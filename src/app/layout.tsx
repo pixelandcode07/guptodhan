@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AppSidebar from "@/components/AppSidebar";
+import Navabar from "@/components/DashboardNav/Navabar";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -14,9 +16,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={` antialiased`}
+        className={` antialiased grid grid-cols-1 lg:grid-cols-12`}
       >
-        {children}
+        <div className="col-span-2 border-2 border-amber-300">
+          <AppSidebar />
+        </div>
+
+        <main className="col-span-10 border-2 border-amber-800">
+          <Navabar />
+          <div className="px-4">
+            {children}
+          </div>
+        </main>
       </body>
     </html>
   );
