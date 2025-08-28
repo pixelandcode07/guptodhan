@@ -1,5 +1,7 @@
 import { House } from 'lucide-react'
 import React from 'react'
+import { Button } from '../ui/button'
+import Vendors from './components/MultivendorModules/Vendors'
 
 export default function AppSidebar() {
     return (
@@ -9,6 +11,7 @@ export default function AppSidebar() {
             <div className='flex items-center gap-2 pl-8'>
                 <House /> Dashboard
             </div>
+            <Button><Vendors /></Button>
         </div>
     )
 }
