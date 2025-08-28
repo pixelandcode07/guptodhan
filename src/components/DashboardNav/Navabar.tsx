@@ -15,8 +15,6 @@ export default function Navabar() {
             <div className='flex justify-end items-center mt-4'>
                 <Button variant="custom" size="customSize1"><Send /> Visit Website</Button>
                 <NavProfile />
-                {/* <div>
-                </div> */}
             </div>
         </div>
     )
