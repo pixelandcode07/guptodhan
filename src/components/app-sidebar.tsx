@@ -5,11 +5,11 @@ import {
   IconCamera,
   IconChartBar,
   IconDashboard,
-  IconDatabase,
+  // IconDatabase,
   IconFileAi,
   IconFileDescription,
-  IconFileWord,
-  IconFolder,
+  // IconFileWord,
+  // IconFolder,
   IconHelp,
   IconListDetails,
   IconReport,
@@ -18,7 +18,7 @@ import {
   IconUsers,
 } from "@tabler/icons-react"
 
-import { NavDocuments } from "@/components/nav-documents"
+import { Multivendor } from "@/components/Multivendor"
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/sidebar"
 import Image from "next/image"
 import Link from "next/link"
+import { DollarSign, Store, UserCheck } from "lucide-react"
 
 const data = {
   user: {
@@ -149,20 +150,20 @@ const data = {
   ],
   documents: [
     {
-      name: "Data Library",
-      url: "#",
-      icon: IconDatabase,
-    },
-    {
-      name: "Reports",
-      url: "#",
-      icon: IconReport,
-    },
-    {
-      name: "Word Assistant",
-      url: "#",
-      icon: IconFileWord,
-    },
+    title: "Vendors",
+    url: "#",
+    icon: UserCheck,
+  },
+  {
+    title: "Stores",
+    url: "#",
+    icon: Store,
+  },
+  {
+    title: "Withdrawal",
+    url: "#",
+    icon: DollarSign,
+  },
   ],
 }
 
@@ -185,7 +186,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
+        <Multivendor items={data.documents} />
+        
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
