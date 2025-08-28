@@ -42,7 +42,7 @@ export function NavDocuments({
       <SidebarMenu>
         {items.map((item) => (
           <SidebarMenuItem key={item.name}>
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton asChild className="!pr-2">
               <a href={item.url}>
                 <item.icon />
                 <span>{item.name}</span>
