@@ -43,28 +43,43 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/",
       icon: IconDashboard,
     },
     {
-      title: "Lifecycle",
-      url: "#",
+      title: "General Info",
+      url: "/general-info",
       icon: IconListDetails,
     },
     {
-      title: "Analytics",
-      url: "#",
+      title: "Footer Settings",
+      url: "/footer-settings",
+      icon: IconSettings,
+    },
+    {
+      title: "Website Theme Color",
+      url: "/website-theme-color",
       icon: IconChartBar,
     },
     {
-      title: "Projects",
-      url: "#",
-      icon: IconFolder,
+      title: "Social Media Links",
+      url: "/social-media-links",
+      icon: IconUsers,
     },
     {
-      title: "Team",
-      url: "#",
-      icon: IconUsers,
+      title: "Home Page SEO",
+      url: "/home-page-seo",
+      icon: IconReport,
+    },
+    {
+      title: "Custom CSS & JS",
+      url: "/custom-css-js",
+      icon: IconFileDescription,
+    },
+    {
+      title: "Social & Chat Scripts",
+      url: "/social-chat-scripts",
+      icon: IconSearch,
     },
   ],
   navClouds: [
