@@ -2,6 +2,7 @@ import "./globals.css"
 import type { Metadata } from "next"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
+import { Toaster } from "@/components/ui/sonner"
 
 export const metadata: Metadata = {
   title: "Guptodhan Dashboard",
@@ -22,6 +23,7 @@ export default function RootLayout({
             {children}
           </SidebarInset>
         </SidebarProvider>
+        <Toaster />
       </body>
     </html>
   )
