@@ -5,11 +5,11 @@ import { ElementType } from "react"
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "./ui/sidebar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible"
 import Link from "next/link"
-// import Link from "next/link"
 
 const vendor = [
-  { title: "Sellers", url: "/sellers", icon: UserCheck },
-  { title: "Stores", url: "/stores", icon: Store },
+  { title: "Add Category", url: "/general/create/vendor/category", icon: UserCheck },
+  { title: "Business Categories", url: "/view/vendor/categories", icon: Store },
+  { title: "Create New Vendor", url: "/create/new/vendor", icon: Store },
   { title: "Plans", url: "/plans", icon: DollarSign },
 ]
 
@@ -33,7 +33,8 @@ export function Multivendor({ items }: { items: { title: string, url: string, ic
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => (
-            <Collapsible key={item.title} defaultOpen className="group/collapsible">
+            <Collapsible key={item.title} className="group/collapsible">
+              {/* (defaultOpen) - Collapsible class */}
               {/* Parent Button */}
               <CollapsibleTrigger asChild>
                 <SidebarMenuItem >
