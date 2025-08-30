@@ -134,6 +134,7 @@ const data = {
         { title: "Storage", url: "/general/view/all/storages" },
         { title: "SIM Types", url: "/general/view/all/sims" },
         { title: "Device Condition", url: "/general/view/all/device/conditions" },
+        { title: "Product Warrenty", url: "/general/view/all/warrenties" },
         { title: "Product Colors", url: "/general/view/all/colors" },
         { title: "Measurement Units", url: "/general/view/all/units" },
         { title: "Product Brands", url: "/general/view/all/brands" },
