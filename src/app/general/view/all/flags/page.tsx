@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Move } from "lucide-react";
 import { createColumns, Flag } from "./columns";
 import { DataTable } from "./data-table";
+import { toast } from "sonner";
 
 // Mock data - in a real app, this would come from an API
 const mockFlags: Flag[] = [
@@ -69,12 +70,36 @@ export default function ViewAllFlagsPage() {
   };
 
   const handleToggleFeatured = (id: number) => {
-    setFlags(flags.map(flag => 
-      flag.id === id 
-        ? { ...flag, featured: flag.featured === "Featured" ? "Not Featured" : "Featured" }
-        : flag
-    ));
-    console.log(`Toggled featured status for flag ${id}`);
+    const flag = flags.find(f => f.id === id);
+    if (!flag) return;
+    
+    const currentStatus = flag.featured;
+    const newStatus = currentStatus === "Featured" ? "Not Featured" : "Featured";
+    const action = currentStatus === "Featured" ? "remove from" : "add to";
+    
+    // Show confirmation alert
+    const isConfirmed = window.confirm(
+      `Are you sure you want to ${action} featured for "${flag.name}"?`
+    );
+    
+    if (isConfirmed) {
+      // Update the flag status
+      setFlags(flags.map(flag => 
+        flag.id === id 
+          ? { ...flag, featured: newStatus }
+          : flag
+      ));
+      
+      // Show success toast
+      toast.success(
+        `Successfully ${action === "remove from" ? "removed" : "added"} "${flag.name}" ${action === "remove from" ? "from" : "to"} featured!`,
+        {
+          description: `Flag is now ${newStatus.toLowerCase()}`,
+        }
+      );
+      
+      console.log(`Toggled featured status for flag ${id} to ${newStatus}`);
+    }
   };
 
   const handleRearrangeAll = () => {
