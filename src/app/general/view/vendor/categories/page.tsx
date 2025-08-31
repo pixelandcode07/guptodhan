@@ -3,7 +3,7 @@ import React from 'react'
 export default function VendorCategories() {
     return (
         <div>
-            This is Vendor Categories Page
+            This is Vendor Categories.
         </div>
     )
 }
