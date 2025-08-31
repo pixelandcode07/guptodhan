@@ -22,6 +22,7 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         BlueBtn: "bg-[#2e7ce4] text-white hover:bg-[#2e7ce4]/90 cursor-pointer",
         GrayBtn: "bg-[#132843] text-white hover:bg-[#132843]/90 cursor-pointer",
+        AquaBtn: "bg-[#00c2b2] text-white hover:bg-[#00c2b2]/90 cursor-pointer",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
