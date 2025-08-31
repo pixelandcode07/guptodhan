@@ -38,7 +38,7 @@ export default function Button({
     <button
       onClick={onClick}
       className={cn(
-        'flex items-center gap-2 rounded-lg font-medium transition-all',
+        'flex items-center gap-2 rounded-lg cursor-pointer font-medium transition-all',
         variantClasses[variant],
         sizeClasses[size]
       )}>
