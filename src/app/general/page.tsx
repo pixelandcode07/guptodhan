@@ -1,8 +1,10 @@
-export default function DashboardPage() {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Dashboard Overview</h2>
-      <p>This is the main dashboard content.</p>
-    </div>
-  );
+import React from 'react'
+import HomePage from './home/page'
+
+export default function DashMain() {
+    return (
+        <div>
+            <HomePage />
+        </div>
+    )
 }
