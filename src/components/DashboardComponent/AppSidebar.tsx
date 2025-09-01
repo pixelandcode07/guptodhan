@@ -6,6 +6,7 @@ import { DollarSign, Store, UserCheck } from 'lucide-react'
 import { Multivendor } from './MotherRoutes/Multivendor'
 import Link from 'next/link'
 import Image from 'next/image'
+import WebsiteConfig from './MotherRoutes/WebsiteConfig'
 
 const data = {
     user: {
@@ -13,48 +14,48 @@ const data = {
         email: "m@example.com",
         avatar: "/avatars/shadcn.jpg",
     },
-    //   navMain: [
-    //     {
-    //       title: "Dashboard",
-    //       url: "/home",
-    //       icon: IconDashboard,
-    //     },
-    //     {
-    //       title: "General Info",
-    //       url: "/general-info",
-    //       icon: IconListDetails,
-    //     },
-    //     {
-    //       title: "Footer Settings",
-    //       url: "/footer-settings",
-    //       icon: IconSettings,
-    //     },
-    //     {
-    //       title: "Website Theme Color",
-    //       url: "/website-theme-color",
-    //       icon: IconChartBar,
-    //     },
-    //     {
-    //       title: "Social Media Links",
-    //       url: "/social-media-links",
-    //       icon: IconUsers,
-    //     },
-    //     {
-    //       title: "Home Page SEO",
-    //       url: "/home-page-seo",
-    //       icon: IconReport,
-    //     },
-    //     {
-    //       title: "Custom CSS & JS",
-    //       url: "/custom-css-js",
-    //       icon: IconFileDescription,
-    //     },
-    //     {
-    //       title: "Social & Chat Scripts",
-    //       url: "/social-chat-scripts",
-    //       icon: IconSearch,
-    //     },
-    //   ],
+    navMain: [
+        {
+            title: "Dashboard",
+            url: "/home",
+            //   icon: IconDashboard,
+        },
+        {
+            title: "General Info",
+            url: "/general-info",
+            //   icon: IconListDetails,
+        },
+        {
+            title: "Footer Settings",
+            url: "/footer-settings",
+            //   icon: IconSettings,
+        },
+        {
+            title: "Website Theme Color",
+            url: "/website-theme-color",
+            //   icon: IconChartBar,
+        },
+        {
+            title: "Social Media Links",
+            url: "/social-media-links",
+            //   icon: IconUsers,
+        },
+        {
+            title: "Home Page SEO",
+            url: "/home-page-seo",
+            //   icon: IconReport,
+        },
+        {
+            title: "Custom CSS & JS",
+            url: "/custom-css-js",
+            //   icon: IconFileDescription,
+        },
+        {
+            title: "Social & Chat Scripts",
+            url: "/social-chat-scripts",
+            //   icon: IconSearch,
+        },
+    ],
 
 
     documents: [
@@ -262,14 +263,7 @@ export default function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
             <SidebarContent>
-                {/* <SidebarGroup>
-                    <SidebarGroupLabel>Application</SidebarGroupLabel>
-                    <SidebarGroupContent>
-                        <SidebarMenu>
-
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup> */}
+                <WebsiteConfig items={data.navMain} />
                 <Multivendor items={data.documents} />
             </SidebarContent>
             <SidebarFooter>
