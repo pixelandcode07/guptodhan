@@ -9,7 +9,7 @@ import Link from "next/link"
 const vendor = [
     { title: "Add Category", url: "/general/create/vendor/category" },
     { title: "Business Categories", url: "/general/view/vendor/categories" },
-    { title: "Create New Vendor", url: "/create/new/vendor" },
+    { title: "Create New Vendor", url: "/general/create/new/vendor" },
     { title: "Plans", url: "/plans" },
 ]
 
