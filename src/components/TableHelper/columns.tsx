@@ -48,7 +48,7 @@ export const columns: ColumnDef<Payment>[] = [
       // const action = row.getValue("action")
       return (
         <div className="flex items-center gap-2">
-          <Button className="bg-yellow-700 hover:bg-yellow-700 text-black cursor-pointer"><Edit /></Button>
+          <Button className="bg-yellow-400 hover:bg-yellow-400 text-black cursor-pointer"><Edit /></Button>
           <Button className="bg-red-700 hover:bg-red-700 text-white cursor-pointer"><Trash /></Button>
         </div>
       )
