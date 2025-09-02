@@ -10,7 +10,8 @@ const vendor = [
     { title: "Add Category", url: "/general/create/vendor/category" },
     { title: "Business Categories", url: "/general/view/vendor/categories" },
     { title: "Create New Vendor", url: "/general/create/new/vendor" },
-    { title: "Plans", url: "/plans" },
+    { title: "Vendor Requests", url: "/general/view/vendor/requests" },
+    { title: "Approved Vendors", url: "/general/view/all/vendors" },
 ]
 
 const stores = [
