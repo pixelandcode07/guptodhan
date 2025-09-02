@@ -7,6 +7,7 @@ import { OtpServices } from './otp.service';
 import { verifyOtpValidationSchema } from './otp.validation';
 
 const sendOtp = async (req: NextRequest) => {
+      console.log('--- 1. OTP Controller: sendOtp function started ---');
   const userId = req.headers.get('x-user-id');
   if (!userId) { throw new Error('Authentication failure: User ID not found'); }
 

@@ -3,7 +3,6 @@
 import { User } from '../user/user.model';
 import { redisClient, connectRedis } from '@/lib/redis';
 import { sendEmail } from '@/lib/utils/email';
-import { StatusCodes } from 'http-status-codes';
 
 const sendOtp = async (userId: string) => {
   await connectRedis();

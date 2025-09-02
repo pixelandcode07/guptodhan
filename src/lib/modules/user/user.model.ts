@@ -1,20 +1,17 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\user\user.model.ts
-
-import { Model, Schema, model, Document } from 'mongoose';
+import { Model, Schema, model, Document, models } from 'mongoose';
 import bcrypt from 'bcrypt';
 import { TUser } from './user.interface';
 
-// সমাধান: TUserDoc নামে একটি নতুন টাইপ তৈরি করা হয়েছে যা Mongoose Document এবং TUser উভয়কেই যুক্ত করে
+// Document + instance methods
 export type TUserDoc = TUser & Document & {
   isPasswordMatched(plainPassword: string, hashedPassword: string): Promise<boolean>;
 };
 
-// কাস্টম স্ট্যাটিক মেথডের জন্য ইন্টারফেস
+// Custom static methods
 export interface UserModel extends Model<TUserDoc> {
   isUserExistsByEmail(email: string): Promise<TUserDoc | null>;
 }
 
-// সমাধান: স্কিমা এবং মডেলে এখন TUserDoc টাইপ ব্যবহার করা হচ্ছে
 const userSchema = new Schema<TUserDoc, UserModel>(
   {
     name: { type: String, required: true },
@@ -26,18 +23,14 @@ const userSchema = new Schema<TUserDoc, UserModel>(
     isDeleted: { type: Boolean, default: false },
     isVerified: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
-    role: {
-      type: String,
-      enum: ['user', 'vendor', 'admin'],
-      default: 'user',
-    },
+    role: { type: String, enum: ['user', 'vendor', 'admin'], default: 'user' },
     rewardPoints: { type: Number, default: 0 },
     passwordChangedAt: { type: Date },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
-// Password hashing middleware (অপরিবর্তিত)
+// Pre-save middleware: hash password
 userSchema.pre('save', async function (next) {
   if (this.isModified('password')) {
     this.password = await bcrypt.hash(this.password as string, 12);
@@ -45,20 +38,20 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-// Static method to check if user exists
-// সমাধান: স্ট্যাটিক মেথডের রিটার্ন টাইপ TUserDoc করা হয়েছে
+// Static method: find user by email
 userSchema.statics.isUserExistsByEmail = async function (
-  email: string,
+  email: string
 ): Promise<TUserDoc | null> {
-  return await this.findOne({ email }).select('+password');
+  return this.findOne({ email }).select('+password');
 };
 
-// Instance method to compare password (অপরিবর্তিত)
+// Instance method: compare password
 userSchema.methods.isPasswordMatched = async function (
   plainPassword: string,
-  hashedPassword: string,
-) {
+  hashedPassword: string
+): Promise<boolean> {
   return await bcrypt.compare(plainPassword, hashedPassword);
 };
 
-export const User = model<TUserDoc, UserModel>('User', userSchema);
+// Export model with type assertion to avoid TypeScript errors
+export const User: UserModel = (models.User || model<TUserDoc, UserModel>('User', userSchema)) as UserModel;
