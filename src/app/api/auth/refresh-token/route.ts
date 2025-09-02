@@ -1,4 +1,3 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\app\api\auth\refresh-token\route.ts
 import { AuthController } from '@/lib/modules/auth/auth.controller';
 import { catchAsync } from '@/lib/middlewares/catchAsync';
 

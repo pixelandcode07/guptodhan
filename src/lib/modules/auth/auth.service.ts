@@ -63,8 +63,32 @@ const changePassword = async (userId: string, payload: TChangePassword) => {
   return null;
 };
 
+const setPasswordForSocialLogin = async (userId: string, newPassword: string) => {
+    
+    const user = await User.findById(userId);
+
+    if (!user) {
+        throw new Error('User not found!');
+    }
+
+
+    if (user.password) {
+        throw new Error('This account already has a password. Please use the "Change Password" feature instead.');
+    }
+
+
+    user.password = newPassword;
+    
+
+    await user.save();
+
+    return null;
+};
+
+
 export const AuthServices = {
   loginUser,
   refreshToken,
   changePassword,
+  setPasswordForSocialLogin,
 };
