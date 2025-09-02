@@ -8,9 +8,10 @@ import { verifyToken } from './lib/utils/jwt';
 // এই রুটগুলোতে রিকোয়েস্ট পাঠাতে হলে অবশ্যই একটি ভ্যালিড accessToken লাগবে
 const protectedRoutes = [
     '/api/auth/change-password',
-    '/api/otp/send',
-    '/api/otp/verify'
-    // ভবিষ্যতে অন্যান্য সুরক্ষিত রুট এখানে যোগ করতে পারেন
+    '/api/otp/send-email',     
+    '/api/otp/verify-email',  
+    '/api/otp/verify-phone' 
+    
 ];
 
 /**
