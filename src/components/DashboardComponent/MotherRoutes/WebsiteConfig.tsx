@@ -15,17 +15,12 @@ export default function WebsiteConfig({ items }: { items: { title: string, url: 
             <SidebarGroupContent>
                 <SidebarMenu>
                     {items.map((item) => (
-                        // {/* (defaultOpen) - Collapsible class */}
-                        // {/* Parent Button */}
-                        // <CollapsibleTrigger asChild>
                         <SidebarMenuItem key={item.title} >
                             <SidebarMenuSubButton>
-                                {/* <item.icon /> */}
+                                <item.icon />
                                 <span>{item.title}</span>
-                                {/* <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" /> */}
                             </SidebarMenuSubButton>
                         </SidebarMenuItem>
-                        // {/* </CollapsibleTrigger> */}
                     ))}
 
                 </SidebarMenu>
