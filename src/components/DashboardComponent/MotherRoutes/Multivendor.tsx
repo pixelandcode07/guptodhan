@@ -16,7 +16,7 @@ const vendor = [
 ]
 
 const stores = [
-    { title: "All Stores", url: "/all-stores" },
+    { title: "Create New Store", url: "/general/create/new/store" },
     { title: "Add New Store", url: "/add-new-store" },
 ]
 
