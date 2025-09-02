@@ -4,14 +4,14 @@ import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 import { sendResponse } from '@/lib/utils/sendResponse';
 import { OtpServices } from './otp.service';
-import { verifyOtpValidationSchema } from './otp.validation';
+import { verifyEmailOtpValidationSchema, verifyPhoneOtpValidationSchema } from './otp.validation';
 
-const sendOtp = async (req: NextRequest) => {
+// --- ইমেইল OTP কন্ট্রোলার ---
+const sendEmailOtp = async (req: NextRequest) => {
   const userId = req.headers.get('x-user-id');
   if (!userId) { throw new Error('Authentication failure: User ID not found'); }
 
-  await OtpServices.sendOtp(userId);
-
+  await OtpServices.sendEmailOtp(userId);
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
@@ -20,24 +20,38 @@ const sendOtp = async (req: NextRequest) => {
   });
 };
 
-const verifyOtp = async (req: NextRequest) => {
+const verifyEmailOtp = async (req: NextRequest) => {
   const userId = req.headers.get('x-user-id');
   if (!userId) { throw new Error('Authentication failure: User ID not found'); }
 
   const body = await req.json();
-  const validatedData = verifyOtpValidationSchema.parse(body);
-
-  await OtpServices.verifyOtp(userId, validatedData.otp);
+  const validatedData = verifyEmailOtpValidationSchema.parse(body);
+  await OtpServices.verifyEmailOtp(userId, validatedData.otp);
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Your account has been successfully verified!',
+    message: 'Your account has been successfully verified via email!',
+    data: null,
+  });
+};
+
+// --- নতুন: ফোন নম্বর ভেরিফিকেশন কন্ট্রোলার ---
+const verifyPhoneOtp = async (req: NextRequest) => {
+  const body = await req.json();
+  const validatedData = verifyPhoneOtpValidationSchema.parse(body);
+  await OtpServices.verifyPhoneNumberWithFirebase(validatedData.idToken);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Your phone number has been successfully verified!',
     data: null,
   });
 };
 
 export const OtpController = {
-  sendOtp,
-  verifyOtp,
+  sendEmailOtp,
+  verifyEmailOtp,
+  verifyPhoneOtp,
 };

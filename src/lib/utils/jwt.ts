@@ -15,7 +15,14 @@ export const generateToken = (
 };
 
 export const verifyToken = (token: string, secret: string): JwtPayload => {
-  // jwt.verify ব্যর্থ হলে একটি এরর থ্রো করবে, তাই সফল ক্ষেত্রে এটি সবসময় JwtPayload হবে।
-  const verifiedToken = jwt.verify(token, secret) as JwtPayload;
-  return verifiedToken;
+  console.log('--- Token to verify ---', token);
+  console.log('--- Secret used ---', secret);
+  try {
+    const verifiedToken = jwt.verify(token, secret) as JwtPayload;
+    console.log('--- Decoded token ---', verifiedToken);
+    return verifiedToken;
+  } catch (error) {
+    console.error('--- JWT verification failed ---', error);
+    throw error;
+  }
 };
