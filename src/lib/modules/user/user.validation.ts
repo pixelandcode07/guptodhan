@@ -1,11 +1,8 @@
-// ফাইল পাথ: src/lib/modules/user/user.validation.ts
 
 import { z } from 'zod';
 
-// বাংলাদেশের ফোন নম্বর ভ্যালিডেট করার জন্য রেগুলার এক্সপ্রেশন
 const bdPhoneNumberRegex = /^(01[3-9]\d{8})$/;
 
-// ইউজার তৈরির জন্য ভ্যালিডেশন স্কিমা
 export const createUserValidationSchema = z.object({
   body: z.object({
     name: z
@@ -28,7 +25,7 @@ export const createUserValidationSchema = z.object({
     profilePicture: z
       .string()
       .url({ message: 'Profile picture must be a valid URL.' })
-      .optional(), // এটি অপশনাল, তাই ইউজার না দিলেও সমস্যা নেই
+      .optional(), 
       
     address: z
       .string()
@@ -40,7 +37,7 @@ export const createUserValidationSchema = z.object({
   }),
 });
 
-// ইউজার আপডেট করার জন্য ভ্যালিডেশন স্কিমা
+
 export const updateUserValidationSchema = z.object({
   body: z.object({
     name: z.string().optional(),
@@ -54,7 +51,6 @@ export const updateUserValidationSchema = z.object({
   }),
 });
 
-// দুটি স্কিমাকে একটি অবজেক্টের মধ্যে এক্সপোর্ট করা হলো
 export const UserValidations = {
   createUserValidationSchema,
   updateUserValidationSchema,

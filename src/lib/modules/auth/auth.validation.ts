@@ -1,4 +1,3 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\auth\auth.validation.ts
 
 import { z } from 'zod';
 
@@ -16,4 +15,8 @@ export const refreshTokenValidationSchema = z.object({
     refreshToken: z.string({
         required_error: 'Refresh token is required',
     }),
+});
+
+export const setPasswordValidationSchema = z.object({
+  newPassword: z.string().min(8, { message: 'Password must be at least 8 characters long.' }),
 });

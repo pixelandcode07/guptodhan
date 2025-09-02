@@ -1,4 +1,3 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\utils\jwt.ts
 
 import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
 

@@ -13,7 +13,7 @@ interface TResponse<T> {
   success: boolean;
   message: string;
   meta?: TMeta;
-  data: T | null; // Data can be null for logout/change-password
+  data: T | null; 
 }
 
 export const sendResponse = <T>(data: TResponse<T>): NextResponse => {

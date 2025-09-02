@@ -26,7 +26,7 @@ async function dbConnect() {
     const opts = {
       bufferCommands: false,
     };
-    console.log('Attempting to connect to MongoDB... ⏳'); // কানেক্ট করার আগে মেসেজ
+    console.log('Attempting to connect to MongoDB... ⏳');
     cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
       return mongoose;
     });
