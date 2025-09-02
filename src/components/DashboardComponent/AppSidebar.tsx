@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '../ui/sidebar'
-import { DollarSign, Store, UserCheck } from 'lucide-react'
+import { DollarSign, LayoutDashboard, Store, UserCheck } from 'lucide-react'
 import { Multivendor } from './MotherRoutes/Multivendor'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -18,42 +18,42 @@ const data = {
         {
             title: "Dashboard",
             url: "/home",
-            //   icon: IconDashboard,
+              icon: LayoutDashboard,
         },
         {
             title: "General Info",
             url: "/general-info",
-            //   icon: IconListDetails,
+              icon: LayoutDashboard,
         },
         {
             title: "Footer Settings",
             url: "/footer-settings",
-            //   icon: IconSettings,
+              icon: LayoutDashboard,
         },
         {
             title: "Website Theme Color",
             url: "/website-theme-color",
-            //   icon: IconChartBar,
+              icon: LayoutDashboard,
         },
         {
             title: "Social Media Links",
             url: "/social-media-links",
-            //   icon: IconUsers,
+              icon: LayoutDashboard,
         },
         {
             title: "Home Page SEO",
             url: "/home-page-seo",
-            //   icon: IconReport,
+              icon: LayoutDashboard,
         },
         {
             title: "Custom CSS & JS",
             url: "/custom-css-js",
-            //   icon: IconFileDescription,
+              icon: LayoutDashboard,
         },
         {
             title: "Social & Chat Scripts",
             url: "/social-chat-scripts",
-            //   icon: IconSearch,
+              icon: LayoutDashboard,
         },
     ],
 
