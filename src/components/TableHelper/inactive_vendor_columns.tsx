@@ -67,7 +67,7 @@ export const inactive_vendor_columns: ColumnDef<Payment>[] = [
     header: "Status",
     cell: ({ row }) => {
       const status = row.getValue("status")
-// status: "pending" | "active" | "inactive",
+      // status: "pending" | "active" | "inactive",
       return (
         <div className={cn(`p-1 rounded-md w-max text-xs`,
           status === "pending" && "text-yellow-400",
