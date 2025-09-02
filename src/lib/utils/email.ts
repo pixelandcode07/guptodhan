@@ -1,4 +1,3 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\utils\email.ts
 import nodemailer from 'nodemailer';
 import path from 'path';
 import ejs from 'ejs';

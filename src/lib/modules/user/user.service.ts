@@ -4,18 +4,14 @@ import { TUser, TUserInput } from './user.interface';
 import { User } from './user.model';
 
 const createUserIntoDB = async (payload: TUserInput): Promise<Partial<TUser> | null> => {
-  // চেক করা হচ্ছে ইউজার আগে থেকেই আছে কিনা
   const isUserExist = await User.findOne({ email: payload.email });
 
   if (isUserExist) {
     throw new Error('User with this email already exists!');
   }
 
-  // ধাপ ১: ইউজার তৈরি করা হলো
   const newUser = await User.create(payload);
 
-  // সমাধান: তৈরি করা ইউজারকে আবার ডেটাবেস থেকে খুঁজে বের করা হচ্ছে,
-  // কিন্তু এবার পাসওয়ার্ড ফিল্ডটি বাদ দিয়ে (`.select('-password')`)
   const result = await User.findById(newUser._id).select('-password');
 
   return result;
