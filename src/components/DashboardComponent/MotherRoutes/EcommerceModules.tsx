@@ -2,8 +2,8 @@
 
 import { ChevronDown } from "lucide-react"
 import { ElementType } from "react"
-import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "./ui/sidebar"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible"
+import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../../ui/sidebar"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../ui/collapsible"
 import Link from "next/link"
 
 interface EcommerceModuleItem {

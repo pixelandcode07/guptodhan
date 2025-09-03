@@ -37,7 +37,7 @@ import {
 } from "@tabler/icons-react"
 
 import { Multivendor } from "@/components/Multivendor"
-import { EcommerceModules } from "@/components/EcommerceModules"
+import { EcommerceModules } from "@/components/DashboardComponent/MotherRoutes/EcommerceModules"
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
