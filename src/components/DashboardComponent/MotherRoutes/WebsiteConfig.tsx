@@ -3,6 +3,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
+  SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
@@ -18,6 +19,9 @@ export default function WebsiteConfig({
 }) {
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+      <SidebarMenuButton>
+        <Link href="/general/home">Dashboard</Link>
+      </SidebarMenuButton>
       <SidebarGroupLabel>
         <p className="text-[#f1bf43] text-[14px]">Website Config</p>
       </SidebarGroupLabel>
