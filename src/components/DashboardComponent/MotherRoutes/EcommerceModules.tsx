@@ -18,6 +18,8 @@ const MENU_CONFIG: Record<string, { icon: ElementType; items: ChildItem[] }> = {
       { title: "Product Sizes", url: "/general/view/all/sizes" },
       { title: "Storage", url: "/general/view/all/storages" },
       { title: "Sim Type", url: "/general/view/all/sims" },
+      { title: "Device Condition", url: "/general/view/all/device/conditions" },
+      { title: "Product Warranty", url: "/general/view/all/product/warranty" },
       { title: "Product Colors", url: "/general/view/all/colors" },
       { title: "Measurement Units", url: "/general/view/all/units" },
       { title: "Product Brands", url: "/general/view/all/brands" },
