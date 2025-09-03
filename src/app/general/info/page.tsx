@@ -1,9 +1,7 @@
 'use client';
-import React from 'react';
-import SectionTitle from '@/Components/SectionTitle';
-import Button from '@/Components/ui/button';
-import Input from '@/Components/ui/input';
-import { CircleX } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import SectionTitle from '@/components/ui/SectionTitle';
 
 interface FileItem {
   label: string;
@@ -59,18 +57,9 @@ const GeneralInfoForm: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between">
         <SectionTitle text="General Information Form" />
         <div className="flex flex-wrap gap-2">
-          <Button
-            text="Cancel"
-            icon={<CircleX className="w-4 h-4" />}
-            size="sm"
-            variant="danger"
-          />
-          <Button
-            text="Update"
-            icon={<CircleX className="w-4 h-4" />}
-            size="sm"
-            variant="primary"
-          />
+          <Button variant="destructive">Cencle</Button>
+
+          <Button variant="secondary">done</Button>
         </div>
       </div>
 
@@ -94,6 +83,7 @@ const GeneralInfoForm: React.FC = () => {
                   onChange={handleFileChange}
                 />
                 {item.preview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     id={item.name + '_preview'}
                     src={item.preview}
@@ -159,8 +149,8 @@ const GeneralInfoForm: React.FC = () => {
             <Input
               id="short_description"
               name="short_description"
-              rows={3}
-              textarea
+              // rows={3}
+              // textarea
               defaultValue="Guptodhan Bangladesh is online version of Guptodhan situated at Dhaka since 2024"
             />
           </div>
@@ -172,8 +162,8 @@ const GeneralInfoForm: React.FC = () => {
             <Input
               id="address"
               name="address"
-              rows={3}
-              textarea
+              // rows={3}
+              // textarea
               defaultValue="Shariatpur Sadar, Dhaka, Bangladesh"
             />
           </div>
@@ -187,8 +177,8 @@ const GeneralInfoForm: React.FC = () => {
             <Input
               id="google_map_link"
               name="google_map_link"
-              rows={2}
-              textarea
+              // rows={2}
+              // textarea
             />
           </div>
 
@@ -230,8 +220,8 @@ const GeneralInfoForm: React.FC = () => {
             <Input
               id="footer_copyright_text"
               name="footer_copyright_text"
-              rows={2}
-              textarea
+              // rows={2}
+              // textarea
               defaultValue="Copyright © 2024 GuptoDhan. All Rights Reserved."
             />
           </div>
@@ -255,6 +245,7 @@ const GeneralInfoForm: React.FC = () => {
                     onChange={handleFileChange}
                   />
                   {item.preview ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       id={item.name + '_preview'}
                       src={item.preview}
@@ -303,17 +294,19 @@ const GeneralInfoForm: React.FC = () => {
         {/* Submit Buttons */}
         <div className="flex justify-center gap-2">
           <Button
-            text="Cancel"
-            icon={<CircleX className="w-4 h-4" />}
-            size="sm"
-            variant="danger"
-          />
+            // text="Cancel"
+            // icon={<CircleX className="w-4 h-4" />}
+            // size="sm"
+            variant="destructive">
+            Cencle
+          </Button>
           <Button
-            text="Update"
-            icon={<CircleX className="w-4 h-4" />}
-            size="sm"
-            variant="primary"
-          />
+            // text="Update"
+            // icon={<CircleX className="w-4 h-4" />}
+            // size="sm"
+            variant="secondary">
+            Update
+          </Button>
         </div>
       </div>
     </form>
