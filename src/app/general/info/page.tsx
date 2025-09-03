@@ -59,7 +59,7 @@ const GeneralInfoForm: React.FC = () => {
         <div className="flex flex-wrap gap-2">
           <Button variant="destructive">Cencle</Button>
 
-          <Button variant="secondary">done</Button>
+          <Button>done</Button>
         </div>
       </div>
 
@@ -301,10 +301,10 @@ const GeneralInfoForm: React.FC = () => {
             Cencle
           </Button>
           <Button
-            // text="Update"
-            // icon={<CircleX className="w-4 h-4" />}
-            // size="sm"
-            variant="secondary">
+          // text="Update"
+          // icon={<CircleX className="w-4 h-4" />}
+          // size="sm"
+          >
             Update
           </Button>
         </div>
