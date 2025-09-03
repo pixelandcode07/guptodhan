@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { TUserInput } from './user.interface';
 import { UserServices } from './user.service';
@@ -14,6 +15,8 @@ const getAllUsers = async (_req: NextRequest) => {
   const users = await UserServices.getAllUsersFromDB();
   return users;
 };
+
+
 
 export const UserController = {
   createUser,
