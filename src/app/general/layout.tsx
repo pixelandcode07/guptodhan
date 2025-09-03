@@ -42,7 +42,7 @@ export default async function RootLayout({
                     {/* </div> */}
                     <main className=" w-full">
                         <DashNavbar />
-                        <div className="px-4">
+                        <div className="md:px-4">
                             {children}
                         </div>
                     </main>
