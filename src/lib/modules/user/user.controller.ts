@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { TUserInput } from './user.interface';
 import { UserServices } from './user.service';

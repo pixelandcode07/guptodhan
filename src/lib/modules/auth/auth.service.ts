@@ -107,9 +107,7 @@ const sendForgotPasswordOtpToEmail = async (email: string) => {
   return null;
 };
 
-/**
- * @description ইমেইল থেকে পাওয়া OTP ভেরিফাই করে একটি রিসেট টোকেন তৈরি করে
- */
+
 const verifyForgotPasswordOtpFromEmail = async (email: string, otp: string) => {
     await connectRedis();
     const redisKey = `reset-otp:email:${email}`;
@@ -129,9 +127,7 @@ const verifyForgotPasswordOtpFromEmail = async (email: string, otp: string) => {
     return { resetToken };
 };
 
-/**
- * @description Firebase idToken ভেরিফাই করে একটি রিসেট টোকেন তৈরি করে
- */
+
 const getResetTokenWithFirebase = async (idToken: string) => {
     const decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
     const phoneNumberFromFirebase = decodedToken.phone_number;
@@ -149,9 +145,7 @@ const getResetTokenWithFirebase = async (idToken: string) => {
 };
 
 
-/**
- * @description রিসেট টোকেন ব্যবহার করে নতুন পাসওয়ার্ড সেট করে
- */
+
 const resetPasswordWithToken = async (token: string, newPassword: string) => {
     const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
     if (!decoded.userId || decoded.purpose !== 'password-reset') {
