@@ -35,8 +35,8 @@ const sliders = [
 ];
 
 const testimonials = [
-  { title: 'Add New Testimonial', url: '/general/testimonials/add' },
-  { title: 'View All Testimonials', url: '/general/testimonials' },
+  { title: 'Add New Testimonial', url: '/general/add/testimonial/add' },
+  { title: 'View All Testimonials', url: '/general/add/testimonial/all' },
 ];
 
 const blog = [
