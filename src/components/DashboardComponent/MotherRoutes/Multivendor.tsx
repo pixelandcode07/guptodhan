@@ -17,7 +17,7 @@ const vendor = [
 
 const stores = [
     { title: "Create New Store", url: "/general/create/new/store" },
-    { title: "Add New Store", url: "/add-new-store" },
+    { title: "View All Stores", url: "/general/view/all/stores" },
 ]
 
 const withdrawal = [
