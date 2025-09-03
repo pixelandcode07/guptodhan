@@ -15,6 +15,8 @@ const getAllUsers = async (_req: NextRequest) => {
   return users;
 };
 
+
+
 export const UserController = {
   createUser,
   getAllUsers,
