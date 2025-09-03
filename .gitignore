@@ -9,6 +9,11 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+<<<<<<< HEAD
+=======
+# Firebase service account key
+serviceAccountKey.json
+>>>>>>> e3b186b3c24301ce4278161fa5144e28060b6126
 
 # testing
 /coverage

@@ -567,7 +567,11 @@ function SidebarMenuAction({
         "peer-data-[size=sm]/menu-button:top-1",
         "peer-data-[size=default]/menu-button:top-1.5",
         "peer-data-[size=lg]/menu-button:top-2.5",
+<<<<<<< HEAD
         "group-data-[collapsible=icon]:hidden md:opacity-0 md:group-hover/menu-item:opacity-100 md:group-focus-within/menu-item:opacity-100",
+=======
+        "group-data-[collapsible=icon]:hidden",
+>>>>>>> e3b186b3c24301ce4278161fa5144e28060b6126
         showOnHover &&
           "peer-data-[active=true]/menu-button:text-sidebar-accent-foreground group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 md:opacity-0",
         className
