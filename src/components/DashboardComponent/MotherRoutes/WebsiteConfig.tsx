@@ -19,7 +19,7 @@ export default function WebsiteConfig({
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>
-        <p className="text-[#f1bf43] text-[14px]">Multivendor Modules</p>
+        <p className="text-[#f1bf43] text-[14px]">Website Config</p>
       </SidebarGroupLabel>
 
       <SidebarGroupContent>
@@ -27,8 +27,8 @@ export default function WebsiteConfig({
           {items.map(item => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuSubButton>
-                <Link href={item.url}>
-                  {/* <item.icon /> */}
+                <Link className="flex gap-2  items-center" href={item.url}>
+                  <item.icon className="w-4 h-4 " />
                   <span>{item.title}</span>
                 </Link>
               </SidebarMenuSubButton>

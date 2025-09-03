@@ -10,11 +10,28 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '../ui/sidebar';
-import { DollarSign, LayoutDashboard, Store, UserCheck } from 'lucide-react';
+import {
+  Code,
+  DollarSign,
+  FilePlus,
+  FileText,
+  HelpCircle,
+  Info,
+  LayoutDashboard,
+  MessageCircle,
+  MessageSquare,
+  Palette,
+  Search,
+  Settings,
+  Share2,
+  Store,
+  UserCheck,
+} from 'lucide-react';
 import { Multivendor } from './MotherRoutes/Multivendor';
 import Link from 'next/link';
 import Image from 'next/image';
 import WebsiteConfig from './MotherRoutes/WebsiteConfig';
+import { ContentManagement } from './MotherRoutes/ContentManagement';
 
 const data = {
   user: {
@@ -31,32 +48,32 @@ const data = {
     {
       title: 'Footer Settings',
       url: '/footer-settings',
-      icon: LayoutDashboard,
+      icon: Settings,
     },
     {
       title: 'Website Theme Color',
       url: '/general/website/theme/page',
-      icon: LayoutDashboard,
+      icon: Palette,
     },
     {
       title: 'Social Media Links',
       url: '/general/social/media/page',
-      icon: LayoutDashboard,
+      icon: Share2,
     },
     {
       title: 'Home Page SEO',
       url: '/general/seo/homepage',
-      icon: LayoutDashboard,
+      icon: Search,
     },
     {
       title: 'Custom CSS & JS',
       url: '/custom-css-js',
-      icon: LayoutDashboard,
+      icon: Code,
     },
     {
       title: 'Social & Chat Scripts',
       url: '/social-chat-scripts',
-      icon: LayoutDashboard,
+      icon: MessageCircle,
     },
   ],
 
@@ -75,6 +92,44 @@ const data = {
       title: 'Withdrawal',
       url: '#',
       icon: DollarSign,
+    },
+  ],
+
+  contentMngement: [
+    {
+      title: 'Slider & Banners',
+      url: '#',
+      icon: Image,
+    },
+    {
+      title: 'Testimonials',
+      url: '#',
+      icon: MessageSquare,
+    },
+    {
+      title: 'Manage Blogs',
+      url: '#',
+      icon: FileText,
+    },
+    {
+      title: 'Terms & Policies',
+      url: '#',
+      icon: File,
+    },
+    {
+      title: 'Custom Pages',
+      url: '#',
+      icon: FilePlus,
+    },
+    {
+      title: 'About Us',
+      url: '#',
+      icon: Info,
+    },
+    {
+      title: "FAQ's",
+      url: '#',
+      icon: HelpCircle,
     },
   ],
   //   ecommerceModules: [
@@ -269,6 +324,7 @@ export default function AppSidebar() {
       <SidebarContent>
         <WebsiteConfig items={data.navMain} />
         <Multivendor items={data.documents} />
+        <ContentManagement />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
     </Sidebar>

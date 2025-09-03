@@ -104,12 +104,12 @@ export default function ThemeColorCard() {
           Cencle
         </Button>
         <Button
-          // text="Update Color"
-          // variant="primary"
-          // size="sm"
-          // icon={<Save className="w-4 h-4" />}
-          // onClick={handleUpdate}
-          variant="secondary">
+        // text="Update Color"
+        // variant="primary"
+        // size="sm"
+        // icon={<Save className="w-4 h-4" />}
+        // onClick={handleUpdate}
+        >
           Update
         </Button>
       </div>
