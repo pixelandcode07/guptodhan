@@ -20,7 +20,7 @@ export default function DashNavbar() {
       <SidebarTrigger />
       {/* Right side */}
       <div className="flex gap-5">
-        <Button variant={'GrayBtn'}>
+        <Button variant={'secondary'}>
           <Send />
           <Link href={'#'}>Visit Website</Link>
         </Button>
