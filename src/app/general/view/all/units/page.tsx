@@ -38,6 +38,32 @@ export default function ViewAllUnitsPage() {
           Rearrange Unit
         </Button>
       </div>
+      
+      {/* Table Filters Row */}
+      <div className="mb-4 p-3 border bg-gray-50 rounded">
+        <div className="grid grid-cols-5 gap-4">
+          <div></div> {/* SL column - no filter */}
+          <div>
+            <Input
+              type="text"
+              placeholder="Filter by name..."
+              className="w-full text-sm border border-gray-300"
+            />
+          </div>
+          <div>
+            <select
+              className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+            >
+              <option value="">All Status</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+          <div></div> {/* Created At column - no filter */}
+          <div></div> {/* Action column - no filter */}
+        </div>
+      </div>
+      
       <DataTable columns={unit_columns} data={data} />
     </div>
   );
