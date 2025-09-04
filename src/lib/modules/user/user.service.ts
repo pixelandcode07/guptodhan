@@ -18,14 +18,11 @@ const createUserIntoDB = async (payload: TUserInput): Promise<Partial<TUser> | n
   return result;
 };
 
-// নতুন: নিজের প্রোফাইল দেখার জন্য সার্ভিস
 const getMyProfileFromDB = async (userId: string): Promise<Partial<TUser> | null> => {
-  // .select('-password') দিয়ে নিশ্চিত করা হচ্ছে যেন পাসওয়ার্ড না আসে
   const result = await User.findById(userId).select('-password');
   return result;
 };
 
-// নিজের প্রোফাইল আপডেট করার সার্ভিস
 const updateMyProfileInDB = async (
   userId: string,
   payload: Partial<TUser>,
@@ -35,10 +32,7 @@ const updateMyProfileInDB = async (
     throw new Error('User not found!');
   }
 
-  // যদি নতুন প্রোফাইল পিকচার আপলোড করা হয় এবং পুরনো একটি ছবি থাকে
   if (payload.profilePicture && user.profilePicture) {
-    // পুরনো প্রোফাইল পিকচারটি Cloudinary থেকে ডিলিট করে দেওয়া হচ্ছে
-    // এটি আপনার Cloudinary স্টোরেজকে পরিষ্কার রাখবে
     await deleteFromCloudinary(user.profilePicture);
   }
 
@@ -50,7 +44,6 @@ const updateMyProfileInDB = async (
   return result;
 };
 
-// অ্যাডমিনের জন্য সকল ইউজারদের তালিকা আনার সার্ভিস (পাসওয়ার্ড ছাড়া)
 const getAllUsersFromDB = async (): Promise<TUser[]> => {
   const result = await User.find({ isDeleted: false }).select('-password');
   return result;
@@ -70,16 +63,15 @@ const updateUserIntoDB = async (id: string, payload: Partial<TUser>): Promise<TU
 };
 
 
-// এই ফাংশনটি ব্যবহারকারী এবং অ্যাডমিন উভয়ই ব্যবহার করতে পারবে
 const deleteUserFromDB = async (id: string): Promise<Partial<TUser> | null> => {
   const result = await User.findByIdAndUpdate(
     id,
     { 
       isDeleted: true,
-      isActive: false, // অ্যাকাউন্ট ডিলিট হলে তাকে inactive করে দেওয়া হচ্ছে
+      isActive: false, 
     },
     { new: true },
-  ).select('-password'); // ডিলিট করা ইউজারের তথ্য রিটার্ন করার সময় পাসওয়ার্ড বাদ দেওয়া হচ্ছে
+  ).select('-password'); 
   return result;
 };
 

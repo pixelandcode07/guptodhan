@@ -1,4 +1,3 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\service-provider\serviceProvider.model.ts
 import { Schema, model, models } from 'mongoose';
 import { TServiceProvider } from './serviceProvider.interface';
 
