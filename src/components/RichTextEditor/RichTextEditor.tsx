@@ -298,7 +298,7 @@ export const RichTextEditor: React.FC<EditorProps> = ({
       {/* Editable Area */}
       <div
         ref={editorRef}
-        className="min-h-[200px] p-3 outline-none text-left"
+        className="h-[380px] p-3 overflow-y-auto outline-none text-left"
         dir="ltr"
         contentEditable
         suppressContentEditableWarning
