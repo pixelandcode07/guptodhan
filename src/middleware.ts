@@ -8,7 +8,9 @@ const protectedRoutes = [
     '/api/otp/send-email',     
     '/api/otp/verify-email',  
     '/api/otp/verify-phone',
-    '/api/v1/auth/set-password' 
+    '/api/v1/auth/set-password',
+    '/api/v1/profile/me',
+    '/api/v1/users' 
     
 ];
 
