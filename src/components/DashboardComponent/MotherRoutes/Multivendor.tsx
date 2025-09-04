@@ -17,11 +17,11 @@ const vendor = [
 
 const stores = [
     { title: "Create New Store", url: "/general/create/new/store" },
-    { title: "Add New Store", url: "/add-new-store" },
+    { title: "View All Stores", url: "/general/view/all/stores" },
 ]
 
 const withdrawal = [
-    // { title: "Withdrawal", url: "/withdrawal"  },
+    { title: "All Withdrawal", url: "/general/view/all/withdraws"  },
     { title: "Add New Withdrawal", url: "/add-new-withdrawal" },
     { title: "All Withdrawal", url: "/all-withdrawal" },
 ]

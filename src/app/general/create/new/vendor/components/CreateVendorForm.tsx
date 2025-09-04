@@ -6,6 +6,7 @@ import BusinessInfo from './BusinessInfo'
 import OwnerInfo from './OwnerInfo'
 import Attachment from './Attachment'
 import { Button } from '@/components/ui/button'
+import { ColourOption } from '@/data/data'
 
 
 
@@ -17,13 +18,14 @@ export type Inputs = {
     owner_number: string
     owner_email: string
     owner_email_password: string
+    business_category: ColourOption[]
 }
 
 export default function CreateVendorForm() {
     const {
         register,
         handleSubmit,
-        // watch,
+        setValue,
         formState: { errors },
     } = useForm<Inputs>()
 
@@ -35,7 +37,7 @@ export default function CreateVendorForm() {
     return (
         <form onSubmit={handleSubmit(onSubmit)} className='bg-[#f8f9fb] m-5 md:m-10 p-5 border border-[#e4e7eb] rounded-xs space-y-5 '>
             {/* Business Information */}
-            <BusinessInfo register={register} errors={errors} />
+            <BusinessInfo register={register} errors={errors} setValue={setValue} />
 
             {/* Owner Information: */}
             <OwnerInfo register={register} errors={errors} />

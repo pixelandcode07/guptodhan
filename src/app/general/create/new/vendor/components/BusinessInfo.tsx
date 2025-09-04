@@ -1,7 +1,7 @@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Asterisk } from 'lucide-react'
-import { FieldErrors, UseFormRegister } from 'react-hook-form'
+import { FieldErrors, UseFormRegister, UseFormSetValue } from 'react-hook-form'
 
 import chroma from 'chroma-js';
 
@@ -62,9 +62,10 @@ const colourStyles: StylesConfig<ColourOption, true> = {
     }),
 };
 
-export default function BusinessInfo({ register, errors }: {
+export default function BusinessInfo({ register, errors, setValue }: {
     register: UseFormRegister<Inputs>
     errors: FieldErrors<Inputs>
+    setValue: UseFormSetValue<Inputs>
 }) {
     return (
         <>
@@ -87,6 +88,7 @@ export default function BusinessInfo({ register, errors }: {
                 isMulti
                 options={colourOptions}
                 styles={colourStyles}
+                onChange={(selectedOptions) => setValue('business_category', [...selectedOptions])}
             />
             {/* Trade License Number */}
             <Label htmlFor="name">Trade License Number</Label>
