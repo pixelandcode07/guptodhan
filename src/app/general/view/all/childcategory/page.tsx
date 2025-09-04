@@ -27,14 +27,14 @@ export default function ViewAllChildCategoriesPage() {
           <span>Search:</span>
           <Input type="text" className="border border-gray-500" />
         </span>
-        <Button className="bg-green-600 hover:bg-green-700">
+        {/* <Button className="bg-green-600 hover:bg-green-700">
           <Plus className="w-4 h-4 mr-2" />
           Add New Child Category
         </Button>
         <Button variant="outline">
           <Move className="w-4 h-4 mr-2" />
           Rearrange Child Category
-        </Button>
+        </Button> */}
       </div>
       <DataTable columns={childcategory_columns} data={data} />
     </div>
