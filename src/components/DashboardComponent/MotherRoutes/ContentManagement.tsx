@@ -53,8 +53,8 @@ const condition = [
 ];
 
 const customPage = [
-  { title: 'Create New Page', url: '/pages/create' },
-  { title: 'View All Pages', url: '/pages' },
+  { title: 'Create New Page', url: '/general/create/new/page' },
+  { title: 'View All Pages', url: '/general/view/all/pages' },
 ];
 
 const aboutUs = [
