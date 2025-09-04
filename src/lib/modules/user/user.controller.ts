@@ -15,7 +15,6 @@ const createUser = async (userData: TUserInput) => {
   return user;
 };
 
-// নতুন: নিজের প্রোফাইল দেখার জন্য কন্ট্রোলার
 const getMyProfile = async (req: NextRequest) => {
   await dbConnect();
   const userId = req.headers.get('x-user-id');
@@ -31,13 +30,11 @@ const getMyProfile = async (req: NextRequest) => {
   });
 };
 
-// নিজের প্রোফাইল আপডেট করার কন্ট্রোলার
 const updateMyProfile = async (req: NextRequest) => {
     await dbConnect();
     const userId = req.headers.get('x-user-id');
     if (!userId) { throw new Error('User ID not found in token'); }
 
-    // Next.js-এ ফাইল এবং অন্যান্য ডেটা form-data থেকে এভাবে গ্রহণ করতে হয়
     const formData = await req.formData();
     const file = formData.get('profilePicture') as File | null;
     const name = formData.get('name') as string;
@@ -48,17 +45,12 @@ const updateMyProfile = async (req: NextRequest) => {
     if (name) payload.name = name;
     if (address) payload.address = address;
 
-    // যদি কোনো ফাইল আপলোড করা হয়
     if (file) {
-      // ফাইলটিকে Buffer-এ রূপান্তর করা হচ্ছে
       const buffer = Buffer.from(await file.arrayBuffer());
-      // Cloudinary-তে 'profile-pictures' ফোল্ডারে আপলোড করা হচ্ছে
       const uploadResult = await uploadToCloudinary(buffer, 'profile-pictures');
-      // Cloudinary থেকে পাওয়া সুরক্ষিত URL টি payload-এ যোগ করা হচ্ছে
       payload.profilePicture = uploadResult.secure_url;
     }
 
-    // Zod দিয়ে ভ্যালিডেট করা হচ্ছে (ফাইল ছাড়া বাকি তথ্য)
     UserValidations.updateUserProfileValidationSchema.parse({ body: payload });
 
     const result = await UserServices.updateMyProfileInDB(userId, payload);
@@ -73,7 +65,6 @@ const updateMyProfile = async (req: NextRequest) => {
 
 
 
-// অ্যাডমিনের জন্য সকল ইউজারদের তালিকা আনার কন্ট্রোলার
 const getAllUsers = async (_req: NextRequest) => {
     await dbConnect();
     const result = await UserServices.getAllUsersFromDB();
@@ -86,10 +77,8 @@ const getAllUsers = async (_req: NextRequest) => {
     });
 };
 
-// নতুন: নিজের অ্যাকাউন্ট ডিলিট করার জন্য কন্ট্রোলার
 const deleteMyAccount = async (req: NextRequest) => {
     await dbConnect();
-    // টোকেন থেকে নিজের userId নেওয়া হচ্ছে
     const userId = req.headers.get('x-user-id');
     if (!userId) { throw new Error('User ID not found in token'); }
 
@@ -104,10 +93,8 @@ const deleteMyAccount = async (req: NextRequest) => {
 };
 
 
-// নতুন: অ্যাডমিনের জন্য অন্য কোনো ইউজারকে ডিলিট করার কন্ট্রোলার
 const deleteUserByAdmin = async (req: NextRequest, { params }: { params: { id: string } }) => {
     await dbConnect();
-    // URL থেকে টার্গেট ইউজারের id নেওয়া হচ্ছে (e.g., /api/v1/users/12345)
     const { id } = params;
     
     await UserServices.deleteUserFromDB(id);
