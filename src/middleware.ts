@@ -4,11 +4,13 @@ import { StatusCodes } from 'http-status-codes';
 import { verifyToken } from './lib/utils/jwt';
 
 const protectedRoutes = [
-    '/api/auth/change-password',
+    '/api/v1/auth/change-password',
     '/api/otp/send-email',     
     '/api/otp/verify-email',  
     '/api/otp/verify-phone',
-    '/api/auth/set-password' 
+    '/api/v1/auth/set-password',
+    '/api/v1/profile/me',
+    '/api/v1/users' 
     
 ];
 

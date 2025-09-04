@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils"
 import { ColumnDef } from "@tanstack/react-table"
-import { Check, Edit, Trash } from "lucide-react"
+import { Check, Edit } from "lucide-react"
 import { Button } from "../ui/button"
 
 
