@@ -3,10 +3,8 @@
 import { useState } from 'react';
 
 import SectionTitle from '@/components/ui/SectionTitle';
-import { Pagination } from '@/components/ui/pagination';
 import { DataTable } from '@/components/TableHelper/data-table';
-import { testimonial_columns } from '@/components/TableHelper/testimonial_columns';
-import { all_page_columns } from '@/components/TableHelper/all_page_columnd';
+import { all_page_columns } from '@/components/TableHelper/all_page_columns';
 
 // Example data (you can fetch from API later)
 const pageData = [
@@ -72,7 +70,7 @@ export default function AllPage() {
 
         <DataTable columns={all_page_columns} data={pageData} />
 
-        <Pagination />
+     
       </div>
     </div>
   );
