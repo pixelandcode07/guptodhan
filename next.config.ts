@@ -1,7 +1,17 @@
-import type { NextConfig } from "next";
+// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\next.config.mjs
 
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+    images: {
+        remotePatterns: [
+            {
+                protocol: 'https',
+                hostname: 'res.cloudinary.com',
+                port: '',
+                pathname: '/**',
+            },
+        ],
+    },
 };
 
 export default nextConfig;

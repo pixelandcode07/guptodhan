@@ -30,6 +30,9 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true';
 
+  const cookieStore = await cookies();
+  const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true';
+
   return (
     <html lang="en">
       <body
@@ -40,10 +43,7 @@ export default async function RootLayout({
           {/* </div> */}
           <main className=" w-full">
             <DashNavbar />
-            <div className="p-5 min-h-[calc(100vh-125px)] bg-gray-100">
-              {children}
-            </div>
-            <Footer />
+            <div className="md:px-4">{children}</div>
           </main>
         </SidebarProvider>
       </body>

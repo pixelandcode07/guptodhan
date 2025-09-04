@@ -13,22 +13,27 @@ export interface UserModel extends Model<TUserDoc> {
 const userSchema = new Schema<TUserDoc, UserModel>(
    {
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    
-    password: { type: String, select: false },
-    
-    phoneNumber: { type: String, unique: true, sparse: true }, 
-    
+    email: { type: String, required: true, unique: true },   
+    password: { type: String, select: false },   
+    phoneNumber: { type: String, unique: true, sparse: true },    
     profilePicture: { type: String },
-    
     address: { type: String },
-
     isDeleted: { type: Boolean, default: false },
     isVerified: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
-    role: { type: String, enum: ['user', 'vendor', 'admin'], default: 'user' },
+    role: { type: String, 
+    enum: ['user', 'vendor', 'service-provider', 'admin'], 
+    default: 'user' },
     rewardPoints: { type: Number, default: 0 },
     passwordChangedAt: { type: Date },
+    vendorInfo: {
+    type: Schema.Types.ObjectId,
+      ref: 'Vendor',
+    },
+    serviceProviderInfo: {
+      type: Schema.Types.ObjectId,
+      ref: 'ServiceProvider',
+    },
   },
   { timestamps: true },
 );

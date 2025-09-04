@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\app\api\auth\[...nextauth]\route.ts
 
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
@@ -25,14 +26,14 @@ export const authOptions = {
               name: user.name,
               email: user.email,
               profilePicture: user.image,
-              role: 'user', 
+              role: 'user',
               isVerified: true, 
             });
           }
-          return true; 
+          return true;
         } catch (error) {
           console.error("Error during Google sign-in and user creation:", error);
-          return false; 
+          return false;
         }
       }
       return true;
@@ -57,6 +58,7 @@ export const authOptions = {
   },
   pages: {
     signIn: '/login', 
+    error: '/api/auth/error', 
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
