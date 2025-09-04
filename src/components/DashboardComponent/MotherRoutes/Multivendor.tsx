@@ -25,6 +25,7 @@ const withdrawal = [
     { title: "Create Withdrawal", url: "/general/create/new/withdraw" },
     { title: "Withdrawal Requests", url: "/general/view/withdraw/requests" },
     { title: "Completed Withdraws", url: "/general/view/completed/withdraws" },
+    { title: "Cancelled Withdraws", url: "/general/view/cancelled/withdraws" },
 ]
 
 export function Multivendor({ items }: { items: { title: string, url: string, icon: ElementType }[] }) {
