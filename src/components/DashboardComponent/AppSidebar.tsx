@@ -10,12 +10,24 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '../ui/sidebar';
-import { DollarSign, LayoutDashboard, Store, UserCheck } from 'lucide-react';
+import {
+  Code,
+  DollarSign,
+  LayoutDashboard,
+  MessageCircle,
+  Palette,
+  Search,
+  Settings,
+  Share2,
+  Store,
+  UserCheck,
+} from 'lucide-react';
 import { Multivendor } from './MotherRoutes/Multivendor';
 import Link from 'next/link';
 import Image from 'next/image';
 import WebsiteConfig from './MotherRoutes/WebsiteConfig';
 import { EcommerceModules } from './MotherRoutes/EcommerceModules';
+import { ContentManagement } from './MotherRoutes/ContentManagement';
 
 const data = {
   user: {
@@ -58,24 +70,6 @@ const data = {
       title: 'Social & Chat Scripts',
       url: '/social-chat-scripts',
       icon: MessageCircle,
-    },
-  ],
-
-  documents: [
-    {
-      title: 'Vendors',
-      url: '#',
-      icon: UserCheck,
-    },
-    {
-      title: 'Stores',
-      url: '#',
-      icon: Store,
-    },
-    {
-      title: 'Withdrawal',
-      url: '#',
-      icon: DollarSign,
     },
   ],
 
@@ -142,6 +136,7 @@ export default function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <WebsiteConfig items={data.navMain} />
+        <ContentManagement />
         <Multivendor items={data.documents} />
         <EcommerceModules items={data.ecommerceModules} />
       </SidebarContent>

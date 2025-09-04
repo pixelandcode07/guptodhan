@@ -14,12 +14,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Star } from 'lucide-react';
 import SectionTitle from '@/components/ui/SectionTitle';
+import { Pagination } from '@/components/ui/pagination';
+import { DataTable } from '@/components/TableHelper/data-table';
+import { testimonial_columns } from '@/components/TableHelper/testimonial_columns';
 
 // Example data (you can fetch from API later)
 const testimonials = [
   {
-    id: '1',
-    image: '/testimonial/TgzFu1710389859.jpg',
+    id: 1,
+    image: 'https://github.com/shadcn.png',
     customer: 'Sacha Lowe',
     designation: 'CEO, Getup Ltd.',
     rating: 3,
@@ -27,8 +30,8 @@ const testimonials = [
       'I usually try to keep my sadness pent up inside where it can fester quietly as a mental illness.',
   },
   {
-    id: '2',
-    image: '/testimonial/N6cXl1710389840.jpg',
+    id: 2,
+    image: 'https://github.com/shadcn.png',
     customer: 'Carissa Woodward',
     designation: 'Manager, Getup Ltd.',
     rating: 4,
@@ -36,8 +39,8 @@ const testimonials = [
       'Trapped in a book I wrote: a crummy world of plot holes and spelling errors!',
   },
   {
-    id: '3',
-    image: '/testimonial/cgUSR1710389825.jpg',
+    id: 3,
+    image: 'https://github.com/shadcn.png',
     customer: 'Patience Blankenship',
     designation: 'Sales Executive, Getup Ltd.',
     rating: 5,
@@ -82,86 +85,9 @@ export default function TestimonialsPage() {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="rounded-md border overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-center">SL</TableHead>
-                <TableHead className="text-center">Image</TableHead>
-                <TableHead className="text-center">Customer</TableHead>
-                <TableHead className="text-center">Designation</TableHead>
-                <TableHead className="text-center">Rating</TableHead>
-                <TableHead className="text-center">Testimonial</TableHead>
-                <TableHead className="text-center">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredData.map((item, index) => (
-                <TableRow key={item.id}>
-                  <TableCell className="text-center">{index + 1}</TableCell>
-                  <TableCell className="text-center">
-                    <Image
-                      src={item.image}
-                      alt={item.customer}
-                      width={40}
-                      height={40}
-                      className="rounded-full"
-                    />
-                  </TableCell>
-                  <TableCell className="text-center">{item.customer}</TableCell>
-                  <TableCell className="text-center">
-                    {item.designation}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex justify-center">
-                      {Array.from({ length: item.rating }).map((_, i) => (
-                        <Star
-                          key={i}
-                          size={16}
-                          className="text-yellow-500"
-                          fill="gold"
-                        />
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center max-w-xs truncate">
-                    {item.testimonial}
-                  </TableCell>
-                  <TableCell className="text-center flex gap-2 justify-center">
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="bg-yellow-500 hover:bg-yellow-600">
-                      <Edit size={16} />
-                    </Button>
-                    <Button size="sm" variant="destructive">
-                      <Trash2 size={16} />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <DataTable columns={testimonial_columns} data={testimonials} />
 
-        {/* Pagination (static example) */}
-        <div className="flex justify-between items-center mt-4 text-sm text-gray-500">
-          <p>
-            Showing {filteredData.length} of {testimonials.length} entries
-          </p>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline">
-              Previous
-            </Button>
-            <Button size="sm" variant="outline">
-              1
-            </Button>
-            <Button size="sm" variant="outline">
-              Next
-            </Button>
-          </div>
-        </div>
+        <Pagination />
       </div>
     </div>
   );

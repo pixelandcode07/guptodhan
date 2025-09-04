@@ -11,6 +11,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, ArrowUpDown, Plus } from 'lucide-react';
 import SectionTitle from '@/components/ui/SectionTitle';
+import { DataTable } from '@/components/TableHelper/data-table';
+import { blog_bagegory_columns } from '@/components/TableHelper/blog_cagegory_columns';
 
 export default function BlogCategoryTable() {
   const data = [
@@ -83,68 +85,9 @@ export default function BlogCategoryTable() {
           />
         </div>
 
-        {/* Table */}
-        <div className="border mt-4  rounded-md overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-center w-16">SL</TableHead>
-                <TableHead className="text-center">Name</TableHead>
-                <TableHead className="text-center">Slug</TableHead>
-                <TableHead className="text-center">Featured</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-center w-40">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((item, index) => (
-                <TableRow key={item.id}>
-                  <TableCell className="text-center">{index + 1}</TableCell>
-                  <TableCell className="text-center">{item.name}</TableCell>
-                  <TableCell className="text-center">{item.slug}</TableCell>
-                  <TableCell className="text-center">
-                    <Button
-                      size="sm"
-                      variant={item.featured ? 'default' : 'destructive'}>
-                      {item.featured ? 'Featured' : 'Not Featured'}
-                    </Button>
-                  </TableCell>
-                  <TableCell className="text-center">{item.status}</TableCell>
-                  <TableCell className="flex justify-center gap-2">
-                    <Button size="sm" variant="secondary">
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="destructive">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700">
-                      <ArrowUpDown className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Pagination */}
-        <div className="flex flex-col md:flex-row justify-between items-center mt-4 text-sm text-gray-600">
-          <p>
-            Showing 1 to {data.length} of {data.length} entries
-          </p>
-          <div className="flex gap-1 mt-2 md:mt-0">
-            <Button variant="outline" size="sm" disabled>
-              Previous
-            </Button>
-            <Button variant="default" size="sm">
-              1
-            </Button>
-            <Button variant="outline" size="sm" disabled>
-              Next
-            </Button>
-          </div>
+        <div className=" px-5 pb-5">
+          {' '}
+          <DataTable columns={blog_bagegory_columns} data={data} />
         </div>
       </div>
     </div>
