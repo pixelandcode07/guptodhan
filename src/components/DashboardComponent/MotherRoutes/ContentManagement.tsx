@@ -58,11 +58,11 @@ const customPage = [
 ];
 
 const aboutUs = [
-  { title: 'About Content', url: '/about/content' },
-  { title: 'View Facts', url: '/about/facts' },
-  { title: 'CTA', url: '/about/cta' },
-  { title: 'Team Config', url: '/about/team/config' },
-  { title: 'View Teams', url: '/about/team' },
+  { title: 'About Content', url: '/general/about/us/page' },
+  { title: 'View Facts', url: '/general/view/facts' },
+  { title: 'CTA', url: '/general/create/cta' },
+  { title: 'Team Config', url: '/general/team/config' },
+  { title: 'View Teams', url: '/general/view/terms' },
 ];
 
 const faq = [
