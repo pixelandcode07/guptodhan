@@ -6,6 +6,7 @@ export type TVendor = {
   businessCategory: string;
   tradeLicenseNumber: string;
   businessAddress: string;
+  isActive: false;
   ownerName: string;
   ownerNidUrl: string;
   tradeLicenseUrl: string;

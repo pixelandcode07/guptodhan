@@ -196,7 +196,6 @@ const registerVendor = async (payload: any) => {
   }
 };
 
-// নতুন: সার্ভিস প্রোভাইডার রেজিস্ট্রেশন সার্ভিস
 const registerServiceProvider = async (payload: any) => {
   const { name, email, password, phoneNumber, address, ...providerData } = payload;
   const userData = { name, email, password, phoneNumber, address, role: 'service-provider' };
