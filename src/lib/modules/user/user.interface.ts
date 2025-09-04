@@ -12,10 +12,12 @@ export type TUser = {
   isDeleted: boolean;
   isVerified: boolean;
   isActive: boolean;
-  role: 'user' | 'vendor' | 'admin';
+  role: 'user' | 'vendor' | 'service-provider' | 'admin';
   rewardPoints: number;
   loginTime?: Date;
   passwordChangedAt?: Date;
+  vendorInfo?: Types.ObjectId;
+  serviceProviderInfo?: Types.ObjectId;
 };
 
 export type TUserInput = Omit<
