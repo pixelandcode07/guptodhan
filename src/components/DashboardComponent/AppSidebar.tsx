@@ -8,6 +8,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import WebsiteConfig from './MotherRoutes/WebsiteConfig'
 import { EcommerceModules } from './MotherRoutes/EcommerceModules'
+import { BuySell } from './MotherRoutes/BuySell'
 
 const data = {
     user: {
@@ -19,42 +20,59 @@ const data = {
         {
             title: "Dashboard",
             url: "/home",
-              icon: LayoutDashboard,
+            icon: LayoutDashboard,
         },
         {
             title: "General Info",
             url: "/general-info",
-              icon: LayoutDashboard,
+            icon: LayoutDashboard,
         },
         {
             title: "Footer Settings",
             url: "/footer-settings",
-              icon: LayoutDashboard,
+            icon: LayoutDashboard,
         },
         {
             title: "Website Theme Color",
             url: "/website-theme-color",
-              icon: LayoutDashboard,
+            icon: LayoutDashboard,
         },
         {
             title: "Social Media Links",
             url: "/social-media-links",
-              icon: LayoutDashboard,
+            icon: LayoutDashboard,
         },
         {
             title: "Home Page SEO",
             url: "/home-page-seo",
-              icon: LayoutDashboard,
+            icon: LayoutDashboard,
         },
         {
             title: "Custom CSS & JS",
             url: "/custom-css-js",
-              icon: LayoutDashboard,
+            icon: LayoutDashboard,
         },
         {
             title: "Social & Chat Scripts",
             url: "/social-chat-scripts",
-              icon: LayoutDashboard,
+            icon: LayoutDashboard,
+        },
+    ],
+    buysell: [
+        {
+            title: "Buy Sell Config",
+            url: "/general/buy/sell/config",
+            icon: LayoutDashboard,
+        },
+        {
+            title: "Buy Sell Categories",
+            url: "*",
+            icon: LayoutDashboard,
+        },
+        {
+            title: "Buy Sell Listing",
+            url: "/general/buy/sell/listing",
+            icon: LayoutDashboard,
         },
     ],
 
@@ -76,7 +94,7 @@ const data = {
             icon: DollarSign,
         },
     ],
-      ecommerceModules: [
+    ecommerceModules: [
         { title: "Config" },
         { title: "Category" },
         { title: "Subcategory" },
@@ -93,7 +111,7 @@ const data = {
         { title: "Delivery & Payment" },
         { title: "Reports" },
         { title: "Download Backup" },
-      ],
+    ],
 }
 
 
@@ -120,6 +138,7 @@ export default function AppSidebar() {
             </SidebarHeader>
             <SidebarContent>
                 <WebsiteConfig items={data.navMain} />
+                <BuySell items={data.buysell} />
                 <Multivendor items={data.documents} />
                 <EcommerceModules items={data.ecommerceModules} />
             </SidebarContent>

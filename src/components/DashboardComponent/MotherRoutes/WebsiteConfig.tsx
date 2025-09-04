@@ -8,7 +8,7 @@ export default function WebsiteConfig({ items }: { items: { title: string, url: 
         <SidebarGroup className="group-data-[collapsible=icon]:hidden">
             <SidebarGroupLabel>
                 <p className="text-[#f1bf43] text-[14px]">
-                    Multivendor Modules
+                   Website Config
                 </p>
             </SidebarGroupLabel>
 
