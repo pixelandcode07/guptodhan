@@ -22,6 +22,9 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, ListOrdered } from 'lucide-react';
+import { DataTable } from '@/components/TableHelper/data-table';
+import { blogs_columns } from '@/components/TableHelper/blogs_columns';
+import SectionTitle from '@/components/ui/SectionTitle';
 
 type Blog = {
   id: number;
@@ -75,17 +78,23 @@ export default function BlogPage() {
   );
 
   return (
-    <Card className="shadow-md">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-xl font-semibold">View All Blogs</CardTitle>
-        <Button variant="destructive" size="sm" asChild>
-          <a href="#">
-            <ListOrdered className="h-4 w-4 mr-2" />
-            Rearrange
-          </a>
-        </Button>
-      </CardHeader>
-      <CardContent>
+    <div className=" bg-white">
+      <div className="flex w-full justify-between items-center pt-5 flex-wrap">
+        <div className="">
+          <SectionTitle text="View All Blogs" />
+        </div>
+
+        <div className=" pr-5">
+          <Button variant="destructive" size="sm" asChild>
+            <a href="#">
+              <ListOrdered className="h-4 w-4 mr-2" />
+              Rearrange
+            </a>
+          </Button>
+        </div>
+      </div>
+      <div className="p-5 pt-">
+        {' '}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
           {/* Show Entries Dropdown */}
           <div className="flex items-center gap-2">
@@ -115,77 +124,8 @@ export default function BlogPage() {
             />
           </div>
         </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-center w-12">SL</TableHead>
-                <TableHead className="text-center">Title</TableHead>
-                <TableHead className="text-center">Image</TableHead>
-                <TableHead className="text-center">Category</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-center">Published</TableHead>
-                <TableHead className="text-center">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredBlogs.map((blog, index) => (
-                <TableRow key={blog.id}>
-                  <TableCell className="text-center">{index + 1}</TableCell>
-                  <TableCell>{blog.title}</TableCell>
-                  <TableCell className="text-center">
-                    <img
-                      src={blog.image}
-                      alt={blog.title}
-                      className="w-14 h-14 object-cover rounded-md mx-auto"
-                    />
-                  </TableCell>
-                  <TableCell className="text-center">{blog.category}</TableCell>
-                  <TableCell className="text-center">{blog.status}</TableCell>
-                  <TableCell className="text-center">
-                    {blog.published}
-                  </TableCell>
-                  <TableCell className="flex items-center justify-center gap-2">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="p-1"
-                      asChild>
-                      <a
-                        href={`https://app-area.guptodhan.com/edit/blog/${blog.id}`}>
-                        <Edit className="h-4 w-4" />
-                      </a>
-                    </Button>
-                    <Button variant="destructive" size="sm" className="p-1">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Footer */}
-        <div className="flex flex-col md:flex-row items-center justify-between mt-4 text-sm text-gray-500">
-          <p>
-            Showing 1 to {filteredBlogs.length} of {blogs.length} entries
-          </p>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" disabled>
-              Previous
-            </Button>
-            <Button variant="default" size="sm">
-              1
-            </Button>
-            <Button variant="outline" size="sm" disabled>
-              Next
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        <DataTable columns={blogs_columns} data={blogs} />
+      </div>
+    </div>
   );
 }
