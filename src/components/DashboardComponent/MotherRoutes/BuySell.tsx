@@ -33,13 +33,9 @@ export function BuySell({ items }: { items: { title: string, url: string, icon: 
                                 <SidebarMenuItem >
                                     <SidebarMenuButton>
                                         <item.icon />
-                                        {(item.title === "Buy Sell Config" || item.title === "Buy Sell Listing") ? (
-                                            <Link href="/general/buy/sell/config">
-                                                <span>{item.title}</span>
-                                            </Link>
-                                        ) : (
-                                            <span>{item.title}</span>
-                                        )}
+                                        {item.title === "Buy Sell Config" && <Link href="/general/buy/sell/config" className="flex items-center gap-2">{item.title}</Link>}
+                                        {item.title === "Buy Sell Listing" && <Link href="/general/buy/sell/listing" className="flex items-center gap-2">{item.title}</Link>}
+                                        {item.title !== "Buy Sell Config" && item.title !== "Buy Sell Listing" && <span className="flex items-center gap-2">{item.title}</span>}
                                         {item.title === "Buy Sell Categories" && <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />}
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
