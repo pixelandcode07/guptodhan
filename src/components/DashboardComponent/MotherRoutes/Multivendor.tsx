@@ -21,7 +21,7 @@ const stores = [
 ]
 
 const withdrawal = [
-    // { title: "Withdrawal", url: "/withdrawal"  },
+    { title: "All Withdrawal", url: "/general/view/all/withdraws"  },
     { title: "Add New Withdrawal", url: "/add-new-withdrawal" },
     { title: "All Withdrawal", url: "/all-withdrawal" },
 ]
