@@ -8,12 +8,12 @@ import { Button } from "../ui/button"
 
 export type Payment = {
   serial: string,
-  vendor_id: number,
-  owner_name: string,
-  owner_email: string,
-  owner_phone: string,
-  Business_name: string,
-  trade_license_number: number,
+  vandor_name: string,
+  amount: number,
+  date_time: "02/09/2025",
+  method: string,
+  bank_name: string,
+  bank_account: number,
   store: string,
   verified: 'Yes' | 'No',
   status: "pending" | "active" | "inactive",
