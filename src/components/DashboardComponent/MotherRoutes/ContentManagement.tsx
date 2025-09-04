@@ -35,21 +35,21 @@ const sliders = [
 ];
 
 const testimonials = [
-  { title: 'Add New Testimonial', url: '/general/add/testimonial/add' },
-  { title: 'View All Testimonials', url: '/general/add/testimonial/all' },
+  { title: 'Add New Testimonial', url: '/general/add/testimonial' },
+  { title: 'View All Testimonials', url: '/general/view/testimonials' },
 ];
 
 const blog = [
-  { title: 'Blog Categories', url: '/blog/categories' },
-  { title: 'Write a Blog', url: '/blog/write' },
-  { title: 'View All Blogs', url: '/blog' },
+  { title: 'Blog Categories', url: '/general/add/new/category' },
+  { title: 'Write a Blog', url: '/general/add/new/blog' },
+  { title: 'View All Blogs', url: '/general/view/all/blogs' },
 ];
 
 const condition = [
-  { title: 'Terms & Condition', url: '/policies/terms' },
-  { title: 'Privacy Policy', url: '/policies/privacy' },
-  { title: 'Shipping Policy', url: '/policies/shipping' },
-  { title: 'Return Policy', url: '/policies/returns' },
+  { title: 'Terms & Condition', url: '/general/terms/and/condition' },
+  { title: 'Privacy Policy', url: '/general/view/privacy/policy' },
+  { title: 'Shipping Policy', url: '/general/view/shipping/policy' },
+  { title: 'Return Policy', url: '/general/view/return/policy' },
 ];
 
 const customPage = [
