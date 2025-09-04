@@ -27,6 +27,32 @@ export const colourOptions: readonly ColourOption[] = [
     { value: 'Automotive', label: 'Automotive', color: '#00B8D9' },
 ];
 
+
+
+export interface VendorOption {
+    readonly value: string;
+    readonly label: string;
+    readonly color: string;
+    readonly isFixed?: boolean;
+    readonly isDisabled?: boolean;
+}
+
+
+export const vendorOptions: readonly VendorOption[] = [
+    { value: 'Apex Global Traders', label: 'Apex Global Traders', color: '#00B8D9' },
+    { value: 'Horizon Supply Co.', label: 'Horizon Supply Co.', color: '#00B8D9' },
+    { value: 'Evergreen Enterprises', label: 'Evergreen Enterprises', color: '#00B8D9' },
+    { value: 'Velocity Distributors', label: 'Velocity Distributors', color: '#00B8D9' },
+    { value: 'Sunrise Wholesale Ltd.', label: 'Sunrise Wholesale Ltd.', color: '#00B8D9' },
+    { value: 'Summit Imports & Exports', label: 'Summit Imports & Exports', color: '#00B8D9' },
+    { value: 'Silverline Suppliers', label: 'Silverline Suppliers', color: '#00B8D9' },
+    { value: 'MetroMart Partners', label: 'MetroMart Partners', color: '#00B8D9' },
+    { value: 'BlueOcean Ventures', label: 'BlueOcean Ventures', color: '#00B8D9' },
+    { value: 'PrimeGate Traders', label: 'PrimeGate Traders', color: '#00B8D9' },
+];
+
+
+
 export interface FlavourOption {
     readonly value: string;
     readonly label: string;
