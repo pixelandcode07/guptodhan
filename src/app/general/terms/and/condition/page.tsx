@@ -1,4 +1,4 @@
-import { RichTextEditor } from '@/components/RichTextEditor/RichTextEditor';
+import { RichTextEditor } from '@/components/ReusableComponents/RichTextEditor';
 import { Button } from '@/components/ui/button';
 import SectionTitle from '@/components/ui/SectionTitle';
 import React from 'react';

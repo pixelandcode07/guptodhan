@@ -2,12 +2,11 @@
 
 import { useState } from 'react';
 
-import SectionTitle from '@/components/ui/SectionTitle';
 import { DataTable } from '@/components/TableHelper/data-table';
-import { Button } from '@/components/ui/button';
-import { Plus, RefreshCcw } from 'lucide-react';
-import { parmition_user_columns } from '@/components/TableHelper/parmition_user_columns';
 import { role_parmition_columns } from '@/components/TableHelper/role_parmition_user_columns';
+import { Button } from '@/components/ui/button';
+import SectionTitle from '@/components/ui/SectionTitle';
+import { RefreshCcw } from 'lucide-react';
 
 // Example data (you can fetch from API later)
 

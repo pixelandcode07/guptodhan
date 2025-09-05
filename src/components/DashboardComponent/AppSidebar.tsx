@@ -47,7 +47,7 @@ const data = {
     },
     {
       title: 'Footer Settings',
-      url: '/footer-settings',
+      url: '/general/view/footer/widget',
       icon: Settings,
     },
     {
@@ -67,12 +67,12 @@ const data = {
     },
     {
       title: 'Custom CSS & JS',
-      url: '/custom-css-js',
+      url: ' /general/custom/css/js',
       icon: Code,
     },
     {
       title: 'Social & Chat Scripts',
-      url: '/social-chat-scripts',
+      url: '/general/social/chat/script/page',
       icon: MessageCircle,
     },
   ],

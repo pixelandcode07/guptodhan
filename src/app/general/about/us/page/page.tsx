@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { RichTextEditor } from '@/components/RichTextEditor/RichTextEditor';
+import { RichTextEditor } from '@/components/ReusableComponents/RichTextEditor';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import SectionTitle from '@/components/ui/SectionTitle';

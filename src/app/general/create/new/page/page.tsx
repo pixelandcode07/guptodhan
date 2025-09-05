@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Image as ImageIcon, X } from 'lucide-react';
-import { RichTextEditor } from '@/components/RichTextEditor/RichTextEditor';
+import { RichTextEditor } from '@/components/ReusableComponents/RichTextEditor';
 import { Checkbox } from '@/components/ui/checkbox';
 import SectionTitle from '@/components/ui/SectionTitle';
 

@@ -6,7 +6,7 @@ import BlogSeoForm from './Components/BlogSeoInfo';
 import BlogForm from './Components/BlogEntryForm';
 import SectionTitle from '@/components/ui/SectionTitle';
 import { Button } from '@/components/ui/button';
-import { RichTextEditor } from '@/components/RichTextEditor/RichTextEditor';
+import { RichTextEditor } from '@/components/ReusableComponents/RichTextEditor';
 
 function page() {
   return (
