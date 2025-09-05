@@ -66,8 +66,8 @@ const aboutUs = [
 ];
 
 const faq = [
-  { title: 'FAQ Categories', url: '/faq/categories' },
-  { title: "FAQ's", url: '/faq' },
+  { title: 'FAQ Categories', url: '/general/faq/categories' },
+  { title: "FAQ's", url: '/general/view/all/faqs' },
 ];
 
 // Main menu items with icons and sub-items
@@ -89,7 +89,9 @@ export function ContentManagement() {
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>
-        <p className="text-[#f1bf43] text-[14px]">Content Management</p>
+        <p className="text-[#f1bf43] text-[12px] uppercase">
+          Content Management
+        </p>
       </SidebarGroupLabel>
 
       <SidebarGroupContent>
