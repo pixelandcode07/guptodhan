@@ -1,5 +1,3 @@
-'use client';
-
 import GeneralInfoForm from './Components/GeneralInfoForm';
 
 const GeneralInfoPage = () => {
