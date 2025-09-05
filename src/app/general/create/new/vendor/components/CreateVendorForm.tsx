@@ -35,6 +35,7 @@ export default function CreateVendorForm() {
         console.log(data)
     }
     return (
+        
         <form onSubmit={handleSubmit(onSubmit)} className='bg-[#f8f9fb] m-5 md:m-10 p-5 border border-[#e4e7eb] rounded-xs space-y-5 '>
             {/* Business Information */}
             <BusinessInfo register={register} errors={errors} setValue={setValue} />

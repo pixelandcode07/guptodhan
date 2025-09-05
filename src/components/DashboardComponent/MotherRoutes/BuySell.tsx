@@ -8,7 +8,7 @@ import Link from "next/link"
 
 
 const category = [
-    { title: "Create New Store", url: "/general/create/new/store" },
+    { title: "Create New", url: "/general/create/buy/sell/category" },
     { title: "View All Stores", url: "/general/view/all/stores" },
 ]
 
