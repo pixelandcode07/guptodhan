@@ -2,32 +2,31 @@
 
 import { cn } from "@/lib/utils"
 import { ColumnDef } from "@tanstack/react-table"
-import { Edit, X } from "lucide-react"
+import { Edit, Trash } from "lucide-react"
 import { Button } from "../ui/button"
 import Image from "next/image"
 
 
-export type StoresDataType = {
+export type BuySellDataType = {
   serial: string,
+  category_name: string,
   store_logo: string,
-  store_name: string,
-  business_name: string,
-  total_product: number,
-  total_earnings: number,
-  current_balance: number,
-  commission: number,
+  slug: string,
   status: "pending" | "active" | "inactive",
-  created_at: string,
 }
 
-export const all_store_columns: ColumnDef<StoresDataType>[] = [
+export const view_buy_sell_columns: ColumnDef<BuySellDataType>[] = [
   {
     accessorKey: "serial",
     header: "Serial",
   },
   {
+    accessorKey: "category_name",
+    header: "Name",
+  },
+  {
     accessorKey: "store_logo",
-    header: "Store Logo",
+    header: "Icon",
     cell: ({ row }) => {
       const logoUrl = row.getValue("store_logo") as string
       return (
@@ -36,28 +35,8 @@ export const all_store_columns: ColumnDef<StoresDataType>[] = [
     },
   },
   {
-    accessorKey: "store_name",
-    header: "Store Name",
-  },
-  {
-    accessorKey: "business_name",
-    header: "Business Name",
-  },
-  {
-    accessorKey: "total_product",
-    header: "Total Product",
-  },
-  {
-    accessorKey: "total_earnings",
-    header: "Total Earnings",
-  },
-  {
-    accessorKey: "current_balance",
-    header: "Current Balance",
-  },
-  {
-    accessorKey: "commission",
-    header: "Commission",
+    accessorKey: "slug",
+    header: "Slug",
   },
   {
     accessorKey: "status",
@@ -75,10 +54,6 @@ export const all_store_columns: ColumnDef<StoresDataType>[] = [
     }
   },
   {
-    accessorKey: "created_at",
-    header: "Created At",
-  },
-  {
     accessorKey: "action",
     header: "Action",
     cell: () => {
@@ -86,7 +61,7 @@ export const all_store_columns: ColumnDef<StoresDataType>[] = [
         <div className="flex items-center gap-2">
           {/* <Button className="bg-green-800 hover:bg-green-800 text-black cursor-pointer"><Check className="text-white" /></Button> */}
           <Button className="bg-yellow-400 hover:bg-yellow-400 text-black cursor-pointer"><Edit /></Button>
-          <Button className="bg-red-700 hover:bg-red-700 text-white cursor-pointer"><X /></Button>
+          <Button className="bg-red-700 hover:bg-red-700 text-white cursor-pointer"><Trash /></Button>
         </div>
       )
     }

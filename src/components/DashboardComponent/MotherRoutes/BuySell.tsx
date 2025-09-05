@@ -9,7 +9,7 @@ import Link from "next/link"
 
 const category = [
     { title: "Create New", url: "/general/create/buy/sell/category" },
-    { title: "View All Stores", url: "/general/view/all/stores" },
+    { title: "View All Categories", url: "/general/view/buy/sell/categories" },
 ]
 
 
