@@ -3,27 +3,24 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
-// import { ChevronDown } from 'lucide-react'
-// import { Key } from 'lucide-react'
+
 import React, { ElementType } from 'react';
 
-export default function WebsiteConfig({
+export default function UserRolePermition({
   items,
 }: {
   items: { title: string; url: string; icon: ElementType }[];
 }) {
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarMenuButton>
-        <Link href="/general/home">Dashboard</Link>
-      </SidebarMenuButton>
       <SidebarGroupLabel>
-        <p className="text-[#f1bf43] text-[12px] uppercase">Website Config</p>
+        <p className="text-[#f1bf43] text-[12px] uppercase">
+          User Role Permission
+        </p>
       </SidebarGroupLabel>
 
       <SidebarGroupContent>
