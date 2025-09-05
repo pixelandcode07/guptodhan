@@ -2,36 +2,49 @@
 
 import { ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Star, Trash2 } from 'lucide-react';
 
 export type Size = {
   id: number;
-  name: string;
-  status: 'Active' | 'Inactive';
-  created_at: string;
+  image: string;
+  title: string;
+  url: string;
+  status: string;
 };
 
-export const size_columns: ColumnDef<Size>[] = [
+export const all_page_columns: ColumnDef<Size>[] = [
   {
     accessorKey: 'id',
     header: 'SL',
   },
   {
-    accessorKey: 'name',
-    header: 'Name',
-  },
-  {
-    accessorKey: 'status',
-    header: 'Status',
+    accessorKey: 'image',
+    header: 'Feature Image',
     cell: ({ row }) => {
-      const status = row.getValue('status') as string;
-      return <span>{status}</span>;
+      const imageUrl = row.getValue('image') as string;
+
+      return (
+        <div className="flex justify-center items-center">
+          <img
+            src={imageUrl}
+            alt="thumbnail"
+            className="h-12 w-12 object-cover rounded-md border"
+          />
+        </div>
+      );
     },
   },
+
   {
-    accessorKey: 'created_at',
-    header: 'Created At',
+    accessorKey: 'title',
+    header: 'Page Title',
   },
+
+  {
+    accessorKey: 'url',
+    header: 'Page URL',
+  },
+
   {
     id: 'action',
     header: 'Action',
