@@ -88,7 +88,7 @@ const data = {
         { title: "SMS Service" },
         { title: "Gateway & API" },
         { title: "Customers" },
-        { title: "Marketing & Content" },
+        { title: "Customers Wishlist" },
         { title: "Customer Management" },
         { title: "Delivery & Payment" },
         { title: "Reports" },

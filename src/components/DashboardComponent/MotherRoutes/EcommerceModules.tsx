@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, Box, ChevronDown, CloudDownload, Command, Filter, Gift, Headphones, Image as ImageIcon, Link as LinkIcon, MessageSquare, Printer, Settings, ShoppingCart, Truck, Users } from "lucide-react"
+import { Bell, Box, ChevronDown, CloudDownload, Command, Filter, Gift, Headphones, Heart, Image as ImageIcon, Link as LinkIcon, MessageSquare, Printer, Settings, ShoppingCart, Truck, Users } from "lucide-react"
 import { ElementType } from "react"
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../../ui/sidebar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../ui/collapsible"
@@ -107,14 +107,9 @@ const MENU_CONFIG: Record<string, { icon: ElementType; items: ChildItem[] }> = {
     icon: Headphones,
     items: [],
   },
-  "Marketing & Content": {
-    icon: ImageIcon,
-    items: [
-      { title: "All Sliders", url: "/general/view/all/sliders" },
-      { title: "All Banners", url: "/general/view/all/banners" },
-      { title: "Promotional Banner", url: "/general/view/promotional/banner" },
-      { title: "Blog Comments", url: "/general/blog/comments" },
-    ],
+ "Customers Wishlist": {
+    icon: Heart,
+    items: [],
   },
   "Customer Management": {
     icon: Users,
