@@ -7,6 +7,7 @@ import RecaptchaForm from './Components/GoogleRecaptcha';
 import GoogleTagManagerForm from './Components/GoogleTagManagerForm';
 import MessengerChatForm from './Components/MessegeChatPlugin';
 import TawkChatForm from './Components/TawkLiveChat';
+import SocialLoginForm from './Components/SocialLoginForm';
 
 // Dynamic import for performance
 
@@ -28,11 +29,11 @@ export default function SocialLoginSettings() {
       label: 'Google Recaptcha',
       content: <RecaptchaForm />,
     },
-    // {
-    //   value: 'slf',
-    //   label: 'Social Login',
-    //   content: <SocialLoginForm />,
-    // },
+    {
+      value: 'slf',
+      label: 'Social Login',
+      content: <SocialLoginForm />,
+    },
     {
       value: 'mcpf',
       label: 'Messenger Chat Plugin',
