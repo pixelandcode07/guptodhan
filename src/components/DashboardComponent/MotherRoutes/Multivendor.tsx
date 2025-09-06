@@ -38,6 +38,7 @@ const withdrawal = [
     { title: "Withdrawal Requests", url: "/general/view/withdraw/requests" },
     { title: "Completed Withdraws", url: "/general/view/completed/withdraws" },
     { title: "Cancelled Withdraws", url: "/general/view/cancelled/withdraws" },
+    { title: "Payment History", url: "/general/view/payment/history" },
 ]
 
 export function Multivendor({
