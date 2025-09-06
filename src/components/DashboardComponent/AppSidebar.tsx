@@ -45,6 +45,89 @@ const data = {
       url: '/general/info',
       icon: LayoutDashboard,
     },
+<<<<<<< HEAD
+    navMain: [
+        {
+            title: "Dashboard",
+            url: "/home",
+              icon: LayoutDashboard,
+        },
+        {
+            title: "General Info",
+            url: "/general-info",
+              icon: LayoutDashboard,
+        },
+        {
+            title: "Footer Settings",
+            url: "/footer-settings",
+              icon: LayoutDashboard,
+        },
+        {
+            title: "Website Theme Color",
+            url: "/website-theme-color",
+              icon: LayoutDashboard,
+        },
+        {
+            title: "Social Media Links",
+            url: "/social-media-links",
+              icon: LayoutDashboard,
+        },
+        {
+            title: "Home Page SEO",
+            url: "/home-page-seo",
+              icon: LayoutDashboard,
+        },
+        {
+            title: "Custom CSS & JS",
+            url: "/custom-css-js",
+              icon: LayoutDashboard,
+        },
+        {
+            title: "Social & Chat Scripts",
+            url: "/social-chat-scripts",
+              icon: LayoutDashboard,
+        },
+    ],
+
+
+    documents: [
+        {
+            title: "Vendors",
+            url: "#",
+            icon: UserCheck,
+        },
+        {
+            title: "Stores",
+            url: "#",
+            icon: Store,
+        },
+        {
+            title: "Withdrawal",
+            url: "#",
+            icon: DollarSign,
+        },
+    ],
+      ecommerceModules: [
+        { title: "Config" },
+        { title: "Category" },
+        { title: "Subcategory" },
+        { title: "Child Category" },
+        { title: "Manage Products" },
+        { title: "Manage Orders" },
+        { title: "Promo Codes" },
+        { title: "Push Notification" },
+        { title: "SMS Service" },
+        { title: "Gateway & API" },
+        { title: "Customers" },
+        { title: "Customer's Wishlist" },
+        { title: "Delivery Charges" },
+        { title: "Upazila & Thana" },
+        { title: "Payment History" },
+        { title: "Generate Reports" },
+        { title: "Download Backup" },
+      ],
+}
+=======
     {
       title: 'Footer Settings',
       url: '/footer-settings',
@@ -76,6 +159,7 @@ const data = {
       icon: MessageCircle,
     },
   ],
+>>>>>>> 32ee1fcda32ce29a3dc76bb76ae56b9fc14f85f7
 
   documents: [
     {
