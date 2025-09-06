@@ -116,6 +116,7 @@ const MENU_CONFIG: Record<string, { icon: ElementType; items: ChildItem[]; url?:
   "Delivery Charges": {
     icon: Truck,
     items: [],
+    url: "/general/view/delivery/charges",
   },
   "Upazila & Thana": {
     icon: Map,
