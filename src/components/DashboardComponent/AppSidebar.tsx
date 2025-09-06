@@ -31,7 +31,11 @@ import Image from 'next/image';
 import WebsiteConfig from './MotherRoutes/WebsiteConfig';
 import { EcommerceModules } from './MotherRoutes/EcommerceModules';
 import { ContentManagement } from './MotherRoutes/ContentManagement';
+import { BuySell } from './MotherRoutes/BuySell'
+import { Donation } from './MotherRoutes/Donation'
 import UserRolePermition from './MotherRoutes/UserRolePermition';
+
+
 
 const data = {
   user: {
@@ -45,89 +49,6 @@ const data = {
       url: '/general/info',
       icon: LayoutDashboard,
     },
-<<<<<<< HEAD
-    navMain: [
-        {
-            title: "Dashboard",
-            url: "/home",
-              icon: LayoutDashboard,
-        },
-        {
-            title: "General Info",
-            url: "/general-info",
-              icon: LayoutDashboard,
-        },
-        {
-            title: "Footer Settings",
-            url: "/footer-settings",
-              icon: LayoutDashboard,
-        },
-        {
-            title: "Website Theme Color",
-            url: "/website-theme-color",
-              icon: LayoutDashboard,
-        },
-        {
-            title: "Social Media Links",
-            url: "/social-media-links",
-              icon: LayoutDashboard,
-        },
-        {
-            title: "Home Page SEO",
-            url: "/home-page-seo",
-              icon: LayoutDashboard,
-        },
-        {
-            title: "Custom CSS & JS",
-            url: "/custom-css-js",
-              icon: LayoutDashboard,
-        },
-        {
-            title: "Social & Chat Scripts",
-            url: "/social-chat-scripts",
-              icon: LayoutDashboard,
-        },
-    ],
-
-
-    documents: [
-        {
-            title: "Vendors",
-            url: "#",
-            icon: UserCheck,
-        },
-        {
-            title: "Stores",
-            url: "#",
-            icon: Store,
-        },
-        {
-            title: "Withdrawal",
-            url: "#",
-            icon: DollarSign,
-        },
-    ],
-      ecommerceModules: [
-        { title: "Config" },
-        { title: "Category" },
-        { title: "Subcategory" },
-        { title: "Child Category" },
-        { title: "Manage Products" },
-        { title: "Manage Orders" },
-        { title: "Promo Codes" },
-        { title: "Push Notification" },
-        { title: "SMS Service" },
-        { title: "Gateway & API" },
-        { title: "Customers" },
-        { title: "Customer's Wishlist" },
-        { title: "Delivery Charges" },
-        { title: "Upazila & Thana" },
-        { title: "Payment History" },
-        { title: "Generate Reports" },
-        { title: "Download Backup" },
-      ],
-}
-=======
     {
       title: 'Footer Settings',
       url: '/footer-settings',
@@ -159,22 +80,61 @@ const data = {
       icon: MessageCircle,
     },
   ],
->>>>>>> 32ee1fcda32ce29a3dc76bb76ae56b9fc14f85f7
+  buysell: [
+    {
+      title: "Buy Sell Config",
+      url: "/general/buy/sell/config",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Buy Sell Categories",
+      url: "*",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Buy Sell Listing",
+      url: "/general/buy/sell/listing",
+      icon: LayoutDashboard,
+    },
+  ],
+  donations: [
+    {
+      title: "Donation Config",
+      url: "/general/donation/config",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Donation Categories",
+      url: "*",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Donation Listing",
+      url: "/general/donation/listing",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Donation Request",
+      url: "/general/donation/requests",
+      icon: LayoutDashboard,
+    },
+  ],
+
 
   documents: [
     {
-      title: 'Vendors',
-      url: '#',
+      title: "Vendors",
+      url: "#",
       icon: UserCheck,
     },
     {
-      title: 'Stores',
-      url: '#',
+      title: "Stores",
+      url: "#",
       icon: Store,
     },
     {
-      title: 'Withdrawal',
-      url: '#',
+      title: "Withdrawal",
+      url: "#",
       icon: DollarSign,
     },
   ],
@@ -248,6 +208,8 @@ export default function AppSidebar() {
         <WebsiteConfig items={data.navMain} />
         <ContentManagement />
         <UserRolePermition items={data.userRole} />
+        <BuySell items={data.buysell} />
+        <Donation items={data.donations} />
         <Multivendor items={data.documents} />
         <EcommerceModules items={data.ecommerceModules} />
       </SidebarContent>

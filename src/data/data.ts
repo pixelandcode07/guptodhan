@@ -51,6 +51,24 @@ export const vendorOptions: readonly VendorOption[] = [
     { value: 'PrimeGate Traders', label: 'PrimeGate Traders', color: '#00B8D9' },
 ];
 
+export interface paymentOptions {
+    readonly value: string;
+    readonly label: string;
+    readonly color: string;
+    readonly isFixed?: boolean;
+    readonly isDisabled?: boolean;
+}
+
+
+export const paymentOptions: readonly VendorOption[] = [
+    { value: 'Bank Transfer', label: 'Bank Transfer', color: '#00B8D9' },
+    { value: 'bkash', label: 'bkash', color: '#00B8D9' },
+    { value: 'Nagad', label: 'Nagad', color: '#00B8D9' },
+    { value: 'Rocket', label: 'Rocket', color: '#00B8D9' },
+    { value: 'Upay', label: 'Upay', color: '#00B8D9' },
+    { value: 'Sure Cash', label: 'Sure Cash', color: '#00B8D9' }
+];
+
 
 
 export interface FlavourOption {
