@@ -90,7 +90,7 @@ const data = {
         { title: "Customers" },
         { title: "Customer's Wishlist" },
         { title: "Delivery Charges" },
-        { title: "Upazila & Thana   " },
+        { title: "Upazila & Thana" },
         { title: "Payment History" },
         { title: "Generate Reports" },
         { title: "Download Backup" },

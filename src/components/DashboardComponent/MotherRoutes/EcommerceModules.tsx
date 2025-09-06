@@ -121,10 +121,12 @@ const MENU_CONFIG: Record<string, { icon: ElementType; items: ChildItem[]; url?:
   "Upazila & Thana": {
     icon: Map,
     items: [],
+    url: "/general/view/upazila/thana",
   },
   "Payment History": {
     icon: Printer,
     items: [],
+    url: "/general/view/payment/history",
   },
   "Generate Reports": {
     icon: Printer,
