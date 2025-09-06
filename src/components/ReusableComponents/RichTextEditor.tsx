@@ -1,25 +1,21 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
+import TextAlign from '@tiptap/extension-text-align';
+import ListItem from '@tiptap/extension-list-item';
+import BulletList from '@tiptap/extension-bullet-list';
+import OrderedList from '@tiptap/extension-ordered-list';
+import CodeBlock from '@tiptap/extension-code-block';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
+
 import { Button } from '@/components/ui/button';
-import {
-  Bold,
-  Italic,
-  Underline,
-  List,
-  ListOrdered,
-  Link,
-  Image as ImageIcon,
-  Table,
-  Code,
-  HelpCircle,
-  X,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignJustify,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
 import {
   Tooltip,
   TooltipContent,
@@ -27,284 +23,181 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-interface EditorProps {
-  value?: string; // Controlled value
-  defaultValue?: string; // Initial value (uncontrolled, plain text বা HTML)
-  onChange?: (val: string) => void;
-  className?: string;
+import {
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  List,
+  ListOrdered,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Table as TableIcon,
+  Link as LinkIcon,
+  Image as ImageIcon,
+  Code,
+  HelpCircle,
+  X,
+} from 'lucide-react';
+
+interface RichTextEditorProps {
+  value: string;
+  onChange: (value: string) => void;
 }
 
-// ✅ plain text → html converter
-const plainToHtml = (text: string) => {
-  if (!text) return '';
-  // যদি text এর মধ্যে "<" থাকে, ধরে নিচ্ছি user html পাঠাচ্ছে → 그대로 দেখাবো
-  if (/<[a-z][\s\S]*>/i.test(text)) {
-    return text;
-  }
-  return text
-    .split('\n')
-    .map(line => `<p>${line || '<br>'}</p>`)
-    .join('');
-};
-
-export const RichTextEditor: React.FC<EditorProps> = ({
+export default function RichTextEditor({
   value,
-  defaultValue = '',
   onChange,
-  className,
-}) => {
-  const [content, setContent] = useState(value ?? plainToHtml(defaultValue));
-  const editorRef = useRef<HTMLDivElement>(null);
+}: RichTextEditorProps) {
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      Link,
+      Image,
+      CodeBlock,
+      BulletList,
+      OrderedList,
+      ListItem,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+    ],
+    content: value,
+    immediatelyRender: false,
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML());
+    },
+  });
 
-  // ✅ Sync controlled value
-  useEffect(() => {
-    if (value !== undefined && value !== content && editorRef.current) {
-      const html = plainToHtml(value);
-      editorRef.current.innerHTML = html;
-      setContent(html);
-    }
-  }, [value]);
+  if (!editor) return null;
 
-  const handleInput = () => {
-    const html = editorRef.current?.innerHTML || '';
-    if (value === undefined) {
-      setContent(html); // uncontrolled
-    }
-    onChange?.(html);
-  };
-
-  const execCmd = (command: string, arg?: string) => {
-    editorRef.current?.focus();
-    document.execCommand(command, false, arg);
-    handleInput();
-  };
+  const ToolbarButton = ({
+    onClick,
+    label,
+    children,
+  }: {
+    onClick: () => void;
+    label: string;
+    children: React.ReactNode;
+  }) => (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          onClick={onClick}
+          variant="outline"
+          size="sm"
+          className="px-2 py-1">
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{label}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
 
   return (
-    <div className={cn('w-full border rounded-md shadow-sm', className)}>
+    <div className="w-full border rounded-lg shadow-sm">
       <TooltipProvider>
         {/* Toolbar */}
-        <div className="flex flex-wrap items-center gap-1 border-b p-2 bg-gray-50">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => execCmd('bold')}>
-                <Bold className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Bold</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => execCmd('italic')}>
-                <Italic className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Italic</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => execCmd('underline')}>
-                <Underline className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Underline</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => execCmd('insertUnorderedList')}>
-                <List className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Bullet List</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => execCmd('insertOrderedList')}>
-                <ListOrdered className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Numbered List</TooltipContent>
-          </Tooltip>
-
-          {/* Alignment */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => execCmd('justifyLeft')}>
-                <AlignLeft className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Align Left</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => execCmd('justifyCenter')}>
-                <AlignCenter className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Align Center</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => execCmd('justifyRight')}>
-                <AlignRight className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Align Right</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => execCmd('justifyFull')}>
-                <AlignJustify className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Justify</TooltipContent>
-          </Tooltip>
-
-          {/* Link */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => {
-                  const url = prompt('Enter URL');
-                  if (url) execCmd('createLink', url);
-                }}>
-                <Link className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Insert Link</TooltipContent>
-          </Tooltip>
-
-          {/* Image */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => {
-                  const imgUrl = prompt('Enter Image URL');
-                  if (imgUrl) execCmd('insertImage', imgUrl);
-                }}>
-                <ImageIcon className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Insert Image</TooltipContent>
-          </Tooltip>
-
-          {/* Table */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() =>
-                  execCmd(
-                    'insertHTML',
-                    `<table style="border:1px solid #000;border-collapse:collapse;width:100%">
-                      <tr>
-                        <td style="border:1px solid #000;padding:4px;">Cell</td>
-                        <td style="border:1px solid #000;padding:4px;">Cell</td>
-                      </tr>
-                    </table>`
-                  )
-                }>
-                <Table className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Insert Table</TooltipContent>
-          </Tooltip>
-
-          {/* Code Block */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() =>
-                  execCmd(
-                    'insertHTML',
-                    `<pre style="background:#f4f4f4;padding:8px;border-radius:4px;"><code>your code here</code></pre>`
-                  )
-                }>
-                <Code className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Code Block</TooltipContent>
-          </Tooltip>
-
-          {/* Help */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="icon" variant="ghost">
-                <HelpCircle className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Help</TooltipContent>
-          </Tooltip>
-
-          {/* Clear */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => {
-                  if (value === undefined) setContent('');
-                  if (editorRef.current) editorRef.current.innerHTML = '';
-                  onChange?.('');
-                }}>
-                <X className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Clear</TooltipContent>
-          </Tooltip>
+        <div className="flex flex-wrap items-center gap-1 p-2 border-b bg-gray-50">
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            label="Bold">
+            <Bold size={16} />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+            label="Italic">
+            <Italic size={16} />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            label="Underline">
+            <UnderlineIcon size={16} />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            label="Bullet List">
+            <List size={16} />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            label="Numbered List">
+            <ListOrdered size={16} />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign('left').run()}
+            label="Align Left">
+            <AlignLeft size={16} />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign('center').run()}
+            label="Align Center">
+            <AlignCenter size={16} />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setTextAlign('right').run()}
+            label="Align Right">
+            <AlignRight size={16} />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() =>
+              editor
+                .chain()
+                .focus()
+                .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+                .run()
+            }
+            label="Insert Table">
+            <TableIcon size={16} />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() =>
+              editor
+                .chain()
+                .focus()
+                .setLink({ href: 'https://example.com' })
+                .run()
+            }
+            label="Insert Link">
+            <LinkIcon size={16} />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() =>
+              editor
+                .chain()
+                .focus()
+                .setImage({ src: 'https://placekitten.com/200/200' })
+                .run()
+            }
+            label="Insert Image">
+            <ImageIcon size={16} />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+            label="Code Block">
+            <Code size={16} />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().clearContent().run()}
+            label="Clear">
+            <X size={16} />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => alert('Help clicked')} label="Help">
+            <HelpCircle size={16} />
+          </ToolbarButton>
         </div>
       </TooltipProvider>
 
-      {/* Editable Area */}
-      <div
-        ref={editorRef}
-        className="h-[380px] p-3 overflow-y-auto outline-none text-left"
-        dir="ltr"
-        contentEditable
-        suppressContentEditableWarning
-        onInput={handleInput}
-        dangerouslySetInnerHTML={{ __html: content }}
+      {/* Editor */}
+      <EditorContent
+        editor={editor}
+        className="editor-content min-h-[250px] p-4 focus:outline-none"
       />
     </div>
   );
-};
+}

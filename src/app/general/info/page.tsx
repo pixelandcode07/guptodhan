@@ -2,7 +2,7 @@ import GeneralInfoForm from './Components/GeneralInfoForm';
 
 const GeneralInfoPage = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h- PT-5 bg-gray-50">
       <div className=" bg-white shadow rounded">
         <GeneralInfoForm />
       </div>
