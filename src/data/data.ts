@@ -68,6 +68,20 @@ export const paymentOptions: readonly VendorOption[] = [
     { value: 'Upay', label: 'Upay', color: '#00B8D9' },
     { value: 'Sure Cash', label: 'Sure Cash', color: '#00B8D9' }
 ];
+export interface DemoProductOpt {
+    readonly value: string;
+    readonly label: string;
+    readonly color: string;
+    readonly isFixed?: boolean;
+    readonly isDisabled?: boolean;
+}
+
+
+export const demoProductOpt: readonly DemoProductOpt[] = [
+    { value: 'Fashion', label: 'Fashion', color: '#00B8D9' },
+    { value: 'Tech', label: 'Tech', color: '#00B8D9' },
+    { value: 'Grocery', label: 'Grocery', color: '#00B8D9' }
+];
 
 
 

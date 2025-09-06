@@ -35,7 +35,11 @@ export default function DonationConfigForm() {
     return (
         <div>
             <form onSubmit={handleSubmit(onSubmit)} className='bg-[#f8f9fb] m-5 md:m-10 p-5 border border-[#e4e7eb] rounded-xs space-y-5 '>
-                <h1 className='border-b border-[#e4e7eb] pb-2 text-lg'>Donation Config Form:</h1>
+                <div >
+                    <h1 className="text-lg font-semibold border-l-2 border-blue-500">
+                        <span className="pl-5">Donation Config Form:</span>
+                    </h1>
+                </div>
                 {/* Title */}
                 <section className='grid grid-cols-1 md:grid-cols-12 gap-6  mb-2'>
                     <div className='col-span-4 md:col-span-2'>
