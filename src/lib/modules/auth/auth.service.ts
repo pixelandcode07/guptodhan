@@ -1,9 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { firebaseAdmin } from '@/lib/firebaseAdmin';
 import { User } from '../user/user.model';
 import { TLoginUser, TChangePassword } from './auth.interface';
 import { generateToken, verifyToken } from '@/lib/utils/jwt';
 import { connectRedis, redisClient } from '@/lib/redis';
 import { sendEmail } from '@/lib/utils/email';
+import mongoose from 'mongoose';
+import { Vendor } from '../vendor/vendor.model';
+import { ServiceProvider } from '../service-provider/serviceProvider.model';
 
 const loginUser = async (payload: TLoginUser) => {
   const user = await User.isUserExistsByEmail(payload.email);
@@ -163,6 +167,63 @@ const resetPasswordWithToken = async (token: string, newPassword: string) => {
 };
 
 
+// নতুন: ভেন্ডর রেজিস্ট্রেশন সার্ভিস
+const registerVendor = async (payload: any) => {
+  const { name, email, password, phoneNumber, address, ...vendorData } = payload;
+  const userData = { name, email, password, phoneNumber, address, role: 'vendor' };
+
+  // Transaction ব্যবহার করে দুটি মডেলে একসাথে ডেটা সেভ করা হচ্ছে
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const newUser = (await User.create([userData], { session }))[0];
+    if (!newUser) { throw new Error('Failed to create user'); }
+
+    vendorData.user = newUser._id;
+    const newVendor = (await Vendor.create([vendorData], { session }))[0];
+    if (!newVendor) { throw new Error('Failed to create vendor profile'); }
+
+    newUser.vendorInfo = newVendor._id;
+    await newUser.save({ session });
+
+    await session.commitTransaction();
+    return newUser;
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
+};
+
+const registerServiceProvider = async (payload: any) => {
+  const { name, email, password, phoneNumber, address, ...providerData } = payload;
+  const userData = { name, email, password, phoneNumber, address, role: 'service-provider' };
+
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const newUser = (await User.create([userData], { session }))[0];
+    if (!newUser) { throw new Error('Failed to create user'); }
+
+    providerData.user = newUser._id;
+    const newProvider = (await ServiceProvider.create([providerData], { session }))[0];
+    if (!newProvider) { throw new Error('Failed to create service provider profile'); }
+    
+    newUser.serviceProviderInfo = newProvider._id;
+    await newUser.save({ session });
+
+    await session.commitTransaction();
+    return newUser;
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
+};
+
+
 
 export const AuthServices = {
   loginUser,
@@ -173,4 +234,6 @@ export const AuthServices = {
   verifyForgotPasswordOtpFromEmail,
   getResetTokenWithFirebase,
   resetPasswordWithToken,
+  registerVendor,
+  registerServiceProvider,
 };

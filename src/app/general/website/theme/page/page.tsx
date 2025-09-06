@@ -1,7 +1,7 @@
 'use client';
-import SectionTitle from '@/Components/SectionTitle';
-import Button from '@/Components/ui/button';
-import { CircleX, Save } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import SectionTitle from '@/components/ui/SectionTitle';
+
 import { useState } from 'react';
 import { ChromePicker } from 'react-color';
 
@@ -49,7 +49,7 @@ export default function ThemeColorCard() {
   };
 
   return (
-    <div className="w-full  rounded-xl  bg-white relative">
+    <div className="w-full   bg-white relative">
       <SectionTitle text="Update Website Theme Color" />
 
       {/* Grid for color pickers */}
@@ -82,7 +82,7 @@ export default function ThemeColorCard() {
                 <div className="absolute z-50 mt-2">
                   <ChromePicker
                     color={value}
-                    onChange={c =>
+                    onChange={(c: { hex: string }) =>
                       handleChange(key as keyof ThemeColors, c.hex)
                     }
                   />
@@ -95,19 +95,23 @@ export default function ThemeColorCard() {
 
       <div className="flex justify-center pb-5 gap-4 mt-6">
         <Button
-          text="Cancel"
-          variant="danger"
-          size="sm"
-          icon={<CircleX className="w-4 h-4" />}
-          onClick={handleCancel}
-        />
+          // text="Cancel"
+          // variant="danger"
+          // size="sm"
+          // icon={<CircleX className="w-4 h-4" />}
+          // onClick={handleCancel}
+          variant="destructive">
+          Cencle
+        </Button>
         <Button
-          text="Update Color"
-          variant="primary"
-          size="sm"
-          icon={<Save className="w-4 h-4" />}
-          onClick={handleUpdate}
-        />
+        // text="Update Color"
+        // variant="primary"
+        // size="sm"
+        // icon={<Save className="w-4 h-4" />}
+        // onClick={handleUpdate}
+        >
+          Update
+        </Button>
       </div>
     </div>
   );
