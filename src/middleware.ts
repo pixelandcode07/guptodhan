@@ -10,9 +10,11 @@ const protectedRoutes = [
     '/api/otp/verify-phone',
     '/api/v1/auth/set-password',
     '/api/v1/profile/me',
-    '/api/v1/users' 
+    '/api/v1/users',
+    '/api/v1/classifieds/ads',
     
 ];
+
 
 
 export async function middleware(req: NextRequest) {
