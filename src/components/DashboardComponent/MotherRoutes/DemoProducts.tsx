@@ -1,3 +1,4 @@
+
 "use client"
 
 import { ChevronDown } from "lucide-react"
@@ -7,19 +8,19 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import Link from "next/link"
 
 
-const category = [
-    { title: "Create New", url: "/general/create/donation/category" },
-    { title: "View All Categories", url: "/general/view/donation/categories" },
+const demoHelper = [
+    { title: "Generate Products", url: "/general/generate/demo/products" },
+    { title: "Remove Products", url: "/general/remove/demo/products/page" },
 ]
 
 
-export function Donation({ items }: { items: { title: string, url: string, icon: ElementType }[] }) {
+export function DemoProducts({ items }: { items: { title: string, url: string, icon: ElementType }[] }) {
 
     return (
         <SidebarGroup className="group-data-[collapsible=icon]:hidden">
             <SidebarGroupLabel>
                 <p className="text-[#f1bf43] text-[14px]">
-                    Donation Modules
+                    {/* Donation Modules */}
                 </p>
             </SidebarGroupLabel>
 
@@ -34,25 +35,25 @@ export function Donation({ items }: { items: { title: string, url: string, icon:
                                     <SidebarMenuButton>
                                         <item.icon />
                                         {/* Donation Config */}
-                                        {item.title === "Donation Config" && <Link href="/general/donation/config" className="flex items-center gap-2">{item.title}</Link>}
+                                        {/* {item.title === "Donation Config" && <Link href="/general/donation/config" className="flex items-center gap-2">{item.title}</Link>} */}
 
                                         {/* Donation Categories */}
-                                        {item.title !== "Donation Config" && item.title !== "Donation Listing" && item.title !== "Donation Request" && <span className="flex items-center gap-2">{item.title}</span>}
-                                        {item.title === "Donation Categories" && <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />}
+                                        {item.title === "Demo Products" && <span className="flex items-center gap-2">{item.title}</span>}
+                                        {item.title === "Demo Products" && <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />}
 
                                         {/* Donation Listing */}
-                                        {item.title === "Donation Listing" && <Link href="/general/donation/listing" className="flex items-center gap-2">{item.title}</Link>}
+                                        {/* {item.title === "Donation Listing" && <Link href="/general/donation/listing" className="flex items-center gap-2">{item.title}</Link>} */}
 
                                         {/* Donation Request */}
-                                        {item.title === "Donation Request" && <Link href="/general/donation/requests" className="flex items-center gap-2">{item.title}</Link>}
+                                        {/* {item.title === "Donation Request" && <Link href="/general/donation/requests" className="flex items-center gap-2">{item.title}</Link>} */}
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                             </CollapsibleTrigger>
                             {/* Child Items */}
                             <CollapsibleContent>
                                 <div className="pl-6">
-                                    {item.title === "Donation Categories" &&
-                                        category.map((sub) => (
+                                    {item.title === "Demo Products" &&
+                                        demoHelper.map((sub) => (
                                             <SidebarMenuItem key={sub.url}>
                                                 <SidebarMenuButton asChild>
                                                     <Link

@@ -11,9 +11,11 @@ import {
   SidebarMenuItem,
 } from '../ui/sidebar';
 import {
+  Box,
   Code,
   DollarSign,
   LayoutDashboard,
+  LogOut,
   MessageCircle,
   Palette,
   Search,
@@ -34,6 +36,8 @@ import { ContentManagement } from './MotherRoutes/ContentManagement';
 import { BuySell } from './MotherRoutes/BuySell'
 import { Donation } from './MotherRoutes/Donation'
 import UserRolePermition from './MotherRoutes/UserRolePermition';
+import { DemoProducts } from './MotherRoutes/DemoProducts';
+import Logout from './MotherRoutes/Logout';
 
 
 
@@ -138,6 +142,13 @@ const data = {
       icon: DollarSign,
     },
   ],
+  demoProducts: [
+    {
+      title: "Demo Products",
+      url: "#",
+      icon: Box,
+    }
+  ],
   ecommerceModules: [
     { title: 'Config' },
     { title: 'Category' },
@@ -179,6 +190,13 @@ const data = {
       icon: UserCheck,
     },
   ],
+  logoutAction: [
+    {
+      title: 'Logout',
+      url: '/general/logout',
+      icon: LogOut,
+    }
+  ],
 };
 
 export default function AppSidebar() {
@@ -213,6 +231,8 @@ export default function AppSidebar() {
         <Donation items={data.donations} />
         <Multivendor items={data.documents} />
         <EcommerceModules items={data.ecommerceModules} />
+        <DemoProducts items={data.demoProducts} />
+        <Logout items={data.logoutAction} />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
     </Sidebar>
