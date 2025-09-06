@@ -31,7 +31,11 @@ import Image from 'next/image';
 import WebsiteConfig from './MotherRoutes/WebsiteConfig';
 import { EcommerceModules } from './MotherRoutes/EcommerceModules';
 import { ContentManagement } from './MotherRoutes/ContentManagement';
+import { BuySell } from './MotherRoutes/BuySell'
+import { Donation } from './MotherRoutes/Donation'
 import UserRolePermition from './MotherRoutes/UserRolePermition';
+
+
 
 const data = {
   user: {
@@ -76,21 +80,61 @@ const data = {
       icon: MessageCircle,
     },
   ],
+  buysell: [
+    {
+      title: "Buy Sell Config",
+      url: "/general/buy/sell/config",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Buy Sell Categories",
+      url: "*",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Buy Sell Listing",
+      url: "/general/buy/sell/listing",
+      icon: LayoutDashboard,
+    },
+  ],
+  donations: [
+    {
+      title: "Donation Config",
+      url: "/general/donation/config",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Donation Categories",
+      url: "*",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Donation Listing",
+      url: "/general/donation/listing",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Donation Request",
+      url: "/general/donation/requests",
+      icon: LayoutDashboard,
+    },
+  ],
+
 
   documents: [
     {
-      title: 'Vendors',
-      url: '#',
+      title: "Vendors",
+      url: "#",
       icon: UserCheck,
     },
     {
-      title: 'Stores',
-      url: '#',
+      title: "Stores",
+      url: "#",
       icon: Store,
     },
     {
-      title: 'Withdrawal',
-      url: '#',
+      title: "Withdrawal",
+      url: "#",
       icon: DollarSign,
     },
   ],
@@ -105,11 +149,12 @@ const data = {
     { title: 'Push Notification' },
     { title: 'SMS Service' },
     { title: 'Gateway & API' },
-    { title: 'Support Tickets' },
-    { title: 'Marketing & Content' },
-    { title: 'Customer Management' },
-    { title: 'Delivery & Payment' },
-    { title: 'Reports' },
+    { title: 'Customers' },
+    { title: "Customer's Wishlist" },
+    { title: 'Delivery Charges' },
+    { title: 'Upazila & Thana' },
+    { title: 'Payment History' },
+    { title: 'Generate Reports' },
     { title: 'Download Backup' },
   ],
   userRole: [
@@ -164,6 +209,8 @@ export default function AppSidebar() {
         <WebsiteConfig items={data.navMain} />
         <ContentManagement />
         <UserRolePermition items={data.userRole} />
+        <BuySell items={data.buysell} />
+        <Donation items={data.donations} />
         <Multivendor items={data.documents} />
         <EcommerceModules items={data.ecommerceModules} />
       </SidebarContent>

@@ -2,8 +2,9 @@
 
 import { cn } from "@/lib/utils"
 import { ColumnDef } from "@tanstack/react-table"
-import {  Edit, X } from "lucide-react"
+import { Edit, X } from "lucide-react"
 import { Button } from "../ui/button"
+import Image from "next/image"
 
 
 export type StoresDataType = {
@@ -27,16 +28,12 @@ export const all_store_columns: ColumnDef<StoresDataType>[] = [
   {
     accessorKey: "store_logo",
     header: "Store Logo",
-     cell: ({ row }) => {
-    const logoUrl = row.getValue("store_logo") as string
-    return (
-      <img
-        src={logoUrl}
-        alt="Store Logo"
-        className="h-10 w-10 object-cover rounded-md"
-      />
-    )
-  },
+    cell: ({ row }) => {
+      const logoUrl = row.getValue("store_logo") as string
+      return (
+        <Image src={logoUrl} alt="Store Logo" width={50} height={50} />
+      )
+    },
   },
   {
     accessorKey: "store_name",
