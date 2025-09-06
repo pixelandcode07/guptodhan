@@ -11,6 +11,7 @@ import {
   SidebarMenuItem,
 } from '../ui/sidebar';
 import {
+  Box,
   Code,
   DollarSign,
   LayoutDashboard,
@@ -34,6 +35,7 @@ import { ContentManagement } from './MotherRoutes/ContentManagement';
 import { BuySell } from './MotherRoutes/BuySell'
 import { Donation } from './MotherRoutes/Donation'
 import UserRolePermition from './MotherRoutes/UserRolePermition';
+import { DemoProducts } from './MotherRoutes/DemoProducts';
 
 
 
@@ -138,6 +140,13 @@ const data = {
       icon: DollarSign,
     },
   ],
+  demoProducts: [
+    {
+      title: "Demo Products",
+      url: "#",
+      icon: Box,
+    }
+  ],
   ecommerceModules: [
     { title: 'Config' },
     { title: 'Category' },
@@ -212,6 +221,7 @@ export default function AppSidebar() {
         <Donation items={data.donations} />
         <Multivendor items={data.documents} />
         <EcommerceModules items={data.ecommerceModules} />
+        <DemoProducts items={data.demoProducts} />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
     </Sidebar>
