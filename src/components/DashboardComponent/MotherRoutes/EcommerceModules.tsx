@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, Box, ChevronDown, CloudDownload, Command, Filter, Gift, Headphones, Image as ImageIcon, Link as LinkIcon, MessageSquare, Printer, Settings, ShoppingCart, Truck, Users } from "lucide-react"
+import { Bell, Box, ChevronDown, CloudDownload, Command, Filter, Gift, Headphones, Heart, Image as ImageIcon, Link as LinkIcon, Map, MessageSquare, Printer, Settings, ShoppingCart, Truck, Users } from "lucide-react"
 import { ElementType } from "react"
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../../ui/sidebar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../ui/collapsible"
@@ -10,7 +10,7 @@ interface EcommerceModuleTitleOnly { title: string }
 
 type ChildItem = { title: string; url: string; count?: string; isNew?: boolean }
 
-const MENU_CONFIG: Record<string, { icon: ElementType; items: ChildItem[] }> = {
+const MENU_CONFIG: Record<string, { icon: ElementType; items: ChildItem[]; url?: string }> = {
   "Config": {
     icon: Settings,
     items: [
@@ -103,42 +103,32 @@ const MENU_CONFIG: Record<string, { icon: ElementType; items: ChildItem[] }> = {
       { title: "Courier API Keys", url: "/general/setup/courier/api/keys" },
     ],
   },
-  "Support Tickets": {
+  "Customers": {
     icon: Headphones,
-    items: [
-      { title: "Pending Support Tickets", url: "/general/pending/support/tickets" },
-      { title: "Solved Support Tickets", url: "/general/solved/support/tickets" },
-      { title: "On Hold Support Tickets", url: "/general/on/hold/support/tickets" },
-      { title: "Rejected Support Tickets", url: "/general/rejected/support/tickets" },
-    ],
+    items: [],
+    url: "/general/view/all/customers",
   },
-  "Marketing & Content": {
-    icon: ImageIcon,
-    items: [
-      { title: "All Sliders", url: "/general/view/all/sliders" },
-      { title: "All Banners", url: "/general/view/all/banners" },
-      { title: "Promotional Banner", url: "/general/view/promotional/banner" },
-      { title: "Blog Comments", url: "/general/blog/comments" },
-    ],
+ "Customer's Wishlist": {
+    icon: Heart,
+    items: [],
+    url: "/general/view/customers/wishlist",
   },
-  "Customer Management": {
-    icon: Users,
-    items: [
-      { title: "All Customers", url: "/general/view/all/customers" },
-      { title: "Customer's Wishlist", url: "/general/view/customers/wishlist" },
-      { title: "All Contact Requests", url: "/general/view/all/contact/requests" },
-      { title: "All Subscribed Users", url: "/general/view/all/subscribed/users" },
-    ],
-  },
-  "Delivery & Payment": {
+  "Delivery Charges": {
     icon: Truck,
-    items: [
-      { title: "Delivery Charges", url: "/general/view/delivery/charges" },
-      { title: "Upazila & Thana", url: "/general/view/upazila/thana" },
-      { title: "Payment History", url: "/general/view/payment/history" },
-    ],
+    items: [],
+    url: "/general/view/delivery/charges",
   },
-  "Reports": {
+  "Upazila & Thana": {
+    icon: Map,
+    items: [],
+    url: "/general/view/upazila/thana",
+  },
+  "Payment History": {
+    icon: Printer,
+    items: [],
+    url: "/general/view/payment/history",
+  },
+  "Generate Reports": {
     icon: Printer,
     items: [
       { title: "Sales Report", url: "/general/sales/report" },
@@ -173,23 +163,34 @@ export function EcommerceModules({ items }: { items: EcommerceModuleTitleOnly[] 
           {items.map((item) => {
             const cfg = MENU_CONFIG[item.title]
             if (!cfg) return null
-            return (
-            <Collapsible key={item.title} className="group/collapsible">
-              {/* Parent Button */}
-              <CollapsibleTrigger asChild>
-                <SidebarMenuItem>
-                  <SidebarMenuButton>
-                    <cfg.icon />
-                    <span>{item.title}</span>
-                    {cfg.items && (
-                      <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                    )}
+            
+            if (cfg.items.length === 0) {
+              // Direct link for items without sub-routes
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <Link href={cfg.url || "#"} className="flex items-center gap-2">
+                      <cfg.icon />
+                      <span>{item.title}</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              </CollapsibleTrigger>
-              
-              {/* Child Items */}
-              {cfg.items && (
+              )
+            }
+            
+            // Collapsible for items with sub-routes
+            return (
+              <Collapsible key={item.title} className="group/collapsible">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton>
+                      <cfg.icon />
+                      <span>{item.title}</span>
+                      <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </CollapsibleTrigger>
+                
                 <CollapsibleContent>
                   <div className="pl-6">
                     {cfg.items.map((subItem) => (
@@ -219,9 +220,9 @@ export function EcommerceModules({ items }: { items: EcommerceModuleTitleOnly[] 
                     ))}
                   </div>
                 </CollapsibleContent>
-              )}
-            </Collapsible>
-          )})}
+              </Collapsible>
+            )
+          })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
