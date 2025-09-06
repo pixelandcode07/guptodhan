@@ -13,7 +13,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Shannon-Knight',
             slug: 'Shannon-Knight LLC',
             status: 'pending',
-            
+
         },
         {
             serial: '2',
@@ -21,7 +21,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Meyer LLC',
             slug: 'Meyer LLC',
             status: 'active',
-            
+
         },
         {
             serial: '3',
@@ -29,7 +29,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Thompson-Cruz',
             slug: 'Thompson-Cruz Ltd.',
             status: 'pending',
-            
+
         },
         {
             serial: '4',
@@ -37,7 +37,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Frank, Zavala and Williams',
             slug: 'Frank PLC',
             status: 'inactive',
-            
+
         },
         {
             serial: '5',
@@ -45,7 +45,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Fuentes PLC',
             slug: 'Fuentes PLC',
             status: 'pending',
-            
+
         },
         {
             serial: '6',
@@ -53,7 +53,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Carroll PLC',
             slug: 'Carroll PLC',
             status: 'inactive',
-            
+
         },
         {
             serial: '7',
@@ -61,7 +61,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Mccarthy and Sons',
             slug: 'Mccarthy & Sons',
             status: 'active',
-            
+
         },
         {
             serial: '8',
@@ -69,7 +69,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Adams and Sons',
             slug: 'Adams & Sons',
             status: 'active',
-            
+
         },
         {
             serial: '9',
@@ -77,7 +77,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Reynolds-Wilson',
             slug: 'Reynolds-Wilson Ltd.',
             status: 'active',
-            
+
         },
         {
             serial: '10',
@@ -85,7 +85,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Petty, Garcia and Hurst',
             slug: 'Petty PLC',
             status: 'inactive',
-            
+
         },
         {
             serial: '11',
@@ -93,7 +93,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Rivas-Ortiz',
             slug: 'Rivas-Ortiz Ltd.',
             status: 'inactive',
-            
+
         },
         {
             serial: '12',
@@ -101,7 +101,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Everett-Smith',
             slug: 'Everett-Smith LLC',
             status: 'pending',
-            
+
         },
         {
             serial: '13',
@@ -109,7 +109,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Wright, Jones and Valentine',
             slug: 'Wright Group',
             status: 'pending',
-            
+
         },
         {
             serial: '14',
@@ -117,7 +117,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Owens-Hoffman',
             slug: 'Owens-Hoffman Ltd.',
             status: 'active',
-            
+
         },
         {
             serial: '15',
@@ -125,7 +125,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Guerrero, Obrien and Atkinson',
             slug: 'Guerrero LLC',
             status: 'active',
-            
+
         },
         {
             serial: '16',
@@ -133,7 +133,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Leblanc LLC',
             slug: 'Leblanc LLC',
             status: 'pending',
-            
+
         },
         {
             serial: '17',
@@ -141,7 +141,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Miller Group',
             slug: 'Miller Group',
             status: 'pending',
-            
+
         },
         {
             serial: '18',
@@ -149,7 +149,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Shea, Jenkins and Moore',
             slug: 'Shea PLC',
             status: 'inactive',
-            
+
         },
         {
             serial: '19',
@@ -157,7 +157,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Turner-Harris',
             slug: 'Turner-Harris Ltd.',
             status: 'active',
-            
+
         },
         {
             serial: '20',
@@ -165,7 +165,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Rosales-Dominguez',
             slug: 'Rosales-Dominguez LLC',
             status: 'active',
-            
+
         },
         {
             serial: '21',
@@ -173,7 +173,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Sanders-Myers',
             slug: 'Sanders LLC',
             status: 'active',
-            
+
         },
         {
             serial: '22',
@@ -181,7 +181,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Tran PLC',
             slug: 'Tran PLC',
             status: 'inactive',
-            
+
         },
         {
             serial: '23',
@@ -189,7 +189,7 @@ const getData = async (): Promise<BuySellDataType[]> => {
             category_name: 'Padilla Group',
             slug: 'Padilla LLC',
             status: 'inactive',
-            
+
         }
     ]
 

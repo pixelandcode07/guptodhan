@@ -9,6 +9,7 @@ import Image from 'next/image'
 import WebsiteConfig from './MotherRoutes/WebsiteConfig'
 import { EcommerceModules } from './MotherRoutes/EcommerceModules'
 import { BuySell } from './MotherRoutes/BuySell'
+import { Donation } from './MotherRoutes/Donation'
 
 const data = {
     user: {
@@ -72,6 +73,28 @@ const data = {
         {
             title: "Buy Sell Listing",
             url: "/general/buy/sell/listing",
+            icon: LayoutDashboard,
+        },
+    ],
+    donations: [
+        {
+            title: "Donation Config",
+            url: "/general/donation/config",
+            icon: LayoutDashboard,
+        },
+        {
+            title: "Donation Categories",
+            url: "*",
+            icon: LayoutDashboard,
+        },
+        {
+            title: "Donation Listing",
+            url: "/general/donation/listing",
+            icon: LayoutDashboard,
+        },
+        {
+            title: "Donation Request",
+            url: "/general/donation/requests",
             icon: LayoutDashboard,
         },
     ],
@@ -139,6 +162,7 @@ export default function AppSidebar() {
             <SidebarContent>
                 <WebsiteConfig items={data.navMain} />
                 <BuySell items={data.buysell} />
+                <Donation items={data.donations} />
                 <Multivendor items={data.documents} />
                 <EcommerceModules items={data.ecommerceModules} />
             </SidebarContent>
