@@ -14,9 +14,7 @@ import {
 
 export default function TawkChatForm() {
   const [chatStatus, setChatStatus] = useState('1');
-  const [tawkLink, setTawkLink] = useState(
-    'https://tawk.to/chat/685f839c79d14b1913dc4758/1iuqhk7n3'
-  );
+  const [tawkLink, setTawkLink] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +51,6 @@ export default function TawkChatForm() {
             id="tawk_chat_link"
             value={tawkLink}
             onChange={e => setTawkLink(e.target.value)}
-            placeholder="ex. https://embed.tawk.to/5a7c31ed7591465c7077c48/default"
           />
         </div>
 

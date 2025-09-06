@@ -51,7 +51,6 @@ export default function CrispChatForm() {
             id="crisp_website_id"
             value={websiteId}
             onChange={e => setWebsiteId(e.target.value)}
-            placeholder="ex. 7b6ec17d-256a-41e8-9732-17ff58bd515t"
           />
         </div>
 

@@ -51,7 +51,6 @@ export default function MessengerChatForm() {
             id="fb_page_id"
             value={messengerLink}
             onChange={e => setMessengerLink(e.target.value)}
-            placeholder="https://m.me/"
           />
         </div>
 

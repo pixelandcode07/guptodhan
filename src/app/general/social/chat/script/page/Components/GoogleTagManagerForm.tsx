@@ -46,7 +46,6 @@ export default function GoogleTagManagerForm() {
             id="google_tag_manager_id"
             name="google_tag_manager_id"
             defaultValue="GTM-MNXFTXSL"
-            placeholder="ex. GTM-546FMKZS"
             className="w-full"
           />
         </div>

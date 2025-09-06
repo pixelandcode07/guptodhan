@@ -14,12 +14,9 @@ import {
 
 export default function RecaptchaForm() {
   const [captchaStatus, setCaptchaStatus] = useState('0');
-  const [siteKey, setSiteKey] = useState(
-    '6LcVO6cbAAAAOzIEwPlU66nL1rxD4VAS38tjp45'
-  );
-  const [secretKey, setSecretKey] = useState(
-    '6LcVO6cbAAAALVNrpZfNRfd0Gy_9a_fJRLiMV'
-  );
+  const [siteKey, setSiteKey] = useState<string>('');
+
+  const [secretKey, setSecretKey] = useState<string>('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +54,6 @@ export default function RecaptchaForm() {
             id="captcha_site_key"
             value={siteKey}
             onChange={e => setSiteKey(e.target.value)}
-            placeholder="ex. 6LcVO6cbAAAAOzIEwPlU66nL1rxD4VAS38tjpBX"
             className="w-full"
           />
         </div>
@@ -69,7 +65,6 @@ export default function RecaptchaForm() {
             id="captcha_secret_key"
             value={secretKey}
             onChange={e => setSecretKey(e.target.value)}
-            placeholder="ex. 6LcVO6cbAAAALVNrpZfNRfd0Gy_9a_fJRLiMVUI"
             className="w-full"
           />
         </div>

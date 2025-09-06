@@ -47,7 +47,6 @@ export default function FacebookPixelForm() {
             id="fb_pixel_app_id"
             name="fb_pixel_app_id"
             defaultValue={1492891321697241}
-            placeholder="ex. 97291160691059"
             className="w-full"
           />
         </div>
