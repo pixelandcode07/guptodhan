@@ -1,51 +1,51 @@
-import { DataTable } from "@/components/TableHelper/data-table";
-import { Flag, flag_columns } from "@/components/TableHelper/flag_columns";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Plus, Move } from "lucide-react";
+import { DataTable } from '@/components/TableHelper/data-table';
+import { Flag, flag_columns } from '@/components/TableHelper/flag_columns';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Plus, Move } from 'lucide-react';
 
 function getData(): Flag[] {
   return [
     {
       id: 1,
-      icon: "",
-      name: "New Collection",
-      status: "Active",
-      featured: "Featured",
-      created_at: "2024-08-18 09:58:42 pm"
+      icon: '',
+      name: 'New Collection',
+      status: 'Active',
+      featured: 'Featured',
+      created_at: '2024-08-18 09:58:42 pm',
     },
     {
       id: 2,
-      icon: "",
-      name: "Best",
-      status: "Inactive",
-      featured: "Featured",
-      created_at: "2024-08-18 10:00:02 pm"
+      icon: '',
+      name: 'Best',
+      status: 'Inactive',
+      featured: 'Featured',
+      created_at: '2024-08-18 10:00:02 pm',
     },
     {
       id: 3,
-      icon: "",
-      name: "Popular",
-      status: "Active",
-      featured: "Featured",
-      created_at: "2024-08-18 10:00:20 pm"
+      icon: '',
+      name: 'Popular',
+      status: 'Active',
+      featured: 'Featured',
+      created_at: '2024-08-18 10:00:20 pm',
     },
     {
       id: 4,
-      icon: "",
-      name: "Offer",
-      status: "Active",
-      featured: "Not Featured",
-      created_at: "2025-03-10 01:25:58 pm"
+      icon: '',
+      name: 'Offer',
+      status: 'Active',
+      featured: 'Not Featured',
+      created_at: '2025-03-10 01:25:58 pm',
     },
     {
       id: 5,
-      icon: "",
-      name: "Eid Collection",
-      status: "Active",
-      featured: "Featured",
-      created_at: "2024-08-18 10:00:09 pm"
-    }
+      icon: '',
+      name: 'Eid Collection',
+      status: 'Active',
+      featured: 'Featured',
+      created_at: '2024-08-18 10:00:09 pm',
+    },
   ];
 }
 

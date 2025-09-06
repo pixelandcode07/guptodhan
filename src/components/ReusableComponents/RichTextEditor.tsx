@@ -196,7 +196,7 @@ export default function RichTextEditor({
       {/* Editor */}
       <EditorContent
         editor={editor}
-        className="editor-content min-h-[250px] p-4 focus:outline-none"
+        className="editor-content min-h-[250px] max-h-[350px] overflow-auto p-4 focus:outline-none"
       />
     </div>
   );

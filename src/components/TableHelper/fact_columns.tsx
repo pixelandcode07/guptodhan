@@ -2,14 +2,12 @@
 
 import { cn } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
-import { Edit, X } from 'lucide-react';
-import { Button } from '../ui/button';
 
 export type StoresDataType = {
   id: number;
   title: string;
-  desc: string,
-  count: string | number,
+  desc: string;
+  count: string | number;
   status: string;
 };
 
@@ -22,7 +20,7 @@ export const fact_columns: ColumnDef<StoresDataType>[] = [
     accessorKey: 'title',
     header: 'Fact Title',
   },
-    {
+  {
     accessorKey: 'count',
     header: 'Fact Count',
   },
@@ -30,7 +28,6 @@ export const fact_columns: ColumnDef<StoresDataType>[] = [
     accessorKey: 'desc',
     header: 'Fact Description',
   },
-
 
   {
     accessorKey: 'status',
@@ -56,20 +53,20 @@ export const fact_columns: ColumnDef<StoresDataType>[] = [
       );
     },
   },
-  {
-    accessorKey: 'action',
-    header: 'Action',
-    cell: () => {
-      return (
-        <div className="flex items-center gap-2">
-          <Button className="bg-yellow-400 hover:bg-yellow-500 text-black cursor-pointer">
-            <Edit />
-          </Button>
-          <Button className="bg-red-700 hover:bg-red-800 text-white cursor-pointer">
-            <X />
-          </Button>
-        </div>
-      );
-    },
-  },
+  // {
+  //   accessorKey: 'action',
+  //   header: 'Action',
+  //   cell: () => {
+  //     return (
+  //       <div className="flex items-center gap-2">
+  //         <Button className="bg-yellow-400 hover:bg-yellow-500 text-black cursor-pointer">
+  //           <Edit />
+  //         </Button>
+  //         <Button className="bg-red-700 hover:bg-red-800 text-white cursor-pointer">
+  //           <X />
+  //         </Button>
+  //       </div>
+  //     );
+  //   },
+  // },
 ];
