@@ -103,14 +103,9 @@ const MENU_CONFIG: Record<string, { icon: ElementType; items: ChildItem[] }> = {
       { title: "Courier API Keys", url: "/general/setup/courier/api/keys" },
     ],
   },
-  "Support Tickets": {
+  "Customers": {
     icon: Headphones,
-    items: [
-      { title: "Pending Support Tickets", url: "/general/pending/support/tickets" },
-      { title: "Solved Support Tickets", url: "/general/solved/support/tickets" },
-      { title: "On Hold Support Tickets", url: "/general/on/hold/support/tickets" },
-      { title: "Rejected Support Tickets", url: "/general/rejected/support/tickets" },
-    ],
+    items: [],
   },
   "Marketing & Content": {
     icon: ImageIcon,
@@ -173,23 +168,34 @@ export function EcommerceModules({ items }: { items: EcommerceModuleTitleOnly[] 
           {items.map((item) => {
             const cfg = MENU_CONFIG[item.title]
             if (!cfg) return null
-            return (
-            <Collapsible key={item.title} className="group/collapsible">
-              {/* Parent Button */}
-              <CollapsibleTrigger asChild>
-                <SidebarMenuItem>
-                  <SidebarMenuButton>
-                    <cfg.icon />
-                    <span>{item.title}</span>
-                    {cfg.items && (
-                      <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                    )}
+            
+            if (cfg.items.length === 0) {
+              // Direct link for items without sub-routes
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <Link href="/general/view/all/customers" className="flex items-center gap-2">
+                      <cfg.icon />
+                      <span>{item.title}</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              </CollapsibleTrigger>
-              
-              {/* Child Items */}
-              {cfg.items && (
+              )
+            }
+            
+            // Collapsible for items with sub-routes
+            return (
+              <Collapsible key={item.title} className="group/collapsible">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton>
+                      <cfg.icon />
+                      <span>{item.title}</span>
+                      <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </CollapsibleTrigger>
+                
                 <CollapsibleContent>
                   <div className="pl-6">
                     {cfg.items.map((subItem) => (
@@ -219,9 +225,9 @@ export function EcommerceModules({ items }: { items: EcommerceModuleTitleOnly[] 
                     ))}
                   </div>
                 </CollapsibleContent>
-              )}
-            </Collapsible>
-          )})}
+              </Collapsible>
+            )
+          })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>

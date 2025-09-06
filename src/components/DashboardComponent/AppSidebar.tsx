@@ -87,7 +87,7 @@ const data = {
         { title: "Push Notification" },
         { title: "SMS Service" },
         { title: "Gateway & API" },
-        { title: "Support Tickets" },
+        { title: "Customers" },
         { title: "Marketing & Content" },
         { title: "Customer Management" },
         { title: "Delivery & Payment" },
