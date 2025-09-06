@@ -29,7 +29,7 @@ export default function CreateVendorForm() {
         formState: { errors },
     } = useForm<Inputs>()
 
-    // const onSubmit:  = (data) => 
+
 
     const onSubmit: SubmitHandler<Inputs> = (data) => {
         console.log(data)
@@ -43,7 +43,7 @@ export default function CreateVendorForm() {
             {/* Owner Information: */}
             <OwnerInfo register={register} errors={errors} />
 
-            {/* Attachments */}
+            {/* Attachments Data */}
             <Attachment />
 
             <div className='text-center'>
