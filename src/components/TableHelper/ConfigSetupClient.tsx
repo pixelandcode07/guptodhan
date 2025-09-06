@@ -27,7 +27,7 @@ export default function ConfigSetupClient({ initialOptions }: Props) {
   }
 
   const handleCancel = () => {
-    router.push("/home")
+    router.push("/general/home")
   }
 
   const handleUpdate = () => {
