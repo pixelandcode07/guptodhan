@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, Box, ChevronDown, CloudDownload, Command, Filter, Gift, Headphones, Heart, Image as ImageIcon, Link as LinkIcon, MessageSquare, Printer, Settings, ShoppingCart, Truck, Users } from "lucide-react"
+import { Bell, Box, ChevronDown, CloudDownload, Command, Filter, Gift, Headphones, Heart, Image as ImageIcon, Link as LinkIcon, Map, MessageSquare, Printer, Settings, ShoppingCart, Truck, Users } from "lucide-react"
 import { ElementType } from "react"
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../../ui/sidebar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../ui/collapsible"
@@ -10,7 +10,7 @@ interface EcommerceModuleTitleOnly { title: string }
 
 type ChildItem = { title: string; url: string; count?: string; isNew?: boolean }
 
-const MENU_CONFIG: Record<string, { icon: ElementType; items: ChildItem[] }> = {
+const MENU_CONFIG: Record<string, { icon: ElementType; items: ChildItem[]; url?: string }> = {
   "Config": {
     icon: Settings,
     items: [
@@ -106,29 +106,26 @@ const MENU_CONFIG: Record<string, { icon: ElementType; items: ChildItem[] }> = {
   "Customers": {
     icon: Headphones,
     items: [],
+    url: "/general/view/all/customers",
   },
- "Customers Wishlist": {
+ "Customer's Wishlist": {
     icon: Heart,
     items: [],
+    url: "/general/view/customers/wishlist",
   },
-  "Customer Management": {
-    icon: Users,
-    items: [
-      { title: "All Customers", url: "/general/view/all/customers" },
-      { title: "Customer's Wishlist", url: "/general/view/customers/wishlist" },
-      { title: "All Contact Requests", url: "/general/view/all/contact/requests" },
-      { title: "All Subscribed Users", url: "/general/view/all/subscribed/users" },
-    ],
-  },
-  "Delivery & Payment": {
+  "Delivery Charges": {
     icon: Truck,
-    items: [
-      { title: "Delivery Charges", url: "/general/view/delivery/charges" },
-      { title: "Upazila & Thana", url: "/general/view/upazila/thana" },
-      { title: "Payment History", url: "/general/view/payment/history" },
-    ],
+    items: [],
   },
-  "Reports": {
+  "Upazila & Thana": {
+    icon: Map,
+    items: [],
+  },
+  "Payment History": {
+    icon: Printer,
+    items: [],
+  },
+  "Generate Reports": {
     icon: Printer,
     items: [
       { title: "Sales Report", url: "/general/sales/report" },
@@ -169,7 +166,7 @@ export function EcommerceModules({ items }: { items: EcommerceModuleTitleOnly[] 
               return (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <Link href="/general/view/all/customers" className="flex items-center gap-2">
+                    <Link href={cfg.url || "#"} className="flex items-center gap-2">
                       <cfg.icon />
                       <span>{item.title}</span>
                     </Link>
