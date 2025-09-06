@@ -29,9 +29,9 @@ import {
 
 // Sub-items
 const sliders = [
-  { title: 'View All Sliders', url: '/general/sliders' },
+  { title: 'View All Sliders', url: '/general/view/all/sliders' },
   { title: 'View All Banners', url: '/general/view/all/banners' },
-  { title: 'Promotional Banners', url: '/general/promotions' },
+  { title: 'Promotional Banners', url: '/general/view/promotional/banner' },
 ];
 
 const testimonials = [
