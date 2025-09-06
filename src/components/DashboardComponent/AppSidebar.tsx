@@ -19,8 +19,11 @@ import {
   Search,
   Settings,
   Share2,
+  ShieldCheck,
   Store,
   UserCheck,
+  UserCog,
+  Users,
 } from 'lucide-react';
 import { Multivendor } from './MotherRoutes/Multivendor';
 import Link from 'next/link';
@@ -28,6 +31,7 @@ import Image from 'next/image';
 import WebsiteConfig from './MotherRoutes/WebsiteConfig';
 import { EcommerceModules } from './MotherRoutes/EcommerceModules';
 import { ContentManagement } from './MotherRoutes/ContentManagement';
+import UserRolePermition from './MotherRoutes/UserRolePermition';
 
 const data = {
   user: {
@@ -108,6 +112,28 @@ const data = {
     { title: 'Reports' },
     { title: 'Download Backup' },
   ],
+  userRole: [
+    {
+      title: 'System Users',
+      url: '/general/view/system/users',
+      icon: Users,
+    },
+    {
+      title: 'Permission Routes',
+      url: '/general/view/permission/routes',
+      icon: ShieldCheck,
+    },
+    {
+      title: 'User Roles',
+      url: '/general/view/user/roles',
+      icon: UserCog,
+    },
+    {
+      title: 'Addign Role Permission',
+      url: '/general/view/user/role/permission',
+      icon: UserCheck,
+    },
+  ],
 };
 
 export default function AppSidebar() {
@@ -137,6 +163,7 @@ export default function AppSidebar() {
       <SidebarContent>
         <WebsiteConfig items={data.navMain} />
         <ContentManagement />
+        <UserRolePermition items={data.userRole} />
         <Multivendor items={data.documents} />
         <EcommerceModules items={data.ecommerceModules} />
       </SidebarContent>
