@@ -108,31 +108,26 @@ export default function BannersPage() {
         </h1>
       </div>
       
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-end mb-4">
+        <div className="flex flex-col items-end gap-2">
+          {/* <div className="flex items-center gap-2">
+            <span>Search:</span>
+            <Input type="text" className="border border-gray-500 w-64" />
+          </div> */}
           <div className="flex items-center gap-2">
-            <span>Show</span>
-            <select className="border border-gray-300 rounded px-2 py-1">
-              <option value="10">10 entries</option>
-              <option value="25">25 entries</option>
-              <option value="50">50 entries</option>
-            </select>
-          </div>
           <div className="flex items-center gap-2">
             <span>Search:</span>
             <Input type="text" className="border border-gray-500 w-64" />
           </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Add New Banner
-          </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
-            <ArrowUpDown className="w-4 h-4" />
-            Rearrange Banners
-          </Button>
+            <Button className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Add New Banner
+            </Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
+              <ArrowUpDown className="w-4 h-4" />
+              Rearrange Banners
+            </Button>
+          </div>
         </div>
       </div>
       

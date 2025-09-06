@@ -30,7 +30,7 @@ import {
 // Sub-items
 const sliders = [
   { title: 'View All Sliders', url: '/general/sliders' },
-  { title: 'View All Banners', url: '/general/banners' },
+  { title: 'View All Banners', url: '/general/view/all/banners' },
   { title: 'Promotional Banners', url: '/general/promotions' },
 ];
 
