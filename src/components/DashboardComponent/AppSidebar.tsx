@@ -34,6 +34,7 @@ import WebsiteConfig from './MotherRoutes/WebsiteConfig';
 import { EcommerceModules } from './MotherRoutes/EcommerceModules';
 import { ContentManagement } from './MotherRoutes/ContentManagement';
 import UserRolePermition from './MotherRoutes/UserRolePermition';
+import { CRMModules } from './MotherRoutes/CRMModules';
 import { BuySell } from './MotherRoutes/BuySell';
 import { Donation } from './MotherRoutes/Donation';
 import { DemoProducts } from './MotherRoutes/DemoProducts';
@@ -187,6 +188,12 @@ const data = {
       icon: UserCheck,
     },
   ],
+  crmModules: [
+    { title: 'Support Ticket' },
+    { title: 'Contact Request' },
+    { title: 'Subscribed Users' },
+    { title: 'Blog Comments' },
+  ],
   logoutAction: [
     {
       title: 'Logout',
@@ -228,6 +235,7 @@ export default function AppSidebar() {
         <Donation items={data.donations} />
         <Multivendor items={data.documents} />
         <EcommerceModules items={data.ecommerceModules} />
+        <CRMModules items={data.crmModules} />
         <DemoProducts items={data.demoProducts} />
         <Logout items={data.logoutAction} />
       </SidebarContent>
