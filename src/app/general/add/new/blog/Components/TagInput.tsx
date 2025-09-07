@@ -1,23 +1,25 @@
 'use client';
 
-import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
 import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Dispatch, SetStateAction } from 'react';
 
-export default function TagsInput() {
-  const [tags, setTags] = useState<string[]>([]);
-  const [inputValue, setInputValue] = useState('');
+interface TagsInputProps {
+  tags: string[];
+  setTags: Dispatch<SetStateAction<string[]>>;
+}
 
+export default function TagsInput({ tags, setTags }: TagsInputProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if ((e.key === 'Enter' || e.key === ',') && inputValue.trim()) {
+    if ((e.key === 'Enter' || e.key === ',') && e.currentTarget.value.trim()) {
       e.preventDefault();
-      if (!tags.includes(inputValue.trim())) {
-        setTags([...tags, inputValue.trim()]);
+      const newTag = e.currentTarget.value.trim();
+      if (!tags.includes(newTag)) {
+        setTags([...tags, newTag]);
       }
-      setInputValue('');
+      e.currentTarget.value = '';
     }
   };
 
@@ -26,7 +28,7 @@ export default function TagsInput() {
   };
 
   return (
-    <div className="w-full  space-y-2">
+    <div className="w-full space-y-2">
       <Label htmlFor="tags">Tags (for search result)</Label>
       <div className="flex flex-wrap gap-2 p-2 border rounded-md">
         {tags.map((tag, index) => (
@@ -43,9 +45,6 @@ export default function TagsInput() {
         ))}
         <Input
           id="tags"
-          name="tags"
-          value={inputValue}
-          onChange={e => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Type and press Enter"
           className="border-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-auto flex-1 min-w-[120px]"

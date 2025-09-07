@@ -1,175 +1,234 @@
 export interface ColourOption {
-    readonly value: string;
-    readonly label: string;
-    readonly color: string;
-    readonly isFixed?: boolean;
-    readonly isDisabled?: boolean;
+  readonly value: string;
+  readonly label: string;
+  readonly color: string;
+  readonly isFixed?: boolean;
+  readonly isDisabled?: boolean;
 }
 
 export const colourOptions: readonly ColourOption[] = [
-    { value: 'Organic', label: 'Organic', color: '#00B8D9' },
-    // , isFixed: true
-    { value: 'Travel & Luggagesss', label: 'Travel & Luggagesss', color: '#00B8D9' },
-    // , isDisabled: true
-    { value: 'Toys & Games', label: 'Toys & Games', color: '#00B8D9' },
-    { value: 'Sporting Goods & Outdoor', label: 'Sporting Goods & Outdoor', color: '#00B8D9' },
-    // , isFixed: true
-    { value: 'Pet Supplies', label: 'Pet Supplies', color: '#00B8D9' },
-    { value: 'Office Supplies', label: 'Office Supplies', color: '#00B8D9' },
-    { value: 'Kitchen & Dining', label: 'Kitchen & Dining', color: '#00B8D9' },
-    { value: 'Home Appliances', label: 'Home Appliances', color: '#00B8D9' },
-    { value: 'Furniture', label: 'Furniture', color: '#00B8D9' },
-    { value: 'Food & Beverages', label: 'Food & Beverages', color: '#00B8D9' },
-    { value: 'Books & Media', label: 'Books & Media', color: '#00B8D9' },
-    { value: 'Beauty & Personal Care', label: 'Beauty & Personal Care', color: '#00B8D9' },
-    { value: 'Apparel & Accessories', label: 'Apparel & Accessories', color: '#00B8D9' },
-    { value: 'Baby & Toddlerss', label: 'Baby & Toddlerss', color: '#00B8D9' },
-    { value: 'Automotive', label: 'Automotive', color: '#00B8D9' },
+  { value: 'Organic', label: 'Organic', color: '#00B8D9' },
+  // , isFixed: true
+  {
+    value: 'Travel & Luggagesss',
+    label: 'Travel & Luggagesss',
+    color: '#00B8D9',
+  },
+  // , isDisabled: true
+  { value: 'Toys & Games', label: 'Toys & Games', color: '#00B8D9' },
+  {
+    value: 'Sporting Goods & Outdoor',
+    label: 'Sporting Goods & Outdoor',
+    color: '#00B8D9',
+  },
+  // , isFixed: true
+  { value: 'Pet Supplies', label: 'Pet Supplies', color: '#00B8D9' },
+  { value: 'Office Supplies', label: 'Office Supplies', color: '#00B8D9' },
+  { value: 'Kitchen & Dining', label: 'Kitchen & Dining', color: '#00B8D9' },
+  { value: 'Home Appliances', label: 'Home Appliances', color: '#00B8D9' },
+  { value: 'Furniture', label: 'Furniture', color: '#00B8D9' },
+  { value: 'Food & Beverages', label: 'Food & Beverages', color: '#00B8D9' },
+  { value: 'Books & Media', label: 'Books & Media', color: '#00B8D9' },
+  {
+    value: 'Beauty & Personal Care',
+    label: 'Beauty & Personal Care',
+    color: '#00B8D9',
+  },
+  {
+    value: 'Apparel & Accessories',
+    label: 'Apparel & Accessories',
+    color: '#00B8D9',
+  },
+  { value: 'Baby & Toddlerss', label: 'Baby & Toddlerss', color: '#00B8D9' },
+  { value: 'Automotive', label: 'Automotive', color: '#00B8D9' },
 ];
 
-
-
 export interface VendorOption {
-    readonly value: string;
-    readonly label: string;
-    readonly color: string;
-    readonly isFixed?: boolean;
-    readonly isDisabled?: boolean;
+  readonly value: string;
+  readonly label: string;
+  readonly color: string;
+  readonly isFixed?: boolean;
+  readonly isDisabled?: boolean;
 }
 
-
 export const vendorOptions: readonly VendorOption[] = [
-    { value: 'Apex Global Traders', label: 'Apex Global Traders', color: '#00B8D9' },
-    { value: 'Horizon Supply Co.', label: 'Horizon Supply Co.', color: '#00B8D9' },
-    { value: 'Evergreen Enterprises', label: 'Evergreen Enterprises', color: '#00B8D9' },
-    { value: 'Velocity Distributors', label: 'Velocity Distributors', color: '#00B8D9' },
-    { value: 'Sunrise Wholesale Ltd.', label: 'Sunrise Wholesale Ltd.', color: '#00B8D9' },
-    { value: 'Summit Imports & Exports', label: 'Summit Imports & Exports', color: '#00B8D9' },
-    { value: 'Silverline Suppliers', label: 'Silverline Suppliers', color: '#00B8D9' },
-    { value: 'MetroMart Partners', label: 'MetroMart Partners', color: '#00B8D9' },
-    { value: 'BlueOcean Ventures', label: 'BlueOcean Ventures', color: '#00B8D9' },
-    { value: 'PrimeGate Traders', label: 'PrimeGate Traders', color: '#00B8D9' },
+  {
+    value: 'Apex Global Traders',
+    label: 'Apex Global Traders',
+    color: '#00B8D9',
+  },
+  {
+    value: 'Horizon Supply Co.',
+    label: 'Horizon Supply Co.',
+    color: '#00B8D9',
+  },
+  {
+    value: 'Evergreen Enterprises',
+    label: 'Evergreen Enterprises',
+    color: '#00B8D9',
+  },
+  {
+    value: 'Velocity Distributors',
+    label: 'Velocity Distributors',
+    color: '#00B8D9',
+  },
+  {
+    value: 'Sunrise Wholesale Ltd.',
+    label: 'Sunrise Wholesale Ltd.',
+    color: '#00B8D9',
+  },
+  {
+    value: 'Summit Imports & Exports',
+    label: 'Summit Imports & Exports',
+    color: '#00B8D9',
+  },
+  {
+    value: 'Silverline Suppliers',
+    label: 'Silverline Suppliers',
+    color: '#00B8D9',
+  },
+  {
+    value: 'MetroMart Partners',
+    label: 'MetroMart Partners',
+    color: '#00B8D9',
+  },
+  {
+    value: 'BlueOcean Ventures',
+    label: 'BlueOcean Ventures',
+    color: '#00B8D9',
+  },
+  { value: 'PrimeGate Traders', label: 'PrimeGate Traders', color: '#00B8D9' },
 ];
 
 export interface paymentOptions {
-    readonly value: string;
-    readonly label: string;
-    readonly color: string;
-    readonly isFixed?: boolean;
-    readonly isDisabled?: boolean;
+  readonly value: string;
+  readonly label: string;
+  readonly color: string;
+  readonly isFixed?: boolean;
+  readonly isDisabled?: boolean;
 }
 
-
 export const paymentOptions: readonly VendorOption[] = [
-    { value: 'Bank Transfer', label: 'Bank Transfer', color: '#00B8D9' },
-    { value: 'bkash', label: 'bkash', color: '#00B8D9' },
-    { value: 'Nagad', label: 'Nagad', color: '#00B8D9' },
-    { value: 'Rocket', label: 'Rocket', color: '#00B8D9' },
-    { value: 'Upay', label: 'Upay', color: '#00B8D9' },
-    { value: 'Sure Cash', label: 'Sure Cash', color: '#00B8D9' }
+  { value: 'Bank Transfer', label: 'Bank Transfer', color: '#00B8D9' },
+  { value: 'bkash', label: 'bkash', color: '#00B8D9' },
+  { value: 'Nagad', label: 'Nagad', color: '#00B8D9' },
+  { value: 'Rocket', label: 'Rocket', color: '#00B8D9' },
+  { value: 'Upay', label: 'Upay', color: '#00B8D9' },
+  { value: 'Sure Cash', label: 'Sure Cash', color: '#00B8D9' },
+];
+export interface DemoProductOpt {
+  readonly value: string;
+  readonly label: string;
+  readonly color: string;
+  readonly isFixed?: boolean;
+  readonly isDisabled?: boolean;
+}
+
+export const demoProductOpt: readonly DemoProductOpt[] = [
+  { value: 'Fashion', label: 'Fashion', color: '#00B8D9' },
+  { value: 'Tech', label: 'Tech', color: '#00B8D9' },
+  { value: 'Grocery', label: 'Grocery', color: '#00B8D9' },
 ];
 
-
-
 export interface FlavourOption {
-    readonly value: string;
-    readonly label: string;
-    readonly rating: string;
+  readonly value: string;
+  readonly label: string;
+  readonly rating: string;
 }
 
 export const flavourOptions: readonly FlavourOption[] = [
-    { value: 'vanilla', label: 'Vanilla', rating: 'safe' },
-    { value: 'chocolate', label: 'Chocolate', rating: 'good' },
-    { value: 'strawberry', label: 'Strawberry', rating: 'wild' },
-    { value: 'salted-caramel', label: 'Salted Caramel', rating: 'crazy' },
+  { value: 'vanilla', label: 'Vanilla', rating: 'safe' },
+  { value: 'chocolate', label: 'Chocolate', rating: 'good' },
+  { value: 'strawberry', label: 'Strawberry', rating: 'wild' },
+  { value: 'salted-caramel', label: 'Salted Caramel', rating: 'crazy' },
 ];
 
 export interface StateOption {
-    readonly value: string;
-    readonly label: string;
+  readonly value: string;
+  readonly label: string;
 }
 
 export const stateOptions: readonly StateOption[] = [
-    { value: 'AL', label: 'Alabama' },
-    { value: 'AK', label: 'Alaska' },
-    { value: 'AS', label: 'American Samoa' },
-    { value: 'AZ', label: 'Arizona' },
-    { value: 'AR', label: 'Arkansas' },
-    { value: 'CA', label: 'California' },
-    { value: 'CO', label: 'Colorado' },
-    { value: 'CT', label: 'Connecticut' },
-    { value: 'DE', label: 'Delaware' },
-    { value: 'DC', label: 'District Of Columbia' },
-    { value: 'FM', label: 'Federated States Of Micronesia' },
-    { value: 'FL', label: 'Florida' },
-    { value: 'GA', label: 'Georgia' },
-    { value: 'GU', label: 'Guam' },
-    { value: 'HI', label: 'Hawaii' },
-    { value: 'ID', label: 'Idaho' },
-    { value: 'IL', label: 'Illinois' },
-    { value: 'IN', label: 'Indiana' },
-    { value: 'IA', label: 'Iowa' },
-    { value: 'KS', label: 'Kansas' },
-    { value: 'KY', label: 'Kentucky' },
-    { value: 'LA', label: 'Louisiana' },
-    { value: 'ME', label: 'Maine' },
-    { value: 'MH', label: 'Marshall Islands' },
-    { value: 'MD', label: 'Maryland' },
-    { value: 'MA', label: 'Massachusetts' },
-    { value: 'MI', label: 'Michigan' },
-    { value: 'MN', label: 'Minnesota' },
-    { value: 'MS', label: 'Mississippi' },
-    { value: 'MO', label: 'Missouri' },
-    { value: 'MT', label: 'Montana' },
-    { value: 'NE', label: 'Nebraska' },
-    { value: 'NV', label: 'Nevada' },
-    { value: 'NH', label: 'New Hampshire' },
-    { value: 'NJ', label: 'New Jersey' },
-    { value: 'NM', label: 'New Mexico' },
-    { value: 'NY', label: 'New York' },
-    { value: 'NC', label: 'North Carolina' },
-    { value: 'ND', label: 'North Dakota' },
-    { value: 'MP', label: 'Northern Mariana Islands' },
-    { value: 'OH', label: 'Ohio' },
-    { value: 'OK', label: 'Oklahoma' },
-    { value: 'OR', label: 'Oregon' },
-    { value: 'PW', label: 'Palau' },
-    { value: 'PA', label: 'Pennsylvania' },
-    { value: 'PR', label: 'Puerto Rico' },
-    { value: 'RI', label: 'Rhode Island' },
-    { value: 'SC', label: 'South Carolina' },
-    { value: 'SD', label: 'South Dakota' },
-    { value: 'TN', label: 'Tennessee' },
-    { value: 'TX', label: 'Texas' },
-    { value: 'UT', label: 'Utah' },
-    { value: 'VT', label: 'Vermont' },
-    { value: 'VI', label: 'Virgin Islands' },
-    { value: 'VA', label: 'Virginia' },
-    { value: 'WA', label: 'Washington' },
-    { value: 'WV', label: 'West Virginia' },
-    { value: 'WI', label: 'Wisconsin' },
-    { value: 'WY', label: 'Wyoming' },
+  { value: 'AL', label: 'Alabama' },
+  { value: 'AK', label: 'Alaska' },
+  { value: 'AS', label: 'American Samoa' },
+  { value: 'AZ', label: 'Arizona' },
+  { value: 'AR', label: 'Arkansas' },
+  { value: 'CA', label: 'California' },
+  { value: 'CO', label: 'Colorado' },
+  { value: 'CT', label: 'Connecticut' },
+  { value: 'DE', label: 'Delaware' },
+  { value: 'DC', label: 'District Of Columbia' },
+  { value: 'FM', label: 'Federated States Of Micronesia' },
+  { value: 'FL', label: 'Florida' },
+  { value: 'GA', label: 'Georgia' },
+  { value: 'GU', label: 'Guam' },
+  { value: 'HI', label: 'Hawaii' },
+  { value: 'ID', label: 'Idaho' },
+  { value: 'IL', label: 'Illinois' },
+  { value: 'IN', label: 'Indiana' },
+  { value: 'IA', label: 'Iowa' },
+  { value: 'KS', label: 'Kansas' },
+  { value: 'KY', label: 'Kentucky' },
+  { value: 'LA', label: 'Louisiana' },
+  { value: 'ME', label: 'Maine' },
+  { value: 'MH', label: 'Marshall Islands' },
+  { value: 'MD', label: 'Maryland' },
+  { value: 'MA', label: 'Massachusetts' },
+  { value: 'MI', label: 'Michigan' },
+  { value: 'MN', label: 'Minnesota' },
+  { value: 'MS', label: 'Mississippi' },
+  { value: 'MO', label: 'Missouri' },
+  { value: 'MT', label: 'Montana' },
+  { value: 'NE', label: 'Nebraska' },
+  { value: 'NV', label: 'Nevada' },
+  { value: 'NH', label: 'New Hampshire' },
+  { value: 'NJ', label: 'New Jersey' },
+  { value: 'NM', label: 'New Mexico' },
+  { value: 'NY', label: 'New York' },
+  { value: 'NC', label: 'North Carolina' },
+  { value: 'ND', label: 'North Dakota' },
+  { value: 'MP', label: 'Northern Mariana Islands' },
+  { value: 'OH', label: 'Ohio' },
+  { value: 'OK', label: 'Oklahoma' },
+  { value: 'OR', label: 'Oregon' },
+  { value: 'PW', label: 'Palau' },
+  { value: 'PA', label: 'Pennsylvania' },
+  { value: 'PR', label: 'Puerto Rico' },
+  { value: 'RI', label: 'Rhode Island' },
+  { value: 'SC', label: 'South Carolina' },
+  { value: 'SD', label: 'South Dakota' },
+  { value: 'TN', label: 'Tennessee' },
+  { value: 'TX', label: 'Texas' },
+  { value: 'UT', label: 'Utah' },
+  { value: 'VT', label: 'Vermont' },
+  { value: 'VI', label: 'Virgin Islands' },
+  { value: 'VA', label: 'Virginia' },
+  { value: 'WA', label: 'Washington' },
+  { value: 'WV', label: 'West Virginia' },
+  { value: 'WI', label: 'Wisconsin' },
+  { value: 'WY', label: 'Wyoming' },
 ];
 
 export const optionLength = [
-    { value: 1, label: 'general' },
-    {
-        value: 2,
-        label:
-            'Evil is the moment when I lack the strength to be true to the Good that compels me.',
-    },
-    {
-        value: 3,
-        label:
-            "It is now an easy matter to spell out the ethic of a truth: 'Do all that you can to persevere in that which exceeds your perseverance. Persevere in the interruption. Seize in your being that which has seized and broken you.",
-    },
+  { value: 1, label: 'general' },
+  {
+    value: 2,
+    label:
+      'Evil is the moment when I lack the strength to be true to the Good that compels me.',
+  },
+  {
+    value: 3,
+    label:
+      "It is now an easy matter to spell out the ethic of a truth: 'Do all that you can to persevere in that which exceeds your perseverance. Persevere in the interruption. Seize in your being that which has seized and broken you.",
+  },
 ];
 
 export const dogOptions = [
-    { id: 1, label: 'Chihuahua' },
-    { id: 2, label: 'Bulldog' },
-    { id: 3, label: 'Dachshund' },
-    { id: 4, label: 'Akita' },
+  { id: 1, label: 'Chihuahua' },
+  { id: 2, label: 'Bulldog' },
+  { id: 3, label: 'Dachshund' },
+  { id: 4, label: 'Akita' },
 ];
 
 // let bigOptions = [];
@@ -178,17 +237,17 @@ export const dogOptions = [
 // }
 
 export interface GroupedOption {
-    readonly label: string;
-    readonly options: readonly ColourOption[] | readonly FlavourOption[];
+  readonly label: string;
+  readonly options: readonly ColourOption[] | readonly FlavourOption[];
 }
 
 export const groupedOptions: readonly GroupedOption[] = [
-    {
-        label: 'Colours',
-        options: colourOptions,
-    },
-    {
-        label: 'Flavours',
-        options: flavourOptions,
-    },
+  {
+    label: 'Colours',
+    options: colourOptions,
+  },
+  {
+    label: 'Flavours',
+    options: flavourOptions,
+  },
 ];
