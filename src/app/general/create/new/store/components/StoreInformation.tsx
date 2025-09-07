@@ -143,7 +143,11 @@ export default function StoreInformation({ register, errors, setValue }: {
                         style={{
                             input: { width: "100%", boxSizing: "border-box" },
                         }}
+<<<<<<< HEAD
                         placeholder="Enter commission %"   // 👈 works because NumericInput passes unknown props to input
+=======
+                        placeholder="Enter commission %"
+>>>>>>> 9944fcc4b908d3e4e63317bcad4cba2074fb780e
                         onChange={(valueAsNumber) => setValue("commission", valueAsNumber ?? 0)}
                     />
                 </section>

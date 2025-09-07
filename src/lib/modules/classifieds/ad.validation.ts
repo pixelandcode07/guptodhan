@@ -1,0 +1,46 @@
+import { z } from 'zod';
+
+export const createAdValidationSchema = z.object({
+  title: z.string().min(5),
+  user: z.string(),
+  category: z.string(),
+  subCategory: z.string().optional(),
+  division: z.string({ required_error: 'Division is required.' }),
+  district: z.string({ required_error: 'District is required.' }),
+  upazila: z.string({ required_error: 'Upazila is required.' }), 
+  condition: z.enum(['new', 'used']),
+  authenticity: z.string(),
+  description: z.string().min(20),
+  price: z.number().positive(),
+  isNegotiable: z.boolean().optional(),
+  images: z.array(z.string().url()).min(1),
+  contactDetails: z.object({
+    name: z.string(),
+    phone: z.string(),
+    isPhoneHidden: z.boolean().optional(),
+  }),
+  brand: z.string().optional(),
+  productModel: z.string().optional(),
+  edition: z.string().optional(),
+  features: z.array(z.string()).optional(),
+});
+
+
+export const updateAdValidationSchema = z.object({
+  title: z.string().min(5).optional(),
+  division: z.string().optional(),
+  district: z.string().optional(),
+  upazila: z.string().optional(),
+  price: z.number().positive().optional(),
+  category: z.string().optional(),
+  subCategory: z.string().optional(),
+  condition: z.enum(['new', 'used']).optional(),
+  authenticity: z.string().optional(),
+  description: z.string().min(20).optional(),
+  isNegotiable: z.boolean().optional(),
+  contactDetails: z.object({
+    name: z.string().optional(),
+    phone: z.string().optional(),
+    isPhoneHidden: z.boolean().optional(),
+  }).optional(),
+});

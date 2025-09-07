@@ -34,8 +34,11 @@ const stores = [
 
 const withdrawal = [
   { title: 'All Withdrawal', url: '/general/view/all/withdraws' },
-  { title: 'Add New Withdrawal', url: '/add-new-withdrawal' },
-  { title: 'All Withdrawal', url: '/all-withdrawal' },
+  { title: 'Create Withdrawal', url: '/general/create/new/withdraw' },
+  { title: 'Withdrawal Requests', url: '/general/view/withdraw/requests' },
+  { title: 'Completed Withdraws', url: '/general/view/completed/withdraws' },
+  { title: 'Cancelled Withdraws', url: '/general/view/cancelled/withdraws' },
+  { title: 'Payment History', url: '/general/view/payment/history' },
 ];
 
 export function Multivendor({

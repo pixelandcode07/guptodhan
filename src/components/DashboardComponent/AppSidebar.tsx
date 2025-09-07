@@ -11,9 +11,11 @@ import {
   SidebarMenuItem,
 } from '../ui/sidebar';
 import {
+  Box,
   Code,
   DollarSign,
   LayoutDashboard,
+  LogOut,
   MessageCircle,
   Palette,
   Search,
@@ -32,6 +34,10 @@ import WebsiteConfig from './MotherRoutes/WebsiteConfig';
 import { EcommerceModules } from './MotherRoutes/EcommerceModules';
 import { ContentManagement } from './MotherRoutes/ContentManagement';
 import UserRolePermition from './MotherRoutes/UserRolePermition';
+import { BuySell } from './MotherRoutes/BuySell';
+import { Donation } from './MotherRoutes/Donation';
+import { DemoProducts } from './MotherRoutes/DemoProducts';
+import Logout from './MotherRoutes/Logout';
 
 const data = {
   user: {
@@ -76,6 +82,45 @@ const data = {
       icon: MessageCircle,
     },
   ],
+  buysell: [
+    {
+      title: 'Buy Sell Config',
+      url: '/general/buy/sell/config',
+      icon: LayoutDashboard,
+    },
+    {
+      title: 'Buy Sell Categories',
+      url: '*',
+      icon: LayoutDashboard,
+    },
+    {
+      title: 'Buy Sell Listing',
+      url: '/general/buy/sell/listing',
+      icon: LayoutDashboard,
+    },
+  ],
+  donations: [
+    {
+      title: 'Donation Config',
+      url: '/general/donation/config',
+      icon: LayoutDashboard,
+    },
+    {
+      title: 'Donation Categories',
+      url: '*',
+      icon: LayoutDashboard,
+    },
+    {
+      title: 'Donation Listing',
+      url: '/general/donation/listing',
+      icon: LayoutDashboard,
+    },
+    {
+      title: 'Donation Request',
+      url: '/general/donation/requests',
+      icon: LayoutDashboard,
+    },
+  ],
 
   documents: [
     {
@@ -94,6 +139,13 @@ const data = {
       icon: DollarSign,
     },
   ],
+  demoProducts: [
+    {
+      title: 'Demo Products',
+      url: '#',
+      icon: Box,
+    },
+  ],
   ecommerceModules: [
     { title: 'Config' },
     { title: 'Category' },
@@ -105,11 +157,12 @@ const data = {
     { title: 'Push Notification' },
     { title: 'SMS Service' },
     { title: 'Gateway & API' },
-    { title: 'Support Tickets' },
-    { title: 'Marketing & Content' },
-    { title: 'Customer Management' },
-    { title: 'Delivery & Payment' },
-    { title: 'Reports' },
+    { title: 'Customers' },
+    { title: "Customer's Wishlist" },
+    { title: 'Delivery Charges' },
+    { title: 'Upazila & Thana' },
+    { title: 'Payment History' },
+    { title: 'Generate Reports' },
     { title: 'Download Backup' },
   ],
   userRole: [
@@ -132,6 +185,13 @@ const data = {
       title: 'Addign Role Permission',
       url: '/general/view/user/role/permission',
       icon: UserCheck,
+    },
+  ],
+  logoutAction: [
+    {
+      title: 'Logout',
+      url: '/general/logout',
+      icon: LogOut,
     },
   ],
 };
@@ -164,8 +224,12 @@ export default function AppSidebar() {
         <WebsiteConfig items={data.navMain} />
         <ContentManagement />
         <UserRolePermition items={data.userRole} />
+        <BuySell items={data.buysell} />
+        <Donation items={data.donations} />
         <Multivendor items={data.documents} />
         <EcommerceModules items={data.ecommerceModules} />
+        <DemoProducts items={data.demoProducts} />
+        <Logout items={data.logoutAction} />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
     </Sidebar>
