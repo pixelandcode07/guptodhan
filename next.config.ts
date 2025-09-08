@@ -17,10 +17,10 @@ const nextConfig = {
     ],
   },
   eslint: {
-    ignoreDuringBuilds: true, // 🚀 build এ ESLint error skip করবে
+    ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true, // 🚀 TS type error skip করবে
+    ignoreBuildErrors: true, 
   },
 };
 

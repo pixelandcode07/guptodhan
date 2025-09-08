@@ -1,4 +1,3 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\brand\brand.service.ts
 
 import { IBrand } from './brand.interface';
 import { Brand } from './brand.model';
@@ -26,7 +25,6 @@ const deleteBrandFromDB = async (id: string) => {
     const brand = await Brand.findById(id);
     if (!brand) { throw new Error("Brand not found"); }
     
-    // যদি লোগো থাকে, তাহলে Cloudinary থেকে ডিলিট করা হচ্ছে
     if (brand.logo) {
         await deleteFromCloudinary(brand.logo);
     }
