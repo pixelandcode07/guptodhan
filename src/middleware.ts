@@ -12,6 +12,11 @@ const protectedRoutes = [
     '/api/v1/profile/me',
     '/api/v1/users',
     '/api/v1/classifieds/ads',
+    '/api/v1/classifieds-banners',
+    '/api/v1/reports',
+    '/api/v1/classifieds-subcategories',
+    '/api/v1/brands',
+    '/api/v1/classifieds-categories'
     
 ];
 

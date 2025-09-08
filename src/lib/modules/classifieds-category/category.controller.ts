@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\classifieds-category\category.controller.ts
 
 import { NextRequest } from 'next/server';
@@ -72,9 +73,36 @@ const deleteCategory = async (req: NextRequest, { params }: { params: { id: stri
     });
 };
 
+
+// নতুন: ক্যাটাগরি এবং সাব-ক্যাটাগরি একসাথে পাঠানোর জন্য কন্ট্রোলার
+const getCategoriesWithSubcategories = async (_req: NextRequest) => {
+    await dbConnect();
+    const result = await ClassifiedCategoryServices.getCategoriesWithSubcategoriesFromDB();
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Categories with sub-categories retrieved successfully!',
+        data: result,
+    });
+};
+
+const getPublicCategories = async (_req: NextRequest) => {
+    await dbConnect();
+    const result = await ClassifiedCategoryServices.getPublicCategoriesFromDB();
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Public categories retrieved successfully!',
+        data: result,
+    });
+};
+
+
 export const ClassifiedCategoryController = {
     createCategory,
     getAllCategories,
     updateCategory,
     deleteCategory,
+    getCategoriesWithSubcategories,
+    getPublicCategories,
 };
