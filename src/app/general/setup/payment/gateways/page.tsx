@@ -1,8 +1,6 @@
 
 import PaymentCard from "./components/PaymentCard";
 
-// import sslcommerz from '../../../../../../public/img/sslcommerz.png'
-
 
 
 
