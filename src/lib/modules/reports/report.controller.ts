@@ -7,7 +7,6 @@ import { createReportValidationSchema, updateReportStatusValidationSchema } from
 import { ReportServices } from './report.service';
 import dbConnect from '@/lib/db';
 
-// নতুন রিপোর্ট তৈরি করার কন্ট্রোলার
 const createReport = async (req: NextRequest) => {
   await dbConnect();
   const reporterId = req.headers.get('x-user-id');
@@ -33,7 +32,6 @@ const createReport = async (req: NextRequest) => {
   });
 };
 
-// সকল রিপোর্ট দেখার কন্ট্রোলার (শুধুমাত্র অ্যাডমিন)
 const getAllReports = async (_req: NextRequest) => {
     await dbConnect();
     const result = await ReportServices.getAllReportsFromDB();
@@ -45,7 +43,6 @@ const getAllReports = async (_req: NextRequest) => {
     });
 };
 
-// রিপোর্টের স্ট্যাটাস আপডেট করার কন্ট্রোলার (শুধুমাত্র অ্যাডমিন)
 const updateReportStatus = async (req: NextRequest, { params }: { params: { id: string } }) => {
     await dbConnect();
     const { id } = params;

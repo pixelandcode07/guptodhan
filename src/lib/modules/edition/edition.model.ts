@@ -1,4 +1,3 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\edition\edition.model.ts
 import { Schema, model, models } from 'mongoose';
 import { IEdition } from './edition.interface';
 

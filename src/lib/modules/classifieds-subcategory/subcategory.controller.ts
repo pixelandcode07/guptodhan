@@ -1,4 +1,3 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\classifieds-subcategory\subcategory.controller.ts
 
 import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
@@ -12,7 +11,6 @@ import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 const createSubCategory = async (req: NextRequest) => {
     await dbConnect();
     
-    // সমাধান: req.json() এর পরিবর্তে req.formData() ব্যবহার করা হচ্ছে
     const formData = await req.formData();
     const name = formData.get('name') as string;
     const categoryId = formData.get('category') as string;
@@ -23,7 +21,6 @@ const createSubCategory = async (req: NextRequest) => {
         category: categoryId,
     };
 
-    // যদি আইকন ফাইল থাকে, তাহলে সেটিকে Cloudinary-তে আপলোড করা হচ্ছে
     if (iconFile) {
         const buffer = Buffer.from(await iconFile.arrayBuffer());
         const uploadResult = await uploadToCloudinary(buffer, 'subcategory-icons');
@@ -32,7 +29,6 @@ const createSubCategory = async (req: NextRequest) => {
     
     const validatedData = createSubCategoryValidationSchema.parse(payload);
     
-    // সার্ভিসকে কল করার জন্য চূড়ান্ত payload তৈরি করা হচ্ছে
     const payloadForService = {
         ...validatedData,
         category: new Types.ObjectId(validatedData.category),
@@ -48,7 +44,6 @@ const createSubCategory = async (req: NextRequest) => {
     });
 };
 
-// নতুন: সাব-ক্যাটাগরি আপডেট করার জন্য কন্ট্রোলার
 const updateSubCategory = async (req: NextRequest, { params }: { params: { id: string } }) => {
     await dbConnect();
     const { id } = params;
@@ -64,7 +59,6 @@ const updateSubCategory = async (req: NextRequest, { params }: { params: { id: s
     });
 };
 
-// সমাধান: params-এর টাইপ { categoryId: string } থেকে { id: string } করা হয়েছে
 const getSubCategoriesByParent = async (_req: NextRequest, { params }: { params: { id: string } }) => {
     await dbConnect();
     const { id } = params; // categoryId এর পরিবর্তে id ব্যবহার করা হচ্ছে
@@ -90,7 +84,6 @@ const getPublicSubCategoriesByParent = async (_req: NextRequest, { params }: { p
 };
 
 
-// নতুন: সাব-ক্যাটাগরি ডিলিট করার জন্য কন্ট্রোলার
 const deleteSubCategory = async (req: NextRequest, { params }: { params: { id: string } }) => {
     await dbConnect();
     const { id } = params;

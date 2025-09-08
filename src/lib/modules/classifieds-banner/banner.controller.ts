@@ -1,4 +1,3 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\classifieds-banner\banner.controller.ts
 
 import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
