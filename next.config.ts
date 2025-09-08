@@ -16,6 +16,12 @@ const nextConfig = {
                 port: '',
                 pathname: '/**',
             },
+            {
+                protocol: 'https',
+                hostname: 'app-area.guptodhan.com',
+                port: '',
+                pathname: '/**',
+            },
         ],
     },
 };

@@ -50,14 +50,14 @@ export default function PaymentCard({ gateway }: PaymentCardProps) {
                 </CardTitle>
                 <Switch />
             </CardHeader>
-            <div className='px-8 text-center'>
+            <div className='flex justify-center items-center min-h-30'>
                 <Image src={gateway.logo} alt={gateway.name} width={100} height={100} className="object-contain" />
             </div>
             <CardContent>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <PaymentForms gateway={gateway} register={register} control={control} setValue={setValue} />
 
-                    <Button type="submit" className="w-full">
+                    <Button type="submit" variant={'BlueBtn'} className="w-full">
                         Update Info
                     </Button>
                 </form>
