@@ -1,26 +1,25 @@
-import { Button } from '@/components/ui/button'
+import TableListToolbar from '@/components/TableHelper/TableListToolbar'
 
-export default function OrdersToolbar({ initialStatus }: { initialStatus?: string }) {
+export default function OrdersToolbar({ initialStatus, showBulkCourierEntry = false }: { initialStatus?: string, showBulkCourierEntry?: boolean }) {
+    const normalized = (initialStatus || '').toLowerCase().replace(/\s+/g, '-');
+    const statusOptions = ["Select Status", "Pending", "Approved", "Ready to Ship", "In Transit", "Delivered", "Cancelled"];
+    const labelFromSlug = (slug: string) => {
+        switch (slug) {
+            case 'ready-to-ship': return 'Ready to Ship';
+            case 'in-transit': return 'In Transit';
+            default: return slug ? slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Select Status';
+        }
+    }
+    const selectedLabel = normalized ? labelFromSlug(normalized) : 'Select Status';
+
     return (
-        <div className='flex flex-wrap items-center gap-2 justify-between border border-[#e4e7eb] rounded-xs p-3'>
-            <div className='flex items-center gap-2'>
-                <span className='text-sm'>All Orders{initialStatus ? ` • ${initialStatus}` : ''}</span>
-                <select className='h-9 border border-gray-300 rounded px-2 text-sm'>
-                    <option>Select Status</option>
-                </select>
-                <Button variant={'default'} className='h-9'>Change Selected Orders</Button>
-                <Button variant={'default'} className='h-9'>Print Selected Orders</Button>
-                <Button variant={'default'} className='h-9'>Courier Status</Button>
-            </div>
-            <div className='flex items-center gap-2'>
-                <span className='text-sm'>Show</span>
-                <select className='h-9 border border-gray-300 rounded px-2 text-sm'>
-                    <option>20</option>
-                </select>
-                <span className='text-sm'>entries</span>
-                <input className='h-9 border border-gray-300 rounded px-3 text-sm' placeholder='Search:' />
-            </div>
-        </div>
+        <TableListToolbar
+            title={`All Orders`}
+            statusOptions={statusOptions}
+            selectedStatus={selectedLabel}
+            pageSizeOptions={[20, 50, 100]}
+            onBulkCourierEntryClick={showBulkCourierEntry ? () => {} : undefined}
+        />
     )
 }
 
