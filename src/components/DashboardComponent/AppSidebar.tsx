@@ -11,9 +11,11 @@ import {
   SidebarMenuItem,
 } from '../ui/sidebar';
 import {
+  Box,
   Code,
   DollarSign,
   LayoutDashboard,
+  LogOut,
   MessageCircle,
   Palette,
   Search,
@@ -31,11 +33,12 @@ import Image from 'next/image';
 import WebsiteConfig from './MotherRoutes/WebsiteConfig';
 import { EcommerceModules } from './MotherRoutes/EcommerceModules';
 import { ContentManagement } from './MotherRoutes/ContentManagement';
-import { BuySell } from './MotherRoutes/BuySell'
-import { Donation } from './MotherRoutes/Donation'
 import UserRolePermition from './MotherRoutes/UserRolePermition';
-
-
+import { CRMModules } from './MotherRoutes/CRMModules';
+import { BuySell } from './MotherRoutes/BuySell';
+import { Donation } from './MotherRoutes/Donation';
+import { DemoProducts } from './MotherRoutes/DemoProducts';
+import Logout from './MotherRoutes/Logout';
 
 const data = {
   user: {
@@ -51,7 +54,7 @@ const data = {
     },
     {
       title: 'Footer Settings',
-      url: '/footer-settings',
+      url: '/general/view/footer/widget',
       icon: Settings,
     },
     {
@@ -71,71 +74,77 @@ const data = {
     },
     {
       title: 'Custom CSS & JS',
-      url: '/custom-css-js',
+      url: ' /general/custom/css/js',
       icon: Code,
     },
     {
       title: 'Social & Chat Scripts',
-      url: '/social-chat-scripts',
+      url: '/general/social/chat/script/page',
       icon: MessageCircle,
     },
   ],
   buysell: [
     {
-      title: "Buy Sell Config",
-      url: "/general/buy/sell/config",
+      title: 'Buy Sell Config',
+      url: '/general/buy/sell/config',
       icon: LayoutDashboard,
     },
     {
-      title: "Buy Sell Categories",
-      url: "*",
+      title: 'Buy Sell Categories',
+      url: '*',
       icon: LayoutDashboard,
     },
     {
-      title: "Buy Sell Listing",
-      url: "/general/buy/sell/listing",
+      title: 'Buy Sell Listing',
+      url: '/general/buy/sell/listing',
       icon: LayoutDashboard,
     },
   ],
   donations: [
     {
-      title: "Donation Config",
-      url: "/general/donation/config",
+      title: 'Donation Config',
+      url: '/general/donation/config',
       icon: LayoutDashboard,
     },
     {
-      title: "Donation Categories",
-      url: "*",
+      title: 'Donation Categories',
+      url: '*',
       icon: LayoutDashboard,
     },
     {
-      title: "Donation Listing",
-      url: "/general/donation/listing",
+      title: 'Donation Listing',
+      url: '/general/donation/listing',
       icon: LayoutDashboard,
     },
     {
-      title: "Donation Request",
-      url: "/general/donation/requests",
+      title: 'Donation Request',
+      url: '/general/donation/requests',
       icon: LayoutDashboard,
     },
   ],
 
-
   documents: [
     {
-      title: "Vendors",
-      url: "#",
+      title: 'Vendors',
+      url: '#',
       icon: UserCheck,
     },
     {
-      title: "Stores",
-      url: "#",
+      title: 'Stores',
+      url: '#',
       icon: Store,
     },
     {
-      title: "Withdrawal",
-      url: "#",
+      title: 'Withdrawal',
+      url: '#',
       icon: DollarSign,
+    },
+  ],
+  demoProducts: [
+    {
+      title: 'Demo Products',
+      url: '#',
+      icon: Box,
     },
   ],
   ecommerceModules: [
@@ -179,6 +188,19 @@ const data = {
       icon: UserCheck,
     },
   ],
+  crmModules: [
+    { title: 'Support Ticket' },
+    { title: 'Contact Request' },
+    { title: 'Subscribed Users' },
+    { title: 'Blog Comments' },
+  ],
+  logoutAction: [
+    {
+      title: 'Logout',
+      url: '/general/logout',
+      icon: LogOut,
+    },
+  ],
 };
 
 export default function AppSidebar() {
@@ -213,6 +235,9 @@ export default function AppSidebar() {
         <Donation items={data.donations} />
         <Multivendor items={data.documents} />
         <EcommerceModules items={data.ecommerceModules} />
+        <CRMModules items={data.crmModules} />
+        <DemoProducts items={data.demoProducts} />
+        <Logout items={data.logoutAction} />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
     </Sidebar>

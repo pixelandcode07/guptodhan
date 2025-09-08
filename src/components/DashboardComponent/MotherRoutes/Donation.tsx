@@ -51,7 +51,7 @@ export function Donation({ items }: { items: { title: string, url: string, icon:
                             {/* Child Items */}
                             <CollapsibleContent>
                                 <div className="pl-6">
-                                    {item.title === "Buy Sell Categories" &&
+                                    {item.title === "Donation Categories" &&
                                         category.map((sub) => (
                                             <SidebarMenuItem key={sub.url}>
                                                 <SidebarMenuButton asChild>
