@@ -12,14 +12,18 @@ import {
 import { ChevronDown, Key, LogOut, Send } from 'lucide-react';
 import { Button } from '../ui/button';
 import { SidebarTrigger } from '../ui/sidebar';
+import BreadcrumbNav from '../ReusableComponents/BreadcrumbNav';
 
 export default function DashNavbar() {
   return (
-    <nav className="flex justify-between p-4  border-[#e3e8f3] border-b-[1px]">
+    <nav className="flex justify-between p-4 items-center  border-[#e3e8f3] border-b-[1px]">
       {/* Left side */}
-      <SidebarTrigger />
+      <div className="flex justify-center items-center gap-2">
+        <SidebarTrigger />
+        <BreadcrumbNav />
+      </div>
       {/* Right side */}
-      <div className="flex gap-5">
+      <div className="flex items-center gap-5">
         <Button variant={'secondary'}>
           <Send />
           <Link href={'#'}>Visit Website</Link>
