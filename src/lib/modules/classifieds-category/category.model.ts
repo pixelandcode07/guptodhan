@@ -1,4 +1,3 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\classifieds\category.model.ts
 import { Schema, model, models } from 'mongoose';
 import { IClassifiedCategory } from './category.interface';
 

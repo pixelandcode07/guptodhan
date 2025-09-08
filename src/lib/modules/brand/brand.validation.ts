@@ -1,4 +1,3 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\brand\brand.validation.ts
 
 import { z } from 'zod';
 

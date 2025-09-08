@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// ফাইল পাথ: src/lib/modules/auth/auth.controller.ts
 
 import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
@@ -26,7 +25,6 @@ const loginUser = async (req: NextRequest) => {
   const validatedData = loginValidationSchema.parse(body);
   const result = await AuthServices.loginUser(validatedData);
 
-  // সমাধান: refreshToken-কে রেসপন্স বডি থেকে আলাদা করা হয়েছে
   const { refreshToken, ...dataForResponseBody } = result;
 
   const response = sendResponse({
@@ -36,7 +34,6 @@ const loginUser = async (req: NextRequest) => {
     data: dataForResponseBody, // এখন এখানে আর refreshToken নেই
   });
 
-  // refreshToken শুধুমাত্র httpOnly কুকিতে সেট করা হচ্ছে
   response.cookies.set('refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -47,7 +44,7 @@ const loginUser = async (req: NextRequest) => {
 };
 
 const refreshToken = async (req: NextRequest) => {
-  await dbConnect(); // সমাধান: dbConnect যোগ করা হয়েছে
+  await dbConnect(); 
   const token = req.cookies.get('refreshToken')?.value;
   const validatedData = refreshTokenValidationSchema.parse({ refreshToken: token });
   const result = await AuthServices.refreshToken(validatedData.refreshToken);
@@ -61,7 +58,7 @@ const refreshToken = async (req: NextRequest) => {
 };
 
 const changePassword = async (req: NextRequest) => {
-  await dbConnect(); // সমাধান: dbConnect যোগ করা হয়েছে
+  await dbConnect(); 
   const userId = req.headers.get('x-user-id');
   if (!userId) { throw new Error("Authentication failure: User ID not found in token"); }
   
@@ -78,7 +75,7 @@ const changePassword = async (req: NextRequest) => {
 };
 
 const setPassword = async (req: NextRequest) => {
-  await dbConnect(); // সমাধান: dbConnect যোগ করা হয়েছে
+  await dbConnect(); 
   const userId = req.headers.get('x-user-id');
   if (!userId) { throw new Error("Authentication failure: User ID not found in token"); }
   
@@ -128,7 +125,6 @@ const resetPasswordWithToken = async (req: NextRequest) => {
 };
 
 
-// --- ভেন্ডর এবং সার্ভিস প্রোভাইডার রেজিস্ট্রেশনের কন্ট্রোলার ---
 const registerVendor = async (req: NextRequest) => {
   await dbConnect();
   const formData = await req.formData();
@@ -143,7 +139,6 @@ const registerVendor = async (req: NextRequest) => {
     uploadToCloudinary(Buffer.from(await tradeLicenseFile.arrayBuffer()), 'vendor-documents')
   ]);
   
-  // formData থেকে বাকি ডেটাগুলো নিয়ে একটি অবজেক্ট তৈরি করা হচ্ছে
   const payload: Record<string, any> = {};
   for (const [key, value] of formData.entries()) {
     if (typeof value === 'string') {
@@ -166,7 +161,7 @@ const registerVendor = async (req: NextRequest) => {
 };
 
 const registerServiceProvider = async (req: NextRequest) => {
-  await dbConnect(); // সমাধান: dbConnect যোগ করা হয়েছে
+  await dbConnect(); 
   const body = await req.json();
   const validatedData = registerServiceProviderValidationSchema.parse(body);
   const result = await AuthServices.registerServiceProvider(validatedData);
