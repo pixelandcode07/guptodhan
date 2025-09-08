@@ -1,10 +1,10 @@
 import { Button } from '@/components/ui/button'
 
-export default function OrdersToolbar() {
+export default function OrdersToolbar({ initialStatus }: { initialStatus?: string }) {
     return (
         <div className='flex flex-wrap items-center gap-2 justify-between border border-[#e4e7eb] rounded-xs p-3'>
             <div className='flex items-center gap-2'>
-                <span className='text-sm'>All Orders</span>
+                <span className='text-sm'>All Orders{initialStatus ? ` • ${initialStatus}` : ''}</span>
                 <select className='h-9 border border-gray-300 rounded px-2 text-sm'>
                     <option>Select Status</option>
                 </select>
