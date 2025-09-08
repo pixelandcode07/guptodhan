@@ -29,7 +29,6 @@ export default function Logout({
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     ))}
-
                 </SidebarMenu>
             </SidebarGroupContent>
         </SidebarGroup >
