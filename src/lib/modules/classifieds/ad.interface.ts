@@ -1,5 +1,3 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\classifieds\ad.interface.ts
-
 import { Document, Types } from 'mongoose';
 
 export interface IClassifiedAd extends Document {
@@ -8,13 +6,13 @@ export interface IClassifiedAd extends Document {
   category: Types.ObjectId;
   subCategory?: Types.ObjectId;
   division: string;
-  district: string; // নতুন: জেলা যোগ করা হলো
-  upazila: string;  
+  district: string;
+  upazila: string;
   condition: 'new' | 'used';
   authenticity: string;
-  brand?: string;
-  productModel?: string;
-  edition?: string;
+  brand?: Types.ObjectId;
+  productModel?: Types.ObjectId;
+  edition?: Types.ObjectId;
   features?: string[];
   description: string;
   price: number;

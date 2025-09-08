@@ -15,12 +15,14 @@ export default function BreadcrumbNav() {
   return (
     <div className="flex items-center">
       <div className="header-breadcumb">
-        <h6 className="header-pretitle flex text-blue-100 justify-center items-center text-sm text-muted-foreground">
+        <h6 className="header-pretitle capitalize hidden md:flex text-blue-100 justify-strt items-center text-sm text-muted-foreground">
           Pages →
           <i className="dripicons-arrow-thin-right inline-block mx-1"></i>
           {breadcrumb}
         </h6>
-        <h2 className="header-title text-xl font-semibold">{title}</h2>
+        <h2 className="header-title text-md md:text-xl font-semibold">
+          {title}
+        </h2>
       </div>
     </div>
   );
