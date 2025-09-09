@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\brand\brand.controller.ts
 
 import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
