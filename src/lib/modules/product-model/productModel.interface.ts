@@ -3,6 +3,6 @@ import { Document, Types } from 'mongoose';
 
 export interface IProductModel extends Document {
   name: string;
-  brand: Types.ObjectId; // Parent Brand reference
+  brand: Types.ObjectId;
   status: 'active' | 'inactive';
 }
