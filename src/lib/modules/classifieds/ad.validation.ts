@@ -17,7 +17,7 @@ export const createAdValidationSchema = z.object({
   contactDetails: z.object({
     name: z.string(),
     phone: z.string(),
-    isPhoneHidden: z.boolean().default(false), // ✅ always boolean
+    isPhoneHidden: z.boolean().default(false),
     email: z.string().optional(),
   }),
   brand: z.string().optional(),

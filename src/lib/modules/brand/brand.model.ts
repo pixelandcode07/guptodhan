@@ -1,4 +1,3 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\brand\brand.model.ts
 
 import { Schema, model, models } from 'mongoose';
 import { IBrand } from './brand.interface';

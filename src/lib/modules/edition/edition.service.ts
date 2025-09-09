@@ -1,4 +1,3 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\edition\edition.service.ts
 import { IEdition } from './edition.interface';
 import { Edition } from './edition.model';
 import { Types } from 'mongoose';
@@ -16,7 +15,6 @@ const updateEditionInDB = async (id: string, payload: Partial<IEdition>) => {
 };
 
 const deleteEditionFromDB = async (id: string) => {
-  // Bonus check: Apni chaile ad model-e check kore dekhte paren ei edition use hocche kina
   return await Edition.findByIdAndDelete(id);
 };
 

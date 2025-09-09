@@ -51,19 +51,22 @@ const MENU_CONFIG: Record<
   string,
   { icon: ElementType; items: ChildItem[]; url?: string }
 > = {
-  items: [
-    { title: 'Product Sizes', url: '/general/view/all/sizes' },
-    { title: 'Storage', url: '/general/view/all/storages' },
-    { title: 'Sim Type', url: '/general/view/all/sims' },
-    { title: 'Device Condition', url: '/general/view/all/device/conditions' },
-    { title: 'Product Warranty', url: '/general/view/all/warrenties' },
-    { title: 'Product Colors', url: '/general/view/all/colors' },
-    { title: 'Measurement Units', url: '/general/view/all/units' },
-    { title: 'Product Brands', url: '/general/view/all/brands' },
-    { title: 'Models of Brand', url: '/general/view/all/models' },
-    { title: 'Product Flags', url: '/general/view/all/flags' },
-    { title: 'Contact Config', url: '/general/contact/config' },
-  ],
+  items: {
+    icon: Filter,
+    items: [
+      { title: 'Product Sizes', url: '/general/view/all/sizes' },
+      { title: 'Storage', url: '/general/view/all/storages' },
+      { title: 'Sim Type', url: '/general/view/all/sims' },
+      { title: 'Device Condition', url: '/general/view/all/device/conditions' },
+      { title: 'Product Warranty', url: '/general/view/all/warrenties' },
+      { title: 'Product Colors', url: '/general/view/all/colors' },
+      { title: 'Measurement Units', url: '/general/view/all/units' },
+      { title: 'Product Brands', url: '/general/view/all/brands' },
+      { title: 'Models of Brand', url: '/general/view/all/models' },
+      { title: 'Product Flags', url: '/general/view/all/flags' },
+      { title: 'Contact Config', url: '/general/contact/config' },
+    ],
+  },
   Category: {
     icon: Filter,
     items: [

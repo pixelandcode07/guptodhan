@@ -167,12 +167,10 @@ const resetPasswordWithToken = async (token: string, newPassword: string) => {
 };
 
 
-// নতুন: ভেন্ডর রেজিস্ট্রেশন সার্ভিস
 const registerVendor = async (payload: any) => {
   const { name, email, password, phoneNumber, address, ...vendorData } = payload;
   const userData = { name, email, password, phoneNumber, address, role: 'vendor' };
 
-  // Transaction ব্যবহার করে দুটি মডেলে একসাথে ডেটা সেভ করা হচ্ছে
   const session = await mongoose.startSession();
   try {
     session.startTransaction();

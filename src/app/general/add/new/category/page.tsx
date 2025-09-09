@@ -1,12 +1,10 @@
-import React from 'react';
-import BlogCategoryTable from './Components/BlogCategoryTable';
+import React from 'react'
+import CategoryForm from './Components/CategoryForm'
 
-const page = () => {
-  return (
-    <div>
-      <BlogCategoryTable />
-    </div>
-  );
-};
-
-export default page;
+export default function AddNewCategoryPage() {
+    return (
+        <div className='max-w-5xl mx-auto'>
+            <CategoryForm />
+        </div>
+    )
+}

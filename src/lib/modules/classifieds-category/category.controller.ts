@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\classifieds-category\category.controller.ts
 
 import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
@@ -74,7 +73,6 @@ const deleteCategory = async (req: NextRequest, { params }: { params: { id: stri
 };
 
 
-// নতুন: ক্যাটাগরি এবং সাব-ক্যাটাগরি একসাথে পাঠানোর জন্য কন্ট্রোলার
 const getCategoriesWithSubcategories = async (_req: NextRequest) => {
     await dbConnect();
     const result = await ClassifiedCategoryServices.getCategoriesWithSubcategoriesFromDB();
