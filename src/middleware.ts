@@ -16,7 +16,8 @@ const protectedRoutes = [
     '/api/v1/reports',
     '/api/v1/classifieds-subcategories',
     '/api/v1/brands',
-    '/api/v1/classifieds-categories'
+    '/api/v1/classifieds-categories',
+    '/api/v1/about'
     
 ];
 
