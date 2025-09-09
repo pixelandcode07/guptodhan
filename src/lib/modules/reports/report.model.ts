@@ -1,4 +1,3 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\reports\report.model.ts
 
 import { Schema, model, models } from 'mongoose';
 import { IReport } from './report.interface';

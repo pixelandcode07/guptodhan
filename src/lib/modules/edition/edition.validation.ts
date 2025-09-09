@@ -1,4 +1,3 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\edition\edition.validation.ts
 import { z } from 'zod';
 
 export const createEditionValidationSchema = z.object({
