@@ -42,7 +42,7 @@ export default function HomePage() {
     }
     fetchTeamMembers();
   }, []);
-  
+
   // ২. অ্যাডমিন লগইন করার ফাংশন
   const handleAdminLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -72,66 +72,66 @@ export default function HomePage() {
       setIsLoading(false);
     }
   };
-  
+
   // ৩. নতুন টিম মেম্বার তৈরি করার ফাংশন
   const handleCreateMember = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!accessToken) {
-        alert("Please log in as an admin first.");
-        return;
+      alert("Please log in as an admin first.");
+      return;
     }
     setIsLoading(true);
     const formData = new FormData(event.currentTarget);
 
     try {
-        const res = await fetch('http://localhost:3000/api/v1/about/team', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${accessToken}` },
-            body: formData,
-        });
-        const data = await res.json();
-        setApiResponse(data);
-        if(data.success) {
-            alert('Team member added successfully!');
-            fetchTeamMembers(); // তালিকাটি রিফ্রেশ করা হচ্ছে
-            (event.target as HTMLFormElement).reset();
-        } else {
-            alert(`Error: ${data.message}`);
-        }
+      const res = await fetch('http://localhost:3000/api/v1/about/team', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+        body: formData,
+      });
+      const data = await res.json();
+      setApiResponse(data);
+      if (data.success) {
+        alert('Team member added successfully!');
+        fetchTeamMembers(); // তালিকাটি রিফ্রেশ করা হচ্ছে
+        (event.target as HTMLFormElement).reset();
+      } else {
+        alert(`Error: ${data.message}`);
+      }
     } catch (error: any) {
-        setApiResponse({ success: false, message: error.message });
+      setApiResponse({ success: false, message: error.message });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
-  
+
   // ৪. টিম মেম্বার ডিলিট করার ফাংশন
   const handleDeleteMember = async (memberId: string) => {
     if (!accessToken) {
-        alert("Please log in as an admin first.");
-        return;
+      alert("Please log in as an admin first.");
+      return;
     }
     if (!window.confirm("Are you sure you want to delete this team member?")) {
-        return;
+      return;
     }
     setIsLoading(true);
     try {
-        const res = await fetch(`http://localhost:3000/api/v1/about/team/${memberId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${accessToken}` },
-        });
-        const data = await res.json();
-        setApiResponse(data);
-        if(data.success) {
-            alert('Team member deleted successfully!');
-            fetchTeamMembers(); // তালিকাটি রিফ্রেশ করা হচ্ছে
-        } else {
-            alert(`Error: ${data.message}`);
-        }
+      const res = await fetch(`http://localhost:3000/api/v1/about/team/${memberId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+      });
+      const data = await res.json();
+      setApiResponse(data);
+      if (data.success) {
+        alert('Team member deleted successfully!');
+        fetchTeamMembers(); // তালিকাটি রিফ্রেশ করা হচ্ছে
+      } else {
+        alert(`Error: ${data.message}`);
+      }
     } catch (error: any) {
-        setApiResponse({ success: false, message: error.message });
+      setApiResponse({ success: false, message: error.message });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -148,10 +148,10 @@ export default function HomePage() {
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-gray-700 mb-4">API Response</h2>
           <pre className="bg-gray-800 text-white p-4 rounded-lg shadow-inner text-sm overflow-x-auto min-h-[100px]">
-             {JSON.stringify(apiResponse, null, 2)}
+            {JSON.stringify(apiResponse, null, 2)}
           </pre>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Section for Admin Panel */}
           <div className="space-y-8">
@@ -166,7 +166,7 @@ export default function HomePage() {
                 {accessToken && <p className="text-green-600 font-semibold mt-2">✅ Access Token Acquired!</p>}
               </form>
             </div>
-            
+
             <div className="bg-white p-6 rounded-lg shadow-lg">
               <h3 className="text-xl font-bold mb-4 text-gray-800 border-b pb-2">2. Add New Team Member</h3>
               <form onSubmit={handleCreateMember} className="space-y-4">
@@ -174,10 +174,10 @@ export default function HomePage() {
                 <input name="designation" placeholder="Designation (e.g., Lead Developer)" className="w-full p-3 border rounded-md" required />
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Member Image (Required):</label>
-                  <input name="image" type="file" required accept="image/*" className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0"/>
+                  <input name="image" type="file" required accept="image/*" className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0" />
                 </div>
-                 <input name="socialLinks.linkedin" placeholder="LinkedIn URL (Optional)" className="w-full p-3 border rounded-md" />
-                 <input name="socialLinks.github" placeholder="GitHub URL (Optional)" className="w-full p-3 border rounded-md" />
+                <input name="socialLinks.linkedin" placeholder="LinkedIn URL (Optional)" className="w-full p-3 border rounded-md" />
+                <input name="socialLinks.github" placeholder="GitHub URL (Optional)" className="w-full p-3 border rounded-md" />
                 <button type="submit" disabled={isLoading || !accessToken} className="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 transition disabled:bg-gray-400">
                   {isLoading ? 'Adding...' : 'Add Member'}
                 </button>
@@ -193,23 +193,23 @@ export default function HomePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-96 overflow-y-auto pr-2">
                 {teamMembers.length > 0 ? teamMembers.map(member => (
                   <div key={member._id} className="relative group p-3 border rounded-md shadow-sm bg-gray-50 text-center">
-                      <Image
-                        src={member.image}
-                        alt={member.name}
-                        width={80}
-                        height={80}
-                        className="rounded-full object-cover mx-auto mb-2 border-2 border-gray-200"
-                      />
-                      <h4 className="font-bold text-gray-800">{member.name}</h4>
-                      <p className="text-sm text-purple-600">{member.designation}</p>
-                      <button 
-                        onClick={() => handleDeleteMember(member._id)}
-                        disabled={isLoading || !accessToken}
-                        className="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full text-xs opacity-0 group-hover:opacity-100 transition disabled:hidden"
-                        title="Delete Member"
-                      >
-                        X
-                      </button>
+                    <Image
+                      src={member.image}
+                      alt={member.name}
+                      width={80}
+                      height={80}
+                      className="rounded-full object-cover mx-auto mb-2 border-2 border-gray-200"
+                    />
+                    <h4 className="font-bold text-gray-800">{member.name}</h4>
+                    <p className="text-sm text-purple-600">{member.designation}</p>
+                    <button
+                      onClick={() => handleDeleteMember(member._id)}
+                      disabled={isLoading || !accessToken}
+                      className="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full text-xs opacity-0 group-hover:opacity-100 transition disabled:hidden"
+                      title="Delete Member"
+                    >
+                      X
+                    </button>
                   </div>
                 )) : <p className="text-gray-500 col-span-2 text-center py-10">No team members found.</p>}
               </div>
