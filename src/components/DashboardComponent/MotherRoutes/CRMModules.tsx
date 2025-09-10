@@ -34,7 +34,7 @@ const CRM_MENU_CONFIG: Record<string, { icon: ElementType; items: ChildItem[]; u
   "Blog Comments": {
     icon: MessageCircle,
     items: [],
-    url: "/general/view/all/blog/comments",
+    url: "/general//blog/comments",
   },
 }
 
