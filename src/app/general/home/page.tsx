@@ -6,5 +6,4 @@ export default function DashboardHomePage() {
       This is Dashboard Main Home Page
     </div>
   )
-
 }
