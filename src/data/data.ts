@@ -137,6 +137,13 @@ export interface paymentOptions {
   readonly isDisabled?: boolean;
 }
 
+export const demoProductOpt = [
+  { value: 'Demo 1', label: 'Demo Product 1' },
+  { value: 'Demo 2', label: 'Demo Product 2' },
+  { value: 'Demo 3', label: 'Demo Product 3' },
+];
+
+
 export const paymentOptions: readonly VendorOption[] = [
   { value: 'Bank Transfer', label: 'Bank Transfer', color: '#00B8D9' },
   { value: 'bkash', label: 'bkash', color: '#00B8D9' },
