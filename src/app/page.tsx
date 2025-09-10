@@ -1,6 +1,10 @@
-// app/page.tsx
-import { redirect } from "next/navigation";
 
-export default function HomePageRedirect() {
-  redirect("/general/");
+
+export default function MainHomePage() {
+  return (
+    <div>
+      This is Home page
+    </div>
+  )
 }
+

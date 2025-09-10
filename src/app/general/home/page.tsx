@@ -1,9 +1,10 @@
 import React from 'react'
 
-export default function HomePage() {
-    return (
-        <div>
-            This is Main Home Page
-        </div>
-    )
+export default function DashboardHomePage() {
+  return (
+    <div>
+      This is Dashboard Main Home Page
+    </div>
+  )
+
 }
