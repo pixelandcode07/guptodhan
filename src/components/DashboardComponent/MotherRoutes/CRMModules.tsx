@@ -24,17 +24,17 @@ const CRM_MENU_CONFIG: Record<string, { icon: ElementType; items: ChildItem[]; u
   "Contact Request": {
     icon: Phone,
     items: [],
-    url: "/general/crm/contact/requests",
+    url: "/general/view/all/contact/requests",
   },
   "Subscribed Users": {
     icon: Users,
     items: [],
-    url: "/general/crm/subscribed/users",
+    url: "/general/view/all/subscribed/users",
   },
   "Blog Comments": {
     icon: MessageCircle,
     items: [],
-    url: "/general/crm/blog/comments",
+    url: "/general/view/all/blog/comments",
   },
 }
 
