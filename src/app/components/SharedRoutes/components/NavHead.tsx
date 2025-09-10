@@ -1,4 +1,5 @@
 import { Phone } from 'lucide-react'
+import Link from 'next/link'
 import React from 'react'
 
 export default function NavHead() {
@@ -16,6 +17,10 @@ export default function NavHead() {
                     <li>Track Order</li>
                     <li>|</li>
                     <li>Contact Us</li>
+                    <li>|</li>
+                    <li>
+                        <Link href={'/general/home'}>Dashboard</Link>
+                    </li>
                 </ul>
             </div>
         </div>
