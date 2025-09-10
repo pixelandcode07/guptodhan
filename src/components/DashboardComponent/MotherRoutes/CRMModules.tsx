@@ -15,10 +15,10 @@ const CRM_MENU_CONFIG: Record<string, { icon: ElementType; items: ChildItem[]; u
     icon: Headphones,
     badge: "0",
     items: [
-      { title: "Pending Supports", url: "/general/crm/support/pending", count: "0", color: "text-blue-500" },
-      { title: "Solved Supports", url: "/general/crm/support/solved", count: "1", color: "text-green-500" },
-      { title: "On Hold Supports", url: "/general/crm/support/on-hold", count: "0", color: "text-yellow-500" },
-      { title: "Rejected Supports", url: "/general/crm/support/rejected", count: "1", color: "text-red-500" },
+      { title: "Pending Supports", url: "/general/pending/support/tickets", count: "0", color: "text-blue-500" },
+      { title: "Solved Supports", url: "/general/solved/support/tickets", count: "1", color: "text-green-500" },
+      { title: "On Hold Supports", url: "/general/on/hold/support/tickets", count: "0", color: "text-yellow-500" },
+      { title: "Rejected Supports", url: "/general/rejected/support/tickets", count: "1", color: "text-red-500" },
     ],
   },
   "Contact Request": {
