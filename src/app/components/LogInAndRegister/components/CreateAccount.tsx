@@ -6,12 +6,13 @@ import { FieldErrors, SubmitHandler, UseFormHandleSubmit, UseFormRegister } from
 import { CreateAccountFormData } from '../LogIn_Register';
 
 export default function CreateAccount({ step, handleSubmitCreate, onSubmitCreate,
-    registerCreate, createErrors }: {
+    registerCreate, createErrors, loading }: {
         step: string;
         handleSubmitCreate: UseFormHandleSubmit<CreateAccountFormData>;
         onSubmitCreate: SubmitHandler<CreateAccountFormData>;
         registerCreate: UseFormRegister<CreateAccountFormData>;
         createErrors: FieldErrors<CreateAccountFormData>;
+        loading: boolean;
     }) {
     return (
         <div>
@@ -39,7 +40,8 @@ export default function CreateAccount({ step, handleSubmitCreate, onSubmitCreate
                         )}
                     </div>
                     <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700">
-                        Create Account
+                        {/* Create Account */}
+                        {loading ? 'Loading...' : 'Create Account'}
                     </Button>
                 </form>
             )}

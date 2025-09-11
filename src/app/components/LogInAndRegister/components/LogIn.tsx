@@ -17,6 +17,7 @@ export default function LogIn({ step, setStep, registerLogin,
         onSubmitLogin: SubmitHandler<LoginFormData>;
         showPin: boolean;
         setShowPin: Dispatch<SetStateAction<boolean>>;
+        
     }) {
     return (
         <div>

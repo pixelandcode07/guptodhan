@@ -6,13 +6,14 @@ import { FieldErrors, SubmitHandler, UseFormHandleSubmit, UseFormRegister } from
 import { VerifyOtpFormData } from '../LogIn_Register';
 
 export default function VerifyOTP({ step, handleSubmitOtp, onSubmitOtp,
-    registerOtp, otpErrors
+    registerOtp, otpErrors, loading
 }: {
     step: string;
     handleSubmitOtp: UseFormHandleSubmit<VerifyOtpFormData>;
     onSubmitOtp: SubmitHandler<VerifyOtpFormData>;
     registerOtp: UseFormRegister<VerifyOtpFormData>;
     otpErrors: FieldErrors<VerifyOtpFormData>;
+    loading: boolean;
 }) {
     return (
         <div>

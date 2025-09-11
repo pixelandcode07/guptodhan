@@ -6,13 +6,14 @@ import { FormStep, SetPinFormData } from '../LogIn_Register';
 import { FieldErrors, SubmitHandler, UseFormHandleSubmit, UseFormRegister } from 'react-hook-form';
 
 export default function SetPin({ step, setStep, handleSubmitPin, onSubmitPin,
-    registerPin, pinErrors }: {
+    registerPin, pinErrors,loading }: {
         step: string;
         setStep: Dispatch<SetStateAction<FormStep>>;
         handleSubmitPin: UseFormHandleSubmit<SetPinFormData>;
         onSubmitPin: SubmitHandler<SetPinFormData>;
         registerPin: UseFormRegister<SetPinFormData>;
         pinErrors: FieldErrors<SetPinFormData>;
+        loading: boolean;
     }) {
     return (
         <div>
