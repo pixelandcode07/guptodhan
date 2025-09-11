@@ -1,39 +1,21 @@
-'use client'
 
-import { Input } from '@/components/ui/input'
-import { Handbag, Heart, Search, User } from 'lucide-react'
+import { Handbag, Heart, User } from 'lucide-react'
 import Image from 'next/image'
-import React, { useState } from 'react'
-import Login from '../../LogInAndRegister/Login'
 import { Dialog, DialogTrigger } from '@/components/ui/dialog'
+import LogInRegister from '../../LogInAndRegister/LogIn_Register'
+import SearchBar from './SearchBar'
 
 export default function NavMain() {
 
-    const [searchQuery, setSearchQuery] = useState('')
 
-    const handleSearch = () => {
-        if (searchQuery.trim()) {
-            console.log('Searching for:', searchQuery)
-            // TODO: Add your search logic here 
-        }
-    }
     return (
         <div className='bg-[#FFFFFF] text-black  flex justify-between items-center py-5 px-15 border-2'>
             <div className="logo">
                 <Image src="/logo.png" width={130} height={44} alt="logo" />
             </div>
             <div className="search flex items-center justify-center w-full max-w-md mx-auto relative">
-                <Input
-                    placeholder='Search...'
-                    className='w-full pr-10'
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                />
-                <Search
-                    className='absolute right-2 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#00005E] cursor-pointer'
-                    onClick={handleSearch}
-                />
+                {/* Search functionality */}
+                <SearchBar />
             </div>
             <div>
                 <Dialog>
@@ -47,7 +29,7 @@ export default function NavMain() {
                         </DialogTrigger>
                     </ul>
                     {/* Login page */}
-                    <Login />
+                    <LogInRegister />
                 </Dialog>
             </div>
         </div>
