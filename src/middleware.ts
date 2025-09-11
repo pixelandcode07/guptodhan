@@ -18,7 +18,16 @@ const protectedRoutes = [
     '/api/v1/brands',
     '/api/v1/classifieds-categories',
     '/api/v1/about',
-    '/api/v1/conversations'
+    '/api/v1/conversations',
+    '/api/v1/service-categories',
+    '/api/v1/service-subcategories',
+    '/api/v1/settings',
+    '/api/v1/footer-widgets',
+    '/api/v1/social-links',
+    '/api/v1/theme-settings',
+    '/api/v1/seo-settings',
+    '/api/v1/custom-code',
+    '/api/v1/integrations'
     
 ];
 
