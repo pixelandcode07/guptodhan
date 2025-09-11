@@ -1,30 +1,3 @@
-// import { AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-// import { Card, CardHeader, CardTitle } from '@/components/ui/card'
-// import React from 'react'
-
-// export default function Login() {
-//     return (
-//         <AlertDialogContent>
-//             <Card className="">
-//                 {/* w-full max-w-sm */}
-//                 <CardHeader>
-//                     <CardTitle className='text-center'>User Login</CardTitle>
-//                     {/* <AlertDialogTitle className='text-center'>User Login</AlertDialogTitle> */}
-//                     {/* <AlertDialogDescription>
-//                         This action cannot be undone. This will permanently delete your account
-//                         and remove your data from our servers.
-//                     </AlertDialogDescription> */}
-//                 </CardHeader>
-//                 <AlertDialogFooter>
-//                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-//                     <AlertDialogAction>Continue</AlertDialogAction>
-//                 </AlertDialogFooter>
-//             </Card>
-//         </AlertDialogContent>
-//     )
-// }
-
-import { AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -33,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import React, { useState } from 'react'
 import { DialogClose, DialogContent, DialogFooter, DialogTitle } from '@/components/ui/dialog'
 
-// Define TypeScript interface for form data
+
 interface FormData {
     phone: string
     pin: string

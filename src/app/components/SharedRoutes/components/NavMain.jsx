@@ -1,6 +1,5 @@
 'use client'
 
-import { AlertDialog, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Handbag, Heart, Search, User } from 'lucide-react'
 import Image from 'next/image'
@@ -15,7 +14,7 @@ export default function NavMain() {
     const handleSearch = () => {
         if (searchQuery.trim()) {
             console.log('Searching for:', searchQuery)
-            // Add your search logic here (e.g., API call, router push, etc.)
+            // TODO: Add your search logic here 
         }
     }
     return (
