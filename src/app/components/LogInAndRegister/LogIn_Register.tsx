@@ -1,12 +1,21 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { useForm } from 'react-hook-form'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { DialogClose, DialogContent, DialogFooter, DialogTitle } from '@/components/ui/dialog'
 import LogIn from './components/LogIn'
 import CreateAccount from './components/CreateAccount'
 import VerifyOTP from './components/VerifyOTP'
 import SetPin from './components/SetPin'
+import axios from 'axios'
+import { auth, setupRecaptcha, signInWithPhoneNumber } from '@/lib/firebase'
+// import { signInWithPhoneNumber } from "firebase/auth";
+
+// Extend the Window interface to include confirmationResult
+declare global {
+    interface Window {
+        confirmationResult?: any;
+    }
+}
 
 // TypeScript interfaces for form data
 export interface LoginFormData {
@@ -32,6 +41,19 @@ export type FormStep = 'login' | 'createAccount' | 'verifyOtp' | 'setPin'
 export default function LogInRegister() {
     const [step, setStep] = useState<FormStep>('login')
     const [submittedPhone, setSubmittedPhone] = useState<string>('')
+    const [userId, setUserId] = useState<string | null>(null)
+    const [loading, setLoading] = useState<boolean>(false)
+    const [error, setError] = useState<string | null>(null)
+
+    // Recaptcha container added to body
+    useEffect(() => {
+        const container = document.createElement('div')
+        container.id = 'recaptcha-container'
+        document.body.appendChild(container)
+        return () => {
+            document.body.removeChild(container)
+        }
+    }, [])
 
     // Login Form
     const {
@@ -65,9 +87,32 @@ export default function LogInRegister() {
         },
     })
 
-    const onSubmitCreate = (data: CreateAccountFormData) => {
-        setSubmittedPhone(data.phone)
-        setStep('verifyOtp')
+    const onSubmitCreate = async (data: CreateAccountFormData) => {
+        setLoading(true)
+        setError(null)
+
+        try {
+            const phoneNumber = data.phone.replace(/\s/g, ''); // ফোন নম্বর ফরম্যাট করা
+            // const res = await axios.post('/api/v1/user/register', { body: data })
+            const res = await axios.post('/api/v1/user/register', { phone: phoneNumber }) // API পাথ এবং ডেটা আপডেট
+            if (res.data.success) {
+                setSubmittedPhone(phoneNumber)
+                const recaptchaVerifier = setupRecaptcha('recaptcha-container')
+                const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier)
+                window.confirmationResult = confirmationResult
+                setStep('verifyOtp')
+            }
+        } catch (error: any) {
+            setError(error.response?.data?.message || 'Registration failed')
+            console.error('Registration error:', error)
+        } finally {
+            setLoading(false)
+        }
+
+
+
+
+        // setStep('verifyOtp')
     }
 
     // Verify OTP Form
@@ -82,10 +127,24 @@ export default function LogInRegister() {
         },
     })
 
-    const onSubmitOtp = (data: VerifyOtpFormData) => {
-        // Simulate OTP verification (replace with API call)
-        console.log('OTP Data:', data)
-        setStep('setPin')
+    const onSubmitOtp = async (data: VerifyOtpFormData) => {
+        setLoading(true)
+        setError(null)
+        try {
+            const result = await window.confirmationResult.confirm(data.otp)
+            const idToken = await result.user.getIdToken()
+            const decodedToken = JSON.parse(atob(idToken.split('.')[1]));
+            setUserId(decodedToken.uid);
+            const response = await axios.post('/api/otp/verify-phone', { idToken })
+            if (response.data.success) {
+                setStep('setPin')
+            }
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'OTP verification failed')
+            console.error('OTP error:', err)
+        } finally {
+            setLoading(false)
+        }
     }
 
     // Set PIN Form
@@ -100,10 +159,34 @@ export default function LogInRegister() {
         },
     })
 
-    const onSubmitPin = (data: SetPinFormData) => {
-        console.log('Set PIN Data:', { phone: submittedPhone, pin: data.pin })
-        alert(`Account created with phone: ${submittedPhone}, PIN: ${data.pin}`)
-        setStep('login') // Return to login after success
+    const onSubmitPin = async (data: SetPinFormData) => {
+        // console.log('Set PIN Data:', { phone: submittedPhone, pin: data.pin })
+        // alert(`Account created with phone: ${submittedPhone}, PIN: ${data.pin}`)
+        // setStep('login') 
+        setLoading(true)
+        setError(null)
+        try {
+            // if (!userId) throw new Error('User ID not found');
+            const response = await axios.post('/app/api/auth/set-password', {
+                // phone: submittedPhone,
+                // pin: data.pin
+                newPassword: data.pin
+            }, {
+                headers: {
+                    'x-user-id': userId,
+                }
+            })
+            if (response.data.success) {
+                alert(`Account created successfully with phone: ${submittedPhone}`)
+                setStep('login')
+                // ডায়ালগ ক্লোজ এবং ড্যাশবোর্ডে রিডিরেক্ট (যেমন: window.location.href = '/dashboard')
+            }
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'PIN setting failed')
+            console.error('Set PIN error:', err)
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -142,7 +225,9 @@ export default function LogInRegister() {
                         handleSubmitCreate={handleSubmitCreate}
                         onSubmitCreate={onSubmitCreate}
                         registerCreate={registerCreate}
-                        createErrors={createErrors} />
+                        createErrors={createErrors}
+                        loading={loading}
+                    />
 
                     {/* Verify OTP */}
                     <VerifyOTP
@@ -151,6 +236,7 @@ export default function LogInRegister() {
                         onSubmitOtp={onSubmitOtp}
                         registerOtp={registerOtp}
                         otpErrors={otpErrors}
+                        loading={loading}
                     />
                     {/* Set pin */}
                     <SetPin
@@ -160,6 +246,7 @@ export default function LogInRegister() {
                         onSubmitPin={onSubmitPin}
                         registerPin={registerPin}
                         pinErrors={pinErrors}
+                        loading={loading}
                     />
                 </CardContent>
                 <DialogFooter>
