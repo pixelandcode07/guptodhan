@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/TableHelper/data-table';
 import { fact_columns } from '@/components/TableHelper/fact_columns';
-import { ArrowUpDown, Edit, Trash2 } from 'lucide-react';
+import { ArrowUpDown, Edit, Trash2, Download } from 'lucide-react';
 
 type Fact = {
   id: number;
@@ -122,6 +122,9 @@ export default function FactsTable({ data }: Props) {
             </SelectContent>
           </Select>
           <span>entries</span>
+          <Button variant="ghost" size="sm" title="Download">
+            <Download className="w-4 h-4" />
+          </Button>
         </div>
 
         <div className="flex items-center gap-2">

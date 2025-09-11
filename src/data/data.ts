@@ -1,10 +1,4 @@
 
-
-
-
-
-
-
 export interface ColourOption {
   readonly value: string;
   readonly label: string;
@@ -137,11 +131,7 @@ export interface paymentOptions {
   readonly isDisabled?: boolean;
 }
 
-export const demoProductOpt = [
-  { value: 'Demo 1', label: 'Demo Product 1' },
-  { value: 'Demo 2', label: 'Demo Product 2' },
-  { value: 'Demo 3', label: 'Demo Product 3' },
-];
+
 
 
 export const paymentOptions: readonly VendorOption[] = [
@@ -165,6 +155,19 @@ export const flavourOptions: readonly FlavourOption[] = [
   { value: 'chocolate', label: 'Chocolate', rating: 'good' },
   { value: 'strawberry', label: 'Strawberry', rating: 'wild' },
   { value: 'salted-caramel', label: 'Salted Caramel', rating: 'crazy' },
+];
+
+
+export interface DemoProductOpt {
+  readonly value: string;
+  readonly label: string;
+  readonly color: string;
+}
+
+export const demoProductOpt: readonly DemoProductOpt[] = [
+  { value: 'Fashion', label: 'Fashion', color: '#00B8D9' },
+  { value: 'Tech', label: 'Tech', color: '#00B8D9' },
+  { value: 'Grocery', label: 'Grocery', color: '#00B8D9' }
 ];
 
 

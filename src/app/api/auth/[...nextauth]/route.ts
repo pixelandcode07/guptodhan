@@ -18,7 +18,7 @@ export const authOptions = {
       if (account.provider === 'google') {
         try {
           await dbConnect();
-          
+
           const existingUser = await User.findOne({ email: user.email });
 
           if (!existingUser) {
@@ -27,7 +27,7 @@ export const authOptions = {
               email: user.email,
               profilePicture: user.image,
               role: 'user',
-              isVerified: true, 
+              isVerified: true,
             });
           }
           return true;
@@ -57,8 +57,8 @@ export const authOptions = {
     },
   },
   pages: {
-    signIn: '/login', 
-    error: '/api/auth/error', 
+    signIn: '/login',
+    error: '/api/auth/error',
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

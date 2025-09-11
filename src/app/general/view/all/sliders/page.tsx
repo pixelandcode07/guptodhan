@@ -3,6 +3,7 @@ import { Slider, slider_columns } from "@/components/TableHelper/slider_columns"
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, ArrowUpDown } from "lucide-react";
+import Link from "next/link";
 
 function getData(): Slider[] {
   return [
@@ -140,10 +141,12 @@ export default function ViewAllSlidersPage() {
             <span>Search:</span>
             <Input type="text" className="border border-gray-500 w-64" />
           </div>
-            <Button className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Add New Slider
-            </Button>
+            <Link href="/general/add/new/slider">
+              <Button className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2">
+                <Plus className="w-4 h-4" />
+                Add New Slider
+              </Button>
+            </Link>
             <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
               <ArrowUpDown className="w-4 h-4" />
               Rearrange Slider
