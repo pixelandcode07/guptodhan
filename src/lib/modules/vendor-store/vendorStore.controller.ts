@@ -79,7 +79,7 @@ const deleteStore = async (_req: NextRequest, { params }: { params: { id: string
   });
 };
 
-export const StoreController = {
+export const VendorStoreController = {
   createStore,
   getAllStores,
   getStoreById,
