@@ -3,19 +3,19 @@ import { IStore } from './vendorStore.interface';
 
 const storeSchema = new Schema<IStore>(
   {
-    storeId: { type: String, required: true, unique: true },  // PK storeID
-    storeLogo: { type: String, required: true },              // Store Logo
-    storeBanner: { type: String, required: true },            // Store Banner
-    storeName: { type: String, required: true, trim: true },  // Store Name
-    storeAddress: { type: String, required: true },           // Store Address
-    storePhone: { type: String, required: true },             // Store Phone
-    storeEmail: { type: String, required: true, unique: true }, // Store Email
-    vendorShortDescription: { type: String, required: true }, // Vendor Short Description
-    fullDescription: { type: String, required: true },        // Full Description
-    storeSocialLink: { type: String },                        // Store Social Link
-    storeMetaTitle: { type: String },                         // Store Meta Title
-    storeMetaKeywords: [{ type: String }],                    // Store Meta Keywords
-    status: { type: String, enum: ['active', 'inactive'], default: 'active' }, // Store status
+    storeId: { type: String, required: true, unique: true },  
+    storeLogo: { type: String, required: true },              
+    storeBanner: { type: String, required: true },           
+    storeName: { type: String, required: true, trim: true },  
+    storeAddress: { type: String, required: true },          
+    storePhone: { type: String, required: true },            
+    storeEmail: { type: String, required: true, unique: true }, 
+    vendorShortDescription: { type: String, required: true }, 
+    fullDescription: { type: String, required: true },        
+    storeSocialLink: { type: String },                        
+    storeMetaTitle: { type: String },                        
+    storeMetaKeywords: [{ type: String }],                   
+    status: { type: String, enum: ['active', 'inactive'], default: 'active' },
   },
   { timestamps: true }
 );
