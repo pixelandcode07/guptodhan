@@ -1,10 +1,4 @@
 
-
-
-
-
-
-
 export interface ColourOption {
   readonly value: string;
   readonly label: string;
@@ -137,6 +131,9 @@ export interface paymentOptions {
   readonly isDisabled?: boolean;
 }
 
+
+
+
 export const paymentOptions: readonly VendorOption[] = [
   { value: 'Bank Transfer', label: 'Bank Transfer', color: '#00B8D9' },
   { value: 'bkash', label: 'bkash', color: '#00B8D9' },
@@ -158,6 +155,19 @@ export const flavourOptions: readonly FlavourOption[] = [
   { value: 'chocolate', label: 'Chocolate', rating: 'good' },
   { value: 'strawberry', label: 'Strawberry', rating: 'wild' },
   { value: 'salted-caramel', label: 'Salted Caramel', rating: 'crazy' },
+];
+
+
+export interface DemoProductOpt {
+  readonly value: string;
+  readonly label: string;
+  readonly color: string;
+}
+
+export const demoProductOpt: readonly DemoProductOpt[] = [
+  { value: 'Fashion', label: 'Fashion', color: '#00B8D9' },
+  { value: 'Tech', label: 'Tech', color: '#00B8D9' },
+  { value: 'Grocery', label: 'Grocery', color: '#00B8D9' }
 ];
 
 

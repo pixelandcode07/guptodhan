@@ -11,9 +11,13 @@ import dbConnect from '@/lib/db';
 
 
 const createUser = async (userData: TUserInput) => {
-  const user = await UserServices.createUserIntoDB(userData);
-  return user;
+  // সার্ভিসকে কল করে মূল কাজটি করা হচ্ছে
+  const result = await UserServices.createUserIntoDB(userData);
+  
+  // sendResponse এখন আর এখানে কল হবে না, এটি route.ts-এ হবে
+  return result;
 };
+
 
 const getMyProfile = async (req: NextRequest) => {
   await dbConnect();

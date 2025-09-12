@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { Download } from "lucide-react"
 
 type TableListToolbarProps = {
   title: string
@@ -16,6 +17,7 @@ type TableListToolbarProps = {
   onPageSizeChange?: (n: number) => void
   search?: string
   onSearchChange?: (s: string) => void
+  onDownloadClick?: () => void
 }
 
 export default function TableListToolbar({
@@ -32,6 +34,7 @@ export default function TableListToolbar({
   onPageSizeChange,
   search = "",
   onSearchChange,
+  onDownloadClick,
 }: TableListToolbarProps) {
   return (
     <div className='flex flex-wrap items-center gap-2 justify-between border border-[#e4e7eb] rounded-xs p-3'>
@@ -65,6 +68,9 @@ export default function TableListToolbar({
           ))}
         </select>
         <span className='text-sm'>entries</span>
+        <Button variant={'ghost'} className='h-9' onClick={onDownloadClick} title='Download'>
+          <Download className='w-4 h-4' />
+        </Button>
         <input
           className='h-9 border border-gray-300 rounded px-3 text-sm'
           placeholder='Search:'

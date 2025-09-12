@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: false, // 👈 এটাই যোগ করো
+
   images: {
     remotePatterns: [
       {
@@ -17,6 +19,12 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'i.ibb.co.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'github.com',
         port: '',
         pathname: '/**',
       },

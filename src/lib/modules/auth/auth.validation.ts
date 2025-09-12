@@ -2,7 +2,7 @@
 import { z } from 'zod';
 
 export const loginValidationSchema = z.object({
-  email: z.email({ message: 'Please provide a valid email address.' }),
+  identifier: z.string().min(1, { message: 'Email or Phone Number is required.' }),
   password: z.string().min(1, { message: 'Password cannot be empty.' }),
 });
 

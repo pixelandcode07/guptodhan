@@ -1,22 +1,40 @@
-// ফাইল পাথ: src/lib/modules/user/user.service.ts
+// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\user\user.service.ts
 
-import { deleteFromCloudinary } from '@/lib/utils/cloudinary';
 import { TUser, TUserInput } from './user.interface';
 import { User } from './user.model';
+import { deleteFromCloudinary } from '@/lib/utils/cloudinary';
+import bcrypt from 'bcrypt'; // <-- bcrypt ইম্পোর্ট করুন
 
 const createUserIntoDB = async (payload: TUserInput): Promise<Partial<TUser> | null> => {
-  const isUserExist = await User.findOne({ email: payload.email });
+    // ইমেইল বা ফোন নম্বর আগে থেকেই আছে কিনা তা চেক করা হচ্ছে
+    const query = [];
+    if (payload.email) query.push({ email: payload.email });
+    if (payload.phoneNumber) query.push({ phoneNumber: payload.phoneNumber });
 
-  if (isUserExist) {
-    throw new Error('User with this email already exists!');
-  }
-
-  const newUser = await User.create(payload);
-
-  const result = await User.findById(newUser._id).select('-password');
-
-  return result;
+    if (query.length > 0) {
+        const isUserExist = await User.findOne({ $or: query });
+        if (isUserExist) {
+            throw new Error('A user with this email or phone number already exists!');
+        }
+    }
+    
+    // সমাধান: পাসওয়ার্ডটি সার্ভিস লেয়ারেই হ্যাশ করা হচ্ছে
+    // Mongoose hook-এর উপর আর নির্ভর করা হচ্ছে না
+    const hashedPassword = await bcrypt.hash(payload.password, 12);
+    
+    // হ্যাশ করা পাসওয়ার্ড দিয়ে নতুন payload তৈরি করা হচ্ছে
+    const payloadWithHashedPassword = {
+        ...payload,
+        password: hashedPassword,
+    };
+    
+    const newUser = await User.create(payloadWithHashedPassword);
+    
+    const result = await User.findById(newUser._id).select('-password');
+    return result;
 };
+
+// --- আপনার বাকি সার্ভিস ফাংশনগুলো অপরিবর্তিত থাকবে ---
 
 const getMyProfileFromDB = async (userId: string): Promise<Partial<TUser> | null> => {
   const result = await User.findById(userId).select('-password');
@@ -49,20 +67,6 @@ const getAllUsersFromDB = async (): Promise<TUser[]> => {
   return result;
 };
 
-const getSingleUserFromDB = async (id: string): Promise<TUser | null> => {
-  const result = await User.findById(id);
-  return result;
-};
-
-const updateUserIntoDB = async (id: string, payload: Partial<TUser>): Promise<TUser | null> => {
-  const result = await User.findByIdAndUpdate(id, payload, {
-    new: true,
-    runValidators: true,
-  });
-  return result;
-};
-
-
 const deleteUserFromDB = async (id: string): Promise<Partial<TUser> | null> => {
   const result = await User.findByIdAndUpdate(
     id,
@@ -79,9 +83,7 @@ const deleteUserFromDB = async (id: string): Promise<Partial<TUser> | null> => {
 export const UserServices = {
   createUserIntoDB,
   getAllUsersFromDB,
-  getSingleUserFromDB,
-  updateUserIntoDB,
-  deleteUserFromDB,
   getMyProfileFromDB,
   updateMyProfileInDB,
+  deleteUserFromDB,
 };

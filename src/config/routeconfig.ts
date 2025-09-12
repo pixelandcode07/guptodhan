@@ -3,6 +3,10 @@ export const routeConfig: Record<
   { breadcrumb: string; title: string }
 > = {
   // navMain
+  '/general': {
+    breadcrumb: ' Dashboard',
+    title: 'Overview',
+  },
   '/general/info': {
     breadcrumb: 'Website Config',
     title: 'Entry General Information',
@@ -193,25 +197,25 @@ export const routeConfig: Record<
 
   // testimonials
   '/general/add/testimonial': {
-    breadcrumb: 'Add New Testimonial',
+    breadcrumb: ' Testimonial',
     title: 'Add New Testimonial',
   },
   '/general/view/testimonials': {
-    breadcrumb: 'View All Testimonials',
+    breadcrumb: 'Testimonial',
     title: 'View All Testimonials',
   },
 
   // blog
   '/general/add/new/category': {
-    breadcrumb: 'Blog Categories',
+    breadcrumb: 'Blog',
     title: 'Blog Categories',
   },
   '/general/add/new/blog': {
-    breadcrumb: 'Write a Blog',
+    breadcrumb: 'Blog',
     title: 'Write a Blog',
   },
   '/general/view/all/blogs': {
-    breadcrumb: 'View All Blogs',
+    breadcrumb: 'Blogs',
     title: 'View All Blogs',
   },
 
