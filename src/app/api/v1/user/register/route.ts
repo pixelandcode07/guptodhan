@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
-import { StatusCodes } from 'http-status-codes'; 
+import { StatusCodes } from 'http-status-codes';
 import dbConnect from '@/lib/db';
 import { UserController } from '@/lib/modules/user/user.controller';
 import { UserValidations } from '@/lib/modules/user/user.validation';
@@ -12,12 +12,12 @@ import { sendResponse } from '@/lib/utils/sendResponse';
 console.log("✅ HEY! I am the register route file. I am working!");
 export async function POST(request: NextRequest) {
   try {
-     await dbConnect();
+    await dbConnect();
     const body = await request.json();
     const validatedData = UserValidations.createUserValidationSchema.parse({
       body: body,
     });
-    
+
     const result = await UserController.createUser(validatedData.body);
 
     return sendResponse({

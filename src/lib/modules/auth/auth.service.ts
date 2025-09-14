@@ -10,6 +10,11 @@ import mongoose from 'mongoose';
 import { Vendor } from '../vendor/vendor.model';
 import { ServiceProvider } from '../service-provider/serviceProvider.model';
 
+
+
+
+
+
 const loginUser = async (payload: TLoginUser) => {
   const { identifier, password: plainPassword } = payload; // সমাধান ১: password-কে plainPassword নামকরণ করা হয়েছে
 

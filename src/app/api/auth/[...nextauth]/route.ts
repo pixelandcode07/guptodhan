@@ -20,7 +20,6 @@ export const authOptions = {
           await dbConnect();
 
           const existingUser = await User.findOne({ email: user.email });
-
           if (!existingUser) {
             await User.create({
               name: user.name,

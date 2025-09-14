@@ -1,6 +1,9 @@
 
 import { z } from 'zod';
 
+
+
+
 export const loginValidationSchema = z.object({
   identifier: z.string().min(1, { message: 'Email or Phone Number is required.' }),
   password: z.string().min(1, { message: 'Password cannot be empty.' }),
@@ -12,9 +15,9 @@ export const changePasswordValidationSchema = z.object({
 });
 
 export const refreshTokenValidationSchema = z.object({
-    refreshToken: z.string({
-        required_error: 'Refresh token is required',
-    }),
+  refreshToken: z.string({
+    required_error: 'Refresh token is required',
+  }),
 });
 
 export const setPasswordValidationSchema = z.object({
@@ -31,7 +34,7 @@ export const verifyForgotPasswordOtpFromEmailSchema = z.object({
 });
 
 export const getResetTokenWithFirebaseSchema = z.object({
-    idToken: z.string({ required_error: 'Firebase ID token is required.' }),
+  idToken: z.string({ required_error: 'Firebase ID token is required.' }),
 });
 
 export const resetPasswordWithTokenSchema = z.object({
@@ -45,13 +48,13 @@ export const registerVendorValidationSchema = z.object({
   password: z.string().min(8, { message: 'Password must be at least 8 characters long.' }),
   phoneNumber: z.string().min(1, { message: 'Phone number is required.' }),
   address: z.string().min(1, { message: 'Address is required.' }),
-  
+
   businessName: z.string().min(1, { message: 'Business name is required.' }),
   businessCategory: z.string().min(1, { message: 'Business category is required.' }),
   tradeLicenseNumber: z.string().min(1, { message: 'Trade license number is required.' }),
   businessAddress: z.string().min(1, { message: 'Business address is required.' }),
   ownerName: z.string().min(1, { message: 'Owner name is required.' }),
-  
+
   ownerNidUrl: z.string().url({ message: 'A valid NID card image URL is required.' }),
   tradeLicenseUrl: z.string().url({ message: 'A valid trade license image URL is required.' }),
 });
