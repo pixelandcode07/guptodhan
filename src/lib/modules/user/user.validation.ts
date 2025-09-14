@@ -1,36 +1,66 @@
 
 import { z } from 'zod';
 
-const bdPhoneNumberRegex = /^(01[3-9]\d{8})$/;
+// const bdPhoneNumberRegex = /^(01[3-9]\d{8})$/;
+const bdPhoneNumberRegex = /^(?:\+8801[3-9]\d{8}|01[3-9]\d{8})$/;
+
+
+export const registerWithPhoneSchema = z.object({
+  body: z.object({
+    phoneNumber: z.string().regex(bdPhoneNumberRegex, {
+      message: 'Must be a valid Bangladeshi phone number (e.g., 017... or +88017...).',
+    }),
+  }),
+});
+
+export const verifyOtpSchema = z.object({
+  body: z.object({
+    phoneNumber: z.string().regex(bdPhoneNumberRegex, {
+      message: 'Must be a valid Bangladeshi phone number.',
+    }),
+    otp: z.string().length(6, { message: 'OTP must be 6 digits' }),
+  }),
+});
+
+export const setPinSchema = z.object({
+  body: z.object({
+    userId: z.string().min(1, { message: 'User ID is required' }),
+    pin: z.string().length(4, { message: 'PIN must be 4 digits' }),
+  }),
+});
+
+
+
+
+
 
 export const createUserValidationSchema = z.object({
   body: z.object({
     name: z
       .string()
-      .min(1, { message: 'Name is required and cannot be empty.' }),
-    
+      .min(1, { message: 'Name is required and cannot be empty.' }).optional(),
+
     email: z
       .email({ message: 'Please provide a valid email address.' }).optional(),
-    
+
     password: z
       .string()
       .min(8, { message: 'Password must be at least 8 characters long.' }).optional(),
-    
+
     phoneNumber: z
       .string()
       .regex(bdPhoneNumberRegex, {
-        message: 'Must be a valid 11-digit Bangladeshi phone number (e.g., 017...).'
+        message: 'Must be a valid Bangladeshi phone number (e.g., 017... or +88017...).'
       }),
-    
+
     profilePicture: z
       .string()
-      .url({ message: 'Profile picture must be a valid URL.' })
-      .optional(), 
-      
+      .url({ message: 'Profile picture must be a valid URL.' }).optional(),
+
     address: z
       .string()
-      .min(1, { message: 'Address is required and cannot be empty.' }),
-      
+      .min(1, { message: 'Address is required and cannot be empty.' }).optional(),
+
     role: z
       .enum(['user', 'vendor', 'admin', 'service-provider'])
       .default('user'),
@@ -41,6 +71,26 @@ export const createUserValidationSchema = z.object({
   }),
 });
 
+// export const createUserValidationSchema = z.object({
+//   body: z.object({
+//     // name: z.string().min(1).optional(),
+//     // email: z.email().optional(),
+//     // password: z.string().min(8).optional(),
+//     phoneNumber: z
+//       .string()
+//       .transform((val) => val.replace(/^\+880/, '0')) // Convert +880 to 0
+//       .refine((val) => bdPhoneNumberRegex.test(val), {
+//         message: 'Must be a valid 11-digit Bangladeshi phone number (e.g., 017...).',
+//       }),
+//     // profilePicture: z.string().url().optional(),
+//     // address: z.string().min(1).optional(),
+//     // role: z.enum(['user', 'vendor', 'admin', 'service-provider']).default('user'),
+//   })
+//   // .refine(data => data.email || data.phoneNumber, {
+//   //   message: 'Either email or phone number must be provided.',
+//   //   path: ['email'],
+//   // }),
+// });
 
 
 export const updateUserValidationSchema = z.object({
@@ -69,5 +119,10 @@ export const UserValidations = {
   createUserValidationSchema,
   updateUserValidationSchema,
   updateUserProfileValidationSchema,
+
+  
+  registerWithPhoneSchema,
+  verifyOtpSchema,
+  setPinSchema,
 
 };

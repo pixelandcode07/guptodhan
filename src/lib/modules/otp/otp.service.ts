@@ -5,6 +5,36 @@ import { redisClient, connectRedis } from '@/lib/redis';
 import { sendEmail } from '@/lib/utils/email';
 import { firebaseAdmin } from '@/lib/firebaseAdmin';
 
+import admin from 'firebase-admin';
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    }),
+  });
+}
+
+const verifyPhoneNumberWithFirebase = async (idToken: string) => {
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+
+    // এখানে তুমি চাইলে user DB তে create/update করতে পারো
+    return {
+      uid: decodedToken.uid,
+      phoneNumber: decodedToken.phone_number,
+    };
+  } catch (error: any) {
+    console.error('Firebase verifyIdToken error:', error);
+    throw new Error('Unauthorized: Invalid or expired token');
+  }
+};
+
+
+
+
 // --- ইমেইল OTP সার্ভিস (আগের কোড) ---
 const sendEmailOtp = async (userId: string) => {
   await connectRedis();
@@ -41,22 +71,23 @@ const verifyEmailOtp = async (userId: string, otp: string) => {
 };
 
 // --- নতুন: ফোন নম্বর ভেরিফিকেশন সার্ভিস (Firebase দিয়ে) ---
-const verifyPhoneNumberWithFirebase = async (idToken: string) => {
-  const decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
-  const phoneNumberFromFirebase = decodedToken.phone_number;
-  if (!phoneNumberFromFirebase) { throw new Error('No phone number found in Firebase token.'); }
-  
-  const localPhoneNumber = phoneNumberFromFirebase.substring(3); // "+88" বাদ দেওয়া হচ্ছে
+// const verifyPhoneNumberWithFirebase = async (idToken: string) => {
+//   const decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
+//   const phoneNumberFromFirebase = decodedToken.phone_number;
+//   if (!phoneNumberFromFirebase) { throw new Error('No phone number found in Firebase token.'); }
 
-  const user = await User.findOne({ phoneNumber: localPhoneNumber });
-  if (!user) { throw new Error('User with this phone number not found in our database.'); }
+//   const localPhoneNumber = phoneNumberFromFirebase.substring(3); // "+88" বাদ দেওয়া হচ্ছে
 
-  await User.findByIdAndUpdate(user._id, { isVerified: true });
-  return null;
-};
+//   const user = await User.findOne({ phoneNumber: localPhoneNumber });
+//   if (!user) { throw new Error('User with this phone number not found in our database.'); }
+
+//   await User.findByIdAndUpdate(user._id, { isVerified: true });
+//   return null;
+// };
 
 export const OtpServices = {
   sendEmailOtp,
   verifyEmailOtp,
-  verifyPhoneNumberWithFirebase,
+  // verifyPhoneNumberWithFirebase,
+  verifyPhoneNumberWithFirebase
 };
