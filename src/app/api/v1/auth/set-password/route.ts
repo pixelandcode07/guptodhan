@@ -1,7 +1,5 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\app\api\auth\set-password\route.ts
 
 import { AuthController } from '@/lib/modules/auth/auth.controller';
 import { catchAsync } from '@/lib/middlewares/catchAsync';
 
-// এই রুটটি সুরক্ষিত থাকবে
 export const POST = catchAsync(AuthController.setPassword);
