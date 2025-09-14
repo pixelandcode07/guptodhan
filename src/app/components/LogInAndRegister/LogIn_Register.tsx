@@ -219,7 +219,7 @@ export default function LogInRegister() {
         // alert(`Account created with phone: ${submittedPhone}, PIN: ${data.pin}`)
         setLoading(true)
         setError(null)
-        setStep('login') 
+        setStep('login')
         // try {
         //     // if (!userId) throw new Error('User ID not found');
         //     const response = await axios.post('/app/api/auth/set-password', {
