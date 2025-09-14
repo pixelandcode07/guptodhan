@@ -10,11 +10,11 @@ export const createUserValidationSchema = z.object({
       .min(1, { message: 'Name is required and cannot be empty.' }),
     
     email: z
-      .email({ message: 'Please provide a valid email address.' }),
+      .email({ message: 'Please provide a valid email address.' }).optional(),
     
     password: z
       .string()
-      .min(8, { message: 'Password must be at least 8 characters long.' }),
+      .min(8, { message: 'Password must be at least 8 characters long.' }).optional(),
     
     phoneNumber: z
       .string()
@@ -32,10 +32,15 @@ export const createUserValidationSchema = z.object({
       .min(1, { message: 'Address is required and cannot be empty.' }),
       
     role: z
-      .enum(['user', 'vendor', 'admin'])
+      .enum(['user', 'vendor', 'admin', 'service-provider'])
       .default('user'),
+  }).refine(data => data.email || data.phoneNumber, {
+    // এই refine ফাংশনটি নিশ্চিত করে যে দুটির মধ্যে অন্তত একটি দেওয়া হয়েছে
+    message: "Either email or phone number must be provided.",
+    path: ["email"], // এররটি কোন ফিল্ডে দেখানো হবে
   }),
 });
+
 
 
 export const updateUserValidationSchema = z.object({

@@ -5,8 +5,8 @@ import { verifyToken } from './lib/utils/jwt';
 
 const protectedRoutes = [
     '/api/v1/auth/change-password',
-    '/api/otp/send-email',     
-    '/api/otp/verify-email',  
+    '/api/otp/send-email',
+    '/api/otp/verify-email',
     '/api/otp/verify-phone',
     '/api/v1/auth/set-password',
     '/api/v1/profile/me',
@@ -40,14 +40,14 @@ export async function middleware(req: NextRequest) {
         const authHeader = req.headers.get('authorization');
         console.log('--- 🔹 Authorization Header ---', authHeader);
 
-        
+
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             return NextResponse.json(
                 { success: false, message: 'Unauthorized: No token provided or malformed header' },
                 { status: StatusCodes.UNAUTHORIZED }
             );
         }
-        
+
         const token = authHeader.split(' ')[1];
         console.log('--- 🔹 Token extracted ---', token);
 
@@ -55,7 +55,7 @@ export async function middleware(req: NextRequest) {
         try {
             const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
             console.log('--- 🔑 Secret used for VERIFYING token ---:', decoded);
-            
+
             const requestHeaders = new Headers(req.headers);
             requestHeaders.set('x-user-id', decoded.userId as string);
             requestHeaders.set('x-user-email', decoded.email as string);
@@ -69,7 +69,7 @@ export async function middleware(req: NextRequest) {
 
         } catch (error) {
             if (error instanceof Error && error.name === 'TokenExpiredError') {
-                 return NextResponse.json(
+                return NextResponse.json(
                     { success: false, message: 'Unauthorized: Token has expired' },
                     { status: StatusCodes.UNAUTHORIZED }
                 );
