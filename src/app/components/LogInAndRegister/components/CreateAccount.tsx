@@ -42,9 +42,10 @@ export default function CreateAccount({ step, handleSubmitCreate, onSubmitCreate
                     <Button
                         type="submit"
                         className="w-full bg-blue-600 text-white hover:bg-blue-700"
-                        disabled={loading}
+                        // disabled={loading}
                     >
-                        {loading ? 'Loading...' : 'Create Account'}
+                        {/* {loading ? 'Loading...' : 'Create Account'} */}
+                        Create Account
                     </Button>
                 </form>
             )}

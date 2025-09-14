@@ -106,36 +106,37 @@ export default function LogInRegister() {
 
     const onSubmitCreate = async (data: CreateAccountFormData) => {
         console.log('Form Data:', data);
-        // setLoading(true)
-        // setError(null)
-        try {
-            setLoading(true);
-            setError(null);
+        setLoading(true)
+        setError(null)
+        setStep("verifyOtp");
+        // try {
+        //     setLoading(true);
+        //     setError(null);
 
-            // ✅ Backend এ send (logging purpose, DB check ইত্যাদি)
-            await axios.post("/api/v1/user/register", data);
+        //     // ✅ Backend এ send (logging purpose, DB check ইত্যাদি)
+        //     await axios.post("/api/v1/user/register", data);
 
-            // ✅ Firebase Recaptcha setup
-            const recaptchaVerifier = setupRecaptcha("recaptcha-container");
+        //     // ✅ Firebase Recaptcha setup
+        //     const recaptchaVerifier = setupRecaptcha("recaptcha-container");
 
-            // ✅ OTP পাঠানো
-            const confirmationResult = await signInWithPhoneNumber(
-                auth,
-                data.phoneNumber,
-                recaptchaVerifier
-            );
+        //     // ✅ OTP পাঠানো
+        //     const confirmationResult = await signInWithPhoneNumber(
+        //         auth,
+        //         data.phoneNumber,
+        //         recaptchaVerifier
+        //     );
 
-            // globally store করে রাখলাম (later verify করার জন্য)
-            window.confirmationResult = confirmationResult;
+        //     // globally store করে রাখলাম (later verify করার জন্য)
+        //     window.confirmationResult = confirmationResult;
 
-            setSubmittedPhone(data.phoneNumber);
-            setStep("verifyOtp");
-        } catch (err: any) {
-            console.error("Register error:", err);
-            setError(err.response?.data?.message || "Failed to send OTP");
-        } finally {
-            setLoading(false);
-        }
+        //     setSubmittedPhone(data.phoneNumber);
+        //     setStep("verifyOtp");
+        // } catch (err: any) {
+        //     console.error("Register error:", err);
+        //     setError(err.response?.data?.message || "Failed to send OTP");
+        // } finally {
+        //     setLoading(false);
+        // }
 
         // try {
         //     const phoneNumber = data.phoneNumber.replace(/\s/g, ''); // Format phone number
@@ -174,29 +175,30 @@ export default function LogInRegister() {
     const onSubmitOtp = async (data: VerifyOtpFormData) => {
         setLoading(true)
         setError(null)
-        try {
-            const result = await window.confirmationResult.confirm(data.otp)
-            const idToken = await result.user.getIdToken()
-            const decodedToken = JSON.parse(atob(idToken.split('.')[1]));
-            setUserId(decodedToken.uid);
-            const response = await axios.post(
-                '/api/otp/verify-phone',
-                { idToken },
-                {
-                    headers: {
-                        'x-user-id': decodedToken.uid, // এটাকে backend middleware ব্যবহার করতে পারবে
-                    },
-                }
-            );
-            if (response.data.success) {
-                setStep('setPin')
-            }
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'OTP verification failed')
-            console.error('OTP error:', err)
-        } finally {
-            setLoading(false)
-        }
+        setStep('setPin')
+        // try {
+        //     const result = await window.confirmationResult.confirm(data.otp)
+        //     const idToken = await result.user.getIdToken()
+        //     const decodedToken = JSON.parse(atob(idToken.split('.')[1]));
+        //     setUserId(decodedToken.uid);
+        //     const response = await axios.post(
+        //         '/api/otp/verify-phone',
+        //         { idToken },
+        //         {
+        //             headers: {
+        //                 'x-user-id': decodedToken.uid, // এটাকে backend middleware ব্যবহার করতে পারবে
+        //             },
+        //         }
+        //     );
+        //     if (response.data.success) {
+        //         setStep('setPin')
+        //     }
+        // } catch (err: any) {
+        //     setError(err.response?.data?.message || 'OTP verification failed')
+        //     console.error('OTP error:', err)
+        // } finally {
+        //     setLoading(false)
+        // }
     }
 
     // Set PIN Form
@@ -215,31 +217,31 @@ export default function LogInRegister() {
 
         // console.log('Set PIN Data:', { phone: submittedPhone, pin: data.pin })
         // alert(`Account created with phone: ${submittedPhone}, PIN: ${data.pin}`)
-        // setStep('login') 
         setLoading(true)
         setError(null)
-        try {
-            // if (!userId) throw new Error('User ID not found');
-            const response = await axios.post('/app/api/auth/set-password', {
-                // phone: submittedPhone,
-                // pin: data.pin
-                newPassword: data.pin
-            }, {
-                headers: {
-                    'x-user-id': userId,
-                }
-            })
-            if (response.data.success) {
-                alert(`Account created successfully with phone: ${submittedPhone}`)
-                setStep('login')
-                // ডায়ালগ ক্লোজ এবং ড্যাশবোর্ডে রিডিরেক্ট (যেমন: window.location.href = '/dashboard')
-            }
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'PIN setting failed')
-            console.error('Set PIN error:', err)
-        } finally {
-            setLoading(false)
-        }
+        setStep('login')
+        // try {
+        //     // if (!userId) throw new Error('User ID not found');
+        //     const response = await axios.post('/app/api/auth/set-password', {
+        //         // phone: submittedPhone,
+        //         // pin: data.pin
+        //         newPassword: data.pin
+        //     }, {
+        //         headers: {
+        //             'x-user-id': userId,
+        //         }
+        //     })
+        //     if (response.data.success) {
+        //         alert(`Account created successfully with phone: ${submittedPhone}`)
+        //         setStep('login')
+        //         // ডায়ালগ ক্লোজ এবং ড্যাশবোর্ডে রিডিরেক্ট (যেমন: window.location.href = '/dashboard')
+        //     }
+        // } catch (err: any) {
+        //     setError(err.response?.data?.message || 'PIN setting failed')
+        //     console.error('Set PIN error:', err)
+        // } finally {
+        //     setLoading(false)
+        // }
     }
 
     return (

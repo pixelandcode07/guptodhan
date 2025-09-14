@@ -28,7 +28,7 @@ export default function DashNavbar() {
         <div className="block">
           <Button variant={'secondary'}>
             <Send className="mr-1" />
-            <Link href={'#'}>Visit Website</Link>
+            <Link href={'/'}>Visit Website</Link>
           </Button>
         </div>
 
