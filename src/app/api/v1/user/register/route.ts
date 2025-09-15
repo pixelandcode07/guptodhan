@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const body = await request.json();
+    console.log('Request Body:', body);
     const validatedData = UserValidations.createUserValidationSchema.parse({
       body: body,
     });
@@ -51,3 +52,38 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// export async function POST(request: NextRequest) {
+//   try {
+//     await dbConnect();
+//     const body = await request.json();
+
+//     // ✅ Validate phone number
+//     const validated = UserValidations.registerWithPhoneSchema.parse({
+//       body,
+//     });
+
+//     const { phoneNumber } = validated.body;
+
+//     // 🔹 এখানে তুমি চাইলে check করতে পারো user আগে থেকে আছে কিনা
+//     // const existingUser = await User.findOne({ phone });
+//     // if (existingUser) throw new Error('User already registered with this number');
+
+//     // 🔹 এখানে Firebase OTP পাঠানোর কাজ হবে (frontend থেকে signInWithphone handle করবে)
+
+//     return sendResponse({
+//       success: true,
+//       statusCode: StatusCodes.OK,
+//       message: 'OTP sent successfully to phone number',
+//       data: { phone: phoneNumber },
+//     });
+//   } catch (error: any) {
+//     return NextResponse.json(
+//       {
+//         success: false,
+//         message: error.message || 'Failed to send OTP',
+//       },
+//       { status: StatusCodes.BAD_REQUEST }
+//     );
+//   }
+// }

@@ -25,23 +25,27 @@ export default function CreateAccount({ step, handleSubmitCreate, onSubmitCreate
                         <Input
                             id="phone"
                             type="tel"
-                            placeholder="+880 1777777777"
-                            {...registerCreate('phone', {
+                            placeholder="+8801777777777 or 01777777777"
+                            {...registerCreate('phoneNumber', {
                                 required: 'Phone number is required',
                                 pattern: {
-                                    value: /^\+?\d{3}\s?\d{9,}$/,
-                                    message: 'Invalid phone number format (e.g., +880 1777777777)',
+                                    value: /^(?:\+8801[3-9]\d{8}|01[3-9]\d{8})$/,
+                                    message: 'Must be a valid Bangladeshi phone number (e.g., +8801777777777 or 01777777777)',
                                 },
                             })}
-                            className={createErrors.phone ? 'border-red-500' : ''}
+                            className={createErrors.phoneNumber ? 'border-red-500' : ''}
                         />
-                        {createErrors.phone && (
-                            <p className="text-sm text-red-500">{createErrors.phone.message}</p>
+                        {createErrors.phoneNumber && (
+                            <p className="text-sm text-red-500">{createErrors.phoneNumber.message}</p>
                         )}
                     </div>
-                    <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700">
-                        {/* Create Account */}
-                        {loading ? 'Loading...' : 'Create Account'}
+                    <Button
+                        type="submit"
+                        className="w-full bg-blue-600 text-white hover:bg-blue-700"
+                        // disabled={loading}
+                    >
+                        {/* {loading ? 'Loading...' : 'Create Account'} */}
+                        Create Account
                     </Button>
                 </form>
             )}

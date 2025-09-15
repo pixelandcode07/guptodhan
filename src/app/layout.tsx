@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SessionProviderWrapper from "@/Providers/SessionProviderWrapper";
-import HomeNavbar from "./components/SharedRoutes/HomeNavbar";
-import HomeFooter from "./components/SharedRoutes/HomeFooter";
 import LayoutWrapper from "@/Providers/LayoutWrapper";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,11 +30,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* <SessionProviderWrapper> */}
-        <LayoutWrapper>
-          {children}
-        </LayoutWrapper>
-        {/* </SessionProviderWrapper> */}
+        <SessionProviderWrapper>
+          <LayoutWrapper>
+            {children}
+            <Toaster />
+          </LayoutWrapper>
+        </SessionProviderWrapper>
       </body>
     </html>
   );
