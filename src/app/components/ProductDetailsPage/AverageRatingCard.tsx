@@ -19,8 +19,8 @@ export function AverageRatingCard() {
   const max = Math.max(...ratingData.distribution.map(d => d.count));
 
   return (
-    <Card className="p-6">
-      <h2 className="text-lg font-semibold mb-4">Customer Reviews</h2>
+    <div className="p-6 pl-0">
+      <h2 className="text-xl font-semibold mb-4">Customer Reviews</h2>
       <p className="mb-6">
         Average rating: <span className="font-bold">{ratingData.average}</span>{' '}
         ({ratingData.total})
@@ -43,6 +43,6 @@ export function AverageRatingCard() {
           </div>
         ))}
       </div>
-    </Card>
+    </div>
   );
 }
