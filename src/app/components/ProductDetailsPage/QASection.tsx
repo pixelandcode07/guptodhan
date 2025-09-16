@@ -1,10 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MessageSquare, HelpCircle } from 'lucide-react';
-import { Props } from 'react-select';
 
 export type QA = {
   id: number;
@@ -19,20 +19,44 @@ type QASectionProps = {
   total: number;
 };
 
-export function QASection({ data, total }: QASectionProps) {
+export function QASection({ data: initialData, total }: QASectionProps) {
+  const [data, setData] = useState<QA[]>(initialData);
+  const [question, setQuestion] = useState('');
+
+  const handleSubmit = () => {
+    if (!question.trim()) return;
+
+    const newQA: QA = {
+      id: Date.now(),
+      question,
+      answer: 'No answer yet.',
+      user: 'You',
+      timeAgo: 'Just now',
+    };
+
+    setData([newQA, ...data]);
+    setQuestion('');
+  };
+
   return (
-    <Card className="p-6">
+    <div className="p-6">
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">
-          Questions About this Product ({total})
+          Questions About this Product ({total + data.length})
         </h2>
       </div>
 
       {/* Input + Button */}
       <div className="flex gap-2 mb-6">
-        <Input placeholder="Enter your questions here" />
-        <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+        <Input
+          placeholder="Enter your questions here"
+          value={question}
+          onChange={e => setQuestion(e.target.value)}
+        />
+        <Button
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+          onClick={handleSubmit}>
           Ask Question
         </Button>
       </div>
@@ -66,6 +90,6 @@ export function QASection({ data, total }: QASectionProps) {
           </div>
         ))}
       </div>
-    </Card>
+    </div>
   );
 }
