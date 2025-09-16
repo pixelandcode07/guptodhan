@@ -22,11 +22,13 @@ const buttonVariants = cva(
         link: 'text-primary underline-offset-4 hover:underline',
         BlueBtn: 'bg-[#2e7ce4] text-white hover:bg-[#2e7ce4] cursor-pointer',
         GrayBtn: 'bg-[#17263A] text-white hover:bg-[#17263A] cursor-pointer',
+        FooterBtn: 'bg-black text-white hover:bg-black cursor-pointer',
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',
         sm: 'h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5',
         lg: 'h-10 rounded-md px-6 has-[>svg]:px-4',
+        xxl: 'h-20 rounded-md px-10 has-[>svg]:px-6',
         icon: 'size-9',
       },
     },

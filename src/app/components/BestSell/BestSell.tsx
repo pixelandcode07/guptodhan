@@ -5,14 +5,14 @@ import { flashSale } from '@/data/flash_sale_data'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import React from 'react'
-import Banner from '../../../../public/img/banner2.jpg'
+import Banner from '../../../../public/img/banner3.png'
 
-export default function FlashSale() {
+export default function BestSell() {
     const router = useRouter();
     return (
         <div className='max-w-7xl mx-auto py-15'>
             <PageHeader
-                title="Flash Sale"
+                title="Best Selling"
                 buttonLabel="Shop All Products"
                 onButtonClick={() => router.push("/view/all/products")}
             />
