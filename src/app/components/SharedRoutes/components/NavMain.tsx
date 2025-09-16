@@ -2,7 +2,6 @@
 import { Handbag, Heart, LogOut, User } from 'lucide-react'
 import Image from 'next/image'
 import { Dialog, DialogTrigger } from '@/components/ui/dialog'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import LogInRegister from '../../LogInAndRegister/LogIn_Register'
 import SearchBar from './SearchBar'
 import { signOut, useSession } from 'next-auth/react'
@@ -12,7 +11,6 @@ export default function NavMain() {
     const { data: session, status } = useSession()
     console.log("Navuser is", session)
     const user = session?.user
-    const avatarInitial = (user?.name ?? user?.email ?? 'U').charAt(0).toUpperCase()
 
     return (
         <div className='bg-[#FFFFFF] text-black  flex justify-between items-center py-5 px-15 border-2'>
@@ -31,11 +29,14 @@ export default function NavMain() {
 
                         {session ? <>
                             <li className='flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer'>
-                                <Avatar className="h-6 w-6">
-                                    <AvatarImage src={user?.image || ''} alt={user?.name ?? 'Profile picture'} />
-                                    <AvatarFallback>{avatarInitial}</AvatarFallback>
-                                </Avatar>
-                                <span className='text-[#00005E] text-[12px]'>Profile</span>
+                                <Link href={'/home/UserProfile'} className='flex flex-col justify-center items-center'>
+                                    {user?.image ? (
+                                        <Image src={user.image} width={24} height={24} alt={user?.name ?? 'Profile picture'} className='rounded-full' />
+                                    ) : (
+                                        <User />
+                                    )}
+                                    <span className='text-[#00005E] text-[12px]'>Profile</span>
+                                </Link>
                             </li>
                             <li
                                 onClick={() => signOut()}
