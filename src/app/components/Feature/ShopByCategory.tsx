@@ -11,42 +11,15 @@ import {
 } from "@/components/ui/carousel"
 import Image from "next/image"
 import { ArrowLeft, ArrowRight } from "lucide-react"
+import { categories } from "@/data/categories_data"
 
-interface Category {
-    name: string;
-    imageUrl: string;
-    href: string;
-}
-
-
-
-
-
-
-
-
-const categories: Category[] = [
-    { name: "Fashion & Apparel", imageUrl: "https://i.ibb.co/20qCx2JM/fashion.jpg", href: "#" },
-    { name: "Electronics & Gadgets", imageUrl: "https://i.ibb.co/tPT8c5CP/gadget.jpg", href: "#" },
-    { name: "Home & Living", imageUrl: "https://i.ibb.co/tPT8c5CP/gadget.jpg", href: "#" },
-    { name: "Beauty & Personal Care", imageUrl: "https://i.ibb.co/mgtydqP/toyes.jpg", href: "#" },
-    { name: "Groceries & Essentials", imageUrl: "https://i.ibb.co/jvhBS39v/groceries.jpg", href: "#" },
-    { name: "Sports & Outdoors", imageUrl: "https://i.ibb.co/KxqSC8rW/sports.jpg", href: "#" },
-    { name: "Books, Media & Stationery", imageUrl: "https://i.ibb.co/wFN3sTNc/books.jpg", href: "#" },
-    { name: "Toys, Kids & Baby", imageUrl: "https://i.ibb.co/mgtydqP/toyes.jpg", href: "#" },
-    { name: "Health & Wellness", imageUrl: "https://i.ibb.co/mgtydqP/toyes.jpg", href: "#" },
-    { name: "Automotive", imageUrl: "https://i.ibb.co/mgtydqP/toyes.jpg", href: "#" },
-];
 
 export function ShopByCategory() {
-    // **1. State to store the carousel API**
     const [api, setApi] = React.useState<CarouselApi>()
 
-    // **State for current slide info (optional, but good for UX)**
     const [current, setCurrent] = React.useState(0)
     const [count, setCount] = React.useState(0)
 
-    // **2. A useEffect to update our state when the carousel changes**
     React.useEffect(() => {
         if (!api) {
             return
