@@ -14,7 +14,7 @@ export default function BestSell() {
             <PageHeader
                 title="Best Selling"
                 buttonLabel="Shop All Products"
-                onButtonClick={() => router.push("/view/all/products")}
+                onButtonClick={() => router.push("/home/view/all/products")}
             />
             <div className='grid justify-center items-center grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-8'>
                 {flashSale.slice(0, 6).map((item, idx) => (
