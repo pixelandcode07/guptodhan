@@ -5,6 +5,7 @@ import { Dialog, DialogTrigger } from '@/components/ui/dialog'
 import LogInRegister from '../../LogInAndRegister/LogIn_Register'
 import SearchBar from './SearchBar'
 import { signOut, useSession } from 'next-auth/react'
+import Link from 'next/link'
 
 export default function NavMain() {
     const { data: session, status } = useSession()
@@ -12,9 +13,9 @@ export default function NavMain() {
 
     return (
         <div className='bg-[#FFFFFF] text-black  flex justify-between items-center py-5 px-15 border-2'>
-            <div className="logo">
+            <Link href={'/'} className="logo">
                 <Image src="/logo.png" width={130} height={44} alt="logo" />
-            </div>
+            </Link>
             <div className="search flex items-center justify-center w-full max-w-md mx-auto relative">
                 {/* Search functionality */}
                 <SearchBar />
