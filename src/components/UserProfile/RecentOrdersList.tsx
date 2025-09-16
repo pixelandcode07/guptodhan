@@ -1,5 +1,6 @@
 import React from 'react'
 import Image from 'next/image'
+import { CheckCircle } from 'lucide-react'
 
 interface Order {
   id: string
@@ -74,7 +75,11 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
             <div className="flex items-center gap-2">
               <span className="font-medium">{order.seller}</span>
               {order.sellerVerified && (
-                <span className="text-blue-600 text-xs">Verified Seller</span>
+                <span className="text-blue-600 text-xs flex items-center gap-1">
+                 
+                  Verified Seller
+                  <CheckCircle className="h-3 w-3" />
+                </span>
               )}
             </div>
             <span className={`text-xs px-2 py-0.5 rounded ${getStatusStyles(order.status)}`}>
