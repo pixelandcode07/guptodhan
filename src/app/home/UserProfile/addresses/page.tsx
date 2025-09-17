@@ -1,10 +1,10 @@
-import React from 'react'
+import React from 'react';
+import HandleAddressesComponent from './Components/handleComponent';
 
-export default function AddressesPage() {
+export default function page() {
   return (
-    <div className="bg-white rounded-md p-6">
-      <h1 className="text-2xl font-semibold mb-4">Saved Addresses</h1>
-      <p>Manage your saved delivery addresses.</p>
+    <div>
+      <HandleAddressesComponent />
     </div>
-  )
+  );
 }
