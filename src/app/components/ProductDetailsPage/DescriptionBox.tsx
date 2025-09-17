@@ -23,7 +23,7 @@ export function DescriptionBox() {
     : text.slice(0, maxLength) + (isLong ? '...' : '');
 
   return (
-    <div className="p-6">
+    <div className="p-6 pl-0">
       <h2 className="text-lg font-semibold mb-3">Description</h2>
       <p className="text-gray-700 whitespace-pre-line">{displayText}</p>
       {isLong && (
