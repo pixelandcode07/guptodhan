@@ -9,12 +9,15 @@ import { Select } from '@radix-ui/react-select'
 export default function DonationHome() {
     const [items, setItems] = React.useState<{ id: string, title: string, image: string, category?: string }[]>([])
     const [category, setCategory] = React.useState<string>('all')
+    const [displayCount, setDisplayCount] = React.useState<number>(5)
 
     const handleSubmit = (data: { title: string, image?: string, category?: string }) => {
         setItems(prev => [{ id: `${Date.now()}`, title: data.title || 'Untitled', image: data.image || '/img/banner.png', category: data.category }, ...prev])
     }
 
-    // Temporary: no persistence while using mock data; backend will replace this later
+    React.useEffect(() => {
+        setDisplayCount(5) // Reset display count when category changes
+    }, [category])
 
     // Mock seed data for initial view
     React.useEffect(() => {
@@ -25,6 +28,13 @@ export default function DonationHome() {
                 { id: 'seed-3', title: 'Rice Bag 10kg', image: '/img/buysell/agriculture.png', category: 'food' },
                 { id: 'seed-4', title: 'Football', image: '/img/buysell/sports.png', category: 'food' },
                 { id: 'seed-5', title: 'Study Lamp', image: '/img/buysell/electronics.png', category: 'books' },
+                { id: 'seed-6', title: 'Denim Jeans', image: '/img/buysell/men-fashion.png', category: 'clothes' },
+                { id: 'seed-7', title: 'Science Books', image: '/img/buysell/education.png', category: 'books' },
+                { id: 'seed-8', title: 'Vegetables', image: '/img/buysell/agriculture.png', category: 'food' },
+                { id: 'seed-9', title: 'Tennis Racket', image: '/img/buysell/sports.png', category: 'food' },
+                { id: 'seed-10', title: 'Laptop', image: '/img/buysell/electronics.png', category: 'books' },
+                { id: 'seed-11', title: 'T-Shirt', image: '/img/buysell/men-fashion.png', category: 'clothes' },
+                { id: 'seed-12', title: 'Novels', image: '/img/buysell/education.png', category: 'books' },
             ]
             setItems(seed)
         }
@@ -54,6 +64,7 @@ export default function DonationHome() {
                 <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-4'>
                     {(items.length === 0 ? Array.from({ length: 6 }).map((_, i) => ({ id: `ph-${i}`, title: '', image: '', category: '' })) : items)
                         .filter(item => category === 'all' || item.category === category)
+                        .slice(0, displayCount)
                         .map(item => (
                             item.title ? (
                                 <div key={item.id} className='bg-white border rounded-md overflow-hidden flex flex-col'>
@@ -71,6 +82,24 @@ export default function DonationHome() {
                             )
                         ))}
                 </div>
+                {(() => {
+                    const filteredItems = items.filter(item => category === 'all' || item.category === category)
+                    const hasMoreItems = displayCount < filteredItems.length
+                    
+                    console.log('Debug Load more:', { displayCount, filteredItemsLength: filteredItems.length, hasMoreItems })
+                    
+                    return hasMoreItems && (
+                        <div className='flex justify-center py-4'>
+                            <Button 
+                                variant={'BlueBtn'} 
+                                onClick={() => setDisplayCount(prev => prev * 2)}
+                                className='px-8'
+                            >
+                                Load more
+                            </Button>
+                        </div>
+                    )
+                })()}
             </section>
         </div>
     )
