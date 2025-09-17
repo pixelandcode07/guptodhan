@@ -1,8 +1,8 @@
-// নতুন ফাইল
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\app\api\v1\service-providers\register\route.ts
-
-import { ServiceProviderController } from '@/lib/modules/service-provider/serviceProvider.controller';
+import { UserController } from '@/lib/modules/user/user.controller';
 import { catchAsync } from '@/lib/middlewares/catchAsync';
 
-// এই রুটটি পাবলিক থাকবে
-export const POST = catchAsync(ServiceProviderController.registerServiceProvider);
+/**
+ * @description Registers a new service provider using the centralized User module.
+ * @method POST
+ */
+export const POST = catchAsync(UserController.registerServiceProvider);

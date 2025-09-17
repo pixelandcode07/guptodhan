@@ -1,5 +1,6 @@
 import React from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { CheckCircle } from 'lucide-react'
 
 interface Order {
@@ -66,9 +67,8 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 p-4">
       <h2 className="text-base font-semibold">Recent Orders</h2>
-      
       {displayOrders.map((order) => (
         <div key={order.id} className="bg-white rounded-md border">
           <div className="px-4 py-2 text-sm border-b flex items-center justify-between">
@@ -76,7 +76,6 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
               <span className="font-medium">{order.seller}</span>
               {order.sellerVerified && (
                 <span className="text-blue-600 text-xs flex items-center gap-1">
-                 
                   Verified Seller
                   <CheckCircle className="h-3 w-3" />
                 </span>
@@ -86,7 +85,7 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
               {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
             </span>
           </div>
-          <div className="p-4 flex gap-4">
+          <Link href={`/home/UserProfile/orders/${order.id}`} className="p-4 flex gap-4 hover:bg-gray-50 transition-colors">
             <Image 
               src={order.productImage} 
               alt="Product" 
@@ -102,9 +101,11 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
               <div className="text-blue-600 font-semibold">{order.price}</div>
               <div className="text-xs text-gray-500">Qty {order.quantity}</div>
             </div>
-          </div>
+          </Link>
         </div>
       ))}
     </div>
   )
 }
+
+
