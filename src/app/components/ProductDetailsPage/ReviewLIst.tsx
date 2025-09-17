@@ -123,7 +123,7 @@ export default function ReviewList() {
       {visibleCount < reviews.length && (
         <div className="relative">
           {/* Gradient Overlay */}
-          <div className="absolute -bottom-5 left-0 w-full h-50 bg-gradient-to-t from-gray-100/90 to-transparent pointer-events-none" />
+          <div className="absolute bottom-10 left-0 w-full h-30 bg-gradient-to-t from-gray-100/90 to-transparent pointer-events-none" />
 
           {/* See More Button */}
           <div className="flex justify-center relative z-10">
