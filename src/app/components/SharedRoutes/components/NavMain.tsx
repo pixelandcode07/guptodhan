@@ -10,6 +10,7 @@ import Link from 'next/link'
 export default function NavMain() {
     const { data: session, status } = useSession()
     console.log("Navuser is", session)
+    const user = session?.user
 
     return (
         <div className='bg-[#FFFFFF] text-black  flex justify-between items-center py-5 px-15 border-2'>
@@ -26,12 +27,24 @@ export default function NavMain() {
                         <li className='flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer'><Heart /><span className='text-[#00005E] text-[12px]'> Whishlist</span></li>
                         <li className='flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer'><Handbag /><span className='text-[#00005E] text-[12px]'> Cart</span></li>
 
-                        {session ? <li
-                            onClick={() => signOut()}
-                            className='flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer'><LogOut /><span className='text-[#00005E] text-[12px]'>
-                                Log out
-                            </span>
-                        </li> :
+                        {session ? <>
+                            <li className='flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer'>
+                                <Link href={'/home/UserProfile'} className='flex flex-col justify-center items-center'>
+                                    {user?.image ? (
+                                        <Image src={user.image} width={24} height={24} alt={user?.name ?? 'Profile picture'} className='rounded-full' />
+                                    ) : (
+                                        <User />
+                                    )}
+                                    <span className='text-[#00005E] text-[12px]'>Profile</span>
+                                </Link>
+                            </li>
+                            <li
+                                onClick={() => signOut()}
+                                className='flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer'><LogOut /><span className='text-[#00005E] text-[12px]'>
+                                    Log out
+                                </span>
+                            </li>
+                        </> :
                             <DialogTrigger>
                                 <li className='flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer'><User /><span className='text-[#00005E] text-[12px]'>
                                     Login /Register
