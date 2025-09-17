@@ -1,6 +1,6 @@
 import React from 'react'
-import OrderSummaryCards from '@/components/UserProfile/OrderSummaryCards'
-import RecentOrdersList from '@/components/UserProfile/RecentOrdersList'
+import OrderSummaryCards from '../../../components/UserProfile/ProfileDashboard/OrderSummaryCards'
+import RecentOrdersList from '../../../components/UserProfile/ProfileDashboard/RecentOrdersList'
 
 export default function UserProfilePage() {
     return (

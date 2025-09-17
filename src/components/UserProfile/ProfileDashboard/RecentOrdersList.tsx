@@ -68,7 +68,6 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
   return (
     <div className="space-y-3">
       <h2 className="text-base font-semibold">Recent Orders</h2>
-      
       {displayOrders.map((order) => (
         <div key={order.id} className="bg-white rounded-md border">
           <div className="px-4 py-2 text-sm border-b flex items-center justify-between">
@@ -76,7 +75,6 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
               <span className="font-medium">{order.seller}</span>
               {order.sellerVerified && (
                 <span className="text-blue-600 text-xs flex items-center gap-1">
-                 
                   Verified Seller
                   <CheckCircle className="h-3 w-3" />
                 </span>
@@ -108,3 +106,5 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
     </div>
   )
 }
+
+
