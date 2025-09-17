@@ -3,13 +3,19 @@
 import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 
 export default function OrderSuccessModal({ open, onOpenChange, orderId }: { open: boolean, onOpenChange: (v: boolean) => void, orderId?: string }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl p-0 overflow-hidden">
+        <DialogHeader>
+          <VisuallyHidden>
+            <DialogTitle>Order Placed Successfully</DialogTitle>
+          </VisuallyHidden>
+        </DialogHeader>
         <div className="p-8 text-center">
           <div className="mx-auto mb-6 w-24 h-24">
             <Image src="/img/Group.png" alt="success" width={96} height={96} className="mx-auto" />
