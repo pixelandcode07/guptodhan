@@ -5,7 +5,7 @@ export default function DashMain() {
     return (
         <div>
             <HomePage />
-            This is this
+            {/* This is this */}
         </div>
     )
 }
