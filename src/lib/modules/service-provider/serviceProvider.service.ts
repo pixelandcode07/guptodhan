@@ -1,22 +1,22 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\service-provider\serviceProvider.service.ts
-import { ServiceProvider } from './serviceProvider.model';
-import { IServiceProvider } from './serviceProvider.interface';
+// D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\service-provider\serviceProvider.service.ts
 
-const registerServiceProviderInDB = async (payload: Partial<IServiceProvider>) => {
-  const isProviderExist = await ServiceProvider.findOne({
-    $or: [{ email: payload.email }, { phoneNumber: payload.phoneNumber }],
-  });
+import { User } from '@/lib/modules/user/user.model';
+import { TUser } from '@/lib/modules/user/user.interface';
 
-  if (isProviderExist) {
-    throw new Error('A service provider with this email or phone number already exists.');
-  }
+const getAllActiveServiceProvidersFromDB = async (): Promise<Partial<TUser>[]> => {
+  const result = await User.find({ role: 'service-provider', isActive: true, isDeleted: false })
+    .select('-password');
+  return result;
+};
 
-  const result = await ServiceProvider.create(payload);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { password, ...providerData } = result.toObject();
-  return providerData;
+const getServiceProviderProfileFromDB = async (serviceProviderId: string): Promise<Partial<TUser> | null> => {
+  const result = await User.findById(serviceProviderId)
+    .where({ role: 'service-provider', isDeleted: false })
+    .select('-password');
+  return result;
 };
 
 export const ServiceProviderServices = {
-  registerServiceProviderInDB,
+  getAllActiveServiceProvidersFromDB,
+  getServiceProviderProfileFromDB,
 };

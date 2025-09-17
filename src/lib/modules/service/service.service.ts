@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\service\service.service.ts
 
 import { IService } from './service.interface';
@@ -20,7 +21,6 @@ const updateServiceInDB = async (serviceId: string, providerId: string, payload:
 const deleteServiceFromDB = async (serviceId: string, providerId: string) => {
   const service = await Service.findOne({ _id: serviceId, provider: providerId });
   if (!service) { throw new Error('Service not found or you are not the owner.'); }
-  // Bonus: Cloudinary থেকে ছবি ডিলিট করার লজিক এখানে যোগ করা যেতে পারে
   await Service.findByIdAndDelete(serviceId);
   return null;
 };
@@ -29,8 +29,7 @@ const searchPublicServicesFromDB = async (filters: Record<string, any>) => {
     const query: Record<string, any> = { status: 'available' };
     if (filters.category) query.category = filters.category;
     if (filters.location) query['location.district'] = new RegExp(filters.location, 'i');
-    // ... baki filter logic ...
-    return await Service.find(query).populate('provider', 'name ratingAvg');
+    return await Service.find(query).populate('provider', 'name ratingAvg profilePicture');
 };
 
 

@@ -3,17 +3,17 @@
 import { Document, Types } from 'mongoose';
 
 export interface IService extends Document {
-  provider: Types.ObjectId;
+  provider: Types.ObjectId; // ServiceProvider মডেলের রেফারেন্স
   title: string;
   description: string;
   price: number;
   category: Types.ObjectId; // ServiceCategory মডেলের রেফারেন্স
-  subCategory?: Types.ObjectId; // ServiceSubCategory মডেলের রেফারেন্স
+  subCategory?: Types.ObjectId;
   location: {
     division: string;
     district: string;
     upazila: string;
   };
-  images: string[]; // সেবার ছবির URL
+  images: string[];
   status: 'available' | 'unavailable';
 }
