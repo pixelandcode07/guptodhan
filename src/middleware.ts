@@ -27,7 +27,10 @@ const protectedRoutes = [
     '/api/v1/theme-settings',
     '/api/v1/seo-settings',
     '/api/v1/custom-code',
-    '/api/v1/integrations'
+    '/api/v1/integrations',
+    '/api/v1/services',
+    '/api/v1/donation-categories',
+    '/api/v1/donation-campaigns'
     
 ];
 

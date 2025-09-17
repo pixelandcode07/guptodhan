@@ -19,6 +19,6 @@ const serviceSchema = new Schema<IService>({
   status: { type: String, enum: ['available', 'unavailable'], default: 'available' },
 }, { timestamps: true });
 
-serviceSchema.index({ category: 1, 'location.division': 1, 'location.district': 1, 'location.upazila': 1 });
+serviceSchema.index({ category: 1, 'location.division': 1, 'location.district': 1 });
 
 export const Service = models.Service || model<IService>('Service', serviceSchema);
