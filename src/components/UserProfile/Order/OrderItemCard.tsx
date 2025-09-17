@@ -1,5 +1,6 @@
 import React from 'react'
 import Image from 'next/image'
+import { CheckCircle } from 'lucide-react'
 import type { OrderSummary } from './types'
 import OrderStatusBadge from './OrderStatusBadge'
 
@@ -8,7 +9,15 @@ export default function OrderItemCard({ order }: { order: OrderSummary }) {
   return (
     <div className="border rounded-md overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 bg-gray-50">
-        <div className="text-sm font-medium">{order.storeName} {order.storeVerified && <span className="inline-flex items-center text-blue-600">✓</span>}</div>
+        <div className="text-sm font-medium flex items-center gap-2">
+          <span>{order.storeName}</span>
+          {order.storeVerified && (
+            <span className="text-blue-600 text-xs inline-flex items-center gap-1">
+              Verified Seller
+              <CheckCircle className="h-3 w-3" />
+            </span>
+          )}
+        </div>
         <OrderStatusBadge status={order.status} />
       </div>
       <div className="flex gap-4 p-4 items-start">
