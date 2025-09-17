@@ -3,6 +3,7 @@
 import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
 import { CheckCircle } from 'lucide-react'
 import type { OrderStatus, OrderSummary } from '@/components/UserProfile/Order/types'
 import OrderStatusBadge from '@/components/UserProfile/Order/OrderStatusBadge'
@@ -51,6 +52,11 @@ const demoOrders: OrderSummary[] = [
 export default function OrderDetailsPage({ params }: PageProps) {
   const order = React.useMemo(() => demoOrders.find(o => o.id === params.id) ?? demoOrders[0], [params.id])
   const item = order.items[0]
+  const { data: session } = useSession()
+  const user = session?.user as (typeof session extends undefined ? undefined : (Record<string, any> & { name?: string }))
+  const userName = user?.name ?? 'Guest User'
+  const userAddress = (user as any)?.address ?? 'Banasree, C block, Main road, Bangladesh'
+  const userPhone = (user as any)?.phone ?? '—'
 
   return (
     <div className="p-6">
@@ -96,9 +102,9 @@ export default function OrderDetailsPage({ params }: PageProps) {
               <div className="text-xs text-gray-500">Placed on {order.createdAt}</div>
             </div>
             <div className="px-4 py-3 text-sm">
-              <div className="font-medium mb-1">Tareq Mahmud</div>
-              <div className="text-gray-600">Banasree, C block, Main road, Bangladesh</div>
-              <div className="text-gray-600">01758260451</div>
+              <div className="font-medium mb-1">{userName}</div>
+              <div className="text-gray-600">{userAddress}</div>
+              <div className="text-gray-600">{userPhone}</div>
             </div>
           </div>
 
