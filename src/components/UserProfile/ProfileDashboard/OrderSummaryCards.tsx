@@ -42,7 +42,7 @@ export default function OrderSummaryCards({
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
       {cards.map((card) => (
         <div key={card.label} className="bg-white rounded-md border p-4">
           <div className="flex items-center gap-2 mb-2">
@@ -55,3 +55,5 @@ export default function OrderSummaryCards({
     </div>
   )
 }
+
+
