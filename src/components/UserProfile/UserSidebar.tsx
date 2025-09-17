@@ -24,7 +24,7 @@ export default function UserSidebar() {
   const user = session?.user
 
   return (
-    <aside className="bg-white border rounded-md">
+    <aside className="bg-transparent">
       <div className="flex flex-col items-center gap-2 p-4 border-b">
         <div className="h-16 w-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
           {user?.image ? (
