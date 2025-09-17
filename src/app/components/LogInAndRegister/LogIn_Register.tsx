@@ -11,14 +11,16 @@ import { auth, setupRecaptcha, signInWithPhoneNumber } from '@/lib/firebase'
 import z from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerWithPhoneSchema } from '@/lib/modules/user/user.validation'
+import Forgetpin from './components/Forgetpin'
+import SetNewPin from './components/SetNewPin'
 // import { signInWithPhoneNumber } from "firebase/auth";
 
 // Extend the Window interface to include confirmationResult
-declare global {
-    interface Window {
-        confirmationResult?: any;
-    }
-}
+// declare global {
+//     interface Window {
+//         confirmationResult?: any;
+//     }
+// }
 
 // TypeScript interfaces for form data
 export interface LoginFormData {
@@ -39,7 +41,7 @@ export interface SetPinFormData {
     pin: string
 }
 
-export type FormStep = 'login' | 'createAccount' | 'verifyOtp' | 'setPin'
+export type FormStep = 'login' | 'createAccount' | 'verifyOtp' | 'setPin' | 'forgetPin' | 'setNewPin'
 
 export default function LogInRegister() {
     const [step, setStep] = useState<FormStep>('login')
@@ -259,6 +261,8 @@ export default function LogInRegister() {
                         {step === 'createAccount' && 'Create Account'}
                         {step === 'verifyOtp' && 'Verify OTP'}
                         {step === 'setPin' && 'Create Account'}
+                        {step === 'forgetPin' && 'Forget PIN'}
+                        {step === 'setNewPin' && 'Set New PIN'}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -303,6 +307,12 @@ export default function LogInRegister() {
                         pinErrors={pinErrors}
                         loading={loading}
                     />
+
+                    {/* Forget PIN */}
+                    <Forgetpin step={step} setStep={setStep} />
+
+                    {/* Set New PIN */}
+                    <SetNewPin step={step} setStep={setStep} />
                 </CardContent>
                 <DialogFooter>
                     <DialogClose asChild>

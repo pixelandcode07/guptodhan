@@ -5,6 +5,7 @@ import React, { Dispatch, SetStateAction } from 'react'
 import { FieldErrors, SubmitHandler, UseFormHandleSubmit, UseFormRegister } from 'react-hook-form';
 import { FormStep, LoginFormData } from '../LogIn_Register';
 import SocialLoginPart from './SocialLoginPart';
+import Forgetpin from './Forgetpin';
 
 
 export default function LogIn({ step, setStep, registerLogin,
@@ -96,7 +97,14 @@ export default function LogIn({ step, setStep, registerLogin,
                                 Remember me
                             </label>
                         </div>
-                        <a href="#" className="text-sm text-blue-600 hover:underline">
+                        {/* Forget PIN */}
+                        {/* <Forgetpin
+                            step={step}
+                            setStep={setStep}
+
+                        /> */}
+                        <a onClick={() => setStep("forgetPin")}
+                            className="text-sm text-blue-600 hover:underline">
                             Forgot PIN?
                         </a>
                     </div>
