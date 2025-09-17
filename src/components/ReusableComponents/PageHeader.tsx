@@ -27,7 +27,7 @@ export default function PageHeader({
         <div className="flex justify-between items-center gap-4 mb-6">
             <h1 className="text-3xl font-medium text-[#00005E]">{title}</h1>
             {buttonLabel && (
-                <Button className="bg-white text-[#0084CB] border border-[#0084CB] rounded-sm" onClick={handleClick}>
+                <Button variant={'HomeBtns'} onClick={handleClick}>
                     {buttonLabel}
                 </Button>
             )}

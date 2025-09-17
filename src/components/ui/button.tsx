@@ -24,6 +24,7 @@ const buttonVariants = cva(
         // #0097E9 #2e7ce4
         GrayBtn: 'bg-[#17263A] text-white hover:bg-[#17263A] cursor-pointer',
         FooterBtn: 'bg-black text-white hover:bg-black cursor-pointer',
+        HomeBtns: 'bg-white hover:bg-white text-[#0084CB] hover:text-[#0084CB] border border-[#0084CB] rounded-sm cursor-pointer',
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',
