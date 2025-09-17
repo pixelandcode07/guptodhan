@@ -4,8 +4,8 @@ import RecentOrdersList from '../../../components/UserProfile/ProfileDashboard/R
 
 export default function UserProfilePage() {
     return (
-        <div className="space-y-6">
-            <h1 className="text-xl font-semibold">Dashboard</h1>
+        <div className="">
+            <h1 className="text-xl font-semibold px-4 mt-1">Dashboard</h1>
             
             <OrderSummaryCards />
             <RecentOrdersList />

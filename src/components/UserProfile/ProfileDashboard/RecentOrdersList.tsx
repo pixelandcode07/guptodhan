@@ -66,7 +66,7 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 p-4">
       <h2 className="text-base font-semibold">Recent Orders</h2>
       {displayOrders.map((order) => (
         <div key={order.id} className="bg-white rounded-md border">
