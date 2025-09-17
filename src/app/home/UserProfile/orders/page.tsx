@@ -64,11 +64,18 @@ const demoOrders: OrderSummary[] = [
 
 export default function OrdersPage() {
   const [filter, setFilter] = React.useState<OrderStatus>('all')
+  const counts = React.useMemo(() => {
+    return demoOrders.reduce<Record<OrderStatus, number>>((acc, o) => {
+      acc['all'] = (acc['all'] ?? 0) + 1
+      acc[o.status] = (acc[o.status] ?? 0) + 1
+      return acc
+    }, { all: 0 } as Record<OrderStatus, number>)
+  }, [])
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">My Order</h1>
-      <OrderFilters value={filter} onChange={setFilter} />
+      <h1 className="text-xl font-semibold px-4 mt-1 mb-4">My Order</h1>
+      <OrderFilters value={filter} onChange={setFilter} counts={counts} />
       <OrderList orders={demoOrders} filter={filter} />
     </div>
   )
