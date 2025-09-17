@@ -1,12 +1,12 @@
-// components/PageHeader.tsx
-"use client"; // Client Component because it has interactive elements
+
+"use client";
 
 import { Button } from "@/components/ui/button";
 
 interface PageHeaderProps {
     title: string;
-    buttonLabel?: string;        // optional button
-    onButtonClick?: () => void;  // optional click handler
+    buttonLabel?: string;
+    onButtonClick?: () => void;
 }
 
 export default function PageHeader({
