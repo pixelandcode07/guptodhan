@@ -12,6 +12,6 @@ export const verifyEmailOtpValidationSchema = z.object({
 // Firebase থেকে পাওয়া ID Token ভেরিফাই করার জন্য স্কিমা
 export const verifyPhoneOtpValidationSchema = z.object({
   idToken: z.string({
-    required_error: 'Firebase ID token is required.',
-  }).min(1, { message: 'ID token cannot be empty.' }),
+    required_error: "Firebase ID token is required",
+  }).min(1, { message: "ID token cannot be empty" }),
 });

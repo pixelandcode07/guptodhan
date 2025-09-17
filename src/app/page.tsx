@@ -4,7 +4,6 @@ import FlashSale from './components/FlashSale/FlashSale';
 import Hero from './components/Hero/Hero';
 import JustForYou from './components/JustForYou/JustForYou';
 
-export default function MainHomePage() {
   return (
     <div>
       <Hero />
