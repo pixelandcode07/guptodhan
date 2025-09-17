@@ -3,8 +3,10 @@ import DeliveryOption from '@/app/components/ProductDetailsPage/DeliveryOption';
 import { DescriptionBox } from '@/app/components/ProductDetailsPage/DescriptionBox';
 import ProductDetails from '@/app/components/ProductDetailsPage/ProductDetails';
 import { QASection } from '@/app/components/ProductDetailsPage/QASection';
-import { ReviewCard } from '@/app/components/ProductDetailsPage/ReviewCard';
 import ReviewList from '@/app/components/ProductDetailsPage/ReviewLIst';
+import ProductCarousel from '@/components/ReusableComponents/ProductCarousel';
+import { carousel_data } from '@/data/carousel_data';
+// import ProductCarousel from './../../components/ProductDetailsPage/ProductCarousel';
 
 type ProductDetailsProps = {
   params: { id: string };
@@ -37,7 +39,14 @@ export default function ProductDetailsPage({ params }: ProductDetailsProps) {
       <div className="grid grid-cols-1  xl:grid-cols-8 gap-3 ">
         <div className=" xl:col-span-6">
           <ProductDetails />
+        </div>
+        <div className="xl:col-span-2">
+          <DeliveryOption />
+        </div>
+      </div>
 
+      <div className="grid grid-cols-1 xl:grid-cols-10 gap-3">
+        <div className="xl:col-span-8">
           <DescriptionBox />
           <div className="space-y-6  py-10">
             <div className="max-w-xl">
@@ -49,9 +58,10 @@ export default function ProductDetailsPage({ params }: ProductDetailsProps) {
 
           <QASection data={qaData} total={1234} />
         </div>
-        <div className="xl:col-span-2">
-          <DeliveryOption />
-        </div>
+      </div>
+
+      <div className="mt-4">
+        <ProductCarousel title="You may also like" products={carousel_data} />
       </div>
 
       <div className="bg-white mt-7"></div>
