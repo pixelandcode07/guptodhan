@@ -1,5 +1,6 @@
 import React from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { CheckCircle } from 'lucide-react'
 import type { OrderSummary } from './types'
 import OrderStatusBadge from './OrderStatusBadge'
@@ -20,7 +21,7 @@ export default function OrderItemCard({ order }: { order: OrderSummary }) {
         </div>
         <OrderStatusBadge status={order.status} />
       </div>
-      <div className="flex gap-4 p-4 items-start">
+      <Link href={`/home/UserProfile/orders/${order.id}`} className="flex gap-4 p-4 items-start hover:bg-gray-50 transition-colors">
         <div className="shrink-0">
           <Image src={item.thumbnailUrl} alt={item.title} width={72} height={72} className="rounded" />
         </div>
@@ -30,7 +31,7 @@ export default function OrderItemCard({ order }: { order: OrderSummary }) {
           <div className="text-sm text-blue-600 font-semibold mt-1">{item.priceFormatted}</div>
           <div className="text-xs text-gray-500">Qty {item.quantity}</div>
         </div>
-      </div>
+      </Link>
     </div>
   )
 }

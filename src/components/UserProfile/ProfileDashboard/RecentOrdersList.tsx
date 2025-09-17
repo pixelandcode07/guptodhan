@@ -1,5 +1,6 @@
 import React from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { CheckCircle } from 'lucide-react'
 
 interface Order {
@@ -84,7 +85,7 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
               {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
             </span>
           </div>
-          <div className="p-4 flex gap-4">
+          <Link href={`/home/UserProfile/orders/${order.id}`} className="p-4 flex gap-4 hover:bg-gray-50 transition-colors">
             <Image 
               src={order.productImage} 
               alt="Product" 
@@ -100,7 +101,7 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
               <div className="text-blue-600 font-semibold">{order.price}</div>
               <div className="text-xs text-gray-500">Qty {order.quantity}</div>
             </div>
-          </div>
+          </Link>
         </div>
       ))}
     </div>
