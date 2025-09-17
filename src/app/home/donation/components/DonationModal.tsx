@@ -79,7 +79,7 @@ export default function DonationModal({ onSubmit }: { onSubmit?: (data: { title:
                             />
                         ))}
                     </div>
-                    <Button className='w-full' onClick={() => {
+                    <Button className='w-full bg-blue-500' onClick={() => {
                         const title = (document.getElementById('donation-title') as HTMLInputElement | null)?.value || ''
                         const category = (document.getElementById('donation-category') as HTMLSelectElement | null)?.value || undefined
                         const description = (document.getElementById('donation-description') as HTMLTextAreaElement | null)?.value || undefined

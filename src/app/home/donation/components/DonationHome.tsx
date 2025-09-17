@@ -5,11 +5,14 @@ import DonationModal from './DonationModal'
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Select } from '@radix-ui/react-select'
+import DonationClaimModal from './DonationClaimModal'
 
 export default function DonationHome() {
     const [items, setItems] = React.useState<{ id: string, title: string, image: string, category?: string }[]>([])
     const [category, setCategory] = React.useState<string>('all')
     const [displayCount, setDisplayCount] = React.useState<number>(5)
+    const [claimOpen, setClaimOpen] = React.useState<boolean>(false)
+    const [selectedItem, setSelectedItem] = React.useState<{ id: string, title: string, image: string, category?: string } | undefined>(undefined)
 
     const handleSubmit = (data: { title: string, image?: string, category?: string }) => {
         setItems(prev => [{ id: `${Date.now()}`, title: data.title || 'Untitled', image: data.image || '/img/banner.png', category: data.category }, ...prev])
@@ -74,7 +77,13 @@ export default function DonationHome() {
                                         {item.category && <div className='text-xs text-gray-500 mt-1'>{item.category}</div>}
                                     </div>
                                     <div className='p-3 pt-0'>
-                                        <Button variant={'BlueBtn'} className='w-full h-8 text-xs'>Claim</Button>
+                                        <Button 
+                                            variant={'BlueBtn'} 
+                                            className='w-full h-8 text-xs'
+                                            onClick={() => { setSelectedItem(item); setClaimOpen(true) }}
+                                        >
+                                            Claim
+                                        </Button>
                                     </div>
                                 </div>
                             ) : (
@@ -82,6 +91,7 @@ export default function DonationHome() {
                             )
                         ))}
                 </div>
+                <DonationClaimModal open={claimOpen} onOpenChange={setClaimOpen} item={selectedItem} />
                 {(() => {
                     const filteredItems = items.filter(item => category === 'all' || item.category === category)
                     const hasMoreItems = displayCount < filteredItems.length
