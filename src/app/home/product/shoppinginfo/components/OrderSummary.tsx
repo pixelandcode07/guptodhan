@@ -3,6 +3,7 @@
 import React from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import OrderSuccessModal from './OrderSuccessModal'
 
 export default function OrderSummary({
   subtotal,
@@ -14,6 +15,7 @@ export default function OrderSummary({
   shipping?: number
 }) {
   const [payment, setPayment] = React.useState<'cod' | 'card'>('cod')
+  const [open, setOpen] = React.useState(false)
   const total = Math.max(0, subtotal - discount + shipping)
 
   return (
@@ -83,7 +85,7 @@ export default function OrderSummary({
         <span>৳ {total.toLocaleString()}</span>
       </div>
 
-      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">Place Order</Button>
+      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setOpen(true)}>Place Order</Button>
 
       <div className="mt-4 text-xs text-gray-600">
         <label className="flex items-start gap-2">
@@ -93,6 +95,8 @@ export default function OrderSummary({
           </span>
         </label>
       </div>
+
+      <OrderSuccessModal open={open} onOpenChange={setOpen} />
     </div>
   )
 }
