@@ -9,29 +9,6 @@ import Banner from '../../../../public/img/banner2.jpg';
 import Link from 'next/link';
 
 export default function FlashSale() {
-<<<<<<< HEAD
-    const router = useRouter();
-    return (
-        <div className='max-w-7xl mx-auto py-15'>
-            <PageHeader
-                title="Flash Sale"
-                buttonLabel="Shop All Products"
-                onButtonClick={() => router.push("/home/view/all/products")}
-            />
-            <div className='grid justify-center items-center grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-8'>
-                {flashSale.slice(0, 6).map((item, idx) => (
-                    <div key={idx}>
-                        <div className="image">
-                            <Image src={item.productImage} alt="Product Image" width={200} height={200} className='w-full min-h-40' />
-                        </div>
-                        <div className="product-details ">
-                            <h3 className='font-medium text-base'>{item.productName}</h3>
-                            <p className='text-[#0084CB] font-medium text-base'>₹{item.productActualPrice}</p>
-                            <p className='font-medium text-[10px]'>₹{item.productDiscountPrice}</p>
-                        </div>
-                    </div>
-                ))}
-=======
   const router = useRouter();
   return (
     <div className="max-w-7xl mx-auto py-15">
@@ -62,7 +39,6 @@ export default function FlashSale() {
               <p className="font-medium text-[10px]">
                 ₹{item.productDiscountPrice}
               </p>
->>>>>>> cd86bcef9765c9dfbc3c1231e17f5f6729e6d27b
             </div>
           </div>
         ))}
