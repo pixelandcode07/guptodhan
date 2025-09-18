@@ -24,7 +24,7 @@ type Props = {
 
 export function ReviewCard({ review }: Props) {
   return (
-    <Card className="p-6">
+    <Card className="p-6 border shadow-none">
       <div className="flex justify-between items-start">
         <div>
           <h3 className="font-semibold">{review.user}</h3>
