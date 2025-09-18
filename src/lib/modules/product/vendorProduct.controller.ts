@@ -1,7 +1,10 @@
 import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 import { sendResponse } from '@/lib/utils/sendResponse';
-import { createVendorProductValidationSchema, updateVendorProductValidationSchema } from './vendorProduct.validation';
+import {
+  createVendorProductValidationSchema,
+  updateVendorProductValidationSchema,
+} from './vendorProduct.validation';
 import { VendorProductServices } from './vendorProduct.service';
 import dbConnect from '@/lib/db';
 import { Types } from 'mongoose';
@@ -15,9 +18,18 @@ const createVendorProduct = async (req: NextRequest) => {
   const payload = {
     ...validatedData,
     category: new Types.ObjectId(validatedData.category),
-    subCategory: validatedData.subCategory ? new Types.ObjectId(validatedData.subCategory) : undefined,
-    childCategory: validatedData.childCategory ? new Types.ObjectId(validatedData.childCategory) : undefined,
-    brand: validatedData.brand ? new Types.ObjectId(validatedData.brand) : undefined,
+    subCategory: validatedData.subCategory
+      ? new Types.ObjectId(validatedData.subCategory)
+      : undefined,
+    childCategory: validatedData.childCategory
+      ? new Types.ObjectId(validatedData.childCategory)
+      : undefined,
+    brand: validatedData.brand
+      ? new Types.ObjectId(validatedData.brand)
+      : undefined,
+
+    // ✅ include productOptions if provided
+    productOptions: validatedData.productOptions ?? [],
   };
 
   const result = await VendorProductServices.createVendorProductInDB(payload);
@@ -44,7 +56,10 @@ const getAllVendorProducts = async () => {
 };
 
 // Update vendor product
-const updateVendorProduct = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const updateVendorProduct = async (
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) => {
   await dbConnect();
   const { id } = params;
   const body = await req.json();
@@ -52,10 +67,23 @@ const updateVendorProduct = async (req: NextRequest, { params }: { params: { id:
 
   const payload = {
     ...validatedData,
-    ...(validatedData.category && { category: new Types.ObjectId(validatedData.category) }),
-    ...(validatedData.subCategory && { subCategory: new Types.ObjectId(validatedData.subCategory) }),
-    ...(validatedData.childCategory && { childCategory: new Types.ObjectId(validatedData.childCategory) }),
-    ...(validatedData.brand && { brand: new Types.ObjectId(validatedData.brand) }),
+    ...(validatedData.category && {
+      category: new Types.ObjectId(validatedData.category),
+    }),
+    ...(validatedData.subCategory && {
+      subCategory: new Types.ObjectId(validatedData.subCategory),
+    }),
+    ...(validatedData.childCategory && {
+      childCategory: new Types.ObjectId(validatedData.childCategory),
+    }),
+    ...(validatedData.brand && {
+      brand: new Types.ObjectId(validatedData.brand),
+    }),
+
+    // ✅ update productOptions too
+    ...(validatedData.productOptions && {
+      productOptions: validatedData.productOptions,
+    }),
   };
 
   const result = await VendorProductServices.updateVendorProductInDB(id, payload);
@@ -69,7 +97,10 @@ const updateVendorProduct = async (req: NextRequest, { params }: { params: { id:
 };
 
 // Delete vendor product
-const deleteVendorProduct = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const deleteVendorProduct = async (
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) => {
   await dbConnect();
   const { id } = params;
   await VendorProductServices.deleteVendorProductFromDB(id);
