@@ -1,27 +1,26 @@
+'use client';
 
-"use client";
-
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 
 interface PageHeaderProps {
-    title: string;
-    buttonLabel?: string;
-    onButtonClick?: () => void;
+  title: string;
+  buttonLabel?: string;
+  onButtonClick?: () => void;
 }
 
 export default function PageHeader({
-    title,
-    buttonLabel,
-    onButtonClick,
+  title,
+  buttonLabel,
+  onButtonClick,
 }: PageHeaderProps) {
-    // default click handler if none is provided
-    const handleClick = () => {
-        if (onButtonClick) {
-            onButtonClick();
-        } else {
-            console.log(`${buttonLabel || "Button"} clicked`);
-        }
-    };
+  // default click handler if none is provided
+  const handleClick = () => {
+    if (onButtonClick) {
+      onButtonClick();
+    } else {
+      console.log(`${buttonLabel || 'Button'} clicked`);
+    }
+  };
 
     return (
         <div className="flex justify-between items-center gap-4 mb-6">
