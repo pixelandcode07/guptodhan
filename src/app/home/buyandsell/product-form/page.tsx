@@ -1,10 +1,14 @@
-import React from 'react'
-import ProductForm from '../components/ProductForm'
+import React, { Suspense } from 'react'; // Import Suspense
+import ProductForm from '../components/ProductForm';
+
 
 export default function ProductFormPage() {
     return (
         <div>
-            <ProductForm />
+            {/* The fallback is what's shown while the component loads */}
+            <Suspense fallback={<div>Loading form...</div>}>
+                <ProductForm />
+            </Suspense>
         </div>
-    )
+    );
 }
