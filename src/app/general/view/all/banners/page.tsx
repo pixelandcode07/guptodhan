@@ -2,7 +2,8 @@ import { DataTable } from "@/components/TableHelper/data-table";
 import { Banner, banner_columns } from "@/components/TableHelper/banner_columns";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, ArrowUpDown } from "lucide-react";
+import { ArrowUpDown } from "lucide-react";
+import AddBannerButton from "./components/AddBannerButton";
 
 function getData(): Banner[] {
   return [
@@ -119,10 +120,7 @@ export default function BannersPage() {
             <span>Search:</span>
             <Input type="text" className="border border-gray-500 w-64" />
           </div>
-            <Button className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Add New Banner
-            </Button>
+            <AddBannerButton />
             <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
               <ArrowUpDown className="w-4 h-4" />
               Rearrange Banners
