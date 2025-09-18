@@ -26,9 +26,6 @@ export default function BuySellNavMain() {
             <div>
                 <Dialog>
                     <ul className='flex gap-4 text-base'>
-                        {/* <li className='flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer'><Heart /><span className='text-[#00005E] text-[12px]'> Whishlist</span></li>
-                        <li className='flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer'><Handbag /><span className='text-[#00005E] text-[12px]'> Cart</span></li> */}
-
                         {session ? <>
                             <li className='flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer'>
                                 <Link href={'/home/UserProfile'} className='flex flex-col justify-center items-center'>
@@ -54,7 +51,10 @@ export default function BuySellNavMain() {
 
                             </DialogTrigger>
                         }
-                        <Button variant={'BlueBtn'}>Post a Free Add</Button>
+                        <Link href={'/home/buyandsell/select-category'}>
+                            {/* className='flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer' */}
+                            <Button variant={'BlueBtn'}>Post a Free Add</Button>
+                        </Link>
                     </ul>
                     {/* Login page */}
                     <LogInRegister />
