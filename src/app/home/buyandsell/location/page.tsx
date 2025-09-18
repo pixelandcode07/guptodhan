@@ -1,10 +1,10 @@
-import React from 'react'
-import LocationPage from '../components/LocationPage'
+import { Suspense } from 'react';
+import LocationPage from '../components/LocationPage';
 
-export default function Location() {
+export default function ParentLocationPage() {
     return (
-        <div>
+        <Suspense fallback={<div>Loading...</div>}>
             <LocationPage />
-        </div>
-    )
+        </Suspense>
+    );
 }
