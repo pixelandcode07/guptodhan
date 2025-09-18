@@ -209,33 +209,30 @@ export default function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-3">
-              <Link href="/general/home">
+            <SidebarMenuButton asChild className="">
+              <Link
+                href="/general/home"
+                className="flex justify-center items-center py-2 hover:bg-transparent">
                 <Image
-                  src="/img/logo.jpg"
+                  src="/logo.png"
                   alt="Guptodhan"
-                  width={120}
-                  height={24}
+                  width={140}
+                  height={50}
                 />
               </Link>
-            </SidebarMenuButton>
-            <SidebarMenuButton asChild>
-              <Link href="/general/home">Dashboard</Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         <WebsiteConfig items={data.navMain} />
-        <ContentManagement />
-        <UserRolePermition items={data.userRole} />
         <BuySell items={data.buysell} />
         <Donation items={data.donations} />
         <Multivendor items={data.documents} />
         <EcommerceModules items={data.ecommerceModules} />
         <CRMModules items={data.crmModules} />
+        <ContentManagement />
+        <UserRolePermition items={data.userRole} />
         <DemoProducts items={data.demoProducts} />
         <Logout items={data.logoutAction} />
       </SidebarContent>

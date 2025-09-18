@@ -27,12 +27,13 @@ export default function UserRolePermition({
         <SidebarMenu>
           {items.map(item => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuSubButton>
-                <Link className="flex gap-2  items-center" href={item.url}>
-                  <item.icon className="w-4 h-4 " />
+              {' '}
+              <Link href={item.url}>
+                <SidebarMenuSubButton className="flex gap-2  items-center">
+                  <item.icon className="w-4 h-4 text-white stroke-white" />
                   <span>{item.title}</span>
-                </Link>
-              </SidebarMenuSubButton>
+                </SidebarMenuSubButton>
+              </Link>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>

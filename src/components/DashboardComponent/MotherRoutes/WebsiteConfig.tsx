@@ -7,6 +7,7 @@ import {
   SidebarMenuItem,
   SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
+import { Home } from 'lucide-react';
 import Link from 'next/link';
 // import { ChevronDown } from 'lucide-react'
 // import { Key } from 'lucide-react'
@@ -19,23 +20,25 @@ export default function WebsiteConfig({
 }) {
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarMenuButton>
-        <Link href="/general/home">Dashboard</Link>
-      </SidebarMenuButton>
+      {' '}
+      <Link href="/general/home">
+        <SidebarMenuButton className="flex cursor-pointer gap-2 items-center">
+          <Home /> Dashboard
+        </SidebarMenuButton>
+      </Link>
       <SidebarGroupLabel>
         <p className="text-[#f1bf43] text-[12px] uppercase">Website Config</p>
       </SidebarGroupLabel>
-
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map(item => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuSubButton>
-                <Link className="flex gap-2  items-center" href={item.url}>
-                  <item.icon className="w-4 h-4 " />
+              <Link href={item.url}>
+                <SidebarMenuSubButton className="flex gap-2 text-white   items-center">
+                  <item.icon className="w-4 h-4 text-white stroke-white" />
                   <span>{item.title}</span>
-                </Link>
-              </SidebarMenuSubButton>
+                </SidebarMenuSubButton>
+              </Link>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
