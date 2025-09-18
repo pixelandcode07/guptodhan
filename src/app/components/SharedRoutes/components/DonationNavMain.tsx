@@ -6,10 +6,12 @@ import { useSession, signOut } from 'next-auth/react'
 import { User, LogOut } from 'lucide-react'
 import SearchBar from './SearchBar'
 import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation'
 
 export default function DonationNavMain() {
     const { data: session } = useSession()
     const user = session?.user
+    const router = useRouter()
 
     return (
         <div className='bg-[#FFFFFF] text-black  flex justify-between items-center py-5 px-15 border-2'>
@@ -33,7 +35,7 @@ export default function DonationNavMain() {
                                     <span className='text-[#00005E] text-[12px]'>Profile</span>
                                 </Link>
                             </li>
-                            <li onClick={() => signOut()} className='flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer'>
+                            <li onClick={(e) => { e.stopPropagation(); signOut(); }} className='flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer'>
                                 <LogOut />
                                 <span className='text-[#00005E] text-[12px]'>Log out</span>
                             </li>
@@ -45,7 +47,7 @@ export default function DonationNavMain() {
                                 </li>
                             </DialogTrigger>
                         }
-                        <Button variant={'BlueBtn'}> Donation</Button>
+                        <Button variant={'BlueBtn'} type='button' onClick={() => router.push('/home/donation?donate=1')}>Donate</Button>
                     </ul>
                     <LogInRegister />
                 </Dialog>
