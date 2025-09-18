@@ -32,7 +32,7 @@ const getVendorProductsByBrandFromDB = async (brandId: string) => {
   return result;
 };
 
-// Update vendor product
+// Update vendor product (including productOptions if provided)
 const updateVendorProductInDB = async (id: string, payload: Partial<IVendorProduct>) => {
   const result = await VendorProductModel.findByIdAndUpdate(id, payload, { new: true });
   if (!result) {
@@ -50,6 +50,33 @@ const deleteVendorProductFromDB = async (id: string) => {
   return null;
 };
 
+// Add a new product option to an existing product
+const addProductOptionInDB = async (id: string, option: any) => {
+  const result = await VendorProductModel.findByIdAndUpdate(
+    id,
+    { $push: { productOptions: option } },
+    { new: true }
+  );
+  if (!result) {
+    throw new Error('Vendor product not found to add option.');
+  }
+  return result;
+};
+
+// Remove a product option by index
+const removeProductOptionFromDB = async (id: string, index: number) => {
+  const product = await VendorProductModel.findById(id);
+  if (!product) {
+    throw new Error('Vendor product not found to remove option.');
+  }
+  if (!product.productOptions || index < 0 || index >= product.productOptions.length) {
+    throw new Error('Invalid product option index.');
+  }
+  product.productOptions.splice(index, 1);
+  await product.save();
+  return product;
+};
+
 export const VendorProductServices = {
   createVendorProductInDB,
   getAllVendorProductsFromDB,
@@ -57,4 +84,6 @@ export const VendorProductServices = {
   getVendorProductsByBrandFromDB,
   updateVendorProductInDB,
   deleteVendorProductFromDB,
+  addProductOptionInDB,
+  removeProductOptionFromDB,
 };
