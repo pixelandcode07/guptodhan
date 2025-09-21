@@ -1,8 +1,22 @@
 import { Document, Types } from 'mongoose';
 
+export interface IProductOption {
+  productImage?: string;
+  unit?: string;
+  simType?: string;
+  warranty?: string;
+  condition?: string;
+  stock?: number;
+  price?: number;
+  discountPrice?: number;
+  color?: string;
+  size?: string;
+}
+
 export interface IVendorProduct extends Document {
   productId: string;
   productTitle: string;
+  vendorStoreId: Types.ObjectId;
   shortDescription: string;
   fullDescription: string;
   specification: string;
@@ -31,10 +45,16 @@ export interface IVendorProduct extends Document {
   status: 'active' | 'inactive';
   createdAt: Date;
   updatedAt: Date;
+
+  
+  // New field
+  productOptions?: IProductOption[];
 }
 
 
-//  Vendor Prudct add
+
+
+//  Vendor Product add
 //  productID
 //  Product Title
 //  Short Description - 255 ch
