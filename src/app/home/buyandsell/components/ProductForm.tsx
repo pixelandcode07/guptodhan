@@ -50,31 +50,61 @@ export default function ProductForm() {
         handleSubmit,
         control,
         setValue,
+        watch,
         formState: { errors },
     } = useForm<FormData>({
         defaultValues: {
             brand: null,
             model: null,
             edition: null,
-            photos: [],
+            photos: ["", "", "", "", ""], // 5 empty slots
         },
     });
 
-    const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+    const [uploading, setUploading] = useState<boolean[]>([false, false, false, false, false]);
 
-    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (!files) return;
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
 
-        const fileArray = Array.from(files).slice(0, 5); // Limit to 5 photos
-        setValue("photos", fileArray);
+  // Convert to base64 for Cloudinary upload
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
 
-        // Clean up old previews to prevent memory leaks
-        photoPreviews.forEach(URL.revokeObjectURL);
+  reader.onloadend = async () => {
+    try {
+      const res = await axios.post("/api/upload", { file: reader.result });
+      const imageUrl = res.data.url;
 
-        const previews = fileArray.map((file) => URL.createObjectURL(file));
-        setPhotoPreviews(previews);
-    };
+      // Replace that index’s preview with cloudinary URL
+      const updatedPreviews = [...photoPreviews];
+      updatedPreviews[index] = imageUrl;
+      setPhotoPreviews(updatedPreviews);
+
+      // Update form value
+      setValue("photos", updatedPreviews as any);
+    } catch (err) {
+      console.error("Upload failed", err);
+      alert("Image upload failed!");
+    }
+  };
+};
+
+    // const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+
+    // const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    //     const files = e.target.files;
+    //     if (!files) return;
+
+    //     const fileArray = Array.from(files).slice(0, 5); // Limit to 5 photos
+    //     setValue("photos", fileArray);
+
+    //     // Clean up old previews to prevent memory leaks
+    //     photoPreviews.forEach(URL.revokeObjectURL);
+
+    //     const previews = fileArray.map((file) => URL.createObjectURL(file));
+    //     setPhotoPreviews(previews);
+    // };
 
     const onSubmit = async (data: FormData) => {
         // Create the final product object to be sent to the API
@@ -204,7 +234,7 @@ export default function ProductForm() {
                     <div className="space-y-6">
                         <h2 className="text-xl font-semibold border-b pb-2">Photos & Contact</h2>
 
-                        <div>
+                        {/* <div>
                             <Label className="font-semibold">Add up to 5 photos*</Label>
                             <Input type="file" accept="image/*" multiple onChange={handlePhotoChange} className="mt-2" />
                             <div className="flex space-x-2 mt-4">
@@ -219,7 +249,33 @@ export default function ProductForm() {
                                     />
                                 ))}
                             </div>
-                        </div>
+                        </div> */}
+                       <div>
+  <Label className="font-semibold">Add up to 5 photos*</Label>
+  <div className="grid grid-cols-5 gap-4 mt-4">
+    {[...Array(5)].map((_, index) => (
+      <div key={index} className="w-20 h-20 border rounded-md flex items-center justify-center">
+        {photoPreviews[index] ? (
+          <Image
+            src={photoPreviews[index]}
+            alt={`Photo ${index + 1}`}
+            width={80}
+            height={80}
+            className="object-cover rounded-md"
+          />
+        ) : (
+          <Input
+            type="file"
+            accept="image/*"
+            className="absolute opacity-0 w-20 h-20 cursor-pointer"
+            onChange={(e) => handlePhotoUpload(e, index)}
+          />
+        )}
+      </div>
+    ))}
+  </div>
+</div>
+
 
                         <div>
                             <Label htmlFor="name" className="font-semibold">Your Name*</Label>
