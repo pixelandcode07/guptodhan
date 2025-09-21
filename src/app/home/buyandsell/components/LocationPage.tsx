@@ -1,67 +1,87 @@
 "use client";
 
-import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { useState } from "react";
+import { division_wise_locations, DivisionWiseLocations } from "@/data/division_wise_locations";
 
 export default function LocationPage() {
-    const searchParams = useSearchParams();
-    const router = useRouter();
+  const params = useSearchParams();
+  const router = useRouter();
 
-    const category = searchParams?.get("category") ?? "";
-    const subcategory = searchParams?.get("subcategory") ?? "";
+  const category = params?.get("category");
+  const subcategory = params?.get("subcategory");
 
-    const [location, setLocation] = useState("");
+  const [selectedDivision, setSelectedDivision] = useState<keyof DivisionWiseLocations | null>(null);
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
 
-    const handleSubmit = () => {
-        if (!location) {
-            alert("Please select a location");
-            return;
-        }
-        // Redirect to the next step with all query params
-        router.push(
-            `/home/buyandsell/product-form?category=${category}&subcategory=${subcategory}&location=${location}`
-        );
-    };
+  return (
+    <div className="md:max-w-[95vw] lg:max-w-[80vw] mx-auto grid grid-cols-1 md:grid-cols-3">
+      {/* Left sidebar - Divisions */}
+      <div className=" border-r p-4">
+        <h2 className="text-lg font-semibold mb-4">Divisions</h2>
+        {Object.keys(division_wise_locations).map((division) => (
+          <button
+            key={division}
+            onClick={() => {
+              setSelectedDivision(division as keyof DivisionWiseLocations);
+              setSelectedCity(null);
+            }}
+            className={`block w-full text-left p-2 rounded mb-2 ${selectedDivision === division ? "bg-blue-600 text-white" : "hover:bg-gray-100"
+              }`}
+          >
+            {division}
+          </button>
+        ))}
+      </div>
 
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-50">
-            <Card className="w-full max-w-md">
-                <CardHeader className="text-center">
-                    <CardTitle className="text-2xl">Select Your Location</CardTitle>
-                    <CardDescription>
-                        You are posting in: <span className="font-semibold text-primary">{category}</span> / <span className="font-semibold text-primary">{subcategory}</span>
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="location-select">Location</Label>
-                            <Select onValueChange={setLocation} value={location}>
-                                <SelectTrigger id="location-select">
-                                    <SelectValue placeholder="-- Select a Location --" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Dhaka">Dhaka</SelectItem>
-                                    <SelectItem value="Chattogram">Chattogram</SelectItem>
-                                    <SelectItem value="Sylhet">Sylhet</SelectItem>
-                                    <SelectItem value="Rajshahi">Rajshahi</SelectItem>
-                                    <SelectItem value="Khulna">Khulna</SelectItem>
-                                    <SelectItem value="Barishal">Barishal</SelectItem>
-                                    <SelectItem value="Rangpur">Rangpur</SelectItem>
-                                    <SelectItem value="Mymensingh">Mymensingh</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <Button onClick={handleSubmit} className="w-full">
-                            Continue
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-    );
+      {/* Middle - Cities */}
+      <div className=" border-r p-4">
+        {selectedDivision ? (
+          <>
+            <h2 className="text-lg font-semibold mb-4">{selectedDivision} Cities</h2>
+            {Object.keys(division_wise_locations[selectedDivision]).map((city) => (
+              <button
+                key={city}
+                onClick={() => setSelectedCity(city)}
+                className={`block w-full text-left p-2 rounded mb-2 ${selectedCity === city ? "bg-green-600 text-white" : "hover:bg-gray-100"
+                  }`}
+              >
+                {city}
+              </button>
+            ))}
+          </>
+        ) : (
+          <p className="text-gray-500">Select a division to see cities</p>
+        )}
+      </div>
+
+      {/* Right - Areas */}
+      <div className="flex-1 p-4">
+        {selectedDivision && selectedCity ? (
+          <>
+            <h2 className="text-lg font-semibold mb-4">{selectedCity} Areas</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {division_wise_locations[selectedDivision][selectedCity].map((area) => (
+                <button
+                  key={area}
+                  onClick={() =>
+                    router.push(
+                      `/home/buyandsell/product-form?category=${category}&subcategory=${subcategory}&division=${selectedDivision}&city=${selectedCity}&area=${area}`
+                    )
+                  }
+                  className="p-3 border rounded hover:bg-gray-100"
+                >
+                  {area}
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="text-gray-500">Select a city to see areas</p>
+        )}
+      </div>
+    </div>
+  );
 }
+
+

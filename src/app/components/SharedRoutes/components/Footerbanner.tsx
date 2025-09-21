@@ -15,7 +15,7 @@ export default function Footerbanner() {
             <div className="footer-content">
                 <h1 className='text-white font-medium text-2xl'>Download our new app today</h1>
             </div>
-            <div className="btns flex flex-col gap-4">
+            <div className="btns hidden md:flex flex-col gap-4">
                 <Button size={"xxl"} variant={'FooterBtn'} className=''>
                     <div className="image-icon">
                         <Image src={PlayStore} width={30} height={30} alt="logo" className='w-fit bg-black' />

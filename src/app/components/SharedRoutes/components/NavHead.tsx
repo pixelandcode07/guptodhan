@@ -4,7 +4,7 @@ import React from 'react'
 
 export default function NavHead() {
     return (
-        <div className='bg-[#0084CB] text-[#FFFFFF]  flex justify-between items-center py-3 px-15'>
+        <div className='bg-[#0084CB] text-[#FFFFFF] hidden md:flex justify-between items-center py-3 px-15'>
             <div className='text-base flex items-center gap-2'>
                 <Phone /> Call us Now : 01816500600
             </div>
