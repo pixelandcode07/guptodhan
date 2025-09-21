@@ -11,6 +11,8 @@ import { brandOptions, modelOptions } from "@/data/data"; // Assuming you have t
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import axios from "axios";
+import { useSession } from "next-auth/react";
 
 // Define the structure of our form data
 type FormData = {
@@ -29,6 +31,7 @@ type FormData = {
 };
 
 export default function ProductForm() {
+    const { data: session, status } = useSession()
     const searchParams = useSearchParams();
     const router = useRouter();
 
@@ -73,15 +76,13 @@ export default function ProductForm() {
         setPhotoPreviews(previews);
     };
 
-    const onSubmit = (data: FormData) => {
+    const onSubmit = async (data: FormData) => {
         // Create the final product object to be sent to the API
         const newProduct = {
             ...data,
-            // Convert select options to simple string values
             brand: data.brand?.value,
             model: data.model?.value,
             edition: data.edition?.value,
-            // Add the params from the URL
             category: category,
             subcategory: subcategory,
             location: {
@@ -94,11 +95,31 @@ export default function ProductForm() {
 
         // In a real app, you would send `newProduct` and `data.photos` to your API here.
         // For now, we save it to localStorage as a mock database.
-        const existingProducts = JSON.parse(localStorage.getItem("products") || "[]");
-        localStorage.setItem("products", JSON.stringify([newProduct, ...existingProducts]));
 
-        alert("Product submitted successfully!");
-        router.push("/home/buyandsell");
+        try {
+            const res = await axios.post('/api/v1/classifieds/ads', newProduct, {
+                headers: { Authorization: `Bearer ${adminAccessToken}` }
+            });
+            if (res.status === 201) {
+                alert("Product submitted successfully!");
+                router.push("/home/buyandsell");
+            } else {
+                alert("Failed to submit product. Please try again.");
+            }
+        } catch (error) {
+            console.log(error)
+            alert("An error occurred while submitting the product.");
+        }
+
+
+
+
+
+        // const existingProducts = JSON.parse(localStorage.getItem("products") || "[]");
+        // localStorage.setItem("products", JSON.stringify([newProduct, ...existingProducts]));
+
+        // alert("Product submitted successfully!");
+        // router.push("/home/buyandsell");
     };
 
     return (
@@ -192,8 +213,8 @@ export default function ProductForm() {
                                         key={idx}
                                         src={src}
                                         alt={`Preview ${idx + 1}`}
-                                        width={80} // ✅ FIX: Added width prop
-                                        height={80} // ✅ FIX: Added height prop
+                                        width={80}
+                                        height={80}
                                         className="object-cover rounded-md border"
                                     />
                                 ))}
