@@ -35,7 +35,12 @@ export default function ProductForm() {
     // Get data from the previous step's URL
     const category = searchParams?.get("category") ?? "";
     const subcategory = searchParams?.get("subcategory") ?? "";
-    const location = searchParams?.get("location") ?? "";
+    const division = searchParams?.get("division") ?? "";
+    const city = searchParams?.get("city") ?? "";
+    const area = searchParams?.get("area") ?? "";
+
+
+
 
     const {
         register,
@@ -79,7 +84,11 @@ export default function ProductForm() {
             // Add the params from the URL
             category: category,
             subcategory: subcategory,
-            location: location,
+            location: {
+                division,
+                city,
+                area
+            },
         };
         console.log("Final Product Data:", newProduct);
 
@@ -97,7 +106,7 @@ export default function ProductForm() {
             <div className="w-full max-w-6xl bg-white shadow-lg rounded-lg p-8">
                 <h1 className="text-3xl font-bold mb-4 text-center text-gray-800">Fill in the details</h1>
                 <p className="text-gray-600 mb-6 text-center">
-                    Posting in: <span className="font-semibold text-primary">{category}</span> / <span className="font-semibold text-primary">{subcategory}</span> / <span className="font-semibold text-primary">{location}</span>
+                    Posting in: <span className="font-semibold text-primary">{category}</span> / <span className="font-semibold text-primary">{subcategory}</span> / <span className="font-semibold text-primary">{division}</span>
                 </p>
 
                 <form
@@ -160,7 +169,7 @@ export default function ProductForm() {
                         <div>
                             <Label htmlFor="description" className="font-semibold">Description*</Label>
                             <Textarea id="description" {...register("description", { required: "Description is required" })} />
-                             {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
+                            {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
                         </div>
 
                         <div>
@@ -194,7 +203,7 @@ export default function ProductForm() {
                         <div>
                             <Label htmlFor="name" className="font-semibold">Your Name*</Label>
                             <Input id="name" {...register("name", { required: "Your name is required" })} />
-                             {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
+                            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
                         </div>
 
                         <div>

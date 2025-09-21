@@ -4,6 +4,7 @@ import "./globals.css";
 import SessionProviderWrapper from "@/Providers/SessionProviderWrapper";
 import LayoutWrapper from "@/Providers/LayoutWrapper";
 import { Toaster } from "@/components/ui/sonner";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +34,11 @@ export default function RootLayout({
         <SessionProviderWrapper>
           <LayoutWrapper>
             {children}
+            {/* Google Maps Places API Script */}
+        <Script
+          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+          strategy="beforeInteractive"
+        />
             <Toaster />
           </LayoutWrapper>
         </SessionProviderWrapper>
