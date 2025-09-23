@@ -70,9 +70,22 @@ const deleteBrand = async (req: NextRequest, { params }: { params: { id: string 
     });
 };
 
+const getBrandById = async (req: NextRequest, { params }: { params: { id: string } }) => {
+    await dbConnect();
+    const { id } = params;
+    const result = await BrandServices.getBrandByIdFromDB(id);
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Brand retrieved successfully!',
+        data: result,
+    });
+};
+
 export const BrandController = {
     createBrand,
     getAllBrands,
     updateBrand,
     deleteBrand,
+    getBrandById,
 };
