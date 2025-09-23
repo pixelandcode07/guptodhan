@@ -1,10 +1,27 @@
 import { z } from 'zod';
 
+// Reusable schema for productOptions
+const productOptionValidationSchema = z.object({
+  productImage: z.string().optional(),
+  unit: z.string().optional(),
+  simType: z.string().optional(),
+  warranty: z.string().optional(),
+  condition: z.string().optional(),
+  stock: z.number().optional(),
+  price: z.number().optional(),
+  discountPrice: z.number().optional(),
+  color: z.string().optional(),
+  size: z.string().optional(),
+});
+
 // Create vendor product validation
 export const createVendorProductValidationSchema = z.object({
   productId: z.string().min(1, { message: 'Product ID is required.' }),
   productTitle: z.string().min(1, { message: 'Product title is required.' }),
-  shortDescription: z.string().min(1, { message: 'Short description is required.' }).max(255, { message: 'Short description cannot exceed 255 characters.' }),
+  shortDescription: z
+    .string()
+    .min(1, { message: 'Short description is required.' })
+    .max(255, { message: 'Short description cannot exceed 255 characters.' }),
   fullDescription: z.string().min(1, { message: 'Full description is required.' }),
   specification: z.string().min(1, { message: 'Specification is required.' }),
   warrantyPolicy: z.string().min(1, { message: 'Warranty policy is required.' }),
@@ -30,6 +47,9 @@ export const createVendorProductValidationSchema = z.object({
   metaKeyword: z.string().optional(),
   metaDescription: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),
+
+  // productOptions: optional array of options
+  productOptions: z.array(productOptionValidationSchema).optional(),
 });
 
 // Update vendor product validation
@@ -62,4 +82,7 @@ export const updateVendorProductValidationSchema = z.object({
   metaKeyword: z.string().optional(),
   metaDescription: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),
+
+  // productOptions: optional array of options
+  productOptions: z.array(productOptionValidationSchema).optional(),
 });

@@ -171,6 +171,29 @@ export const demoProductOpt: readonly DemoProductOpt[] = [
 ];
 
 
+export interface Subcategory {
+  readonly value: string;
+  readonly label: string;
+}
+
+export const brandOptions: readonly Subcategory[] = [
+  { value: "apple", label: "Apple" },
+  { value: "samsung", label: "Samsung" },
+  { value: "xiaomi", label: "Xiaomi" },
+];
+
+export const modelOptions: readonly Subcategory[] = [
+  { value: "model1", label: "Model 1" },
+  { value: "model2", label: "Model 2" },
+];
+
+export const editionOptions: readonly Subcategory[] = [
+  { value: "standard", label: "Standard" },
+  { value: "pro", label: "Pro" },
+  { value: "ultra", label: "Ultra" },
+];
+
+
 
 
 
