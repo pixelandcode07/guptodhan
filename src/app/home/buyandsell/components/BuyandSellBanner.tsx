@@ -2,7 +2,11 @@ import Image from 'next/image'
 import React from 'react'
 import BuySellBanner from '../../../../../public/img/buysell/buysell-banner.png'
 
-export default function BuyandSellBanner() {
+
+
+
+export default async function BuyandSellBanner() {
+  
     return (
         <div>
             <div className="banner py-5">
