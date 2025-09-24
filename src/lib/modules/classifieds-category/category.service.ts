@@ -67,7 +67,13 @@ const getCategoriesWithSubcategoriesFromDB = async () => {
   return result;
 };
 
-
+const getCategoryByIdFromDB = async (id: string) => {
+  const result = await ClassifiedCategory.findById(id);
+  if (!result) {
+    throw new Error('Category not found');
+  }
+  return result;
+};
 
 export const ClassifiedCategoryServices = {
   createCategoryInDB,
@@ -76,4 +82,5 @@ export const ClassifiedCategoryServices = {
   deleteCategoryFromDB,
   getCategoriesWithSubcategoriesFromDB,
   getPublicCategoriesFromDB,
+  getCategoryByIdFromDB,
 };

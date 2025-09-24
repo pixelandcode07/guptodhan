@@ -19,9 +19,9 @@ export default function WebsiteConfig({
 }) {
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarMenuButton>
+      {/* <SidebarMenuButton>
         <Link href="/general/home">Dashboard</Link>
-      </SidebarMenuButton>
+      </SidebarMenuButton> */}
       <SidebarGroupLabel>
         <p className="text-[#f1bf43] text-[12px] uppercase">Website Config</p>
       </SidebarGroupLabel>
