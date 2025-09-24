@@ -33,9 +33,18 @@ const deleteBrandFromDB = async (id: string) => {
     return null;
 };
 
+const getBrandByIdFromDB = async (id: string) => {
+  const result = await Brand.findById(id);
+  if (!result) {
+    throw new Error('Brand not found');
+  }
+  return result;
+};
+
 export const BrandServices = {
   createBrandInDB,
   getAllBrandsFromDB,
   updateBrandInDB,
   deleteBrandFromDB,
+  getBrandByIdFromDB,
 };
