@@ -59,17 +59,28 @@ const updateSubCategory = async (req: NextRequest, { params }: { params: { id: s
     });
 };
 
-const getSubCategoriesByParent = async (_req: NextRequest, { params }: { params: { id: string } }) => {
-    await dbConnect();
-    const { id } = params; // categoryId এর পরিবর্তে id ব্যবহার করা হচ্ছে
-    const result = await ClassifiedSubCategoryServices.getSubCategoriesByParentFromDB(id);
-    return sendResponse({
-        success: true,
-        statusCode: StatusCodes.OK,
-        message: 'Sub-categories retrieved successfully!',
-        data: result,
-    });
+const getSubCategoriesByParent = async (req: NextRequest, context: any) => {
+  await dbConnect();
+
+  // context.params.awaitable → await করে ব্যবহার করতে হবে
+  const params = await context.params;
+  if (!params || !params.id) {
+    throw new Error("Category ID is required in the route params.");
+  }
+  const id = params.id;
+
+  const result = await ClassifiedSubCategoryServices.getSubCategoriesByParentFromDB(id);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Sub-categories retrieved successfully!",
+    data: result,
+  });
 };
+
+
+
 
 const getPublicSubCategoriesByParent = async (_req: NextRequest, { params }: { params: { id: string } }) => {
     await dbConnect();
