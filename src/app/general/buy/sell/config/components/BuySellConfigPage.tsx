@@ -8,6 +8,7 @@ import { Controller, useForm } from 'react-hook-form'
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
+import { Save } from 'lucide-react';
 
 type FormValues = {
     image: File | null
@@ -17,8 +18,6 @@ type FormValues = {
 export default function BuySellConfigPage() {
     const { data: session } = useSession();
     const token = session?.accessToken;
-    console.log("Token being sent:", session?.accessToken);
-    console.log("Role:", session?.user?.role)
     const { handleSubmit, control } = useForm<FormValues>({
         defaultValues: {
             image: null,
@@ -69,13 +68,15 @@ export default function BuySellConfigPage() {
             {/* Image Upload */}
             <div className="space-y-5 md:flex md:gap-30">
                 <h1 className="text-gray-900 font-semibold">Page Banner</h1>
-                <Controller
-                    name="image"
-                    control={control}
-                    render={({ field }) => (
-                        <UploadImageBtn value={field.value} onChange={field.onChange} />
-                    )}
-                />
+                <div className='w-full'>
+                    <Controller
+                        name="image"
+                        control={control}
+                        render={({ field }) => (
+                            <UploadImageBtn value={field.value} onChange={field.onChange} />
+                        )}
+                    />
+                </div>
             </div>
 
             {/* Rich Text */}
@@ -89,8 +90,10 @@ export default function BuySellConfigPage() {
                     )}
                 />
             </div>
+            <div className='text-center'>
+                <Button type="submit" variant={'BlueBtn'}><Save />Save Info</Button>
+            </div>
 
-            <Button type="submit" variant={'BlueBtn'}>Save Info</Button>
         </form>
     )
 }

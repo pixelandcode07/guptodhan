@@ -24,7 +24,7 @@ export default function UploadImageBtn({ value, onChange }: UploadImageBtnProps)
         <div className="mt-2">
             <label
                 htmlFor="image"
-                className="flex flex-col items-center justify-center w-[60vw] h-52 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition"
+                className="flex flex-col items-center justify-center h-52 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition"
             >
                 {!value ? (
                     <div className="flex flex-col items-center justify-center text-center p-4">

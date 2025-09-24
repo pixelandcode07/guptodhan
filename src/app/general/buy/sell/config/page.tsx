@@ -12,7 +12,7 @@ export default function BuySellConfig() {
                     </h1>
                 </div>
                 <div className='my-10 space-y-8'>
-                    {/* BuySellConfig */}
+                    {/* BuySellConfigPage */}
                     <BuySellConfigPage />
 
                 </div>
