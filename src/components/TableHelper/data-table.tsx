@@ -6,6 +6,7 @@ import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
+  getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   SortingState,
@@ -22,34 +23,91 @@ import {
 } from "@/components/ui/table"
 import { PaginationControls } from "./PaginationControls"
 import { SortableColumnHeader } from "./SortHeader"
+import { Input } from "../ui/input"
+import Link from "next/link"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  rearrangePath?: string
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  rearrangePath
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
+  const [globalFilter, setGlobalFilter] = React.useState("") // Search
+  const [pageSize, setPageSize] = React.useState(10) // Entities
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
     defaultColumn: {
       enableSorting: true,
     },
     state: {
       sorting,
+      globalFilter,
+    },
+    initialState: {
+      pagination: {
+        pageSize: pageSize,
+      },
     },
   })
 
   return (
     <div className="overflow-hidden rounded-md border">
+      {/* Top Controls */}
+      <div className="flex justify-between items-center p-2">
+        {/* Show entries */}
+        <div className="flex items-center gap-2">
+          Show
+          <Input
+            type="number"
+            min={1}
+            value={pageSize}
+            onChange={(e) => {
+              const size = Number(e.target.value)
+              setPageSize(size)
+              table.setPageSize(size)
+            }}
+            className="w-20 border border-gray-500"
+          />
+          entries
+        </div>
+
+        {/* Search + Optional Rearrange */}
+        <div className="flex items-center gap-2">
+          Search:
+          <Input
+            type="text"
+            value={globalFilter ?? ""}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            placeholder="Search..."
+            className="border border-gray-500"
+          />
+
+          {/* ✅ Rearrange Button (if route given) */}
+          {rearrangePath && (
+            <Link
+              href={rearrangePath}
+              className="px-3 py-1 border rounded bg-gray-100 hover:bg-gray-200"
+            >
+              Rearrange
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {/* Table */}
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -60,9 +118,9 @@ export function DataTable<TData, TValue>({
                 const renderedHeader = header.isPlaceholder
                   ? null
                   : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )
                 return (
                   <TableHead key={header.id}>
                     {canSort && renderedHeader ? (

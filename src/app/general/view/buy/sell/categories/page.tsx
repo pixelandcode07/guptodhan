@@ -198,13 +198,13 @@ const getData = async (): Promise<BuySellDataType[]> => {
 export default async function ViewBuySellCategories() {
     const data = await getData();
     return (
-        <div className="m-5 p-5 border ">
-            <div >
+        <div className="m-5 p-5 shadow-sm border border-gray-200 rounded-md bg-white transition-all duration-300 hover:shadow-lg hover:border-gray-300">
+            <div className='py-5'>
                 <h1 className="text-lg font-semibold border-l-2 border-blue-500">
-                    <span className="pl-5">Store List</span>
+                    <span className="pl-5">Category List</span>
                 </h1>
             </div>
-            <div className="md:flex justify-between my-5 space-y-2.5">
+            {/* <div className="md:flex justify-between my-5 space-y-2.5">
                 <p>Show (Pagination) entries</p>
                 <span className="md:flex gap-4 space-y-2.5">
                     <span className="flex items-center gap-2">
@@ -212,7 +212,7 @@ export default async function ViewBuySellCategories() {
                         <Input type="text" className="border border-gray-500" />
                     </span>
                 </span>
-            </div>
+            </div> */}
             <DataTable columns={view_buy_sell_columns} data={data} />
         </div>
     )
