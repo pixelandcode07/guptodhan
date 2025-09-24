@@ -25,6 +25,7 @@ import { PaginationControls } from "./PaginationControls"
 import { SortableColumnHeader } from "./SortHeader"
 import { Input } from "../ui/input"
 import Link from "next/link"
+import { ArrowUpNarrowWide } from "lucide-react"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -85,23 +86,26 @@ export function DataTable<TData, TValue>({
         </div>
 
         {/* Search + Optional Rearrange */}
-        <div className="flex items-center gap-2">
-          Search:
-          <Input
-            type="text"
-            value={globalFilter ?? ""}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            placeholder="Search..."
-            className="border border-gray-500"
-          />
+        <div className="flex items-center justify-center gap-2">
+          
+          <div className="flex items-center gap-2">
+            Search:
+            <Input
+              type="text"
+              value={globalFilter ?? ""}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              placeholder="Search..."
+              className="border border-gray-500"
+            />
+          </div>
 
           {/* ✅ Rearrange Button (if route given) */}
           {rearrangePath && (
             <Link
               href={rearrangePath}
-              className="px-3 py-1 border rounded bg-gray-100 hover:bg-gray-200"
+              className="px-3 py-1 border rounded bg-[#00c2b2] text-white flex justify-center items-center text-base"
             >
-              Rearrange
+              <ArrowUpNarrowWide /> Rearrange Categories
             </Link>
           )}
         </div>

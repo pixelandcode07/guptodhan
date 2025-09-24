@@ -204,16 +204,12 @@ export default async function ViewBuySellCategories() {
                     <span className="pl-5">Category List</span>
                 </h1>
             </div>
-            {/* <div className="md:flex justify-between my-5 space-y-2.5">
-                <p>Show (Pagination) entries</p>
-                <span className="md:flex gap-4 space-y-2.5">
-                    <span className="flex items-center gap-2">
-                        Search:
-                        <Input type="text" className="border border-gray-500" />
-                    </span>
-                </span>
-            </div> */}
-            <DataTable columns={view_buy_sell_columns} data={data} />
+            {/* <DataTable columns={view_buy_sell_columns} data={data} /> */}
+            <DataTable
+                columns={view_buy_sell_columns}
+                data={data}
+                rearrangePath="/general/rearrange/buy/sell/categories"
+            />
         </div>
     )
 }
