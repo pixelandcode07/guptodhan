@@ -50,15 +50,18 @@ export default function ProductForm() {
         handleSubmit,
         control,
         setValue,
+        watch,
         formState: { errors },
     } = useForm<FormData>({
         defaultValues: {
             brand: null,
             model: null,
             edition: null,
-            photos: [],
+            photos: ["", "", "", "", ""], // 5 empty slots
         },
     });
+
+
 
     const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
 
@@ -98,7 +101,7 @@ export default function ProductForm() {
 
         try {
             const res = await axios.post('/api/v1/classifieds/ads', newProduct, {
-                headers: { Authorization: `Bearer ${adminAccessToken}` }
+                headers: { Authorization: `Bearer ${token}` }
             });
             if (res.status === 201) {
                 alert("Product submitted successfully!");
@@ -220,6 +223,8 @@ export default function ProductForm() {
                                 ))}
                             </div>
                         </div>
+
+
 
                         <div>
                             <Label htmlFor="name" className="font-semibold">Your Name*</Label>
