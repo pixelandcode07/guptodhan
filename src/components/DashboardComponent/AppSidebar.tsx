@@ -54,7 +54,7 @@ const data = {
     },
     {
       title: 'Footer Settings',
-      url: '/general/view/footer/widget',
+      url: '/general/view/footer/widget/1',
       icon: Settings,
     },
     {

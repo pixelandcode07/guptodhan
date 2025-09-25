@@ -48,10 +48,10 @@ export default function FooterWidget3() {
 
   return (
     <div className=" bg-white w-full">
-      <div className="mb-4">
-        <h4 className="text-lg font-semibold">Footer Widget 3</h4>
+      <div className=" p-3 bg-gray-200">
+        <h4 className="text-md font-semibold">Footer Widget 3</h4>
       </div>
-      <form className="space-y-6" onSubmit={handleSubmit}>
+      <form className="space-y-6 p-4" onSubmit={handleSubmit}>
         {/* Widget Title */}
         <div className="flex flex-col space-y-1">
           <Label htmlFor="widget3_title">Widget Title</Label>
