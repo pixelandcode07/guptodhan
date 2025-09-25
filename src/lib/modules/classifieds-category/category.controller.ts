@@ -96,6 +96,19 @@ const getPublicCategories = async (_req: NextRequest) => {
 };
 
 
+const getCategoryById = async (req: NextRequest, { params }: { params: { id: string } }) => {
+    await dbConnect();
+    const { id } = await params;
+    const result = await ClassifiedCategoryServices.getCategoryByIdFromDB(id);
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Category retrieved successfully!',
+        data: result,
+    });
+};
+
+
 export const ClassifiedCategoryController = {
     createCategory,
     getAllCategories,
@@ -103,4 +116,5 @@ export const ClassifiedCategoryController = {
     deleteCategory,
     getCategoriesWithSubcategories,
     getPublicCategories,
+    getCategoryById,
 };

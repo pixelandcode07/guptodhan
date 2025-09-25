@@ -14,6 +14,7 @@ import {
   Box,
   Code,
   DollarSign,
+  House,
   LayoutDashboard,
   LogOut,
   MessageCircle,
@@ -219,6 +220,25 @@ export default function AppSidebar() {
                   width={140}
                   height={50}
                 />
+              </Link>
+            </SidebarMenuButton>
+            {/* <SidebarMenuButton
+              asChild
+              className="data-[slot=sidebar-menu-button]:!p-3"> */}
+            <Link
+              href="/general/home"
+              className="flex justify-center items-center py-6">
+              <Image
+                src="/img/logo.png"
+                alt="Guptodhan"
+                width={150}
+                height={50}
+              />
+            </Link>
+            {/* </SidebarMenuButton> */}
+            <SidebarMenuButton asChild>
+              <Link href="/general/home">
+                <House /> Dashboard
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
