@@ -1,42 +1,84 @@
-"use client"
+'use client';
 
-import { ChevronDown, Headphones, Phone, Users, MessageCircle } from "lucide-react"
-import { ElementType } from "react"
-import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../../ui/sidebar"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../ui/collapsible"
-import Link from "next/link"
+import {
+  ChevronDown,
+  Headphones,
+  Phone,
+  Users,
+  MessageCircle,
+} from 'lucide-react';
+import { ElementType } from 'react';
+import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '../../ui/sidebar';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '../../ui/collapsible';
+import Link from 'next/link';
 
-interface CRMModuleTitleOnly { title: string }
+interface CRMModuleTitleOnly {
+  title: string;
+}
 
-type ChildItem = { title: string; url: string; count?: string; color?: string }
+type ChildItem = { title: string; url: string; count?: string; color?: string };
 
-const CRM_MENU_CONFIG: Record<string, { icon: ElementType; items: ChildItem[]; url?: string; badge?: string }> = {
-  "Support Ticket": {
+const CRM_MENU_CONFIG: Record<
+  string,
+  { icon: ElementType; items: ChildItem[]; url?: string; badge?: string }
+> = {
+  'Support Ticket': {
     icon: Headphones,
-    badge: "0",
+    badge: '0',
     items: [
-      { title: "Pending Supports", url: "/general/pending/support/tickets", count: "0", color: "text-blue-500" },
-      { title: "Solved Supports", url: "/general/solved/support/tickets", count: "1", color: "text-green-500" },
-      { title: "On Hold Supports", url: "/general/on/hold/support/tickets", count: "0", color: "text-yellow-500" },
-      { title: "Rejected Supports", url: "/general/rejected/support/tickets", count: "1", color: "text-red-500" },
+      {
+        title: 'Pending Supports',
+        url: '/general/pending/support/tickets',
+        count: '0',
+        color: 'text-blue-500',
+      },
+      {
+        title: 'Solved Supports',
+        url: '/general/solved/support/tickets',
+        count: '1',
+        color: 'text-green-500',
+      },
+      {
+        title: 'On Hold Supports',
+        url: '/general/on/hold/support/tickets',
+        count: '0',
+        color: 'text-yellow-500',
+      },
+      {
+        title: 'Rejected Supports',
+        url: '/general/rejected/support/tickets',
+        count: '1',
+        color: 'text-red-500',
+      },
     ],
   },
-  "Contact Request": {
+  'Contact Request': {
     icon: Phone,
     items: [],
-    url: "/general/view/all/contact/requests",
+    url: '/general/view/all/contact/requests',
   },
-  "Subscribed Users": {
+  'Subscribed Users': {
     icon: Users,
     items: [],
-    url: "/general/view/all/subscribed/users",
+    url: '/general/view/all/subscribed/users',
   },
-  "Blog Comments": {
+  'Blog Comments': {
     icon: MessageCircle,
     items: [],
-    url: "/general//blog/comments",
+    url: '/general//blog/comments',
   },
-}
+};
 
 export function CRMModules({ items }: { items: CRMModuleTitleOnly[] }) {
   return (
@@ -47,24 +89,26 @@ export function CRMModules({ items }: { items: CRMModuleTitleOnly[] }) {
 
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map((item) => {
-            const cfg = CRM_MENU_CONFIG[item.title]
-            if (!cfg) return null
-            
+          {items.map(item => {
+            const cfg = CRM_MENU_CONFIG[item.title];
+            if (!cfg) return null;
+
             if (cfg.items.length === 0) {
               // Direct link for items without sub-routes
               return (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <Link href={cfg.url || "#"} className="flex items-center gap-2">
+                    <Link
+                      href={cfg.url || '#'}
+                      className="flex items-center gap-2">
                       <cfg.icon />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              )
+              );
             }
-            
+
             // Collapsible for items with sub-routes
             return (
               <Collapsible key={item.title} className="group/collapsible">
@@ -82,22 +126,27 @@ export function CRMModules({ items }: { items: CRMModuleTitleOnly[] }) {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </CollapsibleTrigger>
-                
+
                 <CollapsibleContent>
                   <div className="pl-6">
-                    {cfg.items.map((subItem) => (
+                    {cfg.items.map(subItem => (
                       <SidebarMenuItem key={subItem.url}>
                         <SidebarMenuButton asChild>
                           <Link
                             href={subItem.url}
-                            className="flex items-center gap-2"
-                          >
-                            <span className={subItem.color || "text-white"}>{subItem.title}</span>
+                            className="flex items-center gap-2">
+                            <span className={subItem.color || 'text-white'}>
+                              {subItem.title}
+                            </span>
                             {subItem.count && (
-                              <span className={`ml-auto text-xs px-2 py-1 rounded ${
-                                subItem.count === "0" ? "bg-orange-500 text-white" : 
-                                subItem.count === "1" ? "bg-green-500 text-white" : "text-blue-400"
-                              }`}>
+                              <span
+                                className={`ml-auto text-xs px-2 py-1 rounded ${
+                                  subItem.count === '0'
+                                    ? 'bg-orange-500 text-white'
+                                    : subItem.count === '1'
+                                    ? 'bg-green-500 text-white'
+                                    : 'text-blue-400'
+                                }`}>
                                 ({subItem.count})
                               </span>
                             )}
@@ -108,10 +157,10 @@ export function CRMModules({ items }: { items: CRMModuleTitleOnly[] }) {
                   </div>
                 </CollapsibleContent>
               </Collapsible>
-            )
+            );
           })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
+  );
 }
