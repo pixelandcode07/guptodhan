@@ -5,44 +5,49 @@ import { ColumnDef } from "@tanstack/react-table"
 import { Edit, Trash } from "lucide-react"
 import { Button } from "../ui/button"
 import Image from "next/image"
+import Link from "next/link"
 
 
 export type BuySellDataType = {
-  serial: string,
-  category_name: string,
-  store_logo: string,
-  slug: string,
-  status: "pending" | "active" | "inactive",
+  _id: string;
+  name: string;
+  icon: string;
+  slug: string;
+  status: "pending" | "active" | "inactive";
 }
 
 export const view_buy_sell_columns: ColumnDef<BuySellDataType>[] = [
   {
-    accessorKey: "serial",
+    id: "serial",
     header: "Serial",
+    cell: ({ row }) => {
+      return <span className="text-center">{row.index + 1}</span>
+    },
   },
   {
-    accessorKey: "category_name",
+    accessorKey: "name",
     header: "Name",
   },
   {
-    accessorKey: "store_logo",
+    accessorKey: "icon",
     header: "Icon",
     cell: ({ row }) => {
-      const logoUrl = row.getValue("store_logo") as string
+      // const logoUrl = row.getValue("icon") as string
       return (
-        <Image src={logoUrl} alt="Store Logo" width={50} height={50} />
+        <Image src={row.original.icon} alt="Store Logo" width={50} height={50} />
       )
     },
   },
   {
-    accessorKey: "slug",
+    accessorKey: "name",
     header: "Slug",
   },
   {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status")
+      // const status = row.getValue("status")
+      const status = row.original.status
       // status: "pending" | "active" | "inactive",
       return (
         <div className={cn(`p-1 rounded-md w-max text-xs`,
@@ -54,16 +59,23 @@ export const view_buy_sell_columns: ColumnDef<BuySellDataType>[] = [
     }
   },
   {
-    accessorKey: "action",
+    id: "action",
     header: "Action",
-    cell: () => {
+    cell: ({ row }) => {
+      const documentId = row.original._id;
       return (
-        <div className="flex items-center gap-2">
-          {/* <Button className="bg-green-800 hover:bg-green-800 text-black cursor-pointer"><Check className="text-white" /></Button> */}
-          <Button className="bg-yellow-400 hover:bg-yellow-400 text-black cursor-pointer"><Edit /></Button>
-          <Button className="bg-red-700 hover:bg-red-700 text-white cursor-pointer"><Trash /></Button>
+        <div className="flex gap-2">
+          <Link href={`/general/edit/buy/sell/category/${documentId}`}>
+            <Button className="bg-yellow-400 text-black"><Edit /></Button>
+          </Link>
+          <Button
+            className="bg-red-700 text-white"
+          // onClick={() => handleDelete(documentId)}
+          >
+            <Trash />
+          </Button>
         </div>
-      )
-    }
+      );
+    },
   },
 ]
