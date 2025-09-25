@@ -55,7 +55,7 @@ const data = {
     },
     {
       title: 'Footer Settings',
-      url: '/general/view/footer/widget',
+      url: '/general/view/footer/widget/1',
       icon: Settings,
     },
     {
@@ -210,10 +210,24 @@ export default function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
+            <SidebarMenuButton asChild className="">
+              <Link
+                href="/general/home"
+                className="flex justify-center items-center py-2 hover:bg-transparent">
+                <Image
+                  src="/logo.png"
+                  alt="Guptodhan"
+                  width={140}
+                  height={50}
+                />
+              </Link>
+            </SidebarMenuButton>
             {/* <SidebarMenuButton
               asChild
               className="data-[slot=sidebar-menu-button]:!p-3"> */}
-            <Link href="/general/home" className='flex justify-center items-center py-6'>
+            <Link
+              href="/general/home"
+              className="flex justify-center items-center py-6">
               <Image
                 src="/img/logo.png"
                 alt="Guptodhan"
@@ -223,20 +237,22 @@ export default function AppSidebar() {
             </Link>
             {/* </SidebarMenuButton> */}
             <SidebarMenuButton asChild>
-              <Link href="/general/home"><House /> Dashboard</Link>
+              <Link href="/general/home">
+                <House /> Dashboard
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         <WebsiteConfig items={data.navMain} />
-        <ContentManagement />
-        <UserRolePermition items={data.userRole} />
         <BuySell items={data.buysell} />
         <Donation items={data.donations} />
         <Multivendor items={data.documents} />
         <EcommerceModules items={data.ecommerceModules} />
         <CRMModules items={data.crmModules} />
+        <ContentManagement />
+        <UserRolePermition items={data.userRole} />
         <DemoProducts items={data.demoProducts} />
         <Logout items={data.logoutAction} />
       </SidebarContent>
