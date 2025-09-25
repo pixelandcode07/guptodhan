@@ -73,14 +73,15 @@ export function Multivendor({
                   {item?.title === 'Vendors' &&
                     vendor.map(subItem => (
                       <SidebarMenuItem key={subItem?.url}>
-                        <SidebarMenuButton asChild>
-                          <Link
-                            href={subItem?.url}
-                            className="flex items-center gap-2">
+                        {' '}
+                        <Link href={subItem?.url}>
+                          <SidebarMenuButton
+                            className="flex items-center gap-2"
+                            asChild>
                             {/* <subItem.icon className="h-4 w-4" /> */}
                             <span>{subItem?.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
+                          </SidebarMenuButton>{' '}
+                        </Link>
                       </SidebarMenuItem>
                     ))}
                   {item.title === 'Stores' &&

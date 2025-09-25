@@ -1,4 +1,5 @@
 'use client';
+
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { ChromePicker } from 'react-color';
@@ -12,17 +13,12 @@ interface ThemeColors {
   border: string;
 }
 
-export default function ThemeColorCard() {
-  const defaultColors: ThemeColors = {
-    primary: '#00005e',
-    secondary: '#3d85c6',
-    tertiary: '#ba2a2a',
-    title: '#222831',
-    paragraph: '#252a34',
-    border: '#eeeeee',
-  };
+interface Props {
+  initialColors: ThemeColors;
+}
 
-  const [colors, setColors] = useState<ThemeColors>(defaultColors);
+export default function ThemeColorCard({ initialColors }: Props) {
+  const [colors, setColors] = useState<ThemeColors>(initialColors);
   const [activePicker, setActivePicker] = useState<string | null>(null);
 
   const handleChange = (key: keyof ThemeColors, color: string) => {
@@ -30,14 +26,31 @@ export default function ThemeColorCard() {
   };
 
   const handleCancel = () => {
-    setColors(defaultColors);
+    setColors(initialColors); // Reset server থেকে পাওয়া ডাটা
     setActivePicker(null);
   };
 
-  const handleUpdate = (e: React.FormEvent) => {
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Updated colors:', colors);
-    alert('Colors updated!');
+
+    try {
+      const res = await fetch(
+        'http://localhost:3000/api/v1/theme-settings/update',
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(colors),
+        }
+      );
+
+      const result = await res.json();
+      console.log('Updated:', result);
+
+      alert('Colors updated!');
+    } catch (error) {
+      console.error('Update failed:', error);
+    }
+
     setActivePicker(null);
   };
 
