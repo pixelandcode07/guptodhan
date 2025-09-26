@@ -9,22 +9,26 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import UploadImageBtn from "@/app/general/buy/sell/config/components/UploadImageBtn";
 import Select from "react-select";
+import { useSession } from "next-auth/react";
+import FancyLoadingPage from "@/app/general/loading";
 
 interface FormInputs {
     name: string;
     icon: File | null;
     status: "pending" | "active" | "inactive";
     slug: string;
-    existingIconUrl?: string; // existing backend image
+    existingIconUrl?: string;
 }
 
 export default function EditCategoryPage() {
+    const { data: session } = useSession();
+    const token = session?.accessToken;
     const params = useParams();
     const categoryId = params.id;
     const router = useRouter();
     const [loading, setLoading] = useState(true);
 
-    const { register, handleSubmit, reset, control, setValue, watch } = useForm<FormInputs>({
+    const { register, handleSubmit, reset, control, watch } = useForm<FormInputs>({
         defaultValues: {
             name: "",
             icon: null,
@@ -43,15 +47,15 @@ export default function EditCategoryPage() {
         const fetchCategory = async () => {
             try {
                 setLoading(true);
-                const baseUrl = process.env.NEXTAUTH_URL;
-                const { data } = await axios.get(`/api/v1/classifieds-categories/${categoryId}`);
+                // const baseUrl = process.env.NEXTAUTH_URL;
+                const { data } = await axios.get(`/api/v1/public/classifieds-categories/${categoryId}`);
                 const category = data.data;
 
                 reset({
                     name: category.name,
                     slug: category.slug,
                     status: category.status,
-                    icon: null, // user can upload new icon
+                    icon: null,
                     existingIconUrl: category.icon,
                 });
             } catch (err) {
@@ -67,7 +71,7 @@ export default function EditCategoryPage() {
 
     const onSubmit: SubmitHandler<FormInputs> = async (formData) => {
         try {
-            const baseUrl = process.env.NEXTAUTH_URL;
+            // const baseUrl = process.env.NEXTAUTH_URL;
             const formDataToSend = new FormData();
             formDataToSend.append("name", formData.name);
             formDataToSend.append("slug", formData.slug);
@@ -77,21 +81,23 @@ export default function EditCategoryPage() {
                 formDataToSend.append("icon", formData.icon);
             }
 
-            await axios.patch(`${baseUrl}/api/v1/classifieds-categories/${categoryId}`, formDataToSend, {
+            await axios.patch(`/api/v1/classifieds-categories/${categoryId}`, formDataToSend, {
                 headers: {
                     "Content-Type": "multipart/form-data",
+                    Authorization: `Bearer ${token}`, // attach token
+                    "x-user-role": session?.user?.role
                 },
             });
 
             toast.success("Category updated successfully!");
-            router.push("/dashboard/buy-sell/categories");
+            router.push("/general/view/buy/sell/categories/");
         } catch (err) {
             console.error(err);
             toast.error("Update failed!");
         }
     };
 
-    if (loading) return <p>Loading...</p>;
+    if (loading) return <FancyLoadingPage />
 
     return (
         <div className="p-5 bg-white shadow rounded-md">

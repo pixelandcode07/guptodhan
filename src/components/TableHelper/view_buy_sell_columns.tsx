@@ -16,7 +16,7 @@ export type BuySellDataType = {
   status: "pending" | "active" | "inactive";
 }
 
-export const view_buy_sell_columns: ColumnDef<BuySellDataType>[] = [
+export const view_buy_sell_columns = (handleDelete: (_id: string) => void): ColumnDef<BuySellDataType>[] => [
   {
     id: "serial",
     header: "Serial",
@@ -53,7 +53,7 @@ export const view_buy_sell_columns: ColumnDef<BuySellDataType>[] = [
         <div className={cn(`p-1 rounded-md w-max text-xs`,
           status === "pending" && "text-yellow-400",
           status === "active" && "text-green-500",
-          status === "inactive" && "text-white bg-red-500",
+          status === "inactive" && "text-red-500",
         )}>{status as string}</div>
       )
     }
@@ -66,11 +66,11 @@ export const view_buy_sell_columns: ColumnDef<BuySellDataType>[] = [
       return (
         <div className="flex gap-2">
           <Link href={`/general/edit/buy/sell/category/${documentId}`}>
-            <Button className="bg-yellow-400 text-black"><Edit /></Button>
+            <Button variant={'EditBtn'} size={'sm'}><Edit /></Button>
           </Link>
           <Button
-            className="bg-red-700 text-white"
-          // onClick={() => handleDelete(documentId)}
+            variant={'DeleteBtn'} size={'sm'}
+            onClick={() => handleDelete(documentId)}
           >
             <Trash />
           </Button>
