@@ -6,7 +6,7 @@ import DashNavbar from '@/components/DashboardComponent/DashNavbar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { cookies } from 'next/headers';
 import Footer from '@/components/DashboardComponent/Footer';
-import { Toaster } from 'sonner';
+// Removed local Toaster to avoid duplicate toasts; global Toaster is in app/layout
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -44,7 +44,6 @@ export default async function RootLayout({
             <DashNavbar />
             <div className="md:px-4">
               {children}
-              <Toaster richColors position="top-right" />
             </div>
           </main>
         </SidebarProvider>

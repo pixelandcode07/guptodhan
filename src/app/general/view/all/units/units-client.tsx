@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Move } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Unit, getUnitColumns } from "@/components/TableHelper/unit_columns";
 import { useSession } from "next-auth/react";
 import type { Session } from "next-auth";
+import { toast } from "sonner";
 
 type ApiUnit = {
   _id: string
@@ -30,7 +31,9 @@ export default function UnitsClient() {
   const [, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Unit | null>(null)
-  const [form, setForm] = useState({ name: "" })
+  const [form, setForm] = useState<{ name: string; status?: "active" | "inactive" }>({ name: "" })
+  const [searchText, setSearchText] = useState("")
+  const [statusFilter, setStatusFilter] = useState<"" | "Active" | "Inactive">("")
 
   const fetchUnits = async () => {
     setLoading(true)
@@ -69,12 +72,14 @@ export default function UnitsClient() {
       if (editing) {
         await axios.patch(`/api/v1/product-config/productUnit/${editing._id}`, {
           name: form.name || editing.name,
+          ...(form.status ? { status: form.status } : {}),
         }, {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...(userRole ? { "x-user-role": userRole } : {}),
           },
         })
+        toast.success("Unit updated")
       } else {
         await axios.post(`/api/v1/product-config/productUnit`, {
           productUnitId: deriveProductUnitId(form.name),
@@ -86,18 +91,19 @@ export default function UnitsClient() {
             ...(userRole ? { "x-user-role": userRole } : {}),
           },
         })
+        toast.success("Unit created")
       }
       await fetchUnits()
       setOpen(false)
       resetForm()
     } catch {
-      // ignore
+      toast.error("Action failed")
     }
   }
 
   const onEdit = useCallback((unit: Unit) => {
     setEditing(unit)
-    setForm({ name: unit.name })
+    setForm({ name: unit.name, status: unit.status === "Active" ? "active" : "inactive" })
     setOpen(true)
   }, [])
 
@@ -110,12 +116,22 @@ export default function UnitsClient() {
         },
       })
       await fetchUnits()
+      toast.success("Unit deleted")
     } catch {
-      // ignore
+      toast.error("Delete failed")
     }
   }, [token, userRole])
 
   const columns = useMemo(() => getUnitColumns({ onEdit, onDelete }), [onEdit, onDelete])
+
+  const filteredUnits = useMemo(() => {
+    const bySearch = (u: Unit) =>
+      !searchText || u.name.toLowerCase().includes(searchText.toLowerCase())
+    const byStatus = (u: Unit) =>
+      !statusFilter || u.status === statusFilter
+    const result = units.filter((u) => bySearch(u) && byStatus(u))
+    return result.map((u, idx) => ({ ...u, id: idx + 1 }))
+  }, [units, searchText, statusFilter])
 
   return (
     <div className="m-5 p-5 border ">
@@ -127,7 +143,7 @@ export default function UnitsClient() {
       <div className="flex items-center justify-end gap-4 mb-4">
         <span className="flex items-center gap-2">
           <span>Search:</span>
-          <Input type="text" className="border border-gray-500" />
+          <Input value={searchText} onChange={(e) => setSearchText(e.target.value)} type="text" className="border border-gray-500" />
         </span>
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm() }}>
           <DialogTrigger asChild>
@@ -145,6 +161,15 @@ export default function UnitsClient() {
                 <Label htmlFor="name">Unit</Label>
                 <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Kilogram" />
               </div>
+              {editing && (
+                <div className="grid gap-2">
+                  <Label htmlFor="status">Status</Label>
+                  <select id="status" className="border rounded px-2 py-2" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as "active" | "inactive" })}>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => { setOpen(false); resetForm() }}>Cancel</Button>
@@ -152,10 +177,7 @@ export default function UnitsClient() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        <Button variant="outline">
-          <Move className="w-4 h-4 mr-2" />
-          Rearrange Unit
-        </Button>
+       
       </div>
 
       {/* Table Filters Row */}
@@ -164,6 +186,8 @@ export default function UnitsClient() {
           <div></div>
           <div>
             <Input
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
               type="text"
               placeholder="Filter by name..."
               className="w-full text-sm border border-gray-300"
@@ -171,6 +195,8 @@ export default function UnitsClient() {
           </div>
           <div>
             <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
               className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
             >
               <option value="">All Status</option>
@@ -183,7 +209,7 @@ export default function UnitsClient() {
         </div>
       </div>
 
-      <DataTable columns={columns} data={units} />
+      <DataTable columns={columns} data={filteredUnits} />
     </div>
   )
 }
