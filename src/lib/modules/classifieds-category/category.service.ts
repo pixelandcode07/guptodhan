@@ -9,7 +9,7 @@ const createCategoryInDB = async (payload: Partial<IClassifiedCategory>) => {
 };
 
 const getAllCategoriesFromDB = async () => {
-  const result = await ClassifiedCategory.find({ status: 'active' });
+  const result = await ClassifiedCategory.find(); // { status: 'active' }
   return result;
 };
 
@@ -24,15 +24,15 @@ const updateCategoryInDB = async (id: string, payload: Partial<IClassifiedCatego
 };
 
 const deleteCategoryFromDB = async (id: string) => {
-    const category = await ClassifiedCategory.findById(id);
-    if (!category) { throw new Error("Category not found"); }
+  const category = await ClassifiedCategory.findById(id);
+  if (!category) { throw new Error("Category not found"); }
 
-    if (category.icon) {
-        await deleteFromCloudinary(category.icon);
-    }
-    
-    await ClassifiedCategory.findByIdAndDelete(id);
-    return null;
+  if (category.icon) {
+    await deleteFromCloudinary(category.icon);
+  }
+
+  await ClassifiedCategory.findByIdAndDelete(id);
+  return null;
 };
 
 
@@ -58,7 +58,7 @@ const getCategoriesWithSubcategoriesFromDB = async () => {
         'subCategories.name': 1,
       }
     },
-    
+
     {
       $sort: { name: 1 }
     }
