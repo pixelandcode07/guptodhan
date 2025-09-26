@@ -21,7 +21,7 @@ const createCategory = async (req: NextRequest) => {
         const uploadResult = await uploadToCloudinary(buffer, 'category-icons');
         payload.icon = uploadResult.secure_url;
     }
-    
+
     const validatedData = createCategoryValidationSchema.parse(payload);
     const result = await ClassifiedCategoryServices.createCategoryInDB(validatedData);
 
@@ -45,17 +45,50 @@ const getAllCategories = async (_req: NextRequest) => {
     });
 };
 
+// const updateCategory = async (req: NextRequest, { params }: { params: { id: string } }) => {
+//     await dbConnect();
+//     const { id } = params;
+//     const body = await req.json();
+//     const validatedData = updateCategoryValidationSchema.parse(body);
+//     const result = await ClassifiedCategoryServices.updateCategoryInDB(id, validatedData);
+
+//     return sendResponse({
+//         success: true,
+//         statusCode: StatusCodes.OK,
+//         message: 'Category updated successfully!',
+//         data: result,
+//     });
+// };
+
 const updateCategory = async (req: NextRequest, { params }: { params: { id: string } }) => {
     await dbConnect();
     const { id } = params;
-    const body = await req.json();
-    const validatedData = updateCategoryValidationSchema.parse(body);
+
+    const formData = await req.formData();
+    const name = formData.get("name") as string | null;
+    const slug = formData.get("slug") as string | null;
+    const status = formData.get("status") as string | null;
+    const iconFile = formData.get("icon") as File | null;
+
+    const payload: { name?: string; slug?: string; status?: "pending" | "active" | "inactive"; icon?: string } = {};
+
+    if (name) payload.name = name;
+    if (slug) payload.slug = slug;
+    if (status) payload.status = status as "pending" | "active" | "inactive";
+
+    if (iconFile) {
+        const buffer = Buffer.from(await iconFile.arrayBuffer());
+        const uploadResult = await uploadToCloudinary(buffer, "category-icons");
+        payload.icon = uploadResult.secure_url;
+    }
+
+    const validatedData = updateCategoryValidationSchema.parse(payload);
     const result = await ClassifiedCategoryServices.updateCategoryInDB(id, validatedData);
-    
+
     return sendResponse({
         success: true,
         statusCode: StatusCodes.OK,
-        message: 'Category updated successfully!',
+        message: "Category updated successfully!",
         data: result,
     });
 };
