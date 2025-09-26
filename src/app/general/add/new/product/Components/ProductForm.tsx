@@ -82,7 +82,7 @@ export default function ProductForm() {
     metaDescription: '',
   });
 
-  const handleInputChange = (field: keyof ProductFormData, value: any) => {
+  const handleInputChange = (field: keyof ProductFormData, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
