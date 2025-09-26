@@ -3,6 +3,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
+  SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
@@ -24,19 +25,22 @@ export default function UserRolePermition({
       </SidebarGroupLabel>
 
       <SidebarGroupContent>
-        <SidebarMenu>
-          {items.map(item => (
-            <SidebarMenuItem key={item.title}>
-              {' '}
-              <Link href={item.url}>
-                <SidebarMenuSubButton className="flex gap-2  items-center">
-                  <item.icon className="w-4 h-4 text-white stroke-white" />
-                  <span>{item.title}</span>
-                </SidebarMenuSubButton>
-              </Link>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
+        <div className="">
+          <div className="list-none">
+            {items.map(item => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild>
+                  <Link
+                    href={item.url || '#'}
+                    className="flex items-center gap-2">
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </div>
+        </div>
       </SidebarGroupContent>
     </SidebarGroup>
   );

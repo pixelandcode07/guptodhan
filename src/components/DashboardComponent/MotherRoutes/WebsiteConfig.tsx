@@ -19,25 +19,22 @@ export default function WebsiteConfig({
   items: { title: string; url: string; icon: ElementType }[];
 }) {
   return (
-    <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      {' '}
+    <div className="">
       <SidebarGroupLabel>
         <p className="text-[#f1bf43] text-[12px] uppercase">Website Config</p>
       </SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {items.map(item => (
-            <SidebarMenuItem key={item.title}>
-              <Link href={item.url}>
-                <SidebarMenuSubButton className="flex gap-2 text-white   items-center">
-                  <item.icon className="w-4 h-4 text-white stroke-white" />
-                  <span>{item.title}</span>
-                </SidebarMenuSubButton>
+      <div className="list-none">
+        {items.map(item => (
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton asChild>
+              <Link href={item.url || '#'} className="flex items-center gap-2">
+                <item.icon />
+                <span>{item.title}</span>
               </Link>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        ))}
+      </div>
+    </div>
   );
 }
