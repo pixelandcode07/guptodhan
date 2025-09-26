@@ -13,19 +13,19 @@ export type StoresDataType = {
 
 export const fact_columns: ColumnDef<StoresDataType>[] = [
   {
-    accessorKey: 'id',
+    accessorKey: '_id',
     header: 'SL',
   },
   {
-    accessorKey: 'title',
+    accessorKey: 'factTitle',
     header: 'Fact Title',
   },
   {
-    accessorKey: 'count',
+    accessorKey: 'factCount',
     header: 'Fact Count',
   },
   {
-    accessorKey: 'desc',
+    accessorKey: 'shortDescription',
     header: 'Fact Description',
   },
 
@@ -36,7 +36,7 @@ export const fact_columns: ColumnDef<StoresDataType>[] = [
       const status = row.getValue('status') as string;
 
       const statusColor =
-        status === 'Active'
+        status === 'active'
           ? 'bg-green-100 text-green-700 border-green-300'
           : status === 'Pending'
           ? 'bg-yellow-100 text-yellow-700 border-yellow-300'

@@ -210,7 +210,7 @@ export default function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="">
+            {/* <SidebarMenuButton asChild className="">
               <Link
                 href="/general/home"
                 className="flex justify-center items-center py-2 hover:bg-transparent">
@@ -221,7 +221,7 @@ export default function AppSidebar() {
                   height={50}
                 />
               </Link>
-            </SidebarMenuButton>
+            </SidebarMenuButton> */}
             {/* <SidebarMenuButton
               asChild
               className="data-[slot=sidebar-menu-button]:!p-3"> */}
@@ -236,11 +236,11 @@ export default function AppSidebar() {
               />
             </Link>
             {/* </SidebarMenuButton> */}
-            <SidebarMenuButton asChild>
+            {/* <SidebarMenuButton asChild>
               <Link href="/general/home">
                 <House /> Dashboard
               </Link>
-            </SidebarMenuButton>
+            </SidebarMenuButton> */}
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
