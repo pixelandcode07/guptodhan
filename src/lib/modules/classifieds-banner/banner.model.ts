@@ -5,7 +5,7 @@ import { IClassifiedBanner } from './banner.interface';
 const classifiedBannerSchema = new Schema<IClassifiedBanner>({
   bannerImage: { type: String, required: true },
   bannerDescription: { type: String },
-  status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+  status: { type: String, enum: ['pending', 'active', 'inactive'], default: 'pending' },
 }, { 
     timestamps: true 
 });
