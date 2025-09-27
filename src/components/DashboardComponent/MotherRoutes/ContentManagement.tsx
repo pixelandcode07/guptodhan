@@ -112,13 +112,13 @@ export function ContentManagement() {
                 <div className="pl-6">
                   {item.subItems.map(sub => (
                     <SidebarMenuItem key={sub.url}>
-                      <SidebarMenuButton asChild>
-                        <Link
-                          href={sub.url}
-                          className="flex items-center gap-2">
+                      <Link href={sub.url}>
+                        <SidebarMenuButton
+                          className="flex items-center gap-2"
+                          asChild>
                           <span>{sub.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
+                        </SidebarMenuButton>
+                      </Link>
                     </SidebarMenuItem>
                   ))}
                 </div>

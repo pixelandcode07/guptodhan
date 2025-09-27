@@ -17,8 +17,11 @@ const createSubCategoryInDB = async (payload: Partial<IClassifiedSubCategory>) =
 
 
 const getSubCategoriesByParentFromDB = async (id: string) => {
-    const result = await ClassifiedSubCategory.find({ category: new Types.ObjectId(id), status: 'active' });
-    return result;
+  const result = await ClassifiedSubCategory.find({
+    category: new Types.ObjectId(id),
+    status: 'active',
+  });
+  return result;
 };
 
 

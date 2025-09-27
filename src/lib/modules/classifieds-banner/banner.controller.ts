@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
@@ -10,7 +11,7 @@ import dbConnect from '@/lib/db';
 const createBanner = async (req: NextRequest) => {
     await dbConnect();
     const formData = await req.formData();
-    
+
     const bannerImageFile = formData.get('bannerImage') as File | null;
     const bannerDescription = formData.get('bannerDescription') as string;
 
@@ -20,12 +21,12 @@ const createBanner = async (req: NextRequest) => {
 
     const buffer = Buffer.from(await bannerImageFile.arrayBuffer());
     const uploadResult = await uploadToCloudinary(buffer, 'buy-sell-banners');
-    
+
     const payload = {
         bannerImage: uploadResult.secure_url,
         bannerDescription: bannerDescription,
     };
-    
+
     const validatedData = createBannerValidationSchema.parse(payload);
     const result = await ClassifiedBannerServices.createBannerInDB(validatedData);
 
