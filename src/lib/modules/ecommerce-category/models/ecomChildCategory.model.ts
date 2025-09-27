@@ -1,0 +1,18 @@
+import { Schema, model, models } from 'mongoose';
+import { IChildCategory } from '../interfaces/ecomChildCategory.interface';
+
+const childCategorySchema = new Schema<IChildCategory>(
+  {
+    childCategoryId: { type: String, required: true, unique: true },
+    category: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
+    subCategory: { type: Schema.Types.ObjectId, ref: 'SubCategory', required: true },
+    name: { type: String, required: true, trim: true },
+    icon: { type: String, required: true },
+    slug: { type: String, required: true, unique: true },
+    status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+  },
+  { timestamps: { createdAt: true, updatedAt: false } }
+);
+
+export const ChildCategoryModel =
+  models.ChildCategoryModel || model<IChildCategory>('ChildCategoryModel', childCategorySchema);
