@@ -9,9 +9,9 @@ const createModelFormInDB = async (payload: Partial<IModelForm>) => {
   return result;
 };
 
-// Get all active model forms
+// Get all model forms (active and inactive)
 const getAllModelFormsFromDB = async () => {
-  const result = await ModelForm.find({ status: 'active' }).sort({ modelName: 1 });
+  const result = await ModelForm.find({}).sort({ modelName: 1 });
   return result;
 };
 

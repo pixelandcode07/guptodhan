@@ -58,7 +58,6 @@ export default function BrandsClient() {
     try {
       const { data } = await axios.get("/api/v1/product-config/brandName")
       const apiBrands: ApiBrand[] = data?.data || []
-      console.log("API Brands:", apiBrands)
       const mapped: Brand[] = apiBrands.map((b, index) => ({
         _id: b._id,
         id: index + 1,
@@ -73,7 +72,6 @@ export default function BrandsClient() {
         featured: b.featured === "featured" ? "Featured" : "Not Featured",
         created_at: new Date(b.createdAt).toLocaleString(),
       }))
-      console.log("Mapped Brands:", mapped)
       setBrands(mapped)
     } catch {
       // ignore
