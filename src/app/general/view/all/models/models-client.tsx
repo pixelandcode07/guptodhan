@@ -127,10 +127,7 @@ export default function ModelsClient() {
             Add New Model
           </Link>
         </Button>
-        <Button variant="outline">
-          <Move className="w-4 h-4 mr-2" />
-          Rearrange Model
-        </Button>
+        
       </div>
 
       {/* Table Filters Row */}
