@@ -1,17 +1,11 @@
 import {
-  SidebarGroup,
-  SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
-import { Home } from 'lucide-react';
 import Link from 'next/link';
-// import { ChevronDown } from 'lucide-react'
-// import { Key } from 'lucide-react'
-import React, { ElementType } from 'react';
+
+import { ElementType } from 'react';
 
 export default function WebsiteConfig({
   items,

@@ -2,14 +2,12 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 
-import React, { ElementType } from 'react';
+import { ElementType } from 'react';
 
 export default function UserRolePermition({
   items,

@@ -1,8 +1,6 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import { DeleteIcon, Edit } from 'lucide-react';
-import { Button } from '../ui/button';
 
 export type StoresDataType = {
   id: number;
