@@ -1,20 +1,20 @@
 import SectionTitle from '@/components/ui/SectionTitle';
 import AboutUsForm from './Components/AboutUsForm'; // client component
 
-export default function Page() {
-  const staticContent = `🎯 আমাদের মিশন:
+// Server Component
+export default async function Page() {
+  // Fetch data from your API
+  const res = await fetch('http://localhost:3000/api/v1/public/about/content', {
+    cache: 'no-store',
+  });
 
-শরীয়তপুরের মানুষকে নিরাপদ, সহজ ও স্মার্ট অনলাইন কেনাকাটার সুবিধা প্রদান করা, যেখানে স্থানীয় বিক্রেতা ও ক্রেতারা একই প্ল্যাটফর্মে যুক্ত হতে পারেন।
-
-🚀 আমাদের ভিশন:
-
-শরীয়তপুরের শীর্ষস্থানীয় অনলাইন মার্কেটপ্লেস হিসেবে গড়ে ওঠা, যেখানে সবার জন্য বিশ্বাসযোগ্য ও সুবিধাজনক কেনাকাটার সুযোগ থাকবে।`;
-
+  const data = await res.json();
+  const initialContent = data?.data?.aboutContent || '';
   return (
     <div className="bg-white pt-5 px-4">
       <SectionTitle text="General Information Form" />
-      {/* All interactive buttons inside the client component */}
-      <AboutUsForm initialContent={staticContent} />
+      {/* Pass content to client component */}
+      <AboutUsForm initialContent={initialContent} />
     </div>
   );
 }

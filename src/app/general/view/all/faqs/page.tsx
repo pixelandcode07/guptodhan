@@ -80,36 +80,6 @@ export default function Tems() {
         </div>
       </div>
       <div className="p-5 pt-">
-        {' '}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
-          {/* Show Entries Dropdown */}
-          <div className="flex items-center gap-2">
-            <span>Show</span>
-            <Select defaultValue="10">
-              <SelectTrigger className="w-20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-                <SelectItem value="100">100</SelectItem>
-              </SelectContent>
-            </Select>
-            <span>entries</span>
-          </div>
-
-          {/* Search Input */}
-          <div className="flex items-center gap-2">
-            <span>Search:</span>
-            <Input
-              placeholder="Search blogs..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-64"
-            />
-          </div>
-        </div>
         <div className=" py-4 pr-5 flex justify-end ">
           <div className="flex gap-2 jstify-end">
             {' '}
