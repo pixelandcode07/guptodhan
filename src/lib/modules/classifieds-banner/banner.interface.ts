@@ -4,5 +4,5 @@ import { Document } from 'mongoose';
 export interface IClassifiedBanner extends Document {
   bannerImage: string; // URL from Cloudinary
   bannerDescription?: string;
-  status: 'pending' | 'active' | 'inactive';
+  status: 'active' | 'inactive';
 }

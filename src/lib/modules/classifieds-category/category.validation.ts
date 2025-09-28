@@ -14,6 +14,6 @@ export const createCategoryValidationSchema = z.object({
 export const updateCategoryValidationSchema = z.object({
   name: z.string().min(1).optional(),
   slug: z.string().min(1).optional(),
-  status: z.enum(["pending", "active", "inactive"]).optional(),
+  status: z.enum(["active", "inactive"]).optional(),
   icon: z.string().url().optional(),
 });
