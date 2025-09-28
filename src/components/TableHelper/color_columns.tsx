@@ -19,7 +19,7 @@ export type ColorColumnHandlers = {
   onDelete: (color: Color) => void
 }
 
-export const getColorColumns = ({ onEdit, onDelete }: ColorColumnHandlers): ColumnDef<Color>[] => [
+export const getColorColumns = ({ onEdit }: ColorColumnHandlers): ColumnDef<Color>[] => [
   {
     accessorKey: "id",
     header: "SL",
