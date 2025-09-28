@@ -4,7 +4,7 @@ import { z } from 'zod';
 export const createProductFlagValidationSchema = z.object({
   productFlagId: z.string({ required_error: 'ProductFlag ID is required.' }),
   name: z.string().min(1, { message: 'Flag name is required.' }),
-  icon: z.string().min(1, { message: 'Flag icon is required.' }),
+  icon: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),
   featured: z.boolean().optional(),
 });

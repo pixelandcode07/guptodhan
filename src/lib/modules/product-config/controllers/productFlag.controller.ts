@@ -35,9 +35,9 @@ const getAllProductFlags = async () => {
 };
 
 // Update product flag
-const updateProductFlag = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const updateProductFlag = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const validatedData = updateProductFlagValidationSchema.parse(body);
 
@@ -52,9 +52,9 @@ const updateProductFlag = async (req: NextRequest, { params }: { params: { id: s
 };
 
 // Delete product flag
-const deleteProductFlag = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const deleteProductFlag = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     await ProductFlagServices.deleteProductFlagFromDB(id);
 
     return sendResponse({
