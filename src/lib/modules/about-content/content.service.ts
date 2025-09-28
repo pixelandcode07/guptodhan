@@ -12,7 +12,12 @@ const createOrUpdateContentInDB = async (payload: Partial<IAboutContent>) => {
   return await AboutContent.findOneAndUpdate({}, payload, { new: true, upsert: true });
 };
 
+const updateContentInDB = async (id: string, payload: Partial<IAboutContent>) => {
+  return await AboutContent.findByIdAndUpdate(id, payload, { new: true });
+};
+
 export const AboutContentServices = {
   getContentFromDB,
   createOrUpdateContentInDB,
+  updateContentInDB,
 };

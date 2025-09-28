@@ -20,7 +20,17 @@ const createOrUpdateContent = async (req: NextRequest) => {
     return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Content updated successfully!', data: result });
 };
 
+const updateContent = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    await dbConnect();
+    const { id } = await params;
+    const body = await req.json();
+    const validatedData = contentValidationSchema.partial().parse(body); // .partial() makes all fields optional
+    const result = await AboutContentServices.updateContentInDB(id, validatedData);
+    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Content updated successfully!', data: result });
+};
+
 export const AboutContentController = {
     getPublicContent,
     createOrUpdateContent,
+    updateContent,
 };
