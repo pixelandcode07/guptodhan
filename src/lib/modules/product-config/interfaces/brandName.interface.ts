@@ -5,8 +5,8 @@ export interface IBrand extends Document {
   name: string;               
   brandLogo: string;          
   brandBanner: string;        
-  category: Types.ObjectId;   
-  subCategory: Types.ObjectId; 
-  children: Types.ObjectId[]; 
+  category: string;   
+  subCategory: string; 
+  childCategory: string; 
   status: 'active' | 'inactive'; 
 }

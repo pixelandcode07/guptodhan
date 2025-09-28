@@ -1,32 +1,89 @@
 import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 import { sendResponse } from '@/lib/utils/sendResponse';
-import { createBrandValidationSchema, updateBrandValidationSchema } from '../validations/brandName.validation';
+import { updateBrandValidationSchema } from '../validations/brandName.validation';
 import { BrandServices } from '../services/brandName.service';
+import { IBrand } from '../interfaces/brandName.interface';
+import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 import dbConnect from '@/lib/db';
-import { Types } from 'mongoose';
 
 // Create a new brand
 const createBrand = async (req: NextRequest) => {
     await dbConnect();
-    const body = await req.json();
-    const validatedData = createBrandValidationSchema.parse(body);
+    
+    try {
+        const formData = await req.formData();
+        
+        // Extract form data
+        const brandId = formData.get('brandId') as string;
+        const name = formData.get('name') as string;
+        const category = formData.get('category') as string;
+        const subCategory = formData.get('subCategory') as string;
+        const childCategory = formData.get('childCategory') as string;
+        const brandLogo = formData.get('brandLogo') as File | null;
+        const brandBanner = formData.get('brandBanner') as File | null;
 
-    const payload = {
-        ...validatedData,
-        category: new Types.ObjectId(validatedData.category),
-        subCategory: new Types.ObjectId(validatedData.subCategory),
-        children: validatedData.children?.map((childId: string) => new Types.ObjectId(childId)),
-    };
+        // Convert File to Buffer for Cloudinary upload
+        const fileToBuffer = async (file: File): Promise<Buffer> => {
+            const arrayBuffer = await file.arrayBuffer();
+            return Buffer.from(arrayBuffer);
+        };
 
-    const result = await BrandServices.createBrandInDB(payload);
+        // Upload to Cloudinary
+        let logoUrl = '';
+        let bannerUrl = '';
 
-    return sendResponse({
-        success: true,
-        statusCode: StatusCodes.CREATED,
-        message: 'Brand created successfully!',
-        data: result,
-    });
+        if (brandLogo) {
+            const logoBuffer = await fileToBuffer(brandLogo);
+            const uploadedLogo = await uploadToCloudinary(logoBuffer, 'brands/logos');
+            logoUrl = uploadedLogo.secure_url;
+        }
+
+        if (brandBanner) {
+            const bannerBuffer = await fileToBuffer(brandBanner);
+            const uploadedBanner = await uploadToCloudinary(bannerBuffer, 'brands/banners');
+            bannerUrl = uploadedBanner.secure_url;
+        }
+
+        const validatedData = {
+            brandId,
+            name,
+            brandLogo: logoUrl,
+            brandBanner: bannerUrl,
+            category,
+            subCategory,
+            childCategory,
+            status: 'active' as const
+        };
+
+        const payload = {
+            brandId: validatedData.brandId,
+            name: validatedData.name,
+            brandLogo: validatedData.brandLogo,
+            brandBanner: validatedData.brandBanner,
+            category: validatedData.category,
+            subCategory: validatedData.subCategory,
+            childCategory: validatedData.childCategory,
+            status: validatedData.status
+        };
+
+        const result = await BrandServices.createBrandInDB(payload);
+
+        return sendResponse({
+            success: true,
+            statusCode: StatusCodes.CREATED,
+            message: 'Brand created successfully!',
+            data: result,
+        });
+    } catch (error) {
+        console.error('Error creating brand:', error);
+        return sendResponse({
+            success: false,
+            statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+            message: 'Failed to create brand',
+            data: null,
+        });
+    }
 };
 
 // Get all brands
@@ -43,20 +100,29 @@ const getAllBrands = async () => {
 };
 
 // Update brand
-const updateBrand = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const updateBrand = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const validatedData = updateBrandValidationSchema.parse(body);
 
-    const payload = {
-        ...validatedData,
-        ...(validatedData.category && { category: new Types.ObjectId(validatedData.category) }),
-        ...(validatedData.subCategory && { subCategory: new Types.ObjectId(validatedData.subCategory) }),
-        ...(validatedData.children && {
-            children: validatedData.children?.map((childId: string) => new Types.ObjectId(childId)),
-        }),
-    };
+    const payload: Partial<IBrand> = {};
+    
+    if (validatedData.brandId) payload.brandId = validatedData.brandId;
+    if (validatedData.name) payload.name = validatedData.name;
+    if (validatedData.brandLogo) payload.brandLogo = validatedData.brandLogo;
+    if (validatedData.brandBanner) payload.brandBanner = validatedData.brandBanner;
+    if (validatedData.status) payload.status = validatedData.status;
+    
+    if (validatedData.category) {
+        payload.category = validatedData.category;
+    }
+    if (validatedData.subCategory) {
+        payload.subCategory = validatedData.subCategory;
+    }
+    if (validatedData.childCategory) {
+        payload.childCategory = validatedData.childCategory;
+    }
 
     const result = await BrandServices.updateBrandInDB(id, payload);
 
@@ -69,9 +135,9 @@ const updateBrand = async (req: NextRequest, { params }: { params: { id: string 
 };
 
 // Delete brand
-const deleteBrand = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const deleteBrand = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     await BrandServices.deleteBrandFromDB(id);
 
     return sendResponse({

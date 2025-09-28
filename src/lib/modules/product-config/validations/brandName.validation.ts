@@ -20,6 +20,6 @@ export const updateBrandValidationSchema = z.object({
   brandBanner: z.string().optional(),
   category: z.string().optional(),
   subCategory: z.string().optional(),
-  children: z.array(z.string()).optional(),
+  childCategory: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),
 });
