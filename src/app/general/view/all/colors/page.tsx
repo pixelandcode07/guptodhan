@@ -42,10 +42,7 @@ export default function ViewAllColorsPage() {
           <Plus className="w-4 h-4 mr-2" />
           Add New Color
         </Button>
-        <Button variant="outline">
-          <Move className="w-4 h-4 mr-2" />
-          Rearrange Color
-        </Button>
+       
       </div>
       <DataTable columns={color_columns} data={data} />
     </div>
