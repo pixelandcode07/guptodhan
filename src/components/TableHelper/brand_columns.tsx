@@ -22,9 +22,10 @@ export type Brand = {
 export type BrandColumnHandlers = {
   onEdit: (brand: Brand) => void
   onDelete: (brand: Brand) => void
+  onToggleFeatured: (brand: Brand) => void
 }
 
-export const getBrandColumns = ({ onEdit, onDelete }: BrandColumnHandlers): ColumnDef<Brand>[] => [
+export const getBrandColumns = ({ onEdit, onDelete, onToggleFeatured }: BrandColumnHandlers): ColumnDef<Brand>[] => [
   {
     accessorKey: "id",
     header: "SL",
@@ -178,14 +179,18 @@ export const getBrandColumns = ({ onEdit, onDelete }: BrandColumnHandlers): Colu
     header: "Featured",
     cell: ({ row }) => {
       const featured = row.getValue("featured") as string;
+      const brand = row.original as Brand;
       return (
-        <div className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          featured === "Featured" 
-            ? "bg-yellow-100 text-yellow-800 border border-yellow-200" 
-            : "bg-gray-100 text-gray-600 border border-gray-200"
-        }`}>
+        <button
+          onClick={() => onToggleFeatured(brand)}
+          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full cursor-pointer hover:opacity-80 transition-opacity ${
+            featured === "Featured" 
+              ? "bg-yellow-100 text-yellow-800 border border-yellow-200" 
+              : "bg-gray-100 text-gray-600 border border-gray-200"
+          }`}
+        >
           {featured}
-        </div>
+        </button>
       );
     },
   },

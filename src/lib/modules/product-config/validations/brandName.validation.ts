@@ -6,8 +6,8 @@ export const createBrandValidationSchema = z.object({
   name: z.string().min(1, { message: 'Brand name is required.' }),
   brandLogo: z.string().min(1, { message: 'Brand logo is required.' }),
   brandBanner: z.string().min(1, { message: 'Brand banner is required.' }),
-  category: z.string({ required_error: 'Category ID is required.' }),
-  subCategory: z.string({ required_error: 'Sub-category ID is required.' }),
+  category: z.string().min(1, 'Category is required.'),
+  subCategory: z.string().min(1, 'Sub-category is required.'),
   children: z.array(z.string()).optional(),
   status: z.enum(['active', 'inactive']).optional(),
 });
@@ -22,4 +22,5 @@ export const updateBrandValidationSchema = z.object({
   subCategory: z.string().optional(),
   childCategory: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),
+  featured: z.enum(['featured', 'not_featured']).optional(),
 });

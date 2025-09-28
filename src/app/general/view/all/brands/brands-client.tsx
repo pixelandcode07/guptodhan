@@ -25,6 +25,7 @@ type ApiBrand = {
   subCategory: string
   childCategory: string
   status: "active" | "inactive"
+  featured: "featured" | "not_featured"
   createdAt: string
 }
 
@@ -49,12 +50,15 @@ export default function BrandsClient() {
     childCategory: "",
     status: "Active" as "Active" | "Inactive",
   })
+  const [featuredModalOpen, setFeaturedModalOpen] = useState(false)
+  const [featuredBrand, setFeaturedBrand] = useState<Brand | null>(null)
 
   const fetchBrands = async () => {
     setLoading(true)
     try {
       const { data } = await axios.get("/api/v1/product-config/brandName")
       const apiBrands: ApiBrand[] = data?.data || []
+      console.log("API Brands:", apiBrands)
       const mapped: Brand[] = apiBrands.map((b, index) => ({
         _id: b._id,
         id: index + 1,
@@ -66,9 +70,10 @@ export default function BrandsClient() {
         childcategories: b.childCategory ? [b.childCategory] : [],
         slug: b.brandId,
         status: b.status === "active" ? "Active" : "Inactive",
-        featured: "Not Featured", // Default value since API doesn't have this field
+        featured: b.featured === "featured" ? "Featured" : "Not Featured",
         created_at: new Date(b.createdAt).toLocaleString(),
       }))
+      console.log("Mapped Brands:", mapped)
       setBrands(mapped)
     } catch {
       // ignore
@@ -108,7 +113,12 @@ export default function BrandsClient() {
     }
   }, [token, userRole])
 
-  const columns = useMemo(() => getBrandColumns({ onEdit, onDelete }), [onEdit, onDelete])
+  const onToggleFeatured = useCallback((brand: Brand) => {
+    setFeaturedBrand(brand)
+    setFeaturedModalOpen(true)
+  }, [])
+
+  const columns = useMemo(() => getBrandColumns({ onEdit, onDelete, onToggleFeatured }), [onEdit, onDelete, onToggleFeatured])
 
   const filteredBrands = useMemo(() => {
     const bySearch = (b: Brand) =>
@@ -242,12 +252,52 @@ export default function BrandsClient() {
                   toast.success("Brand updated")
                   setEditOpen(false)
                   await fetchBrands()
-                } catch (e) {
+                } catch {
                   toast.error("Update failed")
                 }
               }}
             >
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={featuredModalOpen} onOpenChange={setFeaturedModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Toggle Featured Status</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p>
+              Are you sure you want to {featuredBrand?.featured === "Featured" ? "remove" : "set"} &quot;{featuredBrand?.name}&quot; as {featuredBrand?.featured === "Featured" ? "not featured" : "featured"}?
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFeaturedModalOpen(false)}>Cancel</Button>
+            <Button
+              onClick={async () => {
+                if (!featuredBrand) return
+                try {
+                  const newFeaturedStatus = featuredBrand.featured === "Featured" ? "Not Featured" : "Featured"
+                  await axios.patch(`/api/v1/product-config/brandName/${featuredBrand._id}`, {
+                    featured: newFeaturedStatus === "Featured" ? "featured" : "not_featured",
+                  }, {
+                    headers: {
+                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                      ...(userRole ? { "x-user-role": userRole } : {}),
+                      "Content-Type": "application/json",
+                    }
+                  })
+                  toast.success(`Brand ${newFeaturedStatus === "Featured" ? "featured" : "unfeatured"} successfully`)
+                  setFeaturedModalOpen(false)
+                  await fetchBrands()
+                } catch {
+                  toast.error("Failed to update featured status")
+                }
+              }}
+            >
+              {featuredBrand?.featured === "Featured" ? "Remove Featured" : "Set as Featured"}
             </Button>
           </DialogFooter>
         </DialogContent>

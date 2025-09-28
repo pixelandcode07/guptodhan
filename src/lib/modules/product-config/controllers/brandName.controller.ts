@@ -53,7 +53,8 @@ const createBrand = async (req: NextRequest) => {
             category,
             subCategory,
             childCategory,
-            status: 'active' as const
+            status: 'active' as const,
+            featured: 'not_featured' as const
         };
 
         const payload = {
@@ -64,7 +65,8 @@ const createBrand = async (req: NextRequest) => {
             category: validatedData.category,
             subCategory: validatedData.subCategory,
             childCategory: validatedData.childCategory,
-            status: validatedData.status
+            status: validatedData.status,
+            featured: validatedData.featured
         };
 
         const result = await BrandServices.createBrandInDB(payload);
@@ -113,6 +115,7 @@ const updateBrand = async (req: NextRequest, { params }: { params: Promise<{ id:
     if (validatedData.brandLogo) payload.brandLogo = validatedData.brandLogo;
     if (validatedData.brandBanner) payload.brandBanner = validatedData.brandBanner;
     if (validatedData.status) payload.status = validatedData.status;
+    if (validatedData.featured) payload.featured = validatedData.featured;
     
     if (validatedData.category) {
         payload.category = validatedData.category;

@@ -9,4 +9,5 @@ export interface IBrand extends Document {
   subCategory: string; 
   childCategory: string; 
   status: 'active' | 'inactive'; 
+  featured: 'featured' | 'not_featured';
 }

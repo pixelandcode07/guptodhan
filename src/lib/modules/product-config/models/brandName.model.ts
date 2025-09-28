@@ -11,6 +11,7 @@ const brandSchema = new Schema<IBrand>(
     subCategory: { type: String, required: true },
     childCategory: { type: String, required: true },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+    featured: { type: String, enum: ['featured', 'not_featured'], default: 'not_featured' },
   },
   { timestamps: true }
 );
