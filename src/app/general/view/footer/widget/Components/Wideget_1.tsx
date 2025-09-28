@@ -25,9 +25,6 @@ export default function FooterWidget1({ widget }: FooterWidgetProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  const { data: session } = useSession();
-  const token = (session as any)?.accessToken;
-
   const addRow = () => {
     setRows(prev => [...prev, { title: '', url: '' }]);
   };
@@ -45,6 +42,9 @@ export default function FooterWidget1({ widget }: FooterWidgetProps) {
       prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
     );
   };
+
+  const { data: session } = useSession();
+  const token = (session as any)?.accessToken;
 
   // 🔹 Save (POST or PATCH depending on widget existence)
   const handleSubmit = async (e: React.FormEvent) => {

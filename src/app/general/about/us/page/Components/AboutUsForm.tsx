@@ -11,23 +11,57 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import RichTextEditor from '@/components/ReusableComponents/RichTextEditor';
+import axios from 'axios';
+import { useSession } from 'next-auth/react';
 
 type AboutUsFormProps = {
   initialContent?: string;
 };
 
 export default function AboutUsForm({ initialContent = '' }: AboutUsFormProps) {
+  const { data: session } = useSession();
+  const token = (session as any)?.accessToken;
+
   const [content, setContent] = useState(initialContent);
-  const [status, setStatus] = useState('1');
+  const [status, setStatus] = useState('1'); // 1 = Active, 0 = Inactive
+  const [loading, setLoading] = useState(false);
 
   const handleCancel = () => {
     setContent(initialContent);
     setStatus('1');
   };
 
-  const handleDone = () => {
-    console.log({ content, status });
-    alert('Information Updated!');
+  const handleDone = async () => {
+    setLoading(true);
+    try {
+      const payload = {
+        content,
+        status: status === '1' ? 'active' : 'inactive', // backend-friendly value
+      };
+
+      // POST request because PATCH is not allowed
+      const res = await axios.post(
+        'http://localhost:3000/api/v1/about/content',
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (res.data.success) {
+        alert('Information Updated!');
+      } else {
+        alert('Failed to update information!');
+      }
+    } catch (error: any) {
+      console.error(error);
+      alert('Error updating information!');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -61,10 +95,15 @@ export default function AboutUsForm({ initialContent = '' }: AboutUsFormProps) {
       {/* Buttons */}
       <div className="flex justify-center items-center w-full">
         <div className="flex flex-wrap gap-2">
-          <Button variant="destructive" onClick={handleCancel}>
+          <Button
+            variant="destructive"
+            onClick={handleCancel}
+            disabled={loading}>
             Cancel
           </Button>
-          <Button onClick={handleDone}>Done</Button>
+          <Button onClick={handleDone} disabled={loading}>
+            {loading ? 'Updating...' : 'Done'}
+          </Button>
         </div>
       </div>
     </div>
