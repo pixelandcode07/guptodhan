@@ -5,7 +5,6 @@ import { createProductColorValidationSchema, updateProductColorValidationSchema 
 import { ProductColorServices } from '../services/productColor.service';
 import dbConnect from '@/lib/db';
 
-// Create a new product color
 const createProductColor = async (req: NextRequest) => {
     await dbConnect();
     const body = await req.json();
@@ -21,7 +20,6 @@ const createProductColor = async (req: NextRequest) => {
     });
 };
 
-// Get all product colors
 const getAllProductColors = async () => {
     await dbConnect();
     const result = await ProductColorServices.getAllProductColorsFromDB();
@@ -34,10 +32,9 @@ const getAllProductColors = async () => {
     });
 };
 
-// Update product color
-const updateProductColor = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const updateProductColor = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const validatedData = updateProductColorValidationSchema.parse(body);
 
@@ -51,10 +48,9 @@ const updateProductColor = async (req: NextRequest, { params }: { params: { id: 
     });
 };
 
-// Delete product color
-const deleteProductColor = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const deleteProductColor = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     await ProductColorServices.deleteProductColorFromDB(id);
 
     return sendResponse({

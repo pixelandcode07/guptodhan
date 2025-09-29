@@ -2,6 +2,6 @@ import {ModelFormController} from "@/lib/modules/product-config/controllers/mode
 
 import {catchAsync} from "@/lib/middlewares/catchAsync";
 
-export const GET = catchAsync(ModelFormController.getModelFormsByBrand);
+export const GET = catchAsync(ModelFormController.getAllModelForms);
 
 export const POST = catchAsync(ModelFormController.createModelForm);

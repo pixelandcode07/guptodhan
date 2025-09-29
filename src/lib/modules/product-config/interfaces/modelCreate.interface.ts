@@ -3,6 +3,7 @@ import { Document, Types } from 'mongoose';
 export interface IModelForm extends Document {
   modelFormId: string;
   brand: Types.ObjectId;
+  brandName: string;
   modelName: string;
   modelCode: string;
   status: 'active' | 'inactive';
