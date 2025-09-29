@@ -37,9 +37,22 @@ const deleteFact = async (_req: NextRequest, { params }: { params: { id: string 
     return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Fact deleted successfully!', data: null });
 };
 
+const getFactById = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    await dbConnect();
+    const { id } = await params;
+    const result = await AboutFactServices.getFactByIdFromDB(id);
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Fact retrieved successfully!',
+        data: result,
+    });
+};
+
 export const AboutFactController = {
     createFact,
     getPublicFacts,
     updateFact,
     deleteFact,
+    getFactById,
 };
