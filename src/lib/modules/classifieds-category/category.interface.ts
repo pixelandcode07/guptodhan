@@ -4,7 +4,7 @@ export interface IClassifiedCategory extends Document {
   name: string;
   slug: string;
   icon?: string;
-  status: 'pending' | 'active' | 'inactive';
+  status: 'active' | 'inactive';
 }
 
 
