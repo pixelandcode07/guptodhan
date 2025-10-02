@@ -5,13 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Edit, Trash2 } from 'lucide-react';
 
 export type Size = {
+  _id?: string; // mongo id for operations
+  sizeId?: string; // slug/id
   id: number;
   name: string;
   status: 'Active' | 'Inactive';
   created_at: string;
 };
 
-export const size_columns: ColumnDef<Size>[] = [
+export type SizeColumnHandlers = {
+  onDelete: (size: Size) => void;
+};
+
+export const getSizeColumns = ({ onDelete }: SizeColumnHandlers): ColumnDef<Size>[] => [
   {
     accessorKey: 'id',
     header: 'SL',
@@ -35,7 +41,8 @@ export const size_columns: ColumnDef<Size>[] = [
   {
     id: 'action',
     header: 'Action',
-    cell: () => {
+    cell: ({ row }) => {
+      const size = row.original as Size;
       return (
         <div className="flex items-center gap-2">
           <Button
@@ -45,6 +52,7 @@ export const size_columns: ColumnDef<Size>[] = [
             <Edit className="w-4 h-4" />
           </Button>
           <Button
+            onClick={() => onDelete(size)}
             variant="ghost"
             size="sm"
             className="text-red-600 hover:text-red-700 hover:bg-red-50">
