@@ -23,6 +23,7 @@ const adminRoutes = [
     "/api/v1/custom-code",
     "/api/v1/integrations",
     "/api/v1/donation-categories",
+    "/api/v1/theme-settings",
 ];
 
 // যেকোনো লগইন করা ইউজারের জন্য সুরক্ষিত API রুট
@@ -48,7 +49,6 @@ const protectedApiRoutes = [
     '/api/v1/footer-widgets',
     '/api/v1/social-links',
     '/api/v1/theme-settings',
-    '/api/v1/seo-settings',
     '/api/v1/custom-code',
     '/api/v1/integrations',
     '/api/v1/services',
