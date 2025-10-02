@@ -15,9 +15,10 @@ export type Size = {
 
 export type SizeColumnHandlers = {
   onDelete: (size: Size) => void;
+  onEdit: (size: Size) => void;
 };
 
-export const getSizeColumns = ({ onDelete }: SizeColumnHandlers): ColumnDef<Size>[] => [
+export const getSizeColumns = ({ onDelete, onEdit }: SizeColumnHandlers): ColumnDef<Size>[] => [
   {
     accessorKey: 'id',
     header: 'SL',
@@ -46,6 +47,7 @@ export const getSizeColumns = ({ onDelete }: SizeColumnHandlers): ColumnDef<Size
       return (
         <div className="flex items-center gap-2">
           <Button
+            onClick={() => onEdit(size)}
             variant="ghost"
             size="sm"
             className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">

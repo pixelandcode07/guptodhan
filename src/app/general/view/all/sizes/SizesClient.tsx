@@ -30,7 +30,7 @@ export default function SizesClient() {
 
   const [sizes, setSizes] = useState<Size[]>([]);
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<ApiSize | null>(null);
+  const [editing, setEditing] = useState<Size | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
 
   const fetchSizes = useCallback(async () => {
@@ -85,6 +85,11 @@ export default function SizesClient() {
           },
         });
         toast.success("Size updated successfully!");
+        setSizes(prev => prev.map(s => s._id === editing._id ? {
+          ...s,
+          name: (payload.name as string) || s.name,
+          status: (payload.status === 'inactive') ? 'Inactive' : 'Active',
+        } : s));
       } else {
         const res = await axios.post("/api/v1/product-config/productSize", payload, {
           headers: {
@@ -140,7 +145,12 @@ export default function SizesClient() {
     }
   }, [token, userRole]);
 
-  const columns = useMemo(() => getSizeColumns({ onDelete }), [onDelete]);
+  const onEdit = useCallback((row: Size) => {
+    setEditing(row);
+    setOpen(true);
+  }, []);
+
+  const columns = useMemo(() => getSizeColumns({ onDelete, onEdit }), [onDelete, onEdit]);
 
   return (
     <div className="m-5 p-5 border ">
@@ -178,7 +188,7 @@ export default function SizesClient() {
         open={open}
         onOpenChange={setOpen}
         onSubmit={onSubmit}
-        editing={editing ? { name: editing.name, status: editing.status } : null}
+        editing={editing ? { name: editing.name, status: editing.status.toLowerCase() } : null}
       />
     </div>
   );
