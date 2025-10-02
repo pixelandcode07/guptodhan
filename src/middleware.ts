@@ -3,7 +3,33 @@ import { getToken } from "next-auth/jwt";
 import { StatusCodes } from "http-status-codes";
 
 const adminRoutes = ["/general", "/api/v1/users"];
-const protectedApiRoutes = ["/api/v1/profile/me", "/api/v1/orders"];
+const protectedApiRoutes = ['/api/v1/auth/change-password',
+    '/api/otp/send-email',
+    '/api/otp/verify-email',
+    '/api/otp/verify-phone',
+    '/api/v1/auth/set-password',
+    '/api/v1/profile/me',
+    '/api/v1/users',
+    '/api/v1/classifieds/ads',
+    '/api/v1/classifieds-banners',
+    '/api/v1/reports',
+    '/api/v1/classifieds-subcategories',
+    '/api/v1/brands',
+    '/api/v1/classifieds-categories',
+    '/api/v1/about',
+    '/api/v1/conversations',
+    '/api/v1/service-categories',
+    '/api/v1/service-subcategories',
+    '/api/v1/settings',
+    '/api/v1/footer-widgets',
+    '/api/v1/social-links',
+    '/api/v1/theme-settings',
+    '/api/v1/seo-settings',
+    '/api/v1/custom-code',
+    '/api/v1/integrations',
+    '/api/v1/services',
+    '/api/v1/donation-categories',
+    '/api/v1/donation-campaigns'];
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
