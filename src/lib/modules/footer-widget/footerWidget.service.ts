@@ -6,10 +6,14 @@ const createWidgetInDB = async (payload: Partial<IFooterWidget>) => await Footer
 const getPublicWidgetsFromDB = async () => await FooterWidget.find({ status: 'active' }).sort({ createdAt: 1 });
 const updateWidgetInDB = async (id: string, payload: Partial<IFooterWidget>) => await FooterWidget.findByIdAndUpdate(id, payload, { new: true });
 const deleteWidgetFromDB = async (id: string) => await FooterWidget.findByIdAndDelete(id);
-
+const getAllWidgetsForAdminFromDB = async () => {
+  // find({}) দিয়ে সব ডকুমেন্ট (active/inactive) আনা হচ্ছে
+  return await FooterWidget.find({}).sort({ createdAt: 1 }); 
+};
 export const FooterWidgetServices = {
   createWidgetInDB,
   getPublicWidgetsFromDB,
   updateWidgetInDB,
   deleteWidgetFromDB,
+  getAllWidgetsForAdminFromDB,
 };

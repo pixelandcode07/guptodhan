@@ -54,7 +54,28 @@ const getPublicSettings = async (_req: NextRequest) => {
     return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Settings retrieved successfully!', data: result });
 };
 
+// ✅ NEW: Controller for PATCH request
+const updateSettings = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    await dbConnect();
+    const { id } = await params;
+    const body = await req.json(); // For PATCH, we can expect JSON
+    const validatedData = updateSettingsValidationSchema.partial().parse(body); // .partial() makes all fields optional
+    const result = await SettingsServices.updateSettingsInDB(id, validatedData);
+    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Settings updated successfully!', data: result });
+};
+
+// ✅ NEW: Controller for DELETE request
+const deleteSettings = async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    await dbConnect();
+    const { id } = await params;
+    await SettingsServices.deleteSettingsFromDB(id);
+    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Settings deleted successfully!', data: null });
+};
+
+
 export const SettingsController = {
     createOrUpdateSettings,
     getPublicSettings,
+    updateSettings, // ✅ Add this
+    deleteSettings, // ✅ Add thi
 };
