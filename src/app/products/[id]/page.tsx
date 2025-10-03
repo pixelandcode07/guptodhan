@@ -46,7 +46,7 @@ export default function ProductDetailsPage({ params }: ProductDetailsProps) {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-10 gap-3">
-        <div className="xl:col-span-8">
+        <div className="xl:col-span-8  px-4">
           <DescriptionBox />
           <div className="space-y-6  py-10">
             <div className="max-w-xl">
@@ -60,7 +60,7 @@ export default function ProductDetailsPage({ params }: ProductDetailsProps) {
         </div>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 mx-4">
         <ProductCarousel title="You may also like" products={carousel_data} />
       </div>
 
