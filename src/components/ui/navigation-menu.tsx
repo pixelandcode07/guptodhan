@@ -18,7 +18,7 @@ function NavigationMenu({
       data-slot="navigation-menu"
       data-viewport={viewport}
       className={cn(
-        "group/navigation-menu relative flex w-full bg-[#00005E] py-2 flex-1 items-center justify-center",
+        "group/navigation-menu relative flex w-full bg-[#00005E] py-2 flex-1 items-start justify-start",
         className
       )}
       {...props}
@@ -37,7 +37,8 @@ function NavigationMenuList({
     <NavigationMenuPrimitive.List
       data-slot="navigation-menu-list"
       className={cn(
-        "group flex flex-1 list-none items-center justify-center gap-1",
+        
+        "xl:pl-16 group flex flex-1 list-none items-center justify-center gap-1",
         className
       )}
       {...props}
