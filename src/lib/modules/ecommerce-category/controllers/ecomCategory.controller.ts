@@ -7,21 +7,67 @@ import {
 } from '../validations/ecomCategory.validation';
 import { CategoryServices } from '../services/ecomCategory.service';
 import dbConnect from '@/lib/db';
+import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 
-// Create a new category
+// Create a new category (multipart FormData like Brand)
 const createCategory = async (req: NextRequest) => {
-  await dbConnect();
-  const body = await req.json();
-  const validatedData = createCategoryValidationSchema.parse(body);
+  try {
+    await dbConnect();
 
-  const result = await CategoryServices.createCategoryInDB(validatedData);
+    const formData = await req.formData();
 
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.CREATED,
-    message: 'Category created successfully!',
-    data: result,
-  });
+    const categoryId = (formData.get('categoryId') as string) || '';
+    const name = (formData.get('name') as string) || '';
+    const isFeaturedStr = (formData.get('isFeatured') as string) || 'false';
+    const isNavbarStr = (formData.get('isNavbar') as string) || 'false';
+    const slug = (formData.get('slug') as string) || '';
+    const status = (formData.get('status') as string) || 'active';
+    const categoryIconFile = formData.get('categoryIcon') as File | null;
+    const categoryBannerFile = formData.get('categoryBanner') as File | null;
+
+    let iconUrl = '';
+    let bannerUrl = '';
+
+    if (categoryIconFile) {
+      const buffer = Buffer.from(await categoryIconFile.arrayBuffer());
+      const uploaded = await uploadToCloudinary(buffer, 'ecommerce-category/icons');
+      iconUrl = uploaded.secure_url;
+    }
+
+    if (categoryBannerFile) {
+      const buffer = Buffer.from(await categoryBannerFile.arrayBuffer());
+      const uploaded = await uploadToCloudinary(buffer, 'ecommerce-category/banners');
+      bannerUrl = uploaded.secure_url;
+    }
+
+    const payload = {
+      categoryId,
+      name,
+      categoryIcon: iconUrl,
+      categoryBanner: bannerUrl,
+      isFeatured: isFeaturedStr === 'true',
+      isNavbar: isNavbarStr === 'true',
+      slug,
+      status,
+    };
+
+    const validatedData = createCategoryValidationSchema.parse(payload);
+    const result = await CategoryServices.createCategoryInDB(validatedData);
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.CREATED,
+      message: 'Category created successfully!',
+      data: result,
+    });
+  } catch (error: any) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: error?.message || 'Internal server error',
+      data: null,
+    });
+  }
 };
 
 // Get all categories

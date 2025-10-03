@@ -1,46 +1,5 @@
-import { DataTable } from "@/components/TableHelper/data-table";
-import { Category, category_columns } from "@/components/TableHelper/category_columns";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Plus, Move } from "lucide-react";
-import Link from "next/link";
-
-function getData(): Category[] {
-  return [
-    { id: 1, name: "Mobile", status: "Active", created_at: "2024-08-18 09:57:21 pm" },
-    { id: 2, name: "Electronics", status: "Active", created_at: "2024-08-18 09:57:12 pm" },
-    { id: 3, name: "Gadget", status: "Active", created_at: "2025-07-03 05:03:46 pm" },
-    { id: 4, name: "Fashion", status: "Active", created_at: "2025-03-08 12:14:49 pm" },
-    { id: 5, name: "Home & Living", status: "Active", created_at: "2024-08-18 09:57:26 pm" },
-  ];
-}
+import CategoriesClient from "./CategoriesClient";
 
 export default function ViewAllCategoriesPage() {
-  const data = getData();
-  return (
-    <div className="m-5 p-5 border ">
-      <div>
-        <h1 className="text-lg font-semibold border-l-2 border-blue-500">
-          <span className="pl-5">Product Categories</span>
-        </h1>
-      </div>
-      <div className="flex items-center justify-end gap-4 mb-4">
-        <span className="flex items-center gap-2">
-          <span>Search:</span>
-          <Input type="text" className="border border-gray-500" />
-        </span>
-        <Link href="/general/add/new/category">
-          <Button className="bg-green-600 hover:bg-green-700">
-            <Plus className="w-4 h-4 mr-2" />
-            Add New Category
-          </Button>
-        </Link>
-        <Button variant="outline">
-          <Move className="w-4 h-4 mr-2" />
-          Rearrange Category
-        </Button>
-      </div>
-      <DataTable columns={category_columns} data={data} />
-    </div>
-  );
+  return <CategoriesClient />;
 }
