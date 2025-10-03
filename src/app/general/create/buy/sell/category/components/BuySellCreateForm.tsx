@@ -73,7 +73,7 @@ export default function BuySellCreateForm() {
     }
     return (
         <div>
-            <form onSubmit={handleSubmit(onSubmit)} className='bg-[#f8f9fb] m-5 md:m-10 p-5 border border-[#e4e7eb] rounded-xs space-y-5 '>
+            <form onSubmit={handleSubmit(onSubmit)} className='bg-[#f8f9fb] space-y-5 '>
                 <div >
                     <h1 className="text-lg font-semibold border-l-2 border-blue-500">
                         <span className="pl-5">BuySell Category Create Form:</span>

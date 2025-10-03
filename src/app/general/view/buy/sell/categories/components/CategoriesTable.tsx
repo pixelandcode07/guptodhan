@@ -19,30 +19,41 @@ interface CategoriesTableProps {
 }
 
 export default function CategoriesTable({ data }: CategoriesTableProps) {
-     const { data: session } = useSession();
-        const token = session?.accessToken;
+    const { data: session } = useSession();
+    const token = session?.accessToken;
+    const adminRole = session?.user?.role === 'admin'
     // Delete method (client-side)
     const handleDelete = async (_id: string) => {
-        if (!confirm("Are you sure you want to delete this item?")) return;
+        toast("Are you sure you want to delete this item?", {
+            description: "This action cannot be undone.",
+            action: {
+                label: "Delete",
+                onClick: async () => {
+                    try {
+                        await axios.delete(`/api/v1/classifieds-categories/${_id}`, {
+                            headers: {
+                                "Content-Type": "multipart/form-data",
+                                Authorization: `Bearer ${token}`, // attach token
+                                "x-user-role": adminRole,
+                            },
+                        })
 
-        try {
-            // const baseUrl = process.env.NEXTAUTH_URL;
-            await axios.delete(`/api/v1/classifieds-categories/${_id}`,{
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                    Authorization: `Bearer ${token}`, // attach token
-                    "x-user-role": session?.user?.role
+                        toast.success("Deleted successfully!")
+                        window.location.reload()
+                    } catch (error) {
+                        console.error(error)
+                        toast.error("Delete failed!")
+                    }
                 },
-            });
-
-            toast.success("Deleted successfully!");
-            // optional: trigger a refresh
-            window.location.reload();
-        } catch (error) {
-            console.error(error);
-            toast.error("Delete failed!");
-        }
-    };
+            },
+            cancel: {
+                label: "Cancel",
+                onClick: () => {
+                    toast.info("Delete cancelled")
+                },
+            },
+        })
+    }
 
     return (
         <>

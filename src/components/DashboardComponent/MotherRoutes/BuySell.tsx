@@ -1,19 +1,16 @@
 "use client"
 
-import { ChevronDown } from "lucide-react"
 import { ElementType } from "react"
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible"
 import Link from "next/link"
-
-
-const category = [
-    { title: "Create New", url: "/general/create/buy/sell/category" },
-    { title: "View All Categories", url: "/general/view/buy/sell/categories" },
-]
+import { usePathname } from "next/navigation"
 
 
 export function BuySell({ items }: { items: { title: string, url: string, icon: ElementType }[] }) {
+    const pathname = usePathname()
+    const isActive = (href: string) => pathname === href
+
 
     return (
         <SidebarGroup className="group-data-[collapsible=icon]:hidden">
@@ -25,42 +22,31 @@ export function BuySell({ items }: { items: { title: string, url: string, icon: 
 
             <SidebarGroupContent>
                 <SidebarMenu>
-                    {items.map((item) => (
-                        <Collapsible key={item.title} className="group/collapsible">
-                            {/* (defaultOpen) - Collapsible class */}
-                            {/* Parent Button */}
-                            <CollapsibleTrigger asChild>
-                                <SidebarMenuItem >
-                                    <SidebarMenuButton>
-                                        <item.icon />
-                                        {item.title === "Buy Sell Config" && <Link href="/general/buy/sell/config" className="flex items-center gap-2">{item.title}</Link>}
-                                        {item.title === "Buy Sell Listing" && <Link href="/general/buy/sell/listing" className="flex items-center gap-2">{item.title}</Link>}
-                                        {item.title !== "Buy Sell Config" && item.title !== "Buy Sell Listing" && <span className="flex items-center gap-2">{item.title}</span>}
-                                        {item.title === "Buy Sell Categories" && <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />}
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            </CollapsibleTrigger>
-                            {/* Child Items */}
-                            <CollapsibleContent>
-                                <div className="pl-6">
-                                    {item.title === "Buy Sell Categories" &&
-                                        category.map((sub) => (
-                                            <SidebarMenuItem key={sub.url}>
-                                                <SidebarMenuButton asChild>
-                                                    <Link
-                                                        href={sub.url}
-                                                        className="flex items-center gap-2"
-                                                    >
-                                                        {/* <sub.icon className="h-4 w-4" /> */}
-                                                        <span>{sub.title}</span>
-                                                    </Link>
-                                                </SidebarMenuButton>
-                                            </SidebarMenuItem>
-                                        ))}
-                                </div>
-                            </CollapsibleContent>
-                        </Collapsible>
-                    ))}
+                    {items.map((item) => {
+                        // define route based on title
+                        let href = "#"
+                        if (item.title === "Dashboard") href = "/general/buy/sell/dashboard"
+                        if (item.title === "Listing Management") href = "/general/buy/sell/listing"
+                        if (item.title === "Report Listing") href = "/general/buy/sell/report"
+                        if (item.title === "Categories") href = "/general/create/buy/sell/category"
+                        if (item.title === "Setting") href = "/general/buy/sell/config"
+                        const active = isActive(href)
+                        return (
+                            <Collapsible key={item.title} className="group/collapsible">
+                                <CollapsibleTrigger asChild>
+                                    <SidebarMenuItem >
+                                        <SidebarMenuButton className={`flex items-center gap-2 ${active
+                                            ? "bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md"
+                                            : "text-white bg-[#132843]"
+                                            }`}>
+                                            <item.icon />
+                                            <Link href={href}>{item.title}</Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                </CollapsibleTrigger>
+                            </Collapsible>
+                        )
+                    })}
 
                 </SidebarMenu>
             </SidebarGroupContent>

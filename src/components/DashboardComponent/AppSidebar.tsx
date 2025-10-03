@@ -12,11 +12,13 @@ import {
 } from '../ui/sidebar';
 import {
   Box,
+  Bug,
+  ChartNoAxesCombined,
   Code,
   DollarSign,
   House,
   LayoutDashboard,
-  LogOut,
+  Logs,
   MessageCircle,
   Palette,
   Search,
@@ -86,20 +88,31 @@ const data = {
   ],
   buysell: [
     {
-      title: 'Buy Sell Config',
-      url: '/general/buy/sell/config',
-      icon: LayoutDashboard,
+      title: 'Dashboard',
+      url: '/general/buy/sell/dashboard',
+      icon: ChartNoAxesCombined,
     },
     {
-      title: 'Buy Sell Categories',
-      url: '*',
-      icon: LayoutDashboard,
-    },
-    {
-      title: 'Buy Sell Listing',
+      title: 'Listing Management',
       url: '/general/buy/sell/listing',
       icon: LayoutDashboard,
     },
+    {
+      title: 'Report Listing',
+      url: '/general/buy/sell/report',
+      icon: Bug,
+    },
+    {
+      title: 'Categories',
+      url: '/general/create/buy/sell/category',
+      icon: Logs,
+    },
+    {
+      title: 'Setting',
+      url: '/general/buy/sell/config',
+      icon: Settings,
+    },
+
   ],
   donations: [
     {
@@ -195,13 +208,6 @@ const data = {
     { title: 'Subscribed Users' },
     { title: 'Blog Comments' },
   ],
-  // logoutAction: [
-  //   {
-  //     title: 'Logout',
-  //     url: '/general/logout',
-  //     icon: LogOut,
-  //   },
-  // ],
 };
 
 export default function AppSidebar() {
@@ -238,8 +244,7 @@ export default function AppSidebar() {
         <ContentManagement />
         <UserRolePermition items={data.userRole} />
         <DemoProducts items={data.demoProducts} />
-        <Logout  />
-        {/* items={data.logoutAction} */}
+        <Logout />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
     </Sidebar>
