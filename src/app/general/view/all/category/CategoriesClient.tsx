@@ -8,6 +8,7 @@ import { getCategoryColumns, type Category } from "@/components/TableHelper/cate
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import CategoryEditModal from "./CategoryEditModal";
 
 type ApiCategory = {
   _id: string;
@@ -29,6 +30,8 @@ export default function CategoriesClient() {
   const userRole = s?.user?.role;
   const [rows, setRows] = useState<Category[]>([]);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editing, setEditing] = useState<Category | null>(null);
 
   const fetchRows = useCallback(async () => {
     try {
@@ -81,7 +84,7 @@ export default function CategoriesClient() {
     }
   }, [token, userRole]);
 
-  const columns = useMemo(() => getCategoryColumns({ onEdit: () => toast.info('Edit coming soon'), onDelete }), [onDelete]);
+  const columns = useMemo(() => getCategoryColumns({ onEdit: (row) => { setEditing(row); setEditOpen(true); }, onDelete }), [onDelete]);
 
   const filtered = useMemo(() => {
     return rows.filter(r => statusFilter === "all" || r.status.toLowerCase() === statusFilter);
@@ -109,6 +112,13 @@ export default function CategoriesClient() {
         </div>
       </div>
       <DataTable columns={columns} data={filtered} />
+
+      <CategoryEditModal
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        data={editing}
+        onSaved={fetchRows}
+      />
     </div>
   );
 }
