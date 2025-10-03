@@ -3,6 +3,7 @@ import { Category, category_columns } from "@/components/TableHelper/category_co
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Move } from "lucide-react";
+import Link from "next/link";
 
 function getData(): Category[] {
   return [
@@ -28,10 +29,12 @@ export default function ViewAllCategoriesPage() {
           <span>Search:</span>
           <Input type="text" className="border border-gray-500" />
         </span>
-        <Button className="bg-green-600 hover:bg-green-700">
-          <Plus className="w-4 h-4 mr-2" />
-          Add New Category
-        </Button>
+        <Link href="/general/add/new/category">
+          <Button className="bg-green-600 hover:bg-green-700">
+            <Plus className="w-4 h-4 mr-2" />
+            Add New Category
+          </Button>
+        </Link>
         <Button variant="outline">
           <Move className="w-4 h-4 mr-2" />
           Rearrange Category
