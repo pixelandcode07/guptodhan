@@ -36,9 +36,16 @@ const deleteWidget = async (_req: NextRequest, { params }: { params: { id: strin
     return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Footer widget deleted successfully!', data: null });
 };
 
+const getAllWidgetsForAdmin = async (_req: NextRequest) => {
+    await dbConnect();
+    const result = await FooterWidgetServices.getAllWidgetsForAdminFromDB();
+    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'All footer widgets retrieved for admin!', data: result });
+};
+
 export const FooterWidgetController = {
     createWidget,
     getPublicWidgets,
     updateWidget,
     deleteWidget,
+    getAllWidgetsForAdmin,
 };

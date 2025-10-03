@@ -15,7 +15,7 @@ export default function SearchBar() {
         <>
             <Input
                 placeholder='Search...'
-                className='w-full pr-10'
+                className='w-full pr-10 bg-white text-gray-800 border border-gray-300 focus:border-black focus:ring-0 focus:outline-none'
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}

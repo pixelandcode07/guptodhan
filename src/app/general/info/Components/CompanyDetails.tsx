@@ -22,7 +22,6 @@ export default function CompanyDetails({
   formData,
   handleInputChange,
 }: CompanyDetailsProps) {
-  console.log(formData);
   return (
     <div className="space-y-4">
       {/* Company Name */}

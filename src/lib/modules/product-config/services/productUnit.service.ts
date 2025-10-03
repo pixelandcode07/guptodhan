@@ -8,9 +8,9 @@ const createProductUnitInDB = async (payload: Partial<IProductUnit>) => {
   return result;
 };
 
-// Get all active product units
+// Get all product units (active and inactive)
 const getAllProductUnitsFromDB = async () => {
-  const result = await ProductUnit.find({ status: 'active' }).sort({ name: 1 });
+  const result = await ProductUnit.find({}).sort({ name: 1 });
   return result;
 };
 

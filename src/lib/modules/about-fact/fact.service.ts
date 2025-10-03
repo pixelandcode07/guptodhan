@@ -15,9 +15,18 @@ const deleteFactFromDB = async (id: string) => {
   return await AboutFact.findByIdAndDelete(id);
 };
 
+const getFactByIdFromDB = async (id: string) => {
+  const result = await AboutFact.findById(id);
+  if (!result) {
+    throw new Error('Fact not found');
+  }
+  return result;
+}
+
 export const AboutFactServices = {
   createFactInDB,
   getPublicFactsFromDB,
   updateFactInDB,
   deleteFactFromDB,
+  getFactByIdFromDB,
 };

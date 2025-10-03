@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-// Create ProductColor validation
 export const createProductColorValidationSchema = z.object({
   productColorId: z.string({ required_error: 'ProductColor ID is required.' }),
   color: z.string().min(1, { message: 'Color value is required.' }),
@@ -9,7 +8,6 @@ export const createProductColorValidationSchema = z.object({
   status: z.enum(['active', 'inactive']).optional(),
 });
 
-// Update ProductColor validation
 export const updateProductColorValidationSchema = z.object({
   productColorId: z.string().optional(),
   color: z.string().optional(),

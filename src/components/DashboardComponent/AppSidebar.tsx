@@ -40,6 +40,7 @@ import { BuySell } from './MotherRoutes/BuySell';
 import { Donation } from './MotherRoutes/Donation';
 import { DemoProducts } from './MotherRoutes/DemoProducts';
 import Logout from './MotherRoutes/Logout';
+import LogoutBtn from './Components/LogoutBtn';
 
 const data = {
   user: {
@@ -238,7 +239,8 @@ export default function AppSidebar() {
         <ContentManagement />
         <UserRolePermition items={data.userRole} />
         <DemoProducts items={data.demoProducts} />
-        <Logout items={data.logoutAction} />
+        {/* <Logout items={data.logoutAction} /> */}
+        <LogoutBtn />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
     </Sidebar>

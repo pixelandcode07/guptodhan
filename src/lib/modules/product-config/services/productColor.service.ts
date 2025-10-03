@@ -1,20 +1,17 @@
 import { IProductColor } from '../interfaces/productColor.interface';
 import { ProductColor } from '../models/productColor.model';
-import { ClassifiedAd } from '../../classifieds/ad.model'; // dependency check
+import { ClassifiedAd } from '../../classifieds/ad.model';
 
-// Create new product color
 const createProductColorInDB = async (payload: Partial<IProductColor>) => {
   const result = await ProductColor.create(payload);
   return result;
 };
 
-// Get all active product colors
 const getAllProductColorsFromDB = async () => {
-  const result = await ProductColor.find({ status: 'active' }).sort({ colorName: 1 });
+  const result = await ProductColor.find({}).sort({ colorName: 1 });
   return result;
 };
 
-// Get single product color by ID
 const getProductColorByIdFromDB = async (id: string) => {
   const result = await ProductColor.findById(id);
   if (!result) {
@@ -23,7 +20,6 @@ const getProductColorByIdFromDB = async (id: string) => {
   return result;
 };
 
-// Update product color
 const updateProductColorInDB = async (id: string, payload: Partial<IProductColor>) => {
   const result = await ProductColor.findByIdAndUpdate(id, payload, { new: true });
   if (!result) {
@@ -32,7 +28,6 @@ const updateProductColorInDB = async (id: string, payload: Partial<IProductColor
   return result;
 };
 
-// Delete product color (only if not used in product models)
 const deleteProductColorFromDB = async (id: string) => {
   const existingModel = await ClassifiedAd.findOne({ color: id });
   if (existingModel) {

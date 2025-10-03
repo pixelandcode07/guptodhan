@@ -9,16 +9,16 @@ const createBrandInDB = async (payload: Partial<IBrand>) => {
   return result;
 };
 
-// Get all active brands (optional: sorted by name)
+// Get all brands (active and inactive)
 const getAllBrandsFromDB = async () => {
-  const result = await BrandModel.find({ status: 'active' }).sort({ name: 1 });
+  const result = await BrandModel.find({}).sort({ name: 1 });
   return result;
 };
 
 // Get brands by category
 const getBrandsByCategoryFromDB = async (categoryId: string) => {
   const result = await BrandModel.find({ 
-    category: new Types.ObjectId(categoryId), 
+    category: categoryId, 
     status: 'active' 
   }).sort({ name: 1 });
   return result;

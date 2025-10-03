@@ -7,10 +7,11 @@ const brandSchema = new Schema<IBrand>(
     name: { type: String, required: true, trim: true },
     brandLogo: { type: String, required: true },
     brandBanner: { type: String, required: true },
-    category: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
-    subCategory: { type: Schema.Types.ObjectId, ref: 'SubCategory', required: true },
-    children: [{ type: Schema.Types.ObjectId, ref: 'ChildCategory' }],
+    category: { type: String, required: true },
+    subCategory: { type: String, required: true },
+    childCategory: { type: String, required: true },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+    featured: { type: String, enum: ['featured', 'not_featured'], default: 'not_featured' },
   },
   { timestamps: true }
 );

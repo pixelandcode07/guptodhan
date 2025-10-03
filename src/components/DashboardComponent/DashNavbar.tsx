@@ -1,18 +1,9 @@
+import { Send } from 'lucide-react';
 import Link from 'next/link';
-import React from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
-import { ChevronDown, Key, LogOut, Send } from 'lucide-react';
+import BreadcrumbNav from '../ReusableComponents/BreadcrumbNav';
 import { Button } from '../ui/button';
 import { SidebarTrigger } from '../ui/sidebar';
-import BreadcrumbNav from '../ReusableComponents/BreadcrumbNav';
+import UserDropdown from './Components/UserDropdown';
 
 export default function DashNavbar() {
   return (
@@ -33,34 +24,7 @@ export default function DashNavbar() {
         </div>
 
         {/* User Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            <div className="flex gap-2 justify-center items-center cursor-pointer">
-              {/* Avatar always visible */}
-              <Avatar>
-                <AvatarImage src="https://github.com/shadcn.png" />
-                <AvatarFallback>CN</AvatarFallback>
-              </Avatar>
-
-              {/* Name + Chevron only visible on md and up */}
-              <div className="hidden md:flex items-center">
-                <h1 className="mr-1">Yeamin Matbor</h1>
-                <ChevronDown size={18} />
-              </div>
-            </div>
-          </DropdownMenuTrigger>
-
-          <DropdownMenuContent sideOffset={18}>
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Key /> Change Password
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <LogOut /> Logout
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <UserDropdown />
       </div>
     </nav>
   );

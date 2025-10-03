@@ -8,9 +8,9 @@ const createProductFlagInDB = async (payload: Partial<IProductFlag>) => {
   return result;
 };
 
-// Get all active product flags
+// Get all product flags
 const getAllProductFlagsFromDB = async () => {
-  const result = await ProductFlag.find({ status: 'active' }).sort({ name: 1 });
+  const result = await ProductFlag.find({}).sort({ name: 1 });
   return result;
 };
 
