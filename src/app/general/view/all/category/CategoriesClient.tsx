@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { DataTable } from "@/components/TableHelper/data-table";
-import { category_columns, type Category } from "@/components/TableHelper/category_columns";
+import { getCategoryColumns, type Category } from "@/components/TableHelper/category_columns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -64,7 +64,24 @@ export default function CategoriesClient() {
 
   useEffect(() => { fetchRows(); }, [fetchRows]);
 
-  const columns = category_columns;
+  const onDelete = useCallback(async (row: Category) => {
+    try {
+      if (!row._id) return;
+      await axios.delete(`/api/v1/ecommerce-category/ecomCategory/${row._id}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(userRole ? { "x-user-role": userRole } : {}),
+        },
+      });
+      setRows(prev => prev.filter(r => r._id !== row._id));
+      toast.success("Category deleted successfully!");
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } }, message?: string };
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to delete category');
+    }
+  }, [token, userRole]);
+
+  const columns = useMemo(() => getCategoryColumns({ onEdit: () => toast.info('Edit coming soon'), onDelete }), [onDelete]);
 
   const filtered = useMemo(() => {
     return rows.filter(r => statusFilter === "all" || r.status.toLowerCase() === statusFilter);
