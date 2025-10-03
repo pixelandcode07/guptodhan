@@ -30,6 +30,7 @@ const buttonVariants = cva(
         HomeBuy: 'bg-[#3D85C6] text-white text-base font-medium hover:bg-[#3D85C6] cursor-pointer',
         HomeDoante: 'bg-[#21BF73] text-white text-base font-medium hover:bg-[#21BF73] cursor-pointer',
         HomeServices: 'bg-[#1414FF] text-white text-base font-medium hover:bg-[#1414FF] cursor-pointer',
+        VisitWeb: 'bg-[#132843] text-white text-base font-medium hover:bg-[#132843] cursor-pointer',
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',

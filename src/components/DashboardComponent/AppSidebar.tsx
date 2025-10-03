@@ -195,13 +195,13 @@ const data = {
     { title: 'Subscribed Users' },
     { title: 'Blog Comments' },
   ],
-  logoutAction: [
-    {
-      title: 'Logout',
-      url: '/general/logout',
-      icon: LogOut,
-    },
-  ],
+  // logoutAction: [
+  //   {
+  //     title: 'Logout',
+  //     url: '/general/logout',
+  //     icon: LogOut,
+  //   },
+  // ],
 };
 
 export default function AppSidebar() {
@@ -238,7 +238,8 @@ export default function AppSidebar() {
         <ContentManagement />
         <UserRolePermition items={data.userRole} />
         <DemoProducts items={data.demoProducts} />
-        <Logout items={data.logoutAction} />
+        <Logout  />
+        {/* items={data.logoutAction} */}
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
     </Sidebar>
