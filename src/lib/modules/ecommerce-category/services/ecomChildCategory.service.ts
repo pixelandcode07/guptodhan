@@ -11,7 +11,12 @@ const createChildCategoryInDB = async (payload: Partial<IChildCategory>) => {
 
 // Get all active child categories (optional: sorted by name)
 const getAllChildCategoriesFromDB = async () => {
-  const result = await ChildCategoryModel.find({ status: 'active' }).sort({ name: 1 });
+  console.log('🔍 Fetching all child categories from database...');
+  const result = await ChildCategoryModel.find({ status: 'active' })
+    .populate('category', 'name')
+    .populate('subCategory', 'name')
+    .sort({ name: 1 });
+  console.log('📊 Found child categories:', result.length, result.map(r => ({ id: r._id, name: r.name, category: r.category, subCategory: r.subCategory })));
   return result;
 };
 
