@@ -36,8 +36,8 @@ export function BuySell({ items }: { items: { title: string, url: string, icon: 
                                 <CollapsibleTrigger asChild>
                                     <SidebarMenuItem >
                                         <SidebarMenuButton className={`flex items-center gap-2 ${active
-                                            ? "bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md"
-                                            : "text-white bg-[#132843]"
+                                            ? "bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5"
+                                            : "text-white bg-[#132843] pl-5"
                                             }`}>
                                             <item.icon />
                                             <Link href={href}>{item.title}</Link>

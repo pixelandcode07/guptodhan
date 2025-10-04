@@ -1,6 +1,6 @@
 "use client"
 
-import UploadImageBtn from "@/app/general/buy/sell/config/components/UploadImageBtn"
+import UploadImageBtn from "@/components/ReusableComponents/UploadImageBtn"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -47,7 +47,7 @@ export default function CreateCategory() {
       toast.success("Category created successfully!")
       router.push("/general/categories?page=view") // redirect to view tab
     } catch (error) {
-        console.log(error)
+      console.log(error)
       toast.error("Failed to create category")
     }
   }
