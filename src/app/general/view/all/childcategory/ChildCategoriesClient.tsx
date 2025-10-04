@@ -5,9 +5,6 @@ import axios from "axios";
 import { toast } from "sonner";
 import { DataTable } from "@/components/TableHelper/data-table";
 import { getChildCategoryColumns, type ChildCategory } from "@/components/TableHelper/childcategory_columns";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import Link from "next/link";
-import { Move } from "lucide-react";
 
 type ApiChildCategory = {
   _id: string;
@@ -23,7 +20,6 @@ type ApiChildCategory = {
 
 export default function ChildCategoriesClient() {
   const [rows, setRows] = useState<ChildCategory[]>([]);
-  const [statusFilter, setStatusFilter] = useState("all");
 
   const fetchRows = useCallback(async () => {
     try {
@@ -66,31 +62,14 @@ export default function ChildCategoriesClient() {
 
   const columns = useMemo(() => getChildCategoryColumns({ onEdit: () => toast.info('Edit coming soon'), onDelete }), [onDelete]);
 
-  const filtered = useMemo(() => rows.filter(r => statusFilter === "all" || r.status.toLowerCase() === statusFilter), [rows, statusFilter]);
-
   return (
     <div className="m-5 p-5 border ">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-semibold border-l-2 border-blue-500">
           <span className="pl-5">Child Category List</span>
         </h1>
-        <div className="flex items-center gap-3">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Filter by status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
-          <Link href="/general/rearrange/childcategories" className="px-3 py-2 border rounded bg-white hover:bg-gray-50 flex items-center gap-2">
-            <Move className="w-4 h-4" />
-            Rearrange Child Category
-          </Link>
-          <Link href="/general/add/new/childcategory" className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded">Add New Child Category</Link>
-        </div>
       </div>
-      <DataTable columns={columns} data={filtered} />
+      <DataTable columns={columns} data={rows} />
     </div>
   );
 }
