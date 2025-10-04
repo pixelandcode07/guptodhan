@@ -28,7 +28,7 @@ export function BuySell({ items }: { items: { title: string, url: string, icon: 
                         if (item.title === "Dashboard") href = "/general/buy/sell/dashboard"
                         if (item.title === "Listing Management") href = "/general/buy/sell/listing"
                         if (item.title === "Report Listing") href = "/general/buy/sell/report"
-                        if (item.title === "Categories") href = "/general/create/buy/sell/category"
+                        if (item.title === "Categories") href = "/general/categories"
                         if (item.title === "Setting") href = "/general/buy/sell/config"
                         const active = isActive(href)
                         return (

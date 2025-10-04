@@ -2,7 +2,6 @@ import AppSidebar from '@/components/DashboardComponent/AppSidebar';
 import DashNavbar from '@/components/DashboardComponent/DashNavbar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { cookies } from 'next/headers';
-import { Toaster } from 'sonner';
 
 export default async function GeneralLayout({
   children,

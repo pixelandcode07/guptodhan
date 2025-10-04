@@ -18,6 +18,7 @@ type FormValues = {
 export default function BuySellConfigPage() {
     const { data: session } = useSession();
     const token = session?.accessToken;
+    const adminRole = session?.user?.role === 'admin'
     const { handleSubmit, control } = useForm<FormValues>({
         defaultValues: {
             image: null,
@@ -38,7 +39,7 @@ export default function BuySellConfigPage() {
                 headers: {
                     "Content-Type": "multipart/form-data",
                     Authorization: `Bearer ${token}`, // attach token
-                    "x-user-role": session?.user?.role
+                    "x-user-role": adminRole
                 },
             });
             toast.success("Banner created!", {
@@ -66,8 +67,8 @@ export default function BuySellConfigPage() {
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Image Upload */}
-            <div className="space-y-5 md:flex md:gap-30">
-                <h1 className="text-gray-900 font-semibold">Page Banner</h1>
+            {/* <div className="space-y-5 md:flex md:gap-30"> */}
+                <h1 className="text-gray-900 font-semibold ">Page Banner: </h1>
                 <div className='w-full'>
                     <Controller
                         name="image"
@@ -77,11 +78,11 @@ export default function BuySellConfigPage() {
                         )}
                     />
                 </div>
-            </div>
+            {/* </div> */}
 
             {/* Rich Text */}
-            <div className="space-y-5 md:flex md:gap-30">
-                <h1 className="text-gray-900 font-semibold">Page Description</h1>
+            {/* <div className="space-y-5 md:flex md:gap-30"> */}
+                <h1 className="text-gray-900 font-semibold ">Page Description: </h1>
                 <Controller
                     name="description"
                     control={control}
@@ -89,7 +90,7 @@ export default function BuySellConfigPage() {
                         <RichTextEditorPage value={field.value} onChange={field.onChange} />
                     )}
                 />
-            </div>
+            {/* </div> */}
             <div className='text-center'>
                 <Button type="submit" variant={'BlueBtn'}><Save />Save Info</Button>
             </div>
