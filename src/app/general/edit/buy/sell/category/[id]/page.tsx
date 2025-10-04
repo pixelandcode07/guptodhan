@@ -24,7 +24,7 @@ export default function EditCategoryPage() {
     const { data: session } = useSession();
     const token = session?.accessToken;
     const params = useParams();
-    const categoryId = params.id;
+    const categoryId = params?.id;
     const router = useRouter();
     const [loading, setLoading] = useState(true);
 
@@ -32,7 +32,7 @@ export default function EditCategoryPage() {
         defaultValues: {
             name: "",
             icon: null,
-            status: "pending",
+            status: "active",
             slug: "",
             existingIconUrl: "",
         },
@@ -90,7 +90,7 @@ export default function EditCategoryPage() {
             });
 
             toast.success("Category updated successfully!");
-            router.push("/general/view/buy/sell/categories/");
+            router.push("/general/categories?page=view");
         } catch (err) {
             console.error(err);
             toast.error("Update failed!");
@@ -125,7 +125,7 @@ export default function EditCategoryPage() {
                             <Select
                                 {...field}
                                 options={[
-                                    { value: "pending", label: "Pending" },
+                                    // { value: "pending", label: "Pending" },
                                     { value: "active", label: "Active" },
                                     { value: "inactive", label: "Inactive" },
                                 ]}
