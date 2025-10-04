@@ -1,16 +1,18 @@
 import { Label } from '@/components/ui/label'
-import { UseFormRegister, UseFormSetValue } from 'react-hook-form'
+import { UseFormRegister, UseFormSetValue, UseFormWatch } from 'react-hook-form'
 import { CategoryInputs } from './CategoryForm'
-import Dropzone from '@/components/ui/dropzone'
+import UploadImageBtn from '@/app/general/buy/sell/config/components/UploadImageBtn'
 
-export default function MediaUploads({ register, setValue }: { register: UseFormRegister<CategoryInputs>, setValue: UseFormSetValue<CategoryInputs> }) {
+export default function MediaUploads({ register, setValue, watch }: { register: UseFormRegister<CategoryInputs>, setValue: UseFormSetValue<CategoryInputs>, watch: UseFormWatch<CategoryInputs> }) {
+    const iconFile = watch('iconFile') as File | undefined;
+    const bannerFile = watch('bannerFile') as File | undefined;
     return (
         <>
             <Label>Category Icon</Label>
-            <Dropzone accept='image/*' onFiles={(files) => setValue('iconFile', files)} />
+            <UploadImageBtn id="category_icon" value={(iconFile ?? null) as File | null} onChange={(file) => setValue('iconFile', file || undefined)} />
 
             <Label className='mt-4'>Category Banner</Label>
-            <Dropzone accept='image/*' onFiles={(files) => setValue('bannerFile', files)} />
+            <UploadImageBtn id="category_banner" value={(bannerFile ?? null) as File | null} onChange={(file) => setValue('bannerFile', file || undefined)} />
         </>
     )
 }
