@@ -113,7 +113,6 @@ const data = {
       url: '/general/buy/sell/config',
       icon: Settings,
     },
-
   ],
   donations: [
     {
@@ -245,12 +244,8 @@ export default function AppSidebar() {
         <ContentManagement />
         <UserRolePermition items={data.userRole} />
         <DemoProducts items={data.demoProducts} />
-<<<<<<< HEAD
         {/* <Logout items={data.logoutAction} /> */}
         <LogoutBtn />
-=======
-        <Logout />
->>>>>>> 44ebf75a681955b4148af53932cb6e63a855cc2f
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
     </Sidebar>

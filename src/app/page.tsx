@@ -6,7 +6,7 @@ import JustForYou from './components/JustForYou/JustForYou';
 
 export default function MainHomePage() {
   return (
-    <div>
+    <div className="bg-gray-100">
       <Hero />
       <Feature />
 

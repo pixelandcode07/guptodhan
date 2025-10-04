@@ -8,10 +8,11 @@ import Link from 'next/link';
 
 export default function NavMain() {
   const { data: session, status } = useSession();
+  console.log('Navuser is', session);
   const user = session?.user;
 
   return (
-    <div className="bg-[#0097E9] md:bg-[#FFFFFF] text-black  flex justify-between items-center py-5 md:py-5 px-1 md:px-15 border-2">
+    <div className="bg-[#0097E9] md:bg-[#FFFFFF] text-black max-w-[89vw] m-auto  flex justify-between items-center py-5 md:py-5 px-1 md:px-10 border-2 md:border-0">
       <div>
         <div className="flex lg:block items-center">
           <button
@@ -20,7 +21,7 @@ export default function NavMain() {
             <Menu />
           </button>
           <Link href={'/'} className="logo hidden md:block">
-            <Image src="/logo.png" width={130} height={44} alt="logo" />
+            <Image src="/img/logo.png" width={130} height={44} alt="logo" />
           </Link>
           <Link href={'/'} className="logo md:hidden">
             <Image src="/white-logo.png" width={130} height={44} alt="logo" />
