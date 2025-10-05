@@ -3,20 +3,11 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Edit, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 
-export type Slider = {
-  id: number
-  slider: string
-  sub_title: string
-  title: string
-  slider_link: string
-  button_text: string
-  button_link: string
-  status: "Active" | "Inactive"
-  created_at: string
-}
+// Avoid exporting types to prevent deploy issues per request
 
-export const slider_columns: ColumnDef<Slider>[] = [
+export const slider_columns: ColumnDef<any>[] = [
   {
     accessorKey: "id",
     header: "SL",
@@ -116,13 +107,40 @@ export const slider_columns: ColumnDef<Slider>[] = [
   {
     id: "action",
     header: "Action",
-    cell: () => {
+    cell: ({ row }) => {
+      const onDelete = async () => {
+        const item = row.original as any;
+        if (!item?._id) return;
+        toast.warning('Delete this slider?', {
+          description: 'This action cannot be undone.',
+          action: {
+            label: 'Delete',
+            onClick: async () => {
+              await toast.promise(
+                (async () => {
+                  const res = await fetch(`/api/v1/slider-form/${item._id}`, { method: 'DELETE' });
+                  if (!res.ok) {
+                    const j = await res.json().catch(() => ({}));
+                    throw new Error(j?.message || 'Failed to delete');
+                  }
+                })(),
+                {
+                  loading: 'Deleting...',
+                  success: 'Slider deleted',
+                  error: (e) => e?.message || 'Delete failed',
+                }
+              );
+              window.location.reload();
+            },
+          },
+        });
+      };
       return (
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50">
             <Edit className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+          <Button onClick={onDelete} variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
             <Trash2 className="w-4 h-4" />
           </Button>
         </div>
