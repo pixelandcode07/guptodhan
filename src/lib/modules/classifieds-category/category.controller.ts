@@ -13,7 +13,6 @@ const createCategory = async (req: NextRequest) => {
     const formData = await req.formData();
     const name = formData.get('name') as string;
     const iconFile = formData.get('icon') as File | null;
-
     const payload: { name: string; icon?: string } = { name };
 
     if (iconFile) {
