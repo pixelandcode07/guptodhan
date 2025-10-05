@@ -6,7 +6,6 @@ import { SidebarTrigger } from '../ui/sidebar';
 import UserDropdown from './Components/UserDropdown';
 
 export default function DashNavbar() {
-
   return (
     <nav className="flex justify-between p-4 items-center border-[#e3e8f3] border-b-[1px]">
       {/* Left side */}

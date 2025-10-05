@@ -1,14 +1,13 @@
-import React from 'react'
-import FilterContent from './FilterContent'
-import HeroNav from '@/app/components/Hero/HeroNav'
-
+import React from 'react';
+import FilterContent from './FilterContent';
+import HeroNav from '@/app/components/Hero/HeroNavOld';
 
 const demoProducts = Array.from({ length: 16 }).map((_, i) => ({
-  id: `p_${i+1}`,
+  id: `p_${i + 1}`,
   title: 'Vintage Leather Jacket Dog House',
   price: '৳ 7,200',
-  image: '/img/product/p-1.png'
-}))
+  image: '/img/product/p-1.png',
+}));
 
 export default function ProductFilterPage() {
   return (
@@ -18,7 +17,5 @@ export default function ProductFilterPage() {
         <FilterContent products={demoProducts} />
       </div>
     </>
-  )
+  );
 }
-
-

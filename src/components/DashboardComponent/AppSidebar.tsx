@@ -113,7 +113,6 @@ const data = {
       url: '/general/buy/sell/config',
       icon: Settings,
     },
-
   ],
   donations: [
     {
