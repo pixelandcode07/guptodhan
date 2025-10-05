@@ -13,7 +13,14 @@ const getPublicCodeFromDB = async () => {
   return await CustomCode.findOne();
 };
 
+const deleteCodeFromDB = async () => {
+  // Deletes the single document from the collection
+  await CustomCode.deleteMany({});
+  return null;
+};
+
 export const CustomCodeServices = {
   createOrUpdateCodeInDB,
   getPublicCodeFromDB,
+  deleteCodeFromDB,
 };

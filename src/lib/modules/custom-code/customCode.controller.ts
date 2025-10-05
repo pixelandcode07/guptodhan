@@ -32,7 +32,20 @@ const getPublicCode = async (_req: NextRequest) => {
     });
 };
 
+const deleteCode = async (_req: NextRequest) => {
+    await dbConnect();
+    await CustomCodeServices.deleteCodeFromDB();
+    return sendResponse({ 
+        success: true, 
+        statusCode: StatusCodes.OK, 
+        message: 'Custom code deleted successfully!', 
+        data: null 
+    });
+};
+
+
 export const CustomCodeController = {
     createOrUpdateCode,
     getPublicCode,
+    deleteCode,
 };
