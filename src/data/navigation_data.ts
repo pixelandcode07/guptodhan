@@ -70,33 +70,33 @@ export const navigationData: NavigationDataType[] = [
             { title: "Mice", href: "/computer/mice" },
         ],
     },
-    {
-        title: "Laptop",
-        subtitles: [
-            { title: "Gaming Laptops", href: "/laptop/gaming-laptops" },
-            { title: "Business Laptops", href: "/laptop/business-laptops" },
-            { title: "2-in-1 Laptops", href: "/laptop/2-in-1-laptops" },
-            { title: "Ultrabooks", href: "/laptop/ultrabooks" },
-        ],
-    },
-    {
-        title: "Furniture",
-        subtitles: [
-            { title: "Sofas", href: "/furniture/sofas" },
-            { title: "Beds", href: "/furniture/beds" },
-            { title: "Chairs", href: "/furniture/chairs" },
-            { title: "Tables", href: "/furniture/tables" },
-        ],
-    },
-    {
-        title: "Machine",
-        subtitles: [
-            { title: "Washing Machines", href: "/machine/washing-machines" },
-            { title: "Refrigerators", href: "/machine/refrigerators" },
-            { title: "Microwaves", href: "/machine/microwaves" },
-            { title: "Air Conditioners", href: "/machine/air-conditioners" },
-        ],
-    },
+    // {
+    //     title: "Laptop",
+    //     subtitles: [
+    //         { title: "Gaming Laptops", href: "/laptop/gaming-laptops" },
+    //         { title: "Business Laptops", href: "/laptop/business-laptops" },
+    //         { title: "2-in-1 Laptops", href: "/laptop/2-in-1-laptops" },
+    //         { title: "Ultrabooks", href: "/laptop/ultrabooks" },
+    //     ],
+    // },
+    // {
+    //     title: "Furniture",
+    //     subtitles: [
+    //         { title: "Sofas", href: "/furniture/sofas" },
+    //         { title: "Beds", href: "/furniture/beds" },
+    //         { title: "Chairs", href: "/furniture/chairs" },
+    //         { title: "Tables", href: "/furniture/tables" },
+    //     ],
+    // },
+    // {
+    //     title: "Machine",
+    //     subtitles: [
+    //         { title: "Washing Machines", href: "/machine/washing-machines" },
+    //         { title: "Refrigerators", href: "/machine/refrigerators" },
+    //         { title: "Microwaves", href: "/machine/microwaves" },
+    //         { title: "Air Conditioners", href: "/machine/air-conditioners" },
+    //     ],
+    // },
     {
         title: "More",
         subtitles: [

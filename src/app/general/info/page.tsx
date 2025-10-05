@@ -14,7 +14,6 @@ export default async function GeneralInfoPage() {
 
   // শুধু inner data পাঠাচ্ছি
   const settings = json.data;
-  console.log(settings);
 
   return (
     <div className="min-h-screen pt-5 bg-gray-50">

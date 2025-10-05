@@ -7,9 +7,12 @@ import SectionTitle from '@/components/ui/SectionTitle';
 import LogoUpload from './LogoUpload';
 import CompanyDetails from './CompanyDetails';
 import FileUpload from '@/components/ReusableComponents/FileUpload';
+import { useSession } from 'next-auth/react';
 
 export default function GeneralInfoForm({ data = {} }) {
-  // console.log('Props Data', data);
+  const { data: session } = useSession();
+  const token = (session as any)?.accessToken;
+
   const [formData, setFormData] = useState({
     company_name: data.companyName || '',
     contact: data.phoneNumber || '',
@@ -37,13 +40,31 @@ export default function GeneralInfoForm({ data = {} }) {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const onSubmit = () => {
-    console.log('Form Data:', formData);
-    console.log('Submit');
-  };
   const handleFileChange = (name: string, url: string) => {
     setFormData(prev => ({ ...prev, [name]: url }));
     setPreviews(prev => ({ ...prev, [name]: url }));
+  };
+
+  const onSubmit = async () => {
+    try {
+      const res = await fetch('http://localhost:3000/api/v1/settings', {
+        method: 'PATCH', // বা "POST" যদি নতুন ডেটা create করতে চাও
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`, // টোকেন যোগ করা হলো
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to save settings');
+      }
+
+      const result = await res.json();
+      console.log('✅ Saved Successfully:', result);
+    } catch (error) {
+      console.error('❌ Error saving settings:', error);
+    }
   };
 
   return (
@@ -64,7 +85,7 @@ export default function GeneralInfoForm({ data = {} }) {
         </div>
       </div>
 
-      {/* Logo Upload Section  */}
+      {/* Logo Upload Section */}
       <LogoUpload previews={previews} handleUploadedUrl={handleFileChange} />
 
       {/* Company Details */}

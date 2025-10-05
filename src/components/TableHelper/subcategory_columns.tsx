@@ -4,70 +4,50 @@ import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Edit, Trash2 } from "lucide-react"
 
-export type Subcategory = {
+export type SubCategory = {
+  _id?: string
+  subCategoryId?: string
   id: number
-  category: string
+  category?: string
   name: string
-  icon: string
-  image: string
-  slug: string
-  featured: "Featured" | "Not Featured"
+  subCategoryIcon?: string
+  subCategoryBanner?: string
+  slug?: string
+  isFeatured?: boolean
+  isNavbar?: boolean
   status: "Active" | "Inactive"
   created_at: string
 }
 
-export const subcategory_columns: ColumnDef<Subcategory>[] = [
+export const subcategory_columns: ColumnDef<SubCategory>[] = [
+  { accessorKey: "id", header: "SL" },
+  { accessorKey: "category", header: "Category" },
+  { accessorKey: "name", header: "Name" },
   {
-    accessorKey: "id",
-    header: "SL",
-  },
-  {
-    accessorKey: "category",
-    header: "Category",
-  },
-  {
-    accessorKey: "name",
-    header: "Name",
-  },
-  {
-    accessorKey: "icon",
+    accessorKey: "subCategoryIcon",
     header: "Icon",
     cell: ({ row }) => {
-      const icon = row.getValue("icon") as string
-      return (
-        <div className="w-16 h-12 bg-gray-50 rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-xs text-gray-500">
-          {icon}
-        </div>
-      )
+      const url = row.getValue("subCategoryIcon") as string | undefined
+      return url ? <img src={url} alt="icon" className="w-6 h-6 object-cover rounded" /> : <span className="text-xs text-gray-500">-</span>
     },
   },
   {
-    accessorKey: "image",
+    accessorKey: "subCategoryBanner",
     header: "Image",
     cell: ({ row }) => {
-      const image = row.getValue("image") as string
-      return (
-        <div className="w-16 h-12 bg-gray-50 rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-xs text-gray-500">
-          {image}
-        </div>
-      )
+      const url = row.getValue("subCategoryBanner") as string | undefined
+      return url ? <img src={url} alt="banner" className="w-12 h-6 object-cover rounded" /> : <span className="text-xs text-gray-500">-</span>
     },
   },
+  { accessorKey: "slug", header: "Slug" },
   {
-    accessorKey: "slug",
-    header: "Slug",
-    cell: ({ row }) => <div className="font-mono text-sm text-gray-600">{row.getValue("slug")}</div>,
-  },
-  {
-    accessorKey: "featured",
+    accessorKey: "isFeatured",
     header: "Featured",
     cell: ({ row }) => {
-      const featured = row.getValue("featured") as string
+      const val = row.getValue("isFeatured") as boolean | undefined
       return (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          featured === "Featured" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-        }`}>
-          {featured}
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${val ? 'bg-cyan-100 text-cyan-800' : 'bg-gray-100 text-gray-600'}`}>
+          {val ? 'Featured' : 'Not Featured'}
         </span>
       )
     },
@@ -96,6 +76,32 @@ export const subcategory_columns: ColumnDef<Subcategory>[] = [
             <Edit className="w-4 h-4" />
           </Button>
           <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      )
+    },
+  },
+]
+
+export type SubCategoryColumnHandlers = {
+  onEdit: (row: SubCategory) => void
+  onDelete: (row: SubCategory) => void
+}
+
+export const getSubCategoryColumns = ({ onEdit, onDelete }: SubCategoryColumnHandlers): ColumnDef<SubCategory>[] => [
+  ...subcategory_columns.slice(0, -1),
+  {
+    id: "action",
+    header: "Action",
+    cell: ({ row }) => {
+      const data = row.original as SubCategory
+      return (
+        <div className="flex items-center gap-2">
+          <Button onClick={() => onEdit(data)} variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+            <Edit className="w-4 h-4" />
+          </Button>
+          <Button onClick={() => onDelete(data)} variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
             <Trash2 className="w-4 h-4" />
           </Button>
         </div>

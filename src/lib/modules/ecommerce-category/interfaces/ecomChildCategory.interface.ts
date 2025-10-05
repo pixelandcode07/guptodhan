@@ -5,7 +5,7 @@ export interface IChildCategory extends Document {
   category: Types.ObjectId;
   subCategory: Types.ObjectId;
   name: string;
-  icon: string;
+  icon?: string; // Made optional
   slug: string;
   status: 'active' | 'inactive';
   createdAt: Date;

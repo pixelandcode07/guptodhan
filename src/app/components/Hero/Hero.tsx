@@ -6,7 +6,7 @@ import HeroFooter from './HeroFooter'
 export default function Hero() {
     return (
         <div>
-            <nav>
+            <nav className='hidden lg:block'>
                 <HeroNav />
             </nav>
             <main>

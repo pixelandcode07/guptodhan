@@ -1,4 +1,4 @@
-// 'use client';
+'use client';
 
 import { Input } from '@/components/ui/input';
 import { Upload } from 'lucide-react';
@@ -9,9 +9,10 @@ import Image from 'next/image'
 interface UploadImageBtnProps {
     value: File | null
     onChange: (file: File | null) => void
+    id?: string
 }
 
-export default function UploadImageBtn({ value, onChange }: UploadImageBtnProps) {
+export default function UploadImageBtn({ value, onChange, id = 'image' }: UploadImageBtnProps) {
 
     // const [image, setImage] = useState<File | null>(null);
 
@@ -23,7 +24,7 @@ export default function UploadImageBtn({ value, onChange }: UploadImageBtnProps)
     return (
         <div className="mt-2">
             <label
-                htmlFor="image"
+                htmlFor={id}
                 className="flex flex-col items-center justify-center h-52 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition"
             >
                 {!value ? (
@@ -43,8 +44,8 @@ export default function UploadImageBtn({ value, onChange }: UploadImageBtnProps)
                 )}
             </label>
             <Input
-                id="image"
-                name="image"
+                id={id}
+                name={id}
                 type="file"
                 className="hidden"
                 accept="image/*"

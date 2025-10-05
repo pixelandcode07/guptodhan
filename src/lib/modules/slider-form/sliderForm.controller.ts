@@ -35,9 +35,9 @@ const getAllSliders = async () => {
 };
 
 // Get slider by ID
-const getSliderById = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const getSliderById = async (req: NextRequest, context: { params: { id: string } } | Promise<{ params: { id: string } }>) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = (await context).params;
   const result = await SliderServices.getSliderByIdFromDB(id);
 
   return sendResponse({
@@ -49,9 +49,9 @@ const getSliderById = async (req: NextRequest, { params }: { params: { id: strin
 };
 
 // Update slider
-const updateSlider = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const updateSlider = async (req: NextRequest, context: { params: { id: string } } | Promise<{ params: { id: string } }>) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = (await context).params;
   const body = await req.json();
   const validatedData = updatePKSliderValidationSchema.parse(body);
 
@@ -66,9 +66,9 @@ const updateSlider = async (req: NextRequest, { params }: { params: { id: string
 };
 
 // Delete slider
-const deleteSlider = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const deleteSlider = async (req: NextRequest, context: { params: { id: string } } | Promise<{ params: { id: string } }>) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = (await context).params;
   await SliderServices.deleteSliderFromDB(id);
 
   return sendResponse({

@@ -8,9 +8,9 @@ const createStorageTypeInDB = async (payload: Partial<IStorageType>) => {
   return result;
 };
 
-// Get all active storage types
+// Get all storage types (filtering handled client-side)
 const getAllStorageTypesFromDB = async () => {
-  const result = await StorageType.find({ status: 'active' }).sort({ ram: 1, rom: 1 });
+  const result = await StorageType.find({}).sort({ ram: 1, rom: 1 });
   return result;
 };
 

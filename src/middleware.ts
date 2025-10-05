@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
-import { StatusCodes } from "http-status-codes";
+import { NextRequest, NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
+import { StatusCodes } from 'http-status-codes';
 
 // ✅ FIX: রুটগুলো সঠিকভাবে ভাগ করা হয়েছে
 // শুধুমাত্র অ্যাডমিনদের জন্য পেজ এবং API রুট
@@ -59,8 +59,10 @@ const protectedApiRoutes = [
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
-  const isAdminRoute = adminRoutes.some((route) => path.startsWith(route));
-  const isProtectedApi = protectedApiRoutes.some((route) => path.startsWith(route));
+  const isAdminRoute = adminRoutes.some(route => path.startsWith(route));
+  const isProtectedApi = protectedApiRoutes.some(route =>
+    path.startsWith(route)
+  );
 
   if (!isAdminRoute && !isProtectedApi) {
     return NextResponse.next();
@@ -70,31 +72,32 @@ export async function middleware(req: NextRequest) {
 
   // ✅ FIX: টোকেন না থাকলে API-এর জন্য 401 JSON error পাঠানো হচ্ছে
   if (!token) {
-    if (path.startsWith("/general")) { // পেজের জন্য রিডাইরেক্ট
-      return NextResponse.redirect(new URL("/login", req.url));
+    if (path.startsWith('/general')) {
+      // পেজের জন্য রিডাইরেক্ট
+      return NextResponse.redirect(new URL('/', req.url));
     }
     // API-এর জন্য JSON error
     return NextResponse.json(
-        { success: false, message: 'Unauthorized: No token provided' },
-        { status: StatusCodes.UNAUTHORIZED }
+      { success: false, message: 'Unauthorized: No token provided' },
+      { status: StatusCodes.UNAUTHORIZED }
     );
   }
 
   // অ্যাডমিন রোল চেক
-  if (isAdminRoute && token.role !== "admin") {
-    if (path.startsWith("/general")) {
-        return NextResponse.redirect(new URL("/", req.url));
+  if (isAdminRoute && token.role !== 'admin') {
+    if (path.startsWith('/general')) {
+      return NextResponse.redirect(new URL('/', req.url));
     }
     return NextResponse.json(
-        { success: false, message: 'Forbidden: You do not have permission.' },
-        { status: StatusCodes.FORBIDDEN }
+      { success: false, message: 'Forbidden: You do not have permission.' },
+      { status: StatusCodes.FORBIDDEN }
     );
   }
 
   // হেডারে ইউজার তথ্য যোগ করা
   const requestHeaders = new Headers(req.headers);
-  requestHeaders.set("x-user-id", token.id as string);
-  requestHeaders.set("x-user-role", token.role as string);
+  requestHeaders.set('x-user-id', token.id as string);
+  requestHeaders.set('x-user-role', token.role as string);
 
   return NextResponse.next({
     request: { headers: requestHeaders },
@@ -102,5 +105,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/:path*", "/general/:path*"],
+  matcher: ['/api/:path*', '/general/:path*'],
 };
