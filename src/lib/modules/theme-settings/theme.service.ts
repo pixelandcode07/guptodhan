@@ -13,7 +13,19 @@ const getPublicThemeFromDB = async () => {
   return await ThemeSettings.findOne();
 };
 
+// ✅ NEW: PATCH-এর জন্য
+const updateThemeInDB = async (id: string, payload: Partial<IThemeSettings>) => {
+  return await ThemeSettings.findByIdAndUpdate(id, payload, { new: true });
+};
+
+// ✅ NEW: DELETE-এর জন্য
+const deleteThemeFromDB = async (id: string) => {
+  return await ThemeSettings.findByIdAndDelete(id);
+};
+
 export const ThemeSettingsServices = {
   createOrUpdateThemeInDB,
   getPublicThemeFromDB,
+  updateThemeInDB, // <-- যোগ করুন
+  deleteThemeFromDB, // <-- যোগ করুন
 };

@@ -47,7 +47,26 @@ const getPublicSeoSettings = async (req: NextRequest) => {
     return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'SEO settings retrieved successfully!', data: result });
 };
 
+const updateSeoSettings = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    await dbConnect();
+    const { id } = await params;
+    const body = await req.json();
+    // createOrUpdateSeoSchema-কে partial করে update-এর জন্য ব্যবহার করা হচ্ছে
+    const validatedData = createOrUpdateSeoSchema.partial().parse(body);
+    const result = await SeoSettingsServices.updateSeoSettingsInDB(id, validatedData);
+    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'SEO settings updated successfully!', data: result });
+};
+
+const getSeoSettingsById = async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    await dbConnect();
+    const { id } = await params;
+    const result = await SeoSettingsServices.getSeoSettingsByIdFromDB(id);
+    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'SEO settings retrieved successfully!', data: result });
+};
+
 export const SeoSettingsController = {
     createOrUpdateSeoSettings,
     getPublicSeoSettings,
+    updateSeoSettings,
+    getSeoSettingsById,
 };

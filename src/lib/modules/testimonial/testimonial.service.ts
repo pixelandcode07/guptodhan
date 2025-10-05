@@ -41,10 +41,16 @@ const deleteTestimonialFromDB = async (id: string) => {
   return null;
 };
 
+const getPublicTestimonialsFromDB = async () => {
+  // শুধুমাত্র 'approved' স্ট্যাটাসের testimonial গুলো দেখানো হচ্ছে
+  return await TestimonialModel.find({ status: 'approved' }).sort({ date: -1 });
+};
+
 export const TestimonialServices = {
   createTestimonialInDB,
   getAllTestimonialsFromDB,
   getTestimonialsByProductFromDB,
   updateTestimonialInDB,
   deleteTestimonialFromDB,
+  getPublicTestimonialsFromDB,
 };
