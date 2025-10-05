@@ -6,6 +6,9 @@ import Link from "next/link";
 import dbConnect from '@/lib/db';
 import { SliderServices } from '@/lib/modules/slider-form/sliderForm.service';
 
+export const dynamic = 'force-dynamic';
+import SlidersClient from './SlidersClient';
+
 export default async function ViewAllSlidersPage() {
   await dbConnect();
   const items = await SliderServices.getAllSlidersFromDB();
@@ -19,7 +22,7 @@ export default async function ViewAllSlidersPage() {
     button_link: it.buttonLink,
     status: (it.status === 'active' ? 'Active' : 'Inactive'),
     created_at: new Date(it.createdAt || it.created_at || Date.now()).toLocaleString(),
-    _id: it._id,
+    _id: (it?._id && typeof it._id === 'object' && 'toString' in it._id) ? (it._id as any).toString() : String(it._id),
   }));
   
   return (
@@ -45,7 +48,7 @@ export default async function ViewAllSlidersPage() {
         </div>
       </div>
       
-      <DataTable columns={slider_columns} data={rows} />
+      <SlidersClient initialRows={rows} />
     </div>
   );
 }

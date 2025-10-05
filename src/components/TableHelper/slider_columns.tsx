@@ -130,7 +130,8 @@ export const slider_columns: ColumnDef<any>[] = [
                   error: (e) => e?.message || 'Delete failed',
                 }
               );
-              window.location.reload();
+              // notify client wrapper to remove without refresh
+              window.dispatchEvent(new CustomEvent('slider-deleted', { detail: { _id: item._id } }))
             },
           },
         });
