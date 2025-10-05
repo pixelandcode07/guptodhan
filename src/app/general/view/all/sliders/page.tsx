@@ -1,127 +1,58 @@
+"use client";
+
 import { DataTable } from "@/components/TableHelper/data-table";
 import { Slider, slider_columns } from "@/components/TableHelper/slider_columns";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, ArrowUpDown } from "lucide-react";
 import Link from "next/link";
-
-function getData(): Slider[] {
-  return [
-    {
-      id: 1,
-      slider: "https://app-area.guptodhan.com/sliders/hand-phone.jpg",
-      sub_title: "",
-      title: "",
-      slider_link: "",
-      button_text: "",
-      button_link: "",
-      status: "Active",
-      created_at: "2024-08-18 09:58:42 pm"
-    },
-    {
-      id: 2,
-      slider: "https://app-area.guptodhan.com/sliders/night-city.jpg",
-      sub_title: "",
-      title: "",
-      slider_link: "",
-      button_text: "",
-      button_link: "",
-      status: "Inactive",
-      created_at: "2024-08-18 09:58:42 pm"
-    },
-    {
-      id: 3,
-      slider: "https://app-area.guptodhan.com/sliders/blue-abstract.jpg",
-      sub_title: "",
-      title: "",
-      slider_link: "https://guptodhan.com/buy-sale",
-      button_text: "Shop Now",
-      button_link: "https://guptodhan.com/buy-sale",
-      status: "Active",
-      created_at: "2024-08-18 09:58:42 pm"
-    },
-    {
-      id: 4,
-      slider: "https://app-area.guptodhan.com/sliders/person-blender.jpg",
-      sub_title: "",
-      title: "",
-      slider_link: "https://guptodhan.com/shop?category=electronics&subcategory=blender",
-      button_text: "",
-      button_link: "https://guptodhan.com/shop?category=electronics&subcategory=blender",
-      status: "Active",
-      created_at: "2024-08-18 09:58:42 pm"
-    },
-    {
-      id: 5,
-      slider: "https://app-area.guptodhan.com/sliders/shopping-bag.jpg",
-      sub_title: "",
-      title: "",
-      slider_link: "/shop?store=guptodhan",
-      button_text: "",
-      button_link: "/shop?store=guptodhan",
-      status: "Active",
-      created_at: "2024-08-18 09:58:42 pm"
-    },
-    {
-      id: 6,
-      slider: "https://app-area.guptodhan.com/sliders/electronics.jpg",
-      sub_title: "",
-      title: "",
-      slider_link: "/shop?category=electronics",
-      button_text: "",
-      button_link: "/shop?category=electronics",
-      status: "Inactive",
-      created_at: "2024-08-18 09:58:42 pm"
-    },
-    {
-      id: 7,
-      slider: "https://app-area.guptodhan.com/sliders/fashion.jpg",
-      sub_title: "",
-      title: "",
-      slider_link: "/shop?category=fashion",
-      button_text: "",
-      button_link: "/shop?category=fashion",
-      status: "Active",
-      created_at: "2024-08-18 09:58:42 pm"
-    },
-    {
-      id: 8,
-      slider: "https://app-area.guptodhan.com/sliders/home-living.jpg",
-      sub_title: "",
-      title: "",
-      slider_link: "/shop?category=home-living",
-      button_text: "",
-      button_link: "/shop?category=home-living",
-      status: "Inactive",
-      created_at: "2024-08-18 09:58:42 pm"
-    },
-    {
-      id: 9,
-      slider: "https://app-area.guptodhan.com/sliders/sports.jpg",
-      sub_title: "",
-      title: "",
-      slider_link: "/shop?category=sports",
-      button_text: "",
-      button_link: "/shop?category=sports",
-      status: "Active",
-      created_at: "2024-08-18 09:58:42 pm"
-    },
-    {
-      id: 10,
-      slider: "https://app-area.guptodhan.com/sliders/shopping-person.jpg",
-      sub_title: "Shop Now",
-      title: "",
-      slider_link: "/donate-anything",
-      button_text: "Shop Now",
-      button_link: "/shop?store=guptodhan",
-      status: "Inactive",
-      created_at: "2024-08-18 09:58:42 pm"
-    }
-  ];
-}
+import { useEffect, useMemo, useState } from "react";
 
 export default function ViewAllSlidersPage() {
-  const data = getData();
+  const [search, setSearch] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [rows, setRows] = useState<Slider[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchSliders = async () => {
+      try {
+        setIsLoading(true);
+        const res = await fetch('/api/v1/slider-form');
+        const json = await res.json();
+        const items = (json?.data || []) as any[];
+        const mapped: Slider[] = items.map((it, idx) => ({
+          id: idx + 1,
+          slider: it.image,
+          sub_title: it.subTitleWithColor,
+          title: it.bannerTitleWithColor,
+          slider_link: it.sliderLink,
+          button_text: it.buttonWithColor,
+          button_link: it.buttonLink,
+          status: (it.status === 'active' ? 'Active' : 'Inactive') as Slider['status'],
+          created_at: new Date(it.createdAt || it.created_at || Date.now()).toLocaleString(),
+        }));
+        if (mounted) setRows(mapped);
+      } catch (e) {
+        // noop
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    };
+    fetchSliders();
+    return () => { mounted = false };
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    if (!q) return rows;
+    return rows.filter(r =>
+      r.title.toLowerCase().includes(q) ||
+      r.sub_title.toLowerCase().includes(q) ||
+      r.slider_link.toLowerCase().includes(q) ||
+      r.button_text.toLowerCase().includes(q)
+    );
+  }, [rows, search]);
   
   return (
     <div className="m-5 p-5 border">
@@ -137,10 +68,10 @@ export default function ViewAllSlidersPage() {
         <div className="flex flex-col items-end gap-2">
           
           <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
-            <span>Search:</span>
-            <Input type="text" className="border border-gray-500 w-64" />
-          </div>
+            <div className="flex items-center gap-2">
+              <span>Search:</span>
+              <Input type="text" value={search} onChange={(e) => setSearch(e.target.value)} className="border border-gray-500 w-64" />
+            </div>
             <Link href="/general/add/new/slider">
               <Button className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2">
                 <Plus className="w-4 h-4" />
@@ -155,7 +86,8 @@ export default function ViewAllSlidersPage() {
         </div>
       </div>
       
-      <DataTable columns={slider_columns} data={data} />
+      <DataTable columns={slider_columns} data={filtered} />
+      {isLoading && <div className="mt-3 text-sm text-gray-500">Loading...</div>}
     </div>
   );
 }
