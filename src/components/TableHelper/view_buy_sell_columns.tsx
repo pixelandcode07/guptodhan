@@ -13,7 +13,7 @@ export type BuySellDataType = {
   name: string;
   icon: string;
   slug: string;
-  status: "pending" | "active" | "inactive";
+  status: "active" | "inactive";
 }
 
 export const view_buy_sell_columns = (handleDelete: (_id: string) => void): ColumnDef<BuySellDataType>[] => [
@@ -25,10 +25,12 @@ export const view_buy_sell_columns = (handleDelete: (_id: string) => void): Colu
     },
   },
   {
+    id: "col_name",
     accessorKey: "name",
     header: "Name",
   },
   {
+    id: "col_icon",
     accessorKey: "icon",
     header: "Icon",
     cell: ({ row }) => {
@@ -39,10 +41,12 @@ export const view_buy_sell_columns = (handleDelete: (_id: string) => void): Colu
     },
   },
   {
-    accessorKey: "name",
+    id: "col_slug",
+    accessorKey: "slug",
     header: "Slug",
   },
   {
+    id: "col_status",
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
@@ -51,7 +55,7 @@ export const view_buy_sell_columns = (handleDelete: (_id: string) => void): Colu
       // status: "pending" | "active" | "inactive",
       return (
         <div className={cn(`p-1 rounded-md w-max text-xs`,
-          status === "pending" && "text-yellow-400",
+          // status === "pending" && "text-yellow-400",
           status === "active" && "text-green-500",
           status === "inactive" && "text-red-500",
         )}>{status as string}</div>
@@ -59,7 +63,7 @@ export const view_buy_sell_columns = (handleDelete: (_id: string) => void): Colu
     }
   },
   {
-    id: "action",
+    id: "col_action",
     header: "Action",
     cell: ({ row }) => {
       const documentId = row.original._id;

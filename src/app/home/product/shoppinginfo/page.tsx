@@ -1,6 +1,6 @@
-import React from 'react'
-import HeroNav from '@/app/components/Hero/HeroNav'
-import ShoppingInfoContent from './ShoppingInfoContent'
+import React from 'react';
+import HeroNav from '@/app/components/Hero/HeroNavOld';
+import ShoppingInfoContent from './ShoppingInfoContent';
 
 export default function ShoppingInfoPage() {
   return (
@@ -10,5 +10,5 @@ export default function ShoppingInfoPage() {
         <ShoppingInfoContent />
       </div>
     </>
-  )
+  );
 }
