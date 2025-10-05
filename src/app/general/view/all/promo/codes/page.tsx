@@ -17,6 +17,8 @@ export default async function ViewAllPromoCodesPage() {
     min_spend: String(it.minimumOrderAmount),
     code: it.code,
     status: it.status === 'active' ? 'Active' : 'Inactive',
+    icon: it.icon,
+    shortDescription: it.shortDescription,
     _id: (it?._id && typeof it._id === 'object' && 'toString' in it._id) ? (it._id as any).toString() : String(it._id),
   }));
   return (
