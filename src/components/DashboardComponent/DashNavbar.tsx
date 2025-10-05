@@ -1,14 +1,9 @@
-
-import Link from 'next/link';
-import React from 'react';
-import {
-  DropdownMenu
-} from '../ui/dropdown-menu';
 import { Send } from 'lucide-react';
+import Link from 'next/link';
+import BreadcrumbNav from '../ReusableComponents/BreadcrumbNav';
 import { Button } from '../ui/button';
 import { SidebarTrigger } from '../ui/sidebar';
-import BreadcrumbNav from '../ReusableComponents/BreadcrumbNav';
-import DashNavProfile from './DashNavProfile';
+import UserDropdown from './Components/UserDropdown';
 
 export default function DashNavbar() {
 
@@ -30,10 +25,7 @@ export default function DashNavbar() {
         </div>
 
         {/* User Dropdown */}
-        <DropdownMenu>
-          {/* DashNavProfile */}
-          <DashNavProfile />
-        </DropdownMenu>
+        <UserDropdown />
       </div>
     </nav>
   );

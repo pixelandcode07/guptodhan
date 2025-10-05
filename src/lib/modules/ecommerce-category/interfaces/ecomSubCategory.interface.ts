@@ -4,8 +4,8 @@ export interface ISubCategory extends Document {
   subCategoryId: string;
   category: Types.ObjectId;
   name: string;
-  icon: string;
-  image?: string;
+  subCategoryIcon?: string;
+  subCategoryBanner?: string;
   isFeatured: boolean;
   status: 'active' | 'inactive';
   slug: string;
