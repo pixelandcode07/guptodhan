@@ -17,7 +17,7 @@ export default function DashNavbar() {
       {/* Right side */}
       <div className="flex items-center gap-5">
         <div className="block">
-          <Button variant={'secondary'}>
+          <Button variant={'VisitWeb'}>
             <Send className="mr-1" />
             <Link href={'/'}>Visit Website</Link>
           </Button>

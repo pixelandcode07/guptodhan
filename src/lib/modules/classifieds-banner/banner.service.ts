@@ -14,17 +14,31 @@ const getAllPublicBannersFromDB = async () => {
 };
 
 const deleteBannerFromDB = async (id: string) => {
-    const banner = await ClassifiedBanner.findById(id);
-    if (!banner) { throw new Error("Banner not found"); }
+  const banner = await ClassifiedBanner.findById(id);
+  if (!banner) { throw new Error("Banner not found"); }
 
-    await deleteFromCloudinary(banner.bannerImage);
-    
-    await ClassifiedBanner.findByIdAndDelete(id);
-    return null;
+  await deleteFromCloudinary(banner.bannerImage);
+
+  await ClassifiedBanner.findByIdAndDelete(id);
+  return null;
+};
+
+const updateBannerInDB = async (id: string, updateData: Partial<IClassifiedBanner>) => {
+  if (updateData.bannerImage) {
+    const banner = await ClassifiedBanner.findById(id);
+    if (banner?.bannerImage) {
+      await deleteFromCloudinary(banner.bannerImage);
+    }
+  }
+
+  const updatedBanner = await ClassifiedBanner.findByIdAndUpdate(id, updateData, { new: true });
+  if (!updatedBanner) throw new Error('Banner not found');
+  return updatedBanner;
 };
 
 export const ClassifiedBannerServices = {
   createBannerInDB,
   getAllPublicBannersFromDB,
   deleteBannerFromDB,
+  updateBannerInDB,
 };

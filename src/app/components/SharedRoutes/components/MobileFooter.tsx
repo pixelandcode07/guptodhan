@@ -88,7 +88,7 @@ export default function MobileFooter() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent side="top" align="end" className="w-40">
                                 <DropdownMenuItem asChild>
-                                    <Link href="/profile">Profile Settings</Link>
+                                    <Link href="/home/UserProfile" className='cursor-pointer'>Profile Settings</Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => signOut()}>
                                     Logout

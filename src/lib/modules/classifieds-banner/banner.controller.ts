@@ -7,6 +7,7 @@ import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 import { createBannerValidationSchema } from './banner.validation';
 import { ClassifiedBannerServices } from './banner.service';
 import dbConnect from '@/lib/db';
+import { IClassifiedBanner } from './banner.interface';
 
 const createBanner = async (req: NextRequest) => {
     await dbConnect();
@@ -49,6 +50,41 @@ const getAllPublicBanners = async (_req: NextRequest) => {
     });
 };
 
+const updateBanner = async (req: NextRequest, { params }: { params: { id: string } }) => {
+    await dbConnect();
+    const { id } = params;
+
+    const formData = await req.formData();
+    const bannerImageFile = formData.get('bannerImage') as File | null;
+    const bannerDescription = formData.get('bannerDescription') as string | null;
+    const status = formData.get('status') as 'active' | 'inactive' | null;
+
+    const updateData: Partial<IClassifiedBanner> = {};
+
+    if (bannerImageFile) {
+        const buffer = Buffer.from(await bannerImageFile.arrayBuffer());
+        const uploadResult = await uploadToCloudinary(buffer, 'buy-sell-banners');
+        updateData.bannerImage = uploadResult.secure_url;
+    }
+
+    if (bannerDescription !== null) {
+        updateData.bannerDescription = bannerDescription;
+    }
+
+    if (status) {
+        updateData.status = status;
+    }
+
+    const updatedBanner = await ClassifiedBannerServices.updateBannerInDB(id, updateData);
+
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Banner updated successfully!',
+        data: updatedBanner,
+    });
+};
+
 const deleteBanner = async (req: NextRequest, { params }: { params: { id: string } }) => {
     await dbConnect();
     const { id } = params;
@@ -65,4 +101,5 @@ export const ClassifiedBannerController = {
     createBanner,
     getAllPublicBanners,
     deleteBanner,
+    updateBanner,
 };
