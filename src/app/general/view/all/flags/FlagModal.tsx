@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import FileUpload from "@/components/ReusableComponents/FileUpload";
 
 interface FlagModalProps {
   open: boolean;
@@ -46,18 +47,8 @@ export default function FlagModal({ open, onOpenChange, onSubmit, editing }: Fla
     onSubmit(formData);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setFormData(prev => ({
-          ...prev,
-          icon: event.target?.result as string,
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleUploadComplete = (_name: string, url: string) => {
+    setFormData(prev => ({ ...prev, icon: url }));
   };
 
   return (
@@ -80,34 +71,12 @@ export default function FlagModal({ open, onOpenChange, onSubmit, editing }: Fla
 
           <div className="space-y-2">
             <Label htmlFor="icon">Flag Icon</Label>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => document.getElementById('icon-file')?.click()}
-              >
-                Choose File
-              </Button>
-              <span className="text-sm text-gray-500">
-                {formData.icon ? "File chosen" : "No file chosen (optional)"}
-              </span>
-            </div>
-            <input
-              id="icon-file"
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
+            <FileUpload
+              label="Upload flag icon"
+              name="icon"
+              preview={formData.icon || undefined}
+              onUploadComplete={handleUploadComplete}
             />
-            {formData.icon && (
-              <div className="mt-2">
-                <img
-                  src={formData.icon}
-                  alt="Preview"
-                  className="w-16 h-16 object-cover rounded border"
-                />
-              </div>
-            )}
           </div>
 
           {editing && (

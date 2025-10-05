@@ -8,9 +8,9 @@ const createProductSizeInDB = async (payload: Partial<IProductSize>) => {
   return result;
 };
 
-// Get all active product sizes
+// Get all product sizes (filtering handled client-side)
 const getAllProductSizesFromDB = async () => {
-  const result = await ProductSize.find({ status: 'active' }).sort({ name: 1 });
+  const result = await ProductSize.find({}).sort({ name: 1 });
   return result;
 };
 

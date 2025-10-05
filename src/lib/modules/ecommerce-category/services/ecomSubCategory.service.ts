@@ -1,17 +1,24 @@
 import { ISubCategory } from '../interfaces/ecomSubCategory.interface';
 import { SubCategoryModel } from '../models/ecomSubCategory.model';
+import { CategoryModel } from '../models/ecomCategory.model'; // Import to ensure CategoryModel is registered
 import { Types } from 'mongoose';
 import { ClassifiedAd } from '../../classifieds/ad.model';
 
 // Create subcategory
 const createSubCategoryInDB = async (payload: Partial<ISubCategory>) => {
+  console.log('💾 Creating subcategory in database with payload:', payload);
   const result = await SubCategoryModel.create(payload);
+  console.log('✅ Subcategory created successfully:', { id: result._id, name: result.name });
   return result;
 };
 
 // Get all active subcategories (optional: sorted by name)
 const getAllSubCategoriesFromDB = async () => {
-  const result = await SubCategoryModel.find({ status: 'active' }).sort({ name: 1 });
+  //console.log('🔍 Fetching all subcategories from database...');
+  const result = await SubCategoryModel.find({ status: 'active' })
+    .populate('category', 'name')
+    .sort({ name: 1 });
+  //console.log('📊 Found subcategories:', result.length, result.map(r => ({ id: r._id, name: r.name, category: r.category })));
   return result;
 };
 

@@ -6,6 +6,7 @@ import MediaUpload from './parts/MediaUpload';
 import TopRow from './parts/TopRow';
 import DetailsFields from './parts/DetailsFields';
 import ButtonRow from './parts/ButtonRow';
+import { useRouter } from 'next/navigation';
 
 export type TextPosition = 'Left' | 'Right';
 
@@ -18,20 +19,71 @@ export default function SliderForm() {
   const [description, setDescription] = useState('');
   const [buttonText, setButtonText] = useState('');
   const [buttonLink, setButtonLink] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
-  const handleSave = () => {
-    const payload = {
-      image,
-      textPosition,
-      sliderLink,
-      subTitle,
-      title,
-      description,
-      buttonText,
-      buttonLink,
-    };
-    console.log('Slider payload', payload);
-    alert('Slider saved (demo)');
+  const handleSave = async () => {
+    if (isSubmitting) return;
+    try {
+      setIsSubmitting(true);
+
+      // Basic validations
+      if (!image) throw new Error('Please upload an image.');
+      if (!textPosition) throw new Error('Please select text position.');
+      if (!sliderLink) throw new Error('Please provide slider link.');
+      if (!subTitle) throw new Error('Please provide sub title.');
+      if (!title) throw new Error('Please provide banner title.');
+      if (!description) throw new Error('Please provide banner description.');
+      if (!buttonText) throw new Error('Please provide button text.');
+      if (!buttonLink) throw new Error('Please provide button link.');
+
+      // 1) Upload image
+      const formData = new FormData();
+      formData.append('file', image);
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json().catch(() => ({}));
+        throw new Error(err?.error || 'Image upload failed');
+      }
+      const uploadData = await uploadRes.json();
+      const imageUrl: string = uploadData.secure_url || uploadData.url;
+      if (!imageUrl) throw new Error('Image URL not returned by uploader');
+
+      // 2) Build API payload to match server validation
+      const payload = {
+        sliderId: `SL-${Date.now()}`,
+        image: imageUrl,
+        textPosition,
+        sliderLink,
+        subTitleWithColor: subTitle,
+        bannerTitleWithColor: title,
+        bannerDescriptionWithColor: description,
+        buttonWithColor: buttonText,
+        buttonLink,
+        status: 'active' as const,
+      };
+
+      // 3) Create slider
+      const res = await fetch('/api/v1/slider-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (!res.ok || json?.success === false) {
+        throw new Error(json?.message || 'Failed to create slider');
+      }
+
+      // 4) Redirect to list view
+      router.push('/general/view/all/sliders');
+    } catch (error: any) {
+      alert(error?.message || 'Something went wrong');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -66,7 +118,9 @@ export default function SliderForm() {
       </div>
 
       <div className="flex justify-center pb-5">
-        <Button onClick={handleSave}>Save Slider</Button>
+        <Button onClick={handleSave} disabled={isSubmitting}>
+          {isSubmitting ? 'Saving...' : 'Save Slider'}
+        </Button>
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import {
 import { TestimonialServices } from './testimonial.service';
 import dbConnect from '@/lib/db';
 import { Types } from 'mongoose';
+import { ITestimonial } from './testimonial.interface';
 
 // Create a new testimonial
 const createTestimonial = async (req: NextRequest) => {
@@ -15,10 +16,11 @@ const createTestimonial = async (req: NextRequest) => {
   const body = await req.json();
   const validatedData = createTestimonialValidationSchema.parse(body);
 
-  const payload = {
+  // ✅ Explicitly cast productID to ObjectId only, remove string possibility
+  const payload: Partial<ITestimonial> = {
     ...validatedData,
     productID: new Types.ObjectId(validatedData.productID),
-  };
+  } as Partial<ITestimonial>;
 
   const result = await TestimonialServices.createTestimonialInDB(payload);
 
@@ -34,28 +36,22 @@ const createTestimonial = async (req: NextRequest) => {
 const getAllTestimonials = async () => {
   await dbConnect();
   const result = await TestimonialServices.getAllTestimonialsFromDB();
-
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Testimonials retrieved successfully!',
+    message: 'All testimonials retrieved successfully!',
     data: result,
   });
 };
 
-// Get testimonials by product
-const getTestimonialsByProduct = async (
-  req: NextRequest,
-  { params }: { params: { productId: string } }
-) => {
+// Get public testimonials
+const getPublicTestimonials = async () => {
   await dbConnect();
-  const { productId } = params;
-  const result = await TestimonialServices.getTestimonialsByProductFromDB(productId);
-
+  const result = await TestimonialServices.getPublicTestimonialsFromDB();
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Testimonials retrieved successfully!',
+    message: 'Public testimonials retrieved successfully!',
     data: result,
   });
 };
@@ -63,17 +59,20 @@ const getTestimonialsByProduct = async (
 // Update testimonial
 const updateTestimonial = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   const body = await req.json();
   const validatedData = updateTestimonialValidationSchema.parse(body);
 
-  const payload = {
+  // ✅ Safe handling of optional productID
+  const payload: Partial<ITestimonial> = {
     ...validatedData,
-    ...(validatedData.productID && { productID: new Types.ObjectId(validatedData.productID) }),
-  };
+    ...(validatedData.productID
+      ? { productID: new Types.ObjectId(validatedData.productID) }
+      : {}),
+  } as Partial<ITestimonial>;
 
   const result = await TestimonialServices.updateTestimonialInDB(id, payload);
 
@@ -87,11 +86,11 @@ const updateTestimonial = async (
 
 // Delete testimonial
 const deleteTestimonial = async (
-  req: NextRequest,
-  { params }: { params: { id: string } }
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   await TestimonialServices.deleteTestimonialFromDB(id);
 
   return sendResponse({
@@ -105,7 +104,7 @@ const deleteTestimonial = async (
 export const TestimonialController = {
   createTestimonial,
   getAllTestimonials,
-  getTestimonialsByProduct,
+  getPublicTestimonials,
   updateTestimonial,
   deleteTestimonial,
 };

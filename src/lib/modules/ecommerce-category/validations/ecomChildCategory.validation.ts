@@ -3,10 +3,10 @@ import { z } from 'zod';
 // Create child category validation
 export const createChildCategoryValidationSchema = z.object({
   childCategoryId: z.string().min(1, { message: 'ChildCategory ID is required.' }),
-  category: z.string({ required_error: 'Category ID is required.' }),
-  subCategory: z.string({ required_error: 'SubCategory ID is required.' }),
+  category: z.string().min(1, { message: 'Category ID is required.' }),
+  subCategory: z.string().min(1, { message: 'SubCategory ID is required.' }),
   name: z.string().min(1, { message: 'ChildCategory name is required.' }),
-  icon: z.string().min(1, { message: 'ChildCategory icon is required.' }),
+  icon: z.string().optional(), // Made optional since it will be uploaded as file
   slug: z.string().min(1, { message: 'Slug is required.' }),
   status: z.enum(['active', 'inactive']).optional(),
 });

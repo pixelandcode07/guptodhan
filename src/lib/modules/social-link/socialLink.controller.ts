@@ -87,9 +87,22 @@ const deleteSocialLink = async (
   });
 };
 
+const getSocialLinkById = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    await dbConnect();
+    const { id } = await params;
+    const result = await SocialLinkServices.getSocialLinkByIdFromDB(id);
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Social link retrieved successfully!',
+        data: result,
+    });
+};
+
 export const SocialLinkController = {
   createSocialLink,
   getPublicSocialLinks,
   updateSocialLink,
   deleteSocialLink,
+  getSocialLinkById,
 };

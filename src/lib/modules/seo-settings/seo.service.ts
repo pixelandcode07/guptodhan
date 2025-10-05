@@ -25,7 +25,22 @@ const getPublicSeoSettingsFromDB = async (pageIdentifier: string) => {
   return await SeoSettings.findOne({ pageIdentifier });
 };
 
+const getSeoSettingsByIdFromDB = async (id: string) => {
+  const result = await SeoSettings.findById(id);
+  if (!result) {
+    throw new Error('SEO settings not found.');
+  }
+  return result;
+};
+
+
+const updateSeoSettingsInDB = async (id: string, payload: Partial<ISeoSettings>) => {
+  return await SeoSettings.findByIdAndUpdate(id, payload, { new: true });
+};
+
 export const SeoSettingsServices = {
   createOrUpdateSeoSettingsInDB,
   getPublicSeoSettingsFromDB,
+  updateSeoSettingsInDB,
+  getSeoSettingsByIdFromDB,
 };

@@ -4,39 +4,37 @@ import { Asterisk } from 'lucide-react'
 import { FieldErrors, UseFormRegister } from 'react-hook-form'
 import { ChildCategoryInputs } from '../ChildCategory'
 
-export default function BasicInfo({ register, errors }: {
+export default function BasicInfo({ register, errors, categories, subCategories }: {
     register: UseFormRegister<ChildCategoryInputs>
     errors: FieldErrors<ChildCategoryInputs>
+    categories: { label: string, value: string }[]
+    subCategories: { label: string, value: string }[]
 }) {
     return (
         <>
             <h1 className='border-b border-[#e4e7eb] pb-2 text-lg'>Child Category Create Form</h1>
 
             <Label>Select Category<Asterisk className='text-red-600 h-3 ' /></Label>
-            <select {...register('categoryId', { required: 'Category is required' })} className='w-full h-10 border border-gray-500 rounded-md px-3 mb-8'>
+            <select {...register('category', { required: 'Category is required' })} className='w-full h-10 border border-gray-500 rounded-md px-3 mb-8'>
                 <option value=''>Select One</option>
-                <option value='special-offers'>Special Offers</option>
-                <option value='mobile'>Mobile</option>
-                <option value='gadget'>Gadget</option>
-                <option value='electronics'>Electronics</option>
-                <option value='mens-fashion'>Men's Fashion</option>
-                <option value='women-fashion'>Women Fashion</option>
-                <option value='kids-toys'>Kids & Toys</option>
-                <option value='home-living'>Home & Living</option>
-                <option value='computer'>Computer</option>
-                <option value='laptop'>Laptop</option>
-                <option value='accessories'>Accessories</option>
-                <option value='camera'>Camera</option>
-                <option value='vehicles'>Vehicles</option>
-                <option value='organic'>Organic</option>
-                <option value='homemade'>Homemade</option>
-                <option value='bike-gadgets'>Bike Gadgets</option>
+                {categories.map(category => (
+                    <option key={category.value} value={category.value}>{category.label}</option>
+                ))}
             </select>
+            {errors.category && (
+                <span className="text-red-600">{errors.category.message}</span>
+            )}
 
             <Label>Select Subcategory<Asterisk className='text-red-600 h-3 ' /></Label>
-            <select {...register('subcategoryId', { required: 'Subcategory is required' })} className='w-full h-10 border border-gray-500 rounded-md px-3 mb-8'>
+            <select {...register('subCategory', { required: 'Subcategory is required' })} className='w-full h-10 border border-gray-500 rounded-md px-3 mb-8'>
                 <option value=''>Select One</option>
+                {subCategories.map(subCategory => (
+                    <option key={subCategory.value} value={subCategory.value}>{subCategory.label}</option>
+                ))}
             </select>
+            {errors.subCategory && (
+                <span className="text-red-600">{errors.subCategory.message}</span>
+            )}
 
             <Label>Name<Asterisk className='text-red-600 h-3 ' /></Label>
             <Input
