@@ -1,30 +1,70 @@
 "use client"
 
 import { DataTable } from "@/components/TableHelper/data-table"
-import { view_buy_sell_columns } from "@/components/TableHelper/view_buy_sell_columns"
+import { SubCategoryType, view_buy_sell_columns, ViewBuySellDataType } from "@/components/TableHelper/view_buy_sell_columns"
 import axios from "axios"
 import { useSession } from "next-auth/react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
-interface Category {
-    _id: string
-    name: string
-    icon: string
-    slug: string
-    status: "pending" | "active" | "inactive"
-}
+// interface Category {
+//     _id: string
+//     name: string
+//     icon: string
+//     slug: string
+//     status: "active" | "inactive"
+// }
+
+// interface SubCategoryType {
+//                 _id: string
+//                 name: string
+//                 icon?: string
+//                 slug?: string
+//                 status?: "active" | "inactive"
+//                 category?: string
+//                 // add other fields as needed
+//             }
 
 export default function ViewAllCategory() {
     const { data: session } = useSession()
-    const token = session?.accessToken
-    const adminRole = session?.user?.role === "admin"
-    const [categories, setCategories] = useState<Category[]>([])
+    // const token = session?.accessToken
+    // const adminRole = session?.user?.role === "admin"
+
+
+    const token = (session?.user as { accessToken?: string; role?: string })?.accessToken
+    const adminRole = (session?.user as { role?: string })?.role === "admin"
+
+
+
+    const [categories, setCategories] = useState<ViewBuySellDataType[]>([])
+
+    // const fetchCategories = async () => {
+    //     try {
+    //         const res = await axios.get("/api/v1/public/categories-with-subcategories")
+    //         setCategories(res.data.data || [])
+    //     } catch (error) {
+    //         console.log(error)
+    //         toast.error("Failed to fetch categories")
+    //     }
+    // }
+
+    // useEffect(() => {
+    //     fetchCategories()
+    // }, [])
 
     const fetchCategories = async () => {
         try {
-            const res = await axios.get("/api/v1/public/classifieds-categories")
-            setCategories(res.data.data || [])
+            // Fetch from the endpoint that populates subCategories (includes category ID in subCategories)
+            const res = await axios.get("/api/v1/public/categories-with-subcategories")
+            // Ensure subCategories have 'category' field (from lookup, it should be available if projected)
+            const enrichedData = (res.data.data || []).map((cat: ViewBuySellDataType) => ({
+                ...cat,
+                subCategories: cat.subCategories?.map((sub: SubCategoryType) => ({
+                    ...sub,
+                    category: cat._id // Explicitly set parent category ID in each subCategory
+                })) || []
+            }));
+            setCategories(enrichedData)
         } catch (error) {
             console.log(error)
             toast.error("Failed to fetch categories")
