@@ -7,3 +7,6 @@ import { checkRole } from '@/lib/middlewares/checkRole';
 
 // নতুন ক্যাটাগরি তৈরি করা (শুধুমাত্র অ্যাডমিন)
 export const POST = catchAsync(checkRole(['admin'])(ClassifiedCategoryController.createCategory));
+
+// New: GET for all categories (admin can see all, no role check if public, but since admin, optional)
+export const GET = catchAsync(ClassifiedCategoryController.getAllCategories); // Use getAllCategories for admin view

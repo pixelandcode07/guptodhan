@@ -19,7 +19,8 @@ export type Inputs = {
 
 export default function CreateCategory() {
   const { data: session } = useSession()
-  const token = session?.accessToken
+  const token = (session?.user as { accessToken?: string; role?: string })?.accessToken
+  const userRole = (session?.user as { role?: string })?.role
   const router = useRouter()
 
   const {
@@ -42,7 +43,7 @@ export default function CreateCategory() {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
-          "x-user-role": session?.user?.role,
+          "x-user-role": userRole,
         },
       })
 
@@ -79,25 +80,6 @@ export default function CreateCategory() {
           )}
         </span>
       </section>
-      {/* Sub Category Name */}
-      {/* <section className="grid grid-cols-1 md:grid-cols-12">
-        <span className="col-span-2">
-          <Label htmlFor="name" className="mb-2">
-            Sub Category Name <Asterisk className="text-red-600 h-3 inline" />
-          </Label>
-        </span>
-        <span className="col-span-10">
-          <Input
-            type="text"
-            placeholder="Sub Category Name"
-            {...register("sub_category_name", { required: "This field is required" })}
-            className="mb-2 border border-gray-500"
-          />
-          {errors.sub_category_name && (
-            <span className="text-red-600">{errors.sub_category_name.message}</span>
-          )}
-        </span>
-      </section> */}
 
       {/* Icon */}
       <section className="grid grid-cols-1 md:grid-cols-12">
