@@ -44,12 +44,37 @@ const createSubCategory = async (req: NextRequest) => {
     });
 };
 
-const updateSubCategory = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const updateSubCategory = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
-    const body = await req.json();
-    const validatedData = updateSubCategoryValidationSchema.parse(body);
-    const result = await ClassifiedSubCategoryServices.updateSubCategoryInDB(id, validatedData);
+    const { id } = await params;
+    const formData = await req.formData();
+    
+    const payload: Record<string, any> = {};
+
+    // FormData থেকে টেক্সট ফিল্ডগুলো নেওয়া হচ্ছে
+    for (const [key, value] of formData.entries()) {
+        if (typeof value === 'string' && value) {
+            payload[key] = value;
+        }
+    }
+
+    // যদি নতুন আইকন ফাইল পাঠানো হয়, তবে সেটি আপলোড করা হচ্ছে
+    const iconFile = formData.get('icon') as File | null;
+    if (iconFile && iconFile.size > 0) {
+        const buffer = Buffer.from(await iconFile.arrayBuffer());
+        const uploadResult = await uploadToCloudinary(buffer, 'subcategory-icons');
+        payload.icon = uploadResult.secure_url;
+    }
+    
+    const validatedData = updateSubCategoryValidationSchema.parse(payload);
+
+    // যদি নতুন প্যারেন্ট ক্যাটাগরি পাঠানো হয়, সেটিকে ObjectId-তে রূপান্তর করা হচ্ছে
+    const payloadForService: any = { ...validatedData };
+    if (validatedData.category) {
+        payloadForService.category = new Types.ObjectId(validatedData.category);
+    }
+    
+    const result = await ClassifiedSubCategoryServices.updateSubCategoryInDB(id, payloadForService);
 
     return sendResponse({
         success: true,
@@ -58,6 +83,7 @@ const updateSubCategory = async (req: NextRequest, { params }: { params: { id: s
         data: result,
     });
 };
+
 
 const getSubCategoriesByParent = async (req: NextRequest, context: any) => {
     await dbConnect();
