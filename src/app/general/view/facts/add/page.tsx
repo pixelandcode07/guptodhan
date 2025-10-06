@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState } from 'react';
@@ -15,6 +16,7 @@ import {
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 export default function AddFactPage() {
   const { data: session } = useSession();
@@ -22,16 +24,22 @@ export default function AddFactPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<'active' | 'inactive'>('active'); // ✅ default active
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setLoading(true);
+
+    const formData = new FormData(e.currentTarget);
 
     const payload = {
       factTitle: formData.get('factTitle'),
       factCount: Number(formData.get('factCount')),
       shortDescription: formData.get('shortDescription'),
-      status: formData.get('status'),
+      status: status, // ✅ always use selected state
     };
+
+    console.log('🚀 Sending payload:', payload);
 
     try {
       const res = await axios.post(
@@ -43,13 +51,14 @@ export default function AddFactPage() {
       );
 
       if (res.data.success) {
-        console.log('Fact created successfully!');
-        router.push('/general/view/facts/add');
+        toast.success('✅ Fact created successfully!');
+        router.push('/general/view/facts');
       } else {
-        console.error('Failed to create fact');
+        toast.error('❌ Failed to create fact');
       }
     } catch (error: any) {
-      console.error(error);
+      console.error('Error:', error);
+      toast.error('❌ Something went wrong while saving');
     } finally {
       setLoading(false);
     }
@@ -59,9 +68,9 @@ export default function AddFactPage() {
     <div className="max-w-3xl mx-auto bg-white dark:bg-neutral-900 shadow-md rounded-2xl p-6">
       <h4 className="text-xl font-semibold mb-4">Create Fact</h4>
 
-      <form action={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Fact Title + Count */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Fact Title */}
           <div className="space-y-2">
             <Label htmlFor="factTitle">
               Fact Title <span className="text-red-500">*</span>
@@ -75,7 +84,6 @@ export default function AddFactPage() {
             />
           </div>
 
-          {/* Fact Count */}
           <div className="space-y-2">
             <Label htmlFor="factCount">Fact Count</Label>
             <Input
@@ -83,6 +91,7 @@ export default function AddFactPage() {
               name="factCount"
               type="number"
               placeholder="15"
+              required
             />
           </div>
         </div>
@@ -99,10 +108,12 @@ export default function AddFactPage() {
           />
         </div>
 
-        {/* Status */}
+        {/* Status Select */}
         <div className="w-40 space-y-2">
           <Label htmlFor="status">Status</Label>
-          <Select name="status">
+          <Select
+            value={status}
+            onValueChange={val => setStatus(val as 'active' | 'inactive')}>
             <SelectTrigger id="status">
               <SelectValue placeholder="Select One" />
             </SelectTrigger>

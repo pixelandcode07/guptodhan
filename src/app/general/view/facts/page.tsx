@@ -17,6 +17,7 @@ export default async function FactsPage() {
     console.error('Error fetching facts', error);
   }
 
+  console.log(facts);
   return (
     <div className="bg-white pt-5 px-5">
       <SectionTitle text="View All Facts" />
