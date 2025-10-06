@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState } from 'react';
@@ -16,6 +17,7 @@ import {
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import SectionTitle from '@/components/ui/SectionTitle';
 
 type FactType = {
   factTitle: string;
@@ -65,10 +67,10 @@ export default function EditFactPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto bg-white dark:bg-neutral-900 shadow-md rounded-2xl p-6">
-      <h4 className="text-xl font-semibold mb-4">Edit Fact</h4>
+    <div className=" mx-auto bg-white dark:bg-neutral-900 shadow-md rounded-2xl pt-6">
+      <SectionTitle text="Edit Fact" />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6  p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="factTitle">

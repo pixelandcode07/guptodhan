@@ -17,6 +17,7 @@ import { useSession } from 'next-auth/react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import SectionTitle from '@/components/ui/SectionTitle';
 
 export default function AddFactPage() {
   const { data: session } = useSession();
@@ -51,24 +52,24 @@ export default function AddFactPage() {
       );
 
       if (res.data.success) {
-        toast.success('✅ Fact created successfully!');
+        toast.success(' Fact created successfully!');
         router.push('/general/view/facts');
       } else {
-        toast.error('❌ Failed to create fact');
+        toast.error(' Failed to create fact');
       }
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error('❌ Something went wrong while saving');
+      toast.error(' Something went wrong while saving');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto bg-white dark:bg-neutral-900 shadow-md rounded-2xl p-6">
-      <h4 className="text-xl font-semibold mb-4">Create Fact</h4>
+    <div className="mx-auto bg-white dark:bg-neutral-900 shadow-md rounded-2xl pt-6">
+      <SectionTitle text="Create Fact" />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6 p-6">
         {/* Fact Title + Count */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">

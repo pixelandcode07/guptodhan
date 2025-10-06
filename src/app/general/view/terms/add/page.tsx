@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import FileUpload from '@/components/ReusableComponents/FileUpload';
 import SectionTitle from '@/components/ui/SectionTitle';
+import UploadImage from '@/components/ReusableComponents/UploadImage';
 
 export default function TeamEntryForm() {
   const [preview, setPreview] = useState<string | null>(null);
@@ -35,12 +36,7 @@ export default function TeamEntryForm() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Image upload */}
             <div className="lg:col-span-4 w-full">
-              <FileUpload
-                label="User Cover Photo"
-                name="user_cover_photo"
-                preview={preview}
-                onUploadComplete={handleFileChange}
-              />
+              <UploadImage />
             </div>
 
             {/* Form fields */}

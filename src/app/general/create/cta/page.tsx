@@ -1,5 +1,5 @@
-import axios from 'axios';
 import CTAForm from './Components/CTAForm';
+import axios from 'axios';
 
 export default async function CTAPage() {
   // Server-side data fetch
