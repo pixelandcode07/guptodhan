@@ -9,7 +9,7 @@ type CompanyDetailsProps = {
     email: string;
     short_description: string;
     address: string;
-    google_map_link: string;
+    companyMapLink: string;
     trade_license_no: string;
     tin_no: string;
     bin_no: string;
@@ -85,8 +85,8 @@ export default function CompanyDetails({
         <label className="w-full sm:w-1/4 font-medium">Google Map Link</label>
         <Input
           className="flex-1"
-          value={formData.google_map_link}
-          onChange={e => handleInputChange('google_map_link', e.target.value)}
+          value={formData.companyMapLink}
+          onChange={e => handleInputChange('companyMapLink', e.target.value)}
         />
       </div>
 
