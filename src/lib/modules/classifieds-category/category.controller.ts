@@ -4,18 +4,25 @@ import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 import { sendResponse } from '@/lib/utils/sendResponse';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
-import { createCategoryValidationSchema, updateCategoryValidationSchema } from './category.validation';
+import {
+    createCategoryValidationSchema,
+    updateCategoryValidationSchema,
+} from './category.validation';
 import { ClassifiedCategoryServices } from './category.service';
 import dbConnect from '@/lib/db';
+import { IClassifiedCategory } from './category.interface';
 
+// Create Category
 const createCategory = async (req: NextRequest) => {
     await dbConnect();
+
     const formData = await req.formData();
     const name = formData.get('name') as string;
     const iconFile = formData.get('icon') as File | null;
+
     const payload: { name: string; icon?: string } = { name };
 
-    if (iconFile) {
+    if (iconFile && iconFile.size > 0) {
         const buffer = Buffer.from(await iconFile.arrayBuffer());
         const uploadResult = await uploadToCloudinary(buffer, 'category-icons');
         payload.icon = uploadResult.secure_url;
@@ -32,7 +39,7 @@ const createCategory = async (req: NextRequest) => {
     });
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// Get All Categories (for Admin)
 const getAllCategories = async (_req: NextRequest) => {
     await dbConnect();
     const result = await ClassifiedCategoryServices.getAllCategoriesFromDB();
@@ -44,40 +51,30 @@ const getAllCategories = async (_req: NextRequest) => {
     });
 };
 
-// const updateCategory = async (req: NextRequest, { params }: { params: { id: string } }) => {
-//     await dbConnect();
-//     const { id } = params;
-//     const body = await req.json();
-//     const validatedData = updateCategoryValidationSchema.parse(body);
-//     const result = await ClassifiedCategoryServices.updateCategoryInDB(id, validatedData);
-
-//     return sendResponse({
-//         success: true,
-//         statusCode: StatusCodes.OK,
-//         message: 'Category updated successfully!',
-//         data: result,
-//     });
-// };
-
-const updateCategory = async (req: NextRequest, { params }: { params: { id: string } }) => {
+// Update Category
+const updateCategory = async (
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
 
     const formData = await req.formData();
-    const name = formData.get("name") as string | null;
-    const slug = formData.get("slug") as string | null;
-    const status = formData.get("status") as string | null;
-    const iconFile = formData.get("icon") as File | null;
+    const payload: Partial<IClassifiedCategory> = {};
 
-    const payload: { name?: string; slug?: string; status?: "pending" | "active" | "inactive"; icon?: string } = {};
+    const name = formData.get('name') as string | null;
+    const slug = formData.get('slug') as string | null;
+    const status = formData.get('status') as 'active' | 'inactive' | null;
 
     if (name) payload.name = name;
     if (slug) payload.slug = slug;
-    if (status) payload.status = status as "pending" | "active" | "inactive";
+    if (status) payload.status = status;
 
-    if (iconFile) {
+    const iconFile = formData.get('icon') as File | null;
+
+    if (iconFile && iconFile.size > 0) {
         const buffer = Buffer.from(await iconFile.arrayBuffer());
-        const uploadResult = await uploadToCloudinary(buffer, "category-icons");
+        const uploadResult = await uploadToCloudinary(buffer, 'category-icons');
         payload.icon = uploadResult.secure_url;
     }
 
@@ -87,14 +84,19 @@ const updateCategory = async (req: NextRequest, { params }: { params: { id: stri
     return sendResponse({
         success: true,
         statusCode: StatusCodes.OK,
-        message: "Category updated successfully!",
+        message: 'Category updated successfully!',
         data: result,
     });
 };
 
-const deleteCategory = async (req: NextRequest, { params }: { params: { id: string } }) => {
+// Delete Category
+const deleteCategory = async (
+    _req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
+
     await ClassifiedCategoryServices.deleteCategoryFromDB(id);
     return sendResponse({
         success: true,
@@ -104,7 +106,7 @@ const deleteCategory = async (req: NextRequest, { params }: { params: { id: stri
     });
 };
 
-
+// Get Categories with their Subcategories
 const getCategoriesWithSubcategories = async (_req: NextRequest) => {
     await dbConnect();
     const result = await ClassifiedCategoryServices.getCategoriesWithSubcategoriesFromDB();
@@ -116,6 +118,7 @@ const getCategoriesWithSubcategories = async (_req: NextRequest) => {
     });
 };
 
+// Get Public Categories (active ones)
 const getPublicCategories = async (_req: NextRequest) => {
     await dbConnect();
     const result = await ClassifiedCategoryServices.getPublicCategoriesFromDB();
@@ -127,10 +130,14 @@ const getPublicCategories = async (_req: NextRequest) => {
     });
 };
 
-
-const getCategoryById = async (req: NextRequest, { params }: { params: { id: string } }) => {
+// Get a Single Category by ID
+const getCategoryById = async (
+    _req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) => {
     await dbConnect();
     const { id } = await params;
+
     const result = await ClassifiedCategoryServices.getCategoryByIdFromDB(id);
     return sendResponse({
         success: true,
@@ -140,12 +147,12 @@ const getCategoryById = async (req: NextRequest, { params }: { params: { id: str
     });
 };
 
-
+// Export all controller functions
 export const ClassifiedCategoryController = {
     createCategory,
     getAllCategories,
     updateCategory,
-    deleteCategory,
+    deleteCategory, // Only one 'deleteCategory' is now included
     getCategoriesWithSubcategories,
     getPublicCategories,
     getCategoryById,
