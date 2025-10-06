@@ -28,19 +28,26 @@ const getSubCategoriesByParentFromDB = async (id: string) => {
 
 
 const updateSubCategoryInDB = async (id: string, payload: Partial<IClassifiedSubCategory>) => {
-  // যদি ইউজার প্যারেন্ট ক্যাটাগরি পরিবর্তন করার জন্য 'category' ID পাঠায়
+  const subCategoryToUpdate = await ClassifiedSubCategory.findById(id);
+  if (!subCategoryToUpdate) {
+    throw new Error("Sub-category not found to update.");
+  }
+
+  // যদি নতুন প্যারেন্ট ক্যাটাগরি পাঠানো হয়, তবে সেটি ভ্যালিড কিনা চেক করা হচ্ছে
   if (payload.category) {
-    // নতুন প্যারেন্ট ক্যাটাগরিটি ডেটাবেসে আছে কিনা তা তার ID দিয়ে চেক করা হচ্ছে
     const parentCategoryExists = await ClassifiedCategory.findById(payload.category);
     if (!parentCategoryExists) {
       throw new Error(`The new parent category with ID '${payload.category}' does not exist.`);
     }
   }
-
-  const result = await ClassifiedSubCategory.findByIdAndUpdate(id, payload, { new: true });
-  if (!result) {
-    throw new Error("Sub-category not found to update.");
+  
+  // যদি নতুন আইকন আপলোড করা হয়, তাহলে ক্লাউডিনারি থেকে পুরোনো আইকন ডিলিট করা হচ্ছে
+  if (payload.icon && subCategoryToUpdate.icon) {
+    await deleteFromCloudinary(subCategoryToUpdate.icon);
   }
+
+  // ডেটাবেসে সাব-ক্যাটাগরিটি আপডেট করা হচ্ছে
+  const result = await ClassifiedSubCategory.findByIdAndUpdate(id, payload, { new: true });
   return result;
 };
 

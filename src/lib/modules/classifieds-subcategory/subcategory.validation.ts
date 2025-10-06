@@ -9,7 +9,7 @@ export const createSubCategoryValidationSchema = z.object({
 
 export const updateSubCategoryValidationSchema = z.object({
   name: z.string().min(1).optional(),
-  category: z.string().optional(), 
-  icon: z.string().url().optional(),
+  category: z.string().optional(), // Parent category ID
   status: z.enum(['active', 'inactive']).optional(),
+  icon: z.string().url().optional(), // Icon URL
 });
