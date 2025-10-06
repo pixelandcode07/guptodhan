@@ -7,10 +7,10 @@ import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import UploadImageBtn from "@/app/general/buy/sell/config/components/UploadImageBtn";
 import Select from "react-select";
 import { useSession } from "next-auth/react";
 import FancyLoadingPage from "@/app/general/loading";
+import UploadImageBtn from "@/components/ReusableComponents/UploadImageBtn";
 
 interface FormInputs {
     name: string;
