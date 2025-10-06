@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import UploadImage from '@/components/ReusableComponents/UploadImage';
 import CompanyDetails from './CompanyDetails';
-import toast from 'react-hot-toast';
 import SectionTitle from '@/components/ui/SectionTitle';
 import { Loader2 } from 'lucide-react'; // ✅ spinner icon
+import { Toaster } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 
 interface GeneralInfoFormProps {
   data: any;
@@ -69,7 +70,10 @@ export default function GeneralInfoForm({ data }: GeneralInfoFormProps) {
   // ✅ SUBMIT FUNCTION
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true); // start loading
+    setLoading(true);
+
+    // প্রথমে একটি "Updating..." toast দেখাও
+    const toastId = toast.loading('Updating...');
 
     try {
       let hasFile = false;
@@ -77,11 +81,11 @@ export default function GeneralInfoForm({ data }: GeneralInfoFormProps) {
       const jsonPayload: Record<string, any> = {};
 
       for (const [key, value] of Object.entries(formData)) {
-        // 🛠️ skip invalid or empty companyMapLink
-        if (key === 'companyMapLink') {
-          if (!value || !/^https?:\/\//i.test(value.toString())) {
-            continue;
-          }
+        if (
+          key === 'companyMapLink' &&
+          (!value || !/^https?:\/\//i.test(value.toString()))
+        ) {
+          continue;
         }
 
         if (value instanceof File) {
@@ -115,17 +119,17 @@ export default function GeneralInfoForm({ data }: GeneralInfoFormProps) {
       }
 
       if (!response.ok) {
-        const errText = await response.text();
-        console.error('Backend error:', errText);
         throw new Error('Update failed');
       }
 
-      toast.success('✅ Settings updated successfully!');
+      // আগের toast replace করে success মেসেজ দাও ✅
+      toast.success(' Settings updated successfully!', { id: toastId });
     } catch (error) {
       console.error('Submit Error:', error);
-      toast.error('❌ Failed to update settings');
+      // আগের toast replace করে error মেসেজ দাও ❌
+      toast.error(' Failed to update settings', { id: toastId });
     } finally {
-      setLoading(false); // stop loading
+      setLoading(false);
     }
   };
 
