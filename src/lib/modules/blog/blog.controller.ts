@@ -28,10 +28,19 @@ const createBlog = async (req: NextRequest) => {
 };
 
 // Get all blogs
-const getAllBlogs = async () => {
+const getAllBlogs = async (req: NextRequest) => {
     await dbConnect();
-    const result = await BlogServices.getAllBlogsFromDB();
+    const { searchParams } = new URL(req.url);
 
+    // Extract query parameters from the URL
+    const filters = {
+        category: searchParams.get('category') || undefined,
+        status: searchParams.get('status') || undefined,
+        searchTerm: searchParams.get('searchTerm') || undefined,
+    };
+    
+    const result = await BlogServices.getAllBlogsFromDB(filters);
+    
     return sendResponse({
         success: true,
         statusCode: StatusCodes.OK,
@@ -39,6 +48,7 @@ const getAllBlogs = async () => {
         data: result,
     });
 };
+
 
 // Get blogs by category
 const getBlogsByCategory = async (_req: NextRequest, { params }: { params: { categoryId: string } }) => {

@@ -9,9 +9,25 @@ const createBlogInDB = async (payload: Partial<IBlog>) => {
 };
 
 // Get all active blogs (optional: sorted by createdAt descending)
-const getAllBlogsFromDB = async () => {
-  const result = await BlogModel.find({ status: 'active' }).sort({ createdAt: -1 });
-  return result;
+const getAllBlogsFromDB = async (filters: { category?: string; status?: string; searchTerm?: string }) => {
+  const { category, status, searchTerm } = filters;
+  const query: any = {};
+
+  if (category) {
+    query.category = new Types.ObjectId(category);
+  }
+
+  if (status) {
+    query.status = status;
+  }
+
+  if (searchTerm) {
+    query.title = { $regex: searchTerm, $options: 'i' }; // Case-insensitive title search
+  }
+
+  return await BlogModel.find(query)
+    .populate('category', 'name') // Shows the category name
+    .sort({ createdAt: -1 });
 };
 
 // Get blogs by category
