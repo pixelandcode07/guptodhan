@@ -77,11 +77,22 @@ export default function FactsTable({ initialData }: Props) {
         const fact = row.original as Fact;
         return (
           <div className="flex gap-2">
-            <Link href={`/general/view/facts/edit?id=${fact._id}`}>
+            <Link
+              href={{
+                pathname: '/general/view/facts/edit',
+                query: {
+                  id: fact._id,
+                  factTitle: fact.factTitle,
+                  factCount: fact.factCount,
+                  shortDescription: fact.shortDescription,
+                  status: fact.status,
+                },
+              }}>
               <Button size="sm" className="cursor-pointer" variant="outline">
                 <Edit className="w-4 h-4" />
               </Button>
             </Link>
+
             <Button
               size="sm"
               className="cursor-pointer"

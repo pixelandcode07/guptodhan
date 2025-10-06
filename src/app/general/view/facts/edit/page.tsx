@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,10 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import axios from 'axios';
 import { useSession } from 'next-auth/react';
+import axios from 'axios';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
 
 type FactType = {
   factTitle: string;
@@ -24,57 +24,41 @@ type FactType = {
   status: 'active' | 'inactive';
 };
 
-export default async function EditFactPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const id = params.id;
+export default function EditFactPage() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id') || '';
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
   const [fact, setFact] = useState<FactType>({
-    factTitle: '',
-    factCount: 0,
-    shortDescription: '',
-    status: 'active',
+    factTitle: searchParams.get('factTitle') || '',
+    factCount: Number(searchParams.get('factCount')) || 0,
+    shortDescription: searchParams.get('shortDescription') || '',
+    status: (searchParams.get('status') as 'active' | 'inactive') || 'active',
   });
-
-  // ✅ Fetch single fact directly (Server Action)
-  const loadFact = async () => {
-    try {
-      const res = await fetch(
-        `http://localhost:3000/api/v1/public/about/facts/${id}`,
-        { cache: 'no-store' }
-      );
-      const json = await res.json();
-      setFact(json?.data || {});
-    } catch {
-      toast.error('Failed to load fact ❌');
-    }
-  };
-
-  // Call immediately (since client component)
-  if (!fact.factTitle && id) {
-    loadFact();
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      await axios.patch(
+      const res = await axios.patch(
         `http://localhost:3000/api/v1/about/facts/${id}`,
         fact,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success('Fact updated successfully ✅');
-      router.push('/general/view/facts');
+
+      if (res.data.success) {
+        toast.success('Fact updated successfully ');
+        router.push('/general/view/facts');
+      } else {
+        toast.error('Failed to update fact ');
+      }
     } catch (error) {
-      toast.error('Failed to update fact ❌');
+      console.error(error);
+      toast.error('Something went wrong ');
     } finally {
       setLoading(false);
     }
