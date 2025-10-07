@@ -3,8 +3,11 @@ import { z } from 'zod';
 
 export const createFactValidationSchema = z.object({
   factTitle: z.string().min(1, { message: 'Fact title is required.' }),
-  factCount: z.number().positive({ message: 'Fact count must be a positive number.' }),
+  factCount: z
+    .number()
+    .positive({ message: 'Fact count must be a positive number.' }),
   shortDescription: z.string().optional(),
+  status: z.enum(['active', 'inactive']).optional(),
 });
 
 export const updateFactValidationSchema = z.object({

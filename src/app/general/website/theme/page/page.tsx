@@ -3,6 +3,7 @@ import SectionTitle from '@/components/ui/SectionTitle';
 
 export default async function Page() {
   let colors;
+  let themeId = null;
 
   try {
     const res = await fetch(
@@ -18,6 +19,10 @@ export default async function Page() {
 
     const json = await res.json();
     const theme = json?.data;
+
+    if (theme?._id) {
+      themeId = theme._id;
+    }
 
     colors = {
       primary: theme?.primaryColor,
@@ -47,7 +52,8 @@ export default async function Page() {
         <SectionTitle text="Update Website Theme Color" />
       </div>
 
-      <ThemeColorCard initialColors={colors} />
+      {/* ✅ Pass themeId dynamically */}
+      <ThemeColorCard initialColors={colors} themeId={themeId} />
     </div>
   );
 }
