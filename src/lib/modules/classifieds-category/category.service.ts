@@ -61,9 +61,13 @@ const getCategoriesWithSubcategoriesFromDB = async () => {
         _id: 1,
         name: 1,
         icon: 1,
+        status: 1, // For getting status in frontend
         'subCategories._id': 1,
         'subCategories.name': 1,
-      },
+        'subCategories.category': 1, // Parent category ID
+        'subCategories.icon': 1, // Optional for icon
+        'subCategories.status': 1, // Include status for frontend filter
+      }
     },
 
     {

@@ -13,12 +13,14 @@ import { toast } from "sonner"
 
 export type Inputs = {
   category_name: string
+  // sub_category_name: string
   category_image: File | null
 }
 
 export default function CreateCategory() {
   const { data: session } = useSession()
-  const token = session?.accessToken
+  const token = (session?.user as { accessToken?: string; role?: string })?.accessToken
+  const userRole = (session?.user as { role?: string })?.role
   const router = useRouter()
 
   const {
@@ -32,6 +34,7 @@ export default function CreateCategory() {
     try {
       const formData = new FormData()
       formData.append("name", data.category_name)
+      // formData.append("sub_name", data.sub_category_name)
       if (data.category_image) {
         formData.append("icon", data.category_image)
       }
@@ -40,7 +43,7 @@ export default function CreateCategory() {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
-          "x-user-role": session?.user?.role,
+          "x-user-role": userRole,
         },
       })
 
@@ -58,11 +61,11 @@ export default function CreateCategory() {
         <span className="pl-5">Create Category</span>
       </h1>
 
-      {/* Name */}
+      {/* Category Name */}
       <section className="grid grid-cols-1 md:grid-cols-12">
         <span className="col-span-2">
           <Label htmlFor="name" className="mb-2">
-            Name <Asterisk className="text-red-600 h-3 inline" />
+            Category Name <Asterisk className="text-red-600 h-3 inline" />
           </Label>
         </span>
         <span className="col-span-10">
