@@ -1,45 +1,41 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
+import { Badge } from '@/components/ui/badge'; // ✅ use shadcn badge
 
-export type StoresDataType = {
-  id: number;
-  name: string;
-  slug: string;
-  status: string;
+export type FaqCategoryType = {
+  faqCategoryID: number;
+  categoryName: string;
+  isActive: boolean;
 };
 
-export const faq_categories_columns: ColumnDef<StoresDataType>[] = [
+export const faq_categories_columns: ColumnDef<FaqCategoryType>[] = [
   {
-    accessorKey: 'id',
+    accessorKey: 'faqCategoryID',
     header: 'SL',
   },
   {
-    accessorKey: 'name',
-    header: 'Name',
+    accessorKey: 'categoryName',
+    header: 'Category Name',
   },
   {
-    accessorKey: 'slug',
-    header: 'Slug',
-  },
-  {
-    accessorKey: 'status',
+    accessorKey: 'isActive',
     header: 'Status',
+    cell: ({ row }) => {
+      const isActive = row.getValue('isActive') as boolean;
+
+      return (
+        <span
+          className={`px-3 py-1 text-sm font-medium rounded-full border
+          ${
+            isActive
+              ? 'bg-green-100 text-green-700 border-green-400'
+              : 'bg-red-100 text-red-700 border-red-400'
+          }
+        `}>
+          {isActive ? 'Active' : 'Inactive'}
+        </span>
+      );
+    },
   },
-  // {
-  //   accessorKey: 'action',
-  //   header: 'Action',
-  //   cell: () => {
-  //     return (
-  //       <div className="flex items-center gap-2">
-  //         <Button className="bg-yellow-400 hover:bg-yellow-500 text-black cursor-pointer">
-  //           <Edit />
-  //         </Button>
-  //         <Button className="bg-red-700 hover:bg-red-800 text-white cursor-pointer">
-  //           <DeleteIcon />
-  //         </Button>
-  //       </div>
-  //     );
-  //   },
-  // },
 ];
