@@ -13,35 +13,50 @@ import {
 import RichTextEditor from '@/components/ReusableComponents/RichTextEditor';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 
-type AboutUsFormProps = {
-  initialContent?: string;
+type AboutData = {
+  _id: string;
+  aboutContent: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
 };
 
-export default function AboutUsForm({ initialContent = '' }: AboutUsFormProps) {
+type AboutUsFormProps = {
+  aboutData: AboutData;
+};
+
+export default function AboutUsForm({ aboutData }: AboutUsFormProps) {
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
 
-  const [content, setContent] = useState(initialContent);
-  const [status, setStatus] = useState('1'); // 1 = Active, 0 = Inactive
+  const [content, setContent] = useState(aboutData.aboutContent);
+  const [status, setStatus] = useState(aboutData.status); // 'active' or 'inactive'
   const [loading, setLoading] = useState(false);
 
   const handleCancel = () => {
-    setContent(initialContent);
-    setStatus('1');
+    setContent(aboutData.aboutContent);
+    setStatus(aboutData.status);
   };
 
   const handleDone = async () => {
+    if (!aboutData._id) {
+      toast.error('Content ID is missing.');
+      return;
+    }
+
     setLoading(true);
+
     try {
       const payload = {
-        content,
-        status: status === '1' ? 'active' : 'inactive', // backend-friendly value
+        aboutContent: content,
+        status, // already 'active' or 'inactive'
       };
 
-      // POST request because PATCH is not allowed
-      const res = await axios.post(
-        'http://localhost:3000/api/v1/about/content',
+      const res = await axios.patch(
+        `http://localhost:3000/api/v1/about/content/${aboutData._id}`,
         payload,
         {
           headers: {
@@ -52,13 +67,13 @@ export default function AboutUsForm({ initialContent = '' }: AboutUsFormProps) {
       );
 
       if (res.data.success) {
-        alert('Information Updated!');
+        toast.success('Information updated successfully!');
       } else {
-        alert('Failed to update information!');
+        toast.error('Failed to update information.');
       }
     } catch (error: any) {
       console.error(error);
-      alert('Error updating information!');
+      toast.error('Error updating information.');
     } finally {
       setLoading(false);
     }
@@ -85,8 +100,8 @@ export default function AboutUsForm({ initialContent = '' }: AboutUsFormProps) {
               <SelectValue placeholder="Select One" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1">Active</SelectItem>
-              <SelectItem value="0">Inactive</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
             </SelectContent>
           </Select>
         </div>
