@@ -38,9 +38,9 @@ const deleteCategoryFromDB = async (id: string) => {
 
 const getCategoriesWithSubcategoriesFromDB = async () => {
   const result = await ClassifiedCategory.aggregate([
-    {
-      $match: { status: 'active' }
-    },
+    // {
+    //   $match: { status: 'active' }
+    // },
     {
       $lookup: {
         from: 'classifiedsubcategories', // সাব-ক্যাটাগরি মডেলের কালেকশনের নাম (Mongoose এটিকে plural করে)
