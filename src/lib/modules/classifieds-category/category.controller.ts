@@ -152,7 +152,7 @@ export const ClassifiedCategoryController = {
     createCategory,
     getAllCategories,
     updateCategory,
-    deleteCategory, // Only one 'deleteCategory' is now included
+    deleteCategory,
     getCategoriesWithSubcategories,
     getPublicCategories,
     getCategoryById,
