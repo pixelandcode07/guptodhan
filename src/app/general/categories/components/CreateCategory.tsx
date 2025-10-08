@@ -20,7 +20,7 @@ export type Inputs = {
 export default function CreateCategory() {
   const { data: session } = useSession()
   const token = (session?.user as { accessToken?: string; role?: string })?.accessToken
-  const userRole = (session?.user as { role?: string })?.role
+  const adminRole = (session?.user as { role?: string })?.role === "admin"
   const router = useRouter()
 
   const {
@@ -43,7 +43,7 @@ export default function CreateCategory() {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
-          "x-user-role": userRole,
+          "x-user-role": adminRole,
         },
       })
 

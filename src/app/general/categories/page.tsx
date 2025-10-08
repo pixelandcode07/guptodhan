@@ -8,14 +8,14 @@ import ViewAllBrand from "./components/ViewAllBrand"
 export default function CategoriesPage() {
     return (
         <div className="w-full mt-10">
-            <Tabs defaultValue="view">
+            <Tabs defaultValue="view-category">
                 {/* Tab Headers */}
-                <TabsList className="grid max-w-5xl grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
+                <TabsList className="grid max-w-5xl grid-cols-1 md:grid-cols-3 gap-5">
                     <TabsTrigger value="create">Create Category</TabsTrigger>
                     <TabsTrigger value="sub-create">Create Sub-Category</TabsTrigger>
-                    <TabsTrigger value="brand-model-edition">Brand-Model-Edition</TabsTrigger>
+                    {/* <TabsTrigger value="brand-model-edition">Brand-Model-Edition</TabsTrigger> */}
                     <TabsTrigger value="view-category">View All Categories</TabsTrigger>
-                    <TabsTrigger value="view-brands">View All Brands</TabsTrigger>
+                    {/* <TabsTrigger value="view-brands">View All Brands</TabsTrigger> */}
                 </TabsList>
 
                 {/* Create category */}
@@ -31,12 +31,11 @@ export default function CategoriesPage() {
                     </div>
                 </TabsContent>
                 {/* Create Brand Model Edition */}
-                <TabsContent value="brand-model-edition" className="mt-6">
+                {/* <TabsContent value="brand-model-edition" className="mt-6">
                     <div className="space-y-4 p-6 border rounded-md shadow-sm bg-white">
-                        {/* <BrandModelEdition /> */}
                         <BrandModelEditionManagement />
                     </div>
-                </TabsContent>
+                </TabsContent> */}
 
                 {/* View all Category */}
                 <TabsContent value="view-category" className="mt-6">
@@ -45,11 +44,11 @@ export default function CategoriesPage() {
                     </div>
                 </TabsContent>
                 {/* View all vendor */}
-                <TabsContent value="view-brands" className="mt-6">
+                {/* <TabsContent value="view-brands" className="mt-6">
                     <div className="space-y-4 p-6 border rounded-md shadow-sm bg-white">
                         <ViewAllBrand />
                     </div>
-                </TabsContent>
+                </TabsContent> */}
             </Tabs>
         </div>
     )
