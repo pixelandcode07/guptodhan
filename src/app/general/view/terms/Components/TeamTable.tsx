@@ -1,12 +1,11 @@
 'use client';
-
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/TableHelper/data-table';
 import SectionTitle from '@/components/ui/SectionTitle';
 import { teams_columns } from '@/components/TableHelper/teams_columns';
-import { ArrowUpDown, Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, ArrowUpDown } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
 import axios from 'axios';
 
 interface Team {
@@ -14,38 +13,23 @@ interface Team {
   name: string;
   designation: string;
   image: string;
-  socialLinks?: {
-    linkedin?: string;
-    github?: string;
-  };
+  socialLinks?: Record<string, string>;
 }
 
-interface TeamsTableProps {
-  data: Team[];
-  error?: string | null;
-}
-
-export default function TeamsTable({ data, error }: TeamsTableProps) {
+export default function TeamsTable({ data }: { data: Team[] }) {
   const [teams, setTeams] = useState<Team[]>(data);
 
-  if (error) {
-    return <div className="text-red-500 p-4">{error}</div>;
-  }
-
-  // 🗑️ Delete Handler
-  const deleteTeam = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this member?')) return;
-
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete?')) return;
     try {
       await axios.delete(`http://localhost:3000/api/v1/about/team/${id}`);
-      setTeams(prev => prev.filter(team => team._id !== id));
+      setTeams(prev => prev.filter(t => t._id !== id));
     } catch (err) {
-      console.error('Delete failed:', err);
-      alert('Failed to delete member!');
+      console.error(err);
+      alert('Failed to delete!');
     }
   };
 
-  // 📌 Columns with Actions
   const columnsWithActions = [
     ...teams_columns,
     {
@@ -56,22 +40,18 @@ export default function TeamsTable({ data, error }: TeamsTableProps) {
       ),
       accessorKey: 'actions',
       cell: ({ row }: any) => {
-        const team = row.original as Team;
+        const team = row.original;
         return (
           <div className="flex gap-2">
-            {/* ✏️ Edit Button */}
             <Link href={`/general/view/terms/edit?id=${team._id}`}>
-              <Button size="sm" className="cursor-pointer" variant="outline">
+              <Button size="sm" variant="outline">
                 <Edit className="w-4 h-4" />
               </Button>
             </Link>
-
-            {/* 🗑️ Delete Button */}
             <Button
               size="sm"
-              className="cursor-pointer"
               variant="destructive"
-              onClick={() => deleteTeam(team._id)}>
+              onClick={() => handleDelete(team._id)}>
               <Trash2 className="w-4 h-4" />
             </Button>
           </div>
@@ -87,18 +67,11 @@ export default function TeamsTable({ data, error }: TeamsTableProps) {
       </div>
 
       <div className="p-5 pt-0">
-        {/* Action Buttons */}
         <div className="py-4 pr-5 flex justify-end">
-          <div className="flex gap-2">
-            <Link href="/general/view/terms/add" className="cursor-pointer">
-              <Button size="sm">Add New</Button>
-            </Link>
-
-            <Button size="sm">Rearrange</Button>
-          </div>
+          <Link href="/general/view/terms/add">
+            <Button size="sm">Add New</Button>
+          </Link>
         </div>
-
-        {/* Data Table */}
         <DataTable columns={columnsWithActions} data={teams} />
       </div>
     </div>

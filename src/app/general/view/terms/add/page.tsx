@@ -1,116 +1,151 @@
 'use client';
-
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import FileUpload from '@/components/ReusableComponents/FileUpload';
 import SectionTitle from '@/components/ui/SectionTitle';
+import UploadImage from '@/components/ReusableComponents/UploadImage';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { useSession } from 'next-auth/react';
 
 export default function TeamEntryForm() {
-  const [preview, setPreview] = useState<string | null>(null);
+  const [preview, setPreview] = useState<File | null>(null);
+  const [name, setName] = useState('');
+  const [designation, setDesignation] = useState('');
+  const [facebook, setFacebook] = useState('');
+  const [linkedin, setLinkedin] = useState('');
+  const [instagram, setInstagram] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleFileChange = (name: string, url: string) => {
-    setPreview(url);
+  const { data: session } = useSession();
+  const token = (session as any)?.accessToken;
+  const router = useRouter();
+
+  const handleFileChange = (_name: string, file: File | null) => {
+    setPreview(file);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!preview) return toast.error('Please upload an image!');
+    setLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('image', preview as File);
+      formData.append('name', name);
+      formData.append('designation', designation);
+      formData.append('socialLinks.linkedin', linkedin);
+      formData.append('socialLinks.facebook', facebook);
+      formData.append('socialLinks.instagram', instagram);
+
+      const res = await axios.post(
+        'http://localhost:3000/api/v1/about/team',
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      if (res.data.success) {
+        toast.success('Team member created!');
+        // Redirect to /general/view/terms
+        router.push('/general/view/terms');
+      } else {
+        toast.error('Failed to create member!');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error creating member!');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Card className="p-6 border mt-5">
       <SectionTitle text="Team Entry Form" />
-
       <CardContent>
         <form
           className="space-y-6"
-          method="POST"
-          action="https://app-area.guptodhan.com/save/team"
+          onSubmit={handleSubmit}
           encType="multipart/form-data">
-          {/* Hidden token */}
-          <input
-            type="hidden"
-            name="_token"
-            value="b8UkN91D3WKzLc4pCvqnVVeU2RNhVducbSfBE8NO"
-          />
-
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Image upload */}
             <div className="lg:col-span-4 w-full">
-              <FileUpload
-                label="User Cover Photo"
-                name="user_cover_photo"
-                preview={preview}
-                onUploadComplete={handleFileChange}
+              <UploadImage
+                name="image"
+                preview={preview ? URL.createObjectURL(preview) : ''}
+                onChange={handleFileChange}
               />
             </div>
 
-            {/* Form fields */}
             <div className="lg:col-span-8 border-l pl-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Employee Name */}
                 <div>
                   <Label htmlFor="employee_name">
                     Employee Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
+                    value={name}
+                    onChange={e => setName(e.target.value)}
                     type="text"
                     id="employee_name"
-                    name="employee_name"
-                    placeholder="Enter Your Name Here"
                     required
                   />
                 </div>
 
-                {/* Designation */}
                 <div>
                   <Label htmlFor="designation">Designation</Label>
                   <Input
+                    value={designation}
+                    onChange={e => setDesignation(e.target.value)}
                     type="text"
                     id="designation"
-                    name="designation"
-                    placeholder="Designation"
                   />
                 </div>
 
-                {/* Facebook */}
                 <div>
                   <Label htmlFor="facebook">Facebook</Label>
                   <Input
+                    value={facebook}
+                    onChange={e => setFacebook(e.target.value)}
                     type="url"
                     id="facebook"
-                    name="facebook"
-                    placeholder="https://facebook.com/"
                   />
                 </div>
 
-                {/* Twitter */}
                 <div>
-                  <Label htmlFor="linkedin">Twitter</Label>
+                  <Label htmlFor="linkedin">LinkedIn</Label>
                   <Input
+                    value={linkedin}
+                    onChange={e => setLinkedin(e.target.value)}
                     type="url"
                     id="linkedin"
-                    name="linkedin"
-                    placeholder="https://twitter.com/"
                   />
                 </div>
 
-                {/* Instagram */}
                 <div>
-                  <Label htmlFor="whatsapp">Instagram</Label>
+                  <Label htmlFor="instagram">Instagram</Label>
                   <Input
+                    value={instagram}
+                    onChange={e => setInstagram(e.target.value)}
                     type="url"
-                    id="whatsapp"
-                    name="whatsapp"
-                    placeholder="https://instagram.com/"
+                    id="instagram"
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Submit button */}
           <div className="flex justify-center pt-4">
-            <Button type="submit" className="w-40">
-              Save Team
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Saving...' : 'Save Team'}
             </Button>
           </div>
         </form>

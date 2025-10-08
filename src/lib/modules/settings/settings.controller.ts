@@ -9,73 +9,100 @@ import { SettingsServices } from './settings.service';
 import dbConnect from '@/lib/db';
 
 const createOrUpdateSettings = async (req: NextRequest) => {
-    await dbConnect();
-    const formData = await req.formData();
-    
-    const payload: Record<string, any> = {};
-    const filesToUpload: { key: string; file: File, folder: string }[] = [];
+  await dbConnect();
+  const formData = await req.formData();
 
-    // Form data থেকে টেক্সট এবং ফাইল আলাদা করা হচ্ছে
-    for (const [key, value] of formData.entries()) {
-        if (value instanceof File && value.size > 0) {
-            let folder = 'general-settings';
-            if (key === 'paymentBanner' || key === 'userBanner') folder = 'banners';
-            filesToUpload.push({ key, file: value, folder });
-        } else if (typeof value === 'string') {
-            payload[key] = value;
-        }
+  const payload: Record<string, any> = {};
+  const filesToUpload: { key: string; file: File; folder: string }[] = [];
+
+  // Form data থেকে টেক্সট এবং ফাইল আলাদা করা হচ্ছে
+  for (const [key, value] of formData.entries()) {
+    if (value instanceof File && value.size > 0) {
+      let folder = 'general-settings';
+      if (key === 'paymentBanner' || key === 'userBanner') folder = 'banners';
+      filesToUpload.push({ key, file: value, folder });
+    } else if (typeof value === 'string') {
+      payload[key] = value;
     }
+  }
 
-    // ফাইলগুলো Cloudinary-তে আপলোড করা হচ্ছে
-    if (filesToUpload.length > 0) {
-        const uploadPromises = filesToUpload.map(async ({ key, file, folder }) => {
-            const buffer = Buffer.from(await file.arrayBuffer());
-            const result = await uploadToCloudinary(buffer, folder);
-            return { key, url: result.secure_url };
-        });
-        const uploadedFiles = await Promise.all(uploadPromises);
-        uploadedFiles.forEach(({ key, url }) => {
-            payload[key] = url;
-        });
-    }
+  // ফাইলগুলো Cloudinary-তে আপলোড করা হচ্ছে
+  if (filesToUpload.length > 0) {
+    const uploadPromises = filesToUpload.map(async ({ key, file, folder }) => {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const result = await uploadToCloudinary(buffer, folder);
+      return { key, url: result.secure_url };
+    });
+    const uploadedFiles = await Promise.all(uploadPromises);
+    uploadedFiles.forEach(({ key, url }) => {
+      payload[key] = url;
+    });
+  }
 
-    // "true"/"false" স্ট্রিংকে boolean-এ রূপান্তর করা হচ্ছে
-    if (payload.isActive) payload.isActive = payload.isActive === 'true';
+  // "true"/"false" স্ট্রিংকে boolean-এ রূপান্তর করা হচ্ছে
+  if (payload.isActive) payload.isActive = payload.isActive === 'true';
 
-    const validatedData = updateSettingsValidationSchema.parse(payload);
-    const result = await SettingsServices.createOrUpdateSettingsInDB(validatedData);
-    
-    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Settings updated successfully!', data: result });
+  const validatedData = updateSettingsValidationSchema.parse(payload);
+  const result = await SettingsServices.createOrUpdateSettingsInDB(
+    validatedData
+  );
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Settings updated successfully!',
+    data: result,
+  });
 };
 
 const getPublicSettings = async (_req: NextRequest) => {
-    await dbConnect();
-    const result = await SettingsServices.getPublicSettingsFromDB();
-    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Settings retrieved successfully!', data: result });
+  await dbConnect();
+  const result = await SettingsServices.getPublicSettingsFromDB();
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Settings retrieved successfully!',
+    data: result,
+  });
 };
 
 // ✅ NEW: Controller for PATCH request
-const updateSettings = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-    await dbConnect();
-    const { id } = await params;
-    const body = await req.json(); // For PATCH, we can expect JSON
-    const validatedData = updateSettingsValidationSchema.partial().parse(body); // .partial() makes all fields optional
-    const result = await SettingsServices.updateSettingsInDB(id, validatedData);
-    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Settings updated successfully!', data: result });
+const updateSettings = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  await dbConnect();
+  const { id } = await params;
+  const body = await req.json(); // For PATCH, we can expect JSON
+  const validatedData = updateSettingsValidationSchema.partial().parse(body); // .partial() makes all fields optional
+  const result = await SettingsServices.updateSettingsInDB(id, validatedData);
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Settings updated successfully!',
+    data: result,
+  });
 };
 
 // ✅ NEW: Controller for DELETE request
-const deleteSettings = async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-    await dbConnect();
-    const { id } = await params;
-    await SettingsServices.deleteSettingsFromDB(id);
-    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Settings deleted successfully!', data: null });
+const deleteSettings = async (
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  await dbConnect();
+  const { id } = await params;
+  await SettingsServices.deleteSettingsFromDB(id);
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Settings deleted successfully!',
+    data: null,
+  });
 };
 
-
 export const SettingsController = {
-    createOrUpdateSettings,
-    getPublicSettings,
-    updateSettings, // ✅ Add this
-    deleteSettings, // ✅ Add thi
+  createOrUpdateSettings,
+  getPublicSettings,
+  updateSettings, // ✅ Add this
+  deleteSettings, // ✅ Add thi
 };
