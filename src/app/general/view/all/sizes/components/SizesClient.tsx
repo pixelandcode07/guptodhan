@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DataTable } from "@/components/TableHelper/data-table";
-import { getSizeColumns, type Size } from "@/components/TableHelper/size_columns";
+import { type Size } from "@/components/TableHelper/size_columns";
+import SizesHeader from "./SizesHeader";
+import SizesFilters from "./SizesFilters";
+import SizesTable from "./SizesTable";
 import SizeModal from "./SizeModal";
-import Link from "next/link";
-import { Move } from "lucide-react";
+import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
 
 
 type ApiSize = {
@@ -31,7 +30,11 @@ export default function SizesClient() {
   const [sizes, setSizes] = useState<Size[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Size | null>(null);
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [searchText, setSearchText] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"" | "Active" | "Inactive">("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState<Size | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchSizes = useCallback(async () => {
     try {
@@ -123,73 +126,102 @@ export default function SizesClient() {
 
   const filtered = useMemo(() => {
     return sizes.filter((row) => {
-      const matchesStatus = statusFilter === "all" || row.status.toLowerCase() === statusFilter;
-      return matchesStatus;
+      const matchesSearch = !searchText || row.name.toLowerCase().includes(searchText.toLowerCase());
+      const matchesStatus = !statusFilter || row.status === statusFilter;
+      return matchesSearch && matchesStatus;
     });
-  }, [sizes, statusFilter]);
+  }, [sizes, searchText, statusFilter]);
 
-  const onDelete = useCallback(async (row: Size) => {
+  const onDelete = useCallback((row: Size) => {
+    setDeleting(row);
+    setDeleteOpen(true);
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    if (!deleting) return;
+    
+    setDeleteLoading(true);
     try {
-      if (!row._id) return;
-      await axios.delete(`/api/v1/product-config/productSize/${row._id}`, {
+      if (!deleting._id) return;
+      await axios.delete(`/api/v1/product-config/productSize/${deleting._id}`, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...(userRole ? { "x-user-role": userRole } : {}),
         },
       });
-      setSizes(prev => prev.filter(s => s._id !== row._id));
+      setSizes(prev => prev.filter(s => s._id !== deleting._id));
       toast.success("Size deleted successfully!");
-    } catch (error) {
+      setDeleteOpen(false);
+      setDeleting(null);
+    } catch (error: unknown) {
       console.error("Error deleting size:", error);
-      toast.error("Failed to delete size");
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 409) {
+          toast.error("Cannot delete size as it is being used in products");
+        } else {
+          toast.error("Failed to delete size");
+        }
+      } else {
+        toast.error("Failed to delete size");
+      }
+    } finally {
+      setDeleteLoading(false);
     }
-  }, [token, userRole]);
+  }, [deleting, token, userRole]);
 
   const onEdit = useCallback((row: Size) => {
     setEditing(row);
     setOpen(true);
   }, []);
 
-  const columns = useMemo(() => getSizeColumns({ onDelete, onEdit }), [onDelete, onEdit]);
+  const handleAddNew = useCallback(() => {
+    setEditing(null);
+    setOpen(true);
+  }, []);
 
   return (
-    <div className="m-5 p-5 border ">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-semibold border-l-2 border-blue-500">
-          <span className="pl-5">Product Sizes</span>
-        </h1>
-        <div className="flex items-center gap-3">
-          {/* Removed duplicate search input; use DataTable's built-in search */}
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
-          <Link
-            href="/general/view/all/sizes/rearrange"
-            className="px-3 py-2 border rounded bg-white hover:bg-gray-50 flex items-center gap-2"
-          >
-            <Move className="w-4 h-4" />
-            Rearrange Size
-          </Link>
-          <Button className="bg-green-600 hover:bg-green-700" onClick={() => { setEditing(null); setOpen(true); }}>
-            Add New Size
-          </Button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">
+        {/* Header Section */}
+        <div className="mb-6 sm:mb-8">
+          <SizesHeader onAddNew={handleAddNew} />
         </div>
-      </div>
-      <DataTable columns={columns} data={filtered} />
 
-      <SizeModal
-        open={open}
-        onOpenChange={setOpen}
-        onSubmit={onSubmit}
-        editing={editing ? { name: editing.name, status: editing.status.toLowerCase() } : null}
-      />
+        {/* Filters Section */}
+        <div className="mb-4 sm:mb-6">
+          <SizesFilters
+            searchText={searchText}
+            setSearchText={setSearchText}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+          />
+        </div>
+
+        {/* Table Section */}
+        <div className="mb-4 sm:mb-6">
+          <SizesTable
+            sizes={filtered}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        </div>
+
+        {/* Modals */}
+        <SizeModal
+          open={open}
+          onOpenChange={setOpen}
+          onSubmit={onSubmit}
+          editing={editing ? { name: editing.name, status: editing.status.toLowerCase() } : null}
+        />
+
+        <DeleteConfirmationDialog
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          size={deleting}
+          onConfirm={confirmDelete}
+          loading={deleteLoading}
+        />
+      </div>
     </div>
   );
 }
