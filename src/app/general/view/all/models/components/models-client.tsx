@@ -6,11 +6,12 @@ import { useSession } from "next-auth/react";
 import type { Session } from "next-auth";
 import { toast } from "sonner";
 import { Model } from "@/components/TableHelper/model_columns";
-import ModelsHeader from "./components/ModelsHeader";
-import ModelsFilters from "./components/ModelsFilters";
-import ModelsTable from "./components/ModelsTable";
-import ModelEditDialog from "./components/ModelEditDialog";
-import DeleteConfirmationDialog from "./components/DeleteConfirmationDialog";
+import ModelsHeader from "./ModelsHeader";
+import ModelsFilters from "./ModelsFilters";
+import ModelsTable from "./ModelsTable";
+import ModelEditDialog from "./ModelEditDialog";
+import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
+
 
 type ApiModel = {
   _id: string;
@@ -123,14 +124,14 @@ export default function ModelsClient() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">
         {/* Header Section */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <ModelsHeader />
         </div>
 
         {/* Filters Section */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <ModelsFilters
             searchText={searchText}
             setSearchText={setSearchText}
@@ -140,12 +141,14 @@ export default function ModelsClient() {
         </div>
 
         {/* Table Section */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          <ModelsTable
-            models={filteredModels}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
+        <div className="mb-4 sm:mb-6">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+            <ModelsTable
+              models={filteredModels}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          </div>
         </div>
 
         {/* Dialogs */}
