@@ -16,9 +16,10 @@ const classifiedAdSchema = new Schema<IClassifiedAd>(
     condition: { type: String, enum: ['new', 'used'], required: true },
     authenticity: { type: String, required: true },
 
-    brand: { type: Schema.Types.ObjectId, ref: 'Brand', default: undefined },
-    productModel: { type: Schema.Types.ObjectId, ref: 'ProductModel', default: undefined },
-    edition: { type: Schema.Types.ObjectId, ref: 'Edition', default: undefined },
+    brand: { type: String },
+    productModel: { type: String },
+    edition: { type: String },
+
 
     features: [{ type: String }],
     description: { type: String, required: true },
