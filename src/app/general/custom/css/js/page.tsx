@@ -1,34 +1,23 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// app/custom-code/page.tsx
 import SectionTitle from '@/components/ui/SectionTitle';
-import CodeSnippet from './Components/CodeSnipate';
+import CodeSnippet from './CodeSnippet';
 
 export default async function Page() {
-  let codeData = { customCSS: '', headerScript: '', footerScript: '' };
-  let error = null;
+  const res = await fetch(`localhost:3000/api/v1/public/custom-code`, {
+    next: { tags: ['custom-code'] },
+  });
 
-  try {
-    const res = await fetch('http://localhost:3000/api/v1/public/custom-code', {
-      cache: 'no-store', // always fresh data
-    });
-
-    if (!res.ok) {
-      throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
-    }
-
-    const json = await res.json();
-    codeData = json?.data || codeData;
-  } catch (err: any) {
-    error = err.message || 'Something went wrong while fetching custom code';
-  }
+  const json = await res.json();
+  const codeData = json?.data || {
+    customCSS: '',
+    headerScript: '',
+    footerScript: '',
+  };
 
   return (
     <div className="p-6 space-y-6">
-      <div className="p-4 pl-0 items-center flex justify-between gap-5">
-        <SectionTitle text="Custom CSS & JS Form" />
-      </div>
-
-      {/* Pass fetched data as props */}
-      <CodeSnippet initialData={codeData} error={error} />
+      <SectionTitle text="Custom CSS & JS Form" />
+      <CodeSnippet initialData={codeData} />
     </div>
   );
 }
