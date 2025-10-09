@@ -69,9 +69,9 @@ console.log("📝 Validated data:", validatedData);
       },
       category: validatedData.category ? new Types.ObjectId(validatedData.category) : undefined,
       subCategory: validatedData.subCategory ? new Types.ObjectId(validatedData.subCategory) : undefined,
-      brand: validatedData.brand ? new Types.ObjectId(validatedData.brand) : undefined,
-      productModel: validatedData.productModel ? new Types.ObjectId(validatedData.productModel) : undefined,
-      edition: validatedData.edition ? new Types.ObjectId(validatedData.edition) : undefined,
+      brand: validatedData.brand,
+      productModel: validatedData.productModel,
+      edition: validatedData.edition,
     };
 
     const result = await ClassifiedAdServices.createAdInDB(payloadForService);
@@ -108,10 +108,10 @@ const updateAd = async (req: NextRequest, { params }: { params: { id: string } }
     ...validatedData,
     category: validatedData.category ? new Types.ObjectId(validatedData.category) : undefined,
     subCategory: validatedData.subCategory ? new Types.ObjectId(validatedData.subCategory) : undefined,
-    brand: validatedData.brand ? new Types.ObjectId(validatedData.brand) : undefined,
-    productModel: validatedData.productModel ? new Types.ObjectId(validatedData.productModel) : undefined,
-    edition: validatedData.edition ? new Types.ObjectId(validatedData.edition) : undefined,
-   contactDetails: validatedData.contactDetails
+    brand: validatedData.brand,
+    productModel: validatedData.productModel,
+    edition: validatedData.edition,
+    contactDetails: validatedData.contactDetails
   ? {
       name: validatedData.contactDetails.name ?? '',
       phone: validatedData.contactDetails.phone ?? '',

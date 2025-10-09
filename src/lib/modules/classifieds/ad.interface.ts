@@ -10,9 +10,9 @@ export interface IClassifiedAd extends Document {
   upazila: string;
   condition: 'new' | 'used';
   authenticity: string;
-  brand?: Types.ObjectId;
-  productModel?: Types.ObjectId;
-  edition?: Types.ObjectId;
+  brand?: string;
+  productModel?: string;
+  edition?: string;
   features?: string[];
   description: string;
   price: number;
