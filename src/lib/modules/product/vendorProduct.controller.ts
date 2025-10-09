@@ -52,6 +52,7 @@ const getAllVendorProducts = async () => {
     statusCode: StatusCodes.OK,
     message: 'Vendor products retrieved successfully!',
     data: result,
+    
   });
 };
 
