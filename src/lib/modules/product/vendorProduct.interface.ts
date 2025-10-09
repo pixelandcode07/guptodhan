@@ -22,7 +22,6 @@ export interface IVendorProduct extends Document {
   specification: string;
   warrantyPolicy: string;
   productTag?: string[];
-  
   videoUrl?: string;
   photoGallery: string[];
   thumbnailImage: string;
