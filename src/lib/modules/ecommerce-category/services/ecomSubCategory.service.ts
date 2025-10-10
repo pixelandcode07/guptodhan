@@ -6,9 +6,9 @@ import { ClassifiedAd } from '../../classifieds/ad.model';
 
 // Create subcategory
 const createSubCategoryInDB = async (payload: Partial<ISubCategory>) => {
-  console.log('💾 Creating subcategory in database with payload:', payload);
+  //console.log('💾 Creating subcategory in database with payload:', payload);
   const result = await SubCategoryModel.create(payload);
-  console.log('✅ Subcategory created successfully:', { id: result._id, name: result.name });
+ // console.log('✅ Subcategory created successfully:', { id: result._id, name: result.name });
   return result;
 };
 
