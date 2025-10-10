@@ -12,10 +12,10 @@ const createSubCategoryInDB = async (payload: Partial<ISubCategory>) => {
   return result;
 };
 
-// Get all active subcategories (optional: sorted by name)
+// Get all subcategories (both active and inactive)
 const getAllSubCategoriesFromDB = async () => {
   //console.log('🔍 Fetching all subcategories from database...');
-  const result = await SubCategoryModel.find({ status: 'active' })
+  const result = await SubCategoryModel.find({})
     .populate('category', 'name')
     .sort({ name: 1 });
   //console.log('📊 Found subcategories:', result.length, result.map(r => ({ id: r._id, name: r.name, category: r.category })));
