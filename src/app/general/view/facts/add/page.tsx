@@ -43,13 +43,9 @@ export default function AddFactPage() {
     console.log('🚀 Sending payload:', payload);
 
     try {
-      const res = await axios.post(
-        'http://localhost:3000/api/v1/about/facts',
-        payload,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await axios.post('/api/v1/about/facts', payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (res.data.success) {
         toast.success(' Fact created successfully!');

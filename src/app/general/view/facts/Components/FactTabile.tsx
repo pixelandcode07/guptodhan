@@ -1,61 +1,76 @@
-// app/(your-path)/FAQS/Components/FAQSTabile.tsx
+// app/(your-path)/facts/Components/FactsTable.tsx
 'use client';
 
 import { DataTable } from '@/components/TableHelper/data-table';
-import { faq_columns } from '@/components/TableHelper/faq_columns';
 import { Button } from '@/components/ui/button';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import axios from 'axios';
 import { toast } from 'sonner';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { fact_columns } from '@/components/TableHelper/fact_columns'; // 👉 তুমি তোমার columns এখানে ডিফাইন করবে
 
-interface FAQSTabileProps {
-  faq: any[];
-  refreshData: () => void;
-  loading: boolean;
+interface FactsTableProps {
+  initialData: any[];
 }
 
-export default function FAQSTabile({ faq, refreshData, loading }: FAQSTabileProps) {
-  const deleteFAQ = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this FAQ?')) return;
-    const toastId = toast.loading('Deleting FAQ...');
+export default function FactsTable({ initialData }: FactsTableProps) {
+  const [facts, setFacts] = useState(initialData);
+  const [loading, setLoading] = useState(false);
+
+  const refreshData = async () => {
     try {
-      await axios.delete(`http://localhost:3000/api/v1/faq/${id}`);
-      toast.success('FAQ deleted successfully!', { id: toastId });
+      setLoading(true);
+      const res = await axios.get('/api/v1/public/about/facts');
+      setFacts(res.data.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteFact = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this Fact?')) return;
+    const toastId = toast.loading('Deleting Fact...');
+    try {
+      await axios.delete(`/api/v1/about/facts/${id}`);
+      toast.success('Fact deleted successfully!', { id: toastId });
       refreshData();
     } catch (err) {
       console.error(err);
-      toast.error('Failed to delete FAQ', { id: toastId });
+      toast.error('Failed to delete Fact', { id: toastId });
     }
   };
 
   const columnsWithActions = [
-    ...faq_columns,
+    ...fact_columns,
     {
       header: 'Actions',
       cell: ({ row }: any) => {
-        const faqItem = row.original;
+        const factItem = row.original;
         return (
           <div className="flex gap-2">
             <Link
               href={{
-                pathname: '/general/view/all/faqs/edit',
+                pathname: '/general/view/facts/edit',
                 query: {
-                  id: faqItem._id,
-                  category: faqItem.category,
-                  question: faqItem.question,
-                  answer: faqItem.answer,
-                  isActive: faqItem.isActive,
+                  id: factItem._id,
+                  factTitle: factItem.factTitle,
+                  factCount: factItem.factCount,
+                  shortDescription: factItem.shortDescription,
+                  status: factItem.status,
                 },
-              }}
-            >
+              }}>
               <Button size="sm" variant="outline">
                 <Edit className="w-4 h-4" />
               </Button>
             </Link>
 
-            <Button size="sm" variant="destructive" onClick={() => deleteFAQ(faqItem._id)}>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => deleteFact(factItem._id)}>
               <Trash2 className="w-4 h-4" />
             </Button>
           </div>
@@ -68,13 +83,13 @@ export default function FAQSTabile({ faq, refreshData, loading }: FAQSTabileProp
     <div className="p-5">
       <div className="py-4 flex justify-end gap-2">
         <Button size="sm" asChild>
-          <Link href="/general/view/all/faqs/add">
+          <Link href="/general/view/all/facts/add">
             <Plus className="h-4 w-4 mr-2" />
-            Add New FAQ
+            Add New Fact
           </Link>
         </Button>
       </div>
-      <DataTable columns={columnsWithActions} data={faq} loading={loading} />
+      <DataTable columns={columnsWithActions} data={facts} />
     </div>
   );
 }
