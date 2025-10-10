@@ -7,7 +7,7 @@ export interface IPromoCode extends Document {
   startDate: Date;
   endingDate: Date;
   type: string;
-  shortDescription: string;
+  shortDescription?: string;
   value: number;
   minimumOrderAmount: number;
   code: string;

@@ -7,17 +7,19 @@ import BasicInfo from './fields/BasicInfo';
 import ChildMediaUpload from './fields/MediaUpload';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
 
 
 export type ChildCategoryInputs = {
     category: string;
     subCategory: string;
     name: string;
-    iconFile?: FileList;
+    iconFile?: File;
 };
 
 export default function ChildCategory() {
-    const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<ChildCategoryInputs>();
+    const router = useRouter();
+    const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<ChildCategoryInputs>();
     const [categories, setCategories] = useState<{ label: string, value: string }[]>([]);
     const [subCategories, setSubCategories] = useState<{ label: string, value: string }[]>([]);
 
@@ -57,7 +59,7 @@ export default function ChildCategory() {
             formData.append('status', 'active');
             if (data.category) formData.append('category', data.category);
             if (data.subCategory) formData.append('subCategory', data.subCategory);
-            if (data.iconFile && data.iconFile[0]) formData.append('childCategoryIcon', data.iconFile[0]);
+            if (data.iconFile) formData.append('childCategoryIcon', data.iconFile);
 
             console.log('📝 Form data being sent:', {
                 childCategoryId,
@@ -82,7 +84,7 @@ export default function ChildCategory() {
 
             const result = await response.json();
             console.log('Success:', result);
-            window.location.href = '/general/view/all/childcategory';
+            router.replace('/general/view/all/childcategory');
         } catch (e) {
             console.error('Create child category failed:', e);
             alert(`Failed to create child category: ${e instanceof Error ? e.message : 'Unknown error'}`);
@@ -90,16 +92,36 @@ export default function ChildCategory() {
     };
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="bg-[#f8f9fb] m-5 md:m-10 p-5 border border-[#e4e7eb] rounded-xs space-y-5">
-            <BasicInfo register={register} errors={errors} categories={categories} subCategories={subCategories} />
-            <ChildMediaUpload setValue={setValue} />
-            <div className="text-center">
-                <Button variant={'BlueBtn'} type="submit">
-                    <Save />
-                    Save Child Category
-                </Button>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+            <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">
+                <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-3 sm:p-4 md:p-6 lg:p-8">
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
+                        {/* Basic Information */}
+                        <div className="space-y-3 sm:space-y-4">
+                            <BasicInfo register={register} errors={errors} categories={categories} subCategories={subCategories} />
+                        </div>
+
+                        {/* Media Upload Section */}
+                        <div className="space-y-3 sm:space-y-4">
+                            <ChildMediaUpload setValue={setValue} />
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex justify-center pt-3 sm:pt-4 border-t border-gray-200">
+                            <Button 
+                                variant={'BlueBtn'} 
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full sm:w-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md flex items-center justify-center gap-2"
+                            >
+                                <Save className="w-4 h-4 sm:w-5 sm:h-5" />
+                                {isSubmitting ? 'Saving...' : 'Save Child Category'}
+                            </Button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </form>
+        </div>
     );
 }
 

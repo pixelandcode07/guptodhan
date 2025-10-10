@@ -9,6 +9,8 @@ export type ChildCategory = {
   id: number
   category: string
   subCategory: string
+  categoryId?: string
+  subCategoryId?: string
   icon?: string
   name: string
   slug: string

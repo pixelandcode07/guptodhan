@@ -16,7 +16,6 @@ const getAllPromoCodesFromDB = async () => {
 
 // Get promo code by code string
 const getPromoCodeByCodeFromDB = async (id: string) => {
-  console.log("Searching for promo code:", id);
   const result = await PromoCodeModel.findOne({ _id: id });
   return result;
 };

@@ -122,26 +122,94 @@ const getSubCategoriesByCategory = async (req: NextRequest, { params }: { params
   });
 };
 
-// Update subcategory
-const updateSubCategory = async (req: NextRequest, { params }: { params: { id: string } }) => {
-  await dbConnect();
-  const { id } = params;
-  const body = await req.json();
-  const validatedData = updateSubCategoryValidationSchema.parse(body);
+// Update subcategory (await params; accept multipart form-data like create)
+const updateSubCategory = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  try {
+    console.log('🚀 Starting subcategory update...');
+    await dbConnect();
+    console.log('✅ Database connected');
+    
+    const { id } = await params;
+    console.log('📝 Updating subcategory ID:', id);
 
-  const payload = {
-    ...validatedData,
-    ...(validatedData.category && { category: new Types.ObjectId(validatedData.category) }),
-  };
+    // Accept multipart form-data to support icon/banner updates
+    const form = await req.formData();
+    console.log('✅ Form data parsed');
 
-  const result = await SubCategoryServices.updateSubCategoryInDB(id, payload as Partial<ISubCategory>);
+    const name = (form.get('name') as string) ?? undefined;
+    const slug = (form.get('slug') as string) ?? undefined;
+    const status = (form.get('status') as string) ?? undefined; // 'active' | 'inactive'
+    const isFeaturedStr = (form.get('isFeatured') as string) ?? undefined; // 'true' | 'false'
+    const isNavbarStr = (form.get('isNavbar') as string) ?? undefined; // 'true' | 'false'
+    const categoryId = (form.get('category') as string) ?? undefined; // optional category ObjectId
 
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'SubCategory updated successfully!',
-    data: result,
-  });
+    const iconFile = form.get('subCategoryIcon') as File | null;
+    const bannerFile = form.get('subCategoryBanner') as File | null;
+
+    console.log('📝 Form data extracted:', { name, slug, status, isFeaturedStr, isNavbarStr, categoryId });
+
+    const updatePayload: any = {};
+    if (name !== undefined) updatePayload.name = name;
+    if (slug !== undefined) updatePayload.slug = slug;
+    if (status !== undefined) updatePayload.status = status;
+    if (isFeaturedStr !== undefined) updatePayload.isFeatured = isFeaturedStr === 'true';
+    if (isNavbarStr !== undefined) updatePayload.isNavbar = isNavbarStr === 'true';
+    
+    // Only convert to ObjectId if categoryId is provided and valid
+    if (categoryId !== undefined && categoryId.trim() !== '') {
+      if (Types.ObjectId.isValid(categoryId)) {
+        // Keep as string for Zod; convert to ObjectId after validation
+        updatePayload.category = categoryId;
+      } else {
+        console.warn(`Skipping category update because provided value is not an ObjectId: ${categoryId}`);
+      }
+    }
+
+    if (iconFile) {
+      console.log('📤 Uploading icon file...');
+      const b = Buffer.from(await iconFile.arrayBuffer());
+      updatePayload.subCategoryIcon = (await uploadToCloudinary(b, 'ecommerce-subcategory/icons')).secure_url;
+      console.log('✅ Icon uploaded:', updatePayload.subCategoryIcon);
+    }
+
+    if (bannerFile) {
+      console.log('📤 Uploading banner file...');
+      const b = Buffer.from(await bannerFile.arrayBuffer());
+      updatePayload.subCategoryBanner = (await uploadToCloudinary(b, 'ecommerce-subcategory/banners')).secure_url;
+      console.log('✅ Banner uploaded:', updatePayload.subCategoryBanner);
+    }
+
+    console.log('📋 Update payload prepared:', updatePayload);
+
+    // Validate using schema (fields optional)
+    const validatedData = updateSubCategoryValidationSchema.parse(updatePayload);
+    console.log('✅ Data validated');
+
+    // Convert string category -> ObjectId for DB
+    const dbPayload: Partial<ISubCategory> = { ...(validatedData as any) };
+    if (typeof (dbPayload as any).category === 'string') {
+      (dbPayload as any).category = new Types.ObjectId((dbPayload as any).category);
+    }
+
+    const result = await SubCategoryServices.updateSubCategoryInDB(id, dbPayload);
+    console.log('✅ Subcategory updated in database:', result);
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: 'SubCategory updated successfully!',
+      data: result,
+    });
+  } catch (error: unknown) {
+    console.error('❌ Error updating subcategory:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: errorMessage,
+      data: null,
+    });
+  }
 };
 
 // Delete subcategory

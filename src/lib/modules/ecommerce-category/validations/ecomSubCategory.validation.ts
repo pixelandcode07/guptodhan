@@ -20,6 +20,7 @@ export const updateSubCategoryValidationSchema = z.object({
   subCategoryIcon: z.string().optional(),
   subCategoryBanner: z.string().optional(),
   isFeatured: z.boolean().optional(),
+  isNavbar: z.boolean().optional(),
   slug: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),
 });
