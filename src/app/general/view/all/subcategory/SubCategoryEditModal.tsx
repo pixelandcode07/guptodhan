@@ -14,6 +14,7 @@ type SubCategory = {
   _id?: string;
   name: string;
   category?: { _id: string; name: string } | string;
+  categoryId?: string;
   subCategoryIcon?: string;
   subCategoryBanner?: string;
   slug?: string;
@@ -71,9 +72,13 @@ export default function SubCategoryEditModal({ open, onOpenChange, data, onSaved
       setStatus((data.status || "Active").toLowerCase());
       setIconFile(null);
       setBannerFile(null);
-      const cat = data.category;
-      if (typeof cat === 'object' && cat?._id) setCategoryId(cat._id);
-      else if (typeof cat === 'string') setCategoryId(cat);
+      if (data.categoryId) {
+        setCategoryId(data.categoryId);
+      } else {
+        const cat = data.category;
+        if (typeof cat === 'object' && (cat as any)?._id) setCategoryId((cat as any)._id);
+        else if (typeof cat === 'string') setCategoryId(cat);
+      }
     }
   }, [data, open]);
 

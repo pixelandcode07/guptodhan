@@ -1,6 +1,6 @@
 import { ISubCategory } from '../interfaces/ecomSubCategory.interface';
 import { SubCategoryModel } from '../models/ecomSubCategory.model';
-import { CategoryModel } from '../models/ecomCategory.model'; // Import to ensure CategoryModel is registered
+import '../models/ecomCategory.model'; // ensure CategoryModel registered
 import { Types } from 'mongoose';
 import { ClassifiedAd } from '../../classifieds/ad.model';
 
@@ -33,7 +33,7 @@ const getSubCategoriesByCategoryFromDB = async (categoryId: string) => {
 
 // Update subcategory
 const updateSubCategoryInDB = async (id: string, payload: Partial<ISubCategory>) => {
-  const result = await SubCategoryModel.findByIdAndUpdate(id, payload, { new: true });
+  const result = await SubCategoryModel.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
   if (!result) {
     throw new Error('SubCategory not found to update.');
   }

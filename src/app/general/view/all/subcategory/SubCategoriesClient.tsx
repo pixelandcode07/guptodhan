@@ -42,7 +42,9 @@ export default function SubCategoriesClient() {
         _id: it._id,
         subCategoryId: it.subCategoryId,
         id: index + 1,
-        category: typeof it.category === 'object' && it.category ? it.category.name : (it.category || ''),
+        category: typeof it.category === 'object' && it.category ? (it.category as any).name : (it.category || ''),
+        // Preserve category id for edit modal to avoid invalid ObjectId errors
+        categoryId: typeof it.category === 'object' && it.category ? (it.category as any)._id : (it.category || ''),
         name: it.name,
         subCategoryIcon: it.subCategoryIcon,
         subCategoryBanner: it.subCategoryBanner,
