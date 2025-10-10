@@ -6,20 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Color } from "@/components/TableHelper/color_columns";
+import { type Unit } from "@/components/TableHelper/unit_columns";
 
-interface ColorModalProps {
+interface UnitModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { name: string; code: string; status?: string }) => void;
-  editing: Color | null;
+  onSubmit: (data: { name: string; status?: string }) => void;
+  editing: Unit | null;
   onClose: () => void;
 }
 
-export default function ColorModal({ open, onOpenChange, onSubmit, editing, onClose }: ColorModalProps) {
+export default function UnitModal({ open, onOpenChange, onSubmit, editing, onClose }: UnitModalProps) {
   const [formData, setFormData] = useState({
     name: "",
-    code: "",
     status: "Active",
   });
 
@@ -27,13 +26,11 @@ export default function ColorModal({ open, onOpenChange, onSubmit, editing, onCl
     if (editing) {
       setFormData({
         name: editing.name,
-        code: editing.code,
         status: editing.status,
       });
     } else {
       setFormData({
         name: "",
-        code: "",
         status: "Active",
       });
     }
@@ -41,7 +38,7 @@ export default function ColorModal({ open, onOpenChange, onSubmit, editing, onCl
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.code.trim()) {
+    if (!formData.name.trim()) {
       return;
     }
     onSubmit(formData);
@@ -50,7 +47,6 @@ export default function ColorModal({ open, onOpenChange, onSubmit, editing, onCl
   const handleClose = () => {
     setFormData({
       name: "",
-      code: "",
       status: "Active",
     });
     onClose();
@@ -60,61 +56,58 @@ export default function ColorModal({ open, onOpenChange, onSubmit, editing, onCl
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{editing ? "Edit Color" : "Add New Color"}</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl font-semibold">
+            {editing ? "Edit Unit" : "Add New Unit"}
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Color Name</Label>
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          <div className="space-y-2 sm:space-y-3">
+            <Label htmlFor="name" className="text-sm sm:text-base font-medium">
+              Unit Name
+            </Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Enter color name"
+              placeholder="e.g. Kilogram, Liter, Piece"
               required
+              className="h-11 sm:h-12 text-sm sm:text-base"
             />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="code">Color Code</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="code"
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                placeholder="#000000"
-                required
-                className="flex-1"
-              />
-              <div 
-                className="w-10 h-10 rounded border border-gray-300"
-                style={{ backgroundColor: formData.code || "#ffffff" }}
-              />
-            </div>
           </div>
 
           {editing && (
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+            <div className="space-y-2 sm:space-y-3">
+              <Label htmlFor="status" className="text-sm sm:text-base font-medium">
+                Status
+              </Label>
               <Select
                 value={formData.status}
                 onValueChange={(value) => setFormData({ ...formData, status: value })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-11 sm:h-12 text-sm sm:text-base">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
+                  <SelectItem value="Active" className="text-sm sm:text-base">Active</SelectItem>
+                  <SelectItem value="Inactive" className="text-sm sm:text-base">Inactive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           )}
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={handleClose}>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 sm:pt-6">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleClose}
+              className="w-full sm:w-auto h-11 sm:h-12 text-sm sm:text-base"
+            >
               Cancel
             </Button>
-            <Button type="submit" className="bg-green-600 hover:bg-green-700">
+            <Button 
+              type="submit" 
+              className="w-full sm:w-auto h-11 sm:h-12 text-sm sm:text-base bg-green-600 hover:bg-green-700"
+            >
               {editing ? "Update" : "Create"}
             </Button>
           </div>
