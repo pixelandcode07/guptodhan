@@ -1,6 +1,7 @@
-import PromoCodesClient from './PromoCodesClient';
+
 import dbConnect from '@/lib/db';
 import { PromoCodeServices } from '@/lib/modules/promo-code/promoCode.service';
+import PromoCodesClient from './components/PromoCodesClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,9 +22,5 @@ export default async function ViewAllPromoCodesPage() {
     shortDescription: it.shortDescription,
     _id: (it?._id && typeof it._id === 'object' && 'toString' in it._id) ? (it._id as any).toString() : String(it._id),
   }));
-  return (
-    <div className="m-5 p-5 border ">
-      <PromoCodesClient initialRows={rows} />
-    </div>
-  );
+  return <PromoCodesClient initialRows={rows} />;
 }

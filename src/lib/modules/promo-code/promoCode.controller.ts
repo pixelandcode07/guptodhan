@@ -3,21 +3,60 @@ import { StatusCodes } from 'http-status-codes';
 import { sendResponse } from '@/lib/utils/sendResponse';
 import { createPromoCodeValidationSchema, updatePromoCodeValidationSchema } from './promoCode.validation';
 import { PromoCodeServices } from './promoCode.service';
+import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 import dbConnect from '@/lib/db';
 
 // Create a new promo code
 const createPromoCode = async (req: NextRequest) => {
     await dbConnect();
-    const body = await req.json();
-    const validatedData = createPromoCodeValidationSchema.parse(body);
+    
+    const formData = await req.formData();
+    
+    // Extract form fields
+    const promoCodeId = formData.get('promoCodeId') as string;
+    const title = formData.get('title') as string;
+    const startDate = formData.get('startDate') as string;
+    const endingDate = formData.get('endingDate') as string;
+    const type = formData.get('type') as string;
+    const shortDescription = formData.get('shortDescription') as string;
+    const value = formData.get('value') as string;
+    const minimumOrderAmount = formData.get('minimumOrderAmount') as string;
+    const code = formData.get('code') as string;
+    const status = formData.get('status') as string;
+    const iconFile = formData.get('icon') as File;
 
+    // Handle icon upload
+    let iconUrl = '';
+    if (iconFile && iconFile.size > 0) {
+        const buffer = Buffer.from(await iconFile.arrayBuffer());
+        const uploaded = await uploadToCloudinary(buffer, 'promo-codes/icons');
+        iconUrl = uploaded.secure_url;
+    }
+
+    // Prepare payload for validation
     const payload = {
+        promoCodeId,
+        title,
+        startDate,
+        endingDate,
+        type,
+        shortDescription,
+        value: Number(value),
+        minimumOrderAmount: Number(minimumOrderAmount),
+        code,
+        status,
+        icon: iconUrl,
+    };
+
+    const validatedData = createPromoCodeValidationSchema.parse(payload);
+
+    const finalPayload = {
         ...validatedData,
         startDate: new Date(validatedData.startDate),
         endingDate: new Date(validatedData.endingDate),
     };
 
-    const result = await PromoCodeServices.createPromoCodeInDB(payload);
+    const result = await PromoCodeServices.createPromoCodeInDB(finalPayload);
 
     return sendResponse({
         success: true,
@@ -61,7 +100,7 @@ const updatePromoCode = async (req: NextRequest, { params }: { params: { id: str
     const body = await req.json();
     const validatedData = updatePromoCodeValidationSchema.parse(body);
 
-    const payload = {
+    const payload: Record<string, unknown> = {
         ...validatedData,
         ...(validatedData.startDate && { startDate: new Date(validatedData.startDate) }),
         ...(validatedData.endingDate && { endingDate: new Date(validatedData.endingDate) }),
