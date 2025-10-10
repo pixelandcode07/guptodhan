@@ -1,8 +1,7 @@
-import { DataTable } from "@/components/TableHelper/data-table"
-import { customer_columns, Customer } from "@/components/TableHelper/customer_columns"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Download } from "lucide-react"
+import { Customer } from "@/components/TableHelper/customer_columns";
+import CustomersClient from './components/CustomersClient';
+
+export const dynamic = 'force-dynamic';
 
 function getData(): Customer[] {
   return [
@@ -121,43 +120,5 @@ function getData(): Customer[] {
 
 export default function ViewAllCustomersPage() {
   const data = getData();
-  return (
-    <div className="m-5 p-5 border ">
-      <div>
-        <h1 className="text-lg font-semibold border-l-2 border-blue-500">
-          <span className="pl-5">View All Customers</span>
-        </h1>
-      </div>
-      
-      <div className="mt-4 mb-4">
-        <h2 className="text-md font-medium">Customers List</h2>
-      </div>
-
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span>Show</span>
-            <select className="border border-gray-300 rounded px-2 py-1">
-              <option value="10">10</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-            <span>entries</span>
-          </div>
-          <Button className="bg-green-600 hover:bg-green-700">
-            <Download className="w-4 h-4 mr-2" />
-            Download As Excel
-          </Button>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <span>Search:</span>
-          <Input type="text" className="border border-gray-500" />
-        </div>
-      </div>
-      
-      <DataTable columns={customer_columns} data={data} />
-    </div>
-  );
+  return <CustomersClient initialRows={data} />;
 }
