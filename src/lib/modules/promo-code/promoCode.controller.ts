@@ -80,9 +80,9 @@ const getAllPromoCodes = async () => {
 };
 
 // Get promo code by code string
-const getPromoCodeByCode = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const getPromoCodeByCode = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = await  params;
+    const { id } = await params;
     const result = await PromoCodeServices.getPromoCodeByCodeFromDB(id);
 
     return sendResponse({
@@ -94,9 +94,9 @@ const getPromoCodeByCode = async (req: NextRequest, { params }: { params: { id: 
 };
 
 // Update promo code
-const updatePromoCode = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const updatePromoCode = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     const formData = await req.formData();
     
     // Extract form fields
@@ -156,9 +156,9 @@ const updatePromoCode = async (req: NextRequest, { params }: { params: { id: str
 };
 
 // Delete promo code
-const deletePromoCode = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const deletePromoCode = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     await PromoCodeServices.deletePromoCodeFromDB(id);
 
     return sendResponse({
