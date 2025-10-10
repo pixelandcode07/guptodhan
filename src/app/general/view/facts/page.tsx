@@ -17,7 +17,6 @@ const fetchFacts = async () => {
 
 export default async function FactsPage() {
   const facts = await fetchFacts();
-  console.log(facts);
 
   return (
     <div className="bg-white pt-5 px-5 min-h-screen">

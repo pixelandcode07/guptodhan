@@ -5,25 +5,27 @@ import axios from 'axios';
 
 export const revalidate = 0; // optional: disable caching
 
-export default async function FAQS() {
-  let faq: any[] = [];
-
+const fetchFAQS = async () => {
   try {
-    const res = await axios.get('http://localhost:3000/api/v1/faq');
-    if (res.data?.success) {
-      faq = res.data.data;
-    }
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const { data } = await axios.get(`${baseUrl}/api/v1/faq`);
+    return data;
   } catch (error) {
-    console.error('Failed to fetch FAQs:', error);
+    console.log('fetch facts Error:', error);
+    return { data: [] };
   }
-console.log(faq)
+};
+
+export default async function FAQS() {
+  const faq = await fetchFAQS();
+  console.log(faq);
   return (
     <div className="bg-white">
       <div className="flex w-full justify-between items-center pt-5 flex-wrap">
         <SectionTitle text="FAQ List" />
       </div>
 
-      <FAQSTabile faq={faq} />
+      <FAQSTabile faq={faq.data} />
     </div>
   );
 }
