@@ -8,7 +8,6 @@ const wishlistSchema = new Schema<IWishlist>(
     userEmail: { type: String, required: true, trim: true },
     userID: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     productID: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
-    createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );

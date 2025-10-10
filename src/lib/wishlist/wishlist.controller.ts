@@ -23,6 +23,7 @@ const createWishlist = async (req: NextRequest) => {
   } as Partial<IWishlist>;
 
   const result = await WishlistServices.createWishlistInDB(payload);
+  console.log(result)
 
   return sendResponse({
     success: true,
