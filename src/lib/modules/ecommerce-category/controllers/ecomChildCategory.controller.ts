@@ -140,26 +140,18 @@ const updateChildCategory = async (req: NextRequest, { params }: { params: Promi
 
     console.log('📝 Form data extracted:', { name, slug, status, categoryId, subCategoryId });
 
-    const updatePayload: any = {};
+    const updatePayload: Record<string, unknown> = {};
     if (name !== undefined) updatePayload.name = name;
     if (slug !== undefined) updatePayload.slug = slug;
     if (status !== undefined) updatePayload.status = status;
     
-    // Only convert to ObjectId if IDs are provided and valid
+    // Keep as strings for validation, convert to ObjectId later
     if (categoryId !== undefined && categoryId.trim() !== '') {
-      if (Types.ObjectId.isValid(categoryId)) {
-        updatePayload.category = categoryId;
-      } else {
-        console.warn(`Skipping category update because provided value is not an ObjectId: ${categoryId}`);
-      }
+      updatePayload.category = categoryId;
     }
     
     if (subCategoryId !== undefined && subCategoryId.trim() !== '') {
-      if (Types.ObjectId.isValid(subCategoryId)) {
-        updatePayload.subCategory = subCategoryId;
-      } else {
-        console.warn(`Skipping subcategory update because provided value is not an ObjectId: ${subCategoryId}`);
-      }
+      updatePayload.subCategory = subCategoryId;
     }
 
     if (iconFile) {
@@ -176,12 +168,21 @@ const updateChildCategory = async (req: NextRequest, { params }: { params: Promi
     console.log('✅ Data validated');
 
     // Convert string IDs -> ObjectId for DB
-    const dbPayload: Partial<IChildCategory> = { ...(validatedData as any) };
-    if (typeof (dbPayload as any).category === 'string') {
-      (dbPayload as any).category = new Types.ObjectId((dbPayload as any).category);
+    const dbPayload: Partial<IChildCategory> = {};
+    
+    // Copy non-ObjectId fields
+    if (validatedData.childCategoryId) dbPayload.childCategoryId = validatedData.childCategoryId;
+    if (validatedData.name) dbPayload.name = validatedData.name;
+    if (validatedData.icon) dbPayload.icon = validatedData.icon;
+    if (validatedData.slug) dbPayload.slug = validatedData.slug;
+    if (validatedData.status) dbPayload.status = validatedData.status;
+    
+    // Convert string IDs to ObjectIds
+    if (validatedData.category && typeof validatedData.category === 'string') {
+      dbPayload.category = new Types.ObjectId(validatedData.category);
     }
-    if (typeof (dbPayload as any).subCategory === 'string') {
-      (dbPayload as any).subCategory = new Types.ObjectId((dbPayload as any).subCategory);
+    if (validatedData.subCategory && typeof validatedData.subCategory === 'string') {
+      dbPayload.subCategory = new Types.ObjectId(validatedData.subCategory);
     }
 
     const result = await ChildCategoryServices.updateChildCategoryInDB(id, dbPayload);

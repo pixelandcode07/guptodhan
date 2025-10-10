@@ -127,83 +127,142 @@ export default function SubCategoryEditModal({ open, onOpenChange, data, onSaved
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Edit Subcategory</DialogTitle>
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="pb-4 border-b border-gray-200">
+          <DialogTitle className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </div>
+            Edit Subcategory
+          </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <div className="space-y-4 sm:space-y-6 py-4">
+          {/* Basic Information Section */}
+          <div className="space-y-4">
+            <div className="border-l-4 border-blue-500 pl-3">
+              <h3 className="text-sm sm:text-base font-medium text-gray-900">Basic Information</h3>
+              <p className="text-xs text-gray-600">Update the essential details</p>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Category</Label>
+                <Select value={categoryId} onValueChange={setCategoryId}>
+                  <SelectTrigger className="h-10 sm:h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Name</Label>
+                <Input 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)}
+                  className="h-10 sm:h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Enter subcategory name"
+                />
+              </div>
+            </div>
+            
             <div className="space-y-2">
-              <Label>Category</Label>
-              <Select value={categoryId} onValueChange={setCategoryId}>
-                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+              <Label className="text-sm font-medium text-gray-700">Slug</Label>
+              <Input 
+                value={slug} 
+                onChange={(e) => setSlug(e.target.value)}
+                className="h-10 sm:h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                placeholder="Enter slug"
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Featured</Label>
+                <Select value={isFeatured} onValueChange={setIsFeatured}>
+                  <SelectTrigger className="h-10 sm:h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Show On Navbar</Label>
+                <Select value={isNavbar} onValueChange={setIsNavbar}>
+                  <SelectTrigger className="h-10 sm:h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Status</Label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger className="h-10 sm:h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
                 <SelectContent>
-                  {categories.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                  ))}
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Slug</Label>
-            <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Featured</Label>
-              <Select value={isFeatured} onValueChange={setIsFeatured}>
-                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="yes">Yes</SelectItem>
-                  <SelectItem value="no">No</SelectItem>
-                </SelectContent>
-              </Select>
+          {/* Media Upload Section */}
+          <div className="space-y-4">
+            <div className="border-l-4 border-blue-500 pl-3">
+              <h3 className="text-sm sm:text-base font-medium text-gray-900">Media Upload</h3>
+              <p className="text-xs text-gray-600">Update the subcategory icon and banner</p>
             </div>
-            <div className="space-y-2">
-              <Label>Show On Navbar</Label>
-              <Select value={isNavbar} onValueChange={setIsNavbar}>
-                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="yes">Yes</SelectItem>
-                  <SelectItem value="no">No</SelectItem>
-                </SelectContent>
-              </Select>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Icon</Label>
+                <UploadImageBtn value={iconFile} onChange={setIconFile} />
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Banner</Label>
+                <UploadImageBtn value={bannerFile} onChange={setBannerFile} />
+              </div>
             </div>
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Icon</Label>
-              <UploadImageBtn value={iconFile} onChange={setIconFile} />
-            </div>
-            <div className="space-y-2">
-              <Label>Banner</Label>
-              <UploadImageBtn value={bannerFile} onChange={setBannerFile} />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Status</Label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Cancel</Button>
-            <Button onClick={onSubmit} disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
-          </div>
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:justify-end pt-4 border-t border-gray-200">
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)} 
+            disabled={loading}
+            className="w-full sm:w-auto h-10 sm:h-11"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={onSubmit} 
+            disabled={loading}
+            className="w-full sm:w-auto h-10 sm:h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+          >
+            {loading ? "Saving..." : "Save Changes"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
