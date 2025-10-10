@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import UploadImage from "@/components/ReusableComponents/UploadImage";
 import { toast } from "sonner";
 
 type PromoCode = {
@@ -49,8 +50,10 @@ export default function PromoCodeEditModal({
     shortDescription?: string;
   }) => void;
 }) {
+  const [promoCodeId, setPromoCodeId] = useState("");
   const [title, setTitle] = useState("");
-  const [icon, setIcon] = useState("");
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [existingIcon, setExistingIcon] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endingDate, setEndingDate] = useState("");
   const [type, setType] = useState<"Percentage" | "Fixed Amount">("Percentage");
@@ -63,8 +66,10 @@ export default function PromoCodeEditModal({
 
   useEffect(() => {
     if (data) {
+      setPromoCodeId(data._id || "");
       setTitle(data.title || "");
-      setIcon(data.icon || "");
+      setExistingIcon(data.icon || "");
+      setIconFile(null);
       setStartDate(data.effective_date || "");
       setEndingDate(data.expiry_date || "");
       setType(data.type || "Percentage");
@@ -81,23 +86,28 @@ export default function PromoCodeEditModal({
     
     setLoading(true);
     try {
-      const payload = {
-        title,
-        icon,
-        startDate,
-        endingDate,
-        type,
-        value: Number(value),
-        minimumOrderAmount: Number(minimumOrderAmount),
-        code,
-        shortDescription,
-        status,
-      };
+      const formData = new FormData();
+      formData.append('promoCodeId', promoCodeId);
+      formData.append('title', title);
+      formData.append('startDate', startDate);
+      formData.append('endingDate', endingDate);
+      formData.append('type', type);
+      formData.append('value', value);
+      formData.append('minimumOrderAmount', minimumOrderAmount || '0');
+      formData.append('code', code);
+      formData.append('shortDescription', shortDescription);
+      formData.append('status', status);
+      
+      // Only append icon if a new file is selected, otherwise keep existing
+      if (iconFile) {
+        formData.append('icon', iconFile);
+      } else if (existingIcon) {
+        formData.append('icon', existingIcon);
+      }
 
       const res = await fetch(`/api/v1/promo-code/${data._id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: formData,
       });
 
       if (!res.ok) {
@@ -119,7 +129,7 @@ export default function PromoCodeEditModal({
           min_spend: minimumOrderAmount,
           code,
           status: status === "active" ? "Active" : "Inactive",
-          icon,
+          icon: iconFile ? URL.createObjectURL(iconFile) : existingIcon,
           shortDescription,
         });
       }
@@ -179,13 +189,43 @@ export default function PromoCodeEditModal({
             </div>
             
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">Icon URL</Label>
-              <Input 
-                value={icon} 
-                onChange={(e) => setIcon(e.target.value)}
-                className="h-10 sm:h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                placeholder="https://example.com/icon.png"
-              />
+              <Label className="text-sm font-medium text-gray-700">Promo Icon</Label>
+              <div className="space-y-3">
+                {/* Show existing icon if available */}
+                {existingIcon && !iconFile && (
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
+                    <img 
+                      src={existingIcon} 
+                      alt="Current icon" 
+                      className="w-12 h-12 object-cover rounded-lg"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-600">Current icon</p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Upload new icon */}
+                <UploadImage
+                  name="promo_icon_edit"
+                  onChange={(_name, file) => setIconFile(file)}
+                />
+                
+                {/* Show preview of new icon */}
+                {iconFile && (
+                  <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <img 
+                      src={URL.createObjectURL(iconFile)} 
+                      alt="New icon preview" 
+                      className="w-12 h-12 object-cover rounded-lg"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm text-blue-700">New icon selected</p>
+                      <p className="text-xs text-blue-600">{iconFile.name}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             
             <div className="space-y-2">

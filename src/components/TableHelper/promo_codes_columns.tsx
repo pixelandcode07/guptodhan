@@ -14,6 +14,8 @@ export type PromoCode = {
   min_spend: string
   code: string
   status: "Active" | "Inactive" | "Expired"
+  icon?: string
+  shortDescription?: string
   _id: string
 }
 
