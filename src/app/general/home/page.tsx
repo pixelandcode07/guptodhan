@@ -13,27 +13,30 @@ export default async function DashboardPage() {
 
   const kpiCardData = [
     { title: 'No of Orders (Monthly)', value: analyticsData.stats.monthlyOrders, color: '#3b82f6', iconName: 'ShoppingCart', iconColor: '#3b82f6' },
-    { title: 'Total Revenue (Monthly)', value: `$${analyticsData.stats.monthlyRevenue.toLocaleString()}`, color: '#22c55e', iconName: 'DollarSign', iconColor: '#22c55e' },
+    { title: 'Total Revenue (Monthly)', value: `৳${analyticsData.stats.monthlyRevenue.toLocaleString()}`, color: '#22c55e', iconName: 'DollarSign', iconColor: '#22c55e' },
     { title: 'Todays Orders', value: analyticsData.stats.todaysOrders, color: '#f97316', iconName: 'Package', iconColor: '#f97316', withButton: true },
     { title: 'Registered Users (Monthly)', value: analyticsData.stats.monthlyRegisteredUsers, color: '#ef4444', iconName: 'Users', iconColor: '#ef4444' },
   ];
   
-  // ✅ Fix: Handle empty avatar
+  // ✅ Customer data
   const customerData = analyticsData.recentCustomers.map((user: any) => ({
-      avatar: user.profilePicture || null, // ✅ null instead of empty string
-      name: user.name || 'N/A',
-      phone: user.phoneNumber || 'N/A',
-      email: user.email || 'N/A',
-      location: user.address || 'N/A',
-      date: new Date(user.createdAt).toLocaleString(),
+    avatar: user.profilePicture || null,
+    name: user.name || 'N/A',
+    phone: user.phoneNumber || 'N/A',
+    email: user.email || 'N/A',
+    location: user.address || 'N/A',
+    date: new Date(user.createdAt).toLocaleString(),
   }));
 
+  // ✅ Transaction data - handle payment method properly
   const transactionsData = analyticsData.recentOrders.map((order: any) => ({
-      trxId: order.orderNo,
-      amount: `৳ ${order.totalAmount}`,
-      cardType: 'N/A',
-      payment: order.paymentMethod,
-      status: order.paymentStatus.toUpperCase(),
+    trxId: order.orderId,
+    amount: `৳ ${order.totalAmount?.toLocaleString() || 0}`,
+    cardType: 'N/A',
+    payment: typeof order.paymentMethodId === 'object' && order.paymentMethodId?.name 
+      ? order.paymentMethodId.name 
+      : 'Cash', // ✅ Extract payment method name
+    status: order.paymentStatus,
   }));
 
   return (
@@ -64,20 +67,20 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
-            <h2 className="text-xl font-semibold mb-4">Recent Customers</h2>
-            <DataTable 
-              columns={customer_data_columns} 
-              data={customerData}
-              pageSize={5} // ✅ Show only 5 rows per page
-            />
+          <h2 className="text-xl font-semibold mb-4">Recent Customers</h2>
+          <DataTable 
+            columns={customer_data_columns} 
+            data={customerData}
+  
+          />
         </div>
         <div>
-            <h2 className="text-xl font-semibold mb-4">Payment History</h2>
-            <DataTable 
-              columns={transactions_columns} 
-              data={transactionsData}
-              pageSize={5} // ✅ Show only 5 rows per page
-            />
+          <h2 className="text-xl font-semibold mb-4">Payment History</h2>
+          <DataTable 
+            columns={transactions_columns} 
+            data={transactionsData}
+         
+          />
         </div>
       </div>
     </div>
