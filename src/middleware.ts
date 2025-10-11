@@ -54,7 +54,7 @@ const protectedApiRoutes = [
     '/api/v1/services',
     '/api/v1/donation-categories',
     '/api/v1/donation-campaigns',
-    '/api/v1/orders',
+    '/api/v1/product-order',
 ];
 
 export async function middleware(req: NextRequest) {
