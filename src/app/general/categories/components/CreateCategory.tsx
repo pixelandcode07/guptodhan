@@ -13,7 +13,6 @@ import { toast } from "sonner"
 
 export type Inputs = {
   category_name: string
-  // sub_category_name: string
   category_image: File | null
 }
 
