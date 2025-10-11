@@ -2,54 +2,51 @@ import { OrderModel } from '../product-order/order/order.model';
 import { User } from '../user/user.model';
 
 const getDashboardAnalyticsFromDB = async () => {
-  // --- Date Ranges ---
   const today = new Date();
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(today.getDate() - 30);
-
   const startOfToday = new Date(new Date().setHours(0, 0, 0, 0));
 
-  // --- KPI Queries ---
   const monthlyOrdersQuery = OrderModel.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
   const todaysOrdersQuery = OrderModel.countDocuments({ createdAt: { $gte: startOfToday } });
-  const monthlyUsersQuery = User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
+  const monthlyUsersQuery = User.countDocuments({ role: 'user', createdAt: { $gte: thirtyDaysAgo } });
+  
   const monthlyRevenueQuery = OrderModel.aggregate([
-    { $match: { createdAt: { $gte: thirtyDaysAgo }, paymentStatus: 'paid' } },
+    { $match: { createdAt: { $gte: thirtyDaysAgo }, paymentStatus: 'Paid' } },
     { $group: { _id: null, total: { $sum: '$totalAmount' } } }
   ]);
 
-  // --- Sales Analytics Bar Chart Query ---
   const salesByMonthQuery = OrderModel.aggregate([
-    { $match: { paymentStatus: { $in: ['paid', 'failed'] } } },
+    { $match: { paymentStatus: { $in: ['Paid', 'Failed'] } } },
     {
       $group: {
         _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
-        successful: { $sum: { $cond: [{ $eq: ["$paymentStatus", "paid"] }, 1, 0] } },
-        failed: { $sum: { $cond: [{ $eq: ["$paymentStatus", "failed"] }, 1, 0] } }
+        successful: { $sum: { $cond: [{ $eq: ["$paymentStatus", "Paid"] }, 1, 0] } },
+        failed: { $sum: { $cond: [{ $eq: ["$paymentStatus", "Failed"] }, 1, 0] } }
       }
     },
     { $sort: { "_id.year": 1, "_id.month": 1 } }
   ]);
 
-  // --- Order Ratio Pie Chart Query ---
   const orderStatusRatioQuery = OrderModel.aggregate([
     { $match: { createdAt: { $gte: thirtyDaysAgo } } },
-    { $group: { _id: '$status', count: { $sum: 1 } } }
+    { $group: { _id: '$orderStatus', count: { $sum: 1 } } }
   ]);
 
-  // ✅ Recent Customers (Latest registered users)
-  const recentCustomersQuery = User.find({})
+  const recentCustomersQuery = User.find({ role: 'user' })
     .sort({ createdAt: -1 })
     .limit(10)
-    .select('name email profilePicture phoneNumber address createdAt');
+    .select('name email profilePicture phoneNumber address createdAt')
+    .lean();
 
-  // ✅ Recent Payments (Latest orders)
+  // ✅ Populate remove করলাম - শুধু order data নিচ্ছি
   const recentOrdersQuery = OrderModel.find({})
     .sort({ createdAt: -1 })
     .limit(10)
-    .populate('user', 'name email');
+    .populate('userId', 'name email phoneNumber')
+    .select('orderId totalAmount paymentStatus createdAt')
+    .lean();
 
-  // --- Run all queries in parallel ---
   const [
     monthlyOrdersCount,
     todaysOrdersCount,
@@ -58,7 +55,7 @@ const getDashboardAnalyticsFromDB = async () => {
     salesByMonth,
     orderStatusRatio,
     recentCustomers,
-    latestOrders,
+    recentOrders,
   ] = await Promise.all([
     monthlyOrdersQuery,
     todaysOrdersQuery,
@@ -70,8 +67,8 @@ const getDashboardAnalyticsFromDB = async () => {
     recentOrdersQuery,
   ]);
 
-  // Format data for charts
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  
   const salesAnalyticsData = salesByMonth.map(item => ({
     name: `${monthNames[item._id.month - 1]}-${String(item._id.year).slice(-2)}`,
     successful: item.successful,
@@ -92,8 +89,8 @@ const getDashboardAnalyticsFromDB = async () => {
     },
     salesAnalyticsChart: salesAnalyticsData,
     orderRatioChart: orderRatioData,
-    recentCustomers: recentCustomers, // ✅ Newly registered users
-    recentOrders: latestOrders, // ✅ Recent payments/orders
+    recentCustomers: recentCustomers,
+    recentOrders: recentOrders,
   };
 };
 
