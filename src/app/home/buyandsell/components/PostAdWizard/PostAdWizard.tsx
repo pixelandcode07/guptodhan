@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Category, SubCategory } from '@/types/category';
 import { SelectOption, LocationDataProps } from '@/types/locationType';
 import { ClassifiedAdType } from '@/types/classifiedAdType';
+import axios from 'axios';
+import { useSession } from 'next-auth/react';
 
 // -------------------- Form Data Type --------------------
 type FormData = ClassifiedAdType & {
@@ -28,6 +30,10 @@ export default function PostAdWizard() {
   const [activeTab, setActiveTab] = useState<'step1' | 'step2' | 'step3'>('step1');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState<SubCategory | null>(null);
+
+  const { data: session } = useSession()
+  const token = session?.accessToken
+  // const adminRole = (session?.user as { role?: string })?.role === "admin"
 
   // -------------------- react-hook-form --------------------
   const form: UseFormReturn<FormData> = useForm<FormData>({
@@ -88,42 +94,99 @@ export default function PostAdWizard() {
   };
 
   // -------------------- Submit Handler --------------------
+  // const onSubmit = async (data: FormData) => {
+  //   try {
+  //     const formData = new FormData();
+
+  //     // Append all fields to FormData
+  //     formData.append('title', data.title);
+  //     formData.append('category', data.category?._id || '');
+  //     if (data.subCategory?._id) formData.append('subCategory', data.subCategory._id);
+  //     formData.append('division', data.division?.value || '');
+  //     formData.append('district', data.district?.value || '');
+  //     formData.append('upazila', data.upazila?.value || '');
+  //     formData.append('condition', data.condition);
+  //     formData.append('authenticity', data.authenticity);
+  //     if (data.brand) formData.append('brand', data.brand);
+  //     if (data.productModel) formData.append('productModel', data.productModel);
+  //     if (data.edition) formData.append('edition', data.edition);
+  //     formData.append('description', data.description);
+  //     formData.append('price', data.price.toString());
+  //     formData.append('isNegotiable', data.isNegotiable.toString());
+
+  //     data.images.forEach((img) => {
+  //       if (img instanceof File) {
+  //         formData.append('images', img);
+  //       }
+  //     });
+  //     formData.append('contactDetails[name]', data.contactDetails.name);
+  //     if (data.contactDetails.email) formData.append('contactDetails[email]', data.contactDetails.email);
+  //     formData.append('contactDetails[phone]', data.contactDetails.phone);
+  //     formData.append('contactDetails[isPhoneHidden]', data.contactDetails.isPhoneHidden.toString());
+
+  //     // POST request
+  //     // const res = await fetch('/api/v1/classifieds/ads', {
+  //     //   method: 'POST',
+  //     //   body: formData,
+  //     // });
+  //     const res = await axios.post('/api/v1/classifieds/ads', formData, {
+  //       headers: {
+  //         // "Content-Type": "multipart/form-data",
+  //         Authorization: `Bearer ${token}`,
+  //         // "x-user-role": adminRole,
+  //       },
+  //     });
+
+  //     if (!res.ok) throw new Error('Failed to submit ad');
+
+  //     toast.success('Ad submitted successfully!');
+  //     form.reset();
+  //     setActiveTab('step1');
+  //   } catch (err) {
+  //     console.error(err);
+  //     toast.error('Failed to submit ad');
+  //   }
+  // };
+
   const onSubmit = async (data: FormData) => {
     try {
       const formData = new FormData();
 
-      // Append all fields to FormData
-      formData.append('title', data.title);
+      // -------------------- Append all fields --------------------
+      formData.append('title', data.title || '');
       formData.append('category', data.category?._id || '');
       if (data.subCategory?._id) formData.append('subCategory', data.subCategory._id);
       formData.append('division', data.division?.value || '');
       formData.append('district', data.district?.value || '');
       formData.append('upazila', data.upazila?.value || '');
-      formData.append('condition', data.condition);
-      formData.append('authenticity', data.authenticity);
-      if (data.brand) formData.append('brand', data.brand);
-      if (data.productModel) formData.append('productModel', data.productModel);
-      if (data.edition) formData.append('edition', data.edition);
-      formData.append('description', data.description);
-      formData.append('price', data.price.toString());
+      formData.append('condition', data.condition || '');
+      formData.append('authenticity', data.authenticity || '');
+      if (data.brand) formData.append('brand', data.brand.value || data.brand); // if using Creatable
+      if (data.productModel) formData.append('productModel', data.productModel.value || data.productModel);
+      if (data.edition) formData.append('edition', data.edition.value || data.edition);
+      formData.append('description', data.description || '');
+      formData.append('price', data.price?.toString() || '0');
       formData.append('isNegotiable', data.isNegotiable.toString());
 
-      data.images.forEach((img, i) => {
-        formData.append(`images`, img instanceof File ? img : img);
+      // -------------------- Append images --------------------
+      data.images.forEach((img) => {
+        if (img instanceof File) {
+          formData.append('images', img);
+        }
       });
 
-      formData.append('contactDetails[name]', data.contactDetails.name);
-      if (data.contactDetails.email) formData.append('contactDetails[email]', data.contactDetails.email);
-      formData.append('contactDetails[phone]', data.contactDetails.phone);
-      formData.append('contactDetails[isPhoneHidden]', data.contactDetails.isPhoneHidden.toString());
+      // -------------------- Contact Details --------------------
+      formData.append('contactDetails.name', data.contactDetails.name || '');
+      if (data.contactDetails.email) formData.append('contactDetails.email', data.contactDetails.email);
+      formData.append('contactDetails.phone', data.contactDetails.phone || '');
+      formData.append('contactDetails.isPhoneHidden', data.contactDetails.isPhoneHidden.toString());
 
-      // POST request
-      const res = await fetch('/api/v1/classifieds/ads', {
-        method: 'POST',
-        body: formData,
+      // -------------------- POST request --------------------
+      await axios.post('/api/v1/classifieds/ads', formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-
-      if (!res.ok) throw new Error('Failed to submit ad');
 
       toast.success('Ad submitted successfully!');
       form.reset();

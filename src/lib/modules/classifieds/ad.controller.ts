@@ -13,6 +13,8 @@ import { IClassifiedAd } from './ad.interface';
 
 const createAd = async (req: NextRequest) => {
   await dbConnect();
+
+
   // 1️⃣ Token verification
   const authHeader = req.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) throw new Error('Authorization token missing.');
@@ -51,10 +53,7 @@ const createAd = async (req: NextRequest) => {
   const validatedData = createAdValidationSchema.parse(payload);
   console.log("📝 Validated data:", validatedData);
 
-  const validatedData = createAdValidationSchema.parse(payload);
-  console.log("📝 Validated data:", validatedData);
-
-  // Build type-safe payload
+  // 5️⃣ Build type-safe payload for Mongo
   const payloadForService: Partial<IClassifiedAd> = {
     user: new Types.ObjectId(userId),
     title: validatedData.title,
@@ -79,6 +78,7 @@ const createAd = async (req: NextRequest) => {
     edition: validatedData.edition,
   };
 
+  // 6️⃣ Save to DB
   const result = await ClassifiedAdServices.createAdInDB(payloadForService);
 
   return sendResponse({
@@ -87,18 +87,9 @@ const createAd = async (req: NextRequest) => {
     message: 'Ad posted successfully!',
     data: result,
   });
-};
-
-// 6️⃣ Save to DB
-const result = await ClassifiedAdServices.createAdInDB(payloadForService);
-
-return sendResponse({
-  success: true,
-  statusCode: StatusCodes.CREATED,
-  message: 'Ad posted successfully!',
-  data: result,
-});
 }
+
+
 
 const getAllAds = async (_req: NextRequest) => {
   await dbConnect();
