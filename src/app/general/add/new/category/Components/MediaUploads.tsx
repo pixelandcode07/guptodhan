@@ -1,8 +1,7 @@
 import { Label } from '@/components/ui/label'
 import { UseFormRegister, UseFormSetValue, UseFormWatch } from 'react-hook-form'
 import { CategoryInputs } from './CategoryForm'
-import UploadImage from '@/components/ReusableComponents/UploadImage';
-
+import UploadImageBtn from '@/components/ReusableComponents/UploadImageBtn';
 
 export default function MediaUploads({ register, setValue, watch }: { register: UseFormRegister<CategoryInputs>, setValue: UseFormSetValue<CategoryInputs>, watch: UseFormWatch<CategoryInputs> }) {
     const iconFile = watch('iconFile') as File | undefined;

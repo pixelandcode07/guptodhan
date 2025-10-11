@@ -72,10 +72,10 @@ export const authOptions = {
       return session;
     },
   },
-  pages: {
-    signIn: '/login', // আপনার লগইন পেজের পাথ
-    error: '/api/auth/error',
-  },
+  // pages: {
+  //   signIn: '/login', // আপনার লগইন পেজের পাথ
+  //   error: '/api/auth/error',
+  // },
   secret: process.env.NEXTAUTH_SECRET,
 };
 
