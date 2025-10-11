@@ -88,6 +88,7 @@
     "tooltip": "^1.6.1",
     "twilio": "^5.8.2",
     "use-places-autocomplete": "^4.0.1",
+    "uuid": "^13.0.0",
     "vercel": "^47.0.5",
     "zod": "^4.1.5"
   },
