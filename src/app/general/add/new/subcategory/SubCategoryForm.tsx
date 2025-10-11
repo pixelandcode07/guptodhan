@@ -3,12 +3,12 @@
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
-import UploadImageBtn from '@/app/general/buy/sell/config/components/UploadImageBtn';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import UploadImageBtn from '@/components/ReusableComponents/UploadImageBtn';
 
 type Inputs = {
   category: string;

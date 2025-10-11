@@ -1,6 +1,6 @@
 import React from 'react';
-import HeroNav from '@/app/components/Hero/HeroNavOld';
 import ShoppingCartContent from './ShoppingCartContent';
+import HeroNav from '@/app/components/Hero/HeroNav';
 
 // Mock data for shopping cart
 
