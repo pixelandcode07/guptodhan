@@ -230,6 +230,9 @@ importers:
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      sslcommerz-lts:
+        specifier: ^1.2.0
+        version: 1.2.0
       swiper:
         specifier: ^12.0.1
         version: 12.0.1
@@ -5746,6 +5749,9 @@ packages:
   sparse-bitfield@3.0.3:
     resolution: {integrity: sha512-kvzhi7vqKTfkh0PZU+2D2PIllw2ymqJKujUcyPMd9Y75Nv4nPbGJZXNhxsgdQab2BmlDct1YnfQCguEvHr7VsQ==}
 
+  sslcommerz-lts@1.2.0:
+    resolution: {integrity: sha512-OajULbnHHxzBvFfAqQKz4NMKkmyVBbVEKHbfstsR7wckYh0YfoQhZriHprcr0aQYSUqyOA/mc5g66KcW4/idJQ==}
+
   stable-hash@0.0.5:
     resolution: {integrity: sha512-+L3ccpzibovGXFK+Ap/f8LOS0ahMrHTf3xu7mMLSpEGU0EO9ucaysSylKo9eRDFNhWve/y275iPmIZ4z39a9iA==}
 
@@ -10955,7 +10961,6 @@ snapshots:
       hasown: 2.0.2
       mime-types: 2.1.35
       safe-buffer: 5.2.1
-    optional: true
 
   form-data@4.0.4:
     dependencies:
@@ -12850,6 +12855,13 @@ snapshots:
   sparse-bitfield@3.0.3:
     dependencies:
       memory-pager: 1.5.0
+
+  sslcommerz-lts@1.2.0:
+    dependencies:
+      form-data: 2.5.5
+      node-fetch: 2.6.7
+    transitivePeerDependencies:
+      - encoding
 
   stable-hash@0.0.5: {}
 
