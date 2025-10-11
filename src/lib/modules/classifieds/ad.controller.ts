@@ -51,7 +51,6 @@ const createAd = async (req: NextRequest) => {
   const validatedData = createAdValidationSchema.parse(payload);
   console.log("📝 Validated data:", validatedData);
 
-<<<<<<< HEAD
  // 5️⃣ Build type-safe payload for Mongo
   const payloadForService: Partial<IClassifiedAd> = {
     user: new Types.ObjectId(userId),
@@ -72,47 +71,9 @@ const createAd = async (req: NextRequest) => {
     },
     category: validatedData.category ? new Types.ObjectId(validatedData.category) : undefined,
     subCategory: validatedData.subCategory ? new Types.ObjectId(validatedData.subCategory) : undefined,
-    brand: validatedData.brand ? new Types.ObjectId(validatedData.brand) : undefined,
-    productModel: validatedData.productModel ? new Types.ObjectId(validatedData.productModel) : undefined,
-    edition: validatedData.edition ? new Types.ObjectId(validatedData.edition) : undefined,
-=======
-    const validatedData = createAdValidationSchema.parse(payload);
-console.log("📝 Validated data:", validatedData);
-
-    // Build type-safe payload
-    const payloadForService: Partial<IClassifiedAd> = {
-      user: new Types.ObjectId(userId),
-      title: validatedData.title,
-      division: validatedData.division,
-      district: validatedData.district,
-      upazila: validatedData.upazila,
-      condition: validatedData.condition,
-      authenticity: validatedData.authenticity,
-      description: validatedData.description,
-      price: validatedData.price,
-      isNegotiable: validatedData.isNegotiable ?? false,
-      images: validatedData.images,
-      features: validatedData.features,
-      contactDetails: {
-        ...validatedData.contactDetails,
-        isPhoneHidden: validatedData.contactDetails.isPhoneHidden ?? false,
-      },
-      category: validatedData.category ? new Types.ObjectId(validatedData.category) : undefined,
-      subCategory: validatedData.subCategory ? new Types.ObjectId(validatedData.subCategory) : undefined,
-      brand: validatedData.brand,
-      productModel: validatedData.productModel,
-      edition: validatedData.edition,
-    };
-
-    const result = await ClassifiedAdServices.createAdInDB(payloadForService);
-
-    return sendResponse({
-      success: true,
-      statusCode: StatusCodes.CREATED,
-      message: 'Ad posted successfully!',
-      data: result,
-    });
->>>>>>> f8d657b14f42137d211867b626426330dd6f2639
+    brand: validatedData.brand,
+    productModel: validatedData.productModel,
+    edition: validatedData.edition,
   };
 
   // 6️⃣ Save to DB
@@ -150,19 +111,6 @@ const updateAd = async (req: NextRequest, { params }: { params: { id: string } }
     ...validatedData,
     category: validatedData.category ? new Types.ObjectId(validatedData.category) : undefined,
     subCategory: validatedData.subCategory ? new Types.ObjectId(validatedData.subCategory) : undefined,
-<<<<<<< HEAD
-    brand: validatedData.brand ? new Types.ObjectId(validatedData.brand) : undefined,
-    productModel: validatedData.productModel ? new Types.ObjectId(validatedData.productModel) : undefined,
-    edition: validatedData.edition ? new Types.ObjectId(validatedData.edition) : undefined,
-    contactDetails: validatedData.contactDetails
-      ? {
-        name: validatedData.contactDetails.name ?? '',
-        phone: validatedData.contactDetails.phone ?? '',
-        email: validatedData.contactDetails.email,
-        isPhoneHidden: validatedData.contactDetails.isPhoneHidden ?? false,
-      }
-      : undefined,
-=======
     brand: validatedData.brand,
     productModel: validatedData.productModel,
     edition: validatedData.edition,
@@ -174,7 +122,6 @@ const updateAd = async (req: NextRequest, { params }: { params: { id: string } }
       isPhoneHidden: validatedData.contactDetails.isPhoneHidden ?? false,
     }
   : undefined,
->>>>>>> f8d657b14f42137d211867b626426330dd6f2639
   };
 
   const result = await ClassifiedAdServices.updateAdInDB(params.id, userId, payloadForService);
