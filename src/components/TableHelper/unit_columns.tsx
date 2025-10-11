@@ -22,6 +22,13 @@ export const getUnitColumns = ({ onEdit, onDelete }: UnitColumnHandlers): Column
   {
     accessorKey: "id",
     header: "SL",
+    cell: ({ row }) => {
+      return (
+        <div className="pl-4">
+          {row.getValue("id")}
+        </div>
+      )
+    },
   },
   {
     accessorKey: "name",
