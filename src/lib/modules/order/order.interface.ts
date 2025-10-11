@@ -18,4 +18,5 @@ export interface IOrder extends Document {
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   paymentMethod: 'cod' | 'online';
   paymentStatus: 'pending' | 'paid' | 'failed';
+  transactionId?: string;
 }
