@@ -4,13 +4,13 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DataTable } from "@/components/TableHelper/data-table";
 import { getFlagColumns, type Flag } from "@/components/TableHelper/flag_columns";
 import FlagModal from "./FlagModal";
+import FlagsHeader from "./FlagsHeader";
+import FlagsFilters from "./FlagsFilters";
+import FeaturedConfirmDialog from "./FeaturedConfirmDialog";
+import DeleteConfirmDialog from "./DeleteConfirmDialog";
 
 type ApiFlag = {
   _id: string;
@@ -33,12 +33,15 @@ export default function FlagsClient() {
   // removed unused loading state
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Flag | null>(null);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<"" | "Active" | "Inactive">("");
   const [featuredModalOpen, setFeaturedModalOpen] = useState(false);
   const [featuredFlag, setFeaturedFlag] = useState<Flag | null>(null);
+  const [featuredLoading, setFeaturedLoading] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteFlag, setDeleteFlag] = useState<Flag | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchFlags = useCallback(async () => {
     try {
@@ -82,6 +85,7 @@ export default function FlagsClient() {
 
   const onSubmit = async (data: { name: string; icon: string; status?: string }) => {
     try {
+      setSaveLoading(true);
       const candidateId = deriveProductFlagId(data.name);
 
       // Client-side duplicate check against already loaded flags
@@ -101,6 +105,21 @@ export default function FlagsClient() {
       }
 
       if (editing) {
+        // Optimistic update for status and name/icon
+        const optimistic: Flag[] = flags.map((f) => {
+          if (f._id !== editing._id) return f;
+          const nextStatus: "Active" | "Inactive" | undefined = data.status
+            ? (data.status === "active" || data.status === "Active" ? "Active" : "Inactive")
+            : undefined;
+          return {
+            ...f,
+            name: data.name,
+            icon: data.icon || f.icon,
+            ...(nextStatus ? { status: nextStatus } : {}),
+          } as Flag;
+        });
+        setFlags(optimistic);
+
         await axios.patch(`/api/v1/product-config/productFlag/${editing._id}`, payload, {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -136,7 +155,7 @@ export default function FlagsClient() {
 
       setOpen(false);
       setEditing(null);
-      await fetchFlags();
+      // No need to refetch after optimistic update; background refresh optional
     } catch (error: unknown) {
       console.error("Error saving flag:", error);
       // Attempt to surface server message and duplicate errors
@@ -165,6 +184,10 @@ export default function FlagsClient() {
       } else {
         toast.error(`Failed to ${editing ? "update" : "create"} flag`);
       }
+      // Optional: rollback for edit case if needed (kept minimal to avoid flicker)
+    }
+    finally {
+      setSaveLoading(false);
     }
   };
 
@@ -181,8 +204,14 @@ export default function FlagsClient() {
   const handleDeleteConfirm = async () => {
     if (!deleteFlag) return;
 
+    // Optimistic UI: remove immediately
+    const toDeleteId = deleteFlag._id;
+    const previousFlags = flags;
+    setDeleteLoading(true);
+    setFlags((prev) => prev.filter((f) => f._id !== toDeleteId).map((f, idx) => ({ ...f, id: idx + 1 })));
+
     try {
-      await axios.delete(`/api/v1/product-config/productFlag/${deleteFlag._id}`, {
+      await axios.delete(`/api/v1/product-config/productFlag/${toDeleteId}`, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...(userRole ? { "x-user-role": userRole } : {}),
@@ -190,10 +219,14 @@ export default function FlagsClient() {
       });
       toast.success("Flag deleted successfully!");
       setDeleteModalOpen(false);
-      await fetchFlags();
+      setDeleteFlag(null);
     } catch (error) {
       console.error("Error deleting flag:", error);
+      // Rollback on failure
+      setFlags(previousFlags);
       toast.error("Failed to delete flag");
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -205,10 +238,16 @@ export default function FlagsClient() {
   const handleFeaturedToggle = async () => {
     if (!featuredFlag) return;
 
+    // Optimistic UI toggle
+    const toUpdateId = featuredFlag._id;
+    const previousFlags = flags;
+    const newFeaturedBool = featuredFlag.featured !== "Featured";
+    setFeaturedLoading(true);
+    setFlags((prev) => prev.map((f) => f._id === toUpdateId ? { ...f, featured: newFeaturedBool ? "Featured" : "Not Featured" } : f));
+
     try {
-      const newFeaturedStatus = featuredFlag.featured === "Featured" ? false : true;
-      await axios.patch(`/api/v1/product-config/productFlag/${featuredFlag._id}`, {
-        featured: newFeaturedStatus,
+      await axios.patch(`/api/v1/product-config/productFlag/${toUpdateId}`, {
+        featured: newFeaturedBool,
       }, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -216,109 +255,85 @@ export default function FlagsClient() {
           "Content-Type": "application/json",
         }
       });
-      
-      toast.success(`Flag ${newFeaturedStatus ? "featured" : "unfeatured"} successfully`);
+      toast.success(`Flag ${newFeaturedBool ? "featured" : "unfeatured"} successfully`);
       setFeaturedModalOpen(false);
-      await fetchFlags();
+      setFeaturedFlag(null);
     } catch (error) {
       console.error("Error toggling featured status:", error);
+      // Rollback
+      setFlags(previousFlags);
       toast.error("Failed to update featured status");
+    } finally {
+      setFeaturedLoading(false);
     }
   };
 
   const columns = useMemo(() => getFlagColumns({ onEdit, onDelete, onToggleFeatured }), [onEdit, onDelete, onToggleFeatured]);
 
   const filteredFlags = useMemo(() => {
-    return flags.filter((flag) => {
-      const matchesSearch = flag.name.toLowerCase().includes(searchText.toLowerCase()) ||
-                           flag.productFlagId.toLowerCase().includes(searchText.toLowerCase());
-      const matchesStatus = statusFilter === "all" || flag.status.toLowerCase() === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
+    const bySearch = (f: Flag) => {
+      if (!searchText) return true;
+      const s = searchText.toLowerCase();
+      return f.name.toLowerCase().includes(s) || f.productFlagId.toLowerCase().includes(s);
+    };
+    const byStatus = (f: Flag) => {
+      if (!statusFilter) return true;
+      return f.status === statusFilter;
+    };
+    const result = flags.filter((f) => bySearch(f) && byStatus(f));
+    return result.map((f, idx) => ({ ...f, id: idx + 1 }));
   }, [flags, searchText, statusFilter]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Flags</h1>
-        <Button onClick={() => setOpen(true)}>
-          Add New Flag
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8 space-y-4 sm:space-y-6">
+        <div>
+          <FlagsHeader onAddClick={() => setOpen(true)} />
+        </div>
 
-      <div className="flex gap-4">
-        <Input
-          placeholder="Search flags..."
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          className="max-w-sm"
+        <div>
+          <FlagsFilters
+            searchText={searchText}
+            setSearchText={setSearchText}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+          />
+        </div>
+
+        <div>
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+            <DataTable columns={columns} data={filteredFlags} />
+          </div>
+        </div>
+
+        <FlagModal
+          open={open}
+          onOpenChange={setOpen}
+          onSubmit={onSubmit}
+          editing={editing ? {
+            name: editing.name,
+            icon: editing.icon,
+            status: editing.status.toLowerCase(),
+          } : null}
+          loading={saveLoading}
         />
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
+
+        <FeaturedConfirmDialog
+          open={featuredModalOpen}
+          onOpenChange={setFeaturedModalOpen}
+          isCurrentlyFeatured={featuredFlag?.featured === "Featured"}
+        onConfirm={handleFeaturedToggle}
+        loading={featuredLoading}
+        />
+
+      <DeleteConfirmDialog
+          open={deleteModalOpen}
+          onOpenChange={setDeleteModalOpen}
+          flagName={deleteFlag?.name}
+        onConfirm={handleDeleteConfirm}
+        loading={deleteLoading}
+        />
       </div>
-
-      <DataTable columns={columns} data={filteredFlags} />
-
-      <FlagModal
-        open={open}
-        onOpenChange={setOpen}
-        onSubmit={onSubmit}
-        editing={editing ? {
-          name: editing.name,
-          icon: editing.icon,
-          status: editing.status.toLowerCase(),
-        } : null}
-      />
-
-      <Dialog open={featuredModalOpen} onOpenChange={setFeaturedModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Toggle Featured Status</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p>
-              Are you sure you want to {featuredFlag?.featured === "Featured" ? "remove" : "set"} this flag as {featuredFlag?.featured === "Featured" ? "not featured" : "featured"}?
-            </p>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setFeaturedModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleFeaturedToggle}>
-                {featuredFlag?.featured === "Featured" ? "Remove Featured" : "Set Featured"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Flag</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p>
-              Are you sure you want to delete the flag {deleteFlag?.name}? This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={handleDeleteConfirm}>
-                Delete
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

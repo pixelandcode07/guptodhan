@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import UploadImageBtn from "@/app/general/buy/sell/config/components/UploadImageBtn";
 import { toast } from "sonner";
+import UploadImageBtn from "@/components/ReusableComponents/UploadImageBtn";
 
 type Category = {
   _id?: string;
@@ -20,11 +20,12 @@ type Category = {
   status: "Active" | "Inactive";
 };
 
-export default function CategoryEditModal({ open, onOpenChange, data, onSaved }: {
+export default function CategoryEditModal({ open, onOpenChange, data, onSaved, onOptimisticUpdate }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   data: Category | null;
   onSaved: () => void;
+  onOptimisticUpdate?: (update: { _id: string; name: string; slug: string; status: "Active" | "Inactive"; isFeatured: boolean; isNavbar: boolean }) => void;
 }) {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -64,6 +65,15 @@ export default function CategoryEditModal({ open, onOpenChange, data, onSaved }:
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message || "Failed to update category");
+      // Optimistic UI update in parent
+      onOptimisticUpdate?.({
+        _id: data._id,
+        name,
+        slug,
+        status: status === "active" ? "Active" : "Inactive",
+        isFeatured: isFeatured === "yes",
+        isNavbar: isNavbar === "yes",
+      });
       toast.success("Category updated");
       onOpenChange(false);
       onSaved();
@@ -113,11 +123,11 @@ export default function CategoryEditModal({ open, onOpenChange, data, onSaved }:
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Icon</Label>
-              <UploadImageBtn id="edit_category_icon" value={iconFile} onChange={setIconFile} />
+              <UploadImageBtn value={iconFile} onChange={setIconFile} />
             </div>
             <div className="space-y-2">
               <Label>Banner</Label>
-              <UploadImageBtn id="edit_category_banner" value={bannerFile} onChange={setBannerFile} />
+              <UploadImageBtn value={bannerFile} onChange={setBannerFile} />
             </div>
           </div>
           <div className="space-y-2">

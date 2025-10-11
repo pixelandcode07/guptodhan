@@ -23,6 +23,10 @@ export const getStorageColumns = ({ onEdit, onDelete }: StorageColumnHandlers): 
   {
     accessorKey: "id",
     header: "SL",
+    cell: ({ row }) => {
+      const id = row.getValue("id") as number;
+      return <span className="pl-4">{id}</span>;
+    },
   },
   {
     accessorKey: "ram",
@@ -36,8 +40,16 @@ export const getStorageColumns = ({ onEdit, onDelete }: StorageColumnHandlers): 
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string
-      return <span>{status}</span>
+      const status = row.getValue("status") as string;
+      return (
+        <div className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          status === "Active" 
+            ? "bg-green-100 text-green-800" 
+            : "bg-red-100 text-red-800"
+        }`}>
+          {status}
+        </div>
+      );
     },
   },
   {
