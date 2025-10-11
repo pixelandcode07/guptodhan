@@ -1,12 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { IOrder } from './order.interface';
+import { VendorProductModel } from '../product/vendorProduct.model';
 import { Order } from './order.model';
-import { Product } from '../product/product.model'; // ধরে নিচ্ছি আপনার একটি Product মডেল আছে
 import { Types } from 'mongoose';
 
 const createOrderInDB = async (userId: string, payload: any) => {
   const productIds = payload.items.map((item: any) => item.productId);
-  const productsFromDB = await Product.find({ _id: { $in: productIds } });
+  const productsFromDB = await VendorProductModel.find({ _id: { $in: productIds } });
 
   let totalAmount = 0;
   const orderItems = payload.items.map((item: any) => {
