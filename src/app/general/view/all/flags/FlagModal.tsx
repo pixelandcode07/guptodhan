@@ -17,9 +17,10 @@ interface FlagModalProps {
     icon: string;
     status: string;
   } | null;
+  loading?: boolean;
 }
 
-export default function FlagModal({ open, onOpenChange, onSubmit, editing }: FlagModalProps) {
+export default function FlagModal({ open, onOpenChange, onSubmit, editing, loading }: FlagModalProps) {
   const [formData, setFormData] = useState({
     name: "",
     icon: "",
@@ -98,11 +99,11 @@ export default function FlagModal({ open, onOpenChange, onSubmit, editing }: Fla
           )}
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={!!loading}>
               Close
             </Button>
-            <Button type="submit">
-              Save
+            <Button type="submit" disabled={!!loading}>
+              {loading ? "Saving..." : "Save"}
             </Button>
           </div>
         </form>

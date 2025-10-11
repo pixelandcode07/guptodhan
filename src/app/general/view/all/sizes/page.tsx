@@ -1,4 +1,4 @@
-import SizesClient from "./SizesClient";
+import SizesClient from "./components/SizesClient";
 
 export default function ViewAllSizesPage() {
   return <SizesClient />;

@@ -10,15 +10,12 @@ export default async function GeneralInfoPage() {
   }
 
   const json = await res.json();
-  console.log('Form Data', json);
-
-  // শুধু inner data পাঠাচ্ছি
   const settings = json.data;
 
   return (
     <div className="min-h-screen pt-5 bg-gray-50">
       <div className="bg-white shadow rounded">
-        <GeneralInfoForm data={settings} />
+        <GeneralInfoForm data={settings || {}} />
       </div>
     </div>
   );

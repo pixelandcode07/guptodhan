@@ -24,6 +24,10 @@ export const getModelColumns = ({ onEdit, onDelete }: ModelColumnHandlers): Colu
   {
     accessorKey: "id",
     header: "SL",
+    cell: ({ row }) => {
+      const id = row.getValue("id") as number;
+      return <span className="pl-4">{id}</span>;
+    },
   },
   {
     accessorKey: "brand",

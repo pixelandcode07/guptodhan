@@ -22,6 +22,10 @@ export const getSizeColumns = ({ onDelete, onEdit }: SizeColumnHandlers): Column
   {
     accessorKey: 'id',
     header: 'SL',
+    cell: ({ row }) => {
+      const id = row.getValue('id') as number;
+      return <span className="pl-4">{id}</span>;
+    },
   },
   {
     accessorKey: 'name',

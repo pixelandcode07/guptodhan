@@ -3,6 +3,7 @@
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import BasicInfo from './BasicInfo';
 import MediaUploads from './MediaUploads';
 import Options from './Options';
@@ -17,10 +18,16 @@ export type CategoryInputs = {
 };
 
 export default function CategoryForm() {
-    const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<CategoryInputs>();
+    const router = useRouter();
+    const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<CategoryInputs>();
 
     const onSubmit: SubmitHandler<CategoryInputs> = async (data) => {
         try {
+            // Basic client-side validation to match server expectations
+            if (!data.iconFile) {
+                alert('Category icon is required.');
+                return;
+            }
             const categoryId = data.name
                 .toLowerCase()
                 .trim()
@@ -39,11 +46,15 @@ export default function CategoryForm() {
             if (data.iconFile) formData.append('categoryIcon', data.iconFile);
             if (data.bannerFile) formData.append('categoryBanner', data.bannerFile);
 
-            await fetch('/api/v1/ecommerce-category/ecomCategory', {
+            const res = await fetch('/api/v1/ecommerce-category/ecomCategory', {
                 method: 'POST',
                 body: formData,
             });
-            window.location.href = '/general/view/all/category';
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(json?.message || 'Failed to create category');
+            }
+            router.replace('/general/view/all/category');
         } catch (e) {
             console.error('Create category failed:', e);
             alert('Failed to create category');
@@ -56,9 +67,9 @@ export default function CategoryForm() {
             <MediaUploads register={register} setValue={setValue} watch={watch} />
             <Options register={register} setValue={setValue} watch={watch} />
             <div className="text-center">
-                <Button variant={'BlueBtn'} type="submit">
+                <Button variant={'BlueBtn'} type="submit" disabled={isSubmitting}>
                     <Save />
-                    Save Category
+                    {isSubmitting ? 'Saving...' : 'Save Category'}
                 </Button>
             </div>
         </form>

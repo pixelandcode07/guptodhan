@@ -1,6 +1,6 @@
 'use client';
 
-import RichTextEditor from '@/components/ReusableComponents/RichTextEditor';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,10 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useState } from 'react';
-import FileUpload from '@/components/ReusableComponents/FileUpload';
+import RichTextEditor from '@/components/ReusableComponents/RichTextEditor';
+import UploadImage from '@/components/ReusableComponents/UploadImage';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
+import { toast } from 'sonner';
 
 type CTAFormProps = {
   initialData: any;
@@ -32,11 +33,12 @@ export default function CTAForm({ initialData }: CTAFormProps) {
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
 
-  const [previews, setPreviews] = useState({ cta_image: preview });
-
-  const handleUploadedUrl = (name: string, url: string) => {
-    setPreviews(prev => ({ ...prev, [name]: url }));
-    if (name === 'cta_image') setPreview(url);
+  const handleUploadChange = (_name: string, file: File | null) => {
+    if (file) {
+      setPreview(URL.createObjectURL(file));
+    } else {
+      setPreview(initialData?.ctaImage || '');
+    }
   };
 
   const handleCancel = () => {
@@ -46,11 +48,16 @@ export default function CTAForm({ initialData }: CTAFormProps) {
     setStatus(initialData?.isActive ? '1' : '0');
     setContent(initialData?.ctaDescription || '');
     setPreview(initialData?.ctaImage || '');
-    setPreviews({ cta_image: initialData?.ctaImage || '' });
   };
 
   const handleDone = async () => {
+    if (!initialData?._id) {
+      toast.error('CTA ID is missing.');
+      return;
+    }
+
     setLoading(true);
+
     const payload = {
       ctaImage: preview,
       ctaTitle: title,
@@ -62,7 +69,7 @@ export default function CTAForm({ initialData }: CTAFormProps) {
 
     try {
       const res = await axios.patch(
-        'http://localhost:3000/api/v1/about/cta',
+        `http://localhost:3000/api/v1/about/cta/${initialData._id}`,
         payload,
         {
           headers: {
@@ -73,35 +80,34 @@ export default function CTAForm({ initialData }: CTAFormProps) {
       );
 
       if (res.data.success) {
-        alert('CTA updated successfully!');
+        toast.success('CTA updated successfully!');
       } else {
-        alert('Failed to update CTA');
+        toast.error('Failed to update CTA!');
       }
     } catch (error: any) {
       console.error(error);
-      alert('Error updating CTA');
+      toast.error('Error updating CTA!');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRemove = () => setPreview('');
-
   return (
     <div className="grid grid-cols-6 mt-4 gap-2">
+      {/* Left Side */}
       <div className="col-span-2 space-y-4">
-        <FileUpload
+        <UploadImage
           label="CTA Image"
-          name="cta_image"
-          preview={previews.cta_image}
-          onUploadComplete={handleUploadedUrl}
+          name="ctaImage"
+          preview={preview}
+          onChange={handleUploadChange}
         />
 
         <div className="flex flex-col space-y-2">
           <Label htmlFor="btn_text">CTA Button Text</Label>
           <Input
-            type="text"
             id="btn_text"
+            type="text"
             value={btnText}
             onChange={e => setBtnText(e.target.value)}
           />
@@ -110,14 +116,15 @@ export default function CTAForm({ initialData }: CTAFormProps) {
         <div className="flex flex-col space-y-2">
           <Label htmlFor="btn_link">CTA Button Link</Label>
           <Input
-            type="text"
             id="btn_link"
+            type="text"
             value={btnLink}
             onChange={e => setBtnLink(e.target.value)}
           />
         </div>
       </div>
 
+      {/* Right Side */}
       <div className="col-span-4 space-y-6">
         <div className="space-y-2">
           <Label htmlFor="title">
@@ -125,6 +132,7 @@ export default function CTAForm({ initialData }: CTAFormProps) {
           </Label>
           <Input
             id="title"
+            type="text"
             value={title}
             onChange={e => setTitle(e.target.value)}
           />

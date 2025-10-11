@@ -22,6 +22,7 @@ import {
   CollapsibleTrigger,
 } from '../../ui/collapsible';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 interface CRMModuleTitleOnly {
   title: string;
@@ -81,6 +82,9 @@ const CRM_MENU_CONFIG: Record<
 };
 
 export function CRMModules({ items }: { items: CRMModuleTitleOnly[] }) {
+  const pathname = usePathname();
+  const isActive = (href: string) => pathname === href;
+
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel className="text-[#f1bf43] text-[14px]">
@@ -95,12 +99,16 @@ export function CRMModules({ items }: { items: CRMModuleTitleOnly[] }) {
 
             if (cfg.items.length === 0) {
               // Direct link for items without sub-routes
+              const active = isActive(cfg.url || '#');
               return (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link
-                      href={cfg.url || '#'}
-                      className="flex items-center gap-2">
+                  <SidebarMenuButton 
+                    asChild
+                    className={`flex items-center gap-2 ${active
+                      ? "bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5"
+                      : "text-white bg-[#132843] pl-5"
+                    }`}>
+                    <Link href={cfg.url || '#'}>
                       <cfg.icon />
                       <span>{item.title}</span>
                     </Link>
@@ -114,7 +122,7 @@ export function CRMModules({ items }: { items: CRMModuleTitleOnly[] }) {
               <Collapsible key={item.title} className="group/collapsible">
                 <CollapsibleTrigger asChild>
                   <SidebarMenuItem>
-                    <SidebarMenuButton>
+                    <SidebarMenuButton className="text-white bg-[#132843] pl-5">
                       <cfg.icon />
                       <span>{item.title}</span>
                       {cfg.badge && (
@@ -129,31 +137,37 @@ export function CRMModules({ items }: { items: CRMModuleTitleOnly[] }) {
 
                 <CollapsibleContent>
                   <div className="pl-6">
-                    {cfg.items.map(subItem => (
-                      <SidebarMenuItem key={subItem.url}>
-                        <SidebarMenuButton asChild>
-                          <Link
-                            href={subItem.url}
-                            className="flex items-center gap-2">
-                            <span className={subItem.color || 'text-white'}>
-                              {subItem.title}
-                            </span>
-                            {subItem.count && (
-                              <span
-                                className={`ml-auto text-xs px-2 py-1 rounded ${
-                                  subItem.count === '0'
-                                    ? 'bg-orange-500 text-white'
-                                    : subItem.count === '1'
-                                    ? 'bg-green-500 text-white'
-                                    : 'text-blue-400'
-                                }`}>
-                                ({subItem.count})
+                    {cfg.items.map(subItem => {
+                      const active = isActive(subItem.url);
+                      return (
+                        <SidebarMenuItem key={subItem.url}>
+                          <SidebarMenuButton 
+                            asChild
+                            className={`flex items-center gap-2 ${active
+                              ? "bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5"
+                              : "text-white bg-[#132843] pl-5"
+                            }`}>
+                            <Link href={subItem.url}>
+                              <span className={subItem.color || 'text-white'}>
+                                {subItem.title}
                               </span>
-                            )}
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
+                              {subItem.count && (
+                                <span
+                                  className={`ml-auto text-xs px-2 py-1 rounded ${
+                                    subItem.count === '0'
+                                      ? 'bg-orange-500 text-white'
+                                      : subItem.count === '1'
+                                      ? 'bg-green-500 text-white'
+                                      : 'text-blue-400'
+                                  }`}>
+                                  ({subItem.count})
+                                </span>
+                              )}
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
                   </div>
                 </CollapsibleContent>
               </Collapsible>

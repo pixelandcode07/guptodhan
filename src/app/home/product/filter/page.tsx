@@ -1,6 +1,6 @@
 import React from 'react';
 import FilterContent from './FilterContent';
-import HeroNav from '@/app/components/Hero/HeroNavOld';
+import HeroNav from '@/app/components/Hero/HeroNav';
 
 const demoProducts = Array.from({ length: 16 }).map((_, i) => ({
   id: `p_${i + 1}`,

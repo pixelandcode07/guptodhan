@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState } from 'react';
@@ -8,6 +9,7 @@ import { ArrowUpDown, Edit, Trash2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
 import Link from 'next/link';
+import { toast } from 'sonner'; // ✅ Added
 
 type Fact = {
   _id: string;
@@ -31,21 +33,22 @@ export default function FactsTable({ initialData }: Props) {
       await axios.delete(`http://localhost:3000/api/v1/about/facts/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       setFacts(prev => prev.filter(fact => fact._id !== id));
-    } catch (error) {
+      toast.success('Fact deleted successfully ✅');
+    } catch (error: any) {
       console.error('Delete failed:', error);
+      toast.error('Failed to delete fact ❌');
     }
   };
 
-  // --- Edit Function (example: toggling status) ---
+  // --- Edit Function (optional inline update example) ---
   const editFact = async (id: string, updatedData: Partial<Fact>) => {
     try {
       const res = await axios.patch(
         `http://localhost:3000/api/v1/about/facts/${id}`,
         updatedData,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       setFacts(prev =>
@@ -53,8 +56,10 @@ export default function FactsTable({ initialData }: Props) {
           fact._id === id ? { ...fact, ...res.data.data } : fact
         )
       );
+      toast.success('Fact updated successfully ✅');
     } catch (error) {
       console.error('Edit failed:', error);
+      toast.error('Failed to update fact ❌');
     }
   };
 
@@ -72,14 +77,25 @@ export default function FactsTable({ initialData }: Props) {
         const fact = row.original as Fact;
         return (
           <div className="flex gap-2">
-            <Link href={`/general/view/facts/edit?id=${fact._id}`}>
+            <Link
+              href={{
+                pathname: '/general/view/facts/edit',
+                query: {
+                  id: fact._id,
+                  factTitle: fact.factTitle,
+                  factCount: fact.factCount,
+                  shortDescription: fact.shortDescription,
+                  status: fact.status,
+                },
+              }}>
               <Button size="sm" className="cursor-pointer" variant="outline">
                 <Edit className="w-4 h-4" />
               </Button>
             </Link>
+
             <Button
               size="sm"
-              className=" cursor-pointer"
+              className="cursor-pointer"
               variant="destructive"
               onClick={() => deleteFact(fact._id)}>
               <Trash2 className="w-4 h-4" />
@@ -93,8 +109,8 @@ export default function FactsTable({ initialData }: Props) {
   return (
     <div>
       <div className="flex justify-end gap-2 mb-4">
-        <Link className=" cursor-pointer" href="/general/view/facts/add">
-          <Button className=" cursor-pointer" variant="secondary" size="sm">
+        <Link className="cursor-pointer" href="/general/view/facts/add">
+          <Button className="cursor-pointer" variant="secondary" size="sm">
             Add New
           </Button>
         </Link>
