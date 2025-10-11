@@ -7,6 +7,7 @@ import { teams_columns } from '@/components/TableHelper/teams_columns';
 import { Edit, Trash2, ArrowUpDown } from 'lucide-react';
 import Link from 'next/link';
 import axios from 'axios';
+import { toast } from 'sonner';
 
 interface Team {
   _id: string;
@@ -19,15 +20,29 @@ interface Team {
 export default function TeamsTable({ data }: { data: Team[] }) {
   const [teams, setTeams] = useState<Team[]>(data);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete?')) return;
-    try {
-      await axios.delete(`http://localhost:3000/api/v1/about/team/${id}`);
-      setTeams(prev => prev.filter(t => t._id !== id));
-    } catch (err) {
-      console.error(err);
-      alert('Failed to delete!');
-    }
+  const handleDelete = (id: string) => {
+    // Show Sonner confirmation
+    toast.promise(
+      new Promise(async (resolve, reject) => {
+        // Ask user via toast prompt
+        const confirmed = window.confirm('Are you sure you want to delete?'); // or create a custom modal later
+        if (!confirmed) return reject('Cancelled');
+
+        try {
+          await axios.delete(`http://localhost:3000/api/v1/about/team/${id}`);
+          setTeams(prev => prev.filter(t => t._id !== id));
+          resolve('Deleted');
+        } catch (err) {
+          console.error(err);
+          reject('Failed to delete');
+        }
+      }),
+      {
+        loading: 'Deleting...',
+        success: 'Team member deleted!',
+        error: 'Delete failed!',
+      }
+    );
   };
 
   const columnsWithActions = [
