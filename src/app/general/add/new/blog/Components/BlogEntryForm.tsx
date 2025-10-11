@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { Upload } from 'lucide-react';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
@@ -13,21 +12,51 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 
-export default function BlogForm() {
-  const [file, setFile] = useState<File | null>(null);
+export interface BlogData {
+  category: string;
+  title: string;
+  shortDescription: string;
+  coverImage: File | null;
+}
+
+interface BlogFormProps {
+  formData: BlogData;
+  setFormData: Dispatch<SetStateAction<BlogData>>;
+}
+
+export default function BlogForm({ formData, setFormData }: BlogFormProps) {
   const [preview, setPreview] = useState<string | null>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setPreview(URL.createObjectURL(selectedFile));
+  useEffect(() => {
+    if (formData.coverImage) {
+      const url = URL.createObjectURL(formData.coverImage);
+      setPreview(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setPreview(null);
     }
+  }, [formData.coverImage]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0] || null;
+    setFormData(prev => ({ ...prev, coverImage: selectedFile }));
+  };
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setFormData(prev => ({ ...prev, category: value }));
   };
 
   return (
-    <div className="grid grid-cols-1  md:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
       {/* Left: File Upload */}
       <div className="col-span-1">
         <Label htmlFor="image">
@@ -57,7 +86,6 @@ export default function BlogForm() {
             accept="image/*"
             onChange={handleFileChange}
             className="hidden"
-            required
           />
         </div>
       </div>
@@ -66,10 +94,12 @@ export default function BlogForm() {
       <div className="col-span-1 md:col-span-3 space-y-4">
         {/* Category */}
         <div>
-          <Label htmlFor="category_id">
+          <Label htmlFor="category">
             Category <span className="text-red-500">*</span>
           </Label>
-          <Select>
+          <Select
+            onValueChange={handleCategoryChange}
+            value={formData.category}>
             <SelectTrigger className="w-full mt-2">
               <SelectValue placeholder="Select One" />
             </SelectTrigger>
@@ -92,19 +122,21 @@ export default function BlogForm() {
           <Input
             id="title"
             name="title"
-            maxLength={255}
-            placeholder="Enter Product Title Here"
-            required
+            value={formData.title}
+            onChange={handleInputChange}
+            placeholder="Enter Blog Title Here"
             className="mt-2"
           />
         </div>
 
         {/* Short Description */}
         <div>
-          <Label htmlFor="short_description">Short Description</Label>
+          <Label htmlFor="shortDescription">Short Description</Label>
           <Textarea
-            id="short_description"
-            name="short_description"
+            id="shortDescription"
+            name="shortDescription"
+            value={formData.shortDescription}
+            onChange={handleInputChange}
             placeholder="Enter Short Description Here"
             className="mt-2"
           />

@@ -52,7 +52,6 @@ export default function BlogSeoForm({ seoData, setSeoData }: BlogSeoFormProps) {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Meta Title */}
           <div className="space-y-2">
             <Label htmlFor="metaTitle">Meta Title</Label>
             <Input
@@ -65,11 +64,10 @@ export default function BlogSeoForm({ seoData, setSeoData }: BlogSeoFormProps) {
             />
           </div>
 
-          {/* Meta Keywords */}
           <div className="space-y-2">
             <Label htmlFor="metaKeywords">Meta Keywords</Label>
             <div className="flex flex-wrap gap-2 p-2 border rounded-md">
-              {seoData.metaKeywords.map((keyword: string, index: number) => (
+              {seoData.metaKeywords.map((keyword, index) => (
                 <Badge
                   key={index}
                   variant="secondary"
@@ -95,7 +93,6 @@ export default function BlogSeoForm({ seoData, setSeoData }: BlogSeoFormProps) {
           </div>
         </div>
 
-        {/* Meta Description */}
         <div className="mt-6 space-y-2">
           <Label htmlFor="metaDescription">Meta Description</Label>
           <Textarea

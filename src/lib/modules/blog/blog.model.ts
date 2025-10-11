@@ -17,4 +17,5 @@ const blogSchema = new Schema<IBlog>(
   { timestamps: true }
 );
 
-export const BlogModel = models.BlogModel || model<IBlog>('BlogModel', blogSchema);
+export const BlogModel =
+  models.BlogModel || model<IBlog>('BlogModel', blogSchema);
