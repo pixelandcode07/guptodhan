@@ -11,41 +11,71 @@ import dbConnect from '@/lib/db';
 import { verifyToken } from '@/lib/utils/jwt';
 import { IClassifiedAd } from './ad.interface';
 
-  const createAd = async (req: NextRequest) => {
-    await dbConnect();
+const createAd = async (req: NextRequest) => {
+  await dbConnect();
+  // 1️⃣ Token verification
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) throw new Error('Authorization token missing.');
+  const token = authHeader.split(' ')[1];
+  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
+  const userId = decoded.userId as string;
 
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) throw new Error('Authorization token missing.');
-    const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
-    const userId = decoded.userId as string;
+  // 2️⃣ FormData & images
+  const formData = await req.formData();
+  const images = formData.getAll('images') as File[];
+  if (!images.length) throw new Error('At least one image is required.');
 
-    const formData = await req.formData();
-    const images = formData.getAll('images') as File[];
-    if (!images.length) throw new Error('At least one image is required.');
+  const uploadResults = await Promise.all(
+    images.map(async file => uploadToCloudinary(Buffer.from(await file.arrayBuffer()), 'classified-ads'))
+  );
 
-    const uploadResults = await Promise.all(
-      images.map( async file => uploadToCloudinary(Buffer.from(await file.arrayBuffer()), 'classified-ads'))
-    );
-
-    const imageUrls = uploadResults.map(r => r.secure_url);
-
-    const payload: any = { images: imageUrls, user: userId, };
-    for (const [key, value] of formData.entries()) {
-      if (key !== 'images' && typeof value === 'string') {
-        if (key.startsWith('contactDetails.')) {
-          const nestedKey = key.split('.')[1];
-          if (!payload.contactDetails) payload.contactDetails = {};
-          payload.contactDetails[nestedKey] = nestedKey === 'isPhoneHidden' ? value === 'true' : value;
-        } else {
-          payload[key] = value;
-        }
+  const imageUrls = uploadResults.map(r => r.secure_url);
+  // 3️⃣ Payload mapping
+  const payload: any = { images: imageUrls, user: userId, };
+  for (const [key, value] of formData.entries()) {
+    if (key !== 'images' && typeof value === 'string') {
+      if (key.startsWith('contactDetails.')) {
+        const nestedKey = key.split('.')[1];
+        if (!payload.contactDetails) payload.contactDetails = {};
+        payload.contactDetails[nestedKey] = nestedKey === 'isPhoneHidden' ? value === 'true' : value;
+      } else {
+        payload[key] = value;
       }
     }
+  }
+  // Convert types
+  if (payload.price) payload.price = Number(payload.price);
+  if (payload.isNegotiable) payload.isNegotiable = payload.isNegotiable === 'true';
 
-    if (payload.price) payload.price = Number(payload.price);
-    if (payload.isNegotiable) payload.isNegotiable = payload.isNegotiable === 'true';
+  // 4️⃣ Validation
+  const validatedData = createAdValidationSchema.parse(payload);
+  console.log("📝 Validated data:", validatedData);
 
+<<<<<<< HEAD
+ // 5️⃣ Build type-safe payload for Mongo
+  const payloadForService: Partial<IClassifiedAd> = {
+    user: new Types.ObjectId(userId),
+    title: validatedData.title,
+    division: validatedData.division,
+    district: validatedData.district,
+    upazila: validatedData.upazila,
+    condition: validatedData.condition,
+    authenticity: validatedData.authenticity,
+    description: validatedData.description,
+    price: validatedData.price,
+    isNegotiable: validatedData.isNegotiable ?? false,
+    images: validatedData.images,
+    features: validatedData.features,
+    contactDetails: {
+      ...validatedData.contactDetails,
+      isPhoneHidden: validatedData.contactDetails.isPhoneHidden ?? false,
+    },
+    category: validatedData.category ? new Types.ObjectId(validatedData.category) : undefined,
+    subCategory: validatedData.subCategory ? new Types.ObjectId(validatedData.subCategory) : undefined,
+    brand: validatedData.brand ? new Types.ObjectId(validatedData.brand) : undefined,
+    productModel: validatedData.productModel ? new Types.ObjectId(validatedData.productModel) : undefined,
+    edition: validatedData.edition ? new Types.ObjectId(validatedData.edition) : undefined,
+=======
     const validatedData = createAdValidationSchema.parse(payload);
 console.log("📝 Validated data:", validatedData);
 
@@ -82,7 +112,19 @@ console.log("📝 Validated data:", validatedData);
       message: 'Ad posted successfully!',
       data: result,
     });
+>>>>>>> f8d657b14f42137d211867b626426330dd6f2639
   };
+
+  // 6️⃣ Save to DB
+  const result = await ClassifiedAdServices.createAdInDB(payloadForService);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.CREATED,
+    message: 'Ad posted successfully!',
+    data: result,
+  });
+};
 
 const getAllAds = async (_req: NextRequest) => {
   await dbConnect();
@@ -108,6 +150,19 @@ const updateAd = async (req: NextRequest, { params }: { params: { id: string } }
     ...validatedData,
     category: validatedData.category ? new Types.ObjectId(validatedData.category) : undefined,
     subCategory: validatedData.subCategory ? new Types.ObjectId(validatedData.subCategory) : undefined,
+<<<<<<< HEAD
+    brand: validatedData.brand ? new Types.ObjectId(validatedData.brand) : undefined,
+    productModel: validatedData.productModel ? new Types.ObjectId(validatedData.productModel) : undefined,
+    edition: validatedData.edition ? new Types.ObjectId(validatedData.edition) : undefined,
+    contactDetails: validatedData.contactDetails
+      ? {
+        name: validatedData.contactDetails.name ?? '',
+        phone: validatedData.contactDetails.phone ?? '',
+        email: validatedData.contactDetails.email,
+        isPhoneHidden: validatedData.contactDetails.isPhoneHidden ?? false,
+      }
+      : undefined,
+=======
     brand: validatedData.brand,
     productModel: validatedData.productModel,
     edition: validatedData.edition,
@@ -119,6 +174,7 @@ const updateAd = async (req: NextRequest, { params }: { params: { id: string } }
       isPhoneHidden: validatedData.contactDetails.isPhoneHidden ?? false,
     }
   : undefined,
+>>>>>>> f8d657b14f42137d211867b626426330dd6f2639
   };
 
   const result = await ClassifiedAdServices.updateAdInDB(params.id, userId, payloadForService);
