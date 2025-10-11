@@ -5,7 +5,7 @@ import { ChevronRight, MoveRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { toast } from 'sonner'; 
+import { toast } from 'sonner';
 
 interface Category {
   _id: string;
@@ -42,9 +42,9 @@ export default function SelectItems() {
       // get categories from public GET endpoint
       const response = await axios.get('/api/v1/public/classifieds-categories');
       setCategories(response.data.data || []);
-      if (response.data.data?.length > 0) {
-        toast.success('Categories loaded successfully!');
-      }
+      // if (response.data.data?.length > 0) {
+      //   toast.success('Categories loaded successfully!');
+      // }
     } catch (error) {
       console.error('Error fetching categories:', error);
       toast.error('Failed to load categories. Please try again.');
@@ -56,10 +56,10 @@ export default function SelectItems() {
   const fetchSubCategories = async (categoryId: string) => {
     try {
       setSubLoading(true);
-      const response = await axios.get(`/api/v1/public/classifieds-categories/${categoryId}/subcategories`); // Your subcategory GET endpoint
+      const response = await axios.get(`/api/v1/public/classifieds-categories/${categoryId}/subcategories`);
       // Assuming response structure: { success: true, data: [...] }
       setSubCategories(response.data.data || []);
-      toast.success('Subcategories loaded successfully!');
+      // toast.success('Subcategories loaded successfully!');
     } catch (error) {
       console.error('Error fetching subcategories:', error);
       toast.error('Failed to load subcategories. Please try again.');
@@ -105,11 +105,10 @@ export default function SelectItems() {
               categories.map((cat) => (
                 <li
                   key={cat._id}
-                  className={`w-full flex justify-between cursor-pointer p-2 rounded-md ${
-                    selectedCategory?._id === cat._id
-                      ? 'text-[#0097E9] bg-[#ffff]'
-                      : 'hover:bg-gray-200'
-                  }`}
+                  className={`w-full flex justify-between cursor-pointer p-2 rounded-md ${selectedCategory?._id === cat._id
+                    ? 'text-[#0097E9] bg-[#ffff]'
+                    : 'hover:bg-gray-200'
+                    }`}
                   onClick={() => handleCategoryClick(cat)}
                 >
                   {cat.icon && (
@@ -145,11 +144,10 @@ export default function SelectItems() {
                   subCategories.map((sub) => (
                     <li
                       key={sub._id}
-                      className={`justify-self-start w-full flex justify-between cursor-pointer p-3 border rounded-md text-center ${
-                        selectedSubcategory?._id === sub._id
-                          ? 'bg-green-500 text-white'
-                          : 'hover:bg-gray-100'
-                      }`}
+                      className={`justify-self-start w-full flex justify-between cursor-pointer p-3 border rounded-md text-center ${selectedSubcategory?._id === sub._id
+                        ? 'bg-green-500 text-white'
+                        : 'hover:bg-gray-100'
+                        }`}
                       onClick={() => handleSubcategoryClick(sub)}
                     >
                       {sub.icon && (

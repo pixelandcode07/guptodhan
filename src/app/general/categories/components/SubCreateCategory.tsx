@@ -39,7 +39,6 @@ export default function SubCreateCategory() {
     register,
     handleSubmit,
     control,
-    setValue,
     formState: { errors },
   } = useForm<Inputs>()
 

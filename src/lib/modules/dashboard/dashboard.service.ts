@@ -6,7 +6,7 @@ const getDashboardAnalyticsFromDB = async () => {
   const today = new Date();
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(today.getDate() - 30);
-  
+
   const startOfToday = new Date(new Date().setHours(0, 0, 0, 0));
 
   // --- KPI Queries ---
@@ -36,7 +36,7 @@ const getDashboardAnalyticsFromDB = async () => {
     { $match: { createdAt: { $gte: thirtyDaysAgo } } },
     { $group: { _id: '$status', count: { $sum: 1 } } }
   ]);
-  
+
   // ✅ Recent Customers (Latest registered users)
   const recentCustomersQuery = User.find({})
     .sort({ createdAt: -1 })
@@ -73,14 +73,14 @@ const getDashboardAnalyticsFromDB = async () => {
   // Format data for charts
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const salesAnalyticsData = salesByMonth.map(item => ({
-      name: `${monthNames[item._id.month - 1]}-${String(item._id.year).slice(-2)}`,
-      successful: item.successful,
-      failed: item.failed
+    name: `${monthNames[item._id.month - 1]}-${String(item._id.year).slice(-2)}`,
+    successful: item.successful,
+    failed: item.failed
   }));
-  
+
   const orderRatioData = orderStatusRatio.map(item => ({
-      name: item._id,
-      value: item.count
+    name: item._id,
+    value: item.count
   }));
 
   return {
