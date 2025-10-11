@@ -18,6 +18,7 @@ const orderSchema = new Schema<IOrder>({
   status: { type: String, enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'], default: 'pending' },
   paymentMethod: { type: String, enum: ['cod', 'online'], required: true },
   paymentStatus: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
+  transactionId: { type: String },
 }, { timestamps: true });
 
 export const Order = models.Order || model<IOrder>('Order', orderSchema);
