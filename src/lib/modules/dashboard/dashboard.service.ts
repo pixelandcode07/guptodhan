@@ -1,4 +1,4 @@
-import { Order } from '../order/order.model';
+import { OrderModel } from '../product-order/order/order.model';
 import { User } from '../user/user.model';
 
 const getDashboardAnalyticsFromDB = async () => {
@@ -10,16 +10,16 @@ const getDashboardAnalyticsFromDB = async () => {
   const startOfToday = new Date(new Date().setHours(0, 0, 0, 0));
 
   // --- KPI Queries ---
-  const monthlyOrdersQuery = Order.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
-  const todaysOrdersQuery = Order.countDocuments({ createdAt: { $gte: startOfToday } });
+  const monthlyOrdersQuery = OrderModel.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
+  const todaysOrdersQuery = OrderModel.countDocuments({ createdAt: { $gte: startOfToday } });
   const monthlyUsersQuery = User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
-  const monthlyRevenueQuery = Order.aggregate([
+  const monthlyRevenueQuery = OrderModel.aggregate([
     { $match: { createdAt: { $gte: thirtyDaysAgo }, paymentStatus: 'paid' } },
     { $group: { _id: null, total: { $sum: '$totalAmount' } } }
   ]);
 
   // --- Sales Analytics Bar Chart Query ---
-  const salesByMonthQuery = Order.aggregate([
+  const salesByMonthQuery = OrderModel.aggregate([
     { $match: { paymentStatus: { $in: ['paid', 'failed'] } } },
     {
       $group: {
@@ -32,7 +32,7 @@ const getDashboardAnalyticsFromDB = async () => {
   ]);
 
   // --- Order Ratio Pie Chart Query ---
-  const orderStatusRatioQuery = Order.aggregate([
+  const orderStatusRatioQuery = OrderModel.aggregate([
     { $match: { createdAt: { $gte: thirtyDaysAgo } } },
     { $group: { _id: '$status', count: { $sum: 1 } } }
   ]);
@@ -44,7 +44,7 @@ const getDashboardAnalyticsFromDB = async () => {
     .select('name email profilePicture phoneNumber address createdAt');
 
   // ✅ Recent Payments (Latest orders)
-  const recentOrdersQuery = Order.find({})
+  const recentOrdersQuery = OrderModel.find({})
     .sort({ createdAt: -1 })
     .limit(10)
     .populate('user', 'name email');
