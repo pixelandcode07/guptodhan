@@ -1,8 +1,9 @@
+import React from 'react';
 import FaqCategoriesTable from './Components/FaqCategoriesTable';
 
-export default function Page() {
+export default function page() {
   return (
-    <div className="m-5 p-5 border">
+    <div className="  bg-white ">
       <FaqCategoriesTable />
     </div>
   );

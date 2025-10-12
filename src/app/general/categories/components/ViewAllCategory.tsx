@@ -7,50 +7,11 @@ import { useSession } from "next-auth/react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
-// interface Category {
-//     _id: string
-//     name: string
-//     icon: string
-//     slug: string
-//     status: "active" | "inactive"
-// }
-
-// interface SubCategoryType {
-//                 _id: string
-//                 name: string
-//                 icon?: string
-//                 slug?: string
-//                 status?: "active" | "inactive"
-//                 category?: string
-//                 // add other fields as needed
-//             }
-
 export default function ViewAllCategory() {
     const { data: session } = useSession()
-    // const token = session?.accessToken
-    // const adminRole = session?.user?.role === "admin"
-
-
     const token = (session?.user as { accessToken?: string; role?: string })?.accessToken
     const adminRole = (session?.user as { role?: string })?.role === "admin"
-
-
-
     const [categories, setCategories] = useState<ViewBuySellDataType[]>([])
-
-    // const fetchCategories = async () => {
-    //     try {
-    //         const res = await axios.get("/api/v1/public/categories-with-subcategories")
-    //         setCategories(res.data.data || [])
-    //     } catch (error) {
-    //         console.log(error)
-    //         toast.error("Failed to fetch categories")
-    //     }
-    // }
-
-    // useEffect(() => {
-    //     fetchCategories()
-    // }, [])
 
     const fetchCategories = async () => {
         try {

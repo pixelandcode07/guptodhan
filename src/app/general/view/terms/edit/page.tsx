@@ -13,7 +13,7 @@ import { useSession } from 'next-auth/react';
 
 export default function EditTeamEntryForm() {
   const [preview, setPreview] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [previewUrl, setPreviewUrl] = useState<string>(''); // existing image url
   const [name, setName] = useState('');
   const [designation, setDesignation] = useState('');
   const [facebook, setFacebook] = useState('');
@@ -32,15 +32,13 @@ export default function EditTeamEntryForm() {
 
     const fetchData = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:3000/api/v1/public/about/team`
-        );
+        const res = await axios.get(`/api/v1/public/about/team`);
         const member = res.data.data.find((m: any) => m._id === id);
         if (!member) return;
 
         setName(member.name);
         setDesignation(member.designation);
-        setPreviewUrl(member.image); // show existing image
+        setPreviewUrl(member.image); // existing image
         setFacebook(member.socialLinks?.facebook || '');
         setLinkedin(member.socialLinks?.linkedin || '');
         setInstagram(member.socialLinks?.instagram || '');
@@ -63,45 +61,31 @@ export default function EditTeamEntryForm() {
     setLoading(true);
 
     try {
-      let imageUrl = previewUrl;
+      let formData = new FormData();
+      formData.append('name', name);
+      formData.append('designation', designation);
+      formData.append('socialLinks.facebook', facebook);
+      formData.append('socialLinks.linkedin', linkedin);
+      formData.append('socialLinks.instagram', instagram);
 
-      // Upload new image if selected
+      // ✅ Only append new image if selected
       if (preview) {
-        const formData = new FormData();
         formData.append('image', preview);
-
-        const uploadRes = await axios.post(
-          `http://localhost:3000/api/v1/about/team`,
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data',
-            },
-          }
-        );
-
-        imageUrl = uploadRes.data.data.image;
+        console.log('📸 New image will be uploaded:', preview.name);
+      } else {
+        console.log('ℹ️ No new image selected — backend keeps existing one');
       }
 
-      const payload = {
-        name,
-        designation,
-        image: imageUrl,
-        socialLinks: { facebook, linkedin, instagram },
-      };
-
-      const res = await axios.patch(
-        `http://localhost:3000/api/v1/about/team/${id}`,
-        payload,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await axios.patch(`/api/v1/about/team/${id}`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
       if (res.data.success) {
         toast.success('Team member updated!');
-        router.push('/general/view/terms'); // ✅ redirect after update
+        router.push('/general/view/terms');
       } else {
         toast.error('Failed to update!');
       }

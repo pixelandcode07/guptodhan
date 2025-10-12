@@ -6,9 +6,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import UploadImage from '@/components/ReusableComponents/UploadImage';
 import CompanyDetails from './CompanyDetails';
 import SectionTitle from '@/components/ui/SectionTitle';
-import { Loader2 } from 'lucide-react'; // ✅ spinner icon
-import { Toaster } from '@/components/ui/sonner';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 interface GeneralInfoFormProps {
   data: any;
@@ -44,7 +44,7 @@ export default function GeneralInfoForm({ data }: GeneralInfoFormProps) {
     user_cover_photo: data.userBanner || '',
   });
 
-  const [loading, setLoading] = useState(false); // ✅ loading state
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (name: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [name]: value }));
@@ -67,12 +67,11 @@ export default function GeneralInfoForm({ data }: GeneralInfoFormProps) {
     }));
   };
 
-  // ✅ SUBMIT FUNCTION
+  // ✅ SUBMIT FUNCTION (Axios version)
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // প্রথমে একটি "Updating..." toast দেখাও
     const toastId = toast.loading('Updating...');
 
     try {
@@ -103,31 +102,35 @@ export default function GeneralInfoForm({ data }: GeneralInfoFormProps) {
       let response;
 
       if (hasFile) {
-        response = await fetch('http://localhost:3000/api/v1/settings', {
-          method: 'POST',
-          body: formPayload,
-        });
-      } else {
-        response = await fetch(
-          `http://localhost:3000/api/v1/settings/${formData._id}`,
+        // ✅ File থাকলে multipart/form-data
+        response = await axios.post(
+          '/api/v1/settings',
+          formPayload,
           {
-            method: 'PATCH',
+            headers: { 'Content-Type': 'multipart/form-data' },
+          }
+        );
+      } else {
+        // ✅ শুধুমাত্র JSON data হলে PATCH request
+        response = await axios.patch(
+          `/api/v1/settings/${formData._id}`,
+          jsonPayload,
+          {
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(jsonPayload),
           }
         );
       }
 
-      if (!response.ok) {
-        throw new Error('Update failed');
+      if (response.status === 200 || response.status === 201) {
+        toast.success('Settings updated successfully!', { id: toastId });
+      } else {
+        throw new Error('Unexpected response');
       }
-
-      // আগের toast replace করে success মেসেজ দাও ✅
-      toast.success(' Settings updated successfully!', { id: toastId });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Submit Error:', error);
-      // আগের toast replace করে error মেসেজ দাও ❌
-      toast.error(' Failed to update settings', { id: toastId });
+      toast.error(error?.response?.data?.message || 'Failed to update settings', {
+        id: toastId,
+      });
     } finally {
       setLoading(false);
     }
