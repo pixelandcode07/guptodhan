@@ -3,7 +3,7 @@ import { IBlog } from './blog.interface';
 
 const blogSchema = new Schema<IBlog>(
   {
-    blogId: { type: String, required: true, unique: true },
+    blogId: { type: String, unique: true },
     coverImage: { type: String, required: true },
     category: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
     title: { type: String, required: true, trim: true },
