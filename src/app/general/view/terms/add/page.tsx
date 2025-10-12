@@ -42,16 +42,12 @@ export default function TeamEntryForm() {
       formData.append('socialLinks.facebook', facebook);
       formData.append('socialLinks.instagram', instagram);
 
-      const res = await axios.post(
-        'http://localhost:3000/api/v1/about/team',
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      const res = await axios.post('/api/v1/about/team', formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
       if (res.data.success) {
         toast.success('Team member created!');

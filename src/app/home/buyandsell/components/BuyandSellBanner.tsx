@@ -15,7 +15,7 @@ interface BuyandSellBannerProps {
 }
 
 export default async function BuyandSellBanner({ banner }: BuyandSellBannerProps) {
-    console.log(banner)
+    // console.log(banner)
 
     return (
         <div className="space-y-5">

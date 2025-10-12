@@ -8,7 +8,7 @@ export const createPromoCodeValidationSchema = z.object({
   startDate: z.string({ required_error: 'Start date is required.' }), // use string and later convert to Date
   endingDate: z.string({ required_error: 'Ending date is required.' }),
   type: z.string().min(1, { message: 'Type is required.' }),
-  shortDescription: z.string().min(1, { message: 'Short description is required.' }),
+  shortDescription: z.string().optional(),
   value: z.number({ required_error: 'Value is required.' }),
   minimumOrderAmount: z.number({ required_error: 'Minimum order amount is required.' }),
   code: z.string().min(1, { message: 'Code is required.' }),
