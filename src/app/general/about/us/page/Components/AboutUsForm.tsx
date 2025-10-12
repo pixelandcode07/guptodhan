@@ -56,7 +56,7 @@ export default function AboutUsForm({ aboutData }: AboutUsFormProps) {
       };
 
       const res = await axios.patch(
-        `http://localhost:3000/api/v1/about/content/${aboutData._id}`,
+        `/api/v1/about/content/${aboutData._id}`,
         payload,
         {
           headers: {

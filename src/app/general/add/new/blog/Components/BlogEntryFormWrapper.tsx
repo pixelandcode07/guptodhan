@@ -62,7 +62,8 @@ export default function BlogEntryFormWrapper() {
 
     const payload = {
       blogId: crypto.randomUUID(),
-      category: '64f8c5a2b123456789abcdef', // <-- MUST be valid ObjectId
+      // category: blogData.category, // <-- MUST be valid ObjectId
+      category: '507f1f77bcf86cd799439011', //
       title: blogData.title,
       description: blogData.shortDescription, // shortDescription mapped to description
       coverImage: blogData.coverImageUrl,
@@ -70,16 +71,13 @@ export default function BlogEntryFormWrapper() {
       metaTitle: seoData.metaTitle,
       metaDescription: seoData.metaDescription,
       metaKeywords: seoData.metaKeywords,
-      status: 'active', // required by backend enum
+      status: 'active',
     };
 
     console.log(payload);
     try {
       setLoading(true);
-      const res = await axios.post(
-        'http://localhost:3000/api/v1/blog',
-        payload
-      );
+      const res = await axios.post('/api/v1/blog', payload);
       toast.success('Blog created successfully!');
       console.log('Server Response:', res.data);
     } catch (error: any) {
@@ -92,7 +90,7 @@ export default function BlogEntryFormWrapper() {
 
   return (
     <div className="pt-5 bg-white space-y-4">
-      <SectionTitle text="Blog Entry Form" />
+      {/* <SectionTitle text="Blog Entry Form" /> */}
 
       <div className="px-5 pt-4 space-y-4">
         <BlogForm formData={blogData} setFormData={setBlogData} />

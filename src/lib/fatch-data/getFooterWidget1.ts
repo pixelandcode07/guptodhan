@@ -1,10 +1,7 @@
 export async function getFooterWidgets() {
-  const res = await fetch(
-    'http://localhost:3000/api/v1/public/footer-widgets',
-    {
-      cache: 'no-store', // fresh data every request
-    }
-  );
+  const res = await fetch('/api/v1/public/footer-widgets', {
+    cache: 'no-store', // fresh data every request
+  });
   if (!res.ok) throw new Error('Failed to fetch widgets');
 
   const json = await res.json();

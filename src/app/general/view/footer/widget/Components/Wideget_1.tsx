@@ -55,8 +55,8 @@ export default function FooterWidget1({ widget }: FooterWidgetProps) {
     try {
       const method = widget?._id ? 'PATCH' : 'POST';
       const url = widget?._id
-        ? `http://localhost:3000/api/v1/footer-widgets/${widget._id}`
-        : 'http://localhost:3000/api/v1/footer-widgets';
+        ? `/api/v1/footer-widgets/${widget._id}`
+        : '/api/v1/footer-widgets';
 
       const res = await fetch(url, {
         method,

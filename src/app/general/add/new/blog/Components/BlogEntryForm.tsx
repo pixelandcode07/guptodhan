@@ -104,12 +104,12 @@ export default function BlogForm({ formData, setFormData }: BlogFormProps) {
               <SelectValue placeholder="Select One" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="6">Buy & Sale</SelectItem>
-              <SelectItem value="5">Donation</SelectItem>
-              <SelectItem value="4">E-commerce</SelectItem>
-              <SelectItem value="1">Education</SelectItem>
-              <SelectItem value="2">Environment</SelectItem>
-              <SelectItem value="3">Human Rights</SelectItem>
+              <SelectItem value="Buy & Sale">Buy & Sale</SelectItem>
+              <SelectItem value="Donation">Donation</SelectItem>
+              <SelectItem value="E-commerce">E-commerce</SelectItem>
+              <SelectItem value="E-commerce"></SelectItem>
+              <SelectItem value="Environment">Environment</SelectItem>
+              <SelectItem value="Human Rights">Human Rights</SelectItem>
             </SelectContent>
           </Select>
         </div>

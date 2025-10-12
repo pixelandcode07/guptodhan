@@ -15,13 +15,17 @@ interface FAQSTabileProps {
   loading?: boolean;
 }
 
-export default function FAQSTabile({ faq, refreshData, loading }: FAQSTabileProps) {
+export default function FAQSTabile({
+  faq,
+  refreshData,
+  loading,
+}: FAQSTabileProps) {
   const deleteFAQ = async (id: string) => {
     if (!confirm('Are you sure you want to delete this FAQ?')) return;
 
     const toastId = toast.loading('Deleting FAQ...');
     try {
-      await axios.delete(`http://localhost:3000/api/v1/faq/${id}`);
+      await axios.delete(`/api/v1/faq/${id}`);
       toast.success('FAQ deleted successfully!', { id: toastId });
       refreshData?.(); // refresh table after deletion
     } catch (error) {
@@ -55,15 +59,17 @@ export default function FAQSTabile({ faq, refreshData, loading }: FAQSTabileProp
                   answer: faqItem.answer,
                   isActive: faqItem.isActive,
                 },
-              }}
-            >
+              }}>
               <Button size="sm" variant="outline">
                 <Edit className="w-4 h-4" />
               </Button>
             </Link>
 
             {/* Delete Button */}
-            <Button size="sm" variant="destructive" onClick={() => deleteFAQ(faqItem._id)}>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => deleteFAQ(faqItem._id)}>
               <Trash2 className="w-4 h-4" />
             </Button>
           </div>
@@ -92,7 +98,7 @@ export default function FAQSTabile({ faq, refreshData, loading }: FAQSTabileProp
       </div>
 
       {/* Data Table */}
-      <DataTable columns={columnsWithActions} data={faq}  />
+      <DataTable columns={columnsWithActions} data={faq} />
     </div>
   );
 }

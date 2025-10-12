@@ -1,25 +1,20 @@
 import axios from 'axios';
 import SocialLinks from '../../Components/Social_links';
 
-export default async function page() {
-  let socailLinks = null;
+const fetchSocalLinks = async () => {
   try {
-    const res = await axios.get(
-      'http://localhost:3000/api/v1/public/footer-widgets',
-      {
-        headers: { 'Cache-Control': 'no-store' },
-      }
-    );
-
-    if (
-      res.data?.success &&
-      Array.isArray(res.data.data) &&
-      res.data.data.length > 0
-    ) {
-      socailLinks = res.data.data[0];
-    }
-  } catch (err: any) {
-    console.error('API Error:', err.response?.data || err.message);
+    const baseUrl = process.env.NEXTAUTH_URL;
+    const { data } = await axios.get(`${baseUrl}/api/v1/public/footer-widgets`);
+    return data;
+  } catch (error) {
+    console.log('fetch facts Error:', error);
+    return { data: [] };
   }
-  return <SocialLinks socialLink={socailLinks} />;
+};
+
+export default async function page() {
+  const socailLinks = await fetchSocalLinks();
+  console.log(socailLinks);
+
+  return <SocialLinks socialLink={socailLinks.data.links} />;
 }

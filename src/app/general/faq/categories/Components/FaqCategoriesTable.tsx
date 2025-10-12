@@ -39,7 +39,7 @@ export default function FaqCategoriesTable() {
   const [loadingDeleteId, setLoadingDeleteId] = useState<number | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
-  const apiBase = 'http://localhost:3000/general/faq/api/category';
+  const apiBase = '/general/faq/api/category';
 
   useEffect(() => {
     refreshData();

@@ -17,18 +17,19 @@ export type StoresDataType = {
 
 export const blogs_columns: ColumnDef<StoresDataType>[] = [
   {
-    accessorKey: 'id',
+    id: 'serial',
     header: 'SL',
+    cell: ({ row }) => row.index + 1,
   },
   {
     accessorKey: 'title',
     header: 'Title',
   },
   {
-    accessorKey: 'image',
+    accessorKey: 'coverImage',
     header: 'Image',
     cell: ({ row }) => {
-      const imageUrl = row.getValue('image') as string;
+      const imageUrl = row.getValue('coverImage') as string;
       return (
         <img
           src={imageUrl}
@@ -49,7 +50,7 @@ export const blogs_columns: ColumnDef<StoresDataType>[] = [
       const status = row.getValue('status') as string;
 
       const statusColor =
-        status === 'Active'
+        status === 'active'
           ? 'bg-green-100 text-green-700 border-green-300'
           : status === 'Pending'
           ? 'bg-yellow-100 text-yellow-700 border-yellow-300'
@@ -67,23 +68,36 @@ export const blogs_columns: ColumnDef<StoresDataType>[] = [
     },
   },
   {
-    accessorKey: 'published',
+    accessorKey: 'createdAt',
     header: 'Published',
-  },
-  {
-    accessorKey: 'action',
-    header: 'Action',
-    cell: () => {
-      return (
-        <div className="flex items-center gap-2">
-          <Button className="bg-yellow-400 hover:bg-yellow-500 text-black cursor-pointer">
-            <Edit />
-          </Button>
-          <Button className="bg-red-700 hover:bg-red-800 text-white cursor-pointer">
-            <X />
-          </Button>
-        </div>
-      );
+    cell: ({ row }) => {
+      const date = new Date(row.original.createdAt);
+      const formattedDate = date.toLocaleString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+      return formattedDate.replace(',', ' -');
     },
   },
+
+  // {
+  //   accessorKey: 'action',
+  //   header: 'Action',
+  //   cell: () => {
+  //     return (
+  //       <div className="flex items-center gap-2">
+  //         <Button className="bg-yellow-400 hover:bg-yellow-500 text-black cursor-pointer">
+  //           <Edit />
+  //         </Button>
+  //         <Button className="bg-red-700 hover:bg-red-800 text-white cursor-pointer">
+  //           <X />
+  //         </Button>
+  //       </div>
+  //     );
+  //   },
+  // },
 ];
