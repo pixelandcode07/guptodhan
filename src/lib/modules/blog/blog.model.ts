@@ -5,7 +5,7 @@ const blogSchema = new Schema<IBlog>(
   {
     blogId: { type: String, unique: true },
     coverImage: { type: String, required: true },
-    category: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
+    category: { type: String, required: true },
     title: { type: String, required: true, trim: true },
     description: { type: String, required: true },
     tags: [{ type: String }],
