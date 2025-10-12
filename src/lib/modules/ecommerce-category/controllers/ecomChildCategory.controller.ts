@@ -116,38 +116,94 @@ const getChildCategoriesBySubCategory = async (req: NextRequest, { params }: { p
   });
 };
 
-// Update child category
-const updateChildCategory = async (req: NextRequest, { params }: { params: { id: string } }) => {
-  await dbConnect();
-  const { id } = params;
-  const body = await req.json();
-  const validatedData = updateChildCategoryValidationSchema.parse(body);
+// Update child category (await params; accept multipart form-data like create)
+const updateChildCategory = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  try {
+    console.log('🚀 Starting child category update...');
+    await dbConnect();
+    console.log('✅ Database connected');
+    
+    const { id } = await params;
+    console.log('📝 Updating child category ID:', id);
 
-  const payload: Partial<IChildCategory> = {};
+    // Accept multipart form-data to support icon updates
+    const form = await req.formData();
+    console.log('✅ Form data parsed');
 
-  // Copy non-ObjectId fields
-  if (validatedData.childCategoryId) payload.childCategoryId = validatedData.childCategoryId;
-  if (validatedData.name) payload.name = validatedData.name;
-  if (validatedData.icon) payload.icon = validatedData.icon;
-  if (validatedData.slug) payload.slug = validatedData.slug;
-  if (validatedData.status) payload.status = validatedData.status;
+    const name = (form.get('name') as string) ?? undefined;
+    const slug = (form.get('slug') as string) ?? undefined;
+    const status = (form.get('status') as string) ?? undefined; // 'active' | 'inactive'
+    const categoryId = (form.get('category') as string) ?? undefined; // optional category ObjectId
+    const subCategoryId = (form.get('subCategory') as string) ?? undefined; // optional subcategory ObjectId
 
-  // Convert string IDs to ObjectIds
-  if (validatedData.category) {
-    payload.category = new Types.ObjectId(validatedData.category);
+    const iconFile = form.get('childCategoryIcon') as File | null;
+
+    console.log('📝 Form data extracted:', { name, slug, status, categoryId, subCategoryId });
+
+    const updatePayload: Record<string, unknown> = {};
+    if (name !== undefined) updatePayload.name = name;
+    if (slug !== undefined) updatePayload.slug = slug;
+    if (status !== undefined) updatePayload.status = status;
+    
+    // Keep as strings for validation, convert to ObjectId later
+    if (categoryId !== undefined && categoryId.trim() !== '') {
+      updatePayload.category = categoryId;
+    }
+    
+    if (subCategoryId !== undefined && subCategoryId.trim() !== '') {
+      updatePayload.subCategory = subCategoryId;
+    }
+
+    if (iconFile) {
+      console.log('📤 Uploading icon file...');
+      const b = Buffer.from(await iconFile.arrayBuffer());
+      updatePayload.icon = (await uploadToCloudinary(b, 'ecommerce-childcategory/icons')).secure_url;
+      console.log('✅ Icon uploaded:', updatePayload.icon);
+    }
+
+    console.log('📋 Update payload prepared:', updatePayload);
+
+    // Validate using schema (fields optional)
+    const validatedData = updateChildCategoryValidationSchema.parse(updatePayload);
+    console.log('✅ Data validated');
+
+    // Convert string IDs -> ObjectId for DB
+    const dbPayload: Partial<IChildCategory> = {};
+    
+    // Copy non-ObjectId fields
+    if (validatedData.childCategoryId) dbPayload.childCategoryId = validatedData.childCategoryId;
+    if (validatedData.name) dbPayload.name = validatedData.name;
+    if (validatedData.icon) dbPayload.icon = validatedData.icon;
+    if (validatedData.slug) dbPayload.slug = validatedData.slug;
+    if (validatedData.status) dbPayload.status = validatedData.status;
+    
+    // Convert string IDs to ObjectIds
+    if (validatedData.category && typeof validatedData.category === 'string') {
+      dbPayload.category = new Types.ObjectId(validatedData.category);
+    }
+    if (validatedData.subCategory && typeof validatedData.subCategory === 'string') {
+      dbPayload.subCategory = new Types.ObjectId(validatedData.subCategory);
+    }
+
+    const result = await ChildCategoryServices.updateChildCategoryInDB(id, dbPayload);
+    console.log('✅ Child category updated in database:', result);
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: 'ChildCategory updated successfully!',
+      data: result,
+    });
+  } catch (error: unknown) {
+    console.error('❌ Error updating child category:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: errorMessage,
+      data: null,
+    });
   }
-  if (validatedData.subCategory) {
-    payload.subCategory = new Types.ObjectId(validatedData.subCategory);
-  }
-
-  const result = await ChildCategoryServices.updateChildCategoryInDB(id, payload);
-
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'ChildCategory updated successfully!',
-    data: result,
-  });
 };
 
 // Delete child category
