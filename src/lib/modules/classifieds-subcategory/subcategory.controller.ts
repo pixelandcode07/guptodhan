@@ -10,7 +10,7 @@ import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 
 const createSubCategory = async (req: NextRequest) => {
     await dbConnect();
-    
+
     const formData = await req.formData();
     const name = formData.get('name') as string;
     const categoryId = formData.get('category') as string;
@@ -26,14 +26,14 @@ const createSubCategory = async (req: NextRequest) => {
         const uploadResult = await uploadToCloudinary(buffer, 'subcategory-icons');
         payload.icon = uploadResult.secure_url;
     }
-    
+
     const validatedData = createSubCategoryValidationSchema.parse(payload);
-    
+
     const payloadForService = {
         ...validatedData,
         category: new Types.ObjectId(validatedData.category),
     };
-    
+
     const result = await ClassifiedSubCategoryServices.createSubCategoryInDB(payloadForService);
 
     return sendResponse({
@@ -86,23 +86,23 @@ const updateSubCategory = async (req: NextRequest, { params }: { params: Promise
 
 
 const getSubCategoriesByParent = async (req: NextRequest, context: any) => {
-  await dbConnect();
+    await dbConnect();
 
-  // context.params.awaitable → await করে ব্যবহার করতে হবে
-  const params = await context.params;
-  if (!params || !params.id) {
-    throw new Error("Category ID is required in the route params.");
-  }
-  const id = params.id;
+    // context.params.awaitable → await করে ব্যবহার করতে হবে
+    const params = await context.params;
+    if (!params || !params.id) {
+        throw new Error("Category ID is required in the route params.");
+    }
+    const id = params.id;
 
-  const result = await ClassifiedSubCategoryServices.getSubCategoriesByParentFromDB(id);
+    const result = await ClassifiedSubCategoryServices.getSubCategoriesByParentFromDB(id);
 
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: "Sub-categories retrieved successfully!",
-    data: result,
-  });
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: "Sub-categories retrieved successfully!",
+        data: result,
+    });
 };
 
 

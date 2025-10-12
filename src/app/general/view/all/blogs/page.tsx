@@ -1,9 +1,23 @@
+import axios from 'axios';
 import BlogTable from './Components/BlogTable';
 
-export default function BlogPage() {
+const fetchBLogs = async () => {
+  try {
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const { data } = await axios.get(`${baseUrl}/api/v1/blog`);
+    return data;
+  } catch (error) {
+    console.log('fetch facts Error:', error);
+    return { data: [] };
+  }
+};
+
+export default async function BlogPage() {
+  const blogs = await fetchBLogs();
+  console.log(blogs);
   return (
     <div className="min-h-screen bg-gray-50">
-      <BlogTable />
+      <BlogTable blogs={blogs} />
     </div>
   );
 }

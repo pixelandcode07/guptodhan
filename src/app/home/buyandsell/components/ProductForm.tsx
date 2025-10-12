@@ -38,9 +38,7 @@ export default function ProductForm() {
     // Get data from the previous step's URL
     const category = searchParams?.get("category") ?? "";
     const subcategory = searchParams?.get("subcategory") ?? "";
-    const division = searchParams?.get("division") ?? "";
-    const city = searchParams?.get("city") ?? "";
-    const area = searchParams?.get("area") ?? "";
+    const location = searchParams?.get("location") ?? "";
 
 
 
@@ -88,11 +86,7 @@ export default function ProductForm() {
             edition: data.edition?.value,
             category: category,
             subcategory: subcategory,
-            location: {
-                division,
-                city,
-                area
-            },
+            location: location,
         };
         console.log("Final Product Data:", newProduct);
 
@@ -130,7 +124,7 @@ export default function ProductForm() {
             <div className="w-full max-w-6xl bg-white shadow-lg rounded-lg p-8">
                 <h1 className="text-3xl font-bold mb-4 text-center text-gray-800">Fill in the details</h1>
                 <p className="text-gray-600 mb-6 text-center">
-                    Posting in: <span className="font-semibold text-primary">{category}</span> / <span className="font-semibold text-primary">{subcategory}</span> / <span className="font-semibold text-primary">{division}</span>
+                    Posting in: <span className="font-semibold text-primary">{category}</span> / <span className="font-semibold text-primary">{subcategory}</span> / <span className="font-semibold text-primary">{location}</span>
                 </p>
 
                 <form

@@ -1,62 +1,99 @@
 'use client';
 
 import { useState } from 'react';
-import BlogForm from './BlogEntryForm';
-import BlogSeoForm from './BlogSeoInfo';
+import BlogForm, { BlogData } from './BlogForm';
+import BlogSeoForm, { SeoData } from './BlogSeoForm';
 import TagsInput from './TagInput';
+import RichTextEditor from '@/components/ReusableComponents/RichTextEditor';
 import { Button } from '@/components/ui/button';
 import SectionTitle from '@/components/ui/SectionTitle';
-import RichTextEditor from '@/components/ReusableComponents/RichTextEditor';
+import { toast } from 'sonner';
+import axios from 'axios';
 
-export type BlogData = {
-  category: string;
-  title: string;
-  shortDescription: string;
-  coverImage: File | null;
-};
-
-export type SeoData = {
-  metaTitle: string;
-  metaKeywords: string[];
-  metaDescription: string;
-};
 export default function BlogEntryFormWrapper() {
-  // 1. BlogForm state
+  const [loading, setLoading] = useState(false);
+
   const [blogData, setBlogData] = useState<BlogData>({
     category: '',
     title: '',
     shortDescription: '',
-    coverImage: null as File | null,
+    coverImageUrl: '', // Use URL
   });
 
-  // 2. Tags state
   const [tags, setTags] = useState<string[]>([]);
-
-  // 3. SEO state
   const [seoData, setSeoData] = useState<SeoData>({
     metaTitle: '',
-    metaKeywords: [] as string[],
+    metaKeywords: [],
     metaDescription: '',
   });
-
-  // 4. RichTextEditor content
   const [content, setContent] = useState('');
 
-  const handleUpdate = () => {
-    const formData = {
-      blogData,
+  const handleSubmit = async () => {
+    // Validation
+    if (!blogData.category) return toast.error('Category is required!');
+    if (!blogData.title.trim()) return toast.error('Title is required!');
+    if (!blogData.coverImageUrl) return toast.error('Cover image is required!');
+
+    // const payload = {
+    //   blogId: crypto.randomUUID(), // generate a unique string
+    //   category: blogData.category,
+    //   title: blogData.title,
+    //   shortDescription: blogData.shortDescription,
+    //   coverImage: blogData.coverImageUrl,
+    //   content,
+    //   tags,
+    //   metaTitle: seoData.metaTitle,
+    //   metaDescription: seoData.metaDescription,
+    //   metaKeywords: seoData.metaKeywords,
+    // };
+
+    // const payload = {
+    //   blogId: crypto.randomUUID(),
+    //   category: blogData.category,
+    //   title: blogData.title,
+    //   description: blogData.shortDescription, // <-- use 'description'
+    //   coverImage: blogData.coverImageUrl,
+    //   content, // content can be sent if backend stores it inside description or separate field
+    //   tags,
+    //   metaTitle: seoData.metaTitle,
+    //   metaDescription: seoData.metaDescription,
+    //   metaKeywords: seoData.metaKeywords,
+    // };
+
+    const payload = {
+      blogId: crypto.randomUUID(),
+      category: '64f8c5a2b123456789abcdef', // <-- MUST be valid ObjectId
+      title: blogData.title,
+      description: blogData.shortDescription, // shortDescription mapped to description
+      coverImage: blogData.coverImageUrl,
       tags,
-      seoData,
-      content, // RichText content
+      metaTitle: seoData.metaTitle,
+      metaDescription: seoData.metaDescription,
+      metaKeywords: seoData.metaKeywords,
+      status: 'active', // required by backend enum
     };
 
-    console.log('Form Data Object:', formData);
-    alert('Form updated!');
+    console.log(payload);
+    try {
+      setLoading(true);
+      const res = await axios.post(
+        'http://localhost:3000/api/v1/blog',
+        payload
+      );
+      toast.success('Blog created successfully!');
+      console.log('Server Response:', res.data);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Something went wrong!');
+      console.error('Post Error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="pt-5 bg-white space-y-4">
       <SectionTitle text="Blog Entry Form" />
+
       <div className="px-5 pt-4 space-y-4">
         <BlogForm formData={blogData} setFormData={setBlogData} />
         <RichTextEditor value={content} onChange={setContent} />
@@ -65,10 +102,15 @@ export default function BlogEntryFormWrapper() {
       </div>
 
       <div className="flex justify-center pb-5 gap-4 mt-6">
-        <Button variant="destructive" onClick={() => console.log('Cancelled')}>
+        <Button
+          variant="destructive"
+          onClick={() => console.log('Cancelled')}
+          disabled={loading}>
           Cancel
         </Button>
-        <Button onClick={handleUpdate}>Update</Button>
+        <Button onClick={handleSubmit} disabled={loading}>
+          {loading ? 'Posting...' : 'Post'}
+        </Button>
       </div>
     </div>
   );

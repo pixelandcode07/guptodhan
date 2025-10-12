@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState } from 'react';
@@ -13,19 +12,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 import SectionTitle from '@/components/ui/SectionTitle';
 
-export default function AddFactPage() {
-  const { data: session } = useSession();
-  const token = (session as any)?.accessToken;
-  const router = useRouter();
-
+export default function AddBlogPage() {
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<'active' | 'inactive'>('active'); // ✅ default active
+  const [status, setStatus] = useState<'active' | 'inactive'>('active');
+  const [category, setCategory] = useState('');
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -34,89 +30,134 @@ export default function AddFactPage() {
     const formData = new FormData(e.currentTarget);
 
     const payload = {
-      factTitle: formData.get('factTitle'),
-      factCount: Number(formData.get('factCount')),
-      shortDescription: formData.get('shortDescription'),
-      status: status, // ✅ always use selected state
+      blogId: formData.get('blogId'),
+      coverImage: formData.get('coverImage'),
+      category: category,
+      title: formData.get('title'),
+      description: formData.get('description'),
+      tags: (formData.get('tags') as string)?.split(',').map(tag => tag.trim()),
+      metaTitle: formData.get('metaTitle'),
+      metaKeywords: (formData.get('metaKeywords') as string)
+        ?.split(',')
+        .map(k => k.trim()),
+      metaDescription: formData.get('metaDescription'),
+      status,
     };
 
-    console.log('🚀 Sending payload:', payload);
-
     try {
-      const res = await axios.post(
-        'http://localhost:3000/api/v1/about/facts',
-        payload,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
+      const res = await axios.post('/api/v1/blog', payload);
       if (res.data.success) {
-        toast.success(' Fact created successfully!');
-        router.push('/general/view/facts');
+        toast.success('Blog created successfully!');
+        router.push('/admin/blogs');
       } else {
-        toast.error(' Failed to create fact');
+        toast.error('Failed to create blog!');
       }
     } catch (error: any) {
-      console.error('Error:', error);
-      toast.error(' Something went wrong while saving');
+      console.error(error);
+      toast.error('Something went wrong!');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="mx-auto bg-white dark:bg-neutral-900 shadow-md rounded-2xl pt-6">
-      <SectionTitle text="Create Fact" />
+    <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-md pt-6">
+      <SectionTitle text="Create Blog" />
 
       <form onSubmit={handleSubmit} className="space-y-6 p-6">
-        {/* Fact Title + Count */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="factTitle">
-              Fact Title <span className="text-red-500">*</span>
-            </Label>
+            <Label htmlFor="blogId">Blog ID</Label>
             <Input
-              id="factTitle"
-              name="factTitle"
-              type="text"
-              placeholder="Products For Sale"
+              id="blogId"
+              name="blogId"
+              placeholder="Unique blog ID"
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="factCount">Fact Count</Label>
+            <Label htmlFor="coverImage">Cover Image URL</Label>
             <Input
-              id="factCount"
-              name="factCount"
-              type="number"
-              placeholder="15"
+              id="coverImage"
+              name="coverImage"
+              placeholder="https://..."
               required
             />
           </div>
         </div>
 
-        {/* Short Description */}
         <div className="space-y-2">
-          <Label htmlFor="shortDescription">Short Description</Label>
+          <Label htmlFor="title">Title</Label>
+          <Input id="title" name="title" placeholder="Blog Title" required />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
           <Textarea
-            id="shortDescription"
-            name="shortDescription"
-            rows={3}
-            maxLength={250}
-            placeholder="Short Description"
+            id="description"
+            name="description"
+            rows={4}
+            placeholder="Blog Description"
+            required
           />
         </div>
 
-        {/* Status Select */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="tags">Tags (comma separated)</Label>
+            <Input id="tags" name="tags" placeholder="nextjs, react, mongodb" />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category">Category ID</Label>
+            <Input
+              id="category"
+              name="category"
+              placeholder="Paste category ObjectId"
+              onChange={e => setCategory(e.target.value)}
+              required
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="metaTitle">Meta Title</Label>
+          <Input
+            id="metaTitle"
+            name="metaTitle"
+            placeholder="SEO title"
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="metaKeywords">Meta Keywords</Label>
+            <Input
+              id="metaKeywords"
+              name="metaKeywords"
+              placeholder="keyword1, keyword2"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="metaDescription">Meta Description</Label>
+            <Textarea
+              id="metaDescription"
+              name="metaDescription"
+              rows={2}
+              placeholder="SEO description"
+            />
+          </div>
+        </div>
+
         <div className="w-40 space-y-2">
-          <Label htmlFor="status">Status</Label>
+          <Label>Status</Label>
           <Select
             value={status}
             onValueChange={val => setStatus(val as 'active' | 'inactive')}>
-            <SelectTrigger id="status">
-              <SelectValue placeholder="Select One" />
+            <SelectTrigger>
+              <SelectValue placeholder="Select status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="active">Active</SelectItem>
@@ -125,10 +166,9 @@ export default function AddFactPage() {
           </Select>
         </div>
 
-        {/* Submit Button */}
         <div className="pt-4">
           <Button type="submit" disabled={loading} className="w-full md:w-auto">
-            {loading ? 'Saving...' : 'Save'}
+            {loading ? 'Saving...' : 'Save Blog'}
           </Button>
         </div>
       </form>
