@@ -1,7 +1,7 @@
 import { Document, Types } from 'mongoose';
 
 export interface IBlog extends Document {
-  blogId: string;
+  // blogId: string;
   coverImage: string;
   category: string;
   title: string;

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Create blog validation
 export const createBlogValidationSchema = z.object({
-  blogId: z.string().min(1, { message: 'Blog ID is required.' }),
+  // blogId: z.string().min(1, { message: 'Blog ID is required.' }),
   coverImage: z.string().min(1, { message: 'Cover image is required.' }),
   category: z.string({ required_error: 'Category ID is required.' }),
   title: z.string().min(1, { message: 'Blog title is required.' }),
@@ -16,7 +16,7 @@ export const createBlogValidationSchema = z.object({
 
 // Update blog validation
 export const updateBlogValidationSchema = z.object({
-  blogId: z.string().optional(),
+  // blogId: z.string().optional(),
   coverImage: z.string().optional(),
   category: z.string().optional(),
   title: z.string().optional(),
