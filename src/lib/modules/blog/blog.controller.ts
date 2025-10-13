@@ -14,7 +14,6 @@ const createBlog = async (req: NextRequest) => {
 
     const payload = {
         ...validatedData,
-        category: new Types.ObjectId(validatedData.category),
     };
 
     const result = await BlogServices.createBlogInDB(payload);
