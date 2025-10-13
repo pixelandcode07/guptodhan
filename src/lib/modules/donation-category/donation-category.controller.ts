@@ -5,7 +5,6 @@ import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 import { createDonationCategorySchema, updateDonationCategorySchema } from './donation-category.validation';
 import { DonationCategoryServices } from './donation-category.service';
 import dbConnect from '@/lib/db';
-import { ZodError } from 'zod';
 
 const createCategory = async (req: NextRequest) => {
     await dbConnect();
@@ -33,7 +32,71 @@ const getActiveCategories = async (_req: NextRequest) => {
     return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Active categories retrieved!', data: result });
 };
 
+// ✅ NEW: Function to handle PATCH requests
+const updateCategory = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    await dbConnect();
+    const { id } = await params;
+    const formData = await req.formData();
+    
+    const payload: Record<string, any> = {};
+
+    // Get text fields from form data
+    if (formData.has('name')) payload.name = formData.get('name');
+    if (formData.has('status')) payload.status = formData.get('status');
+
+    // Handle optional icon upload
+    const iconFile = formData.get('icon') as File | null;
+    if (iconFile && iconFile.size > 0) {
+        const buffer = Buffer.from(await iconFile.arrayBuffer());
+        const uploadResult = await uploadToCloudinary(buffer, 'donation-category-icons');
+        payload.icon = uploadResult.secure_url;
+    }
+
+    const validatedData = updateDonationCategorySchema.parse(payload);
+    const result = await DonationCategoryServices.updateCategoryInDB(id, validatedData);
+    
+    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Donation category updated!', data: result });
+};
+
+// ✅ NEW: Function to handle DELETE requests
+const deleteCategory = async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    await dbConnect();
+    const { id } = await params;
+    await DonationCategoryServices.deleteCategoryFromDB(id);
+    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Donation category deleted!', data: null });
+};
+
+const getCategoryById = async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    await dbConnect();
+    const { id } = await params;
+    const result = await DonationCategoryServices.getCategoryByIdFromDB(id);
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Category retrieved successfully!',
+        data: result,
+    });
+};
+
+
+const getCategoryByIdForAdmin = async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    await dbConnect();
+    const { id } = await params;
+    const result = await DonationCategoryServices.getCategoryByIdForAdminFromDB(id);
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Category retrieved successfully!',
+        data: result,
+    });
+};
+
+
 export const DonationCategoryController = {
   createCategory,
   getActiveCategories,
+  updateCategory,
+  deleteCategory,
+  getCategoryById,
+  getCategoryByIdForAdmin,
 };
