@@ -79,10 +79,24 @@ const getCategoryById = async (_req: NextRequest, { params }: { params: Promise<
 };
 
 
+const getCategoryByIdForAdmin = async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    await dbConnect();
+    const { id } = await params;
+    const result = await DonationCategoryServices.getCategoryByIdForAdminFromDB(id);
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Category retrieved successfully!',
+        data: result,
+    });
+};
+
+
 export const DonationCategoryController = {
   createCategory,
   getActiveCategories,
   updateCategory,
   deleteCategory,
   getCategoryById,
+  getCategoryByIdForAdmin,
 };
