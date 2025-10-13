@@ -51,6 +51,7 @@ const fetchAllBuySellData = async () => {
 export default async function BuyandSellHome() {
     const banner = await fetchBanner();
     const allCategory = await fetchAllBuySellData();
+    console.log("allCategory=====>", allCategory)
     return (
         <div className='mt-5 max-w-7xl mx-auto'>
             <BuyandSellBanner banner={banner} />

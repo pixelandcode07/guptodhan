@@ -144,7 +144,7 @@ export function Donation({ items }: { items: { title: string, url: string, icon:
             if (item.title === "User Management") href = "/general/donation/user-management"
             if (item.title === "Donations") href = "/general/donation/donate-list"
             if (item.title === "Claims") href = "/general/donation/donate-item-claim-list"
-            if (item.title === "Categories") href = "/general/create/donation/category"
+            if (item.title === "Categories") href = "/general/donation/categories"
             if (item.title === "Setting") href = "/general/donation/config"
             const active = isActive(href)
             return (

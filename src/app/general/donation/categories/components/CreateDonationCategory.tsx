@@ -16,7 +16,7 @@ export type Inputs = {
   category_image: File | null
 }
 
-export default function CreateCategory() {
+export default function CreateDonationCategory() {
   const { data: session } = useSession()
   const token = (session?.user as { accessToken?: string; role?: string })?.accessToken
   const adminRole = (session?.user as { role?: string })?.role === "admin"
@@ -38,9 +38,9 @@ export default function CreateCategory() {
         formData.append("icon", data.category_image)
       }
 
-      await axios.post("/api/v1/classifieds-categories", formData, {
+      await axios.post("/api/v1/donation-categories", formData, {
         headers: {
-          "Content-Type": "multipart/form-data",
+          // "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
           "x-user-role": adminRole,
         },

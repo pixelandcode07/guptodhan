@@ -159,7 +159,7 @@ const data = {
     },
     {
       title: 'Categories',
-      url: '/general/create/donation/category',
+      url: '/general/donation/categories',
       icon: Logs,
     },
     {

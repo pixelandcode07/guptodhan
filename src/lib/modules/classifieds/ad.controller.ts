@@ -105,27 +105,27 @@ const getSingleAd = async (_req: NextRequest, { params }: { params: { id: string
 
 // ✅ NEW: সকল পাবলিক বিজ্ঞাপন GET করার জন্য
 const getPublicAds = async (_req: NextRequest) => {
-    await dbConnect();
-    const result = await ClassifiedAdServices.getAllPublicAdsFromDB();
-    return sendResponse({
-        success: true,
-        statusCode: StatusCodes.OK,
-        message: 'Public ads retrieved successfully!',
-        data: result,
-    });
+  await dbConnect();
+  const result = await ClassifiedAdServices.getAllPublicAdsFromDB();
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Public ads retrieved successfully!',
+    data: result,
+  });
 };
 
 // ✅ NEW: একটি নির্দিষ্ট বিজ্ঞাপন GET করার জন্য
 const getPublicAdById = async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-    await dbConnect();
-    const { id } = await params;
-    const result = await ClassifiedAdServices.getPublicAdByIdFromDB(id);
-    return sendResponse({
-        success: true,
-        statusCode: StatusCodes.OK,
-        message: 'Ad retrieved successfully!',
-        data: result,
-    });
+  await dbConnect();
+  const { id } = await params;
+  const result = await ClassifiedAdServices.getPublicAdByIdFromDB(id);
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Ad retrieved successfully!',
+    data: result,
+  });
 };
 
 const updateAd = async (req: NextRequest, { params }: { params: { id: string } }) => {
@@ -167,5 +167,7 @@ const deleteAd = async (req: NextRequest, { params }: { params: { id: string } }
   return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad deleted', data: null });
 };
 
-export const ClassifiedAdController = { createAd, getAllAds, getSingleAd, updateAd, deleteAd, getPublicAds,
-  getPublicAdById, };
+export const ClassifiedAdController = {
+  createAd, getAllAds, getSingleAd, updateAd, deleteAd, getPublicAds,
+  getPublicAdById,
+};

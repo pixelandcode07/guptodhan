@@ -12,7 +12,7 @@ const getActiveCategoriesFromDB = async () => {
 
 // Admin facing - all categories
 const getAllCategoriesForAdminFromDB = async () => {
-    return await DonationCategory.find({}).sort({ createdAt: -1 });
+  return await DonationCategory.find({}).sort({ createdAt: -1 });
 };
 
 const updateCategoryInDB = async (id: string, payload: Partial<IDonationCategory>) => {
