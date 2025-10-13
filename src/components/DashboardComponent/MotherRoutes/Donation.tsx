@@ -1,113 +1,171 @@
-'use client';
+// 'use client';
 
-import { ChevronDown } from 'lucide-react';
-import { ElementType } from 'react';
-import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from '@/components/ui/sidebar';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import Link from 'next/link';
+// import { ChevronDown } from 'lucide-react';
+// import { ElementType } from 'react';
+// import {
+//   SidebarGroup,
+//   SidebarGroupContent,
+//   SidebarGroupLabel,
+//   SidebarMenu,
+//   SidebarMenuButton,
+//   SidebarMenuItem,
+//   useSidebar,
+// } from '@/components/ui/sidebar';
+// import {
+//   Collapsible,
+//   CollapsibleContent,
+//   CollapsibleTrigger,
+// } from '@/components/ui/collapsible';
+// import Link from 'next/link';
 
-const category = [
-  { title: 'Create New', url: '/general/create/donation/category' },
-  { title: 'View All Categories', url: '/general/view/donation/categories' },
-];
+// const category = [
+//   { title: 'Create New', url: '/general/create/donation/category' },
+//   { title: 'View All Categories', url: '/general/view/donation/categories' },
+// ];
 
-export function Donation({
-  items,
-}: {
-  items: { title: string; url: string; icon: ElementType }[];
-}) {
+// export function Donation({
+//   items,
+// }: {
+//   items: { title: string; url: string; icon: ElementType }[];
+// }) {
+//   return (
+//     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+//       <SidebarGroupLabel>
+//         <p className="text-[#f1bf43] text-[14px]">Donation Modules</p>
+//       </SidebarGroupLabel>
+
+//       <SidebarGroupContent>
+//         <SidebarMenu>
+//           {items.map(item => (
+//             <Collapsible key={item.title} className="group/collapsible">
+//               {/* (defaultOpen) - Collapsible class */}
+//               {/* Parent Button */}
+//               <CollapsibleTrigger asChild>
+//                 <SidebarMenuItem>
+//                   <SidebarMenuButton>
+//                     <item.icon />
+//                     {/* Donation Config */}
+//                     {item.title === 'Donation Config' && (
+//                       <Link
+//                         href="/general/donation/config"
+//                         className="flex items-center gap-2">
+//                         {item.title}
+//                       </Link>
+//                     )}
+
+//                     {/* Donation Categories */}
+//                     {item.title !== 'Donation Config' &&
+//                       item.title !== 'Donation Listing' &&
+//                       item.title !== 'Donation Request' && (
+//                         <span className="flex items-center gap-2">
+//                           {item.title}
+//                         </span>
+//                       )}
+//                     {item.title === 'Donation Categories' && (
+//                       <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+//                     )}
+
+//                     {/* Donation Listing */}
+//                     {item.title === 'Donation Listing' && (
+//                       <Link
+//                         href="/general/donation/listing"
+//                         className="flex items-center gap-2">
+//                         {item.title}
+//                       </Link>
+//                     )}
+
+//                     {/* Donation Request */}
+//                     {item.title === 'Donation Request' && (
+//                       <Link
+//                         href="/general/donation/requests"
+//                         className="flex items-center gap-2">
+//                         {item.title}
+//                       </Link>
+//                     )}
+//                   </SidebarMenuButton>
+//                 </SidebarMenuItem>
+//               </CollapsibleTrigger>
+//               {/* Child Items */}
+//               <CollapsibleContent>
+//                 <div className="pl-6">
+//                   {item.title === 'Donation Categories' &&
+//                     category.map(sub => (
+//                       <SidebarMenuItem key={sub.url}>
+//                         {' '}
+//                         <Link
+//                           href={sub.url}
+//                           className="flex items-center gap-2">
+//                           <SidebarMenuButton asChild>
+//                             {/* <sub.icon className="h-4 w-4" /> */}
+//                             <span>{sub.title}</span>
+//                           </SidebarMenuButton>{' '}
+//                         </Link>
+//                       </SidebarMenuItem>
+//                     ))}
+//                 </div>
+//               </CollapsibleContent>
+//             </Collapsible>
+//           ))}
+//         </SidebarMenu>
+//       </SidebarGroupContent>
+//     </SidebarGroup>
+//   );
+// }
+
+
+"use client"
+
+import { ElementType } from "react"
+import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
+import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+
+
+export function Donation({ items }: { items: { title: string, url: string, icon: ElementType }[] }) {
+  const pathname = usePathname()
+  const isActive = (href: string) => pathname === href
+
+
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>
-        <p className="text-[#f1bf43] text-[14px]">Donation Modules</p>
+        <p className="text-[#f1bf43] text-[14px]">
+          Donation Modules
+        </p>
       </SidebarGroupLabel>
 
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map(item => (
-            <Collapsible key={item.title} className="group/collapsible">
-              {/* (defaultOpen) - Collapsible class */}
-              {/* Parent Button */}
-              <CollapsibleTrigger asChild>
-                <SidebarMenuItem>
-                  <SidebarMenuButton>
-                    <item.icon />
-                    {/* Donation Config */}
-                    {item.title === 'Donation Config' && (
-                      <Link
-                        href="/general/donation/config"
-                        className="flex items-center gap-2">
-                        {item.title}
-                      </Link>
-                    )}
+          {items.map((item) => {
+            // define route based on title
+            let href = "#"
+            if (item.title === "Dashboard") href = "/general/donation/dashboard"
+            if (item.title === "User Management") href = "/general/donation/user-management"
+            if (item.title === "Donations") href = "/general/donation/donate-list"
+            if (item.title === "Claims") href = "/general/donation/donate-item-claim-list"
+            if (item.title === "Categories") href = "/general/create/donation/category"
+            if (item.title === "Setting") href = "/general/donation/config"
+            const active = isActive(href)
+            return (
+              <Collapsible key={item.title} className="group/collapsible">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuItem >
+                    <SidebarMenuButton className={`flex items-center gap-2 ${active
+                      ? "bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5"
+                      : "text-white bg-[#132843] pl-5"
+                      }`}>
+                      <item.icon />
+                      <Link href={href}>{item.title}</Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </CollapsibleTrigger>
+              </Collapsible>
+            )
+          })}
 
-                    {/* Donation Categories */}
-                    {item.title !== 'Donation Config' &&
-                      item.title !== 'Donation Listing' &&
-                      item.title !== 'Donation Request' && (
-                        <span className="flex items-center gap-2">
-                          {item.title}
-                        </span>
-                      )}
-                    {item.title === 'Donation Categories' && (
-                      <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                    )}
-
-                    {/* Donation Listing */}
-                    {item.title === 'Donation Listing' && (
-                      <Link
-                        href="/general/donation/listing"
-                        className="flex items-center gap-2">
-                        {item.title}
-                      </Link>
-                    )}
-
-                    {/* Donation Request */}
-                    {item.title === 'Donation Request' && (
-                      <Link
-                        href="/general/donation/requests"
-                        className="flex items-center gap-2">
-                        {item.title}
-                      </Link>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </CollapsibleTrigger>
-              {/* Child Items */}
-              <CollapsibleContent>
-                <div className="pl-6">
-                  {item.title === 'Donation Categories' &&
-                    category.map(sub => (
-                      <SidebarMenuItem key={sub.url}>
-                        {' '}
-                        <Link
-                          href={sub.url}
-                          className="flex items-center gap-2">
-                          <SidebarMenuButton asChild>
-                            {/* <sub.icon className="h-4 w-4" /> */}
-                            <span>{sub.title}</span>
-                          </SidebarMenuButton>{' '}
-                        </Link>
-                      </SidebarMenuItem>
-                    ))}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          ))}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  );
+  )
 }
