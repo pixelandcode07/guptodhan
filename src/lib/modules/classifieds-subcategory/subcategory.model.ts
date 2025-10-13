@@ -1,6 +1,6 @@
-
 import { Schema, model, models } from 'mongoose';
 import { IClassifiedSubCategory } from './subcategory.interface';
+import '@/lib/modules/classifieds-category/category.model'; // ✅ FIX: Import the parent model to register it
 
 const classifiedSubCategorySchema = new Schema<IClassifiedSubCategory>({
   name: { type: String, required: true },
