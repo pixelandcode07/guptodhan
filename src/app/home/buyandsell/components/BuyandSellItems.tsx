@@ -24,7 +24,7 @@ interface BuyandSellItemsProps {
 export default function BuyandSellItems({ allCategory }: BuyandSellItemsProps) {
   return (
     <div>
-      <div className='border-b border-gray-200 pb-6 mb-6'>
+      <div className=''>
         <PageHeader title="Buy and Sell Items" />
       </div>
       <div className='grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 justify-start items-start gap-4'>

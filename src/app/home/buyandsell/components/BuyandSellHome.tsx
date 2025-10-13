@@ -2,6 +2,10 @@ import axios from "axios";
 import BuyandSellAdds from "./BuyandSellAdds";
 import BuyandSellBanner from "./BuyandSellBanner";
 import BuyandSellItems from "./BuyandSellItems";
+// import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+// import { getServerSession } from "next-auth";
+// import { useAllPublicCategory } from "@/lib/actions/getAllPublicCategoryAds";
+// import { headers } from "next/headers";
 
 export interface CategoryDataType {
     _id: string;
@@ -24,25 +28,16 @@ const fetchBanner = async () => {
     }
 };
 
-const getAllCategories = async () => {
-    try {
-        const baseUrl = process.env.NEXTAUTH_URL;
-        // const { data: allCategory } = await axios.get(`${baseUrl}/api/v1/public/classifieds-categories`)
-        const { data: allCategory } = await axios.get(`${baseUrl}/api/v1/public/categories-with-subcategories`)
-        console.log("allCategory", allCategory)
-        return allCategory.data || [];
-    } catch (error) {
-        console.log('Unable to get all categories', error)
-        return [];
-    }
-}
+
+
+
 
 
 
 
 export default async function BuyandSellHome() {
     const banner = await fetchBanner();
-    const allCategory = await getAllCategories()
+    // const allCategory = await getAllPublicCategoryAds();
     return (
         <div className='mt-5 max-w-7xl mx-auto'>
             <BuyandSellBanner banner={banner} />

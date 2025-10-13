@@ -2,8 +2,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import CreateCategory from "./components/CreateCategory"
 import ViewAllCategory from "./components/ViewAllCategory"
 import SubCreateCategory from "./components/SubCreateCategory"
-import BrandModelEditionManagement from "./components/BrandModelEditionManagement"
-import ViewAllBrand from "./components/ViewAllBrand"
+// import BrandModelEditionManagement from "./components/BrandModelEditionManagement"
+// import ViewAllBrand from "./components/ViewAllBrand"
 
 export default function CategoriesPage() {
     return (

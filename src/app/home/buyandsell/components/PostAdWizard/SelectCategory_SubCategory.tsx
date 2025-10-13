@@ -60,7 +60,7 @@ export default function SelectCategory_SubCategory({ onSelectCategory, onSelectS
     return (
         <TabsContent value="step1">
             <AnimatePresence mode="wait">
-                <motion.div key="category-step" variants={variants} initial="initial" animate="animate" exit="exit">
+                <motion.div key="category-step" variants={variants} initial="initial" animate="animate" exit="exit" className=''>
                     <div className="flex gap-6">
                         <div className="w-1/3 border-r pr-4">
                             <h3 className="font-semibold mb-2">Main Categories</h3>
