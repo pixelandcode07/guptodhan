@@ -1,19 +1,13 @@
+// ফাইল পাথ: src/lib/modules/classifieds/ad.model.ts
 import { Schema, model, models } from 'mongoose';
 import { IClassifiedAd } from './ad.interface';
-
-import '@/lib/modules/user/user.model';
-import '@/lib/modules/classifieds-category/category.model';
-import '@/lib/modules/classifieds-subcategory/subcategory.model';
-import '@/lib/modules/brand/brand.model';
-import '@/lib/modules/product-model/productModel.model';
-import '@/lib/modules/edition/edition.model';
 
 const classifiedAdSchema = new Schema<IClassifiedAd>(
   {
     title: { type: String, required: true },
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     category: { type: Schema.Types.ObjectId, ref: 'ClassifiedCategory', required: true },
-    subCategory: { type: Schema.Types.ObjectId, ref: 'ClassifiedSubCategory' },
+    subCategory: { type: Schema.Types.ObjectId, ref: 'ClassifiedSubCategory', default: undefined },
 
     division: { type: String, required: true },
     district: { type: String, required: true },
@@ -22,10 +16,10 @@ const classifiedAdSchema = new Schema<IClassifiedAd>(
     condition: { type: String, enum: ['new', 'used'], required: true },
     authenticity: { type: String, required: true },
 
-    // ✅ FIX: Changed types from String to ObjectId and added refs
-    brand: { type: Schema.Types.ObjectId, ref: 'Brand' },
-    productModel: { type: Schema.Types.ObjectId, ref: 'ProductModel' },
-    edition: { type: Schema.Types.ObjectId, ref: 'Edition' },
+    brand: { type: String },
+    productModel: { type: String },
+    edition: { type: String },
+
 
     features: [{ type: String }],
     description: { type: String, required: true },
@@ -35,14 +29,16 @@ const classifiedAdSchema = new Schema<IClassifiedAd>(
 
     contactDetails: {
       name: { type: String, required: true },
-      email: { type: String },
+      email: { type: String, default: undefined },
       phone: { type: String, required: true },
       isPhoneHidden: { type: Boolean, default: false },
     },
 
     status: { type: String, enum: ['active', 'sold', 'inactive'], default: 'active' },
   },
-  { timestamps: true }
+  {
+    timestamps: true, // createdAt & updatedAt automatically
+  }
 );
 
 // Indexing for faster queries
