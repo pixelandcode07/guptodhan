@@ -32,6 +32,32 @@ const getSingleAdFromDB = async (adId: string) => {
     .populate('productModel', 'name');
 };
 
+
+// ✅ NEW: সকল فعال বিজ্ঞাপন দেখানোর জন্য
+const getAllPublicAdsFromDB = async () => {
+  return await ClassifiedAd.find({ status: 'active' })
+    .populate('user', 'name profilePicture') // বিক্রেতার নাম ও ছবি দেখানোর জন্য
+    .populate('category', 'name')
+    .populate('subCategory', 'name')
+    .sort({ createdAt: -1 });
+};
+
+// ✅ NEW: একটি নির্দিষ্ট বিজ্ঞাপন তার ID দিয়ে দেখানোর জন্য
+const getPublicAdByIdFromDB = async (id: string) => {
+  const ad = await ClassifiedAd.findById(id)
+    .populate('user', 'name profilePicture')
+    .populate('category', 'name')
+    .populate('subCategory', 'name')
+    .populate('brand', 'name')
+    .populate('productModel', 'name');
+
+  if (!ad || ad.status !== 'active') {
+    throw new Error('Ad not found or is not active.');
+  }
+  return ad;
+};
+
+
 const updateAdInDB = async (adId: string, userId: string, payload: Partial<IClassifiedAd>) => {
   const ad = await ClassifiedAd.findById(adId);
   if (!ad) throw new Error('Ad not found!');
@@ -67,4 +93,6 @@ export const ClassifiedAdServices = {
   getSingleAdFromDB,
   updateAdInDB,
   deleteAdFromDB,
+  getAllPublicAdsFromDB,
+  getPublicAdByIdFromDB,
 };
