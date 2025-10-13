@@ -47,6 +47,14 @@ const getCategoryByIdFromDB = async (id: string) => {
   return category;
 };
 
+const getCategoryByIdForAdminFromDB = async (id: string) => {
+  const category = await DonationCategory.findById(id);
+  if (!category) {
+    throw new Error('Category not found.');
+  }
+  return category;
+};
+
 export const DonationCategoryServices = {
   createCategoryInDB,
   getActiveCategoriesFromDB,
@@ -54,4 +62,5 @@ export const DonationCategoryServices = {
   updateCategoryInDB,
   deleteCategoryFromDB, 
   getCategoryByIdFromDB,
+  getCategoryByIdForAdminFromDB,
 };
