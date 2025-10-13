@@ -12,12 +12,12 @@ const getDashboardAnalyticsFromDB = async () => {
   const monthlyUsersQuery = User.countDocuments({ role: 'user', createdAt: { $gte: thirtyDaysAgo } });
   
   const monthlyRevenueQuery = OrderModel.aggregate([
-    { $match: { createdAt: { $gte: thirtyDaysAgo }, paymentStatus: 'Paid' } },
+    { $match: { createdAt: { $gte: thirtyDaysAgo } } },
     { $group: { _id: null, total: { $sum: '$totalAmount' } } }
   ]);
 
   const salesByMonthQuery = OrderModel.aggregate([
-    { $match: { paymentStatus: { $in: ['Paid', 'Failed'] } } },
+    { $match: { paymentStatus: { $in: ['Paid', 'Failed', 'Pending'] } } },
     {
       $group: {
         _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
@@ -39,12 +39,12 @@ const getDashboardAnalyticsFromDB = async () => {
     .select('name email profilePicture phoneNumber address createdAt')
     .lean();
 
-  // ✅ Populate remove করলাম - শুধু order data নিচ্ছি
+  // ✅ Order থেকে সরাসরি userId populate
   const recentOrdersQuery = OrderModel.find({})
     .sort({ createdAt: -1 })
     .limit(10)
-    .populate('userId', 'name email phoneNumber')
-    .select('orderId totalAmount paymentStatus createdAt')
+    .populate('userId', 'name email phoneNumber') // ✅ Order.userId populate
+    .select('orderId totalAmount paymentStatus createdAt userId')
     .lean();
 
   const [
