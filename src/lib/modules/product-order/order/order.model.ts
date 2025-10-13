@@ -4,7 +4,7 @@ import { IOrder } from './order.interface';
 const orderSchema = new Schema<IOrder>(
   {
     orderId: { type: String, required: true, unique: true },
-    userId: { type: Schema.Types.ObjectId, ref: 'UserModel', required: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     storeId: { type: Schema.Types.ObjectId, ref: 'StoreModel', required: true },
     deliveryMethodId: { type: Schema.Types.ObjectId, ref: 'DeliveryMethodModel', required: true },
     paymentMethodId: { type: Schema.Types.ObjectId, ref: 'PaymentMethodModel', required: true },
