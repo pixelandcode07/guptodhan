@@ -1,9 +1,10 @@
 import { Schema, model, models } from 'mongoose';
 import { IBlog } from './blog.interface';
+import { v4 as uuidv4 } from 'uuid';
 
 const blogSchema = new Schema<IBlog>(
   {
-    // blogId: { type: String, unique: true },
+    blogId: { type: String, unique: true, default: uuidv4 },
     coverImage: { type: String, required: true },
     category: { type: String, required: true },
     title: { type: String, required: true, trim: true },
