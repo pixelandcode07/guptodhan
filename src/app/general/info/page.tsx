@@ -1,21 +1,26 @@
+import axios from 'axios';
 import GeneralInfoForm from './Components/GeneralInfoForm';
 
-export default async function GeneralInfoPage() {
-  const res = await fetch('http://localhost:3000/api/v1/public/settings', {
-    cache: 'no-store',
-  });
+const fetchSettings = async () => {
+  try {
+    const baseUrl = process.env.NEXTAUTH_URL;
 
-  if (!res.ok) {
-    throw new Error('Failed to fetch settings');
+    const { data } = await axios.get(`${baseUrl}/api/v1/public/settings`);
+
+    return data;
+  } catch (error) {
+    console.log('fatch settings Error', error);
   }
+};
 
-  const json = await res.json();
-  const settings = json.data;
+export default async function GeneralInfoPage() {
+  const settings = await fetchSettings();
+  console.log(settings);
 
   return (
     <div className="min-h-screen pt-5 bg-gray-50">
       <div className="bg-white shadow rounded">
-        <GeneralInfoForm data={settings || {}} />
+        <GeneralInfoForm data={settings.data || {}} />
       </div>
     </div>
   );

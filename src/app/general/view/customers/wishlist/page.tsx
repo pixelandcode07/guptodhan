@@ -1,6 +1,7 @@
-import { DataTable } from "@/components/TableHelper/data-table"
-import { wishlist_columns, Wishlist } from "@/components/TableHelper/wishlist_columns"
-import { Input } from "@/components/ui/input"
+import { Wishlist } from "@/components/TableHelper/wishlist_columns";
+import WishlistClient from './components/WishlistClient';
+
+export const dynamic = 'force-dynamic';
 
 function getData(): Wishlist[] {
   return [
@@ -109,35 +110,5 @@ function getData(): Wishlist[] {
 
 export default function WishlistPage() {
   const data = getData();
-  return (
-    <div className="m-5 p-5 border ">
-      <div>
-        <h1 className="text-lg font-semibold border-l-2 border-blue-500">
-          <span className="pl-5">WishList</span>
-        </h1>
-      </div>
-      
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span>Show</span>
-            <select className="border border-gray-300 rounded px-2 py-1">
-              <option value="10">10</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-            <span>entries</span>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <span>Search:</span>
-          <Input type="text" className="border border-gray-500" />
-        </div>
-      </div>
-      
-      <DataTable columns={wishlist_columns} data={data} />
-    </div>
-  );
+  return <WishlistClient initialRows={data} />;
 }

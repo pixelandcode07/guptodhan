@@ -12,7 +12,11 @@ interface TermsFormProps {
   categoryId?: string; // optional for create
 }
 
-export default function TermsForm({ initialContent, termId, categoryId }: TermsFormProps) {
+export default function TermsForm({
+  initialContent,
+  termId,
+  categoryId,
+}: TermsFormProps) {
   const [content, setContent] = useState(initialContent);
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +33,7 @@ export default function TermsForm({ initialContent, termId, categoryId }: TermsF
       if (termId) {
         // Update existing term
         const res = await axios.patch(
-          `http://localhost:3000/api/v1/terms-condition/${termId}`,
+          `/api/v1/terms-condition/${termId}`,
           { description: content },
           { headers: { 'Content-Type': 'application/json' } }
         );
@@ -42,15 +46,21 @@ export default function TermsForm({ initialContent, termId, categoryId }: TermsF
         }
 
         const res = await axios.post(
-          `http://localhost:3000/api/v1/terms-condition`,
-          { description: content, category: categoryId, termsId: 'auto-generated-id' },
+          `/api/v1/terms-condition`,
+          {
+            description: content,
+            category: categoryId,
+            termsId: 'auto-generated-id',
+          },
           { headers: { 'Content-Type': 'application/json' } }
         );
         data = res.data;
       }
 
       if (data.success) {
-        toast.success(termId ? 'Term updated successfully!' : 'Term created successfully!');
+        toast.success(
+          termId ? 'Term updated successfully!' : 'Term created successfully!'
+        );
       } else {
         toast.error('Operation failed.');
       }
@@ -67,7 +77,13 @@ export default function TermsForm({ initialContent, termId, categoryId }: TermsF
       <RichTextEditor value={content} onChange={setContent} />
       <div className="flex justify-center items-center py-7">
         <Button onClick={handleSubmit} disabled={loading}>
-          {loading ? (termId ? 'Updating...' : 'Creating...') : termId ? 'Update Terms' : 'Create Terms'}
+          {loading
+            ? termId
+              ? 'Updating...'
+              : 'Creating...'
+            : termId
+            ? 'Update Terms'
+            : 'Create Terms'}
         </Button>
       </div>
     </>

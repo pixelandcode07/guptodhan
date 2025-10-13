@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState } from 'react';
@@ -28,12 +27,13 @@ type FactType = {
 
 export default function EditFactPage() {
   const searchParams = useSearchParams();
-  const id = searchParams.get('id') || '';
+  const router = useRouter();
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
-  const router = useRouter();
 
-  const [loading, setLoading] = useState(false);
+  const id = searchParams.get('id') || '';
+
+  // Prefill from search params
   const [fact, setFact] = useState<FactType>({
     factTitle: searchParams.get('factTitle') || '',
     factCount: Number(searchParams.get('factCount')) || 0,
@@ -41,36 +41,38 @@ export default function EditFactPage() {
     status: (searchParams.get('status') as 'active' | 'inactive') || 'active',
   });
 
+  const [loading, setLoading] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    if (!id) return;
 
+    setLoading(true);
     try {
-      const res = await axios.patch(
-        `http://localhost:3000/api/v1/about/facts/${id}`,
-        fact,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await axios.patch(`/api/v1/about/facts/${id}`, fact, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (res.data.success) {
-        toast.success('Fact updated successfully ');
+        toast.success('Fact updated successfully!');
         router.push('/general/view/facts');
       } else {
-        toast.error('Failed to update fact ');
+        toast.error('Failed to update fact');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error('Something went wrong ');
+      toast.error(error.response?.data?.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className=" mx-auto bg-white dark:bg-neutral-900 shadow-md rounded-2xl pt-6">
+    <div className="mx-auto bg-white dark:bg-neutral-900 shadow-md rounded-2xl pt-6">
       <SectionTitle text="Edit Fact" />
 
-      <form onSubmit={handleSubmit} className="space-y-6  p-6">
+      <form onSubmit={handleSubmit} className="space-y-6 p-6">
+        {/* Title + Count */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="factTitle">
@@ -78,7 +80,6 @@ export default function EditFactPage() {
             </Label>
             <Input
               id="factTitle"
-              type="text"
               value={fact.factTitle}
               onChange={e => setFact({ ...fact, factTitle: e.target.value })}
               required
@@ -90,14 +91,17 @@ export default function EditFactPage() {
             <Input
               id="factCount"
               type="number"
+              min={0}
               value={fact.factCount}
               onChange={e =>
                 setFact({ ...fact, factCount: Number(e.target.value) })
               }
+              required
             />
           </div>
         </div>
 
+        {/* Short Description */}
         <div className="space-y-2">
           <Label htmlFor="shortDescription">Short Description</Label>
           <Textarea
@@ -111,6 +115,7 @@ export default function EditFactPage() {
           />
         </div>
 
+        {/* Status */}
         <div className="w-40 space-y-2">
           <Label htmlFor="status">Status</Label>
           <Select
@@ -130,7 +135,7 @@ export default function EditFactPage() {
 
         <div className="pt-4">
           <Button type="submit" disabled={loading} className="w-full md:w-auto">
-            {loading ? 'Updating...' : 'Update'}
+            {loading ? 'Updating...' : 'Update Fact'}
           </Button>
         </div>
       </form>

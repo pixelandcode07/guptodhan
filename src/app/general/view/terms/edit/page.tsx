@@ -32,9 +32,7 @@ export default function EditTeamEntryForm() {
 
     const fetchData = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:3000/api/v1/public/about/team`
-        );
+        const res = await axios.get(`/api/v1/public/about/team`);
         const member = res.data.data.find((m: any) => m._id === id);
         if (!member) return;
 
@@ -78,16 +76,12 @@ export default function EditTeamEntryForm() {
         console.log('ℹ️ No new image selected — backend keeps existing one');
       }
 
-      const res = await axios.patch(
-        `http://localhost:3000/api/v1/about/team/${id}`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      const res = await axios.patch(`/api/v1/about/team/${id}`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
       if (res.data.success) {
         toast.success('Team member updated!');

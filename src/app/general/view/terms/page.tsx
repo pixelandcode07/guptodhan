@@ -1,23 +1,18 @@
+import axios from 'axios';
 import TeamsTable from './Components/TeamTable';
 
-export default async function Page() {
-  let data = [];
-  let error = null;
-
+const fetchTeams = async () => {
   try {
-    const res = await fetch('http://localhost:3000/api/v1/public/about/team', {
-      cache: 'no-store',
-    });
-
-    if (!res.ok) {
-      throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
-    }
-
-    const json = await res.json();
-    data = json?.data || [];
-  } catch (err: any) {
-    error = err.message || 'Something went wrong while fetching team members';
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const { data } = await axios.get(`${baseUrl}/api/v1/public/about/team`);
+    return data;
+  } catch (error) {
+    console.log('fetch facts Error:', error);
+    return { data: [] };
   }
+};
 
-  return <TeamsTable data={data} error={error} />;
+export default async function Page() {
+  const data = await fetchTeams();
+  return <TeamsTable data={data.data} />;
 }

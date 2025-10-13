@@ -1,26 +1,27 @@
+// app/(your-path)/facts/page.tsx
 import SectionTitle from '@/components/ui/SectionTitle';
+
+import axios from 'axios';
 import FactsTable from './Components/FactTabile';
 
-export default async function FactsPage() {
-  let facts = [];
-
+const fetchFacts = async () => {
   try {
-    const res = await fetch('http://localhost:3000/api/v1/public/about/facts', {
-      cache: 'no-store',
-    });
-
-    if (!res.ok) throw new Error('Failed to fetch facts');
-
-    const json = await res.json();
-    facts = json?.data || [];
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const { data } = await axios.get(`${baseUrl}/api/v1/public/about/facts`);
+    return data;
   } catch (error) {
-    console.error('Error fetching facts', error);
+    console.log('fetch facts Error:', error);
+    return { data: [] };
   }
+};
+
+export default async function FactsPage() {
+  const facts = await fetchFacts();
 
   return (
-    <div className="bg-white pt-5 px-5">
+    <div className="bg-white pt-5 px-5 min-h-screen">
       <SectionTitle text="View All Facts" />
-      <FactsTable initialData={facts} />
+      <FactsTable initialData={facts?.data || []} />
     </div>
   );
 }

@@ -29,7 +29,7 @@ export default function TeamsTable({ data }: { data: Team[] }) {
         if (!confirmed) return reject('Cancelled');
 
         try {
-          await axios.delete(`http://localhost:3000/api/v1/about/team/${id}`);
+          await axios.delete(`/api/v1/about/team/${id}`);
           setTeams(prev => prev.filter(t => t._id !== id));
           resolve('Deleted');
         } catch (err) {

@@ -7,6 +7,7 @@ export interface ISubCategory extends Document {
   subCategoryIcon?: string;
   subCategoryBanner?: string;
   isFeatured: boolean;
+  isNavbar?: boolean;
   status: 'active' | 'inactive';
   slug: string;
   createdAt: Date;
