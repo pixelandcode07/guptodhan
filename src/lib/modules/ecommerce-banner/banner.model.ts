@@ -14,4 +14,4 @@ const bannerSchema = new Schema<IEcommerceBanner>({
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
 }, { timestamps: true });
 
-export const EcommerceBanner = models.EcommerceBanner || model<IEcommerceBanner>('EcommerceBanner', bannerSchema);
+export const EcommerceBanner = models.EcommerceBanner || model<IEcommerceBanner>('EcommerceBanner', bannerSchema); 

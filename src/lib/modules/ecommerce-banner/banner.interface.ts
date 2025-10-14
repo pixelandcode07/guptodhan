@@ -11,4 +11,4 @@ export interface IEcommerceBanner extends Document {
   buttonText?: string;
   buttonLink?: string;
   status: 'active' | 'inactive';
-}
+} 

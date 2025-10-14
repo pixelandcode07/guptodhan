@@ -5,7 +5,7 @@ import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 import { createBannerSchema, updateBannerSchema } from './banner.validation';
 import { EcommerceBannerServices } from './banner.service';
 import dbConnect from '@/lib/db';
-
+ 
 const createBanner = async (req: NextRequest) => {
     await dbConnect();
     const formData = await req.formData();

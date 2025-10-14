@@ -15,4 +15,4 @@ export const createBannerSchema = z.object({
   buttonLink: z.string().url().optional(),
 });
 
-export const updateBannerSchema = createBannerSchema.partial();
+export const updateBannerSchema = createBannerSchema.partial(); 
