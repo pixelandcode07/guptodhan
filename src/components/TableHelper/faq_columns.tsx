@@ -11,11 +11,11 @@ export type FaqCategoryType = {
 
 export const faq_categories_columns: ColumnDef<FaqCategoryType>[] = [
   {
-    accessorKey: 'faqCategoryID',
+    accessorKey: '_id',
     header: 'SL',
   },
   {
-    accessorKey: 'categoryName',
+    accessorKey: 'name',
     header: 'Category Name',
   },
   {

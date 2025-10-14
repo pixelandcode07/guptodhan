@@ -9,7 +9,7 @@ const blogSchema = new Schema<IBlog>(
     category: { type: String, required: true },
     title: { type: String, required: true, trim: true },
     description: { type: String, required: true },
-    content: { type: String, required: true }, // <-- added content
+    content: { type: String, required: true },
     tags: [{ type: String }],
     metaTitle: { type: String, required: true },
     metaKeywords: [{ type: String }],

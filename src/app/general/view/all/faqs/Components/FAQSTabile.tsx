@@ -54,10 +54,6 @@ export default function FAQSTabile({
                 pathname: '/general/view/all/faqs/edit',
                 query: {
                   id: faqItem._id,
-                  category: faqItem.category,
-                  question: faqItem.question,
-                  answer: faqItem.answer,
-                  isActive: faqItem.isActive,
                 },
               }}>
               <Button size="sm" variant="outline">

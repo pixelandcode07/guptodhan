@@ -83,7 +83,7 @@ export default function FactsTable({ initialData }: FactsTableProps) {
     <div className="p-5">
       <div className="py-4 flex justify-end gap-2">
         <Button size="sm" asChild>
-          <Link href="/general/view/all/facts/add">
+          <Link href="/general/view/facts/add">
             <Plus className="h-4 w-4 mr-2" />
             Add New Fact
           </Link>
