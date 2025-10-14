@@ -70,9 +70,12 @@ const updateBlog = async (req: NextRequest, { params }: { params: { id: string }
     const body = await req.json();
     const validatedData = updateBlogValidationSchema.parse(body);
 
+    console.log('Validated Data:', validatedData);
+    console.log('Blog ID:', id);
+
     const payload = {
         ...validatedData,
-        ...(validatedData.category && { category: new Types.ObjectId(validatedData.category) }),
+        // ...(validatedData.category && { category: new Types.ObjectId(validatedData.category) }),
     };
 
     const result = await BlogServices.updateBlogInDB(id, payload);

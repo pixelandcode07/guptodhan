@@ -6,6 +6,7 @@ export interface IBlog extends Document {
   category: string;
   title: string;
   description: string;
+  content: string;
   tags: string[];
   metaTitle: string;
   metaKeywords: string[];
