@@ -5,9 +5,9 @@ import { Upload, X } from 'lucide-react';
 import axios from 'axios';
 
 interface FileUploadProps {
-  label?: string; // optional
+  label?: string;
   name: string;
-  preview?: string; // initial preview URL from Cloudinary
+  preview?: string;
   onUploadComplete: (name: string, url: string) => void;
 }
 
@@ -22,7 +22,7 @@ export default function FileUpload({
   const [uploadedUrl, setUploadedUrl] = useState<string | undefined>(preview);
 
   const handleFileChange = async (file: File | null) => {
-    if (!file) return;
+    if (!file || uploadedUrl) return; // ✅ Prevent upload if image exists
 
     setLoading(true);
     setProgress(0);
@@ -59,11 +59,7 @@ export default function FileUpload({
   const handleRemove = async () => {
     if (uploadedUrl) {
       try {
-        // Extract public_id properly including folder if present
-        const publicId = uploadedUrl
-          .split('/upload/')[1] // after /upload/
-          .split('.')[0]; // remove extension
-
+        const publicId = uploadedUrl.split('/upload/')[1].split('.')[0];
         await axios.post('/api/v1/image/delete', { public_id: publicId });
       } catch (err) {
         console.error('Failed to delete from Cloudinary:', err);
@@ -77,6 +73,7 @@ export default function FileUpload({
 
   const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
+    if (uploadedUrl) return; // ✅ Disable drag-drop if image exists
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileChange(e.dataTransfer.files[0]);
     }
@@ -126,14 +123,16 @@ export default function FileUpload({
         )}
       </label>
 
+      {/* ✅ disable input if image exists */}
       <input
         id={name}
         type="file"
         accept="image/*"
         className="hidden"
+        disabled={!!uploadedUrl} // prevent re-upload until removed
         onChange={e => {
           handleFileChange(e.target.files?.[0] || null);
-          e.currentTarget.value = ''; // reset input to allow re-upload of same file
+          e.currentTarget.value = ''; // reset input
         }}
       />
     </div>
