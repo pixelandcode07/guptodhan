@@ -5,59 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Dropzone from "@/components/ui/dropzone";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import type { Session } from "next-auth";
 import axios from "axios";
+import CategorySelection from "@/app/general/add/new/product/Components/CategorySelection";
 
 type FormData = {
   name: string;
   brandLogo: File | null;
   brandBanner: File | null;
-  categories: string;
-  subcategories: string;
-  childcategories: string;
+  category: string;
+  subcategory: string;
+  childCategory: string;
 };
-
-// Category data based on the dropdown images
-const categories = [
-  "Special Offers",
-  "Mobile", 
-  "Gadget",
-  "Electronics",
-  "Men's Fashion",
-  "Women Fashion",
-  "Kids & Toys",
-  "Home & Living",
-  "Computer",
-  "Laptop",
-  "Accessories"
-];
-
-const subcategories = [
-  "Smartphones",
-  "Tablets",
-  "Laptops",
-  "Accessories",
-  "Gaming",
-  "Audio",
-  "Cameras",
-  "Wearables"
-];
-
-const childcategories = [
-  "iPhone",
-  "Samsung",
-  "Android",
-  "Gaming Laptops",
-  "Business Laptops",
-  "Headphones",
-  "Speakers",
-  "DSLR",
-  "Mirrorless"
-];
 
 export default function BrandForm() {
   const { data: session } = useSession();
@@ -70,13 +32,17 @@ export default function BrandForm() {
     name: "",
     brandLogo: null,
     brandBanner: null,
-    categories: "",
-    subcategories: "",
-    childcategories: "",
+    category: "",
+    subcategory: "",
+    childCategory: "",
   });
 
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+
+  const handleInputChange = (field: string, value: unknown) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
   const handleLogoChange = (files: FileList) => {
     const file = files[0] || null;
@@ -109,9 +75,9 @@ export default function BrandForm() {
       const formDataToSend = new FormData();
       formDataToSend.append("brandId", formData.name.toLowerCase().replace(/\s+/g, "-"));
       formDataToSend.append("name", formData.name);
-      formDataToSend.append("category", formData.categories);
-      formDataToSend.append("subCategory", formData.subcategories);
-      formDataToSend.append("childCategory", formData.childcategories);
+      formDataToSend.append("category", formData.category);
+      formDataToSend.append("subCategory", formData.subcategory);
+      formDataToSend.append("childCategory", formData.childCategory);
       
       if (formData.brandLogo) {
         formDataToSend.append("brandLogo", formData.brandLogo);
@@ -197,62 +163,15 @@ export default function BrandForm() {
               </div>
             </div>
 
-            {/* Categories */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-              <Label htmlFor="categories" className="text-right">Categories</Label>
-              <div className="md:col-span-2">
-                <Select value={formData.categories} onValueChange={(value) => setFormData(prev => ({ ...prev, categories: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Subcategories */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-              <Label htmlFor="subcategories" className="text-right">Subcategories</Label>
-              <div className="md:col-span-2">
-                <Select value={formData.subcategories} onValueChange={(value) => setFormData(prev => ({ ...prev, subcategories: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Subcategories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subcategories.map((subcategory) => (
-                      <SelectItem key={subcategory} value={subcategory}>
-                        {subcategory}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Childcategories */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-              <Label htmlFor="childcategories" className="text-right">Childcategories</Label>
-              <div className="md:col-span-2">
-                <Select value={formData.childcategories} onValueChange={(value) => setFormData(prev => ({ ...prev, childcategories: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Childcategories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {childcategories.map((childcategory) => (
-                      <SelectItem key={childcategory} value={childcategory}>
-                        {childcategory}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            {/* Category Selection */}
+            <CategorySelection
+              formData={{
+                category: formData.category,
+                subcategory: formData.subcategory,
+                childCategory: formData.childCategory,
+              }}
+              handleInputChange={handleInputChange}
+            />
 
             {/* Submit Button */}
             <div className="flex justify-start pt-4">
