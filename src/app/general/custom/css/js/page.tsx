@@ -17,7 +17,7 @@ const fetchCodes = async () => {
 
 export default async function Page() {
   const codeData = await fetchCodes();
-  console.log(codeData);
+  // console.log(codeData);
 
   return (
     <div className="p-6 space-y-6">

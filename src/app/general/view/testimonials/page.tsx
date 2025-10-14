@@ -2,24 +2,22 @@ import SectionTitle from '@/components/ui/SectionTitle';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import TestimonialsTable from './Components/TestimonialsTable';
+import axios from 'axios';
 
-async function getTestimonials() {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/testimonial`,
-    {
-      cache: 'no-store',
-    }
-  );
-
-  if (!res.ok) {
-    throw new Error('Failed to fetch testimonials');
+const getTestimonials = async () => {
+  try {
+    const baseUrl = process.env.NEXTAUTH_URL;
+    const { data } = await axios.get(`${baseUrl}/api/v1/testimonial`);
+    return data;
+  } catch (error) {
+    console.log('fetch facts Error:', error);
+    return { data: [] };
   }
-
-  return res.json();
-}
+};
 
 export default async function Page() {
   const testimonials = await getTestimonials();
+  console.log(testimonials);
 
   return (
     <div className="pb-6 pt-5 space-y-6 bg-white">
@@ -30,7 +28,7 @@ export default async function Page() {
         </Link>
       </div>
       <div className="px-5">
-        <TestimonialsTable testimonials={testimonials} />
+        <TestimonialsTable testimonials={testimonials.data} />
       </div>
     </div>
   );

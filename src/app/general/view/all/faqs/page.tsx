@@ -7,7 +7,7 @@ export const revalidate = 0; // optional: disable caching
 
 const fetchFAQS = async () => {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL;
     const { data } = await axios.get(`${baseUrl}/api/v1/faq`);
     return data;
   } catch (error) {
@@ -16,7 +16,7 @@ const fetchFAQS = async () => {
   }
 };
 
-export default async function FAQS() {
+export default async function page() {
   const faq = await fetchFAQS();
   console.log(faq);
   return (

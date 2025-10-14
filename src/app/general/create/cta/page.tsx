@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const fetchCta = async () => {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL;
     const { data } = await axios.get(`${baseUrl}/api/v1/public/about/cta`);
     return data;
   } catch (error) {

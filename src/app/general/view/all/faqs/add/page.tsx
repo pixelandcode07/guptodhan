@@ -6,8 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 export default function FAQCreateForm() {
   const router = useRouter();
@@ -17,76 +24,55 @@ export default function FAQCreateForm() {
   const [answer, setAnswer] = useState('');
   const [loading, setLoading] = useState(false);
 
-
-
-
- const apiBase = 'http://localhost:3000/general/faq/api/category';
+  const categoriesApi = '/api/v1/faq-category';
+  const faqApi = '/api/v1/faq';
 
   useEffect(() => {
-    refreshData();
+    const fetchCategories = async () => {
+      try {
+        const res = await axios.get(categoriesApi);
+        const data = res.data.data || res.data;
+        setCategories(data || []);
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to load categories');
+      }
+    };
+
+    fetchCategories();
   }, []);
 
-const refreshData = async () => {
-  try {
-    const res = await fetch(apiBase, { cache: 'no-store' });
-    if (!res.ok) throw new Error('Failed to fetch categories');
-    const result = await res.json();
-
-    // Normalize categories to have consistent keys
-    const normalizedCategories = (result.data || result).map((cat: any) => ({
-      id: String(cat.faqCategoryID),
-      name: cat.categoryName,
-    }));
-
-    console.log('Normalized categories:', normalizedCategories);
-    setCategories(normalizedCategories);
-  } catch (err) {
-    console.error(err);
-    toast.error('Failed to load categories');
-  }
-};
-
-
-
-
-
-
-  // ✅ Handle form submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!category || !question || !answer) return toast.error('Please fill all required fields');
+    if (!category || !question || !answer) {
+      return toast.error('Please fill all required fields');
+    }
 
     setLoading(true);
 
     try {
       const payload = {
-        faqID: `FAQ-${Date.now()}`, // Required by backend
-        category, // This will be ObjectId from backend
+        faqID: `FAQ-${Date.now()}`,
+        category, // ✅ Backend expects category _id
         question,
         answer,
         isActive: true,
       };
 
-      const res = await fetch('/api/v1/faq', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const res = await axios.post(faqApi, payload);
 
-      const data = await res.json();
-
-      if (res.ok && data.success) {
+      if (res.data?.success) {
         toast.success('FAQ created successfully!');
         setCategory('');
         setQuestion('');
         setAnswer('');
         router.push('/general/view/all/faqs');
       } else {
-        toast.error(data.message || 'Failed to create FAQ');
+        toast.error(res.data?.message || 'Failed to create FAQ');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('FAQ create error:', error);
-      toast.error('Something went wrong');
+      toast.error(error.response?.data?.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -101,27 +87,27 @@ const refreshData = async () => {
           <Label htmlFor="category_id" className="w-full sm:w-1/5">
             Category <span className="text-red-500">*</span>
           </Label>
-          <Select value={category} onValueChange={setCategory} required className="w-full sm:w-4/5">
+          <Select
+            value={category}
+            onValueChange={setCategory}
+            required
+            className="w-full sm:w-4/5">
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select One" />
             </SelectTrigger>
-                    {
-                      categories && <SelectContent>
-  {categories.length > 0 ? (
-    categories.map((cat) => (
-      <SelectItem key={cat.id} value={cat.id}>
-        {cat.name}
-      </SelectItem>
-    ))
-  ) : (
-    <SelectItem disabled value="">
-      No categories found
-    </SelectItem>
-  )}
-</SelectContent>
-                    }
-
-
+            <SelectContent>
+              {categories.length > 0 ? (
+                categories.map(cat => (
+                  <SelectItem key={cat._id} value={cat._id}>
+                    {cat.name || cat.categoryName} {/* Backend name */}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem disabled value="">
+                  No categories found
+                </SelectItem>
+              )}
+            </SelectContent>
           </Select>
         </div>
 
@@ -135,7 +121,7 @@ const refreshData = async () => {
             type="text"
             placeholder="Question"
             value={question}
-            onChange={(e) => setQuestion(e.target.value)}
+            onChange={e => setQuestion(e.target.value)}
             className="w-full sm:w-4/5"
             required
           />
@@ -150,7 +136,7 @@ const refreshData = async () => {
             id="answer"
             rows={10}
             value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
+            onChange={e => setAnswer(e.target.value)}
             className="w-full sm:w-4/5"
             required
           />
