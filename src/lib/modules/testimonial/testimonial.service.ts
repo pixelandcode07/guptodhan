@@ -10,7 +10,7 @@ const createTestimonialInDB = async (payload: Partial<ITestimonial>) => {
 
 // Get all active testimonials (optional: sorted by date descending)
 const getAllTestimonialsFromDB = async () => {
-  const result = await TestimonialModel.find({ status: 'active' }).sort({
+  const result = await TestimonialModel.find().sort({
     date: -1,
   });
   return result;

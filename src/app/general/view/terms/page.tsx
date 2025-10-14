@@ -3,7 +3,7 @@ import TeamsTable from './Components/TeamTable';
 
 const fetchTeams = async () => {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL;
     const { data } = await axios.get(`${baseUrl}/api/v1/public/about/team`);
     return data;
   } catch (error) {
@@ -14,5 +14,6 @@ const fetchTeams = async () => {
 
 export default async function Page() {
   const data = await fetchTeams();
+
   return <TeamsTable data={data.data} />;
 }

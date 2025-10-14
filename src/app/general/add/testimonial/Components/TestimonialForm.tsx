@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import axios from 'axios';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -13,56 +14,58 @@ import {
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import SectionTitle from '@/components/ui/SectionTitle';
-import UploadImage from '@/components/ReusableComponents/UploadImage';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import FileUpload from '@/components/ReusableComponents/FileUpload';
 
 export default function TestimonialForm() {
-  const [image, setImage] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // ✅ Image change handler
-  const handleImageChange = (_name: string, file: File | null) => {
-    setImage(file);
+  // Image change handler
+  const handleImageChange = (_name: string, url: string) => {
+    setImageUrl(url);
   };
 
-  // ✅ Submit handler
+  // Submit handler
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!image) {
+    if (!imageUrl) {
       toast.error('Please upload a customer image.');
       return;
     }
 
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    setLoading(true);
+
     try {
-      setLoading(true);
+      const payload = {
+        reviewID: crypto.randomUUID(),
+        customerImage: imageUrl,
+        customerName: formData.get('customerName'),
+        customerProfession: formData.get('customerProfession'),
+        rating: Number(formData.get('rating')),
+        description: formData.get('description'),
+        productID: '67000abc1234567890abcd12',
+        status: 'approved',
+        // date: new Date().toISOString(), // ⚡ convert Date to ISO string
+      };
 
-      const form = e.currentTarget;
-      const formData = new FormData(form);
+      const res = await axios.post('/api/v1/testimonial', payload);
 
-      // 🧩 Append extra fields
-      formData.append('customerImage', image);
-      formData.append('reviewID', crypto.randomUUID());
-      formData.append('productID', '67000abc1234567890abcd12'); // replace dynamically if needed
-
-      // ✅ Send to backend
-      const res = await fetch('/api/v1/testimonial', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const result = await res.json();
-
-      if (!res.ok)
-        throw new Error(result.message || 'Failed to save testimonial');
-
-      toast.success('Testimonial added successfully!');
-      router.push('/general/view/testimonials');
+      if (res.data?.success) {
+        toast.success('Testimonial added successfully!');
+        router.push('/general/view/testimonials');
+      } else {
+        toast.error(res.data?.message || 'Failed to save testimonial');
+      }
     } catch (error: any) {
-      toast.error(error.message || 'Something went wrong!');
+      toast.error(error.response?.data?.message || 'Something went wrong!');
     } finally {
       setLoading(false);
     }
@@ -71,26 +74,31 @@ export default function TestimonialForm() {
   return (
     <div className="bg-white pt-5 shadow">
       <SectionTitle text="Testimonial Entry Form" />
-      <div className="flex justify-end">
-        <button>
-          <Link href="/general/add/testimonial">Add new Testimonial</Link>
-        </button>
+      <div className="flex justify-end mb-2">
+        <Link
+          href="/general/add/testimonial"
+          className="text-blue-500 hover:underline">
+          Add new Testimonial
+        </Link>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6 p-6 pt-2">
-        {/* Grid Layout */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Image Upload */}
+          {/* Customer Image */}
           <div>
             <Label htmlFor="customerImage">
               Customer Image <span className="text-red-500">*</span>
             </Label>
             <div className="mt-2">
-              <UploadImage name="customerImage" onChange={handleImageChange} />
+              <FileUpload
+                name="customerImage"
+                onUploadComplete={handleImageChange}
+                preview={imageUrl || undefined}
+              />
             </div>
           </div>
 
-          {/* Right Side */}
+          {/* Other Fields */}
           <div className="md:col-span-2 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

@@ -44,7 +44,7 @@ export default function FAQEditForm({
     formData.append('answer', answer);
 
     try {
-      const res = await fetch(`http://localhost:3000/api/v1/faq/${id}`, {
+      const res = await fetch(`/api/v1/faq/${id}`, {
         method: 'PUT',
         body: formData,
       });
@@ -76,8 +76,7 @@ export default function FAQEditForm({
             value={category}
             onValueChange={setCategory}
             required
-            className="w-full sm:w-4/5"
-          >
+            className="w-full sm:w-4/5">
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select One" />
             </SelectTrigger>

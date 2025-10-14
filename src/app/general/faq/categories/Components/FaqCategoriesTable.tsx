@@ -39,7 +39,7 @@ export default function FaqCategoriesTable() {
   const [loadingDeleteId, setLoadingDeleteId] = useState<number | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
-  const apiBase = 'http://localhost:3000/general/faq/api/category';
+  const apiBase = '/api/v1/faq-category';
 
   useEffect(() => {
     refreshData();
@@ -59,9 +59,11 @@ export default function FaqCategoriesTable() {
 
   const handleAdd = async (closeDialog: () => void) => {
     if (!newCategoryName.trim()) return toast.error('Enter category name');
+    const payload = { name: newCategoryName, isActive: true };
+    console.log(payload);
     try {
       setLoadingAdd(true);
-      await axios.post(apiBase, { categoryName: newCategoryName });
+      await axios.post(apiBase, payload);
       toast.success('Category added');
       setNewCategoryName('');
       closeDialog();

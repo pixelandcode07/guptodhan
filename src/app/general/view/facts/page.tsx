@@ -6,7 +6,7 @@ import FactsTable from './Components/FactTabile';
 
 const fetchFacts = async () => {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL;
     const { data } = await axios.get(`${baseUrl}/api/v1/public/about/facts`);
     return data;
   } catch (error) {

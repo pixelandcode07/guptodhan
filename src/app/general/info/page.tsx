@@ -15,7 +15,7 @@ const fetchSettings = async () => {
 
 export default async function GeneralInfoPage() {
   const settings = await fetchSettings();
-  console.log(settings);
+  // console.log(settings);
 
   return (
     <div className="min-h-screen pt-5 bg-gray-50">

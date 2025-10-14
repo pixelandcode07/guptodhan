@@ -1,15 +1,19 @@
 import axios from 'axios';
 import SocialLinks from '../Components/Social_links';
 
-export default async function Page() {
-  let socialLinks = [];
+const fetchSocalLinks = async () => {
   try {
-    const res = await axios.get(
-      'http://localhost:3000/api/v1/public/social-links'
-    );
-    if (res.data?.success) socialLinks = res.data.data;
-  } catch (err) {
-    console.error(err);
+    const baseUrl = process.env.NEXTAUTH_URL;
+    const { data } = await axios.get(`${baseUrl}/api/v1/public/about/team`);
+    return data;
+  } catch (error) {
+    console.log('fetch facts Error:', error);
+    return { data: [] };
   }
-  return <SocialLinks initialLinks={socialLinks} />;
+};
+
+export default async function Page() {
+  const socailLinks = await fetchSocalLinks();
+  console.log(socailLinks);
+  return <SocialLinks initialLinks={socailLinks.data} />;
 }

@@ -63,8 +63,8 @@ export default function SocialLinks({ initialLinks = [] }: SocialLinksProps) {
 
       const method = link?._id ? 'PATCH' : 'POST';
       const url = link?._id
-        ? `http://localhost:3000/api/v1/social-links/${link._id}`
-        : `http://localhost:3000/api/v1/social-links`;
+        ? `/api/v1/social-links/${link._id}`
+        : `/api/v1/social-links`;
 
       const payload: any = {
         label: link.label,
@@ -103,10 +103,9 @@ export default function SocialLinks({ initialLinks = [] }: SocialLinksProps) {
 
     try {
       setLoading(true);
-      const res = await axios.delete(
-        `http://localhost:3000/api/v1/social-links/${_id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await axios.delete(`/api/v1/social-links/${_id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setMessage(res.data.message || 'Deleted successfully!');
     } catch (err: any) {
       setMessage(
