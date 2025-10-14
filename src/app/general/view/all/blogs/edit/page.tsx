@@ -76,42 +76,55 @@ export default function EditBlogPage() {
   }, [id, router]);
 
   // --- Update blog
-  const handleUpdate = async () => {
-    if (!blogData.category) return toast.error('Category is required!');
-    if (!blogData.title.trim()) return toast.error('Title is required!');
-    if (!blogData.coverImageUrl) return toast.error('Cover image is required!');
-
+  const handleUpdate = async (e) => {
+    // if (!blogData.category) return toast.error('Category is required!');
+    // if (!blogData.title.trim()) return toast.error('Title is required!');
+    // if (!blogData.coverImageUrl) return toast.error('Cover image is required!');
+    
     try {
       setLoading(true);
 
-      const updatedData = {
-        _id: id,
-        category: blogData.category,
-        title: blogData.title,
-        description: blogData.shortDescription,
-        coverImage: blogData.coverImageUrl,
-        content,
-        tags,
-        metaTitle: seoData.metaTitle,
-        metaKeywords: seoData.metaKeywords,
-        metaDescription: seoData.metaDescription,
-        status: 'active',
-      };
+      // const updatedData = {
+      //   _id: id,
+      //   category: blogData.category,
+      //   title: blogData.title,
+      //   description: blogData.shortDescription,
+      //   coverImage: blogData.coverImageUrl,
+      //   content,
+      //   tags,
+      //   metaTitle: seoData.metaTitle,
+      //   metaKeywords: seoData.metaKeywords,
+      //   metaDescription: seoData.metaDescription,
+      //   status: 'active',
+      // };
+      
+    //       const payload = {
+            
+    //   category: blogData.category,
+    //   title: blogData.title,
+    //   description: blogData.shortDescription,
+    //   coverImage: blogData.coverImageUrl,
+    //   content: content,
+    //   tags,
+    //   metaTitle: seoData.metaTitle,
+    //   metaDescription: seoData.metaDescription,
+    //   metaKeywords: seoData.metaKeywords,
+    //   status: 'active',
+    // };
+    //   const res = await axios.patch('/api/v1/blog', payload);
 
-      const res = await axios.patch('/api/v1/blog', updatedData);
-
-      if (res.data.success) {
-        toast.success('Blog updated successfully!');
-        router.push('/general/view/all/blogs');
-      } else {
-        toast.error(res.data.message || 'Update failed');
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to update blog.');
-    } finally {
-      setLoading(false);
-    }
+    //   if (res.data.success) {
+    //     toast.success('Blog updated successfully!');
+    //     router.push('/general/view/all/blogs');
+    //   } else {
+    //     toast.error(res.data.message || 'Update failed');
+    //   }
+    // } catch (error) {
+    //   console.error(error);
+    //   toast.error('Failed to update blog.');
+    // } finally {
+    //   setLoading(false);
+    // }
   };
 
   return (
@@ -126,7 +139,8 @@ export default function EditBlogPage() {
         </Button>
       </div>
 
-      <BlogForm formData={blogData} setFormData={setBlogData} />
+    <form onSubmit={handleUpdate} action="">
+            <BlogForm formData={blogData} setFormData={setBlogData} />
 
       <RichTextEditor value={content} onChange={setContent} />
 
@@ -135,10 +149,11 @@ export default function EditBlogPage() {
       <BlogSeoForm seoData={seoData} setSeoData={setSeoData} />
 
       <div className="flex justify-end pt-4">
-        <Button onClick={handleUpdate} disabled={loading} className="w-[200px]">
+        <Button type="submit"  disabled={loading} className="w-[200px]">
           {loading ? 'Updating...' : 'Update Blog'}
         </Button>
       </div>
+    </form>
     </div>
   );
 }
