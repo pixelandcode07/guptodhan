@@ -85,8 +85,9 @@ export default function BlogTable({ blogs: initialBlogs }) {
           </a>
         </Button>
       </div>
-
-      <DataTable columns={columnsWithActions} data={blogs} />
+      <div className="ml-4">
+        <DataTable columns={columnsWithActions} data={blogs} />
+      </div>
     </div>
   );
 }

@@ -15,6 +15,15 @@ export type StoresDataType = {
   created_at?: string;
 };
 
+const categoryMap: Record<string, string> = {
+  '1': 'Education',
+  '2': 'Environment',
+  '3': 'Human Rights',
+  '4': 'E-commerce',
+  '5': 'Donation',
+  '6': 'Buy & Sale',
+};
+
 export const blogs_columns: ColumnDef<StoresDataType>[] = [
   {
     id: 'serial',
@@ -42,6 +51,10 @@ export const blogs_columns: ColumnDef<StoresDataType>[] = [
   {
     accessorKey: 'category',
     header: 'Category',
+    cell: ({ row }) => {
+      const categoryValue = row.getValue('category') as string;
+      return categoryMap[categoryValue] || categoryValue;
+    },
   },
   {
     accessorKey: 'status',

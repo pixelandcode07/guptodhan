@@ -9,7 +9,6 @@ export default function MainHomePage() {
     <div className="bg-gray-100">
       <Hero />
       <Feature />
-
       <FlashSale />
       <BestSell />
       <JustForYou />

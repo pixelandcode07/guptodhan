@@ -6,45 +6,41 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import SectionTitle from '@/components/ui/SectionTitle';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import BlogForm, {
-  BlogData,
-} from '@/app/general/add/new/blog/Components/BlogForm';
-import BlogSeoForm, {
-  SeoData,
-} from '@/app/general/add/new/blog/Components/BlogSeoForm';
-import TagsInput from '@/app/general/add/new/blog/Components/TagInput';
+
+import RichTextEditor from '@/components/ReusableComponents/RichTextEditor';
+import BlogForm from '@/app/general/add/new/blog/Components/BlogForm';
+import TagsInput from './Components/TagsInput';
+import BlogSeoForm from './Components/BlogSeoForm';
 
 export default function EditBlogPage() {
   const searchParams = useSearchParams();
-  const id = searchParams.get('id'); // get id from query
+  const id = searchParams.get('id');
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
-  const [content, setContent] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
-  const [formData, setFormData] = useState<BlogData>({
+  const [blogData, setBlogData] = useState<BlogData>({
     category: '',
     title: '',
     shortDescription: '',
     coverImageUrl: '',
   });
+  const [tags, setTags] = useState<string[]>([]);
   const [seoData, setSeoData] = useState<SeoData>({
     metaTitle: '',
     metaKeywords: [],
     metaDescription: '',
   });
+  const [content, setContent] = useState('');
 
-  // --- Fetch and filter blog using GET all
+  // --- Fetch blog data
   useEffect(() => {
     if (!id) return;
 
     const fetchBlog = async () => {
       try {
         setLoading(true);
-        const res = await axios.get('/api/v1/blog'); // only this works
+        const res = await axios.get('/api/v1/blog');
         const blogs = res.data.data;
-
         const blog = blogs.find((b: any) => b._id === id);
 
         if (!blog) {
@@ -52,25 +48,15 @@ export default function EditBlogPage() {
           router.push('/general/view/all/blogs');
           return;
         }
-        console.log(blog);
 
-        // fill form fields
-        setFormData({
+        // Parent state update
+        setBlogData({
           category: blog.category || '',
           title: blog.title || '',
-          shortDescription: blog.description || '', // map from description
-          coverImageUrl: blog.coverImage || '', // map from coverImage
+          shortDescription: blog.description || '',
+          coverImageUrl: blog.coverImage || '',
         });
 
-        setContent(blog.content || ''); // default empty if undefined
-        setTags(blog.tags || []);
-        setSeoData({
-          metaTitle: blog.metaTitle || '',
-          metaKeywords: blog.metaKeywords || [],
-          metaDescription: blog.metaDescription || '',
-        });
-
-        // fill content, tags, SEO
         setContent(blog.content || '');
         setTags(blog.tags || []);
         setSeoData({
@@ -79,7 +65,7 @@ export default function EditBlogPage() {
           metaDescription: blog.metaDescription || '',
         });
       } catch (error) {
-        console.error('Error fetching blog:', error);
+        console.error(error);
         toast.error('Failed to load blog data.');
       } finally {
         setLoading(false);
@@ -89,17 +75,27 @@ export default function EditBlogPage() {
     fetchBlog();
   }, [id, router]);
 
-  // --- Update blog using PATCH
+  // --- Update blog
   const handleUpdate = async () => {
+    if (!blogData.category) return toast.error('Category is required!');
+    if (!blogData.title.trim()) return toast.error('Title is required!');
+    if (!blogData.coverImageUrl) return toast.error('Cover image is required!');
+
     try {
       setLoading(true);
 
       const updatedData = {
-        _id: id, // backend requires _id
-        ...formData,
+        _id: id,
+        category: blogData.category,
+        title: blogData.title,
+        description: blogData.shortDescription,
+        coverImage: blogData.coverImageUrl,
         content,
         tags,
-        seoData,
+        metaTitle: seoData.metaTitle,
+        metaKeywords: seoData.metaKeywords,
+        metaDescription: seoData.metaDescription,
+        status: 'active',
       };
 
       const res = await axios.patch('/api/v1/blog', updatedData);
@@ -111,20 +107,12 @@ export default function EditBlogPage() {
         toast.error(res.data.message || 'Update failed');
       }
     } catch (error) {
-      console.error('Update failed:', error);
+      console.error(error);
       toast.error('Failed to update blog.');
     } finally {
       setLoading(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <p className="text-gray-500 text-lg">Loading blog data...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="bg-white p-5 rounded-lg shadow space-y-6">
@@ -138,21 +126,12 @@ export default function EditBlogPage() {
         </Button>
       </div>
 
-      <BlogForm formData={formData} setFormData={setFormData} />
+      <BlogForm formData={blogData} setFormData={setBlogData} />
 
-      <Card>
-        <CardContent className="p-4 space-y-2">
-          <label className="font-medium text-sm">Content</label>
-          <textarea
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            placeholder="Write blog content here..."
-            className="w-full h-[300px] border rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </CardContent>
-      </Card>
+      <RichTextEditor value={content} onChange={setContent} />
 
       <TagsInput tags={tags} setTags={setTags} />
+
       <BlogSeoForm seoData={seoData} setSeoData={setSeoData} />
 
       <div className="flex justify-end pt-4">

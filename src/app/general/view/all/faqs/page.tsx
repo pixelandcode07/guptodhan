@@ -16,7 +16,7 @@ const fetchFAQS = async () => {
   }
 };
 
-export default async function FAQS() {
+export default async function page() {
   const faq = await fetchFAQS();
   console.log(faq);
   return (

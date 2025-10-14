@@ -9,9 +9,12 @@ import { Button } from '@/components/ui/button';
 import SectionTitle from '@/components/ui/SectionTitle';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
 
 export default function BlogEntryFormWrapper() {
   const [loading, setLoading] = useState(false);
+
+  const router = useRouter();
 
   const [blogData, setBlogData] = useState<BlogData>({
     category: '',
@@ -34,39 +37,13 @@ export default function BlogEntryFormWrapper() {
     if (!blogData.title.trim()) return toast.error('Title is required!');
     if (!blogData.coverImageUrl) return toast.error('Cover image is required!');
 
-    // const payload = {
-    //   blogId: crypto.randomUUID(), // generate a unique string
-    //   category: blogData.category,
-    //   title: blogData.title,
-    //   shortDescription: blogData.shortDescription,
-    //   coverImage: blogData.coverImageUrl,
-    //   content,
-    //   tags,
-    //   metaTitle: seoData.metaTitle,
-    //   metaDescription: seoData.metaDescription,
-    //   metaKeywords: seoData.metaKeywords,
-    // };
-
-    // const payload = {
-    //   blogId: crypto.randomUUID(),
-    //   category: blogData.category,
-    //   title: blogData.title,
-    //   description: blogData.shortDescription, // <-- use 'description'
-    //   coverImage: blogData.coverImageUrl,
-    //   content, // content can be sent if backend stores it inside description or separate field
-    //   tags,
-    //   metaTitle: seoData.metaTitle,
-    //   metaDescription: seoData.metaDescription,
-    //   metaKeywords: seoData.metaKeywords,
-    // };
-
     const payload = {
-      blogId: crypto.randomUUID(),
-      // category: blogData.category, // <-- MUST be valid ObjectId
-      category: '507f1f77bcf86cd799439011', //
+      // blogId: crypto.randomUUID(), // category: '507f1f77bcf86cd799439011',
+      category: blogData.category,
       title: blogData.title,
-      description: blogData.shortDescription, // shortDescription mapped to description
+      description: blogData.shortDescription,
       coverImage: blogData.coverImageUrl,
+      content: content,
       tags,
       metaTitle: seoData.metaTitle,
       metaDescription: seoData.metaDescription,
@@ -79,7 +56,7 @@ export default function BlogEntryFormWrapper() {
       setLoading(true);
       const res = await axios.post('/api/v1/blog', payload);
       toast.success('Blog created successfully!');
-      console.log('Server Response:', res.data);
+      router.push('/general/view/all/blogs');
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Something went wrong!');
       console.error('Post Error:', error);

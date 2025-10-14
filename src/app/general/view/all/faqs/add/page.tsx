@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 export default function FAQCreateForm() {
   const router = useRouter();
@@ -23,69 +24,55 @@ export default function FAQCreateForm() {
   const [answer, setAnswer] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const apiBase = '/general/faq/api/category';
+  const categoriesApi = '/api/v1/faq-category';
+  const faqApi = '/api/v1/faq';
 
   useEffect(() => {
-    refreshData();
+    const fetchCategories = async () => {
+      try {
+        const res = await axios.get(categoriesApi);
+        const data = res.data.data || res.data;
+        setCategories(data || []);
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to load categories');
+      }
+    };
+
+    fetchCategories();
   }, []);
 
-  const refreshData = async () => {
-    try {
-      const res = await fetch(apiBase, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Failed to fetch categories');
-      const result = await res.json();
-
-      // Normalize categories to have consistent keys
-      const normalizedCategories = (result.data || result).map((cat: any) => ({
-        id: String(cat.faqCategoryID),
-        name: cat.categoryName,
-      }));
-
-      console.log('Normalized categories:', normalizedCategories);
-      setCategories(normalizedCategories);
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to load categories');
-    }
-  };
-
-  // ✅ Handle form submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!category || !question || !answer)
+    if (!category || !question || !answer) {
       return toast.error('Please fill all required fields');
+    }
 
     setLoading(true);
 
     try {
       const payload = {
-        faqID: `FAQ-${Date.now()}`, // Required by backend
-        category, // This will be ObjectId from backend
+        faqID: `FAQ-${Date.now()}`,
+        category, // ✅ Backend expects category _id
         question,
         answer,
         isActive: true,
       };
 
-      const res = await fetch('/api/v1/faq', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const res = await axios.post(faqApi, payload);
 
-      const data = await res.json();
-
-      if (res.ok && data.success) {
+      if (res.data?.success) {
         toast.success('FAQ created successfully!');
         setCategory('');
         setQuestion('');
         setAnswer('');
         router.push('/general/view/all/faqs');
       } else {
-        toast.error(data.message || 'Failed to create FAQ');
+        toast.error(res.data?.message || 'Failed to create FAQ');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('FAQ create error:', error);
-      toast.error('Something went wrong');
+      toast.error(error.response?.data?.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -108,21 +95,19 @@ export default function FAQCreateForm() {
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select One" />
             </SelectTrigger>
-            {categories && (
-              <SelectContent>
-                {categories.length > 0 ? (
-                  categories.map(cat => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem disabled value="">
-                    No categories found
+            <SelectContent>
+              {categories.length > 0 ? (
+                categories.map(cat => (
+                  <SelectItem key={cat._id} value={cat._id}>
+                    {cat.name || cat.categoryName} {/* Backend name */}
                   </SelectItem>
-                )}
-              </SelectContent>
-            )}
+                ))
+              ) : (
+                <SelectItem disabled value="">
+                  No categories found
+                </SelectItem>
+              )}
+            </SelectContent>
           </Select>
         </div>
 

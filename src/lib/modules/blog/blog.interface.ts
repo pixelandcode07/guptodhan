@@ -4,6 +4,7 @@ export interface IBlog extends Document {
   blogId: string;
   coverImage: string;
   category: string;
+  content: string; // <-- add here
   title: string;
   description: string;
   tags: string[];

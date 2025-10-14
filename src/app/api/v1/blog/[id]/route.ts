@@ -4,7 +4,7 @@ import { catchAsync } from '@/lib/middlewares/catchAsync';
 export const GET = catchAsync(
   async (req: NextRequest, { params }: { params: { id: string } }) => {
     const { id } = params;
-    const blogs = await BlogController.getAllBlogs(req); // optional, or create a getBlogById
+    const blogs = await BlogController.getAllBlogs(req);
     const blog = blogs.data.find((b: any) => b._id === id);
     if (!blog) throw new Error('Blog not found');
     return {
