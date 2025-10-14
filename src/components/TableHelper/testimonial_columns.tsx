@@ -17,12 +17,15 @@ export const testimonial_columns: ColumnDef<Size>[] = [
   {
     accessorKey: 'id',
     header: 'SL',
+    cell: ({ row }) => {
+      return row.index + 1;
+    },
   },
   {
-    accessorKey: 'image',
+    accessorKey: 'customerImage',
     header: 'Image',
     cell: ({ row }) => {
-      const imageUrl = row.getValue('image') as string;
+      const imageUrl = row.getValue('customerImage') as string;
 
       return (
         <div className="flex justify-center items-center">
@@ -37,7 +40,7 @@ export const testimonial_columns: ColumnDef<Size>[] = [
   },
 
   {
-    accessorKey: 'customer',
+    accessorKey: 'customerName',
     header: 'Customer',
   },
   {
@@ -60,30 +63,7 @@ export const testimonial_columns: ColumnDef<Size>[] = [
     },
   },
   {
-    accessorKey: 'designation',
+    accessorKey: 'description',
     header: 'Testimonial',
-  },
-
-  {
-    id: 'action',
-    header: 'Action',
-    cell: () => {
-      return (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-            <Edit className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50">
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
-      );
-    },
   },
 ];
