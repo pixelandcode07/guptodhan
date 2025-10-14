@@ -40,8 +40,29 @@ const createModelForm = async (req: NextRequest) => {
             message: 'Model form created successfully!',
             data: result,
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating model:', error);
+        
+        // Handle specific MongoDB errors
+        if (error.code === 11000) {
+            const duplicateField = Object.keys(error.keyPattern)[0];
+            if (duplicateField === 'modelCode') {
+                return sendResponse({
+                    success: false,
+                    statusCode: StatusCodes.CONFLICT,
+                    message: 'Model Code already exists. Please use a different code.',
+                    data: null,
+                });
+            } else if (duplicateField === 'modelFormId') {
+                return sendResponse({
+                    success: false,
+                    statusCode: StatusCodes.CONFLICT,
+                    message: 'Model Name already exists. Please use a different name.',
+                    data: null,
+                });
+            }
+        }
+        
         return sendResponse({
             success: false,
             statusCode: StatusCodes.INTERNAL_SERVER_ERROR,

@@ -24,6 +24,7 @@ const adminRoutes = [
     "/api/v1/integrations",
     "/api/v1/donation-categories",
     "/api/v1/theme-settings",
+    "/app/api/v1/donation-categories/[id]",
 ];
 
 // যেকোনো লগইন করা ইউজারের জন্য সুরক্ষিত API রুট
@@ -53,7 +54,8 @@ const protectedApiRoutes = [
     '/api/v1/integrations',
     '/api/v1/services',
     '/api/v1/donation-categories',
-    '/api/v1/donation-campaigns'
+    '/api/v1/donation-campaigns',
+    '/api/v1/product-order',
 ];
 
 export async function middleware(req: NextRequest) {

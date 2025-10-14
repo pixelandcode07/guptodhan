@@ -10,7 +10,9 @@ const createTestimonialInDB = async (payload: Partial<ITestimonial>) => {
 
 // Get all active testimonials (optional: sorted by date descending)
 const getAllTestimonialsFromDB = async () => {
-  const result = await TestimonialModel.find({ status: 'active' }).sort({ date: -1 });
+  const result = await TestimonialModel.find({ status: 'active' }).sort({
+    date: -1,
+  });
   return result;
 };
 
@@ -24,8 +26,13 @@ const getTestimonialsByProductFromDB = async (productId: string) => {
 };
 
 // Update testimonial
-const updateTestimonialInDB = async (id: string, payload: Partial<ITestimonial>) => {
-  const result = await TestimonialModel.findByIdAndUpdate(id, payload, { new: true });
+const updateTestimonialInDB = async (
+  id: string,
+  payload: Partial<ITestimonial>
+) => {
+  const result = await TestimonialModel.findByIdAndUpdate(id, payload, {
+    new: true,
+  });
   if (!result) {
     throw new Error('Testimonial not found to update.');
   }

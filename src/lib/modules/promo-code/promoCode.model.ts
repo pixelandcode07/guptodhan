@@ -9,7 +9,7 @@ const promoCodeSchema = new Schema<IPromoCode>(
     startDate: { type: Date, required: true },
     endingDate: { type: Date, required: true },
     type: { type: String, required: true },
-    shortDescription: { type: String, required: true, trim: true },
+    shortDescription: { type: String, required: false, trim: true },
     value: { type: Number, required: true },
     minimumOrderAmount: { type: Number, required: true },
     code: { type: String, required: true, unique: true },

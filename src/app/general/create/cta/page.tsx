@@ -1,19 +1,19 @@
 import CTAForm from './Components/CTAForm';
 import axios from 'axios';
 
-export default async function CTAPage() {
-  // Server-side data fetch
-  let ctaData = null;
+const fetchCta = async () => {
   try {
-    const res = await axios.get(
-      'http://localhost:3000/api/v1/public/about/cta'
-    );
-    if (res.data.success) {
-      ctaData = res.data.data;
-    }
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const { data } = await axios.get(`${baseUrl}/api/v1/public/about/cta`);
+    return data;
   } catch (error) {
-    console.error('Error fetching CTA data:', error);
+    console.log('fetch facts Error:', error);
+    return { data: [] };
   }
+};
 
-  return <CTAForm initialData={ctaData} />;
+export default async function CTAPage() {
+  const ctaData = await fetchCta();
+  console.log(ctaData);
+  return <CTAForm initialData={ctaData.data || {}} />;
 }

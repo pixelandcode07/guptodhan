@@ -1,4 +1,6 @@
-import UnitsClient from "./units-client";
+import UnitsClient from "./components/UnitsClient";
+
+;
 
 
 export default function ViewAllUnitsPage() {

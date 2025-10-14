@@ -1,6 +1,7 @@
+// src/app/(admin)/general/create/cta/Components/CTAForm.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,79 +23,132 @@ type CTAFormProps = {
 };
 
 export default function CTAForm({ initialData }: CTAFormProps) {
-  const [title, setTitle] = useState(initialData?.ctaTitle || '');
-  const [btnText, setBtnText] = useState(initialData?.ctaButtonText || '');
-  const [btnLink, setBtnLink] = useState(initialData?.ctaLink || '');
-  const [status, setStatus] = useState(initialData?.isActive ? '1' : '0');
-  const [content, setContent] = useState(initialData?.ctaDescription || '');
-  const [preview, setPreview] = useState(initialData?.ctaImage || '');
+  const [ctaData, setCtaData] = useState<any>(initialData);
   const [loading, setLoading] = useState(false);
+  const [formReady, setFormReady] = useState(false);
+
+  const [title, setTitle] = useState('');
+  const [btnText, setBtnText] = useState('');
+  const [btnLink, setBtnLink] = useState('');
+  const [status, setStatus] = useState('1');
+  const [content, setContent] = useState('');
+  const [preview, setPreview] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
 
+  useEffect(() => {
+    if (ctaData) {
+      setTitle(ctaData.ctaTitle || '');
+      setBtnText(ctaData.ctaButtonText || '');
+      setBtnLink(ctaData.ctaLink || '');
+      setStatus(ctaData.isActive ? '1' : '0');
+      setContent(ctaData.ctaDescription || '');
+      setPreview(ctaData.ctaImage || '');
+    }
+    setFormReady(true);
+  }, [ctaData]);
+
   const handleUploadChange = (_name: string, file: File | null) => {
+    setSelectedFile(file);
     if (file) {
       setPreview(URL.createObjectURL(file));
     } else {
-      setPreview(initialData?.ctaImage || '');
+      setPreview(ctaData?.ctaImage || '');
     }
   };
 
   const handleCancel = () => {
-    setTitle(initialData?.ctaTitle || '');
-    setBtnText(initialData?.ctaButtonText || '');
-    setBtnLink(initialData?.ctaLink || '');
-    setStatus(initialData?.isActive ? '1' : '0');
-    setContent(initialData?.ctaDescription || '');
-    setPreview(initialData?.ctaImage || '');
+    if (!ctaData) return;
+    setTitle(ctaData.ctaTitle || '');
+    setBtnText(ctaData.ctaButtonText || '');
+    setBtnLink(ctaData.ctaLink || '');
+    setStatus(ctaData.isActive ? '1' : '0');
+    setContent(ctaData.ctaDescription || '');
+    setPreview(ctaData.ctaImage || '');
+    setSelectedFile(null);
   };
 
   const handleDone = async () => {
-    if (!initialData?._id) {
+    if (!ctaData?._id) {
       toast.error('CTA ID is missing.');
+      return;
+    }
+
+    if (!title || !btnText || !btnLink) {
+      toast.error('Please fill all required fields.');
       return;
     }
 
     setLoading(true);
 
-    const payload = {
-      ctaImage: preview,
-      ctaTitle: title,
-      ctaButtonText: btnText,
-      ctaLink: btnLink,
-      ctaDescription: content,
-      isActive: status === '1',
-    };
-
     try {
+      const formData = new FormData();
+
+      if (selectedFile) {
+        console.log('📤 Appending new image file:', selectedFile);
+        formData.append('ctaImage', selectedFile);
+      }
+
+      formData.append('ctaTitle', title);
+      formData.append('ctaButtonText', btnText);
+      formData.append('ctaLink', btnLink);
+      formData.append('ctaDescription', content);
+      formData.append('isActive', status === '1' ? 'true' : 'false');
+
+      console.log('🧾 FormData Entries:', Array.from(formData.entries()));
+
       const res = await axios.patch(
-        `http://localhost:3000/api/v1/about/cta/${initialData._id}`,
-        payload,
+        `/api/v1/about/cta/${ctaData._id}`,
+        formData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
           },
         }
       );
 
+      console.log('🟢 Response from server:', res.data);
+
       if (res.data.success) {
         toast.success('CTA updated successfully!');
+
+        // Use returned data first
+        const updatedData = res.data.data;
+        setCtaData(updatedData);
+        if (updatedData.ctaImage) setPreview(updatedData.ctaImage);
+        setSelectedFile(null);
+
+        // Force refetch from public endpoint to guarantee DB sync
+        try {
+          const fresh = await axios.get('/api/v1/public/about/cta');
+          if (fresh.data.success && fresh.data.data) {
+            setCtaData(fresh.data.data);
+            setPreview(fresh.data.data.ctaImage || updatedData.ctaImage || '');
+          }
+        } catch (err) {
+          console.warn('Failed to fetch fresh CTA after update:', err);
+        }
       } else {
         toast.error('Failed to update CTA!');
       }
-    } catch (error: any) {
-      console.error(error);
+    } catch (error) {
+      console.error('❌ Error updating CTA:', error);
       toast.error('Error updating CTA!');
     } finally {
       setLoading(false);
     }
   };
 
+  if (!formReady) {
+    return (
+      <p className="text-center mt-10 text-gray-500">Loading CTA data...</p>
+    );
+  }
+
   return (
     <div className="grid grid-cols-6 mt-4 gap-2">
-      {/* Left Side */}
       <div className="col-span-2 space-y-4">
         <UploadImage
           label="CTA Image"
@@ -124,7 +178,6 @@ export default function CTAForm({ initialData }: CTAFormProps) {
         </div>
       </div>
 
-      {/* Right Side */}
       <div className="col-span-4 space-y-6">
         <div className="space-y-2">
           <Label htmlFor="title">

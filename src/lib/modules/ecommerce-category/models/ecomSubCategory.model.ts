@@ -10,6 +10,7 @@ const subCategorySchema = new Schema<ISubCategory>(
     subCategoryIcon: { type: String },
     subCategoryBanner: { type: String },
     isFeatured: { type: Boolean, default: false },
+    isNavbar: { type: Boolean, default: false },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
     slug: { type: String, required: true, unique: true },
   },

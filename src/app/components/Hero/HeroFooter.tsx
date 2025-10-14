@@ -8,7 +8,7 @@ import React from 'react';
 export default function HeroFooter() {
   return (
     <>
-      <div className="hidden lg:flex justify-center bg-gray-50 items-center gap-4 py-2 px-20  rounded-md overflow-x-auto">
+      <div className="hidden lg:flex justify-center bg-gray-100 items-center gap-4 py-2 px-20  rounded-md overflow-x-auto">
         {heroFooterData.map((item, idx) => (
           <Link
             key={idx}

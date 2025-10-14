@@ -9,9 +9,9 @@ const createCategoryInDB = async (payload: Partial<ICategory>) => {
   return result;
 };
 
-// Get all active categories (optional: sorted by name)
+// Get all categories (sorted by name)
 const getAllCategoriesFromDB = async () => {
-  const result = await CategoryModel.find({ status: 'active' }).sort({ name: 1 });
+  const result = await CategoryModel.find({}).sort({ name: 1 });
   return result;
 };
 
