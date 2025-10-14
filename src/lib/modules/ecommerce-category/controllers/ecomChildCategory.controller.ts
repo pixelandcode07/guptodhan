@@ -103,9 +103,9 @@ const getAllChildCategories = async () => {
 };
 
 // Get child categories by subcategory
-const getChildCategoriesBySubCategory = async (req: NextRequest, { params }: { params: { subCategoryId: string } }) => {
+const getChildCategoriesBySubCategory = async (req: NextRequest, { params }: { params: Promise<{ subCategoryId: string }> }) => {
   await dbConnect();
-  const { subCategoryId } = params;
+  const { subCategoryId } = await params;
   const result = await ChildCategoryServices.getChildCategoriesBySubCategoryFromDB(subCategoryId);
 
   return sendResponse({
@@ -207,9 +207,9 @@ const updateChildCategory = async (req: NextRequest, { params }: { params: Promi
 };
 
 // Delete child category
-const deleteChildCategory = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const deleteChildCategory = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   await ChildCategoryServices.deleteChildCategoryFromDB(id);
 
   return sendResponse({
