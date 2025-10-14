@@ -12,10 +12,13 @@ import {
 } from '../ui/sidebar';
 import {
   Box,
+  Bug,
+  ChartNoAxesCombined,
   Code,
   DollarSign,
+  House,
   LayoutDashboard,
-  LogOut,
+  Logs,
   MessageCircle,
   Palette,
   Search,
@@ -39,6 +42,7 @@ import { BuySell } from './MotherRoutes/BuySell';
 import { Donation } from './MotherRoutes/Donation';
 import { DemoProducts } from './MotherRoutes/DemoProducts';
 import Logout from './MotherRoutes/Logout';
+import LogoutBtn from './Components/LogoutBtn';
 
 const data = {
   user: {
@@ -54,7 +58,7 @@ const data = {
     },
     {
       title: 'Footer Settings',
-      url: '/general/view/footer/widget',
+      url: '/general/view/footer/widget/1',
       icon: Settings,
     },
     {
@@ -85,19 +89,29 @@ const data = {
   ],
   buysell: [
     {
-      title: 'Buy Sell Config',
-      url: '/general/buy/sell/config',
-      icon: LayoutDashboard,
+      title: 'Dashboard',
+      url: '/general/buy/sell/dashboard',
+      icon: ChartNoAxesCombined,
     },
     {
-      title: 'Buy Sell Categories',
-      url: '*',
-      icon: LayoutDashboard,
-    },
-    {
-      title: 'Buy Sell Listing',
+      title: 'Listing Management',
       url: '/general/buy/sell/listing',
       icon: LayoutDashboard,
+    },
+    {
+      title: 'Report Listing',
+      url: '/general/buy/sell/report',
+      icon: Bug,
+    },
+    {
+      title: 'Categories',
+      url: '/general/create/buy/sell/category',
+      icon: Logs,
+    },
+    {
+      title: 'Setting',
+      url: '/general/buy/sell/config',
+      icon: Settings,
     },
   ],
   donations: [
@@ -194,13 +208,6 @@ const data = {
     { title: 'Subscribed Users' },
     { title: 'Blog Comments' },
   ],
-  logoutAction: [
-    {
-      title: 'Logout',
-      url: '/general/logout',
-      icon: LogOut,
-    },
-  ],
 };
 
 export default function AppSidebar() {
@@ -209,35 +216,36 @@ export default function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-3">
-              <Link href="/general/home">
-                <Image
-                  src="/img/logo.jpg"
-                  alt="Guptodhan"
-                  width={120}
-                  height={24}
-                />
-              </Link>
-            </SidebarMenuButton>
+            <Link
+              href="/general/home"
+              className="flex justify-center items-center py-6">
+              <Image
+                src="/img/logo.png"
+                alt="Guptodhan"
+                width={150}
+                height={50}
+              />
+            </Link>
             <SidebarMenuButton asChild>
-              <Link href="/general/home">Dashboard</Link>
+              <Link href="/general/home">
+                <House /> Dashboard
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         <WebsiteConfig items={data.navMain} />
-        <ContentManagement />
-        <UserRolePermition items={data.userRole} />
         <BuySell items={data.buysell} />
         <Donation items={data.donations} />
         <Multivendor items={data.documents} />
         <EcommerceModules items={data.ecommerceModules} />
         <CRMModules items={data.crmModules} />
+        <ContentManagement />
+        <UserRolePermition items={data.userRole} />
         <DemoProducts items={data.demoProducts} />
-        <Logout items={data.logoutAction} />
+        {/* <Logout items={data.logoutAction} /> */}
+        <LogoutBtn />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
     </Sidebar>

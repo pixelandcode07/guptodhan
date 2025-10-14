@@ -14,9 +14,12 @@ export type PromoCode = {
   min_spend: string
   code: string
   status: "Active" | "Inactive" | "Expired"
+  icon?: string
+  shortDescription?: string
+  _id: string
 }
 
-export const promo_codes_columns: ColumnDef<PromoCode>[] = [
+export const getPromoCodeColumns = ({ onEdit, onDelete }: { onEdit: (row: PromoCode) => void; onDelete: (row: PromoCode) => void }): ColumnDef<PromoCode>[] => [
   {
     accessorKey: "id",
     header: "SL",
@@ -130,13 +133,13 @@ export const promo_codes_columns: ColumnDef<PromoCode>[] = [
   {
     id: "action",
     header: "Action",
-    cell: () => {
+    cell: ({ row }) => {
       return (
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+          <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => onEdit(row.original)}>
             <Edit className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => onDelete(row.original)}>
             <Trash2 className="w-4 h-4" />
           </Button>
         </div>
@@ -144,3 +147,9 @@ export const promo_codes_columns: ColumnDef<PromoCode>[] = [
     },
   },
 ]
+
+// Legacy export for backward compatibility
+export const promo_codes_columns: ColumnDef<PromoCode>[] = getPromoCodeColumns({ 
+  onEdit: () => {}, 
+  onDelete: () => {} 
+})

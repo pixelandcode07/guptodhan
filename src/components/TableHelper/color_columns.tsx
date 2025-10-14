@@ -5,17 +5,28 @@ import { Button } from "@/components/ui/button"
 import { Edit, Trash2 } from "lucide-react"
 
 export type Color = {
+  _id: string
   id: number
+  productColorId: string
   name: string
   code: string
   status: "Active" | "Inactive"
   created_at: string
 }
 
-export const color_columns: ColumnDef<Color>[] = [
+export type ColorColumnHandlers = {
+  onEdit: (color: Color) => void
+  onDelete: (color: Color) => void
+}
+
+export const getColorColumns = ({ onEdit, onDelete }: ColorColumnHandlers): ColumnDef<Color>[] => [
   {
     accessorKey: "id",
     header: "SL",
+    cell: ({ row }) => {
+      const id = row.getValue("id") as number;
+      return <span className="pl-4">{id}</span>;
+    },
   },
   {
     id: "colorSwatch",
@@ -45,8 +56,16 @@ export const color_columns: ColumnDef<Color>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string
-      return <span>{status}</span>
+      const status = row.getValue("status") as string;
+      return (
+        <div className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          status === "Active" 
+            ? "bg-green-100 text-green-800" 
+            : "bg-red-100 text-red-800"
+        }`}>
+          {status}
+        </div>
+      );
     },
   },
   {
@@ -56,13 +75,14 @@ export const color_columns: ColumnDef<Color>[] = [
   {
     id: "action",
     header: "Action",
-    cell: () => {
+    cell: ({ row }) => {
+      const color = row.original as Color
       return (
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+          <Button onClick={() => onEdit(color)} variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
             <Edit className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+          <Button onClick={() => onDelete(color)} variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
             <Trash2 className="w-4 h-4" />
           </Button>
         </div>

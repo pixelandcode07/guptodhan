@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { firebaseAdmin } from '@/lib/firebaseAdmin';
 import { User } from '../user/user.model';
-import { TLoginUser, TChangePassword } from './auth.interface';
+import {  TChangePassword, TLoginUser } from './auth.interface';
 import { generateToken, verifyToken } from '@/lib/utils/jwt';
 import { connectRedis, redisClient } from '@/lib/redis';
 import { sendEmail } from '@/lib/utils/email';
@@ -9,16 +10,42 @@ import mongoose from 'mongoose';
 import { Vendor } from '../vendor/vendor.model';
 import { ServiceProvider } from '../service-provider/serviceProvider.model';
 
+
+
+
+
+
 const loginUser = async (payload: TLoginUser) => {
-  const user = await User.isUserExistsByEmail(payload.email);
+  const { identifier, password: plainPassword } = payload; // সমাধান ১: password-কে plainPassword নামকরণ করা হয়েছে
 
-  if (!user) throw new Error('User not found!');
-  if (!user.password) throw new Error('Password not set for this user.');
+  const isEmail = identifier.includes('@');
+  
+  const user = isEmail
+    ? await User.isUserExistsByEmail(identifier)
+    : await User.isUserExistsByPhone(identifier);
 
-  const isPasswordMatched = await user.isPasswordMatched(payload.password, user.password);
-  if (!isPasswordMatched) throw new Error('Incorrect password!');
+  if (!user) {
+    throw new Error('User not found!');
+  }
 
-  const jwtPayload = { userId: user._id.toString(), email: user.email, role: user.role };
+  if (!user.password) {
+    throw new Error('Password not set for this user. Please try social login.');
+  }
+
+  const isPasswordMatched = await user.isPasswordMatched(
+    plainPassword,
+    user.password,
+  );
+
+  if (!isPasswordMatched) {
+    throw new Error('Incorrect password!');
+  }
+
+  const jwtPayload = {
+    userId: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  };
 
   const accessTokenSecret = process.env.JWT_ACCESS_SECRET;
   const accessTokenExpiresIn = process.env.JWT_ACCESS_EXPIRES_IN;
@@ -26,12 +53,13 @@ const loginUser = async (payload: TLoginUser) => {
   const refreshTokenExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN;
 
   if (!accessTokenSecret || !accessTokenExpiresIn || !refreshTokenSecret || !refreshTokenExpiresIn) {
-    throw new Error('JWT secret or expiration not configured in .env');
+    throw new Error('JWT secret or expiration not configured in .env.local file');
   }
 
   const accessToken = generateToken(jwtPayload, accessTokenSecret, accessTokenExpiresIn);
   const refreshToken = generateToken(jwtPayload, refreshTokenSecret, refreshTokenExpiresIn);
 
+  // সমাধান ২: এখানে password ডিস্ট্রাকচার করার আর কোনো দ্বন্দ্ব নেই
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password, ...userWithoutPassword } = user.toObject();
 
@@ -92,17 +120,26 @@ const setPasswordForSocialLogin = async (userId: string, newPassword: string) =>
     return null;
 };
 
+// --- শুধুমাত্র ইমেইলের জন্য: Forgot Password এর জন্য OTP পাঠানোর সার্ভিস ---
 const sendForgotPasswordOtpToEmail = async (email: string) => {
   await connectRedis();
+  
   const user = await User.findOne({ email });
-  if (!user) { throw new Error('No user found with this email address.'); }
+  if (!user) { 
+    throw new Error('No user found with this email address.'); 
+  }
+
+  // সমাধান: sendEmail কল করার আগে নিশ্চিত করা হচ্ছে যে user.email আছে
+  if (!user.email) {
+    throw new Error('This user does not have a registered email address.');
+  }
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const redisKey = `reset-otp:email:${email}`;
-  await redisClient.set(redisKey, otp, { EX: 300 }); // 5 minutes expiration
+  await redisClient.set(redisKey, otp, { EX: 300 });
 
   await sendEmail({
-    to: user.email,
+    to: user.email, // এখন TypeScript নিশ্চিত যে এটি একটি string
     subject: 'Your Password Reset Code',
     template: 'otp.ejs',
     data: { name: user.name, otp: otp },

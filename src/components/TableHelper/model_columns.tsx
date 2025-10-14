@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Edit, Trash2 } from "lucide-react"
 
 export type Model = {
+  _id: string
   id: number
   brand: string
   modelName: string
@@ -14,10 +15,19 @@ export type Model = {
   created_at: string
 }
 
-export const model_columns: ColumnDef<Model>[] = [
+export type ModelColumnHandlers = {
+  onEdit: (model: Model) => void
+  onDelete: (model: Model) => void
+}
+
+export const getModelColumns = ({ onEdit, onDelete }: ModelColumnHandlers): ColumnDef<Model>[] => [
   {
     accessorKey: "id",
     header: "SL",
+    cell: ({ row }) => {
+      const id = row.getValue("id") as number;
+      return <span className="pl-4">{id}</span>;
+    },
   },
   {
     accessorKey: "brand",
@@ -67,13 +77,14 @@ export const model_columns: ColumnDef<Model>[] = [
   {
     id: "action",
     header: "Action",
-    cell: () => {
+    cell: ({ row }) => {
+      const model = row.original as Model
       return (
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+          <Button onClick={() => onEdit(model)} variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
             <Edit className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+          <Button onClick={() => onDelete(model)} variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
             <Trash2 className="w-4 h-4" />
           </Button>
         </div>

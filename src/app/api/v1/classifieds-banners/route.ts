@@ -4,8 +4,5 @@ import { ClassifiedBannerController } from '@/lib/modules/classifieds-banner/ban
 import { catchAsync } from '@/lib/middlewares/catchAsync';
 import { checkRole } from '@/lib/middlewares/checkRole';
 
-// সকল ব্যানার দেখা (পাবলিক)
-export const GET = catchAsync(ClassifiedBannerController.getAllPublicBanners);
-
 // নতুন ব্যানার তৈরি করা (শুধুমাত্র অ্যাডমিন)
 export const POST = catchAsync(checkRole(['admin'])(ClassifiedBannerController.createBanner));

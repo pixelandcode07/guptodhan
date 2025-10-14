@@ -1,44 +1,90 @@
-"use client"
+'use client';
 
-import { ChevronDown, Headphones, Phone, Users, MessageCircle } from "lucide-react"
-import { ElementType } from "react"
-import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../../ui/sidebar"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../ui/collapsible"
-import Link from "next/link"
+import {
+  ChevronDown,
+  Headphones,
+  Phone,
+  Users,
+  MessageCircle,
+} from 'lucide-react';
+import { ElementType } from 'react';
+import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '../../ui/sidebar';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '../../ui/collapsible';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
-interface CRMModuleTitleOnly { title: string }
-
-type ChildItem = { title: string; url: string; count?: string; color?: string }
-
-const CRM_MENU_CONFIG: Record<string, { icon: ElementType; items: ChildItem[]; url?: string; badge?: string }> = {
-  "Support Ticket": {
-    icon: Headphones,
-    badge: "0",
-    items: [
-      { title: "Pending Supports", url: "/general/crm/support/pending", count: "0", color: "text-blue-500" },
-      { title: "Solved Supports", url: "/general/crm/support/solved", count: "1", color: "text-green-500" },
-      { title: "On Hold Supports", url: "/general/crm/support/on-hold", count: "0", color: "text-yellow-500" },
-      { title: "Rejected Supports", url: "/general/crm/support/rejected", count: "1", color: "text-red-500" },
-    ],
-  },
-  "Contact Request": {
-    icon: Phone,
-    items: [],
-    url: "/general/crm/contact/requests",
-  },
-  "Subscribed Users": {
-    icon: Users,
-    items: [],
-    url: "/general/crm/subscribed/users",
-  },
-  "Blog Comments": {
-    icon: MessageCircle,
-    items: [],
-    url: "/general/crm/blog/comments",
-  },
+interface CRMModuleTitleOnly {
+  title: string;
 }
 
+type ChildItem = { title: string; url: string; count?: string; color?: string };
+
+const CRM_MENU_CONFIG: Record<
+  string,
+  { icon: ElementType; items: ChildItem[]; url?: string; badge?: string }
+> = {
+  'Support Ticket': {
+    icon: Headphones,
+    badge: '0',
+    items: [
+      {
+        title: 'Pending Supports',
+        url: '/general/pending/support/tickets',
+        count: '0',
+        color: 'text-blue-500',
+      },
+      {
+        title: 'Solved Supports',
+        url: '/general/solved/support/tickets',
+        count: '1',
+        color: 'text-green-500',
+      },
+      {
+        title: 'On Hold Supports',
+        url: '/general/on/hold/support/tickets',
+        count: '0',
+        color: 'text-yellow-500',
+      },
+      {
+        title: 'Rejected Supports',
+        url: '/general/rejected/support/tickets',
+        count: '1',
+        color: 'text-red-500',
+      },
+    ],
+  },
+  'Contact Request': {
+    icon: Phone,
+    items: [],
+    url: '/general/view/all/contact/requests',
+  },
+  'Subscribed Users': {
+    icon: Users,
+    items: [],
+    url: '/general/view/all/subscribed/users',
+  },
+  'Blog Comments': {
+    icon: MessageCircle,
+    items: [],
+    url: '/general//blog/comments',
+  },
+};
+
 export function CRMModules({ items }: { items: CRMModuleTitleOnly[] }) {
+  const pathname = usePathname();
+  const isActive = (href: string) => pathname === href;
+
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel className="text-[#f1bf43] text-[14px]">
@@ -47,30 +93,36 @@ export function CRMModules({ items }: { items: CRMModuleTitleOnly[] }) {
 
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map((item) => {
-            const cfg = CRM_MENU_CONFIG[item.title]
-            if (!cfg) return null
-            
+          {items.map(item => {
+            const cfg = CRM_MENU_CONFIG[item.title];
+            if (!cfg) return null;
+
             if (cfg.items.length === 0) {
               // Direct link for items without sub-routes
+              const active = isActive(cfg.url || '#');
               return (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link href={cfg.url || "#"} className="flex items-center gap-2">
+                  <SidebarMenuButton 
+                    asChild
+                    className={`flex items-center gap-2 ${active
+                      ? "bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5"
+                      : "text-white bg-[#132843] pl-5"
+                    }`}>
+                    <Link href={cfg.url || '#'}>
                       <cfg.icon />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              )
+              );
             }
-            
+
             // Collapsible for items with sub-routes
             return (
               <Collapsible key={item.title} className="group/collapsible">
                 <CollapsibleTrigger asChild>
                   <SidebarMenuItem>
-                    <SidebarMenuButton>
+                    <SidebarMenuButton className="text-white bg-[#132843] pl-5">
                       <cfg.icon />
                       <span>{item.title}</span>
                       {cfg.badge && (
@@ -82,36 +134,47 @@ export function CRMModules({ items }: { items: CRMModuleTitleOnly[] }) {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </CollapsibleTrigger>
-                
+
                 <CollapsibleContent>
                   <div className="pl-6">
-                    {cfg.items.map((subItem) => (
-                      <SidebarMenuItem key={subItem.url}>
-                        <SidebarMenuButton asChild>
-                          <Link
-                            href={subItem.url}
-                            className="flex items-center gap-2"
-                          >
-                            <span className={subItem.color || "text-white"}>{subItem.title}</span>
-                            {subItem.count && (
-                              <span className={`ml-auto text-xs px-2 py-1 rounded ${
-                                subItem.count === "0" ? "bg-orange-500 text-white" : 
-                                subItem.count === "1" ? "bg-green-500 text-white" : "text-blue-400"
-                              }`}>
-                                ({subItem.count})
+                    {cfg.items.map(subItem => {
+                      const active = isActive(subItem.url);
+                      return (
+                        <SidebarMenuItem key={subItem.url}>
+                          <SidebarMenuButton 
+                            asChild
+                            className={`flex items-center gap-2 ${active
+                              ? "bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5"
+                              : "text-white bg-[#132843] pl-5"
+                            }`}>
+                            <Link href={subItem.url}>
+                              <span className={subItem.color || 'text-white'}>
+                                {subItem.title}
                               </span>
-                            )}
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
+                              {subItem.count && (
+                                <span
+                                  className={`ml-auto text-xs px-2 py-1 rounded ${
+                                    subItem.count === '0'
+                                      ? 'bg-orange-500 text-white'
+                                      : subItem.count === '1'
+                                      ? 'bg-green-500 text-white'
+                                      : 'text-blue-400'
+                                  }`}>
+                                  ({subItem.count})
+                                </span>
+                              )}
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
                   </div>
                 </CollapsibleContent>
               </Collapsible>
-            )
+            );
           })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
+  );
 }

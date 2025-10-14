@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import SectionTitle from '@/components/ui/SectionTitle';
-import { ListOrdered, Plus } from 'lucide-react';
+import { Edit, ListOrdered, Plus, Trash2 } from 'lucide-react';
 import { DataTable } from '@/components/TableHelper/data-table';
 import { faq_categories_columns } from '@/components/TableHelper/faq_columns';
 import {
@@ -20,92 +20,177 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from '@/components/ui/dialog';
+import { toast } from 'sonner';
+import axios from 'axios';
 
-type FaqCategories = {
-  id: number;
-  name: string;
-  slug: string;
-  status: string;
+type FaqCategory = {
+  faqCategoryID: number;
+  categoryName: string;
+  isActive: boolean;
 };
 
 export default function FaqCategoriesTable() {
-  const [search, setSearch] = useState('');
-  const [entries, setEntries] = useState('10');
-  const [categories, setCategories] = useState<FaqCategories[]>([
-    {
-      id: 1,
-      name: 'Shipping Information',
-      slug: 'shipping-information',
-      status: 'active',
-    },
-    { id: 2, name: 'Payment', slug: 'payment', status: 'active' },
-    {
-      id: 3,
-      name: 'Orders & Returns',
-      slug: 'orders-returns',
-      status: 'active',
-    },
-  ]);
-  const [newCategory, setNewCategory] = useState('');
+  const [categories, setCategories] = useState<FaqCategory[]>([]);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [loadingAdd, setLoadingAdd] = useState(false);
+  const [loadingUpdateId, setLoadingUpdateId] = useState<number | null>(null);
+  const [loadingDeleteId, setLoadingDeleteId] = useState<number | null>(null);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
-  const filteredCategories = categories.filter(cat =>
-    cat.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const apiBase = '/api/v1/faq-category';
 
-  const handleAddCategory = () => {
-    if (!newCategory.trim()) return;
-    const newCat: FaqCategories = {
-      id: Date.now(),
-      name: newCategory,
-      slug: newCategory.toLowerCase().replace(/\s+/g, '-'),
-      status: 'active',
-    };
-    setCategories(prev => [...prev, newCat]);
-    setNewCategory('');
+  useEffect(() => {
+    refreshData();
+  }, []);
+
+  const refreshData = async () => {
+    try {
+      const res = await fetch(apiBase, { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to fetch categories');
+      const data = await res.json();
+      setCategories(data);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to load categories');
+    }
   };
 
-  const handleDelete = (id: number) => {
-    setCategories(prev => prev.filter(cat => cat.id !== id));
+  const handleAdd = async (closeDialog: () => void) => {
+    if (!newCategoryName.trim()) return toast.error('Enter category name');
+    const payload = { name: newCategoryName, isActive: true };
+    console.log(payload);
+    try {
+      setLoadingAdd(true);
+      await axios.post(apiBase, payload);
+      toast.success('Category added');
+      setNewCategoryName('');
+      closeDialog();
+      await refreshData();
+    } catch {
+      toast.error('Failed to add category');
+    } finally {
+      setLoadingAdd(false);
+    }
   };
 
-  const handleEdit = (id: number, updated: Partial<FaqCategories>) => {
-    setCategories(prev =>
-      prev.map(cat => (cat.id === id ? { ...cat, ...updated } : cat))
-    );
+  const handleUpdate = async (
+    id: number,
+    categoryName: string,
+    isActive: boolean,
+    closeDialog: () => void
+  ) => {
+    try {
+      setLoadingUpdateId(id);
+      await axios.put(`${apiBase}/${id}`, { categoryName, isActive });
+      toast.success('Category updated');
+      closeDialog();
+      await refreshData();
+    } catch {
+      toast.error('Failed to update category');
+    } finally {
+      setLoadingUpdateId(null);
+    }
   };
 
-  // Columns with Actions
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure?')) return;
+    try {
+      setLoadingDeleteId(id);
+      toast('Deleting...', { duration: 1000 });
+      await axios.delete(`${apiBase}/${id}`);
+      toast.success('Deleted successfully');
+      await refreshData();
+    } catch {
+      toast.error('Failed to delete category');
+    } finally {
+      setLoadingDeleteId(null);
+    }
+  };
+
   const columnsWithActions = [
     ...faq_categories_columns,
     {
       header: 'Actions',
       cell: ({ row }: any) => {
-        const cat = row.original as FaqCategories;
+        const cat = row.original as FaqCategory;
+        const [editName, setEditName] = useState(cat.categoryName);
+        const [editStatus, setEditStatus] = useState(
+          cat.isActive ? 'active' : 'inactive'
+        );
+
         return (
           <div className="flex gap-2">
             <Dialog>
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline">
-                  Edit
+                  <Edit className="w-4 h-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-sm">
                 <DialogHeader>
                   <DialogTitle>Edit Category</DialogTitle>
                 </DialogHeader>
-                <Input
-                  defaultValue={cat.name}
-                  onChange={e => handleEdit(cat.id, { name: e.target.value })}
-                />
+                <div className="space-y-3 py-2">
+                  <div>
+                    <label className="text-sm font-medium">Category Name</label>
+                    <Input
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Status</label>
+                    <Select
+                      value={editStatus}
+                      onValueChange={v => setEditStatus(v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <Button
+                      onClick={() =>
+                        handleUpdate(
+                          cat.faqCategoryID,
+                          editName,
+                          editStatus === 'active',
+                          () => {
+                            const dialog =
+                              document.querySelector('dialog[open]');
+                            if (dialog) (dialog as HTMLDialogElement).close();
+                          }
+                        )
+                      }
+                      disabled={loadingUpdateId === cat.faqCategoryID}>
+                      {loadingUpdateId === cat.faqCategoryID
+                        ? 'Updating...'
+                        : 'Update'}
+                    </Button>
+                  </div>
+                </div>
               </DialogContent>
             </Dialog>
 
             <Button
               size="sm"
               variant="destructive"
-              onClick={() => handleDelete(cat.id)}>
-              Delete
+              onClick={() => handleDelete(cat.faqCategoryID)}
+              disabled={loadingDeleteId === cat.faqCategoryID}>
+              {loadingDeleteId === cat.faqCategoryID ? (
+                'Deleting...'
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
             </Button>
           </div>
         );
@@ -115,75 +200,54 @@ export default function FaqCategoriesTable() {
 
   return (
     <div className="bg-white">
-      <div className="flex w-full justify-between items-center pt-5 flex-wrap">
-        <SectionTitle text="View All faq Categories" />
+      <div className="flex w-full justify-between items-center flex-wrap">
+        <SectionTitle text="View All FAQ Categories" />
       </div>
+
       <div className="p-5">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
-          {/* Show Entries */}
-          <div className="flex items-center gap-2">
-            <span>Show</span>
-            <Select defaultValue={entries} onValueChange={setEntries}>
-              <SelectTrigger className="w-20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-                <SelectItem value="100">100</SelectItem>
-              </SelectContent>
-            </Select>
-            <span>entries</span>
-          </div>
+        <div className="py-4 flex justify-end gap-2">
+          <Button
+            size="sm"
+            onClick={() => toast.info('Rearrange not implemented')}>
+            <ListOrdered className="h-4 w-4 mr-2" />
+            Rearrange Category
+          </Button>
 
-          {/* Search */}
-          <div className="flex items-center gap-2">
-            <span>Search:</span>
-            <Input
-              placeholder="Search categories..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-64"
-            />
-          </div>
-        </div>
-
-        {/* Buttons */}
-        <div className="py-4 pr-5 flex justify-end">
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              onClick={() => alert('Rearrange functionality not implemented')}>
-              <ListOrdered className="h-4 w-4 mr-2" />
-              Rearrange Category
-            </Button>
-
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Category
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add Category</DialogTitle>
-                </DialogHeader>
+          <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add New Category
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Add Category</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 py-2">
                 <Input
                   placeholder="Category name"
-                  value={newCategory}
-                  onChange={e => setNewCategory(e.target.value)}
-                  className="mb-3"
+                  value={newCategoryName}
+                  onChange={e => setNewCategoryName(e.target.value)}
                 />
-                <Button onClick={handleAddCategory}>Save</Button>
-              </DialogContent>
-            </Dialog>
-          </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogClose>
+                  <Button
+                    onClick={async () => {
+                      await handleAdd(() => setAddDialogOpen(false)); // Close dialog after add
+                    }}
+                    disabled={loadingAdd}>
+                    {loadingAdd ? 'Adding...' : 'Save'}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
-        {/* DataTable */}
-        <DataTable columns={columnsWithActions} data={filteredCategories} />
+        <DataTable columns={columnsWithActions} data={categories ?? []} />
       </div>
     </div>
   );

@@ -55,6 +55,7 @@ export const seystem_users_columns: ColumnDef<Size>[] = [
   {
     accessorKey: 'id',
     header: 'SL',
+    cell: ({ row }) => row.index + 1,
   },
   {
     accessorKey: 'name',
@@ -65,27 +66,12 @@ export const seystem_users_columns: ColumnDef<Size>[] = [
     header: 'Email',
   },
   {
-    accessorKey: 'phone',
+    accessorKey: 'phoneNumber',
     header: 'Phone',
   },
   {
-    accessorKey: 'userType',
+    accessorKey: 'role',
     header: 'User Type',
-    cell: ({ row }) => {
-      const type = row.getValue('userType') as string;
-      return (
-        <span
-          className={
-            type === 'Make SuperAdmin'
-              ? 'text-green-600 font-medium'
-              : type === 'Revoke SuperAdmin'
-              ? 'text-red-600 font-medium'
-              : ''
-          }>
-          {type}
-        </span>
-      );
-    },
   },
   {
     id: 'action',

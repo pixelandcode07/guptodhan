@@ -3,6 +3,7 @@ import { IClassifiedSubCategory } from './subcategory.interface';
 import { ClassifiedSubCategory } from './subcategory.model';
 import { ClassifiedCategory } from '../classifieds-category/category.model'; // <-- Parent Category মডেল ইম্পোর্ট করুন
 import { Types } from 'mongoose';
+import { ClassifiedAd } from '../classifieds/ad.model';
 
 const createSubCategoryInDB = async (payload: Partial<IClassifiedSubCategory>) => {
   const parentCategory = await ClassifiedCategory.findById(payload.category);
@@ -17,29 +18,39 @@ const createSubCategoryInDB = async (payload: Partial<IClassifiedSubCategory>) =
 
 
 const getSubCategoriesByParentFromDB = async (id: string) => {
-    const result = await ClassifiedSubCategory.find({ category: new Types.ObjectId(id), status: 'active' });
-    return result;
-};
-
-
-
-const updateSubCategoryInDB = async (id: string, payload: { name?: string; category?: string; status?: 'active' | 'inactive' }) => {
-  const payloadForDB: any = { ...payload };
-
-  if (payload.category) {
-    const parentCategory = await ClassifiedCategory.findOne({ name: payload.category });
-    if (!parentCategory) {
-      throw new Error(`Parent category '${payload.category}' not found.`);
-    }
-    payloadForDB.category = parentCategory._id;
-  }
-
-  const result = await ClassifiedSubCategory.findByIdAndUpdate(id, payloadForDB, { new: true });
-  if (!result) {
-    throw new Error("Sub-category not found to update.");
-  }
+  const result = await ClassifiedSubCategory.find({
+    category: new Types.ObjectId(id),
+    status: 'active',
+  });
   return result;
 };
+
+
+
+const updateSubCategoryInDB = async (id: string, payload: Partial<IClassifiedSubCategory>) => {
+  const subCategoryToUpdate = await ClassifiedSubCategory.findById(id);
+  if (!subCategoryToUpdate) {
+    throw new Error("Sub-category not found to update.");
+  }
+
+  // যদি নতুন প্যারেন্ট ক্যাটাগরি পাঠানো হয়, তবে সেটি ভ্যালিড কিনা চেক করা হচ্ছে
+  if (payload.category) {
+    const parentCategoryExists = await ClassifiedCategory.findById(payload.category);
+    if (!parentCategoryExists) {
+      throw new Error(`The new parent category with ID '${payload.category}' does not exist.`);
+    }
+  }
+  
+  // যদি নতুন আইকন আপলোড করা হয়, তাহলে ক্লাউডিনারি থেকে পুরোনো আইকন ডিলিট করা হচ্ছে
+  if (payload.icon && subCategoryToUpdate.icon) {
+    await deleteFromCloudinary(subCategoryToUpdate.icon);
+  }
+
+  // ডেটাবেসে সাব-ক্যাটাগরিটি আপডেট করা হচ্ছে
+  const result = await ClassifiedSubCategory.findByIdAndUpdate(id, payload, { new: true });
+  return result;
+};
+
 
 // নতুন: সাব-ক্যাটাগরি ডিলিট করার জন্য সার্ভিস
 const deleteSubCategoryFromDB = async (id: string) => {

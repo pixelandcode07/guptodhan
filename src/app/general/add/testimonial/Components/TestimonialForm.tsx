@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import axios from 'axios';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -12,107 +13,120 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Upload } from 'lucide-react';
 import SectionTitle from '@/components/ui/SectionTitle';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import Link from 'next/link';
+import FileUpload from '@/components/ReusableComponents/FileUpload';
 
 export default function TestimonialForm() {
-  const [image, setImage] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setImage(e.target.files[0]);
-    }
+  // Image change handler
+  const handleImageChange = (_name: string, url: string) => {
+    setImageUrl(url);
   };
 
-  // ✅ Handle form submit
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // Submit handler
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!image) {
-      alert('Please upload an image.');
+    if (!imageUrl) {
+      toast.error('Please upload a customer image.');
       return;
     }
 
-    const formData = new FormData(e.currentTarget);
-    formData.set('image', image);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
 
-    const data = Object.fromEntries(formData.entries());
-    console.log('Testimonial Form Data:', data);
-    alert('Testimonial Saved!');
+    setLoading(true);
+
+    try {
+      const payload = {
+        reviewID: crypto.randomUUID(),
+        customerImage: imageUrl,
+        customerName: formData.get('customerName'),
+        customerProfession: formData.get('customerProfession'),
+        rating: Number(formData.get('rating')),
+        description: formData.get('description'),
+        productID: '67000abc1234567890abcd12',
+        status: 'approved',
+        // date: new Date().toISOString(), // ⚡ convert Date to ISO string
+      };
+
+      const res = await axios.post('/api/v1/testimonial', payload);
+
+      if (res.data?.success) {
+        toast.success('Testimonial added successfully!');
+        router.push('/general/view/testimonials');
+      } else {
+        toast.error(res.data?.message || 'Failed to save testimonial');
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Something went wrong!');
+    } finally {
+      setLoading(false);
+    }
   };
+
   return (
-    <div className=" bg-white pt-5 shadow">
+    <div className="bg-white pt-5 shadow">
       <SectionTitle text="Testimonial Entry Form" />
+      <div className="flex justify-end mb-2">
+        <Link
+          href="/general/add/testimonial"
+          className="text-blue-500 hover:underline">
+          Add new Testimonial
+        </Link>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6 p-6 pt-2">
-        {/* Grid Layout */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Image Upload Box */}
+          {/* Customer Image */}
           <div>
-            <Label htmlFor="image">
+            <Label htmlFor="customerImage">
               Customer Image <span className="text-red-500">*</span>
             </Label>
             <div className="mt-2">
-              <label
-                htmlFor="image"
-                className="flex flex-col items-center justify-center w-full h-52 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition">
-                {!image ? (
-                  <div className="flex flex-col items-center justify-center text-center p-4">
-                    <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                    <p className="text-gray-500">
-                      Click to upload or drag & drop
-                    </p>
-                    <p className="text-xs text-gray-400">PNG, JPG (max 1MB)</p>
-                  </div>
-                ) : (
-                  <img
-                    src={URL.createObjectURL(image)}
-                    alt="Preview"
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                )}
-              </label>
-              <Input
-                id="image"
-                name="image"
-                type="file"
-                className="hidden"
-                accept="image/*"
-                onChange={handleImageChange}
+              <FileUpload
+                name="customerImage"
+                onUploadComplete={handleImageChange}
+                preview={imageUrl || undefined}
               />
             </div>
           </div>
 
-          {/* Right side */}
+          {/* Other Fields */}
           <div className="md:col-span-2 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label className="mb-2" htmlFor="name">
+                <Label htmlFor="customerName">
                   Customer Name <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   type="text"
-                  id="name"
-                  name="name"
+                  id="customerName"
+                  name="customerName"
                   placeholder="Enter Customer Name"
                   required
                 />
               </div>
+
               <div>
-                <Label className="mb-2" htmlFor="designation">
-                  Designation
-                </Label>
+                <Label htmlFor="customerProfession">Designation</Label>
                 <Input
                   type="text"
-                  id="designation"
-                  name="designation"
-                  placeholder="Designation"
+                  id="customerProfession"
+                  name="customerProfession"
+                  placeholder="Enter Profession"
                 />
               </div>
             </div>
 
             <div>
-              <Label className="mb-2" htmlFor="rating">
+              <Label htmlFor="rating">
                 Rating <span className="text-red-500">*</span>
               </Label>
               <Select name="rating" required>
@@ -130,7 +144,7 @@ export default function TestimonialForm() {
             </div>
 
             <div>
-              <Label className="mb-2" htmlFor="description">
+              <Label htmlFor="description">
                 Description <span className="text-red-500">*</span>
               </Label>
               <Textarea
@@ -144,9 +158,10 @@ export default function TestimonialForm() {
           </div>
         </div>
 
-        {/* Submit */}
         <div className="text-center">
-          <Button type="submit">Save Testimonial</Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Saving...' : 'Save Testimonial'}
+          </Button>
         </div>
       </form>
     </div>

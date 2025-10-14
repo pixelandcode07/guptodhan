@@ -10,7 +10,6 @@ import {
   Gift,
   Headphones,
   Heart,
-  Image as ImageIcon,
   Link as LinkIcon,
   Map,
   MessageSquare,
@@ -18,7 +17,6 @@ import {
   Settings,
   ShoppingCart,
   Truck,
-  Users,
 } from 'lucide-react';
 import { ElementType } from 'react';
 import {
@@ -35,6 +33,7 @@ import {
   CollapsibleTrigger,
 } from '../../ui/collapsible';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 interface EcommerceModuleTitleOnly {
   title: string;
@@ -51,19 +50,23 @@ const MENU_CONFIG: Record<
   string,
   { icon: ElementType; items: ChildItem[]; url?: string }
 > = {
-  items: [
-    { title: 'Product Sizes', url: '/general/view/all/sizes' },
-    { title: 'Storage', url: '/general/view/all/storages' },
-    { title: 'Sim Type', url: '/general/view/all/sims' },
-    { title: 'Device Condition', url: '/general/view/all/device/conditions' },
-    { title: 'Product Warranty', url: '/general/view/all/warrenties' },
-    { title: 'Product Colors', url: '/general/view/all/colors' },
-    { title: 'Measurement Units', url: '/general/view/all/units' },
-    { title: 'Product Brands', url: '/general/view/all/brands' },
-    { title: 'Models of Brand', url: '/general/view/all/models' },
-    { title: 'Product Flags', url: '/general/view/all/flags' },
-    { title: 'Contact Config', url: '/general/contact/config' },
-  ],
+  Config: {
+    icon: Settings,
+    items: [
+      { title: 'Setup Your Config', url: '/general/config/setup' },
+      { title: 'Product Sizes', url: '/general/view/all/sizes' },
+      { title: 'Storage', url: '/general/view/all/storages' },
+      { title: 'Sim Type', url: '/general/view/all/sims' },
+      { title: 'Device Condition', url: '/general/view/all/device/conditions' },
+      { title: 'Product Warranty', url: '/general/view/all/warrenties' },
+      { title: 'Product Colors', url: '/general/view/all/colors' },
+      { title: 'Measurement Units', url: '/general/view/all/units' },
+      { title: 'Product Brands', url: '/general/view/all/brands' },
+      { title: 'Models of Brand', url: '/general/view/all/models' },
+      { title: 'Product Flags', url: '/general/view/all/flags' },
+      { title: 'Contact Config', url: '/general/contact/config' },
+    ],
+  },
   Category: {
     icon: Filter,
     items: [
@@ -236,6 +239,9 @@ export function EcommerceModules({
 }: {
   items: EcommerceModuleTitleOnly[];
 }) {
+  const pathname = usePathname();
+  const isActive = (href: string) => pathname === href;
+
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel className="text-[#f1bf43] text-[14px]">
@@ -249,12 +255,16 @@ export function EcommerceModules({
             if (!cfg) return null;
 
             if (cfg.items.length === 0) {
+              const active = isActive(cfg.url || '#');
               return (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link
-                      href={cfg.url || '#'}
-                      className="flex items-center gap-2">
+                  <SidebarMenuButton 
+                    asChild
+                    className={`flex items-center gap-2 ${active
+                      ? "bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5"
+                      : "text-white bg-[#132843] pl-5"
+                    }`}>
+                    <Link href={cfg.url || '#'}>
                       <cfg.icon />
                       <span>{item.title}</span>
                     </Link>
@@ -267,7 +277,7 @@ export function EcommerceModules({
               <Collapsible key={item.title} className="group/collapsible">
                 <CollapsibleTrigger asChild>
                   <SidebarMenuItem>
-                    <SidebarMenuButton>
+                    <SidebarMenuButton className="text-white bg-[#132843] pl-5">
                       <cfg.icon />
                       <span>{item.title}</span>
                       <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
@@ -277,34 +287,40 @@ export function EcommerceModules({
 
                 <CollapsibleContent>
                   <div className="pl-6">
-                    {cfg.items.map(subItem => (
-                      <SidebarMenuItem key={subItem.url}>
-                        <SidebarMenuButton asChild>
-                          <Link
-                            href={subItem.url}
-                            className="flex items-center gap-2">
-                            <span>{subItem.title}</span>
-                            {subItem.count && (
-                              <span
-                                className={`ml-auto text-xs px-2 py-1 rounded ${
-                                  subItem.count === '0'
-                                    ? 'bg-orange-500 text-white'
-                                    : subItem.count === '829'
-                                    ? 'text-green-500'
-                                    : 'text-blue-400'
-                                }`}>
-                                {subItem.count}
-                              </span>
-                            )}
-                            {subItem.isNew && (
-                              <span className="ml-auto text-xs bg-orange-500 text-white px-2 py-1 rounded">
-                                New
-                              </span>
-                            )}
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
+                    {cfg.items.map(subItem => {
+                      const active = isActive(subItem.url);
+                      return (
+                        <SidebarMenuItem key={subItem.url}>
+                          <SidebarMenuButton 
+                            asChild
+                            className={`flex items-center gap-2 ${active
+                              ? "bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5"
+                              : "text-white bg-[#132843] pl-5"
+                            }`}>
+                            <Link href={subItem.url}>
+                              <span>{subItem.title}</span>
+                              {subItem.count && (
+                                <span
+                                  className={`ml-auto text-xs px-2 py-1 rounded ${
+                                    subItem.count === '0'
+                                      ? 'bg-orange-500 text-white'
+                                      : subItem.count === '829'
+                                      ? 'text-green-500'
+                                      : 'text-blue-400'
+                                  }`}>
+                                  {subItem.count}
+                                </span>
+                              )}
+                              {subItem.isNew && (
+                                <span className="ml-auto text-xs bg-orange-500 text-white px-2 py-1 rounded">
+                                  New
+                                </span>
+                              )}
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
                   </div>
                 </CollapsibleContent>
               </Collapsible>

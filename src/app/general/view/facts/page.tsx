@@ -1,42 +1,27 @@
+// app/(your-path)/facts/page.tsx
 import SectionTitle from '@/components/ui/SectionTitle';
+
+import axios from 'axios';
 import FactsTable from './Components/FactTabile';
 
-const facts = [
-  {
-    id: 1,
-    title: 'Products For Sale tes',
-    desc: 'Diam maecenas ultricies mi eget mauris test',
-    count: '12',
-    status: 'Active',
-  },
-  {
-    id: 2,
-    title: 'Products For Sale tes',
-    desc: 'Diam maecenas ultricies mi eget mauris test',
-    count: '12',
-    status: 'Active',
-  },
-  {
-    id: 3,
-    title: 'Products For Sale tes',
-    desc: 'Diam maecenas ultricies mi eget mauris test',
-    count: '12',
-    status: 'Active',
-  },
-  {
-    id: 4,
-    title: 'Products For Sale tes',
-    desc: 'Diam maecenas ultricies mi eget mauris test',
-    count: '12',
-    status: 'Active',
-  },
-];
+const fetchFacts = async () => {
+  try {
+    const baseUrl = process.env.NEXTAUTH_URL;
+    const { data } = await axios.get(`${baseUrl}/api/v1/public/about/facts`);
+    return data;
+  } catch (error) {
+    console.log('fetch facts Error:', error);
+    return { data: [] };
+  }
+};
 
-export default function FactsPage() {
+export default async function FactsPage() {
+  const facts = await fetchFacts();
+
   return (
-    <div className="bg-white pt-5 px-5">
+    <div className="bg-white pt-5 px-5 min-h-screen">
       <SectionTitle text="View All Facts" />
-      <FactsTable data={facts} />
+      <FactsTable initialData={facts?.data || []} />
     </div>
   );
 }

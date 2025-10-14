@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 
-type TUserRole = 'user' | 'vendor' | 'admin';
+export type TUserRole = 'user' | 'vendor' | 'admin' | 'service-provider';
 type TControllerFunction = (req: NextRequest, ...args: any[]) => Promise<NextResponse>;
 
 export const checkRole = (allowedRoles: TUserRole[]) => {

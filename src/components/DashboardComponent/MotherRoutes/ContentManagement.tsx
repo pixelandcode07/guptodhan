@@ -16,6 +16,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@radix-ui/react-collapsible';
+import { usePathname } from 'next/navigation';
 
 import {
   Image,
@@ -86,6 +87,9 @@ const contentItems: {
 ];
 
 export function ContentManagement() {
+  const pathname = usePathname();
+  const isActive = (href: string) => pathname === href;
+
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>
@@ -100,7 +104,7 @@ export function ContentManagement() {
             <Collapsible key={item.title} className="group/collapsible">
               <CollapsibleTrigger asChild>
                 <SidebarMenuItem>
-                  <SidebarMenuButton>
+                  <SidebarMenuButton className="text-white bg-[#132843] pl-5">
                     <item.icon className="w-5 h-5 mr-2" />
                     <span>{item.title}</span>
                     <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
@@ -110,17 +114,23 @@ export function ContentManagement() {
 
               <CollapsibleContent>
                 <div className="pl-6">
-                  {item.subItems.map(sub => (
-                    <SidebarMenuItem key={sub.url}>
-                      <SidebarMenuButton asChild>
-                        <Link
-                          href={sub.url}
-                          className="flex items-center gap-2">
-                          <span>{sub.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                  {item.subItems.map(sub => {
+                    const active = isActive(sub.url);
+                    return (
+                      <SidebarMenuItem key={sub.url}>
+                        <SidebarMenuButton
+                          asChild
+                          className={`flex items-center gap-2 ${active
+                            ? "bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5"
+                            : "text-white bg-[#132843] pl-5"
+                          }`}>
+                          <Link href={sub.url}>
+                            <span>{sub.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
                 </div>
               </CollapsibleContent>
             </Collapsible>

@@ -19,6 +19,10 @@ import {
   registerServiceProviderValidationSchema,
 } from './auth.validation';
 
+
+
+
+
 const loginUser = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
@@ -44,7 +48,7 @@ const loginUser = async (req: NextRequest) => {
 };
 
 const refreshToken = async (req: NextRequest) => {
-  await dbConnect(); 
+  await dbConnect();
   const token = req.cookies.get('refreshToken')?.value;
   const validatedData = refreshTokenValidationSchema.parse({ refreshToken: token });
   const result = await AuthServices.refreshToken(validatedData.refreshToken);
@@ -58,10 +62,10 @@ const refreshToken = async (req: NextRequest) => {
 };
 
 const changePassword = async (req: NextRequest) => {
-  await dbConnect(); 
+  await dbConnect();
   const userId = req.headers.get('x-user-id');
   if (!userId) { throw new Error("Authentication failure: User ID not found in token"); }
-  
+
   const body = await req.json();
   const validatedData = changePasswordValidationSchema.parse(body);
   await AuthServices.changePassword(userId, validatedData);
@@ -75,10 +79,10 @@ const changePassword = async (req: NextRequest) => {
 };
 
 const setPassword = async (req: NextRequest) => {
-  await dbConnect(); 
+  await dbConnect();
   const userId = req.headers.get('x-user-id');
   if (!userId) { throw new Error("Authentication failure: User ID not found in token"); }
-  
+
   const body = await req.json();
   const validatedData = setPasswordValidationSchema.parse(body);
   await AuthServices.setPasswordForSocialLogin(userId, validatedData.newPassword);
@@ -138,14 +142,14 @@ const registerVendor = async (req: NextRequest) => {
     uploadToCloudinary(Buffer.from(await ownerNidFile.arrayBuffer()), 'vendor-documents'),
     uploadToCloudinary(Buffer.from(await tradeLicenseFile.arrayBuffer()), 'vendor-documents')
   ]);
-  
+
   const payload: Record<string, any> = {};
   for (const [key, value] of formData.entries()) {
     if (typeof value === 'string') {
       payload[key] = value;
     }
   }
-  
+
   payload.ownerNidUrl = ownerNidUploadResult.secure_url;
   payload.tradeLicenseUrl = tradeLicenseUploadResult.secure_url;
 
@@ -161,7 +165,7 @@ const registerVendor = async (req: NextRequest) => {
 };
 
 const registerServiceProvider = async (req: NextRequest) => {
-  await dbConnect(); 
+  await dbConnect();
   const body = await req.json();
   const validatedData = registerServiceProviderValidationSchema.parse(body);
   const result = await AuthServices.registerServiceProvider(validatedData);

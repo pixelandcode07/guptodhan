@@ -11,23 +11,72 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import RichTextEditor from '@/components/ReusableComponents/RichTextEditor';
+import axios from 'axios';
+import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 
-type AboutUsFormProps = {
-  initialContent?: string;
+type AboutData = {
+  _id: string;
+  aboutContent: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
 };
 
-export default function AboutUsForm({ initialContent = '' }: AboutUsFormProps) {
-  const [content, setContent] = useState(initialContent);
-  const [status, setStatus] = useState('1');
+type AboutUsFormProps = {
+  aboutData: AboutData;
+};
+
+export default function AboutUsForm({ aboutData }: AboutUsFormProps) {
+  const { data: session } = useSession();
+  const token = (session as any)?.accessToken;
+
+  const [content, setContent] = useState(aboutData.aboutContent);
+  const [status, setStatus] = useState(aboutData.status); // 'active' or 'inactive'
+  const [loading, setLoading] = useState(false);
 
   const handleCancel = () => {
-    setContent(initialContent);
-    setStatus('1');
+    setContent(aboutData.aboutContent);
+    setStatus(aboutData.status);
   };
 
-  const handleDone = () => {
-    console.log({ content, status });
-    alert('Information Updated!');
+  const handleDone = async () => {
+    if (!aboutData._id) {
+      toast.error('Content ID is missing.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const payload = {
+        aboutContent: content,
+        status, // already 'active' or 'inactive'
+      };
+
+      const res = await axios.patch(
+        `/api/v1/about/content/${aboutData._id}`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (res.data.success) {
+        toast.success('Information updated successfully!');
+      } else {
+        toast.error('Failed to update information.');
+      }
+    } catch (error: any) {
+      console.error(error);
+      toast.error('Error updating information.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,8 +100,8 @@ export default function AboutUsForm({ initialContent = '' }: AboutUsFormProps) {
               <SelectValue placeholder="Select One" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1">Active</SelectItem>
-              <SelectItem value="0">Inactive</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -61,10 +110,15 @@ export default function AboutUsForm({ initialContent = '' }: AboutUsFormProps) {
       {/* Buttons */}
       <div className="flex justify-center items-center w-full">
         <div className="flex flex-wrap gap-2">
-          <Button variant="destructive" onClick={handleCancel}>
+          <Button
+            variant="destructive"
+            onClick={handleCancel}
+            disabled={loading}>
             Cancel
           </Button>
-          <Button onClick={handleDone}>Done</Button>
+          <Button onClick={handleDone} disabled={loading}>
+            {loading ? 'Updating...' : 'Done'}
+          </Button>
         </div>
       </div>
     </div>

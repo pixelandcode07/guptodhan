@@ -5,17 +5,20 @@ import { Button } from "@/components/ui/button"
 import { Edit, Trash2 } from "lucide-react"
 
 export type ChildCategory = {
+  _id: string
   id: number
   category: string
-  subcategory: string
-  icon: string
+  subCategory: string
+  categoryId?: string
+  subCategoryId?: string
+  icon?: string
   name: string
   slug: string
   status: "Active" | "Inactive"
   created_at: string
 }
 
-export const childcategory_columns: ColumnDef<ChildCategory>[] = [
+export const getChildCategoryColumns = ({ onEdit, onDelete }: { onEdit: (row: ChildCategory) => void; onDelete: (row: ChildCategory) => void }): ColumnDef<ChildCategory>[] => [
   {
     accessorKey: "id",
     header: "SL",
@@ -25,7 +28,7 @@ export const childcategory_columns: ColumnDef<ChildCategory>[] = [
     header: "Category",
   },
   {
-    accessorKey: "subcategory",
+    accessorKey: "subCategory",
     header: "Sub Category",
   },
   {
@@ -35,7 +38,11 @@ export const childcategory_columns: ColumnDef<ChildCategory>[] = [
       const icon = row.getValue("icon") as string
       return (
         <div className="w-16 h-12 bg-gray-50 rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-xs text-gray-500">
-          {icon}
+          {icon ? (
+            <img src={icon} alt="Icon" className="w-full h-full object-cover rounded" />
+          ) : (
+            "No Icon"
+          )}
         </div>
       )
     },
@@ -66,13 +73,13 @@ export const childcategory_columns: ColumnDef<ChildCategory>[] = [
   {
     id: "action",
     header: "Action",
-    cell: () => {
+    cell: ({ row }) => {
       return (
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+          <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => onEdit(row.original)}>
             <Edit className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => onDelete(row.original)}>
             <Trash2 className="w-4 h-4" />
           </Button>
         </div>
@@ -80,3 +87,9 @@ export const childcategory_columns: ColumnDef<ChildCategory>[] = [
     },
   },
 ]
+
+// Legacy export for backward compatibility
+export const childcategory_columns: ColumnDef<ChildCategory>[] = getChildCategoryColumns({ 
+  onEdit: () => {}, 
+  onDelete: () => {} 
+})

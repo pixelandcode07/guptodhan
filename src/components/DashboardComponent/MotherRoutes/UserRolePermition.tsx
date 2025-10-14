@@ -2,13 +2,12 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarMenu,
+  SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 
-import React, { ElementType } from 'react';
+import { ElementType } from 'react';
 
 export default function UserRolePermition({
   items,
@@ -24,18 +23,22 @@ export default function UserRolePermition({
       </SidebarGroupLabel>
 
       <SidebarGroupContent>
-        <SidebarMenu>
-          {items.map(item => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuSubButton>
-                <Link className="flex gap-2  items-center" href={item.url}>
-                  <item.icon className="w-4 h-4 " />
-                  <span>{item.title}</span>
-                </Link>
-              </SidebarMenuSubButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
+        <div className="">
+          <div className="list-none">
+            {items.map(item => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild>
+                  <Link
+                    href={item.url || '#'}
+                    className="flex items-center gap-2">
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </div>
+        </div>
       </SidebarGroupContent>
     </SidebarGroup>
   );

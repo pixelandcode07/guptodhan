@@ -6,8 +6,8 @@ const classifiedBannerSchema = new Schema<IClassifiedBanner>({
   bannerImage: { type: String, required: true },
   bannerDescription: { type: String },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
-}, { 
-    timestamps: true 
+}, {
+  timestamps: true
 });
 
 export const ClassifiedBanner = models.ClassifiedBanner || model<IClassifiedBanner>('ClassifiedBanner', classifiedBannerSchema);

@@ -2,68 +2,133 @@
 
 import { cn } from "@/lib/utils"
 import { ColumnDef } from "@tanstack/react-table"
-import { Edit, Trash } from "lucide-react"
+import { Edit, MoreHorizontal, Trash } from "lucide-react"
 import { Button } from "../ui/button"
 import Image from "next/image"
+import Link from "next/link"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu"
 
-
-export type BuySellDataType = {
-  serial: string,
-  category_name: string,
-  store_logo: string,
-  slug: string,
-  status: "pending" | "active" | "inactive",
+// SubCategory type as per your DB structure
+export interface SubCategoryType {
+  _id: string
+  name: string
+  icon?: string
+  status?: "active" | "inactive"
+  category?: string
 }
 
-export const view_buy_sell_columns: ColumnDef<BuySellDataType>[] = [
+
+// Main type for ViewBuySellDataType
+export type ViewBuySellDataType = {
+  _id: string;
+  name: string;
+  icon: string;
+  slug?: string;
+  status: "active" | "inactive";
+  subCategories?: SubCategoryType[]; // Populated from /api/v1/public/categories-with-subcategories
+}
+
+export const view_buy_sell_columns = (handleDelete: (_id: string) => void): ColumnDef<ViewBuySellDataType>[] => [
   {
-    accessorKey: "serial",
+    id: "serial",
     header: "Serial",
+    cell: ({ row }) => {
+      return <span className="text-center">{row.index + 1}</span>
+    },
   },
   {
-    accessorKey: "category_name",
+    id: "col_name",
+    accessorKey: "name",
     header: "Name",
   },
   {
-    accessorKey: "store_logo",
+    id: "col_icon",
+    accessorKey: "icon",
     header: "Icon",
     cell: ({ row }) => {
-      const logoUrl = row.getValue("store_logo") as string
       return (
-        <Image src={logoUrl} alt="Store Logo" width={50} height={50} />
+        <Image src={row.original.icon} alt="Category Icon" width={50} height={50} className="rounded" />
       )
     },
   },
   {
-    accessorKey: "slug",
+    id: "col_subcategories", // Repurposed to show subcategories (comma-separated names)
     header: "Slug",
+    cell: ({ row }) => {
+      const subs = row.original.subCategories || [];
+      if (subs.length === 0) {
+        return <span className="text-gray-500">No subcategories</span>;
+      }
+      // Filter active subcategories only (optional)
+      const activeSubs = subs.filter(sub => sub.status === 'active');
+      if (activeSubs.length === 0) {
+        return <span className="text-gray-500">No active subcategories</span>;
+      }
+      // Show comma-separated names (truncate if too long)
+      const subNames = activeSubs.map(sub => sub.name).join(', ');
+      return (
+        <div className="text-sm max-w-[200px] truncate" title={subNames}>
+          {subNames.length > 50 ? `${subNames.substring(0, 50)}...` : subNames}
+        </div>
+      );
+    }
   },
   {
+    id: "col_status",
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status")
-      // status: "pending" | "active" | "inactive",
+      const status = row.original.status
       return (
-        <div className={cn(`p-1 rounded-md w-max text-xs`,
-          status === "pending" && "text-yellow-400",
-          status === "active" && "text-green-500",
-          status === "inactive" && "text-white bg-red-500",
-        )}>{status as string}</div>
+        <div className={cn(`p-1 rounded-md w-max text-xs capitalize`,
+          // status === "pending" && "text-yellow-500 bg-yellow-100",
+          status === "active" && "text-green-500 bg-green-100",
+          status === "inactive" && "text-red-500 bg-red-100",
+        )}>
+          {status}
+        </div>
       )
     }
   },
   {
-    accessorKey: "action",
-    header: "Action",
-    cell: () => {
+    id: "col_action",
+    header: "Actions",
+    cell: ({ row }) => {
+      const documentId = row.original._id;
       return (
-        <div className="flex items-center gap-2">
-          {/* <Button className="bg-green-800 hover:bg-green-800 text-black cursor-pointer"><Check className="text-white" /></Button> */}
-          <Button className="bg-yellow-400 hover:bg-yellow-400 text-black cursor-pointer"><Edit /></Button>
-          <Button className="bg-red-700 hover:bg-red-700 text-white cursor-pointer"><Trash /></Button>
-        </div>
-      )
-    }
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1 h-8"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link
+                href={`/general/edit/buy/sell/category/${documentId}`}
+                className="flex items-center gap-2 w-full"
+              >
+                <Edit className="h-4 w-4 text-yellow-500" />
+                Edit
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="flex items-center gap-2 text-red-600 cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete(documentId);
+              }}
+            >
+              <Trash className="h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
   },
 ]

@@ -1,62 +1,27 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\otp\otp.service.ts
+import { User } from "../user/user.model";
+import { firebaseAdmin } from "@/lib/firebaseAdmin";
 
-import { User } from '../user/user.model';
-import { redisClient, connectRedis } from '@/lib/redis';
-import { sendEmail } from '@/lib/utils/email';
-import { firebaseAdmin } from '@/lib/firebaseAdmin';
-
-// --- ইমেইল OTP সার্ভিস (আগের কোড) ---
-const sendEmailOtp = async (userId: string) => {
-  await connectRedis();
-  const user = await User.findById(userId);
-  if (!user) { throw new Error('User not found'); }
-  if (user.isVerified) { throw new Error('User is already verified'); }
-
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const redisKey = `otp:email:${user.email}`;
-  await redisClient.set(redisKey, otp, { EX: 300 });
-
-  await sendEmail({
-    to: user.email,
-    subject: 'Your Verification Code for Guptodhan',
-    template: 'otp.ejs',
-    data: { name: user.name, otp: otp },
-  });
-  return null;
-};
-
-const verifyEmailOtp = async (userId: string, otp: string) => {
-  await connectRedis();
-  const user = await User.findById(userId);
-  if (!user) { throw new Error('User not found'); }
-  const redisKey = `otp:email:${user.email}`;
-  const storedOtp = await redisClient.get(redisKey);
-
-  if (!storedOtp) { throw new Error('OTP has expired or is invalid.'); }
-  if (storedOtp !== otp) { throw new Error('The OTP you entered is incorrect.'); }
-
-  await User.findByIdAndUpdate(userId, { isVerified: true });
-  await redisClient.del(redisKey);
-  return null;
-};
-
-// --- নতুন: ফোন নম্বর ভেরিফিকেশন সার্ভিস (Firebase দিয়ে) ---
 const verifyPhoneNumberWithFirebase = async (idToken: string) => {
-  const decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
-  const phoneNumberFromFirebase = decodedToken.phone_number;
-  if (!phoneNumberFromFirebase) { throw new Error('No phone number found in Firebase token.'); }
-  
-  const localPhoneNumber = phoneNumberFromFirebase.substring(3); // "+88" বাদ দেওয়া হচ্ছে
+  try {
+    const decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
 
-  const user = await User.findOne({ phoneNumber: localPhoneNumber });
-  if (!user) { throw new Error('User with this phone number not found in our database.'); }
+    const phoneNumber = decodedToken.phone_number;
+    if (!phoneNumber) throw new Error("No phone number found in token");
 
-  await User.findByIdAndUpdate(user._id, { isVerified: true });
-  return null;
+    const localPhoneNumber = phoneNumber.startsWith("+88") ? phoneNumber.slice(3) : phoneNumber;
+
+    const user = await User.findOne({ phoneNumber: localPhoneNumber });
+    if (!user) throw new Error("User not found in DB");
+
+    await User.findByIdAndUpdate(user._id, { isVerified: true });
+
+    return { uid: decodedToken.uid, phoneNumber };
+  } catch (error: any) {
+    console.error("Firebase verifyIdToken error:", error);
+    throw new Error("Unauthorized: Invalid or expired token");
+  }
 };
 
 export const OtpServices = {
-  sendEmailOtp,
-  verifyEmailOtp,
   verifyPhoneNumberWithFirebase,
 };

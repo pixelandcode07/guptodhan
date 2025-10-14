@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\app\api\auth\[...nextauth]\route.ts
-
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import dbConnect from '@/lib/db';
 import { User } from '@/lib/modules/user/user.model';
+import { generateToken } from '@/lib/utils/jwt'; // ✅ আপনার JWT ইউটিলিটি ইম্পোর্ট করুন
 
 export const authOptions = {
   providers: [
@@ -18,48 +17,65 @@ export const authOptions = {
       if (account.provider === 'google') {
         try {
           await dbConnect();
-          
-          const existingUser = await User.findOne({ email: user.email });
+          let existingUser = await User.findOne({ email: user.email });
 
           if (!existingUser) {
-            await User.create({
+            existingUser = await User.create({
               name: user.name,
               email: user.email,
               profilePicture: user.image,
               role: 'user',
-              isVerified: true, 
+              isVerified: true,
             });
           }
+          // ✅ পরবর্তী callback-এ পুরো ইউজার অবজেক্ট পাস করা হচ্ছে
+          user.dbUser = existingUser;
           return true;
         } catch (error) {
-          console.error("Error during Google sign-in and user creation:", error);
+          console.error("Error during Google sign-in:", error);
           return false;
         }
       }
       return true;
     },
+
     async jwt({ token, user }: { token: any; user: any }) {
+      // user অবজেক্টটি শুধুমাত্র প্রথমবার লগইনের সময় পাওয়া যায়
       if (user) {
-        const dbUser = await User.findOne({ email: user.email });
-        if (dbUser) {
-          token.role = dbUser.role;
-          token.id = dbUser._id.toString();
-        }
+        const dbUser = user.dbUser; // signIn থেকে পাওয়া ইউজার অবজেক্ট
+        
+        // NextAuth টোকেনে প্রয়োজনীয় তথ্য যোগ করা হচ্ছে
+        token.role = dbUser.role;
+        token.id = dbUser._id.toString();
+
+        // ✅ FIX: আপনার নিজের backend-এর জন্য custom accessToken তৈরি করা হচ্ছে
+        const accessTokenPayload = { userId: dbUser._id, role: dbUser.role };
+        token.accessToken = generateToken(
+            accessTokenPayload,
+            process.env.JWT_ACCESS_SECRET!,
+            process.env.JWT_ACCESS_EXPIRES_IN!
+        );
       }
       return token;
     },
+
     async session({ session, token }: { session: any; token: any }) {
+      // টোকেন থেকে সেশনে তথ্য যোগ করা হচ্ছে, যা frontend-এ পাওয়া যাবে
       if (session.user) {
         session.user.role = token.role;
         session.user.id = token.id;
       }
+      
+      // ✅ FIX: session অবজেক্টে accessToken যোগ করা হচ্ছে
+      session.accessToken = token.accessToken;
+      
       return session;
     },
   },
-  pages: {
-    signIn: '/login', 
-    error: '/api/auth/error', 
-  },
+  // pages: {
+  //   signIn: '/login', // আপনার লগইন পেজের পাথ
+  //   error: '/api/auth/error',
+  // },
   secret: process.env.NEXTAUTH_SECRET,
 };
 

@@ -1,20 +1,27 @@
 import SectionTitle from '@/components/ui/SectionTitle';
-import AboutUsForm from './Components/AboutUsForm'; // client component
+import AboutUsForm from './Components/AboutUsForm';
+import axios from 'axios';
 
-export default function Page() {
-  const staticContent = `🎯 আমাদের মিশন:
+const fetchAbout = async () => {
+  try {
+    const baseUrl = process.env.NEXTAUTH_URL;
 
-শরীয়তপুরের মানুষকে নিরাপদ, সহজ ও স্মার্ট অনলাইন কেনাকাটার সুবিধা প্রদান করা, যেখানে স্থানীয় বিক্রেতা ও ক্রেতারা একই প্ল্যাটফর্মে যুক্ত হতে পারেন।
+    const { data } = await axios.get(`${baseUrl}/api/v1/public/about/content`);
 
-🚀 আমাদের ভিশন:
+    return data;
+  } catch (error) {
+    console.log('fatch settings Error', error);
+  }
+};
 
-শরীয়তপুরের শীর্ষস্থানীয় অনলাইন মার্কেটপ্লেস হিসেবে গড়ে ওঠা, যেখানে সবার জন্য বিশ্বাসযোগ্য ও সুবিধাজনক কেনাকাটার সুযোগ থাকবে।`;
+export default async function Page() {
+  const aboutData = await fetchAbout();
+  console.log('aboutData', aboutData);
 
   return (
     <div className="bg-white pt-5 px-4">
       <SectionTitle text="General Information Form" />
-      {/* All interactive buttons inside the client component */}
-      <AboutUsForm initialContent={staticContent} />
+      <AboutUsForm aboutData={aboutData.data} />
     </div>
   );
 }

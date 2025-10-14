@@ -1,37 +1,27 @@
-import { seystem_users_columns } from '@/components/TableHelper/system_users_columns';
 import SectionTitle from '@/components/ui/SectionTitle';
-import UsersFilter from './Components/UserFilter';
+import axios from 'axios';
+import UserTabile from './Components/UserTabile';
 
-// Example data (fetched from server)
-const userData = [
-  {
-    id: 1,
-    name: 'Amir Hamja',
-    email: 'amir@gmail.com',
-    phone: '01816500800',
-    address: 'Dhaka',
-    createDate: '2025-06-24 12:04:11 pm',
-    userType: 'Revoke SuperAdmin',
-  },
-  {
-    id: 2,
-    name: 'Amir Hamja',
-    email: 'amir@gmail.com',
-    phone: '01816500800',
-    address: 'Dhaka',
-    createDate: '2025-06-24 12:04:11 pm',
-    userType: 'Make SuperAdmin',
-  },
-];
+const fetchUser = async () => {
+  try {
+    const baseUrl = process.env.NEXTAUTH_URL;
+    const { data } = await axios.get(`${baseUrl}/api/v1/system-user`);
+    return data;
+  } catch (error) {
+    console.log('fetch facts Error:', error);
+    return { data: [] };
+  }
+};
 
-export default function UsersPage() {
+export default async function UsersPage() {
+  const userData = await fetchUser();
+
   return (
     <div className="pb-6 pt-5 space-y-6 bg-white">
       <SectionTitle text="System Users List" />
 
       <div className="px-5">
-        {/* Client-side Filter/Search */}
-        <UsersFilter data={userData} columns={seystem_users_columns} />
+        <UserTabile data={userData.data || []} />
       </div>
     </div>
   );

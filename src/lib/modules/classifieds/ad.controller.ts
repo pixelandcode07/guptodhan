@@ -13,24 +13,25 @@ import { IClassifiedAd } from './ad.interface';
 
 const createAd = async (req: NextRequest) => {
   await dbConnect();
-
+  // 1️⃣ Token verification
   const authHeader = req.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) throw new Error('Authorization token missing.');
   const token = authHeader.split(' ')[1];
   const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
   const userId = decoded.userId as string;
 
+  // 2️⃣ FormData & images
   const formData = await req.formData();
   const images = formData.getAll('images') as File[];
   if (!images.length) throw new Error('At least one image is required.');
 
   const uploadResults = await Promise.all(
-    images.map( async file => uploadToCloudinary(Buffer.from(await file.arrayBuffer()), 'classified-ads'))
+    images.map(async file => uploadToCloudinary(Buffer.from(await file.arrayBuffer()), 'classified-ads'))
   );
 
   const imageUrls = uploadResults.map(r => r.secure_url);
-
-  const payload: any = { images: imageUrls };
+  // 3️⃣ Payload mapping
+  const payload: any = { images: imageUrls, user: userId, };
   for (const [key, value] of formData.entries()) {
     if (key !== 'images' && typeof value === 'string') {
       if (key.startsWith('contactDetails.')) {
@@ -42,13 +43,15 @@ const createAd = async (req: NextRequest) => {
       }
     }
   }
-
+  // Convert types
   if (payload.price) payload.price = Number(payload.price);
   if (payload.isNegotiable) payload.isNegotiable = payload.isNegotiable === 'true';
 
+  // 4️⃣ Validation
   const validatedData = createAdValidationSchema.parse(payload);
+  console.log("📝 Validated data:", validatedData);
 
-  // Build type-safe payload
+ // 5️⃣ Build type-safe payload for Mongo
   const payloadForService: Partial<IClassifiedAd> = {
     user: new Types.ObjectId(userId),
     title: validatedData.title,
@@ -68,11 +71,12 @@ const createAd = async (req: NextRequest) => {
     },
     category: validatedData.category ? new Types.ObjectId(validatedData.category) : undefined,
     subCategory: validatedData.subCategory ? new Types.ObjectId(validatedData.subCategory) : undefined,
-    brand: validatedData.brand ? new Types.ObjectId(validatedData.brand) : undefined,
-    productModel: validatedData.productModel ? new Types.ObjectId(validatedData.productModel) : undefined,
-    edition: validatedData.edition ? new Types.ObjectId(validatedData.edition) : undefined,
+    brand: validatedData.brand,
+    productModel: validatedData.productModel,
+    edition: validatedData.edition,
   };
 
+  // 6️⃣ Save to DB
   const result = await ClassifiedAdServices.createAdInDB(payloadForService);
 
   return sendResponse({
@@ -95,6 +99,31 @@ const getSingleAd = async (_req: NextRequest, { params }: { params: { id: string
   return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad retrieved', data: result });
 };
 
+// ✅ NEW: সকল পাবলিক বিজ্ঞাপন GET করার জন্য
+const getPublicAds = async (_req: NextRequest) => {
+    await dbConnect();
+    const result = await ClassifiedAdServices.getAllPublicAdsFromDB();
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Public ads retrieved successfully!',
+        data: result,
+    });
+};
+
+// ✅ NEW: একটি নির্দিষ্ট বিজ্ঞাপন GET করার জন্য
+const getPublicAdById = async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    await dbConnect();
+    const { id } = await params;
+    const result = await ClassifiedAdServices.getPublicAdByIdFromDB(id);
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Ad retrieved successfully!',
+        data: result,
+    });
+};
+
 const updateAd = async (req: NextRequest, { params }: { params: { id: string } }) => {
   await dbConnect();
   const userId = req.headers.get('x-user-id');
@@ -107,10 +136,10 @@ const updateAd = async (req: NextRequest, { params }: { params: { id: string } }
     ...validatedData,
     category: validatedData.category ? new Types.ObjectId(validatedData.category) : undefined,
     subCategory: validatedData.subCategory ? new Types.ObjectId(validatedData.subCategory) : undefined,
-    brand: validatedData.brand ? new Types.ObjectId(validatedData.brand) : undefined,
-    productModel: validatedData.productModel ? new Types.ObjectId(validatedData.productModel) : undefined,
-    edition: validatedData.edition ? new Types.ObjectId(validatedData.edition) : undefined,
-   contactDetails: validatedData.contactDetails
+    brand: validatedData.brand,
+    productModel: validatedData.productModel,
+    edition: validatedData.edition,
+    contactDetails: validatedData.contactDetails
   ? {
       name: validatedData.contactDetails.name ?? '',
       phone: validatedData.contactDetails.phone ?? '',
@@ -134,4 +163,5 @@ const deleteAd = async (req: NextRequest, { params }: { params: { id: string } }
   return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad deleted', data: null });
 };
 
-export const ClassifiedAdController = { createAd, getAllAds, getSingleAd, updateAd, deleteAd };
+export const ClassifiedAdController = { createAd, getAllAds, getSingleAd, updateAd, deleteAd, getPublicAds,
+  getPublicAdById, };

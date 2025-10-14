@@ -1,141 +1,95 @@
+// app/(your-path)/facts/Components/FactsTable.tsx
 'use client';
 
-import { useState } from 'react';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/TableHelper/data-table';
-import { fact_columns } from '@/components/TableHelper/fact_columns';
-import { ArrowUpDown, Edit, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Plus, Edit, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import axios from 'axios';
+import { toast } from 'sonner';
+import React, { useState, useEffect } from 'react';
+import { fact_columns } from '@/components/TableHelper/fact_columns'; // 👉 তুমি তোমার columns এখানে ডিফাইন করবে
 
-type Fact = {
-  id: number;
-  title: string;
-  desc: string;
-  count: string | number;
-  status: string;
-};
+interface FactsTableProps {
+  initialData: any[];
+}
 
-type Props = {
-  data: Fact[];
-};
+export default function FactsTable({ initialData }: FactsTableProps) {
+  const [facts, setFacts] = useState(initialData);
+  const [loading, setLoading] = useState(false);
 
-export default function FactsTable({ data }: Props) {
-  const [search, setSearch] = useState('');
-  const [facts, setFacts] = useState(data);
-
-  const filteredData = facts.filter(item =>
-    item.title.toLowerCase().includes(search.toLowerCase())
-  );
-
-  // Button Handlers
-  const handleAddNew = () => {
-    const newFact = {
-      id: facts.length + 1,
-      title: 'New Fact',
-      desc: 'New description',
-      count: 0,
-      status: 'Active',
-    };
-    setFacts([...facts, newFact]);
-    alert('New fact added!');
-  };
-
-  const handleRearrange = () => {
-    setFacts([...facts].reverse());
-    alert('Facts rearranged!');
-  };
-
-  const handleEdit = (id: number) => {
-    const fact = facts.find(f => f.id === id);
-    if (fact) alert(`Editing: ${fact.title}`);
-  };
-
-  const handleDelete = (id: number) => {
-    if (confirm('Are you sure you want to delete this fact?')) {
-      setFacts(facts.filter(f => f.id !== id));
-      alert('Fact deleted!');
+  const refreshData = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get('/api/v1/public/about/facts');
+      setFacts(res.data.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Add action buttons to the table dynamically
+  const deleteFact = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this Fact?')) return;
+    const toastId = toast.loading('Deleting Fact...');
+    try {
+      await axios.delete(`/api/v1/about/facts/${id}`);
+      toast.success('Fact deleted successfully!', { id: toastId });
+      refreshData();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete Fact', { id: toastId });
+    }
+  };
+
   const columnsWithActions = [
     ...fact_columns,
     {
-      header: () => (
-        <div className="flex items-center">
-          Actions
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </div>
-      ),
-      accessorKey: 'actions',
-      cell: ({ row }: unknown) => (
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => handleEdit(row.original.id)}>
-            <Edit className="w-4 h-4" />
-          </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => handleDelete(row.original.id)}>
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
-      ),
+      header: 'Actions',
+      cell: ({ row }: any) => {
+        const factItem = row.original;
+        return (
+          <div className="flex gap-2">
+            <Link
+              href={{
+                pathname: '/general/view/facts/edit',
+                query: {
+                  id: factItem._id,
+                  factTitle: factItem.factTitle,
+                  factCount: factItem.factCount,
+                  shortDescription: factItem.shortDescription,
+                  status: factItem.status,
+                },
+              }}>
+              <Button size="sm" variant="outline">
+                <Edit className="w-4 h-4" />
+              </Button>
+            </Link>
+
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => deleteFact(factItem._id)}>
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
   return (
-    <div>
-      {/* Buttons */}
-      <div className="flex justify-end gap-2 mb-4">
-        <Button variant="secondary" size="sm" onClick={handleAddNew}>
-          Add New
-        </Button>
-        <Button variant="secondary" size="sm" onClick={handleRearrange}>
-          Rearrange
+    <div className="p-5">
+      <div className="py-4 flex justify-end gap-2">
+        <Button size="sm" asChild>
+          <Link href="/general/view/all/facts/add">
+            <Plus className="h-4 w-4 mr-2" />
+            Add New Fact
+          </Link>
         </Button>
       </div>
-
-      {/* Show Entries & Search */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
-        <div className="flex items-center gap-2">
-          <span>Show</span>
-          <Select defaultValue="10">
-            <SelectTrigger className="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="25">25</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-              <SelectItem value="100">100</SelectItem>
-            </SelectContent>
-          </Select>
-          <span>entries</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span>Search:</span>
-          <Input
-            placeholder="Search facts..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-64"
-          />
-        </div>
-      </div>
-
-      <DataTable columns={columnsWithActions} data={filteredData} />
+      <DataTable columns={columnsWithActions} data={facts} />
     </div>
   );
 }

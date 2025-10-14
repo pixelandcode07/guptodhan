@@ -7,37 +7,37 @@ import { Input } from '@/components/ui/input'
 const getBuySellListing = async (): Promise<BuySellListingType[]> => {
     return [
         {
-            serial: '1',
-            category: 'Gadaget',
+            id: '1',
+            serial: 'Gadaget',
+            product_name: 'Smart watch',
             product_image: 'https://www.publicdomainpictures.net/pictures/260000/nahled/photographer-sunset-evening-sky.jpg',
-            title: 'Smart watch',
-            price: 1000,
-            discount: 10,
-            phone: '+91 9876543210',
-            postedBy: 'Shannon-Knight',
-            status: 'approved',
+            category: 'phone',
+            actual_price: 1020,
+            discount_price: 900,
+            status: "pending",
+            postedBy: 'Shakib',
         },
         {
-            serial: '2',
-            category: 'Gadaget',
+            id: '2',
+            serial: 'Gadaget',
+            product_name: 'Smart watch',
             product_image: 'https://www.publicdomainpictures.net/pictures/260000/nahled/photographer-sunset-evening-sky.jpg',
-            title: 'Smart watch',
-            price: 1000,
-            discount: 10,
-            phone: '+91 9876543210',
-            postedBy: 'Shannon-Knight',
-            status: 'pending',
+            category: 'watch',
+            actual_price: 1500,
+            discount_price: 500,
+            status: "approved",
+            postedBy: 'Tasif',
         },
         {
-            serial: '3',
-            category: 'Gadaget',
+            id: '3',
+            serial: 'Gadaget',
+            product_name: 'Smart watch',
             product_image: 'https://www.publicdomainpictures.net/pictures/260000/nahled/photographer-sunset-evening-sky.jpg',
-            title: 'Smart watch',
-            price: 1000,
-            discount: 10,
-            phone: '+91 9876543210',
-            postedBy: 'Shannon-Knight',
-            status: 'rejected',
+            category: 'watch',
+            actual_price: 2000,
+            discount_price: 1200,
+            status: "rejected",
+            postedBy: 'Shawon',
         }
     ]
 
@@ -47,19 +47,10 @@ export default async function BuySellListing() {
     const buySellListing = await getBuySellListing()
     return (
         <>
-            <div >
+            <div className='py-5'>
                 <h1 className="text-lg font-semibold border-l-2 border-blue-500">
-                    <span className="pl-5">BuySell Listing</span>
+                    <span className="pl-5">Buy Sell Listing</span>
                 </h1>
-            </div>
-            <div className="md:flex justify-between my-5 space-y-2.5">
-                <p>Show (Pagination) entries</p>
-                <span className="md:flex gap-4 space-y-2.5">
-                    <span className="flex items-center gap-2">
-                        Search:
-                        <Input type="text" className="border border-gray-500" />
-                    </span>
-                </span>
             </div>
 
 

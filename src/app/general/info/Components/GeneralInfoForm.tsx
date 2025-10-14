@@ -1,259 +1,267 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
-
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from '@/components/ui/form';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import UploadImage from '@/components/ReusableComponents/UploadImage';
+import CompanyDetails from './CompanyDetails';
 import SectionTitle from '@/components/ui/SectionTitle';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import axios from 'axios';
 
-interface FileItem {
-  label: string;
-  name: string;
-  preview?: string;
+interface GeneralInfoFormProps {
+  data: any;
 }
 
-const logoFiles: FileItem[] = [
-  {
-    label: 'Primary Logo (Light)',
-    name: 'logo',
-    preview: 'https://app-area.guptodhan.com/company_logo/Y9Rnj1736918088.png',
-  },
-  {
-    label: 'Secondary Logo (Dark)',
-    name: 'logo_dark',
-    preview: 'https://app-area.guptodhan.com/company_logo/dy7dI1736918088.png',
-  },
-  {
-    label: 'Favicon',
-    name: 'fav_icon',
-    preview: 'https://app-area.guptodhan.com/company_logo/O7NCy1736918088.png',
-  },
-];
-
-const bannerFiles: FileItem[] = [
-  {
-    label: 'Payment Banner',
-    name: 'payment_banner',
-    preview: 'https://app-area.guptodhan.com/company_logo/cRxqA1720483781.png',
-  },
-  {
-    label: 'User Cover Photo',
-    name: 'user_cover_photo',
-    preview: 'https://app-area.guptodhan.com/company_logo/itjXj1741589131.jpg',
-  },
-];
-
-export default function GeneralInfoForm() {
-  const [previews, setPreviews] = useState<Record<string, string>>({});
-
-  const form = useForm({
-    defaultValues: {
-      company_name: 'Guptodhan Bangladesh',
-      contact: '01816500600',
-      email: 'guptodhan24@gmail.com',
-      short_description:
-        'Guptodhan Bangladesh is online version of Guptodhan situated at Dhaka since 2024',
-      address: 'Shariatpur Sadar, Dhaka, Bangladesh',
-      google_map_link: '',
-      trade_license_no: '01288',
-      tin_no: '673266555252',
-      bin_no: '',
-      footer_copyright_text: 'Copyright © 2024 GuptoDhan. All Rights Reserved.',
-      guest_checkout: true,
-      store_pickup: true,
-    },
+export default function GeneralInfoForm({ data }: GeneralInfoFormProps) {
+  const [formData, setFormData] = useState<any>({
+    _id: data._id || '',
+    companyName: data.companyName || '',
+    phoneNumber: data.phoneNumber || '',
+    companyEmail: data.companyEmail || '',
+    shortDescription: data.shortDescription || '',
+    companyAddress: data.companyAddress || '',
+    companyMapLink: data.companyMapLink || '',
+    tradeLicenseNo: data.tradeLicenseNo || '',
+    tinNo: data.tinNo || '',
+    binNo: data.binNo || '',
+    footerCopyrightText: data.footerCopyrightText || '',
+    primaryLogoLight: data.primaryLogoLight || '',
+    secondaryLogoDark: data.secondaryLogoDark || '',
+    favicon: data.favicon || '',
+    paymentBanner: data.paymentBanner || '',
+    userBanner: data.userBanner || '',
+    guest_checkout: data.guest_checkout || false,
+    store_pickup: data.store_pickup || false,
   });
 
-  const handleFileChange = (name: string, file: File | undefined) => {
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setPreviews(prev => ({ ...prev, [name]: url }));
-      form.setValue(name as any, file);
+  const [previews, setPreviews] = useState({
+    logo: data.primaryLogoLight || '',
+    logo_dark: data.secondaryLogoDark || '',
+    fav_icon: data.favicon || '',
+    payment_banner: data.paymentBanner || '',
+    user_cover_photo: data.userBanner || '',
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  const handleInputChange = (name: string, value: any) => {
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (name: string, file: File | null) => {
+    const map: Record<string, string> = {
+      logo: 'primaryLogoLight',
+      logo_dark: 'secondaryLogoDark',
+      fav_icon: 'favicon',
+      payment_banner: 'paymentBanner',
+      user_cover_photo: 'userBanner',
+    };
+
+    handleInputChange(map[name], file);
+
+    setPreviews(prev => ({
+      ...prev,
+      [name]: file ? URL.createObjectURL(file) : '',
+    }));
+  };
+
+  // ✅ SUBMIT FUNCTION (Axios version)
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const toastId = toast.loading('Updating...');
+
+    try {
+      let hasFile = false;
+      const formPayload = new FormData();
+      const jsonPayload: Record<string, any> = {};
+
+      for (const [key, value] of Object.entries(formData)) {
+        if (
+          key === 'companyMapLink' &&
+          (!value || !/^https?:\/\//i.test(value.toString()))
+        ) {
+          continue;
+        }
+
+        if (value instanceof File) {
+          hasFile = true;
+          formPayload.append(key, value);
+        } else if (typeof value === 'boolean') {
+          formPayload.append(key, value ? 'true' : 'false');
+          jsonPayload[key] = value;
+        } else if (value !== undefined && value !== null) {
+          formPayload.append(key, value.toString());
+          jsonPayload[key] = value;
+        }
+      }
+
+      let response;
+
+      if (hasFile) {
+        // ✅ File থাকলে multipart/form-data
+        response = await axios.post(
+          '/api/v1/settings',
+          formPayload,
+          {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          }
+        );
+      } else {
+        // ✅ শুধুমাত্র JSON data হলে PATCH request
+        response = await axios.patch(
+          `/api/v1/settings/${formData._id}`,
+          jsonPayload,
+          {
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      if (response.status === 200 || response.status === 201) {
+        toast.success('Settings updated successfully!', { id: toastId });
+      } else {
+        throw new Error('Unexpected response');
+      }
+    } catch (error: any) {
+      console.error('Submit Error:', error);
+      toast.error(error?.response?.data?.message || 'Failed to update settings', {
+        id: toastId,
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const onSubmit = (values: any) => {
-    console.log('Form Data:', values);
-  };
-
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Header */}
-        <div className="flex pt-6 pr-6 flex-wrap items-center justify-between">
-          <SectionTitle text="General Information Form" />
-          <div className="flex flex-wrap gap-2">
-            <Button variant="destructive" type="button">
-              Cancel
-            </Button>
-            <Button type="submit">Update</Button>
-          </div>
+    <form onSubmit={onSubmit} className="space-y-6 p-6">
+      <div className="flex flex-wrap justify-between items-center pr-6">
+        <SectionTitle text="General Information Form" />
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="destructive" type="button" disabled={loading}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              'Update'
+            )}
+          </Button>
         </div>
+      </div>
 
-        <div className=" p-6 space-y-6">
-          {/* Logo Uploads */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {logoFiles.map(item => (
-              <FormField
-                key={item.name}
-                control={form.control}
-                name={item.name as any}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{item.label}</FormLabel>
-                    <FormControl>
-                      <div
-                        onClick={() =>
-                          document.getElementById(item.name)?.click()
-                        }
-                        className="border border-gray-300 rounded p-2 cursor-pointer hover:bg-gray-100 flex flex-col items-center justify-center min-h-[120px]">
-                        <input
-                          type="file"
-                          id={item.name}
-                          accept="image/*"
-                          className="hidden"
-                          onChange={e =>
-                            handleFileChange(item.name, e.target.files?.[0])
-                          }
-                        />
-                        <img
-                          src={previews[item.name] || item.preview || ''}
-                          alt={item.label}
-                          className="h-32 object-contain"
-                        />
-                      </div>
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            ))}
-          </div>
+      {/* Logo Uploads */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <UploadImage
+          name="logo"
+          label="Primary Logo (Light)"
+          preview={previews.logo}
+          onChange={handleFileChange}
+        />
+        <UploadImage
+          name="logo_dark"
+          label="Secondary Logo (Dark)"
+          preview={previews.logo_dark}
+          onChange={handleFileChange}
+        />
+        <UploadImage
+          name="fav_icon"
+          label="Favicon"
+          preview={previews.fav_icon}
+          onChange={handleFileChange}
+        />
+      </div>
 
-          {/* Company Details */}
+      {/* Company Details */}
+      <CompanyDetails
+        formData={{
+          company_name: formData.companyName,
+          contact: formData.phoneNumber,
+          email: formData.companyEmail,
+          short_description: formData.shortDescription,
+          address: formData.companyAddress,
+          companyMapLink: formData.companyMapLink,
+          trade_license_no: formData.tradeLicenseNo,
+          tin_no: formData.tinNo,
+          bin_no: formData.binNo,
+          footer_copyright_text: formData.footerCopyrightText,
+        }}
+        handleInputChange={(name, value) => {
+          const map: Record<string, string> = {
+            company_name: 'companyName',
+            contact: 'phoneNumber',
+            email: 'companyEmail',
+            short_description: 'shortDescription',
+            address: 'companyAddress',
+            companyMapLink: 'companyMapLink',
+            trade_license_no: 'tradeLicenseNo',
+            tin_no: 'tinNo',
+            bin_no: 'binNo',
+            footer_copyright_text: 'footerCopyrightText',
+          };
+          handleInputChange(map[name], value);
+        }}
+      />
+
+      {/* Banner Uploads */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+        <UploadImage
+          name="payment_banner"
+          label="Payment Banner"
+          preview={previews.payment_banner}
+          onChange={handleFileChange}
+        />
+        <UploadImage
+          name="user_cover_photo"
+          label="User Cover Photo"
+          preview={previews.user_cover_photo}
+          onChange={handleFileChange}
+        />
+      </div>
+
+      {/* Checkout Config */}
+      <div className="bg-white shadow rounded p-4 mt-6">
+        <SectionTitle text="Checkout Page Configuration" />
+        <div className="flex flex-wrap gap-6 text-sm mt-2">
           {[
-            { label: 'Company Name', name: 'company_name', required: true },
-            { label: 'Phone No.', name: 'contact', required: true },
-            { label: 'Company Emails', name: 'email', required: true },
-            { label: 'Short Description', name: 'short_description' },
-            { label: 'Company Address', name: 'address' },
-            { label: 'Google Map Link', name: 'google_map_link' },
-            { label: 'Trade License No', name: 'trade_license_no' },
-            { label: 'TIN No', name: 'tin_no' },
-            { label: 'BIN No', name: 'bin_no' },
-            { label: 'Footer Copyright Text', name: 'footer_copyright_text' },
-          ].map(item => (
-            <FormField
-              key={item.name}
-              control={form.control}
-              name={item.name as any}
-              render={({ field }) => (
-                <FormItem className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
-                  <FormLabel className="w-full sm:w-1/4 font-medium">
-                    {item.label}{' '}
-                    {item.required && <span className="text-red-500">*</span>}
-                  </FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          ))}
-
-          {/* Banner Uploads */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {bannerFiles.map(item => (
-              <FormField
-                key={item.name}
-                control={form.control}
-                name={item.name as any}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{item.label}</FormLabel>
-                    <FormControl>
-                      <div
-                        onClick={() =>
-                          document.getElementById(item.name)?.click()
-                        }
-                        className="border border-gray-300 rounded p-2 cursor-pointer hover:bg-gray-100 flex flex-col items-center justify-center min-h-[120px]">
-                        <input
-                          type="file"
-                          id={item.name}
-                          accept="image/*"
-                          className="hidden"
-                          onChange={e =>
-                            handleFileChange(item.name, e.target.files?.[0])
-                          }
-                        />
-                        <img
-                          src={previews[item.name] || item.preview || ''}
-                          alt={item.label}
-                          className="h-32 object-contain"
-                        />
-                      </div>
-                    </FormControl>
-                  </FormItem>
-                )}
+            { label: 'Guest Checkout', key: 'guest_checkout' },
+            { label: 'Store Pickup', key: 'store_pickup' },
+          ].map(opt => (
+            <div key={opt.key} className="flex items-center space-x-2">
+              <Checkbox
+                checked={!!formData[opt.key]}
+                onCheckedChange={checked =>
+                  handleInputChange(opt.key, !!checked)
+                }
               />
-            ))}
-          </div>
-
-          {/* Checkout Config */}
-          <div className="bg-white shadow rounded p-4">
-            <SectionTitle text="Checkout Page Configuration" />
-            <div className="flex flex-wrap gap-6 text-sm mt-2">
-              <FormField
-                control={form.control}
-                name="guest_checkout"
-                render={({ field }) => (
-                  <FormItem className="flex items-center space-x-2">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormLabel>Guest Checkout</FormLabel>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="store_pickup"
-                render={({ field }) => (
-                  <FormItem className="flex items-center space-x-2">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormLabel>Store Pickup</FormLabel>
-                  </FormItem>
-                )}
-              />
+              <label>{opt.label}</label>
             </div>
-          </div>
-
-          {/* Footer Buttons */}
-          <div className="flex justify-center gap-2">
-            <Button variant="destructive" type="button">
-              Cancel
-            </Button>
-            <Button type="submit">Update</Button>
-          </div>
+          ))}
         </div>
-      </form>
-    </Form>
+      </div>
+
+      <div className="flex justify-center gap-2 mt-6">
+        <Button variant="destructive" type="button" disabled={loading}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Updating...
+            </>
+          ) : (
+            'Update'
+          )}
+        </Button>
+      </div>
+    </form>
   );
 }

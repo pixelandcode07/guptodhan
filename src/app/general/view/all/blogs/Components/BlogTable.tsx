@@ -1,70 +1,78 @@
-'use client'; // this component needs to be client-side
+'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
-import { ListOrdered } from 'lucide-react';
+import { blogs_columns } from '@/components/TableHelper/blogs_columns';
+import { DataTable } from '@/components/TableHelper/data-table';
 import SectionTitle from '@/components/ui/SectionTitle';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { DataTable } from '@/components/TableHelper/data-table';
-import { blogs_columns } from '@/components/TableHelper/blogs_columns';
+import { ListOrdered, Edit, Trash2 } from 'lucide-react';
+import axios from 'axios';
+import { toast } from 'sonner';
 
-type Blog = {
-  id: number;
-  title: string;
-  image: string;
-  category: string;
-  status: string;
-  published: string;
-};
+export default function BlogTable({ blogs: initialBlogs }) {
+  const [blogs, setBlogs] = useState(initialBlogs);
+  const [deletingId, setDeletingId] = useState<string | null>(null); // ✅ track deleting blog
 
-const blogs: Blog[] = [
-  {
-    id: 1,
-    title: 'Guptodhan.com: কীভাবে ব্যবহার করবেন এবং কী সুবিধা পাবেন?',
-    image: '/blogImages/1Rzmf1738560493.jpg',
-    category: 'E-commerce',
-    status: 'Active',
-    published: '2024-11-10',
-  },
-  {
-    id: 2,
-    title: 'গুপ্তধন ডট কম – ইকমার্স মডিউলের শর্তাবলী',
-    image: '/blogImages/f1xjC1741673614.jpg',
-    category: 'E-commerce',
-    status: 'Active',
-    published: '2025-03-11',
-  },
-  {
-    id: 3,
-    title: 'গুপ্তধন ডট কম – ক্রয়-বিক্রয় (Buy&Sale) পরিষেবার নিয়মাবলী !',
-    image: '/blogImages/OPqsX1741672537.jpg',
-    category: 'Buy&Sale',
-    status: 'Active',
-    published: '2025-03-11',
-  },
-  {
-    id: 4,
-    title: 'গুপ্তধন ডট কম – ডোনেশন মডিউলের নীতিমালা',
-    image: '/blogImages/waaRK1741673378.jpg',
-    category: 'Donation',
-    status: 'Active',
-    published: '2025-03-11',
-  },
-];
+  // Delete blog function
+  const deleteBlog = async (id: string) => {
+    const confirmDelete = window.confirm(
+      'Are you sure you want to delete this blog?'
+    );
+    if (!confirmDelete) return;
 
-export default function BlogTable() {
-  const [search, setSearch] = useState('');
+    try {
+      setDeletingId(id); // ✅ start deleting
+      const res = await axios.delete(`/api/v1/blog/${id}`);
 
-  const filteredBlogs = blogs.filter(blog =>
-    blog.title.toLowerCase().includes(search.toLowerCase())
-  );
+      if (res.data.success) {
+        toast.success('Blog deleted successfully!');
+        setBlogs(prev => prev.filter((blog: any) => blog._id !== id));
+      } else {
+        toast.error(res.data.message || 'Failed to delete blog.');
+      }
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete blog.');
+    } finally {
+      setDeletingId(null); // ✅ done deleting
+    }
+  };
+
+  // Combine columns + action buttons
+  const columnsWithActions = [
+    ...blogs_columns,
+    {
+      header: 'Actions',
+      cell: ({ row }: any) => {
+        const blog = row.original;
+        const isDeleting = deletingId === blog._id; // check if this blog is deleting
+        return (
+          <div className="flex gap-2">
+            <Link href={`/general/view/all/blogs/edit?id=${blog._id}`}>
+              <Button
+                size="sm"
+                variant="outline"
+                title="Edit"
+                disabled={isDeleting}>
+                <Edit className="w-4 h-4" />
+              </Button>
+            </Link>
+
+            <Button
+              size="sm"
+              variant="destructive"
+              title="Delete"
+              onClick={() => deleteBlog(blog._id)}
+              disabled={isDeleting} // disable while deleting
+            >
+              {isDeleting ? 'Deleting...' : <Trash2 className="w-4 h-4" />}
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
     <div className="bg-white p-5">
@@ -77,38 +85,9 @@ export default function BlogTable() {
           </a>
         </Button>
       </div>
-
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4 mt-4">
-        {/* Show Entries */}
-        <div className="flex items-center gap-2">
-          <span>Show</span>
-          <Select defaultValue="10">
-            <SelectTrigger className="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="25">25</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-              <SelectItem value="100">100</SelectItem>
-            </SelectContent>
-          </Select>
-          <span>entries</span>
-        </div>
-
-        {/* Search */}
-        <div className="flex items-center gap-2">
-          <span>Search:</span>
-          <Input
-            placeholder="Search blogs..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-64"
-          />
-        </div>
+      <div className="ml-4">
+        <DataTable columns={columnsWithActions} data={blogs} />
       </div>
-
-      <DataTable columns={blogs_columns} data={filteredBlogs} />
     </div>
   );
 }

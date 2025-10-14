@@ -1,5 +1,7 @@
+// src/app/(admin)/general/create/cta/Components/CTAForm.tsx
 'use client';
-import RichTextEditor from '@/components/ReusableComponents/RichTextEditor';
+
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,97 +12,156 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useState } from 'react';
+import RichTextEditor from '@/components/ReusableComponents/RichTextEditor';
+import UploadImage from '@/components/ReusableComponents/UploadImage';
+import { useSession } from 'next-auth/react';
+import axios from 'axios';
+import { toast } from 'sonner';
 
-export default function CTAForm() {
-  // Static data only
-  const preview =
-    'https://app-area.guptodhan.com/uploads/about_us/yMCRq1741755424.jpg';
+type CTAFormProps = {
+  initialData: any;
+};
 
-  const [title, setTitle] = useState('Guptodhan.com কী?');
-  const [btnText, setBtnText] = useState('Visit Now');
-  const [btnLink, setBtnLink] = useState('/guptodhan.com/');
+export default function CTAForm({ initialData }: CTAFormProps) {
+  const [ctaData, setCtaData] = useState<any>(initialData);
+  const [loading, setLoading] = useState(false);
+  const [formReady, setFormReady] = useState(false);
+
+  const [title, setTitle] = useState('');
+  const [btnText, setBtnText] = useState('');
+  const [btnLink, setBtnLink] = useState('');
   const [status, setStatus] = useState('1');
-  const [content, setContent] = useState(`<h2>Guptodhan.com সম্পর্কে</h2>
-<p>Guptodhan.com একটি আধুনিক ই-কমার্স ওয়েবসাইট, যা ক্রেতা ও বিক্রেতাদের জন্য একটি সহজ এবং নিরাপদ অনলাইন মার্কেটপ্লেস প্রদান করে। এটি অন্যান্য ই-কমার্স সাইটের মতোই কার্যকরী, তবে এর কিছু বিশেষ ফিচার রয়েছে যা একে আলাদা করে তোলে।</p>
+  const [content, setContent] = useState('');
+  const [preview, setPreview] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-<h3>Guptodhan.com কীভাবে ব্যবহার করবেন?</h3>
+  const { data: session } = useSession();
+  const token = (session as any)?.accessToken;
 
-<h4>1. রেজিস্ট্রেশন:</h4>
-<ul>
-  <li><strong>বিক্রেতাদের জন্য:</strong> দোকানদাররা সহজেই Guptodhan.com-এ রেজিস্ট্রেশন করে তাদের পণ্য তালিকাভুক্ত করতে পারেন। এটি তাদের অনলাইন উপস্থিতি বাড়াতে এবং বৃহত্তর গ্রাহকগোষ্ঠীর কাছে পৌঁছাতে সহায়তা করে।</li>
-  <li><strong>ক্রেতাদের জন্য:</strong> ক্রেতারা সাইটে রেজিস্ট্রেশন করে বিভিন্ন পণ্য ব্রাউজ করতে, অর্ডার করতে এবং তাদের অর্ডারের স্ট্যাটাস ট্র্যাক করতে পারেন।</li>
-</ul>
+  useEffect(() => {
+    if (ctaData) {
+      setTitle(ctaData.ctaTitle || '');
+      setBtnText(ctaData.ctaButtonText || '');
+      setBtnLink(ctaData.ctaLink || '');
+      setStatus(ctaData.isActive ? '1' : '0');
+      setContent(ctaData.ctaDescription || '');
+      setPreview(ctaData.ctaImage || '');
+    }
+    setFormReady(true);
+  }, [ctaData]);
 
-<h4>2. বাই এন্ড সেল:</h4>
-<p>যাদের নিজস্ব স্টোর নেই, তারাও এই মডিউলের মাধ্যমে সহজেই পণ্য কিনতে বা বিক্রি করতে পারেন। পুরাতন বা নতুন পণ্য কেনা-বেচার জন্য এটি একটি সহজ উপায়।</p>
-
-<h4>3. ডোনেশন সুবিধা:</h4>
-<p>ব্যবহারকারীরা তাদের অপ্রয়োজনীয় জিনিসপত্র ডোনেট করতে পারেন। অন্যরা এই ডোনেশন সেকশন থেকে প্রয়োজনীয় পণ্য সংগ্রহ করতে পারেন, যা সমাজে সহানুভূতির বন্ধনকে আরও দৃঢ় করে।</p>
-
-<h3>Guptodhan.com-এর বিশেষ ফিচারসমূহ:</h3>
-<ul>
-  <li><strong>নিরাপদ লেনদেন:</strong> সাইটটি নিরাপদ পেমেন্ট গেটওয়ে ব্যবহার করে, যা ক্রেতা ও বিক্রেতাদের জন্য সুরক্ষিত লেনদেন নিশ্চিত করে।</li>
-  <li><strong>ব্যবহারকারী-বান্ধব ইন্টারফেস:</strong> সহজ নেভিগেশন এবং পরিষ্কার ডিজাইনের মাধ্যমে ব্যবহারকারীরা সহজেই সাইটটি ব্যবহার করতে পারেন।</li>
-  <li><strong>গ্রাহক সহায়তা:</strong> ২৪/৭ গ্রাহক সহায়তা সুবিধা রয়েছে, যা ব্যবহারকারীদের যেকোনো সমস্যায় সহায়তা করে।</li>
-</ul>
-
-<h3>Guptodhan.com কেন ব্যবহার করবেন?</h3>
-<p>Guptodhan.com শুধুমাত্র একটি ই-কমার্স প্ল্যাটফর্ম নয়; এটি একটি কমিউনিটি যেখানে মানুষ তাদের প্রয়োজনীয় পণ্য কিনতে, বিক্রি করতে এবং ডোনেশন করতে পারে। এর উদ্ভাবনী ফিচার এবং ব্যবহারকারী-বান্ধব ইন্টারফেস ব্যবহারকারীদের সন্তুষ্টি নিশ্চিত করে।</p>
-
-<p>#Guptodhan #Ecommerce #OnlineShopping #DonationPlatform #DigitalMarketplace</p>
-`);
+  const handleUploadChange = (_name: string, file: File | null) => {
+    setSelectedFile(file);
+    if (file) {
+      setPreview(URL.createObjectURL(file));
+    } else {
+      setPreview(ctaData?.ctaImage || '');
+    }
+  };
 
   const handleCancel = () => {
-    alert('Cancel clicked! Form reset to static values.');
+    if (!ctaData) return;
+    setTitle(ctaData.ctaTitle || '');
+    setBtnText(ctaData.ctaButtonText || '');
+    setBtnLink(ctaData.ctaLink || '');
+    setStatus(ctaData.isActive ? '1' : '0');
+    setContent(ctaData.ctaDescription || '');
+    setPreview(ctaData.ctaImage || '');
+    setSelectedFile(null);
   };
 
-  const handleDone = () => {
-    const formData = {
-      image: preview,
-      title,
-      btnText,
-      btnLink,
-      status,
-      content,
-    };
+  const handleDone = async () => {
+    if (!ctaData?._id) {
+      toast.error('CTA ID is missing.');
+      return;
+    }
 
-    console.log('CTA Form Data:', formData);
-    alert('Form Submitted:\n' + JSON.stringify(formData, null, 2));
+    if (!title || !btnText || !btnLink) {
+      toast.error('Please fill all required fields.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const formData = new FormData();
+
+      if (selectedFile) {
+        console.log('📤 Appending new image file:', selectedFile);
+        formData.append('ctaImage', selectedFile);
+      }
+
+      formData.append('ctaTitle', title);
+      formData.append('ctaButtonText', btnText);
+      formData.append('ctaLink', btnLink);
+      formData.append('ctaDescription', content);
+      formData.append('isActive', status === '1' ? 'true' : 'false');
+
+      console.log('🧾 FormData Entries:', Array.from(formData.entries()));
+
+      const res = await axios.patch(
+        `/api/v1/about/cta/${ctaData._id}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log('🟢 Response from server:', res.data);
+
+      if (res.data.success) {
+        toast.success('CTA updated successfully!');
+
+        // Use returned data first
+        const updatedData = res.data.data;
+        setCtaData(updatedData);
+        if (updatedData.ctaImage) setPreview(updatedData.ctaImage);
+        setSelectedFile(null);
+
+        // Force refetch from public endpoint to guarantee DB sync
+        try {
+          const fresh = await axios.get('/api/v1/public/about/cta');
+          if (fresh.data.success && fresh.data.data) {
+            setCtaData(fresh.data.data);
+            setPreview(fresh.data.data.ctaImage || updatedData.ctaImage || '');
+          }
+        } catch (err) {
+          console.warn('Failed to fetch fresh CTA after update:', err);
+        }
+      } else {
+        toast.error('Failed to update CTA!');
+      }
+    } catch (error) {
+      console.error('❌ Error updating CTA:', error);
+      toast.error('Error updating CTA!');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRemove = () => {
-    alert('Remove clicked! Image removed (static example).');
-  };
+  if (!formReady) {
+    return (
+      <p className="text-center mt-10 text-gray-500">Loading CTA data...</p>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-6 gap-2">
+    <div className="grid grid-cols-6 mt-4 gap-2">
       <div className="col-span-2 space-y-4">
-        <div className="flex flex-col space-y-2">
-          <Label htmlFor="cta_image">
-            CTA Image <span className="text-red-500">*</span>
-          </Label>
-          <div className="relative border border-gray-300 rounded p-2 h-52 flex flex-col items-center justify-center">
-            <img
-              src={preview}
-              alt="CTA Preview"
-              className="object-contain h-full w-full"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              className="absolute top-2 right-2"
-              onClick={handleRemove}>
-              Remove
-            </Button>
-          </div>
-        </div>
+        <UploadImage
+          label="CTA Image"
+          name="ctaImage"
+          preview={preview}
+          onChange={handleUploadChange}
+        />
 
         <div className="flex flex-col space-y-2">
           <Label htmlFor="btn_text">CTA Button Text</Label>
           <Input
-            type="text"
             id="btn_text"
+            type="text"
             value={btnText}
             onChange={e => setBtnText(e.target.value)}
           />
@@ -109,8 +170,8 @@ export default function CTAForm() {
         <div className="flex flex-col space-y-2">
           <Label htmlFor="btn_link">CTA Button Link</Label>
           <Input
-            type="text"
             id="btn_link"
+            type="text"
             value={btnLink}
             onChange={e => setBtnLink(e.target.value)}
           />
@@ -124,6 +185,7 @@ export default function CTAForm() {
           </Label>
           <Input
             id="title"
+            type="text"
             value={title}
             onChange={e => setTitle(e.target.value)}
           />
@@ -149,10 +211,15 @@ export default function CTAForm() {
 
         <div className="flex justify-start items-center w-full">
           <div className="flex flex-wrap gap-2">
-            <Button variant="destructive" onClick={handleCancel}>
+            <Button
+              variant="destructive"
+              onClick={handleCancel}
+              disabled={loading}>
               Cancel
             </Button>
-            <Button onClick={handleDone}>Done</Button>
+            <Button onClick={handleDone} disabled={loading}>
+              {loading ? 'Saving...' : 'Done'}
+            </Button>
           </div>
         </div>
       </div>
