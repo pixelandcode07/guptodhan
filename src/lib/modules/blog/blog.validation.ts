@@ -8,6 +8,7 @@ export const createBlogValidationSchema = z.object({
   content: z.string().min(1, { message: 'Content is required.' }), // <-- added new value
   title: z.string().min(1, { message: 'Blog title is required.' }),
   description: z.string().min(1, { message: 'Description is required.' }),
+  content: z.string().min(1, { message: 'Content is required.' }),
   tags: z.array(z.string()).optional(),
   metaTitle: z.string().min(1, { message: 'Meta title is required.' }),
   metaKeywords: z.array(z.string()).optional(),
@@ -25,6 +26,7 @@ export const updateBlogValidationSchema = z.object({
   content: z.string().optional(), // <-- added new value
   title: z.string().optional(),
   description: z.string().optional(),
+  content: z.string().optional(),
   tags: z.array(z.string()).optional(),
   metaTitle: z.string().optional(),
   metaKeywords: z.array(z.string()).optional(),
