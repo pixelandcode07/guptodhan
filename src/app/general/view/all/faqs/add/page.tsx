@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import axios from 'axios';
+import Loadding from '../Components/Loadding';
 
 export default function FAQCreateForm() {
   const router = useRouter();
@@ -23,41 +24,55 @@ export default function FAQCreateForm() {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(true); // ✅ Loading state
 
-  const categoriesApi = '/api/v1/faq-category';
   const faqApi = '/api/v1/faq';
 
+  // ✅ Category load from backend
   useEffect(() => {
     const fetchCategories = async () => {
+      setLoadingCategories(true);
       try {
-        const res = await axios.get(categoriesApi);
-        const data = res.data.data || res.data;
+        const res = await axios.get(`/api/v1/faq-category`);
+        const data = res.data.data;
         setCategories(data || []);
       } catch (err) {
         console.error(err);
         toast.error('Failed to load categories');
+      } finally {
+        setLoadingCategories(false);
       }
     };
-
     fetchCategories();
   }, []);
 
+  // ✅ Submit handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!category || !question || !answer) {
       return toast.error('Please fill all required fields');
     }
 
+    // const payload = {
+    //   faqID: `FAQ-${Date.now()}`,
+    //   category, // category ID (_id)
+    //   question,
+    //   answer,
+    //   isActive: true,
+    // };
+    // console.log(payload);
+
     setLoading(true);
 
     try {
       const payload = {
         faqID: `FAQ-${Date.now()}`,
-        category, // ✅ Backend expects category _id
+        category, // category ID (_id)
         question,
         answer,
         isActive: true,
       };
+      console.log(payload);
 
       const res = await axios.post(faqApi, payload);
 
@@ -78,6 +93,11 @@ export default function FAQCreateForm() {
     }
   };
 
+  // ✅ Skeleton Loader for categories
+  if (loadingCategories) {
+    return <Loadding />;
+  }
+
   return (
     <div className="card bg-white shadow rounded p-6">
       <h4 className="text-xl font-semibold mb-6">FAQ Create Form</h4>
@@ -96,10 +116,12 @@ export default function FAQCreateForm() {
               <SelectValue placeholder="Select One" />
             </SelectTrigger>
             <SelectContent>
-              {categories.length > 0 ? (
+              {categories && categories.length > 0 ? (
                 categories.map(cat => (
-                  <SelectItem key={cat._id} value={cat._id}>
-                    {cat.name || cat.categoryName} {/* Backend name */}
+                  <SelectItem
+                    key={cat._id}
+                    value={cat.name || cat.categoryName}>
+                    {cat.name || cat.categoryName}
                   </SelectItem>
                 ))
               ) : (
@@ -119,7 +141,7 @@ export default function FAQCreateForm() {
           <Input
             id="question"
             type="text"
-            placeholder="Question"
+            placeholder="Enter question"
             value={question}
             onChange={e => setQuestion(e.target.value)}
             className="w-full sm:w-4/5"
@@ -134,7 +156,8 @@ export default function FAQCreateForm() {
           </Label>
           <Textarea
             id="answer"
-            rows={10}
+            rows={8}
+            placeholder="Write the answer here..."
             value={answer}
             onChange={e => setAnswer(e.target.value)}
             className="w-full sm:w-4/5"

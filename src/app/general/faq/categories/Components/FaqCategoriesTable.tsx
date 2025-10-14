@@ -26,17 +26,17 @@ import { toast } from 'sonner';
 import axios from 'axios';
 
 type FaqCategory = {
-  faqCategoryID: number;
-  categoryName: string;
+  _id: string;
+  name: string;
   isActive: boolean;
 };
 
-export default function FaqCategoriesTable() {
-  const [categories, setCategories] = useState<FaqCategory[]>([]);
+export default function FaqCategoriesTable({ data }: { data: any[] }) {
+  const [categories, setCategories] = useState<FaqCategory[]>(data || []);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [loadingAdd, setLoadingAdd] = useState(false);
-  const [loadingUpdateId, setLoadingUpdateId] = useState<number | null>(null);
-  const [loadingDeleteId, setLoadingDeleteId] = useState<number | null>(null);
+  const [loadingUpdateId, setLoadingUpdateId] = useState<string | null>(null);
+  const [loadingDeleteId, setLoadingDeleteId] = useState<string | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   const apiBase = '/api/v1/faq-category';
@@ -45,83 +45,103 @@ export default function FaqCategoriesTable() {
     refreshData();
   }, []);
 
+  // ✅ Load all categories
   const refreshData = async () => {
     try {
-      const res = await fetch(apiBase, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Failed to fetch categories');
-      const data = await res.json();
-      setCategories(data);
+      const res = await axios.get(apiBase);
+      const result = res.data?.data || res.data;
+      setCategories(result);
     } catch (err) {
       console.error(err);
       toast.error('Failed to load categories');
     }
   };
 
+  // ✅ Add category
   const handleAdd = async (closeDialog: () => void) => {
     if (!newCategoryName.trim()) return toast.error('Enter category name');
     const payload = { name: newCategoryName, isActive: true };
-    console.log(payload);
+
     try {
       setLoadingAdd(true);
-      await axios.post(apiBase, payload);
-      toast.success('Category added');
-      setNewCategoryName('');
-      closeDialog();
-      await refreshData();
-    } catch {
-      toast.error('Failed to add category');
+      const res = await axios.post(apiBase, payload);
+      if (res.data?.success) {
+        toast.success('Category added');
+        setNewCategoryName('');
+        closeDialog();
+        await refreshData();
+      } else {
+        toast.error(res.data?.message || 'Failed to add category');
+      }
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.message || 'Failed to add category');
     } finally {
       setLoadingAdd(false);
     }
   };
 
+  // ✅ Update category
   const handleUpdate = async (
-    id: number,
-    categoryName: string,
+    id: string,
+    name: string,
     isActive: boolean,
     closeDialog: () => void
   ) => {
     try {
       setLoadingUpdateId(id);
-      await axios.put(`${apiBase}/${id}`, { categoryName, isActive });
-      toast.success('Category updated');
-      closeDialog();
-      await refreshData();
-    } catch {
-      toast.error('Failed to update category');
+      const res = await axios.patch(`${apiBase}/${id}`, { name, isActive });
+      if (res.data?.success) {
+        toast.success('Category updated');
+        closeDialog();
+        await refreshData();
+      } else {
+        toast.error(res.data?.message || 'Failed to update category');
+      }
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.message || 'Failed to update category');
     } finally {
       setLoadingUpdateId(null);
     }
   };
 
-  const handleDelete = async (id: number) => {
+  // ✅ Delete category
+  const handleDelete = async (id: string) => {
     if (!confirm('Are you sure?')) return;
     try {
       setLoadingDeleteId(id);
-      toast('Deleting...', { duration: 1000 });
-      await axios.delete(`${apiBase}/${id}`);
-      toast.success('Deleted successfully');
-      await refreshData();
-    } catch {
-      toast.error('Failed to delete category');
+      toast.message('Deleting...', { duration: 1000 });
+      const res = await axios.delete(`${apiBase}/${id}`);
+      if (res.data?.success) {
+        toast.success('Deleted successfully');
+        await refreshData();
+      } else {
+        toast.error(res.data?.message || 'Failed to delete category');
+      }
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.message || 'Failed to delete category');
     } finally {
       setLoadingDeleteId(null);
     }
   };
 
+  // ✅ Columns with edit/delete actions
   const columnsWithActions = [
     ...faq_categories_columns,
     {
       header: 'Actions',
       cell: ({ row }: any) => {
         const cat = row.original as FaqCategory;
-        const [editName, setEditName] = useState(cat.categoryName);
+        const [editName, setEditName] = useState(cat.name);
         const [editStatus, setEditStatus] = useState(
           cat.isActive ? 'active' : 'inactive'
         );
 
         return (
           <div className="flex gap-2">
+            {/* Edit Button + Modal */}
             <Dialog>
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline">
@@ -161,32 +181,27 @@ export default function FaqCategoriesTable() {
                     <Button
                       onClick={() =>
                         handleUpdate(
-                          cat.faqCategoryID,
+                          cat._id,
                           editName,
                           editStatus === 'active',
-                          () => {
-                            const dialog =
-                              document.querySelector('dialog[open]');
-                            if (dialog) (dialog as HTMLDialogElement).close();
-                          }
+                          () => setAddDialogOpen(false)
                         )
                       }
-                      disabled={loadingUpdateId === cat.faqCategoryID}>
-                      {loadingUpdateId === cat.faqCategoryID
-                        ? 'Updating...'
-                        : 'Update'}
+                      disabled={loadingUpdateId === cat._id}>
+                      {loadingUpdateId === cat._id ? 'Updating...' : 'Update'}
                     </Button>
                   </div>
                 </div>
               </DialogContent>
             </Dialog>
 
+            {/* Delete Button */}
             <Button
               size="sm"
               variant="destructive"
-              onClick={() => handleDelete(cat.faqCategoryID)}
-              disabled={loadingDeleteId === cat.faqCategoryID}>
-              {loadingDeleteId === cat.faqCategoryID ? (
+              onClick={() => handleDelete(cat._id)}
+              disabled={loadingDeleteId === cat._id}>
+              {loadingDeleteId === cat._id ? (
                 'Deleting...'
               ) : (
                 <Trash2 className="w-4 h-4" />
@@ -213,6 +228,7 @@ export default function FaqCategoriesTable() {
             Rearrange Category
           </Button>
 
+          {/* Add New Category Dialog */}
           <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
@@ -236,7 +252,7 @@ export default function FaqCategoriesTable() {
                   </DialogClose>
                   <Button
                     onClick={async () => {
-                      await handleAdd(() => setAddDialogOpen(false)); // Close dialog after add
+                      await handleAdd(() => setAddDialogOpen(false));
                     }}
                     disabled={loadingAdd}>
                     {loadingAdd ? 'Adding...' : 'Save'}

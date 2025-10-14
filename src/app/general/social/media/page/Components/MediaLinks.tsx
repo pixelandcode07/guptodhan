@@ -36,7 +36,7 @@ const MediaPage: React.FC = () => {
 
         <form
           onSubmit={handleSubmit}
-          className="space-y-4 p-4 pt-0 max-w-[1000px] mt-10 text-sm mx-auto">
+          className="space-y-4 p-4 pt-0  mt-10 text-sm mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label
