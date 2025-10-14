@@ -8,9 +8,11 @@ import SectionTitle from '@/components/ui/SectionTitle';
 import { Button } from '@/components/ui/button';
 
 import RichTextEditor from '@/components/ReusableComponents/RichTextEditor';
-import BlogForm from '@/app/general/add/new/blog/Components/BlogForm';
+
 import TagsInput from './Components/TagsInput';
 import BlogSeoForm from './Components/BlogSeoForm';
+import BlogForm from './Components/BlogForm';
+import Loadding from './Components/loadding';
 
 export default function EditBlogPage() {
   const searchParams = useSearchParams();
@@ -76,56 +78,47 @@ export default function EditBlogPage() {
   }, [id, router]);
 
   // --- Update blog
-  const handleUpdate = async (e) => {
-    // if (!blogData.category) return toast.error('Category is required!');
-    // if (!blogData.title.trim()) return toast.error('Title is required!');
-    // if (!blogData.coverImageUrl) return toast.error('Cover image is required!');
-    
+  const handleUpdate = async () => {
+    if (!blogData.category) return toast.error('Category is required!');
+    if (!blogData.title.trim()) return toast.error('Title is required!');
+    if (!blogData.coverImageUrl) return toast.error('Cover image is required!');
+
     try {
       setLoading(true);
 
-      // const updatedData = {
-      //   _id: id,
-      //   category: blogData.category,
-      //   title: blogData.title,
-      //   description: blogData.shortDescription,
-      //   coverImage: blogData.coverImageUrl,
-      //   content,
-      //   tags,
-      //   metaTitle: seoData.metaTitle,
-      //   metaKeywords: seoData.metaKeywords,
-      //   metaDescription: seoData.metaDescription,
-      //   status: 'active',
-      // };
-      
-    //       const payload = {
-            
-    //   category: blogData.category,
-    //   title: blogData.title,
-    //   description: blogData.shortDescription,
-    //   coverImage: blogData.coverImageUrl,
-    //   content: content,
-    //   tags,
-    //   metaTitle: seoData.metaTitle,
-    //   metaDescription: seoData.metaDescription,
-    //   metaKeywords: seoData.metaKeywords,
-    //   status: 'active',
-    // };
-    //   const res = await axios.patch('/api/v1/blog', payload);
+      const updatedData = {
+        category: blogData.category,
+        title: blogData.title,
+        description: blogData.shortDescription,
+        coverImage: blogData.coverImageUrl,
+        content,
+        tags,
+        metaTitle: seoData.metaTitle,
+        metaKeywords: seoData.metaKeywords,
+        metaDescription: seoData.metaDescription,
+        status: 'active',
+      };
 
-    //   if (res.data.success) {
-    //     toast.success('Blog updated successfully!');
-    //     router.push('/general/view/all/blogs');
-    //   } else {
-    //     toast.error(res.data.message || 'Update failed');
-    //   }
-    // } catch (error) {
-    //   console.error(error);
-    //   toast.error('Failed to update blog.');
-    // } finally {
-    //   setLoading(false);
-    // }
+      // ✅ এখানে id সহ সঠিক API call
+      const res = await axios.patch(`/api/v1/blog/${id}`, updatedData);
+
+      if (res.data.success) {
+        toast.success('Blog updated successfully!');
+        router.push('/general/view/all/blogs');
+      } else {
+        toast.error(res.data.message || 'Update failed');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to update blog.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (loading) {
+    return <Loadding />;
+  }
 
   return (
     <div className="bg-white p-5 rounded-lg shadow space-y-6">
@@ -139,8 +132,7 @@ export default function EditBlogPage() {
         </Button>
       </div>
 
-    <form onSubmit={handleUpdate} action="">
-            <BlogForm formData={blogData} setFormData={setBlogData} />
+      <BlogForm formData={blogData} setFormData={setBlogData} />
 
       <RichTextEditor value={content} onChange={setContent} />
 
@@ -149,11 +141,10 @@ export default function EditBlogPage() {
       <BlogSeoForm seoData={seoData} setSeoData={setSeoData} />
 
       <div className="flex justify-end pt-4">
-        <Button type="submit"  disabled={loading} className="w-[200px]">
+        <Button onClick={handleUpdate} disabled={loading} className="w-[200px]">
           {loading ? 'Updating...' : 'Update Blog'}
         </Button>
       </div>
-    </form>
     </div>
   );
 }
