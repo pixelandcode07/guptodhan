@@ -76,9 +76,9 @@ export default function TestimonialForm() {
       <SectionTitle text="Testimonial Entry Form" />
       <div className="flex justify-end mb-2">
         <Link
-          href="/general/add/testimonial"
+          href="/general/view/testimonials"
           className="text-blue-500 hover:underline">
-          Add new Testimonial
+          backe to Testimonials
         </Link>
       </div>
 

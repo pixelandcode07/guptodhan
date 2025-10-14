@@ -3,8 +3,6 @@ import SectionTitle from '@/components/ui/SectionTitle';
 import FAQSTabile from './Components/FAQSTabile';
 import axios from 'axios';
 
-export const revalidate = 0; // optional: disable caching
-
 const fetchFAQS = async () => {
   try {
     const baseUrl = process.env.NEXTAUTH_URL;
