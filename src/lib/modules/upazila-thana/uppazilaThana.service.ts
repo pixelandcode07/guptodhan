@@ -20,6 +20,7 @@ const getUpazilaThanasByDistrictFromDB = async (district: string) => {
   return result;
 };
 
+
 // Update Upazila/Thana
 const updateUpazilaThanaInDB = async (
   id: string,
