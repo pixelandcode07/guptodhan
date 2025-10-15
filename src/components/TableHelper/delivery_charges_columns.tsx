@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Edit } from "lucide-react"
 
 export type DeliveryCharge = {
+  _id?: string
   id: number
   division: string
   district: string
@@ -12,7 +13,9 @@ export type DeliveryCharge = {
   delivery_charge: number
 }
 
-export const delivery_charges_columns: ColumnDef<DeliveryCharge>[] = [
+export type DeliveryChargeHandlers = { onEdit: (row: DeliveryCharge) => void }
+
+export const getDeliveryChargesColumns = ({ onEdit }: DeliveryChargeHandlers): ColumnDef<DeliveryCharge>[] => [
   {
     accessorKey: "id",
     header: "SL",
@@ -68,10 +71,11 @@ export const delivery_charges_columns: ColumnDef<DeliveryCharge>[] = [
   {
     id: "action",
     header: "Action",
-    cell: () => {
+    cell: ({ row }) => {
+      const record = row.original as DeliveryCharge
       return (
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50">
+          <Button onClick={() => onEdit(record)} variant="ghost" size="sm" className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50">
             <Edit className="w-4 h-4" />
           </Button>
         </div>
