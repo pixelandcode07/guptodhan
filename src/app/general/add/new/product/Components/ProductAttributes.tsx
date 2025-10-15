@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -9,6 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useSession } from 'next-auth/react';
+import axios from 'axios';
 
 interface ProductAttributesProps {
   formData: {
@@ -19,7 +21,46 @@ interface ProductAttributesProps {
   handleInputChange: (field: string, value: unknown) => void;
 }
 
+type ProductFlag = {
+  _id: string;
+  productFlagId: string;
+  name: string;
+  status: 'active' | 'inactive';
+};
+
 export default function ProductAttributes({ formData, handleInputChange }: ProductAttributesProps) {
+  const [flags, setFlags] = useState<ProductFlag[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const { data: session } = useSession();
+  type Session = { user?: { role?: string }; accessToken?: string };
+  const s = session as Session | null;
+  const token = s?.accessToken;
+  const userRole = s?.user?.role;
+
+  const fetchFlags = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get('/api/v1/product-config/productFlag', {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(userRole ? { 'x-user-role': userRole } : {}),
+        },
+      });
+      const items: ProductFlag[] = Array.isArray(res.data?.data) ? res.data.data : [];
+      const active = items.filter((f) => f.status === 'active');
+      setFlags(active);
+    } catch (_e) {
+      setFlags([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, userRole]);
+
+  useEffect(() => {
+    fetchFlags();
+  }, [fetchFlags]);
+
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
       <h2 className="text-lg font-semibold text-gray-900 border-b pb-2 mb-6">
@@ -29,17 +70,20 @@ export default function ProductAttributes({ formData, handleInputChange }: Produ
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <div>
           <Label className="text-sm font-medium">Product Flag</Label>
-          <Select value={formData.flag} onValueChange={(value) => handleInputChange('flag', value)}>
+          <Select value={formData.flag} onValueChange={(value) => handleInputChange('flag', value)} disabled={loading}>
             <SelectTrigger className="mt-1">
-              <SelectValue placeholder="Select Flag" />
+              <SelectValue placeholder={loading ? 'Loading flags...' : 'Select Flag'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="new">New</SelectItem>
-              <SelectItem value="featured">Featured</SelectItem>
-              <SelectItem value="sale">On Sale</SelectItem>
-              <SelectItem value="trending">Trending</SelectItem>
-              <SelectItem value="bestseller">Bestseller</SelectItem>
-              <SelectItem value="limited">Limited Edition</SelectItem>
+              {flags.length > 0 ? (
+                flags.map((f) => (
+                  <SelectItem key={f._id} value={f._id}>
+                    {f.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="p-3 text-sm text-gray-500">No flags found</div>
+              )}
             </SelectContent>
           </Select>
         </div>
