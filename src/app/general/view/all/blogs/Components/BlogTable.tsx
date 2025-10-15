@@ -2,71 +2,110 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { blogs_columns } from '@/components/TableHelper/blogs_columns';
 import { DataTable } from '@/components/TableHelper/data-table';
 import SectionTitle from '@/components/ui/SectionTitle';
 import { Button } from '@/components/ui/button';
-import { ListOrdered, Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Loader2, PlusCircle } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { useSession } from 'next-auth/react';
+import { ColumnDef } from '@tanstack/react-table';
 
-export default function BlogTable({ blogs: initialBlogs }) {
-  const [blogs, setBlogs] = useState(initialBlogs);
-  const [deletingId, setDeletingId] = useState<string | null>(null); // ✅ track deleting blog
+// Define the type for your blog data
+// Ensure this matches the data structure coming from your API
+export type Blog = {
+    _id: string;
+    title: string;
+    category: { name: string };
+    status: 'published' | 'draft';
+    // Add any other fields you need for the table
+};
 
-  // Delete blog function
-  const deleteBlog = async (id: string) => {
-    const confirmDelete = window.confirm(
-      'Are you sure you want to delete this blog?'
-    );
-    if (!confirmDelete) return;
+interface BlogTableProps {
+    initialBlogs: Blog[];
+}
 
-    try {
-      setDeletingId(id); // ✅ start deleting
-      const res = await axios.delete(`/api/v1/blog/${id}`);
+export default function BlogTable({ initialBlogs }: BlogTableProps) {
+  const { data: session } = useSession();
+  const token = (session as any)?.accessToken;
 
-      if (res.data.success) {
-        toast.success('Blog deleted successfully!');
-        setBlogs(prev => prev.filter((blog: any) => blog._id !== id));
-      } else {
-        toast.error(res.data.message || 'Failed to delete blog.');
-      }
-    } catch (error: any) {
-      console.error('Delete error:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete blog.');
-    } finally {
-      setDeletingId(null); // ✅ done deleting
+  const [blogs, setBlogs] = useState<Blog[]>(initialBlogs);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  const deleteBlog = (id: string) => {
+    if (!token) {
+        return toast.error("Authentication failed. Please log in again.");
     }
+    
+    toast("Are you sure you want to delete this blog?", {
+        description: "This action cannot be undone.",
+        action: {
+            label: "Delete",
+            onClick: async () => {
+                setIsDeleting(id);
+                try {
+                    await axios.delete(`/api/v1/blog/${id}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    toast.success('Blog deleted successfully!');
+                    setBlogs(prev => prev.filter(blog => blog._id !== id));
+                } catch (error: any) {
+                    toast.error(error.response?.data?.message || 'Failed to delete blog.');
+                } finally {
+                    setIsDeleting(null);
+                }
+            }
+        },
+        cancel: {
+            label: "Cancel",
+            onClick: () => {}, // This empty function is required
+        }
+    });
   };
 
-  // Combine columns + action buttons
-  const columnsWithActions = [
+  // Define your columns here, correctly typed for 'Blog'
+  const blogs_columns: ColumnDef<Blog>[] = [
+    {
+        accessorKey: "title",
+        header: "Title",
+    },
+    {
+        accessorKey: "category.name",
+        header: "Category",
+    },
+    {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ row }) => {
+            const status = row.original.status;
+            return <span className={`capitalize px-2 py-1 text-xs font-semibold rounded-full ${status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{status}</span>
+        }
+    },
+  ];
+
+  const columnsWithActions: ColumnDef<Blog>[] = [
     ...blogs_columns,
     {
+      id: 'actions',
       header: 'Actions',
-      cell: ({ row }: any) => {
+      cell: ({ row }) => {
         const blog = row.original;
-        const isDeleting = deletingId === blog._id; // check if this blog is deleting
+        const isCurrentlyDeleting = isDeleting === blog._id;
         return (
           <div className="flex gap-2">
-            <Link href={`/general/view/all/blogs/edit?id=${blog._id}`}>
-              <Button
-                size="sm"
-                variant="outline"
-                title="Edit"
-                disabled={isDeleting}>
-                <Edit className="w-4 h-4" />
-              </Button>
-            </Link>
-
+            <Button asChild size="sm" variant="outline" title="Edit" disabled={isCurrentlyDeleting}>
+                <Link href={`/general/add/new/blog?id=${blog._id}`}>
+                    <Edit className="w-4 h-4" />
+                </Link>
+            </Button>
             <Button
               size="sm"
               variant="destructive"
               title="Delete"
               onClick={() => deleteBlog(blog._id)}
-              disabled={isDeleting} // disable while deleting
+              disabled={isCurrentlyDeleting}
             >
-              {isDeleting ? 'Deleting...' : <Trash2 className="w-4 h-4" />}
+              {isCurrentlyDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
             </Button>
           </div>
         );
@@ -75,19 +114,17 @@ export default function BlogTable({ blogs: initialBlogs }) {
   ];
 
   return (
-    <div className="bg-white p-5">
-      <div className="flex w-full justify-between items-center pt-5 flex-wrap">
+    <div className="bg-white p-5 m-5 shadow-sm border rounded-md">
+      <div className="flex w-full justify-between items-center pt-5 mb-5 flex-wrap">
         <SectionTitle text="View All Blogs" />
-        <Button variant="destructive" size="sm" asChild>
-          <a href="#">
-            <ListOrdered className="h-4 w-4 mr-2" />
-            Rearrange
-          </a>
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/general/add/new/blog">
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Add New Blog
+          </Link>
         </Button>
       </div>
-      <div className="ml-4">
-        <DataTable columns={columnsWithActions} data={blogs} />
-      </div>
+      <DataTable columns={columnsWithActions} data={blogs} />
     </div>
   );
 }

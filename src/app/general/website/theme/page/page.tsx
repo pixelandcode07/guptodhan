@@ -1,28 +1,28 @@
-import axios from 'axios';
-import ThemeColorCard from './Components/ThemeColorCard';
 import SectionTitle from '@/components/ui/SectionTitle';
+import ThemeColorCard from './Components/ThemeColorCard';
+import { ThemeSettingsServices } from '@/lib/modules/theme-settings/theme.service';
+import dbConnect from '@/lib/db';
 
-const fatchColor = async () => {
-  const baseUrl = process.env.NEXTAUTH_URL;
-  try {
-    const { data } = await axios.get(`${baseUrl}/api/v1/public/theme-settings`);
-
-    return data;
-  } catch (error) {
-    console.error('Error fetching theme settings:', error);
-  }
-};
-export default async function Page() {
-  const colors = await fatchColor();
+// This is an async Server Component that runs on the server
+export default async function ThemeSettingsPage() {
+  // Directly connect to the DB and call the service function on the server
+  await dbConnect();
+  const themeData = await ThemeSettingsServices.getPublicThemeFromDB();
 
   return (
-    <div>
-      <div className="pt-5 pr-5">
-        <SectionTitle text="Update Website Theme Color" />
+    <div className="bg-white pt-5 p-4 sm:p-6">
+      <SectionTitle text="Update Website Theme Color" />
+      <div className="mt-4">
+        <p className="pb-2 text-sm text-gray-500">
+          Customize your website's primary and secondary theme colors.
+        </p>
+        {/* Fetch করা ডেটা props হিসেবে ক্লায়েন্ট কম্পোনেন্টে পাঠানো হচ্ছে।
+          JSON.parse(JSON.stringify(...)) ব্যবহার করা হয়েছে Mongoose ডকুমেন্টকে 
+          সাধারণ অবজেক্টে রূপান্তর করার জন্য, যা Server Component থেকে Client Component-এ পাঠানো নিরাপদ।
+        */}
+        {/* ✅ FIX: The prop name has been changed from 'initialData' to 'initialColors' */}
+        <ThemeColorCard initialColors={JSON.parse(JSON.stringify(themeData))} />
       </div>
-
-      {/* ✅ Pass themeId dynamically */}
-      <ThemeColorCard initialColors={colors.data || {}} />
     </div>
   );
 }
