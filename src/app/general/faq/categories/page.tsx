@@ -1,23 +1,23 @@
-import React from 'react';
 import FaqCategoriesTable from './Components/FaqCategoriesTable';
-import axios from 'axios';
+import dbConnect from '@/lib/db';
+import SectionTitle from '@/components/ui/SectionTitle';
+import { FAQCategoryServices } from '@/lib/modules/faq-category/faqCategory.service';
 
-const fetchFaq = async () => {
-  try {
-    const baseUrl = process.env.NEXTAUTH_URL;
-    const { data } = await axios.get(`${baseUrl}/api/v1/faq-category`);
-    return data;
-  } catch (error) {
-    console.log('fetch facts Error:', error);
-    return { data: [] };
-  }
-};
+// This is now an async Server Component
+export default async function FaqCategoriesPage() {
+  // Directly connect to the DB and call the service function on the server
+  await dbConnect();
+  // Assuming you have a service function to get all categories for admin
+  const initialData = await FAQCategoryServices.getAllFAQCategoriesFromDB(); 
 
-export default async function page() {
-  const faq = await fetchFaq();
   return (
-    <div className="  bg-white ">
-      <FaqCategoriesTable data={faq?.data} />
+    <div className="bg-white p-4 sm:p-6 min-h-screen">
+      <SectionTitle text="FAQ Categories Management" />
+      {/* Pass the fetched data as a prop to the client component.
+        JSON.parse(JSON.stringify(...)) converts the Mongoose document
+        to a plain object, which is safe to pass from Server to Client Components.
+      */}
+      <FaqCategoriesTable initialData={JSON.parse(JSON.stringify(initialData))} />
     </div>
   );
 }
