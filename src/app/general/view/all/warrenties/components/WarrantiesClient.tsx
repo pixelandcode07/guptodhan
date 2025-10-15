@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { type Warranty } from "@/components/TableHelper/warranty_columns";
 import axios from "axios";
 import { useSession } from "next-auth/react";
+import type { Session } from "next-auth";
 import WarrantiesHeader from "./WarrantiesHeader";
 import WarrantiesTable from "./WarrantiesTable";
 import WarrantyModal from "./WarrantyModal";
@@ -16,8 +17,10 @@ export default function WarrantiesClient() {
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | "Active" | "Inactive">("");
   const { data: session } = useSession();
-  const token = (session as any)?.accessToken as string | undefined;
-  const userRole = (session as any)?.user?.role as string | undefined;
+  type AugmentedSession = Session & { accessToken?: string; user?: Session["user"] & { role?: string } };
+  const s = session as AugmentedSession | null;
+  const token = s?.accessToken;
+  const userRole = s?.user?.role;
 
   const fetchWarranties = useCallback(async () => {
     try {
@@ -27,8 +30,14 @@ export default function WarrantiesClient() {
           ...(userRole ? { "x-user-role": userRole } : {}),
         },
       });
-      const items = Array.isArray(data?.data) ? data.data : [];
-      const mapped: Warranty[] = items.map((w: any, idx: number) => ({
+      type ApiWarranty = {
+        _id: string;
+        warrantyName: string;
+        status: "active" | "inactive";
+        createdAt?: string;
+      };
+      const items: ApiWarranty[] = Array.isArray(data?.data) ? data.data : [];
+      const mapped: Warranty[] = items.map((w: ApiWarranty, idx: number) => ({
         _id: w._id,
         id: idx + 1,
         name: w.warrantyName ?? "",
@@ -36,7 +45,7 @@ export default function WarrantiesClient() {
         created_at: w.createdAt ? new Date(w.createdAt).toLocaleString() : "",
       }));
       setWarranties(mapped);
-    } catch (_e) {
+    } catch {
       toast.error("Failed to fetch warranties");
     }
   }, [token, userRole]);
@@ -100,7 +109,7 @@ export default function WarrantiesClient() {
       });
       await fetchWarranties();
       toast.success("Warranty type deleted successfully!");
-    } catch (_e) {
+    } catch {
       toast.error("Failed to delete warranty type");
     }
   }, [fetchWarranties, token, userRole]);
