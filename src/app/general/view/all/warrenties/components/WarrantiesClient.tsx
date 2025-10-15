@@ -3,19 +3,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { type Warranty } from "@/components/TableHelper/warranty_columns";
+import axios from "axios";
+import { useSession } from "next-auth/react";
 import WarrantiesHeader from "./WarrantiesHeader";
 import WarrantiesTable from "./WarrantiesTable";
 import WarrantyModal from "./WarrantyModal";
-
-function getData(): Warranty[] {
-  return [
-    { id: 1, name: "10 Days Replacement Guarentee", status: "Active", created_at: "2023-06-07 11:16:37 pm" },
-    { id: 2, name: "10 Days Cashback Guarantee", status: "Active", created_at: "2023-07-17 03:53:13 am" },
-    { id: 3, name: "1 Year Replacement Warrenty", status: "Inactive", created_at: "2023-06-07 11:16:37 pm" },
-    { id: 4, name: "1 Yr Replacement & 2 Yr Service Warrenty", status: "Active", created_at: "2023-07-17 03:53:13 am" },
-    { id: 5, name: "2 Years Service Warrenty", status: "Active", created_at: "2023-06-07 11:16:37 pm" },
-  ];
-}
 
 export default function WarrantiesClient() {
   const [warranties, setWarranties] = useState<Warranty[]>([]);
@@ -23,30 +15,65 @@ export default function WarrantiesClient() {
   const [editing, setEditing] = useState<Warranty | null>(null);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | "Active" | "Inactive">("");
+  const { data: session } = useSession();
+  const token = (session as any)?.accessToken as string | undefined;
+  const userRole = (session as any)?.user?.role as string | undefined;
+
+  const fetchWarranties = useCallback(async () => {
+    try {
+      const { data } = await axios.get("/api/v1/product-config/warranty", {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(userRole ? { "x-user-role": userRole } : {}),
+        },
+      });
+      const items = Array.isArray(data?.data) ? data.data : [];
+      const mapped: Warranty[] = items.map((w: any, idx: number) => ({
+        _id: w._id,
+        id: idx + 1,
+        name: w.warrantyName ?? "",
+        status: (w.status === "active" ? "Active" : "Inactive") as "Active" | "Inactive",
+        created_at: w.createdAt ? new Date(w.createdAt).toLocaleString() : "",
+      }));
+      setWarranties(mapped);
+    } catch (_e) {
+      toast.error("Failed to fetch warranties");
+    }
+  }, [token, userRole]);
 
   useEffect(() => {
-    setWarranties(getData());
-  }, []);
+    fetchWarranties();
+  }, [fetchWarranties]);
 
   const onSubmit = async (data: { name: string; status?: string }) => {
     try {
       if (editing) {
-        // Update existing warranty
-        setWarranties(prev => prev.map(warranty => 
-          warranty.id === editing.id 
-            ? { ...warranty, name: data.name, status: data.status as "Active" | "Inactive" || "Active" }
-            : warranty
-        ));
+        // Update existing warranty via API
+        await axios.patch(`/api/v1/product-config/warranty/${editing._id}`, {
+          warrantyName: data.name,
+          status: data.status === "Inactive" ? "inactive" : "active",
+        }, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(userRole ? { "x-user-role": userRole } : {}),
+            "Content-Type": "application/json",
+          }
+        });
+        await fetchWarranties();
         toast.success("Warranty type updated successfully!");
       } else {
-        // Add new warranty
-        const newWarranty: Warranty = {
-          id: Math.max(...warranties.map(w => w.id)) + 1,
-          name: data.name,
-          status: "Active",
-          created_at: new Date().toLocaleString(),
-        };
-        setWarranties(prev => [newWarranty, ...prev]);
+        // Create new warranty via API
+        await axios.post(`/api/v1/product-config/warranty`, {
+          warrantyName: data.name,
+          status: "active",
+        }, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(userRole ? { "x-user-role": userRole } : {}),
+            "Content-Type": "application/json",
+          }
+        });
+        await fetchWarranties();
         toast.success("Warranty type created successfully!");
       }
 
@@ -63,10 +90,20 @@ export default function WarrantiesClient() {
     setOpen(true);
   }, []);
 
-  const onDelete = useCallback((warranty: Warranty) => {
-    setWarranties(prev => prev.filter(w => w.id !== warranty.id));
-    toast.success("Warranty type deleted successfully!");
-  }, []);
+  const onDelete = useCallback(async (warranty: Warranty) => {
+    try {
+      await axios.delete(`/api/v1/product-config/warranty/${warranty._id}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(userRole ? { "x-user-role": userRole } : {}),
+        }
+      });
+      await fetchWarranties();
+      toast.success("Warranty type deleted successfully!");
+    } catch (_e) {
+      toast.error("Failed to delete warranty type");
+    }
+  }, [fetchWarranties, token, userRole]);
 
   const filteredWarranties = useMemo(() => {
     const bySearch = (w: Warranty) => {
