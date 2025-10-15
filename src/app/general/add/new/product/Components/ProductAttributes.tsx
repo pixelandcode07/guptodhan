@@ -35,11 +35,20 @@ type ApiWarranty = {
   createdAt?: string;
 };
 
+type ApiUnit = {
+  _id: string;
+  productUnitId: string;
+  name: string;
+  status: 'active' | 'inactive';
+};
+
 export default function ProductAttributes({ formData, handleInputChange }: ProductAttributesProps) {
   const [flags, setFlags] = useState<ProductFlag[]>([]);
   const [warranties, setWarranties] = useState<ApiWarranty[]>([]);
   const [loading, setLoading] = useState(false);
   const [warrantyLoading, setWarrantyLoading] = useState(false);
+  const [units, setUnits] = useState<ApiUnit[]>([]);
+  const [unitLoading, setUnitLoading] = useState(false);
 
   const { data: session } = useSession();
   type Session = { user?: { role?: string }; accessToken?: string };
@@ -93,6 +102,29 @@ export default function ProductAttributes({ formData, handleInputChange }: Produ
     fetchWarranties();
   }, [fetchWarranties]);
 
+  const fetchUnits = useCallback(async () => {
+    try {
+      setUnitLoading(true);
+      const res = await axios.get('/api/v1/product-config/productUnit', {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(userRole ? { 'x-user-role': userRole } : {}),
+        },
+      });
+      const items: ApiUnit[] = Array.isArray(res.data?.data) ? res.data.data : [];
+      const active = items.filter((u) => u.status === 'active');
+      setUnits(active);
+    } catch {
+      setUnits([]);
+    } finally {
+      setUnitLoading(false);
+    }
+  }, [token, userRole]);
+
+  useEffect(() => {
+    fetchUnits();
+  }, [fetchUnits]);
+
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
       <h2 className="text-lg font-semibold text-gray-900 border-b pb-2 mb-6">
@@ -103,13 +135,13 @@ export default function ProductAttributes({ formData, handleInputChange }: Produ
         <div>
           <Label className="text-sm font-medium">Product Flag</Label>
           <Select value={formData.flag} onValueChange={(value) => handleInputChange('flag', value)} disabled={loading}>
-            <SelectTrigger className="mt-1">
+            <SelectTrigger className="mt-1 bg-white text-gray-900">
               <SelectValue placeholder={loading ? 'Loading flags...' : 'Select Flag'} />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white text-gray-900">
               {flags.length > 0 ? (
                 flags.map((f) => (
-                  <SelectItem key={f._id} value={f._id}>
+                  <SelectItem key={f._id} value={f._id} className="text-gray-900">
                     {f.name}
                   </SelectItem>
                 ))
@@ -123,13 +155,13 @@ export default function ProductAttributes({ formData, handleInputChange }: Produ
         <div>
           <Label className="text-sm font-medium">Warranty Period</Label>
           <Select value={formData.warranty} onValueChange={(value) => handleInputChange('warranty', value)} disabled={warrantyLoading}>
-            <SelectTrigger className="mt-1">
+            <SelectTrigger className="mt-1 bg-white text-gray-900">
               <SelectValue placeholder={warrantyLoading ? 'Loading warranties...' : 'Select Warranty'} />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white text-gray-900">
               {warranties.length > 0 ? (
                 warranties.map((w) => (
-                  <SelectItem key={w._id} value={w._id}>
+                  <SelectItem key={w._id} value={w._id} className="text-gray-900">
                     {w.warrantyName}
                   </SelectItem>
                 ))
@@ -142,21 +174,20 @@ export default function ProductAttributes({ formData, handleInputChange }: Produ
 
         <div>
           <Label className="text-sm font-medium">Unit of Measurement</Label>
-          <Select value={formData.unit} onValueChange={(value) => handleInputChange('unit', value)}>
-            <SelectTrigger className="mt-1">
-              <SelectValue placeholder="Select Unit" />
+          <Select value={formData.unit} onValueChange={(value) => handleInputChange('unit', value)} disabled={unitLoading}>
+            <SelectTrigger className="mt-1 bg-white text-gray-900">
+              <SelectValue placeholder={unitLoading ? 'Loading units...' : 'Select Unit'} />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="piece">Piece</SelectItem>
-              <SelectItem value="kg">Kilogram</SelectItem>
-              <SelectItem value="gram">Gram</SelectItem>
-              <SelectItem value="liter">Liter</SelectItem>
-              <SelectItem value="ml">Milliliter</SelectItem>
-              <SelectItem value="meter">Meter</SelectItem>
-              <SelectItem value="cm">Centimeter</SelectItem>
-              <SelectItem value="inch">Inch</SelectItem>
-              <SelectItem value="box">Box</SelectItem>
-              <SelectItem value="pack">Pack</SelectItem>
+            <SelectContent className="bg-white text-gray-900">
+              {units.length > 0 ? (
+                units.map((u) => (
+                  <SelectItem key={u._id} value={u._id} className="text-gray-900">
+                    {u.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="p-3 text-sm text-gray-500">No units found</div>
+              )}
             </SelectContent>
           </Select>
         </div>
