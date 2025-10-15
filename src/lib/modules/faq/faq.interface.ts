@@ -2,7 +2,7 @@ import { Document, Types } from 'mongoose';
 
 export interface IFAQ extends Document {
   faqID: string;
-  category: Types.ObjectId;
+  category: string;
   question: string;
   answer: string;
   isActive: boolean;

@@ -14,7 +14,6 @@ const createFAQ = async (req: NextRequest) => {
 
     const payload = {
         ...validatedData,
-        category: new Types.ObjectId(validatedData.category),
     };
 
     const result = await FAQServices.createFAQInDB(payload);
@@ -49,7 +48,6 @@ const updateFAQ = async (req: NextRequest, { params }: { params: { id: string } 
 
     const payload = {
         ...validatedData,
-        ...(validatedData.category && { category: new Types.ObjectId(validatedData.category) }),
     };
 
     const result = await FAQServices.updateFAQInDB(id, payload);
