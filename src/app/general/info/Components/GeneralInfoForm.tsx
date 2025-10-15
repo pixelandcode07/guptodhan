@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import UploadImage from '@/components/ReusableComponents/UploadImage';
@@ -9,42 +8,47 @@ import SectionTitle from '@/components/ui/SectionTitle';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { useSession } from 'next-auth/react';
 
 interface GeneralInfoFormProps {
   data: any;
 }
 
 export default function GeneralInfoForm({ data }: GeneralInfoFormProps) {
-  const [formData, setFormData] = useState<any>({
-    _id: data._id || '',
-    companyName: data.companyName || '',
-    phoneNumber: data.phoneNumber || '',
-    companyEmail: data.companyEmail || '',
-    shortDescription: data.shortDescription || '',
-    companyAddress: data.companyAddress || '',
-    companyMapLink: data.companyMapLink || '',
-    tradeLicenseNo: data.tradeLicenseNo || '',
-    tinNo: data.tinNo || '',
-    binNo: data.binNo || '',
-    footerCopyrightText: data.footerCopyrightText || '',
-    primaryLogoLight: data.primaryLogoLight || '',
-    secondaryLogoDark: data.secondaryLogoDark || '',
-    favicon: data.favicon || '',
-    paymentBanner: data.paymentBanner || '',
-    userBanner: data.userBanner || '',
-    guest_checkout: data.guest_checkout || false,
-    store_pickup: data.store_pickup || false,
-  });
-
-  const [previews, setPreviews] = useState({
-    logo: data.primaryLogoLight || '',
-    logo_dark: data.secondaryLogoDark || '',
-    fav_icon: data.favicon || '',
-    payment_banner: data.paymentBanner || '',
-    user_cover_photo: data.userBanner || '',
-  });
-
+  const { data: session } = useSession();
+  const token = (session as any)?.accessToken;
   const [loading, setLoading] = useState(false);
+
+  const [formData, setFormData] = useState<any>({});
+  const [previews, setPreviews] = useState<any>({});
+  
+  useEffect(() => {
+    if (data) {
+        setFormData({
+            _id: data._id || '',
+            companyName: data.companyName || '',
+            phoneNumber: data.phoneNumber || '',
+            companyEmail: data.companyEmail || '',
+            shortDescription: data.shortDescription || '',
+            companyAddress: data.companyAddress || '',
+            companyMapLink: data.companyMapLink || '',
+            tradeLicenseNo: data.tradeLicenseNo || '',
+            tinNo: data.tinNo || '',
+            binNo: data.binNo || '',
+            footerCopyrightText: data.footerCopyrightText || '',
+            guest_checkout: data.guest_checkout || false,
+            store_pickup: data.store_pickup || false,
+        });
+        setPreviews({
+            logo: data.primaryLogoLight || '',
+            logo_dark: data.secondaryLogoDark || '',
+            fav_icon: data.favicon || '',
+            payment_banner: data.paymentBanner || '',
+            user_cover_photo: data.userBanner || '',
+        });
+    }
+  }, [data]);
+
 
   const handleInputChange = (name: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [name]: value }));
@@ -58,79 +62,33 @@ export default function GeneralInfoForm({ data }: GeneralInfoFormProps) {
       payment_banner: 'paymentBanner',
       user_cover_photo: 'userBanner',
     };
-
     handleInputChange(map[name], file);
-
-    setPreviews(prev => ({
-      ...prev,
-      [name]: file ? URL.createObjectURL(file) : '',
-    }));
+    setPreviews((prev: any) => ({ ...prev, [name]: file ? URL.createObjectURL(file) : '' }));
   };
 
-  // ✅ SUBMIT FUNCTION (Axios version)
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token) return toast.error("Authentication required.");
     setLoading(true);
 
-    const toastId = toast.loading('Updating...');
-
+    const dataToSend = new FormData();
+    for (const [key, value] of Object.entries(formData)) {
+      if (value !== undefined && value !== null) {
+        dataToSend.append(key, value as any);
+      }
+    }
+    
     try {
-      let hasFile = false;
-      const formPayload = new FormData();
-      const jsonPayload: Record<string, any> = {};
-
-      for (const [key, value] of Object.entries(formData)) {
-        if (
-          key === 'companyMapLink' &&
-          (!value || !/^https?:\/\//i.test(value.toString()))
-        ) {
-          continue;
-        }
-
-        if (value instanceof File) {
-          hasFile = true;
-          formPayload.append(key, value);
-        } else if (typeof value === 'boolean') {
-          formPayload.append(key, value ? 'true' : 'false');
-          jsonPayload[key] = value;
-        } else if (value !== undefined && value !== null) {
-          formPayload.append(key, value.toString());
-          jsonPayload[key] = value;
-        }
-      }
-
-      let response;
-
-      if (hasFile) {
-        // ✅ File থাকলে multipart/form-data
-        response = await axios.post(
-          '/api/v1/settings',
-          formPayload,
-          {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          }
-        );
-      } else {
-        // ✅ শুধুমাত্র JSON data হলে PATCH request
-        response = await axios.patch(
-          `/api/v1/settings/${formData._id}`,
-          jsonPayload,
-          {
-            headers: { 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      if (response.status === 200 || response.status === 201) {
-        toast.success('Settings updated successfully!', { id: toastId });
-      } else {
-        throw new Error('Unexpected response');
-      }
-    } catch (error: any) {
-      console.error('Submit Error:', error);
-      toast.error(error?.response?.data?.message || 'Failed to update settings', {
-        id: toastId,
+      // The POST route handles both create and update (upsert)
+      await axios.post('/api/v1/settings', dataToSend, {
+        headers: { 
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${token}`,
+        },
       });
+      toast.success('Settings updated successfully!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update settings');
     } finally {
       setLoading(false);
     }
