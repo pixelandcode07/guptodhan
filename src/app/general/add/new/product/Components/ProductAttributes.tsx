@@ -28,9 +28,18 @@ type ProductFlag = {
   status: 'active' | 'inactive';
 };
 
+type ApiWarranty = {
+  _id: string;
+  warrantyName: string;
+  status: 'active' | 'inactive';
+  createdAt?: string;
+};
+
 export default function ProductAttributes({ formData, handleInputChange }: ProductAttributesProps) {
   const [flags, setFlags] = useState<ProductFlag[]>([]);
+  const [warranties, setWarranties] = useState<ApiWarranty[]>([]);
   const [loading, setLoading] = useState(false);
+  const [warrantyLoading, setWarrantyLoading] = useState(false);
 
   const { data: session } = useSession();
   type Session = { user?: { role?: string }; accessToken?: string };
@@ -50,7 +59,7 @@ export default function ProductAttributes({ formData, handleInputChange }: Produ
       const items: ProductFlag[] = Array.isArray(res.data?.data) ? res.data.data : [];
       const active = items.filter((f) => f.status === 'active');
       setFlags(active);
-    } catch (_e) {
+    } catch {
       setFlags([]);
     } finally {
       setLoading(false);
@@ -60,6 +69,29 @@ export default function ProductAttributes({ formData, handleInputChange }: Produ
   useEffect(() => {
     fetchFlags();
   }, [fetchFlags]);
+
+  const fetchWarranties = useCallback(async () => {
+    try {
+      setWarrantyLoading(true);
+      const res = await axios.get('/api/v1/product-config/warranty', {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(userRole ? { 'x-user-role': userRole } : {}),
+        },
+      });
+      const items: ApiWarranty[] = Array.isArray(res.data?.data) ? res.data.data : [];
+      const active = items.filter((w) => w.status === 'active');
+      setWarranties(active);
+    } catch {
+      setWarranties([]);
+    } finally {
+      setWarrantyLoading(false);
+    }
+  }, [token, userRole]);
+
+  useEffect(() => {
+    fetchWarranties();
+  }, [fetchWarranties]);
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
@@ -90,18 +122,20 @@ export default function ProductAttributes({ formData, handleInputChange }: Produ
 
         <div>
           <Label className="text-sm font-medium">Warranty Period</Label>
-          <Select value={formData.warranty} onValueChange={(value) => handleInputChange('warranty', value)}>
+          <Select value={formData.warranty} onValueChange={(value) => handleInputChange('warranty', value)} disabled={warrantyLoading}>
             <SelectTrigger className="mt-1">
-              <SelectValue placeholder="Select Warranty" />
+              <SelectValue placeholder={warrantyLoading ? 'Loading warranties...' : 'Select Warranty'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="no-warranty">No Warranty</SelectItem>
-              <SelectItem value="3months">3 Months</SelectItem>
-              <SelectItem value="6months">6 Months</SelectItem>
-              <SelectItem value="1year">1 Year</SelectItem>
-              <SelectItem value="2year">2 Years</SelectItem>
-              <SelectItem value="3year">3 Years</SelectItem>
-              <SelectItem value="5year">5 Years</SelectItem>
+              {warranties.length > 0 ? (
+                warranties.map((w) => (
+                  <SelectItem key={w._id} value={w._id}>
+                    {w.warrantyName}
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="p-3 text-sm text-gray-500">No warranties found</div>
+              )}
             </SelectContent>
           </Select>
         </div>
