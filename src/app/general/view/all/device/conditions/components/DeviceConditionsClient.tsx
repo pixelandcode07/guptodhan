@@ -2,19 +2,22 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
+import api from "@/lib/axios";
 import { type DeviceCondition } from "@/components/TableHelper/device_condition_columns";
 import DeviceConditionsHeader from "./DeviceConditionsHeader";
 import DeviceConditionsTable from "./DeviceConditionsTable";
 import DeviceConditionModal from "./DeviceConditionModal";
 
-function getData(): DeviceCondition[] {
-  return [
-    { id: 1, name: "Brand New (Official)", status: "Active", created_at: "2023-06-05 10:34:14 am" },
-    { id: 2, name: "Brand New (Unofficial)", status: "Active", created_at: "2023-07-17 03:50:39 am" },
-    { id: 3, name: "Used (Few Scratches)", status: "Inactive", created_at: "2023-07-17 03:52:02 am" },
-    { id: 4, name: "Used (Fresh Condition)", status: "Active", created_at: "2023-06-05 10:34:27 am" },
-    { id: 5, name: "Refurbished", status: "Active", created_at: "2023-06-05 10:34:33 am" },
-  ];
+async function fetchDeviceConditions(): Promise<DeviceCondition[]> {
+  const { data } = await api.get("/product-config/deviceCondition");
+  const items = (data?.data ?? []) as Array<{ _id: string; deviceCondition: string; createdAt: string }>;
+  return items.map((item, index) => ({
+    _id: item._id,
+    id: index + 1,
+    name: item.deviceCondition,
+    // Backend model has no explicit status; leaving undefined shows "-" in table
+    created_at: new Date(item.createdAt).toLocaleString(),
+  }));
 }
 
 export default function DeviceConditionsClient() {
@@ -25,31 +28,33 @@ export default function DeviceConditionsClient() {
   const [statusFilter, setStatusFilter] = useState<"" | "Active" | "Inactive">("");
 
   useEffect(() => {
-    setConditions(getData());
+    (async () => {
+      try {
+        const list = await fetchDeviceConditions();
+        setConditions(list);
+      } catch (error) {
+        console.error("Failed to fetch device conditions", error);
+        toast.error("Failed to load device conditions");
+      }
+    })();
   }, []);
 
   const onSubmit = async (data: { name: string; status?: string }) => {
     try {
-      if (editing) {
-        // Update existing condition
-        setConditions(prev => prev.map(condition => 
-          condition.id === editing.id 
-            ? { ...condition, name: data.name, status: data.status as "Active" | "Inactive" || "Active" }
-            : condition
-        ));
+      if (editing && editing._id) {
+        await api.patch(`/product-config/deviceCondition/${editing._id}`, {
+          deviceCondition: data.name,
+        });
         toast.success("Device condition updated successfully!");
       } else {
-        // Add new condition
-        const newCondition: DeviceCondition = {
-          id: Math.max(...conditions.map(c => c.id)) + 1,
-          name: data.name,
-          status: "Active",
-          created_at: new Date().toLocaleString(),
-        };
-        setConditions(prev => [newCondition, ...prev]);
+        await api.post(`/product-config/deviceCondition`, {
+          deviceCondition: data.name,
+        });
         toast.success("Device condition created successfully!");
       }
 
+      const list = await fetchDeviceConditions();
+      setConditions(list);
       setOpen(false);
       setEditing(null);
     } catch (error) {
@@ -63,9 +68,17 @@ export default function DeviceConditionsClient() {
     setOpen(true);
   }, []);
 
-  const onDelete = useCallback((condition: DeviceCondition) => {
-    setConditions(prev => prev.filter(c => c.id !== condition.id));
-    toast.success("Device condition deleted successfully!");
+  const onDelete = useCallback(async (condition: DeviceCondition) => {
+    try {
+      if (!condition._id) throw new Error("Missing id");
+      await api.delete(`/product-config/deviceCondition/${condition._id}`);
+      const list = await fetchDeviceConditions();
+      setConditions(list);
+      toast.success("Device condition deleted successfully!");
+    } catch (error) {
+      console.error("Failed to delete device condition", error);
+      toast.error("Failed to delete device condition");
+    }
   }, []);
 
   const filteredConditions = useMemo(() => {

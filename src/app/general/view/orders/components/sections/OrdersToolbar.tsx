@@ -13,13 +13,17 @@ export default function OrdersToolbar({ initialStatus, showBulkCourierEntry = fa
     const selectedLabel = normalized ? labelFromSlug(normalized) : 'Select Status';
 
     return (
-        <TableListToolbar
-            title={`All Orders`}
-            statusOptions={statusOptions}
-            selectedStatus={selectedLabel}
-            pageSizeOptions={[20, 50, 100]}
-            onBulkCourierEntryClick={showBulkCourierEntry ? () => {} : undefined}
-        />
+        <div className="rounded-lg border border-[#e4e7eb] bg-white shadow-sm">
+            <div className="px-3 py-2 md:px-4 md:py-3">
+                <TableListToolbar
+                    title={`All Orders`}
+                    statusOptions={statusOptions}
+                    selectedStatus={selectedLabel}
+                    pageSizeOptions={[20, 50, 100]}
+                    onBulkCourierEntryClick={showBulkCourierEntry ? () => {} : undefined}
+                />
+            </div>
+        </div>
     )
 }
 
