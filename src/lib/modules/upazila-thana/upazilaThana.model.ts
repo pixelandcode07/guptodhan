@@ -12,5 +12,6 @@ const upazilaThanaSchema = new Schema<IUpazilaThana>(
   { timestamps: true }
 );
 
+
 export const UpazilaThanaModel =
   models.UpazilaThanaModel || model<IUpazilaThana>('UpazilaThanaModel', upazilaThanaSchema)
