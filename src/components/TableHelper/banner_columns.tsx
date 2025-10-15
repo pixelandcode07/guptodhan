@@ -3,101 +3,66 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Edit, Trash2 } from "lucide-react"
+import Image from "next/image" // ✅ Import Next.js Image component for performance
 
+// ✅ Use a more standard type that includes the database _id
 export type Banner = {
-  id: number
-  banner: string
-  sub_title: string
-  title: string
-  description: string
-  button_text: string
-  position: string
-  status: "Active" | "Inactive"
-  created_at: string
+  _id: string
+  bannerImage: string
+  subTitle: string
+  bannerTitle: string
+  bannerDescription: string
+  buttonText: string
+  bannerPosition: string
+  status: "active" | "inactive"
 }
 
-export const banner_columns: ColumnDef<Banner>[] = [
+// ✅ Turn the columns into a function that accepts handlers
+export const getBannerColumns = (
+    handleEdit: (id: string) => void,
+    handleDelete: (id: string) => void
+): ColumnDef<Banner>[] => [
   {
-    accessorKey: "id",
-    header: "SL",
-  },
-  {
-    accessorKey: "banner",
+    accessorKey: "bannerImage",
     header: "Banner",
     cell: ({ row }) => {
-      const banner = row.getValue("banner") as string;
+      const imageUrl = row.getValue("bannerImage") as string;
       return (
-        <div className="w-16 h-12 bg-gray-100 rounded flex items-center justify-center">
-          {banner ? (
-            <img src={banner} alt="Banner" className="w-full h-full object-cover rounded" />
+        <div className="w-20 h-12 bg-gray-100 rounded flex items-center justify-center relative">
+          {imageUrl ? (
+            // ✅ Use next/image for optimization
+            <Image 
+              src={imageUrl} 
+              alt="Banner" 
+              layout="fill"
+              objectFit="cover"
+              className="rounded"
+            />
           ) : (
-            <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
-              No Image
-            </div>
+            <div className="text-xs text-gray-500">No Image</div>
           )}
         </div>
       );
     },
   },
   {
-    accessorKey: "sub_title",
-    header: "Sub Title",
-    cell: ({ row }) => {
-      const subTitle = row.getValue("sub_title") as string;
-      return (
-        <div className="max-w-xs truncate" title={subTitle}>
-          {subTitle || "-"}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "title",
+    accessorKey: "bannerTitle",
     header: "Title",
-    cell: ({ row }) => {
-      const title = row.getValue("title") as string;
-      return (
-        <div className="max-w-xs truncate" title={title}>
-          {title || "-"}
-        </div>
-      );
-    },
+    cell: ({ row }) => <div className="max-w-xs truncate">{row.getValue("bannerTitle")}</div>,
   },
   {
-    accessorKey: "description",
-    header: "Description",
-    cell: ({ row }) => {
-      const description = row.getValue("description") as string;
-      return (
-        <div className="max-w-xs truncate" title={description}>
-          {description || "-"}
-        </div>
-      );
-    },
+    accessorKey: "subTitle",
+    header: "Sub Title",
+     cell: ({ row }) => <div className="max-w-xs truncate">{row.getValue("subTitle") || "-"}</div>,
   },
   {
-    accessorKey: "button_text",
-    header: "Button Text",
-    cell: ({ row }) => {
-      const buttonText = row.getValue("button_text") as string;
-      return (
-        <div className="font-medium text-blue-600">
-          {buttonText || "-"}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "position",
+    accessorKey: "bannerPosition",
     header: "Position",
-    cell: ({ row }) => {
-      const position = row.getValue("position") as string;
-      return (
-        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-          {position}
-        </span>
-      );
-    },
+    cell: ({ row }) => (
+      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 capitalize">
+        { (row.getValue("bannerPosition") as string).replace('-', ' ') }
+      </span>
+    ),
   },
   {
     accessorKey: "status",
@@ -105,8 +70,8 @@ export const banner_columns: ColumnDef<Banner>[] = [
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       return (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          status === "Active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full capitalize ${
+          status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
         }`}>
           {status}
         </span>
@@ -114,15 +79,28 @@ export const banner_columns: ColumnDef<Banner>[] = [
     },
   },
   {
-    id: "action",
-    header: "Action",
-    cell: () => {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      const banner = row.original;
       return (
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50">
+          {/* ✅ Connect the Edit button to the handleEdit function */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
+            onClick={() => handleEdit(banner._id)}
+          >
             <Edit className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+          {/* ✅ Connect the Delete button to the handleDelete function */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={() => handleDelete(banner._id)}
+          >
             <Trash2 className="w-4 h-4" />
           </Button>
         </div>
