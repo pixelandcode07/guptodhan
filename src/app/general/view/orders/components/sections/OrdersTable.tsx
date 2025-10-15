@@ -1,20 +1,75 @@
+import React from 'react'
 import { DataTable } from '@/components/TableHelper/data-table'
 import { OrderRow, ordersColumns } from '@/components/TableHelper/orders_columns'
+import api from '@/lib/axios'
 
-const data: OrderRow[] = [
-    { id: '1', sl: 1, orderNo: '1753607894617', orderDate: '2025-08-27', from: 'Mobile App', name: 'Etti Ahmed Tanjil', phone: '01333061763', total: 2400, payment: 'Unpaid', status: 'Pending' },
-    { id: '2', sl: 2, orderNo: '175452809551', orderDate: '2025-08-01', from: 'Mobile App', name: 'Mr X', phone: '01792522355', total: 200, payment: 'Unpaid', status: 'Pending' },
-    { id: '3', sl: 3, orderNo: '1753773458929', orderDate: '2025-07-29', from: 'Mobile App', name: 'Ms Y', phone: '01792522355', total: 3350, payment: 'Unpaid', status: 'Pending' },
-    { id: '4', sl: 4, orderNo: '1753769354561', orderDate: '2025-07-29', from: 'Mobile App', name: 'MD Sifat Hossain', phone: '01792522355', total: 5359, payment: 'Unpaid', status: 'Pending' },
-    { id: '5', sl: 5, orderNo: '1753601068101', orderDate: '2025-07-27', from: 'Mobile App', name: 'Mr Z', phone: '01792522355', total: 2290, payment: 'Unpaid', status: 'Pending' },
-]
+type ApiOrder = {
+    _id: string
+    orderId: string
+    orderDate?: string
+    createdAt?: string
+    orderForm?: string
+    shippingName?: string
+    shippingPhone?: string
+    totalAmount?: number
+    paymentStatus?: string
+    orderStatus?: string
+}
 
 export default function OrdersTable({ initialStatus }: { initialStatus?: string }) {
-    const filtered = Array.isArray(data) && initialStatus
-        ? data.filter(d => d.status.toLowerCase() === initialStatus)
-        : data
+    const [rows, setRows] = React.useState<OrderRow[]>([])
+    const [loading, setLoading] = React.useState(false)
+
+    React.useEffect(() => {
+        setLoading(true)
+        api.get('/product-order')
+            .then((res) => {
+                const list = (res.data?.data ?? []) as ApiOrder[]
+                const mapped: OrderRow[] = list.map((o, idx) => ({
+                    id: o._id,
+                    sl: idx + 1,
+                    orderNo: o.orderId,
+                    orderDate: new Date(o.orderDate ?? o.createdAt ?? Date.now()).toLocaleDateString(),
+                    from: o.orderForm || 'Website',
+                    name: o.shippingName || '-',
+                    phone: o.shippingPhone || '-',
+                    total: typeof o.totalAmount === 'number' ? o.totalAmount : 0,
+                    payment: o.paymentStatus || '-',
+                    status: o.orderStatus || 'Pending',
+                }))
+                setRows(mapped)
+            })
+            .catch(() => setRows([]))
+            .finally(() => setLoading(false))
+    }, [])
+
+    const filtered = React.useMemo(() => {
+        if (!initialStatus) return rows
+        const slug = initialStatus.toLowerCase()
+        // Map route slug to backend status labels
+        const mapSlugToApiStatus = (value: string): string | undefined => {
+            switch (value) {
+                case 'pending': return 'Pending'
+                case 'approved': return 'Processing' // closest available server state
+                case 'ready-to-ship': return 'Processing'
+                case 'in-transit': return 'Shipped'
+                case 'delivered': return 'Delivered'
+                case 'cancelled': return 'Cancelled'
+                default: return undefined
+            }
+        }
+        const apiStatus = mapSlugToApiStatus(slug)
+        if (!apiStatus) return rows
+        return rows.filter(d => (d.status || '').toLowerCase() === apiStatus.toLowerCase())
+    }, [rows, initialStatus])
+
     return (
-        <DataTable columns={ordersColumns} data={filtered} />
+        <div className="w-full overflow-x-auto">
+            <div className="min-w-[800px]">
+                <DataTable columns={ordersColumns} data={filtered} />
+                {loading && <div className="px-3 py-2 text-sm text-gray-500">Loading orders…</div>}
+            </div>
+        </div>
     )
 }
 

@@ -1,6 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+import axios from 'axios';
+import { useSession } from 'next-auth/react';
+import type { Session } from 'next-auth';
+import { toast } from 'sonner';
 import BasicInfo from './BasicInfo';
 import ImageSection from './ImageSection';
 import PricingInventory from './PricingInventory';
@@ -76,6 +80,13 @@ export default function ProductForm() {
     metaDescription: '',
   });
 
+  const { data: session } = useSession();
+  type AugmentedSession = Session & { accessToken?: string; user?: Session['user'] & { role?: string } };
+  const s = session as AugmentedSession | null;
+  const token = s?.accessToken;
+  const userRole = s?.user?.role;
+  const [submitting, setSubmitting] = useState(false);
+
   const handleInputChange = (field: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -87,10 +98,86 @@ export default function ProductForm() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const uploadSingleImage = async (file: File): Promise<string> => {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await axios.post('/api/v1/image/upload', fd);
+    return res.data?.secure_url || res.data?.url || '';
+  };
+
+  const uploadMultipleImages = async (files: File[]): Promise<string[]> => {
+    const urls: string[] = [];
+    for (const f of files) {
+      const url = await uploadSingleImage(f);
+      if (url) urls.push(url);
+    }
+    return urls;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    // Handle form submission here
+    if (submitting) return;
+    try {
+      setSubmitting(true);
+
+      // Upload images
+      const thumbnailUrl = formData.thumbnailImage ? await uploadSingleImage(formData.thumbnailImage) : '';
+      let galleryUrls = formData.galleryImages?.length ? await uploadMultipleImages(formData.galleryImages) : [];
+      // Ensure at least one gallery image as per backend validation
+      if (galleryUrls.length === 0 && thumbnailUrl) {
+        galleryUrls = [thumbnailUrl];
+      }
+
+      // Build payload matching backend validation
+      const uniqueProductId = `${formData.productCode || 'PROD'}-${Date.now()}`;
+      const payload = {
+        productId: uniqueProductId,
+        productTitle: formData.title,
+        shortDescription: formData.shortDescription,
+        fullDescription: formData.fullDescription,
+        specification: formData.specification,
+        warrantyPolicy: formData.warrantyPolicy,
+        videoUrl: formData.videoUrl || undefined,
+        photoGallery: galleryUrls,
+        thumbnailImage: thumbnailUrl,
+        productPrice: Number(formData.price) || 0,
+        discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
+        stock: formData.stock ? Number(formData.stock) : undefined,
+        sku: formData.productCode || undefined,
+        rewardPoints: formData.rewardPoints ? Number(formData.rewardPoints) : undefined,
+        vendorStoreId: formData.store,
+        category: formData.category,
+        subCategory: formData.subcategory || undefined,
+        childCategory: formData.childCategory || undefined,
+        // omit brand if empty to avoid invalid ObjectId cast on backend
+        brand: formData.brand ? formData.brand : undefined,
+        productModel: formData.model || undefined,
+        flag: formData.flag || undefined,
+        warranty: formData.warranty,
+        weightUnit: formData.unit || undefined,
+        offerDeadline: formData.offerEndTime ? new Date(formData.offerEndTime) : undefined,
+        metaTitle: formData.metaTitle || undefined,
+        metaKeyword: formData.metaKeywords || undefined,
+        metaDescription: formData.metaDescription || undefined,
+        status: 'active' as const,
+      };
+
+      await axios.post('/api/v1/product', payload, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(userRole ? { 'x-user-role': userRole } : {}),
+          'Content-Type': 'application/json',
+        },
+      });
+
+      toast.success('Product saved successfully');
+      // Optionally reset minimal fields
+      setFormData(prev => ({ ...prev, galleryImages: [], thumbnailImage: null }));
+    } catch {
+      toast.error('Failed to save product');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDiscard = () => {
