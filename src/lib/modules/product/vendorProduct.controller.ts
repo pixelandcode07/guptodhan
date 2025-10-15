@@ -8,6 +8,7 @@ import {
 import { VendorProductServices } from './vendorProduct.service';
 import dbConnect from '@/lib/db';
 import { Types } from 'mongoose';
+import { get } from 'http';
 
 // Create a new vendor product
 const createVendorProduct = async (req: NextRequest) => {
@@ -54,6 +55,24 @@ const getAllVendorProducts = async () => {
     data: result,
   });
 };
+
+// Get vendor product by ID
+const getVendorProductById = async (
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) => {
+  await dbConnect();
+  const { id } = params;
+  const result = await VendorProductServices.getVendorProductByIdFromDB(id);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Vendor product retrieved successfully!',
+    data: result,
+  });
+};
+
 
 // Update vendor product
 const updateVendorProduct = async (
@@ -116,6 +135,7 @@ const deleteVendorProduct = async (
 export const VendorProductController = {
   createVendorProduct,
   getAllVendorProducts,
+  getVendorProductById,
   updateVendorProduct,
   deleteVendorProduct,
 };
