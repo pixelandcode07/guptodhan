@@ -1,72 +1,85 @@
 'use client';
 
-import { DataTable } from '@/components/TableHelper/data-table';
-import { faq_columns } from '@/components/TableHelper/faq_categories';
-import { Button } from '@/components/ui/button';
-import { Plus, Edit, Trash2, ArrowUpDown } from 'lucide-react';
+import { useState } from 'react';
 import Link from 'next/link';
-import React from 'react';
+import { DataTable } from '@/components/TableHelper/data-table';
+import { Button } from '@/components/ui/button';
+import { Plus, Edit, Trash2, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { useSession } from 'next-auth/react'; // ✅ useSession ইম্পোর্ট করুন
+import { ColumnDef } from '@tanstack/react-table';
+import { faq_columns } from '@/components/TableHelper/faq_categories';
+
+// ডেটার জন্য একটি টাইপ ডিফাইন করুন
+type FAQ = {
+  _id: string;
+  // আপনার FAQ মডেল অনুযায়ী অন্যান্য ফিল্ড যোগ করুন
+  question: string;
+  answer: string;
+  category: { name: string };
+  isActive: boolean;
+};
 
 interface FAQSTabileProps {
-  faq: any[];
-  refreshData?: () => void; // optional callback to refresh parent data
-  loading?: boolean;
+  initialFaqs: FAQ[];
 }
 
-export default function FAQSTabile({
-  faq,
-  refreshData,
-  loading,
-}: FAQSTabileProps) {
-  const deleteFAQ = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this FAQ?')) return;
+export default function FAQSTabile({ initialFaqs }: FAQSTabileProps) {
+  const { data: session } = useSession();
+  const token = (session as any)?.accessToken; // API কলের জন্য টোকেন নিন
 
-    const toastId = toast.loading('Deleting FAQ...');
-    try {
-      await axios.delete(`/api/v1/faq/${id}`);
-      toast.success('FAQ deleted successfully!', { id: toastId });
-      refreshData?.(); // refresh table after deletion
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to delete FAQ', { id: toastId });
-    }
+  const [faqs, setFaqs] = useState(initialFaqs);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  const deleteFAQ = async (id: string) => {
+    if (!token) return toast.error("Authentication required.");
+
+    toast("Are you sure you want to delete this FAQ?", {
+        action: {
+            label: "Delete",
+            onClick: async () => {
+                setIsDeleting(id);
+                try {
+                    await axios.delete(`/api/v1/faq/${id}`, {
+                        headers: { Authorization: `Bearer ${token}` } // ✅ টোকেন যোগ করুন
+                    });
+                    toast.success('FAQ deleted successfully!');
+                    setFaqs(prev => prev.filter((faq) => faq._id !== id));
+                } catch (error: any) {
+                    toast.error(error.response?.data?.message || 'Failed to delete FAQ');
+                } finally {
+                    setIsDeleting(null);
+                }
+            }
+        },
+        cancel: { label: "Cancel", onClick: () => {} }
+    });
   };
 
-  // Add actions column
-  const columnsWithActions = [
-    ...faq_columns,
+  // কলামের সাথে অ্যাকশন বাটন যোগ করা হচ্ছে
+  const columnsWithActions: ColumnDef<FAQ>[] = [
+    ...(faq_columns as ColumnDef<FAQ>[]),
     {
-      header: () => (
-        <div className="flex items-center">
-          Actions <ArrowUpDown className="ml-2 h-4 w-4" />
-        </div>
-      ),
-      accessorKey: 'actions',
-      cell: ({ row }: any) => {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }) => {
         const faqItem = row.original;
+        const isCurrentlyDeleting = isDeleting === faqItem._id;
         return (
           <div className="flex gap-2">
-            {/* Edit Button */}
-            <Link
-              href={{
-                pathname: '/general/view/all/faqs/edit',
-                query: {
-                  id: faqItem._id,
-                },
-              }}>
-              <Button size="sm" variant="outline">
+            <Button asChild size="sm" variant="outline" disabled={isCurrentlyDeleting}>
+              <Link href={`/general/view/all/faqs/edit?id=${faqItem._id}`}>
                 <Edit className="w-4 h-4" />
-              </Button>
-            </Link>
-
-            {/* Delete Button */}
+              </Link>
+            </Button>
             <Button
               size="sm"
               variant="destructive"
-              onClick={() => deleteFAQ(faqItem._id)}>
-              <Trash2 className="w-4 h-4" />
+              onClick={() => deleteFAQ(faqItem._id)}
+              disabled={isCurrentlyDeleting}
+            >
+              {isCurrentlyDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
             </Button>
           </div>
         );
@@ -76,7 +89,6 @@ export default function FAQSTabile({
 
   return (
     <div className="p-5">
-      {/* Top Buttons */}
       <div className="py-4 pr-5 flex justify-end gap-2">
         <Button size="sm" asChild>
           <Link href="/general/view/all/faqs/add">
@@ -84,17 +96,8 @@ export default function FAQSTabile({
             Add New FAQ
           </Link>
         </Button>
-
-        <Button size="sm" asChild>
-          <a href="#">
-            <Plus className="h-4 w-4 mr-2" />
-            Rearrange
-          </a>
-        </Button>
       </div>
-
-      {/* Data Table */}
-      <DataTable columns={columnsWithActions} data={faq} />
+      <DataTable columns={columnsWithActions} data={faqs} />
     </div>
   );
 }
