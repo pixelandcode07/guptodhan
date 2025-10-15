@@ -53,36 +53,68 @@ export default function BrandsClient() {
   const [featuredModalOpen, setFeaturedModalOpen] = useState(false)
   const [featuredBrand, setFeaturedBrand] = useState<Brand | null>(null)
 
-  const fetchBrands = async () => {
+  const fetchBrands = useCallback(async () => {
     setLoading(true)
     try {
       const { data } = await axios.get("/api/v1/product-config/brandName")
       const apiBrands: ApiBrand[] = data?.data || []
+      
+      // Fetch all categories, subcategories, and child categories for mapping
+      const [categoriesRes, subcategoriesRes, childCategoriesRes] = await Promise.all([
+        axios.get("/api/v1/ecommerce-category/ecomCategory", {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(userRole ? { "x-user-role": userRole } : {}),
+          },
+        }),
+        axios.get("/api/v1/ecommerce-category/ecomSubCategory", {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(userRole ? { "x-user-role": userRole } : {}),
+          },
+        }),
+        axios.get("/api/v1/ecommerce-category/ecomChildCategory", {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(userRole ? { "x-user-role": userRole } : {}),
+          },
+        }),
+      ])
+
+      const categories = categoriesRes.data?.data || []
+      const subcategories = subcategoriesRes.data?.data || []
+      const childCategories = childCategoriesRes.data?.data || []
+
+      // Create lookup maps
+      const categoryMap = new Map(categories.map((cat: any) => [cat._id, cat.name]))
+      const subcategoryMap = new Map(subcategories.map((sub: any) => [sub._id, sub.name]))
+      const childCategoryMap = new Map(childCategories.map((child: any) => [child._id, child.name]))
+
       const mapped: Brand[] = apiBrands.map((b, index) => ({
         _id: b._id,
         id: index + 1,
         name: b.name,
         logo: b.brandLogo,
         banner: b.brandBanner,
-        categories: b.category ? [b.category] : [],
-        subcategories: b.subCategory ? [b.subCategory] : [],
-        childcategories: b.childCategory ? [b.childCategory] : [],
+        categories: b.category ? [categoryMap.get(b.category) || b.category] : [],
+        subcategories: b.subCategory ? [subcategoryMap.get(b.subCategory) || b.subCategory] : [],
+        childcategories: b.childCategory ? [childCategoryMap.get(b.childCategory) || b.childCategory] : [],
         slug: b.brandId,
         status: b.status === "active" ? "Active" : "Inactive",
         featured: b.featured === "featured" ? "Featured" : "Not Featured",
         created_at: new Date(b.createdAt).toLocaleString(),
       }))
       setBrands(mapped)
-    } catch {
-      // ignore
+    } catch (error) {
+      console.error("Error fetching brands:", error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [token, userRole])
 
   useEffect(() => {
     fetchBrands()
-  }, [])
+  }, [fetchBrands])
 
   const onEdit = useCallback((brand: Brand) => {
     setEditing(brand)

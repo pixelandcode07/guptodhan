@@ -7,66 +7,157 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import SectionTitle from '@/components/ui/SectionTitle';
+import { useForm, SubmitHandler } from 'react-hook-form';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { useSession } from 'next-auth/react';
+import { Loader2 } from 'lucide-react';
+
+interface OgFormInputs {
+  ogTitle: string;
+  ogDescription: string;
+  ogImage: FileList | null;
+  existingOgImage?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords?: string;
+}
+
+const MAX_FILE_SIZE = 1 * 1024 * 1024; // ✅ 1MB in bytes
 
 export default function OpenGraphForm() {
-  const handleOgSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
-    console.log('Open Graph Form Data:', data);
-    alert('Open Graph Info Updated!');
+  const { data: session } = useSession();
+  const token = (session as any)?.accessToken;
+
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { register, handleSubmit, reset, watch, setValue } = useForm<OgFormInputs>();
+
+  const ogImageFile = watch('ogImage');
+  const existingOgImage = watch('existingOgImage');
+
+  useEffect(() => {
+    const fetchOgData = async () => {
+      try {
+        const res = await axios.get('/api/v1/public/seo-settings?page=homepage');
+        if (res.data.success && res.data.data) {
+          reset({
+            ogTitle: res.data.data.ogTitle,
+            ogDescription: res.data.data.ogDescription,
+            existingOgImage: res.data.data.ogImage,
+            metaTitle: res.data.data.metaTitle,
+            metaDescription: res.data.data.metaDescription,
+            metaKeywords: res.data.data.metaKeywords?.join(','),
+          });
+        }
+      } catch (error) {
+        toast.error("Could not load existing Open Graph data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOgData();
+  }, [reset]);
+
+  const handleOgSubmit: SubmitHandler<OgFormInputs> = async (data) => {
+    if (!token) return toast.error("Admin authentication failed.");
+
+    // ✅ Frontend validation for file size
+    if (data.ogImage && data.ogImage.length > 0) {
+      const file = data.ogImage[0];
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`Image size must be less than 1MB. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('pageIdentifier', 'homepage');
+      formData.append('ogTitle', data.ogTitle);
+      formData.append('ogDescription', data.ogDescription);
+      formData.append('metaTitle', data.metaTitle || data.ogTitle);
+      formData.append('metaDescription', data.metaDescription || data.ogDescription);
+      formData.append('metaKeywords', data.metaKeywords || '');
+      
+      if (data.ogImage && data.ogImage.length > 0) {
+        formData.append('ogImage', data.ogImage[0]);
+      }
+
+      await axios.post('/api/v1/seo-settings', formData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      toast.success('Open Graph Info Updated Successfully!');
+    } catch (err: any) {
+      console.error('Error:', err.response?.data);
+      toast.error(err.response?.data?.message || 'Update failed!');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (loading) {
+    return <div>Loading Open Graph form...</div>;
+  }
 
   return (
     <Card>
       <SectionTitle text="Meta Open Graph for HomePage" />
-      <CardContent className="space-y-4">
-        <form onSubmit={handleOgSubmit} className="space-y-4">
+      <CardContent>
+        <form onSubmit={handleSubmit(handleOgSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="meta_og_title">Meta OG Title</Label>
+            <Label htmlFor="ogTitle">Meta OG Title</Label>
             <Input
-              type="text"
-              id="meta_og_title"
-              name="meta_og_title"
-              defaultValue="GuptoDhan - Online Ecommerce Shopping"
+              id="ogTitle"
+              {...register("ogTitle", { required: true })}
               placeholder="Enter Meta OG Title Here"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="meta_og_description">Meta OG Description</Label>
+            <Label htmlFor="ogDescription">Meta OG Description</Label>
             <Textarea
-              id="meta_og_description"
-              name="meta_og_description"
+              id="ogDescription"
+              {...register("ogDescription", { required: true })}
               rows={5}
-              defaultValue="Guptodhan.com is a trusted online marketplace connecting buyers and sellers. Explore a diverse range of high-quality products, enjoy secure transactions, and find unbeatable deals—all in one place."
               placeholder="Write Meta OG Description Here"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="meta_og_image">Meta OG Image</Label>
+            <Label htmlFor="ogImage">Meta OG Image</Label>
+            <p className="text-xs text-muted-foreground">Maximum file size: 1MB</p>
             <Input
               type="file"
-              id="meta_og_image"
-              name="meta_og_image"
+              id="ogImage"
+              {...register("ogImage")}
               accept="image/*"
               className="cursor-pointer"
             />
-            <div className="mt-2">
-              <img
-                src="https://app-area.guptodhan.com/company_logo/ZjEXa1736918101.png"
-                alt="Current OG"
-                className="h-32 rounded border object-cover"
-              />
-            </div>
+            {(ogImageFile && ogImageFile.length > 0) || existingOgImage ? (
+              <div className="mt-2">
+                <img
+                  src={ogImageFile && ogImageFile.length > 0 ? URL.createObjectURL(ogImageFile[0]) : existingOgImage}
+                  alt="Current OG"
+                  className="h-32 rounded border object-cover"
+                />
+              </div>
+            ) : null}
           </div>
 
           <div className="flex justify-center space-x-4 pt-4">
-            <Button variant="destructive" asChild>
-              <a href="https://app-area.guptodhan.com/home">Cancel</a>
+            <Button type="button" variant="destructive">Cancel</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="animate-spin mr-2" />}
+              {isSubmitting ? 'Updating...' : 'Update Info'}
             </Button>
-            <Button type="submit">Update Info</Button>
           </div>
         </form>
       </CardContent>
