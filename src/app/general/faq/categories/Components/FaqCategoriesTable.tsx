@@ -11,9 +11,8 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import SectionTitle from '@/components/ui/SectionTitle';
-import { Edit, ListOrdered, Plus, Trash2 } from 'lucide-react';
+import { Edit, ListOrdered, Plus, Trash2, Loader2 } from 'lucide-react';
 import { DataTable } from '@/components/TableHelper/data-table';
-import { faq_categories_columns } from '@/components/TableHelper/faq_columns';
 import {
   Dialog,
   DialogContent,
@@ -21,191 +20,159 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { useSession } from 'next-auth/react';
+import { ColumnDef } from '@tanstack/react-table';
+import { Label } from '@/components/ui/label'; // ✅ FIX: Label ইম্পোর্ট করা হয়েছে
 
+// ডেটার টাইপ ডিফাইন করা হচ্ছে
 type FaqCategory = {
   _id: string;
   name: string;
   isActive: boolean;
 };
 
-export default function FaqCategoriesTable({ data }: { data: any[] }) {
-  const [categories, setCategories] = useState<FaqCategory[]>(data || []);
+interface FaqCategoriesTableProps {
+    initialData: FaqCategory[];
+}
+
+export default function FaqCategoriesTable({ initialData }: FaqCategoriesTableProps) {
+  const { data: session } = useSession();
+  const token = (session as any)?.accessToken;
+
+  const [categories, setCategories] = useState<FaqCategory[]>(initialData);
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [loadingAdd, setLoadingAdd] = useState(false);
-  const [loadingUpdateId, setLoadingUpdateId] = useState<string | null>(null);
-  const [loadingDeleteId, setLoadingDeleteId] = useState<string | null>(null);
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const apiBase = '/api/v1/faq-category';
 
-  useEffect(() => {
-    refreshData();
-  }, []);
-
-  // ✅ Load all categories
   const refreshData = async () => {
+    if (!token) return;
     try {
-      const res = await axios.get(apiBase);
-      const result = res.data?.data || res.data;
-      setCategories(result);
+      const res = await axios.get(apiBase, { headers: { Authorization: `Bearer ${token}` } });
+      setCategories(res.data?.data || []);
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to load categories');
+      toast.error('Failed to reload categories.');
     }
   };
 
-  // ✅ Add category
   const handleAdd = async (closeDialog: () => void) => {
-    if (!newCategoryName.trim()) return toast.error('Enter category name');
-    const payload = { name: newCategoryName, isActive: true };
-
+    if (!token) return toast.error('Authentication required.');
+    if (!newCategoryName.trim()) return toast.error('Category name is required.');
+    
+    setLoading(true);
     try {
-      setLoadingAdd(true);
-      const res = await axios.post(apiBase, payload);
-      if (res.data?.success) {
-        toast.success('Category added');
-        setNewCategoryName('');
-        closeDialog();
-        await refreshData();
-      } else {
-        toast.error(res.data?.message || 'Failed to add category');
-      }
+      await axios.post(apiBase, { name: newCategoryName }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Category added successfully!');
+      setNewCategoryName('');
+      closeDialog();
+      await refreshData();
     } catch (error: any) {
-      console.error(error);
-      toast.error(error.response?.data?.message || 'Failed to add category');
+      toast.error(error.response?.data?.message || 'Failed to add category.');
     } finally {
-      setLoadingAdd(false);
+      setLoading(false);
     }
   };
 
-  // ✅ Update category
-  const handleUpdate = async (
-    id: string,
-    name: string,
-    isActive: boolean,
-    closeDialog: () => void
-  ) => {
+  const handleUpdate = async (id: string, name: string, isActive: boolean, closeDialog: () => void) => {
+    if (!token) return toast.error('Authentication required.');
+    setLoading(true);
     try {
-      setLoadingUpdateId(id);
-      const res = await axios.patch(`${apiBase}/${id}`, { name, isActive });
-      if (res.data?.success) {
-        toast.success('Category updated');
-        closeDialog();
-        await refreshData();
-      } else {
-        toast.error(res.data?.message || 'Failed to update category');
-      }
+      await axios.patch(`${apiBase}/${id}`, { name, isActive }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Category updated successfully!');
+      closeDialog();
+      await refreshData();
     } catch (error: any) {
-      console.error(error);
-      toast.error(error.response?.data?.message || 'Failed to update category');
+      toast.error(error.response?.data?.message || 'Failed to update category.');
     } finally {
-      setLoadingUpdateId(null);
+      setLoading(false);
     }
   };
 
-  // ✅ Delete category
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure?')) return;
-    try {
-      setLoadingDeleteId(id);
-      toast.message('Deleting...', { duration: 1000 });
-      const res = await axios.delete(`${apiBase}/${id}`);
-      if (res.data?.success) {
-        toast.success('Deleted successfully');
-        await refreshData();
-      } else {
-        toast.error(res.data?.message || 'Failed to delete category');
-      }
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error.response?.data?.message || 'Failed to delete category');
-    } finally {
-      setLoadingDeleteId(null);
-    }
+  const handleDelete = (id: string) => {
+    if (!token) return toast.error('Authentication required.');
+    toast("Are you sure you want to delete this category?", {
+        description: "This action cannot be undone.",
+        action: {
+            label: "Delete",
+            onClick: async () => {
+                setLoading(true);
+                try {
+                    await axios.delete(`${apiBase}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+                    toast.success('Deleted successfully!');
+                    await refreshData();
+                } catch (error: any) {
+                    toast.error(error.response?.data?.message || 'Failed to delete category.');
+                } finally {
+                    setLoading(false);
+                }
+            }
+        },
+        cancel: {
+            label: "Cancel",
+            onClick: () => {}, // ✅ FIX: onClick ফাংশন যোগ করা হয়েছে
+        }
+    });
   };
 
-  // ✅ Columns with edit/delete actions
-  const columnsWithActions = [
-    ...faq_categories_columns,
+  // ✅ FIX: কলামগুলো FaqCategory টাইপের সাথে মেলানো হয়েছে
+  const columns: ColumnDef<FaqCategory>[] = [
     {
+        accessorKey: 'name',
+        header: 'Category Name',
+    },
+    {
+        accessorKey: 'isActive',
+        header: 'Status',
+        cell: ({ row }) => {
+            const isActive = row.original.isActive;
+            return <span className={`px-2 py-1 text-xs rounded-full ${isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{isActive ? 'Active' : 'Inactive'}</span>
+        }
+    },
+    {
+      id: 'actions',
       header: 'Actions',
-      cell: ({ row }: any) => {
-        const cat = row.original as FaqCategory;
+      cell: ({ row }) => {
+        const cat = row.original;
         const [editName, setEditName] = useState(cat.name);
-        const [editStatus, setEditStatus] = useState(
-          cat.isActive ? 'active' : 'inactive'
-        );
+        const [editStatus, setEditStatus] = useState(cat.isActive ? 'active' : 'inactive');
+        const [isModalOpen, setIsModalOpen] = useState(false);
 
         return (
           <div className="flex gap-2">
-            {/* Edit Button + Modal */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button size="sm" variant="outline">
-                  <Edit className="w-4 h-4" />
-                </Button>
-              </DialogTrigger>
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+              <DialogTrigger asChild><Button size="sm" variant="outline"><Edit className="w-4 h-4" /></Button></DialogTrigger>
               <DialogContent className="max-w-sm">
-                <DialogHeader>
-                  <DialogTitle>Edit Category</DialogTitle>
-                </DialogHeader>
+                <DialogHeader><DialogTitle>Edit Category</DialogTitle></DialogHeader>
                 <div className="space-y-3 py-2">
                   <div>
-                    <label className="text-sm font-medium">Category Name</label>
-                    <Input
-                      value={editName}
-                      onChange={e => setEditName(e.target.value)}
-                    />
+                    <Label>Category Name</Label>
+                    <Input value={editName} onChange={e => setEditName(e.target.value)} />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Status</label>
-                    <Select
-                      value={editStatus}
-                      onValueChange={v => setEditStatus(v)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
+                    <Label>Status</Label>
+                    <Select value={editStatus} onValueChange={(v) => setEditStatus(v as 'active' | 'inactive')}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="active">Active</SelectItem>
                         <SelectItem value="inactive">Inactive</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex justify-end gap-2 pt-2">
-                    <DialogClose asChild>
-                      <Button variant="outline">Cancel</Button>
-                    </DialogClose>
-                    <Button
-                      onClick={() =>
-                        handleUpdate(
-                          cat._id,
-                          editName,
-                          editStatus === 'active',
-                          () => setAddDialogOpen(false)
-                        )
-                      }
-                      disabled={loadingUpdateId === cat._id}>
-                      {loadingUpdateId === cat._id ? 'Updating...' : 'Update'}
-                    </Button>
-                  </div>
                 </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                    <Button onClick={() => handleUpdate(cat._id, editName, editStatus === 'active', () => setIsModalOpen(false))} disabled={loading}>
+                      {loading ? <Loader2 className="animate-spin" /> : 'Update'}
+                    </Button>
+                </DialogFooter>
               </DialogContent>
             </Dialog>
-
-            {/* Delete Button */}
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => handleDelete(cat._id)}
-              disabled={loadingDeleteId === cat._id}>
-              {loadingDeleteId === cat._id ? (
-                'Deleting...'
-              ) : (
-                <Trash2 className="w-4 h-4" />
-              )}
+            <Button size="sm" variant="destructive" onClick={() => handleDelete(cat._id)} disabled={loading}>
+              <Trash2 className="w-4 h-4" />
             </Button>
           </div>
         );
@@ -214,57 +181,28 @@ export default function FaqCategoriesTable({ data }: { data: any[] }) {
   ];
 
   return (
-    <div className="bg-white">
-      <div className="flex w-full justify-between items-center flex-wrap">
+    <div className="bg-white p-5">
+      <div className="flex w-full justify-between items-center flex-wrap mb-4">
         <SectionTitle text="View All FAQ Categories" />
+        <Dialog>
+          <DialogTrigger asChild><Button size="sm"><Plus className="h-4 w-4 mr-2" />Add New Category</Button></DialogTrigger>
+          <DialogContent className="max-w-sm">
+            <DialogHeader><DialogTitle>Add New Category</DialogTitle></DialogHeader>
+            <div className="space-y-3 py-2">
+              <Input placeholder="Enter category name..." value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} />
+            </div>
+             <DialogFooter>
+                <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                <DialogClose asChild>
+                    <Button onClick={() => handleAdd(() => {})} disabled={loading}>
+                        {loading ? <Loader2 className="animate-spin"/> : 'Save'}
+                    </Button>
+                </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      <div className="p-5">
-        <div className="py-4 flex justify-end gap-2">
-          <Button
-            size="sm"
-            onClick={() => toast.info('Rearrange not implemented')}>
-            <ListOrdered className="h-4 w-4 mr-2" />
-            Rearrange Category
-          </Button>
-
-          {/* Add New Category Dialog */}
-          <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add New Category
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-sm">
-              <DialogHeader>
-                <DialogTitle>Add Category</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-3 py-2">
-                <Input
-                  placeholder="Category name"
-                  value={newCategoryName}
-                  onChange={e => setNewCategoryName(e.target.value)}
-                />
-                <div className="flex justify-end gap-2 pt-2">
-                  <DialogClose asChild>
-                    <Button variant="outline">Cancel</Button>
-                  </DialogClose>
-                  <Button
-                    onClick={async () => {
-                      await handleAdd(() => setAddDialogOpen(false));
-                    }}
-                    disabled={loadingAdd}>
-                    {loadingAdd ? 'Adding...' : 'Save'}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        <DataTable columns={columnsWithActions} data={categories ?? []} />
-      </div>
+      <DataTable columns={columns} data={categories ?? []} />
     </div>
   );
 }
