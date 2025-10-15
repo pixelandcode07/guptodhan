@@ -1,52 +1,38 @@
-import axios from "axios";
 import BuyandSellAdds from "./BuyandSellAdds";
 import BuyandSellBanner from "./BuyandSellBanner";
 import BuyandSellItems from "./BuyandSellItems";
 
+// ✅ Import your service functions directly
+import { ClassifiedBannerServices } from '@/lib/modules/classifieds-banner/banner.service';
+import { ClassifiedCategoryServices } from '@/lib/modules/classifieds-category/category.service';
+import dbConnect from '@/lib/db';
+
 export interface CategoryDataType {
     _id: string;
     name: string;
-    icon?: 'string | undefined';
+    icon?: string; // ✅ Corrected the type
     status: 'active' | 'inactive';
 }
 
-
-const fetchBanner = async () => {
-    try {
-        const baseUrl = process.env.NEXTAUTH_URL;
-        // console.log("baseUrl:", baseUrl)
-        const { data: postedData } = await axios.get(`${baseUrl}/api/v1/public/classifieds-banners`);
-        // console.log("PostedData:", postedData);
-        return postedData.data || [];
-    } catch (error) {
-        console.error("Error fetching posts:", error);
-        return [];
-    }
-};
-
-const getAllCategories = async () => {
-    try {
-        const baseUrl = process.env.NEXTAUTH_URL;
-        // const { data: allCategory } = await axios.get(`${baseUrl}/api/v1/public/classifieds-categories`)
-        const { data: allCategory } = await axios.get(`${baseUrl}/api/v1/public/categories-with-subcategories`)
-        console.log("allCategory", allCategory)
-        return allCategory.data || [];
-    } catch (error) {
-        console.log('Unable to get all categories', error)
-        return [];
-    }
-}
-
-
-
-
+// This is now an async Server Component that fetches data directly
 export default async function BuyandSellHome() {
-    const banner = await fetchBanner();
-    const allCategory = await getAllCategories()
+    // Directly connect to the DB and call the service functions on the server
+    await dbConnect();
+    
+    // Fetch banner and category data in parallel for better performance
+    const [bannerData, categoryData] = await Promise.all([
+        ClassifiedBannerServices.getAllPublicBannersFromDB(),
+        ClassifiedCategoryServices.getCategoriesWithSubcategoriesFromDB()
+    ]);
+
+    // Convert Mongoose documents to plain objects to safely pass to client components
+    const banners = JSON.parse(JSON.stringify(bannerData));
+    const allCategories = JSON.parse(JSON.stringify(categoryData));
+
     return (
         <div className='mt-5 max-w-7xl mx-auto'>
-            <BuyandSellBanner banner={banner} />
-            <BuyandSellItems allCategory={allCategory} />
+            <BuyandSellBanner banner={banners} />
+            <BuyandSellItems allCategory={allCategories} />
             <BuyandSellAdds />
         </div>
     )
