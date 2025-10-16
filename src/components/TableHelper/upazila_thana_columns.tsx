@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Edit, Trash2 } from "lucide-react"
 
 export type UpazilaThana = {
+  _id?: string
   id: number
   district: string
   upazila_thana_english: string
@@ -12,7 +13,12 @@ export type UpazilaThana = {
   website: string
 }
 
-export const upazila_thana_columns: ColumnDef<UpazilaThana>[] = [
+export type UpazilaThanaColumnHandlers = {
+  onEdit: (row: UpazilaThana) => void
+  onDelete: (row: UpazilaThana) => void
+}
+
+export const getUpazilaThanaColumns = ({ onEdit, onDelete }: UpazilaThanaColumnHandlers): ColumnDef<UpazilaThana>[] => [
   {
     accessorKey: "id",
     header: "SL",
@@ -68,13 +74,14 @@ export const upazila_thana_columns: ColumnDef<UpazilaThana>[] = [
   {
     id: "action",
     header: "Action",
-    cell: () => {
+    cell: ({ row }) => {
+      const record = row.original as UpazilaThana
       return (
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50">
+          <Button onClick={() => onEdit(record)} variant="ghost" size="sm" className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50">
             <Edit className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+          <Button onClick={() => onDelete(record)} variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
             <Trash2 className="w-4 h-4" />
           </Button>
         </div>

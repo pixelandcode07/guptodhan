@@ -6,7 +6,7 @@ import { Save, X, AlertCircle } from 'lucide-react';
 
 interface ActionButtonsProps {
   onDiscard: () => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (e: React.FormEvent) => void; // ✅ FIX: Added the missing onSubmit prop
   isSubmitting?: boolean;
 }
 
@@ -38,6 +38,7 @@ export default function ActionButtons({ onDiscard, onSubmit, isSubmitting = fals
             <Save className="w-4 h-4" />
             {isSubmitting ? 'Saving...' : 'Save Product'}
           </Button>
+          
         </div>
       </div>
     </div>

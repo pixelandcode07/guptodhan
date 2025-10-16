@@ -1,336 +1,116 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
 
+// --- Type Definitions ---
+interface Category { _id: string; name: string; status: 'active' | 'inactive'; }
+interface SubCategory extends Category { category: string; }
+interface ChildCategory extends Category { subCategory: string; }
+
 interface CategorySelectionProps {
-  formData: {
-    category: string;
-    subcategory: string;
-    childCategory: string;
-  };
-  handleInputChange: (field: string, value: unknown) => void;
+    formData: {
+        category: string;
+        subcategory: string;
+        childCategory: string;
+    };
+    handleInputChange: (field: string, value: string) => void;
+    categories: Category[];
 }
 
-interface Category {
-  _id: string;
-  categoryId: string;
-  name: string;
-  status: 'active' | 'inactive';
-}
+export default function CategorySelection({ formData, handleInputChange, categories = [] }: CategorySelectionProps) {
+    const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+    const [childCategories, setChildCategories] = useState<ChildCategory[]>([]);
+    const [loading, setLoading] = useState({ sub: false, child: false });
 
-interface SubCategory {
-  _id: string;
-  subCategoryId: string;
-  name: string;
-  status: 'active' | 'inactive';
-}
+    const { data: session } = useSession();
+    const token = (session as any)?.accessToken;
 
-interface ChildCategory {
-  _id: string;
-  childCategoryId: string;
-  category: string;
-  subCategory: string | { _id: string };
-  name: string;
-  status: 'active' | 'inactive';
-}
+    // Fetch sub-categories when parent category changes
+    useEffect(() => {
+        const fetchSubCategories = async (categoryId: string) => {
+            if (!categoryId || !token) return;
+            setLoading(prev => ({ ...prev, sub: true }));
+            try {
+                const res = await axios.get(`/api/v1/ecommerce-category/ecomSubCategory/category/${categoryId}`, { headers: { Authorization: `Bearer ${token}` } });
+                setSubCategories(res.data?.data?.filter((s: SubCategory) => s.status === 'active') || []);
+            } catch (error) { console.error('Failed to fetch subcategories:', error); } 
+            finally { setLoading(prev => ({ ...prev, sub: false })); }
+        };
 
-export default function CategorySelection({ formData, handleInputChange }: CategorySelectionProps) {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
-  const [childCategories, setChildCategories] = useState<ChildCategory[]>([]);
-  const [loading, setLoading] = useState({
-    categories: false,
-    subCategories: false,
-    childCategories: false,
-  });
-  
-  // Simple cache to avoid repeated API calls
-  const subCategoryCacheRef = useRef<Record<string, SubCategory[]>>({});
-  const handleInputChangeRef = useRef(handleInputChange);
+        if (formData.category) {
+            fetchSubCategories(formData.category);
+        }
+    }, [formData.category, token]);
 
-  // Update ref when handleInputChange changes
-  useEffect(() => {
-    handleInputChangeRef.current = handleInputChange;
-  }, [handleInputChange]);
+    // Fetch child-categories when sub-category changes
+    useEffect(() => {
+        const fetchChildCategories = async (subCategoryId: string) => {
+            if (!subCategoryId || !token) return;
+            setLoading(prev => ({ ...prev, child: true }));
+            try {
+                // Assuming you have an endpoint to get child categories by sub-category ID
+                const res = await axios.get(`/api/v1/ecommerce-category/ecomChildCategory?subCategory=${subCategoryId}`, { headers: { Authorization: `Bearer ${token}` } });
+                setChildCategories(res.data?.data?.filter((c: ChildCategory) => c.status === 'active') || []);
+            } catch (error) { console.error('Failed to fetch child categories:', error); }
+            finally { setLoading(prev => ({ ...prev, child: false })); }
+        };
 
-  const { data: session } = useSession();
-  type Session = {
-    user?: { role?: string; id?: string };
-    accessToken?: string;
-  };
-  const s = session as Session | null;
-  const token = s?.accessToken;
-  const userRole = s?.user?.role;
+        if (formData.subcategory) {
+            fetchChildCategories(formData.subcategory);
+        }
+    }, [formData.subcategory, token]);
 
-  // Fetch categories
-  const fetchCategories = useCallback(async () => {
-    try {
-      setLoading(prev => ({ ...prev, categories: true }));
-      const response = await axios.get('/api/v1/ecommerce-category/ecomCategory', {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(userRole ? { "x-user-role": userRole } : {}),
-        },
-      });
-      
-      const activeCategories = response.data?.data?.filter((cat: Category) => cat.status === 'active') || [];
-      setCategories(activeCategories);
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
-    } finally {
-      setLoading(prev => ({ ...prev, categories: false }));
-    }
-  }, [token, userRole]);
+    // ✅ FIX: Reset logic is now handled in these functions to prevent infinite loops
+    const handleCategoryChange = (value: string) => {
+        handleInputChange('category', value);
+        handleInputChange('subcategory', '');
+        handleInputChange('childCategory', '');
+        setSubCategories([]);
+        setChildCategories([]);
+    };
 
-  // Fetch subcategories by category
-  const fetchSubCategories = useCallback(async (categoryId: string) => {
-    if (!categoryId) {
-      setSubCategories([]);
-      setChildCategories([]);
-      return;
-    }
+    const handleSubCategoryChange = (value: string) => {
+        handleInputChange('subcategory', value);
+        handleInputChange('childCategory', '');
+        setChildCategories([]);
+    };
 
-    // Check cache first
-    if (subCategoryCacheRef.current[categoryId]) {
-      setSubCategories(subCategoryCacheRef.current[categoryId]);
-      handleInputChangeRef.current('subcategory', '');
-      handleInputChangeRef.current('childCategory', '');
-      return;
-    }
-
-    try {
-      setLoading(prev => ({ ...prev, subCategories: true }));
-      console.log('🔄 Fetching subcategories for category:', categoryId);
-      
-      // Add timeout to prevent hanging requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      
-      const response = await axios.get(`/api/v1/ecommerce-category/ecomSubCategory/category/${categoryId}`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(userRole ? { "x-user-role": userRole } : {}),
-        },
-        signal: controller.signal,
-      });
-      
-      clearTimeout(timeoutId);
-      console.log('✅ Subcategories fetched successfully:', response.data?.data?.length || 0, 'items');
-      
-      const activeSubCategories = response.data?.data?.filter((sub: SubCategory) => sub.status === 'active') || [];
-      
-      // Cache the result
-      subCategoryCacheRef.current[categoryId] = activeSubCategories;
-      setSubCategories(activeSubCategories);
-      
-      // Reset child category when subcategory changes
-      handleInputChangeRef.current('subcategory', '');
-      handleInputChangeRef.current('childCategory', '');
-    } catch (error) {
-      console.error('❌ Failed to fetch subcategories:', error);
-      if (error instanceof Error && error.name === 'AbortError') {
-        console.error('⏰ Request timed out');
-      }
-    } finally {
-      setLoading(prev => ({ ...prev, subCategories: false }));
-    }
-  }, [token, userRole]);
-
-  // Fetch child categories by subcategory
-  const fetchChildCategories = useCallback(async (subCategoryId: string) => {
-    if (!subCategoryId) {
-      setChildCategories([]);
-      return;
-    }
-
-    try {
-      setLoading(prev => ({ ...prev, childCategories: true }));
-      console.log('🔄 Fetching child categories for subcategory:', subCategoryId);
-      
-      const response = await axios.get('/api/v1/ecommerce-category/ecomChildCategory', {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(userRole ? { "x-user-role": userRole } : {}),
-        },
-      });
-      
-      console.log('📦 All child categories:', response.data?.data);
-      
-      // Filter child categories by subcategory and status
-      const allChildCategories = response.data?.data || [];
-      const filteredChildCategories = allChildCategories.filter((child: ChildCategory) => {
-        // Handle both string and ObjectId comparison
-        const subCategoryMatch = child.subCategory === subCategoryId || 
-                                (typeof child.subCategory === 'object' && child.subCategory?._id === subCategoryId) ||
-                                child.subCategory?.toString() === subCategoryId;
-        
-        console.log('🔍 Checking child:', {
-          childId: child._id,
-          childSubCategory: child.subCategory,
-          targetSubCategory: subCategoryId,
-          status: child.status,
-          subCategoryMatch,
-          isActive: child.status === 'active',
-          finalMatch: child.status === 'active' && subCategoryMatch
-        });
-        
-        return child.status === 'active' && subCategoryMatch;
-      });
-      
-      console.log('✅ Filtered child categories:', filteredChildCategories);
-      setChildCategories(filteredChildCategories);
-      
-      // Reset child category when subcategory changes
-      handleInputChangeRef.current('childCategory', '');
-    } catch (error) {
-      console.error('❌ Failed to fetch child categories:', error);
-    } finally {
-      setLoading(prev => ({ ...prev, childCategories: false }));
-    }
-  }, [token, userRole]);
-
-  // Load categories on component mount
-  useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
-
-  // Load subcategories when category changes
-  useEffect(() => {
-    if (formData.category) {
-      fetchSubCategories(formData.category);
-    }
-  }, [formData.category, fetchSubCategories]);
-
-  // Load child categories when subcategory changes
-  useEffect(() => {
-    if (formData.subcategory) {
-      fetchChildCategories(formData.subcategory);
-    }
-  }, [formData.subcategory, fetchChildCategories]);
-
-  const handleCategoryChange = (value: string) => {
-    handleInputChange('category', value);
-  };
-
-  const handleSubCategoryChange = (value: string) => {
-    handleInputChange('subcategory', value);
-  };
-
-  const handleChildCategoryChange = (value: string) => {
-    handleInputChange('childCategory', value);
-  };
-
-  return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
-      <h2 className="text-lg font-semibold text-gray-900 border-b pb-2 mb-6">
-        Category Selection
-      </h2>
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div>
-          <Label className="text-sm font-medium">
-            Main Category<span className="text-red-500">*</span>
-          </Label>
-          <Select 
-            value={formData.category} 
-            onValueChange={handleCategoryChange}
-            disabled={loading.categories}
-          >
-            <SelectTrigger className="mt-1">
-              <SelectValue placeholder={loading.categories ? "Loading..." : "Select Category"} />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((category) => (
-                <SelectItem key={category._id} value={category._id}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <Label className="text-sm font-medium">Subcategory</Label>
-          <Select 
-            value={formData.subcategory} 
-            onValueChange={handleSubCategoryChange}
-            disabled={!formData.category || loading.subCategories}
-          >
-            <SelectTrigger className="mt-1">
-              <SelectValue placeholder={
-                !formData.category 
-                  ? "Select category first" 
-                  : loading.subCategories 
-                    ? "Loading subcategories..." 
-                    : "Select Subcategory"
-              } />
-            </SelectTrigger>
-            <SelectContent>
-              {loading.subCategories ? (
-                <div className="flex items-center justify-center p-4">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                  <span className="ml-2 text-sm text-gray-500">Loading...</span>
+    return (
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-gray-900 border-b pb-2 mb-6">Category Selection</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div>
+                    <Label>Main Category<span className="text-red-500">*</span></Label>
+                    <Select value={formData.category} onValueChange={handleCategoryChange} disabled={!categories}>
+                        <SelectTrigger className="mt-1"><SelectValue placeholder={!categories ? "Loading..." : "Select Category"} /></SelectTrigger>
+                        <SelectContent>
+                            {categories?.map((cat) => (<SelectItem key={cat._id} value={cat._id}>{cat.name}</SelectItem>))}
+                        </SelectContent>
+                    </Select>
                 </div>
-              ) : (
-                subCategories.map((subCategory) => (
-                  <SelectItem key={subCategory._id} value={subCategory._id}>
-                    {subCategory.name}
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-          {loading.subCategories && (
-            <p className="text-xs text-blue-600 mt-1">Fetching subcategories...</p>
-          )}
-        </div>
-
-        <div>
-          <Label className="text-sm font-medium">Child Category</Label>
-          <Select 
-            value={formData.childCategory} 
-            onValueChange={handleChildCategoryChange}
-            disabled={!formData.subcategory || loading.childCategories}
-          >
-            <SelectTrigger className="mt-1">
-              <SelectValue placeholder={
-                !formData.subcategory 
-                  ? "Select subcategory first" 
-                  : loading.childCategories 
-                    ? "Loading child categories..." 
-                    : "Select Child Category"
-              } />
-            </SelectTrigger>
-            <SelectContent>
-              {loading.childCategories ? (
-                <div className="flex items-center justify-center p-4">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                  <span className="ml-2 text-sm text-gray-500">Loading...</span>
+                <div>
+                    <Label>Subcategory</Label>
+                    <Select value={formData.subcategory} onValueChange={handleSubCategoryChange} disabled={!formData.category || loading.sub}>
+                        <SelectTrigger className="mt-1"><SelectValue placeholder={!formData.category ? "Select category first" : loading.sub ? "Loading..." : "Select Subcategory"} /></SelectTrigger>
+                        <SelectContent>
+                            {subCategories.map((sub) => (<SelectItem key={sub._id} value={sub._id}>{sub.name}</SelectItem>))}
+                        </SelectContent>
+                    </Select>
                 </div>
-              ) : (
-                childCategories.map((childCategory) => (
-                  <SelectItem key={childCategory._id} value={childCategory._id}>
-                    {childCategory.name}
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-          {loading.childCategories && (
-            <p className="text-xs text-blue-600 mt-1">Fetching child categories...</p>
-          )}
+                <div>
+                    <Label>Child Category</Label>
+                    <Select value={formData.childCategory} onValueChange={(v) => handleInputChange('childCategory', v)} disabled={!formData.subcategory || loading.child}>
+                        <SelectTrigger className="mt-1"><SelectValue placeholder={!formData.subcategory ? "Select subcategory first" : loading.child ? "Loading..." : "Select Child Category"} /></SelectTrigger>
+                        <SelectContent>
+                            {childCategories.map((child) => (<SelectItem key={child._id} value={child._id}>{child.name}</SelectItem>))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }
