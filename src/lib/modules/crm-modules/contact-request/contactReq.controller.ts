@@ -30,9 +30,12 @@ const getAllContactRequests = async (_req: NextRequest) => {
   });
 };
 
-const getContactRequestById = async (_req: NextRequest, { params }: { params: { id: string } }) => {
+const getContactRequestById = async (
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   const result = await ContactRequestServices.getContactRequestByIdFromDB(id);
 
   return sendResponse({
@@ -43,9 +46,12 @@ const getContactRequestById = async (_req: NextRequest, { params }: { params: { 
   });
 };
 
-const updateContactRequest = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const updateContactRequest = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   const body = await req.json();
   const validatedData = updateContactRequestValidationSchema.parse(body);
   const result = await ContactRequestServices.updateContactRequestInDB(id, validatedData);
@@ -58,9 +64,12 @@ const updateContactRequest = async (req: NextRequest, { params }: { params: { id
   });
 };
 
-const deleteContactRequest = async (_req: NextRequest, { params }: { params: { id: string } }) => {
+const deleteContactRequest = async (
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   await ContactRequestServices.deleteContactRequestFromDB(id);
 
   return sendResponse({
