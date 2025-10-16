@@ -34,7 +34,7 @@ export interface IVendorProduct extends Document {
   subCategory?: Types.ObjectId;
   childCategory?: Types.ObjectId;
   brand?: Types.ObjectId;
-  productModel?: string;
+  productModel?: Types.ObjectId;
   flag?: string;
   warranty: string;
   weightUnit?: string;

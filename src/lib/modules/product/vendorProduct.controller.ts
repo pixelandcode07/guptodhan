@@ -8,40 +8,55 @@ import {
 import { VendorProductServices } from './vendorProduct.service';
 import dbConnect from '@/lib/db';
 import { Types } from 'mongoose';
-import { get } from 'http';
+import { IVendorProduct } from './vendorProduct.interface';
 
 // Create a new vendor product
 const createVendorProduct = async (req: NextRequest) => {
-  await dbConnect();
-  const body = await req.json();
-  const validatedData = createVendorProductValidationSchema.parse(body);
+  try {
+    await dbConnect();
+    const body = await req.json();
+    const validatedData = createVendorProductValidationSchema.parse(body);
 
-  const payload = {
-    ...validatedData,
-    category: new Types.ObjectId(validatedData.category),
-    subCategory: validatedData.subCategory
-      ? new Types.ObjectId(validatedData.subCategory)
-      : undefined,
-    childCategory: validatedData.childCategory
-      ? new Types.ObjectId(validatedData.childCategory)
-      : undefined,
-    brand: validatedData.brand
-      ? new Types.ObjectId(validatedData.brand)
-      : undefined,
+    const payload: Partial<IVendorProduct> = {
+      ...validatedData,
+      category: new Types.ObjectId(validatedData.category),
+      subCategory: validatedData.subCategory
+        ? new Types.ObjectId(validatedData.subCategory)
+        : undefined,
+      childCategory: validatedData.childCategory
+        ? new Types.ObjectId(validatedData.childCategory)
+        : undefined,
+      brand: validatedData.brand
+        ? new Types.ObjectId(validatedData.brand)
+        : undefined,
+      productModel: validatedData.productModel
+        ? new Types.ObjectId(validatedData.productModel)
+        : undefined,
+      productOptions: validatedData.productOptions ?? [],
+    };
 
-    // ✅ include productOptions if provided
-    productOptions: validatedData.productOptions ?? [],
-  };
+    console.log("Payload:", payload);
 
-  const result = await VendorProductServices.createVendorProductInDB(payload);
+    const result = await VendorProductServices.createVendorProductInDB(payload);
 
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.CREATED,
-    message: 'Vendor product created successfully!',
-    data: result,
-  });
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.CREATED,
+      message: "Vendor product created successfully!",
+      data: result,
+    });
+  } catch (err) {
+    console.error("Error creating vendor product:", err);
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: "Something went wrong while saving the product.",
+      data: null,
+    });
+  }
 };
+
+
 
 // Get all vendor products
 const getAllVendorProducts = async () => {
@@ -74,46 +89,45 @@ const getVendorProductById = async (
 };
 
 
-// Update vendor product
 const updateVendorProduct = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   const body = await req.json();
   const validatedData = updateVendorProductValidationSchema.parse(body);
 
+  // ⚙️ এখানে আমরা টাইপ কাস্ট করছি ObjectId এর সাথে compatible করতে
   const payload = {
     ...validatedData,
-    ...(validatedData.category && {
-      category: new Types.ObjectId(validatedData.category),
-    }),
-    ...(validatedData.subCategory && {
-      subCategory: new Types.ObjectId(validatedData.subCategory),
-    }),
-    ...(validatedData.childCategory && {
-      childCategory: new Types.ObjectId(validatedData.childCategory),
-    }),
-    ...(validatedData.brand && {
-      brand: new Types.ObjectId(validatedData.brand),
-    }),
-
-    // ✅ update productOptions too
-    ...(validatedData.productOptions && {
-      productOptions: validatedData.productOptions,
-    }),
-  };
+    category: validatedData.category
+      ? new Types.ObjectId(validatedData.category)
+      : undefined,
+    subCategory: validatedData.subCategory
+      ? new Types.ObjectId(validatedData.subCategory)
+      : undefined,
+    childCategory: validatedData.childCategory
+      ? new Types.ObjectId(validatedData.childCategory)
+      : undefined,
+    brand: validatedData.brand
+      ? new Types.ObjectId(validatedData.brand)
+      : undefined,
+    productModel: validatedData.productModel
+      ? new Types.ObjectId(validatedData.productModel)
+      : undefined,
+  } as Partial<IVendorProduct>; // ✅ এখানে cast করে দিলাম
 
   const result = await VendorProductServices.updateVendorProductInDB(id, payload);
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Vendor product updated successfully!',
+    message: "Vendor product updated successfully!",
     data: result,
   });
 };
+
 
 // Delete vendor product
 const deleteVendorProduct = async (

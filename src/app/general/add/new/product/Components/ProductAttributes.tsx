@@ -13,12 +13,10 @@ import { useSession } from 'next-auth/react';
 import axios from 'axios';
 
 interface ProductAttributesProps {
-  formData: {
-    flag: string;
-    warranty: string;
-    unit: string;
-  };
+  formData: { flag: string; warranty: string; unit: string; };
   handleInputChange: (field: string, value: unknown) => void;
+  flags?: any[]; // ✅ FIX: Added the missing 'flags' prop
+  units?: any[]; // ✅ FIX: Added the missing 'units' prop
 }
 
 type ProductFlag = {

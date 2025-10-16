@@ -14,10 +14,9 @@ import type { Session } from 'next-auth';
 import axios from 'axios';
 
 interface StoreSelectionProps {
-  formData: {
-    store: string;
-  };
+  formData: { store: string; };
   handleInputChange: (field: string, value: unknown) => void;
+  stores?: any[]; // ✅ FIX: Added the missing 'stores' prop
 }
 
 export default function StoreSelection({ formData, handleInputChange }: StoreSelectionProps) {

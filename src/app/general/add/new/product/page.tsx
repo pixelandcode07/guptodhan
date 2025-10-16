@@ -1,7 +1,35 @@
-
 import ProductForm from './Components/ProductForm';
+import { BrandServices } from '@/lib/modules/brand/brand.service'; // Assuming BrandService exists
+// Assuming WarrantyService exists if it's separate from product config
+import dbConnect from '@/lib/db';
+import { StoreServices } from '@/lib/modules/vendor-store/vendorStore.service';
+import { CategoryServices } from '@/lib/modules/ecommerce-category/services/ecomCategory.service';
+import { ProductFlagServices } from '@/lib/modules/product-config/services/productFlag.service';
+import { ProductUnitServices } from '@/lib/modules/product-config/services/productUnit.service';
 
-export default function page() {
+// This is now an async Server Component
+export default async function AddNewProductPage() {
+    await dbConnect();
+
+    // Fetch all necessary dropdown data in parallel on the server
+    const [storesData, categoriesData, brandsData, flagsData, unitsData] = await Promise.all([
+        StoreServices.getAllStoresFromDB(), // Assuming this fetches all stores
+        CategoryServices.getAllCategoriesFromDB(), // Assuming this fetches all categories
+        BrandServices.getAllBrandsFromDB(), // Assuming this fetches all brands
+        ProductFlagServices.getAllProductFlagsFromDB(), // Assuming this fetches all flags
+        ProductUnitServices.getAllProductUnitsFromDB(), // Assuming this fetches all units
+        // Add more service calls for models, warranties, etc. as needed
+    ]);
+
+    // Pass fetched data as props (convert Mongoose docs to plain objects)
+   const initialProps = {
+        stores: JSON.parse(JSON.stringify(storesData || [])),
+        categories: JSON.parse(JSON.stringify(categoriesData || [])),
+        brands: JSON.parse(JSON.stringify(brandsData || [])),
+        flags: JSON.parse(JSON.stringify(flagsData || [])),
+        units: JSON.parse(JSON.stringify(unitsData || [])),
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
             <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">
@@ -20,7 +48,8 @@ export default function page() {
                         </div>
                     </div>
                 </div>
-                <ProductForm />
+                {/* Pass all initial data to the ProductForm */}
+                <ProductForm initialData={initialProps} />
             </div>
         </div>
     );
