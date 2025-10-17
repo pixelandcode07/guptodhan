@@ -19,6 +19,8 @@ const createVendorProduct = async (req: NextRequest) => {
 
     const payload: Partial<IVendorProduct> = {
       ...validatedData,
+      // ✅ **পরিবর্তন:** vendorStoreId-কে ObjectId-তে রূপান্তর করা হয়েছে
+      vendorStoreId: new Types.ObjectId(validatedData.vendorStoreId),
       category: new Types.ObjectId(validatedData.category),
       subCategory: validatedData.subCategory
         ? new Types.ObjectId(validatedData.subCategory)
@@ -34,8 +36,6 @@ const createVendorProduct = async (req: NextRequest) => {
         : undefined,
       productOptions: validatedData.productOptions ?? [],
     };
-
-    console.log("Payload:", payload);
 
     const result = await VendorProductServices.createVendorProductInDB(payload);
 

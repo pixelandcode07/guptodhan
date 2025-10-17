@@ -1,33 +1,55 @@
-import ProductForm from './Components/ProductForm';
-import { BrandServices } from '@/lib/modules/brand/brand.service'; // Assuming BrandService exists
-// Assuming WarrantyService exists if it's separate from product config
 import dbConnect from '@/lib/db';
+import ProductForm from './Components/ProductForm';
 import { StoreServices } from '@/lib/modules/vendor-store/vendorStore.service';
 import { CategoryServices } from '@/lib/modules/ecommerce-category/services/ecomCategory.service';
+import { BrandServices } from '@/lib/modules/brand/brand.service';
 import { ProductFlagServices } from '@/lib/modules/product-config/services/productFlag.service';
 import { ProductUnitServices } from '@/lib/modules/product-config/services/productUnit.service';
+import { ModelFormServices } from '@/lib/modules/product-config/services/modelCreate.service';
+import { ProductWarrantyServices } from '@/lib/modules/product-config/services/warranty.service';
+import { ProductColorServices } from '@/lib/modules/product-config/services/productColor.service';
+import { ProductSimTypeServices } from '@/lib/modules/product-config/services/productSimType.service';
+import { ProductSizeServices } from '@/lib/modules/product-config/services/productSize.service';
+import { DeviceConditionServices } from '@/lib/modules/product-config/services/deviceCondition.service';
+import { StorageTypeServices } from '@/lib/modules/product-config/services/storageType.service';
 
-// This is now an async Server Component
+// This is an async Server Component
 export default async function AddNewProductPage() {
     await dbConnect();
 
     // Fetch all necessary dropdown data in parallel on the server
-    const [storesData, categoriesData, brandsData, flagsData, unitsData] = await Promise.all([
-        StoreServices.getAllStoresFromDB(), // Assuming this fetches all stores
-        CategoryServices.getAllCategoriesFromDB(), // Assuming this fetches all categories
-        BrandServices.getAllBrandsFromDB(), // Assuming this fetches all brands
-        ProductFlagServices.getAllProductFlagsFromDB(), // Assuming this fetches all flags
-        ProductUnitServices.getAllProductUnitsFromDB(), // Assuming this fetches all units
-        // Add more service calls for models, warranties, etc. as needed
+    const [
+        storesData, 
+        categoriesData, 
+        brandsData, 
+        flagsData, 
+        unitsData,
+        modelsData,     // Added
+        warrantiesData  // Added
+    ] = await Promise.all([
+        StoreServices.getAllStoresFromDB(),
+        CategoryServices.getAllCategoriesFromDB(),
+        BrandServices.getAllBrandsFromDB(),
+        ProductFlagServices.getAllProductFlagsFromDB(),
+        ProductUnitServices.getAllProductUnitsFromDB(),
+        ModelFormServices.getAllModelFormsFromDB(), // Assuming this service method exists
+        ProductWarrantyServices.getAllProductWarrantiesFromDB(), 
+        ProductSimTypeServices.getAllProductSimTypesFromDB(), // Assuming method exists
+        ProductColorServices.getAllProductColorsFromDB(),     // Assuming method exists
+        ProductSizeServices.getAllProductSizesFromDB(),       // Assuming method exists
+        DeviceConditionServices.getAllDeviceConditionsFromDB(),
+        StorageTypeServices.getAllStorageTypesFromDB(),
     ]);
 
     // Pass fetched data as props (convert Mongoose docs to plain objects)
-   const initialProps = {
+    const initialData = {
         stores: JSON.parse(JSON.stringify(storesData || [])),
         categories: JSON.parse(JSON.stringify(categoriesData || [])),
         brands: JSON.parse(JSON.stringify(brandsData || [])),
         flags: JSON.parse(JSON.stringify(flagsData || [])),
         units: JSON.parse(JSON.stringify(unitsData || [])),
+        models: JSON.parse(JSON.stringify(modelsData || [])),         // Added
+        warranties: JSON.parse(JSON.stringify(warrantiesData || [])), // Added
     };
 
     return (
@@ -49,7 +71,7 @@ export default async function AddNewProductPage() {
                     </div>
                 </div>
                 {/* Pass all initial data to the ProductForm */}
-                <ProductForm initialData={initialProps} />
+                <ProductForm initialData={initialData} />
             </div>
         </div>
     );
