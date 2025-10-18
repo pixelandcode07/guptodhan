@@ -163,5 +163,12 @@ const deleteAd = async (req: NextRequest, { params }: { params: { id: string } }
   return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad deleted', data: null });
 };
 
-export const ClassifiedAdController = { createAd, getAllAds, getSingleAd, updateAd, deleteAd, getPublicAds,
-  getPublicAdById, };
+export const ClassifiedAdController = { 
+  createAd, 
+  getAllAds, 
+  getSingleAd, 
+  updateAd, 
+  deleteAd, 
+  getPublicAds,
+  getPublicAdById, 
+};
