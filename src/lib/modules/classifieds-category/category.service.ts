@@ -105,6 +105,54 @@ const getCategoryByIdFromDB = async (id: string) => {
   return result;
 };
 
+
+// ✅ getPublicCategoriesWithCountsFromDB
+const getPublicCategoriesWithCountsFromDB = async () => {
+  try {
+    const categoriesWithCounts = await ClassifiedCategory.aggregate([
+      // ১️⃣ শুধুমাত্র active category নাও
+      { $match: { status: 'active' } },
+
+      // ২️⃣ classifiedads collection থেকে JOIN করো
+      {
+        $lookup: {
+          from: 'classifiedads',
+          localField: '_id',
+          foreignField: 'category',
+          pipeline: [{ $match: { status: 'active' } }],
+          as: 'ads',
+        },
+      },
+
+      // ৩️⃣ adCount যোগ করো
+      {
+        $addFields: {
+          adCount: { $size: '$ads' },
+        },
+      },
+
+      // ৪️⃣ শুধু দরকারি field রাখো
+      {
+        $project: {
+          name: 1,
+          icon: 1,
+          status: 1,
+          adCount: 1,
+        },
+      },
+
+      // ৫️⃣ নাম অনুযায়ী sort করো
+      { $sort: { name: 1 } },
+    ]);
+
+    return categoriesWithCounts;
+  } catch (error) {
+    console.error('Error fetching categories with ad counts:', error);
+    return [];
+  }
+};
+
+
 export const ClassifiedCategoryServices = {
   createCategoryInDB,
   getAllCategoriesFromDB,
@@ -113,4 +161,5 @@ export const ClassifiedCategoryServices = {
   getCategoriesWithSubcategoriesFromDB,
   getPublicCategoriesFromDB,
   getCategoryByIdFromDB,
+  getPublicCategoriesWithCountsFromDB,
 };

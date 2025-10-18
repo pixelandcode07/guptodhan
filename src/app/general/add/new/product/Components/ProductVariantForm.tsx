@@ -11,7 +11,7 @@ interface DropdownOption {
     _id: string;
     name?: string;
     warrantyName?: string;
-    deviceCondition?: string; // ✅ পরিবর্তন: নতুন ফিল্ড যোগ করা হয়েছে
+    deviceCondition?: string;
     colorName?: string;
     ram?: string;
     rom?: string;

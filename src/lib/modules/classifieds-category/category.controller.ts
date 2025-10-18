@@ -146,6 +146,18 @@ const getCategoryById = async (
         data: result,
     });
 };
+// ✅ NEW: Get public categories with ad counts
+const getPublicCategoriesWithCounts = async (_req: NextRequest) => {
+  await dbConnect();
+  const result = await ClassifiedCategoryServices.getPublicCategoriesWithCountsFromDB();
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Public categories with ad counts retrieved successfully!',
+    data: result,
+  });
+};
 
 // Export all controller functions
 export const ClassifiedCategoryController = {
@@ -156,4 +168,5 @@ export const ClassifiedCategoryController = {
     getCategoriesWithSubcategories,
     getPublicCategories,
     getCategoryById,
+    getPublicCategoriesWithCounts,
 };
