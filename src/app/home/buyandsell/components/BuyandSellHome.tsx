@@ -1,3 +1,4 @@
+import axios from "axios";
 import BuyandSellAdds from "./BuyandSellAdds";
 import BuyandSellBanner from "./BuyandSellBanner";
 import BuyandSellItems from "./BuyandSellItems";
@@ -49,8 +50,8 @@ export default async function BuyandSellHome() {
     console.log("allCategory=====>", allCategory)
     return (
         <div className='mt-5 max-w-7xl mx-auto'>
-            <BuyandSellBanner banner={banners} />
-            <BuyandSellItems allCategory={allCategories} />
+            <BuyandSellBanner banner={banner} />
+            <BuyandSellItems allCategory={allCategory} />
             <BuyandSellAdds />
         </div>
     )
