@@ -9,7 +9,11 @@ const createBlogInDB = async (payload: Partial<IBlog>) => {
 };
 
 // Get all active blogs (optional: sorted by createdAt descending)
-const getAllBlogsFromDB = async (filters: { category?: string; status?: string; searchTerm?: string }) => {
+const getAllBlogsFromDB = async (filters: {
+  category?: string;
+  status?: string;
+  searchTerm?: string;
+}) => {
   const { category, status, searchTerm } = filters;
   const query: any = {};
 
@@ -32,9 +36,9 @@ const getAllBlogsFromDB = async (filters: { category?: string; status?: string; 
 
 // Get blogs by category
 const getBlogsByCategoryFromDB = async (categoryId: string) => {
-  const result = await BlogModel.find({ 
-    category: new Types.ObjectId(categoryId), 
-    status: 'active' 
+  const result = await BlogModel.find({
+    category: new Types.ObjectId(categoryId),
+    status: 'active',
   }).sort({ createdAt: -1 });
   return result;
 };
@@ -43,7 +47,7 @@ const getBlogsByCategoryFromDB = async (categoryId: string) => {
 const updateBlogInDB = async (id: string, payload: Partial<IBlog>) => {
   const result = await BlogModel.findByIdAndUpdate(id, payload, { new: true });
   if (!result) {
-    throw new Error("Blog not found to update.");
+    throw new Error('Blog not found to update.');
   }
   return result;
 };
@@ -52,7 +56,7 @@ const updateBlogInDB = async (id: string, payload: Partial<IBlog>) => {
 const deleteBlogFromDB = async (id: string) => {
   const result = await BlogModel.findByIdAndDelete(id);
   if (!result) {
-    throw new Error("Blog not found to delete.");
+    throw new Error('Blog not found to delete.');
   }
   return null;
 };

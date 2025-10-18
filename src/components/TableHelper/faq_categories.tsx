@@ -14,7 +14,7 @@ export type StoresDataType = {
 
 export const faq_columns: ColumnDef<StoresDataType>[] = [
   {
-    accessorKey: 'id',
+    accessorKey: '_id',
     header: 'SL',
   },
   {
@@ -22,7 +22,7 @@ export const faq_columns: ColumnDef<StoresDataType>[] = [
     header: 'Category',
   },
   {
-    accessorKey: 'qustion',
+    accessorKey: 'question',
     header: 'Qustion',
   },
   {
@@ -32,20 +32,17 @@ export const faq_columns: ColumnDef<StoresDataType>[] = [
   {
     accessorKey: 'status',
     header: 'Status',
-  },
-  {
-    accessorKey: 'action',
-    header: 'Action',
-    cell: () => {
+    cell: ({ row }: any) => {
+      const isActive = row.original.isActive; // true বা false
       return (
-        <div className="flex items-center gap-2">
-          <Button className="bg-yellow-400 hover:bg-yellow-500 text-black cursor-pointer">
-            <Edit />
-          </Button>
-          <Button className="bg-red-700 hover:bg-red-800 text-white cursor-pointer">
-            <DeleteIcon />
-          </Button>
-        </div>
+        <span
+          className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${
+            isActive
+              ? 'bg-green-100 text-green-700 border-green-300'
+              : 'bg-red-100 text-red-700 border-red-300'
+          }`}>
+          {isActive ? 'Active' : 'Inactive'}
+        </span>
       );
     },
   },

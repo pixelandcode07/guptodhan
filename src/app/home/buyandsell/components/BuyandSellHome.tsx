@@ -1,16 +1,11 @@
-import axios from "axios";
 import BuyandSellAdds from "./BuyandSellAdds";
 import BuyandSellBanner from "./BuyandSellBanner";
 import BuyandSellItems from "./BuyandSellItems";
-// import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-// import { getServerSession } from "next-auth";
-// import { useAllPublicCategory } from "@/lib/actions/getAllPublicCategoryAds";
-// import { headers } from "next/headers";
 
 export interface CategoryDataType {
     _id: string;
     name: string;
-    icon?: 'string | undefined';
+    icon?: string; // ✅ Corrected the type
     status: 'active' | 'inactive';
 }
 
@@ -54,8 +49,8 @@ export default async function BuyandSellHome() {
     console.log("allCategory=====>", allCategory)
     return (
         <div className='mt-5 max-w-7xl mx-auto'>
-            <BuyandSellBanner banner={banner} />
-            <BuyandSellItems allCategory={allCategory} />
+            <BuyandSellBanner banner={banners} />
+            <BuyandSellItems allCategory={allCategories} />
             <BuyandSellAdds />
         </div>
     )

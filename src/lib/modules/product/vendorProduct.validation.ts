@@ -16,6 +16,9 @@ const productOptionValidationSchema = z.object({
 
 // Create vendor product validation
 export const createVendorProductValidationSchema = z.object({
+  // ✅ **পরিবর্তন:** vendorStoreId যোগ করা হয়েছে
+  vendorStoreId: z.string().min(1, { message: 'Store ID is required.' }),
+
   productId: z.string().min(1, { message: 'Product ID is required.' }),
   productTitle: z.string().min(1, { message: 'Product title is required.' }),
   shortDescription: z
@@ -47,13 +50,14 @@ export const createVendorProductValidationSchema = z.object({
   metaKeyword: z.string().optional(),
   metaDescription: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),
-
-  // productOptions: optional array of options
   productOptions: z.array(productOptionValidationSchema).optional(),
 });
 
 // Update vendor product validation
 export const updateVendorProductValidationSchema = z.object({
+  // ✅ **পরিবর্তন:** vendorStoreId যোগ করা হয়েছে
+  vendorStoreId: z.string().optional(),
+
   productId: z.string().optional(),
   productTitle: z.string().optional(),
   shortDescription: z.string().max(255).optional(),
@@ -82,7 +86,5 @@ export const updateVendorProductValidationSchema = z.object({
   metaKeyword: z.string().optional(),
   metaDescription: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),
-
-  // productOptions: optional array of options
   productOptions: z.array(productOptionValidationSchema).optional(),
 });

@@ -1,37 +1,24 @@
-import { seystem_users_columns } from '@/components/TableHelper/system_users_columns';
 import SectionTitle from '@/components/ui/SectionTitle';
-import UsersFilter from './Components/UserFilter';
+import UserTabile from './Components/UserTabile';
+import { UserServices } from '@/lib/modules/user/user.service'; // ✅ Import your service directly
+import dbConnect from '@/lib/db'; // ✅ Import your database connection
 
-// Example data (fetched from server)
-const userData = [
-  {
-    id: 1,
-    name: 'Amir Hamja',
-    email: 'amir@gmail.com',
-    phone: '01816500800',
-    address: 'Dhaka',
-    createDate: '2025-06-24 12:04:11 pm',
-    userType: 'Revoke SuperAdmin',
-  },
-  {
-    id: 2,
-    name: 'Amir Hamja',
-    email: 'amir@gmail.com',
-    phone: '01816500800',
-    address: 'Dhaka',
-    createDate: '2025-06-24 12:04:11 pm',
-    userType: 'Make SuperAdmin',
-  },
-];
+// This is now an async Server Component
+export default async function UsersPage() {
+  // Directly connect to the DB and call the service function on the server
+  await dbConnect();
+  // Assuming you have a service function to get all users
+  const usersData = await UserServices.getAllUsersFromDB();
 
-export default function UsersPage() {
   return (
     <div className="pb-6 pt-5 space-y-6 bg-white">
       <SectionTitle text="System Users List" />
-
       <div className="px-5">
-        {/* Client-side Filter/Search */}
-        <UsersFilter data={userData} columns={seystem_users_columns} />
+        {/* Pass the fetched data as a prop to the client component.
+          JSON.parse(JSON.stringify(...)) converts the Mongoose document
+          to a plain object, which is safe to pass from Server to Client Components.
+        */}
+        <UserTabile data={JSON.parse(JSON.stringify(usersData))} />
       </div>
     </div>
   );

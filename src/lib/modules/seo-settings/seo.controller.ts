@@ -8,12 +8,21 @@ import { createOrUpdateSeoSchema } from './seo.validation';
 import { SeoSettingsServices } from './seo.service';
 import dbConnect from '@/lib/db';
 
+const MAX_FILE_SIZE = 1 * 1024 * 1024;
+
 const createOrUpdateSeoSettings = async (req: NextRequest) => {
     await dbConnect();
     const formData = await req.formData();
     
     const payload: Record<string, any> = {};
     const ogImageFile = formData.get('ogImage') as File | null;
+
+    // ✅ Backend validation for file size
+    if (ogImageFile && ogImageFile.size > 0) {
+        if (ogImageFile.size > MAX_FILE_SIZE) {
+            throw new Error(`Image size must be less than 1MB. Current size: ${(ogImageFile.size / 1024 / 1024).toFixed(2)}MB`);
+        }
+    }
 
     for (const [key, value] of formData.entries()) {
         if (key !== 'ogImage' && typeof value === 'string') {
@@ -32,7 +41,12 @@ const createOrUpdateSeoSettings = async (req: NextRequest) => {
     
     const result = await SeoSettingsServices.createOrUpdateSeoSettingsInDB(pageIdentifier, seoData);
     
-    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'SEO settings updated successfully!', data: result });
+    return sendResponse({ 
+        success: true, 
+        statusCode: StatusCodes.OK, 
+        message: 'SEO settings updated successfully!', 
+        data: result 
+    });
 };
 
 const getPublicSeoSettings = async (req: NextRequest) => {

@@ -109,9 +109,9 @@ const getAllSubCategories = async () => {
 };
 
 // Get subcategories by category
-const getSubCategoriesByCategory = async (req: NextRequest, { params }: { params: { categoryId: string } }) => {
+const getSubCategoriesByCategory = async (req: NextRequest, { params }: { params: Promise<{ categoryId: string }> }) => {
   await dbConnect();
-  const { categoryId } = params;
+  const { categoryId } = await params;
   const result = await SubCategoryServices.getSubCategoriesByCategoryFromDB(categoryId);
 
   return sendResponse({
@@ -213,9 +213,9 @@ const updateSubCategory = async (req: NextRequest, { params }: { params: Promise
 };
 
 // Delete subcategory
-const deleteSubCategory = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const deleteSubCategory = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   await SubCategoryServices.deleteSubCategoryFromDB(id);
 
   return sendResponse({

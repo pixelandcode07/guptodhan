@@ -1,28 +1,18 @@
-// app/custom-code/page.tsx
 import SectionTitle from '@/components/ui/SectionTitle';
 import CodeSnippet from './Components/CodeSnipate';
-import axios from 'axios';
+import { CustomCodeServices } from '@/lib/modules/custom-code/customCode.service'; // Import your service
+import dbConnect from '@/lib/db'; // Import your database connection
 
-const fetchCodes = async () => {
-  try {
-    const baseUrl = process.env.NEXTAUTH_URL;
-
-    const { data } = await axios.get(`${baseUrl}/api/v1/public/custom-code`);
-
-    return data;
-  } catch (error) {
-    console.log('fatch settings Error', error);
-  }
-};
-
-export default async function Page() {
-  const codeData = await fetchCodes();
-  console.log(codeData);
+// This is now an async Server Component
+export default async function CustomCodePage() {
+  // Directly connect to the DB and call the service function
+  await dbConnect();
+  const codeData = await CustomCodeServices.getPublicCodeFromDB();
 
   return (
     <div className="p-6 space-y-6">
       <SectionTitle text="Custom CSS & JS Form" />
-      <CodeSnippet initialData={codeData.data} />
+      <CodeSnippet initialData={JSON.parse(JSON.stringify(codeData))} />
     </div>
   );
 }

@@ -1,25 +1,24 @@
-import axios from 'axios';
+import { SocialLinksServices } from '@/lib/modules/social-links/social-links.service'; // ✅ Import the correct service
+import dbConnect from '@/lib/db';
 import SocialLinks from '../../Components/Social_links';
+import SectionTitle from '@/components/ui/SectionTitle';
 
-export default async function page() {
-  let socailLinks = null;
-  try {
-    const res = await axios.get(
-      'http://localhost:3000/api/v1/public/footer-widgets',
-      {
-        headers: { 'Cache-Control': 'no-store' },
-      }
-    );
+// This is now an async Server Component
+export default async function SocialLinksPage() {
+  // Directly connect to the DB and call the service function on the server
+  await dbConnect();
+  const socialLinksData = await SocialLinksServices.getPublicSocialLinksFromDB();
 
-    if (
-      res.data?.success &&
-      Array.isArray(res.data.data) &&
-      res.data.data.length > 0
-    ) {
-      socailLinks = res.data.data[0];
-    }
-  } catch (err: any) {
-    console.error('API Error:', err.response?.data || err.message);
-  }
-  return <SocialLinks socialLink={socailLinks} />;
+  return (
+    <div className="bg-white p-4 sm:p-6 min-h-screen">
+        <SectionTitle text="Manage Social Media Links" />
+        <div className="mt-4">
+            {/* Pass the fetched data as a prop to the client component.
+              JSON.parse(JSON.stringify(...)) is used to convert the Mongoose document
+              to a plain object, which is safe to pass from Server to Client Components.
+            */}
+            <SocialLinks initialData={JSON.parse(JSON.stringify(socialLinksData))} />
+        </div>
+    </div>
+  );
 }

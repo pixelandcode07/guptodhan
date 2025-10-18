@@ -1,3 +1,4 @@
+import { get } from 'http';
 import { IVendorProduct } from './vendorProduct.interface';
 import { VendorProductModel } from './vendorProduct.model';
 import { Types } from 'mongoose';
@@ -31,6 +32,16 @@ const getVendorProductsByBrandFromDB = async (brandId: string) => {
   }).sort({ productTitle: 1 });
   return result;
 };
+
+// Get vendor product by ID
+const getVendorProductByIdFromDB = async (id: string) => {
+  const result = await VendorProductModel.findById(id);
+  if (!result) {
+    throw new Error('Vendor product not found');
+  }
+  return result;
+};
+
 
 // Update vendor product (including productOptions if provided)
 const updateVendorProductInDB = async (id: string, payload: Partial<IVendorProduct>) => {
@@ -80,6 +91,7 @@ const removeProductOptionFromDB = async (id: string, index: number) => {
 export const VendorProductServices = {
   createVendorProductInDB,
   getAllVendorProductsFromDB,
+  getVendorProductByIdFromDB,
   getVendorProductsByCategoryFromDB,
   getVendorProductsByBrandFromDB,
   updateVendorProductInDB,

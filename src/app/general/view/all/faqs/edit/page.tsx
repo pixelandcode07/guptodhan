@@ -1,6 +1,7 @@
-// src/app/(your-path)/FAQEditForm.tsx
 'use client';
 
+import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,56 +13,88 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useState } from 'react';
+import { toast } from 'sonner';
+import axios from 'axios';
+import Loadding from '../Components/Loadding';
 
-type FAQEditFormProps = {
-  id: number;
-  categoryId: string;
-  question: string;
-  answer: string;
-  onSuccess?: () => void; // callback after successful update
-};
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
 
-export default function FAQEditForm({
-  id,
-  categoryId,
-  question: initialQuestion,
-  answer: initialAnswer,
-  onSuccess,
-}: FAQEditFormProps) {
-  const [category, setCategory] = useState(categoryId);
-  const [question, setQuestion] = useState(initialQuestion);
-  const [answer, setAnswer] = useState(initialAnswer);
+export default function FAQEditForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id'); // ✅ URL থেকে ID নিচ্ছে
+
+  const [categories, setCategories] = useState<any[]>([]);
+  const [category, setCategory] = useState('');
+  const [question, setQuestion] = useState('');
+  const [answer, setAnswer] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
 
+  const faqApi = `/api/v1/faq`;
+  const categoryApi = `/api/v1/faq-category`;
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!id) return;
+
+      try {
+        // 🔹 Load all categories
+        const catRes = await axios.get(categoryApi);
+        setCategories(catRes.data?.data || []);
+
+        // 🔹 Get all FAQs then filter by ID
+        const faqRes = await axios.get(faqApi);
+        const allFaqs = faqRes.data?.data || [];
+        const singleFaq = allFaqs.find((item: any) => item._id === id);
+
+        if (singleFaq) {
+          setQuestion(singleFaq.question || '');
+          setAnswer(singleFaq.answer || '');
+          setCategory(singleFaq.category?._id || singleFaq.category || '');
+        } else {
+          toast.error('FAQ not found');
+        }
+      } catch (error) {
+        console.error('Fetch error:', error);
+        toast.error('Failed to load FAQ data');
+      } finally {
+        setFetching(false);
+      }
+    };
+    fetchData();
+  }, [id]);
+
+  // ✅ Update FAQ
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!category || !question || !answer)
+      return toast.error('All fields are required');
+
     setLoading(true);
-
-    const formData = new FormData();
-    formData.append('category_id', category);
-    formData.append('question', question);
-    formData.append('answer', answer);
-
     try {
-      const res = await fetch(`http://localhost:3000/api/v1/faq/${id}`, {
-        method: 'PUT',
-        body: formData,
-      });
+      const payload = { category, question, answer };
 
-      if (res.ok) {
-        alert('FAQ updated successfully!');
-        onSuccess?.(); // trigger parent callback
+      const res = await axios.patch(`${faqApi}/${id}`, payload);
+
+      if (res.data?.success) {
+        toast.success('FAQ updated successfully!');
+        router.push('/general/view/all/faqs');
       } else {
-        alert('Failed to update FAQ.');
+        toast.error(res.data?.message || 'Update failed');
       }
-    } catch (err) {
-      console.error(err);
-      alert('Error updating FAQ.');
+    } catch (error: any) {
+      console.error('Update error:', error);
+      toast.error(error.response?.data?.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }
   };
+
+  if (fetching) {
+    return <Loadding />;
+  }
 
   return (
     <div className="card bg-white shadow rounded p-6">
@@ -69,22 +102,29 @@ export default function FAQEditForm({
       <form onSubmit={handleUpdate} className="space-y-6">
         {/* Category */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-          <Label htmlFor="category_id" className="w-full sm:w-1/5">
+          <Label htmlFor="category" className="w-full sm:w-1/5">
             Category <span className="text-red-500">*</span>
           </Label>
           <Select
             value={category}
             onValueChange={setCategory}
             required
-            className="w-full sm:w-4/5"
-          >
+            className="w-full sm:w-4/5">
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select One" />
+              <SelectValue placeholder="Select Category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="6">Orders & Returns</SelectItem>
-              <SelectItem value="5">Payment</SelectItem>
-              <SelectItem value="3">Shipping Information</SelectItem>
+              {categories.length > 0 ? (
+                categories.map(cat => (
+                  <SelectItem key={cat._id} value={cat._id}>
+                    {cat.name || cat.categoryName}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem disabled value="">
+                  No categories found
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -97,7 +137,7 @@ export default function FAQEditForm({
           <Input
             id="question"
             type="text"
-            placeholder="Question"
+            placeholder="Enter question"
             value={question}
             onChange={e => setQuestion(e.target.value)}
             className="w-full sm:w-4/5"
@@ -112,7 +152,8 @@ export default function FAQEditForm({
           </Label>
           <Textarea
             id="answer"
-            rows={10}
+            rows={8}
+            placeholder="Write the answer..."
             value={answer}
             onChange={e => setAnswer(e.target.value)}
             className="w-full sm:w-4/5"
@@ -120,7 +161,7 @@ export default function FAQEditForm({
           />
         </div>
 
-        {/* Submit Button */}
+        {/* Submit */}
         <div className="flex justify-start">
           <Button type="submit" disabled={loading}>
             {loading ? 'Updating...' : 'Update FAQ'}
