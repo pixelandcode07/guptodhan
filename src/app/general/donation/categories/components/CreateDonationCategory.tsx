@@ -47,7 +47,7 @@ export default function CreateDonationCategory() {
       })
 
       toast.success("Category created successfully!")
-      router.push("/general/categories?page=view-category") // redirect to view tab
+      router.push("/general/donation/categories?page=view-category") // redirect to view tab
     } catch (error) {
       console.log(error)
       toast.error("Failed to create category")

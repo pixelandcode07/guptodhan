@@ -15,16 +15,7 @@ export default function ViewAllDonationCategory() {
 
     const fetchCategories = async () => {
         try {
-            // Fetch from the endpoint that populates subCategories (includes category ID in subCategories)
             const res = await axios.get("/api/v1/public/donation-categories")
-            // Ensure subCategories have 'category' field (from lookup, it should be available if projected)
-            // const enrichedData = (res.data.data || []).map((cat: ViewBuySellDataType) => ({
-            //     ...cat,
-            //     subCategories: cat.subCategories?.map((sub: SubCategoryType) => ({
-            //         ...sub,
-            //         category: cat._id // Explicitly set parent category ID in each subCategory
-            //     })) || []
-            // }));
             setCategories(res.data.data || [])
         } catch (error) {
             console.log(error)
@@ -43,7 +34,7 @@ export default function ViewAllDonationCategory() {
                 label: "Delete",
                 onClick: async () => {
                     try {
-                        await axios.delete(`/api/v1/classifieds-categories/${_id}`, {
+                        await axios.delete(`/api/v1/donation-categories/${_id}`, {
                             headers: {
                                 Authorization: `Bearer ${token}`,
                                 "x-user-role": adminRole,

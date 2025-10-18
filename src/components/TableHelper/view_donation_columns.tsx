@@ -79,7 +79,7 @@ export const view_donation_columns = (handleDelete: (_id: string) => void): Colu
           <DropdownMenuContent align="end">
             <DropdownMenuItem asChild>
               <Link
-                href={`/general/edit/buy/sell/category/${documentId}`}
+                href={`/general/edit/donation/category/${documentId}`}
                 className="flex items-center gap-2 w-full"
               >
                 <Edit className="h-4 w-4 text-yellow-500" />

@@ -7,7 +7,8 @@ const createCategoryInDB = async (payload: Partial<IDonationCategory>) => {
 };
 
 const getActiveCategoriesFromDB = async () => {
-  return await DonationCategory.find({ status: 'active' }).sort({ name: 1 });
+  return await DonationCategory.find().sort({ name: 1 });
+  // { status: 'active' }
 };
 
 const getAllCategoriesForAdminFromDB = async () => {
