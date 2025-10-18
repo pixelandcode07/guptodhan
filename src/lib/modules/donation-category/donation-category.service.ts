@@ -17,10 +17,10 @@ const getAllCategoriesForAdminFromDB = async () => {
 const updateCategoryInDB = async (id: string, payload: Partial<IDonationCategory>) => {
   // If a new icon is being uploaded, we should delete the old one first
   if (payload.icon) {
-      const existingCategory = await DonationCategory.findById(id);
-      if (existingCategory?.icon) {
-          await deleteFromCloudinary(existingCategory.icon);
-      }
+    const existingCategory = await DonationCategory.findById(id);
+    if (existingCategory?.icon) {
+      await deleteFromCloudinary(existingCategory.icon);
+    }
   }
   return await DonationCategory.findByIdAndUpdate(id, payload, { new: true });
 };
@@ -60,7 +60,7 @@ export const DonationCategoryServices = {
   getActiveCategoriesFromDB,
   getAllCategoriesForAdminFromDB,
   updateCategoryInDB,
-  deleteCategoryFromDB, 
+  deleteCategoryFromDB,
   getCategoryByIdFromDB,
   getCategoryByIdForAdminFromDB,
 };
