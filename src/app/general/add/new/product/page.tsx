@@ -2,7 +2,7 @@ import dbConnect from '@/lib/db';
 import ProductForm from './Components/ProductForm';
 import { StoreServices } from '@/lib/modules/vendor-store/vendorStore.service';
 import { CategoryServices } from '@/lib/modules/ecommerce-category/services/ecomCategory.service';
-import { BrandServices } from '@/lib/modules/brand/brand.service';
+import { BrandServices as ProductConfigBrandServices } from '@/lib/modules/product-config/services/brandName.service';
 import { ProductFlagServices } from '@/lib/modules/product-config/services/productFlag.service';
 import { ProductUnitServices } from '@/lib/modules/product-config/services/productUnit.service';
 import { ModelFormServices } from '@/lib/modules/product-config/services/modelCreate.service';
@@ -29,7 +29,7 @@ export default async function AddNewProductPage() {
     ] = await Promise.all([
         StoreServices.getAllStoresFromDB(),
         CategoryServices.getAllCategoriesFromDB(),
-        BrandServices.getAllBrandsFromDB(),
+        ProductConfigBrandServices.getAllBrandsFromDB(),
         ProductFlagServices.getAllProductFlagsFromDB(),
         ProductUnitServices.getAllProductUnitsFromDB(),
         ModelFormServices.getAllModelFormsFromDB(), // Assuming this service method exists

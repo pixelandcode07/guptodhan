@@ -18,7 +18,13 @@ export type Product = {
   created_at: string
 }
 
-export const product_columns: ColumnDef<Product>[] = [
+export type ProductColumnHandlers = {
+  onView?: (product: Product) => void
+  onEdit?: (product: Product) => void
+  onDelete?: (product: Product) => void
+}
+
+export const getProductColumns = ({ onView, onEdit, onDelete }: ProductColumnHandlers): ColumnDef<Product>[] => [
   {
     accessorKey: "id",
     header: "SL",
@@ -126,18 +132,21 @@ export const product_columns: ColumnDef<Product>[] = [
   {
     id: "action",
     header: "Action",
-    cell: () => {
+    cell: ({ row }) => {
+      const product = row.original as Product
       return (
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700 hover:bg-green-50">
             <Eye className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50">
+          <Button onClick={() => onEdit?.(product)} variant="ghost" size="sm" className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50">
             <Edit className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          {onDelete && (
+            <Button onClick={() => onDelete(product)} variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       )
     },

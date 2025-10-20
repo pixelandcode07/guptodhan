@@ -4,6 +4,7 @@ import React, { useState, FormEvent, useEffect } from 'react';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 // Import UI Components
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,11 @@ import ProductImageGallery from './ProductImageGallery';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function ProductForm({ initialData }: any) {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const productId = searchParams?.get('id');
+    const isEditMode = !!productId;
+    
     // --- State Management ---
     const [title, setTitle] = useState('');
     const [shortDescription, setShortDescription] = useState('');
@@ -32,6 +38,7 @@ export default function ProductForm({ initialData }: any) {
     const [thumbnail, setThumbnail] = useState<File | null>(null);
     const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
     const [galleryImages, setGalleryImages] = useState<File[]>([]);
+    const [galleryImagePreviews, setGalleryImagePreviews] = useState<string[]>([]);
 
     const [rewardPoints, setRewardPoints] = useState(0);
     const [productCode, setProductCode] = useState('');
@@ -74,7 +81,24 @@ export default function ProductForm({ initialData }: any) {
         const fetchChildCategories = async () => { if (subcategory && token) { try { const res = await axios.get(`/api/v1/ecommerce-category/ecomChildCategory?subCategoryId=${subcategory}`, { headers: { Authorization: `Bearer ${token}` } }); setChildCategories(res.data?.data || []); setChildCategory(''); } catch (error) { console.error('Failed to fetch child categories', error); } } else { setChildCategories([]); } }; fetchChildCategories();
     }, [subcategory, token]);
     useEffect(() => {
-        const fetchModels = async () => { if (brand && token) { try { const res = await axios.get(`/api/v1/product-models?brandId=${brand}`, { headers: { Authorization: `Bearer ${token}` } }); setModels(res.data?.data || []); setModel(''); } catch (error) { console.error('Failed to fetch models', error); } } else { setModels([]); } }; fetchModels();
+        const fetchModels = async () => { 
+            if (brand && token) { 
+                try { 
+                    console.log('Fetching models for brand:', brand);
+                    const res = await axios.get(`/api/v1/product-config/modelName?brandId=${brand}`, { headers: { Authorization: `Bearer ${token}` } }); 
+                    console.log('Models API response:', res.data?.data);
+                    const filteredModels = res.data?.data?.filter((m: any) => m.status === 'active') || [];
+                    console.log('Filtered models:', filteredModels);
+                    setModels(filteredModels); 
+                    setModel(''); 
+                } catch (error) { 
+                    console.error('Failed to fetch models', error); 
+                } 
+            } else { 
+                setModels([]); 
+            } 
+        }; 
+        fetchModels();
     }, [brand, token]);
 
     // ✅ পরিবর্তন ১: uploadFile ফাংশনকে আরও শক্তিশালী করা হয়েছে
@@ -103,7 +127,7 @@ export default function ProductForm({ initialData }: any) {
         if (!token) return toast.error("Authentication required.");
         
         // ✅ পরিবর্তন ২: ক্লায়েন্ট সাইডে প্রাথমিক ভ্যালিডেশন
-        if (!thumbnail) {
+        if (!isEditMode && !thumbnail) {
             return toast.error("Thumbnail image is required.");
         }
         if (!title || !store || !category) {
@@ -114,14 +138,18 @@ export default function ProductForm({ initialData }: any) {
 
         try {
             // thumbnail এবং gallery image আপলোড করা
-            const thumbnailUrl = await uploadFile(thumbnail);
+            let thumbnailUrl = thumbnailPreview; // Use existing thumbnail if in edit mode
+            if (thumbnail) {
+                thumbnailUrl = await uploadFile(thumbnail);
+            }
 
-            const galleryUrls = await Promise.all(
-                galleryImages.map(file => uploadFile(file))
-            );
-
-            // নিশ্চিত করা যে কোনো null বা undefined ভ্যালু নেই
-            const validGalleryUrls = galleryUrls.filter(url => !!url);
+            let validGalleryUrls = galleryImagePreviews || []; // Use existing gallery images if in edit mode
+            if (galleryImages.length > 0) {
+                const galleryUrls = await Promise.all(
+                    galleryImages.map(file => uploadFile(file))
+                );
+                validGalleryUrls = galleryUrls.filter(url => !!url);
+            }
 
             const productData = {
                 productId: productCode || `PROD-${Date.now()}`,
@@ -162,15 +190,22 @@ export default function ProductForm({ initialData }: any) {
                 }))) : [],
             };
 
-            await axios.post('/api/v1/product', productData, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            toast.success("Product created successfully!");
+            if (isEditMode && productId) {
+                await axios.put(`/api/v1/product/${productId}`, productData, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                toast.success("Product updated successfully!");
+                router.push('/general/view/all/product');
+            } else {
+                await axios.post('/api/v1/product', productData, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                toast.success("Product created successfully!");
+            }
         } catch (error: any) {
             // এখন uploadFile থেকে আসা এররও এখানে ধরা পড়বে
             console.error("Submission Error:", error.response?.data || error.message);
-            toast.error(error.response?.data?.message || error.message || "Failed to create product.");
+            toast.error(error.response?.data?.message || error.message || `Failed to ${isEditMode ? 'update' : 'create'} product.`);
         } finally {
             setIsSubmitting(false);
         }
@@ -198,7 +233,7 @@ export default function ProductForm({ initialData }: any) {
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
-                    <Save className="mr-2 h-4 w-4" /> Save Product
+                    <Save className="mr-2 h-4 w-4" /> {isEditMode ? "Update Product" : "Save Product"}
                 </Button>
             </div>
 
@@ -314,7 +349,7 @@ export default function ProductForm({ initialData }: any) {
                                  <Select value={model} onValueChange={setModel} disabled={!brand || models.length === 0}>
                                      <SelectTrigger><SelectValue placeholder="Select Brand First" /></SelectTrigger>
                                      <SelectContent>
-                                         {models.map((m: any) => <SelectItem key={m._id} value={m._id}>{m.name}</SelectItem>)}
+                                         {models.map((m: any) => <SelectItem key={m._id} value={m._id} className="text-black">{m.modelName}</SelectItem>)}
                                      </SelectContent>
                                  </Select>
                              </div>
@@ -407,7 +442,7 @@ export default function ProductForm({ initialData }: any) {
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
-                    <Save className="mr-2 h-4 w-4" /> Save Product
+                    <Save className="mr-2 h-4 w-4" /> {isEditMode ? "Update Product" : "Save Product"}
                 </Button>
             </div>
         </form>

@@ -1,13 +1,15 @@
 "use client";
 
 import { DataTable } from "@/components/TableHelper/data-table";
-import { Product, product_columns } from "@/components/TableHelper/product_columns";
+import { Product, getProductColumns } from "@/components/TableHelper/product_columns";
 import { Input } from "@/components/ui/input";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useSession } from "next-auth/react";
 import type { Session } from "next-auth";
 import { toast } from "sonner";
+import DeleteProductDialog from "./components/DeleteProductDialog";
+import { useRouter } from "next/navigation";
 
 type ApiProduct = {
   _id: string;
@@ -41,6 +43,10 @@ export default function ViewAllProductsPage() {
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [storeMap, setStoreMap] = useState<Record<string, string>>({});
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
   const { data: session } = useSession();
   type AugmentedSession = Session & { accessToken?: string; user?: Session["user"] & { role?: string } };
   const s = session as AugmentedSession | null;
@@ -128,6 +134,53 @@ export default function ViewAllProductsPage() {
     });
     setRows(mapped);
   }, [products, categoryMap, storeMap]);
+
+  const onEdit = useCallback((product: Product) => {
+    // Find the original product data to get the _id
+    const originalProduct = products.find(p => p.productTitle === product.name);
+    if (originalProduct) {
+      router.push(`/general/edit/product/${originalProduct._id}`);
+    }
+  }, [products, router]);
+
+  const onDelete = useCallback((product: Product) => {
+    setProductToDelete(product);
+    setDeleteOpen(true);
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    if (!productToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      // Find the original product data to get the _id
+      const originalProduct = products.find(p => p.productTitle === productToDelete.name);
+      if (!originalProduct) {
+        throw new Error("Product not found");
+      }
+
+      await axios.delete(`/api/v1/product/${originalProduct._id}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(userRole ? { "x-user-role": userRole } : {}),
+        },
+      });
+      
+      toast.success("Product deleted successfully!");
+      setDeleteOpen(false);
+      setProductToDelete(null);
+      
+      // Refresh the products list
+      await fetchProducts();
+    } catch (error: any) {
+      console.error("Error deleting product:", error);
+      toast.error(error.response?.data?.message || "Failed to delete product");
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [productToDelete, products, token, userRole, fetchProducts]);
+
+  const columns = useMemo(() => getProductColumns({ onEdit, onDelete }), [onEdit, onDelete]);
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">
@@ -161,10 +214,24 @@ export default function ViewAllProductsPage() {
         <div className="mb-4 sm:mb-6">
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
             <div className="min-w-[840px]">
-              <DataTable columns={product_columns} data={rows} />
+              <DataTable columns={columns} data={rows} />
             </div>
           </div>
         </div>
+
+        <DeleteProductDialog
+          open={deleteOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setProductToDelete(null);
+              setIsDeleting(false);
+            }
+            setDeleteOpen(open);
+          }}
+          productName={productToDelete?.name}
+          isDeleting={isDeleting}
+          onConfirm={confirmDelete}
+        />
       </div>
     </div>
   );
