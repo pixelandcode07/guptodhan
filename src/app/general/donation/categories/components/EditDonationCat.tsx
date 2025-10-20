@@ -20,6 +20,7 @@ import UploadImageBtn from "@/components/ReusableComponents/UploadImageBtn";
 
 type CategoryFormData = {
     name: string;
+    icon?: string;
     status: string;
 };
 
@@ -29,47 +30,46 @@ export default function EditDonationCat() {
     const router = useRouter();
 
     const { data: session } = useSession();
-    const token = (session?.user as { accessToken?: string; role?: string })?.accessToken;
+    // accessToken is not part of the default Session type — narrow with a cast
+    const token = (session as unknown as { accessToken?: string })?.accessToken;
     const adminRole = (session?.user as { role?: string })?.role === "admin";
 
     const [iconFile, setIconFile] = useState<File | string | null>(null);
-    const [statusValue, setStatusValue] = useState<string>("active");
+    const [donationData, setDonationData] = useState<CategoryFormData>()
 
     const {
         register,
         handleSubmit,
         setValue,
-        watch,
+        // watch,
         formState: { isSubmitting },
-    } = useForm<CategoryFormData>({
-        defaultValues: {
-            name: "",
-            status: "active",
-        },
-    });
+    } = useForm<CategoryFormData>();
 
     // Fetch category data by ID
     useEffect(() => {
         const fetchCategory = async () => {
-            // if (!token) return;
+            if (!token) return;
             try {
-                const { data } = await axios.get(`/api/v1/public/donation-categories/${id}`);
+                const { data } = await axios.get(`/api/v1/donation-categories/${id}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                setDonationData(data?.data);
 
                 // Debug log to check data
                 console.log("Fetched Category by ID:", data);
-
-                // Update form fields
-                // setValue("name", data?.name || "");
-                // setValue("status", data?.status || "active");
-                // setStatusValue(data?.status || "active");
-                // setIconFile(data?.icon || null);
-            } catch (error: any) {
-                console.error(error);
-                toast.error(error?.response?.data?.message || "Failed to fetch category");
+            } catch (error: unknown) {
+                if (axios.isAxiosError(error)) {
+                    toast.error(error.response?.data?.message || "Faield to fetch category.");
+                } else {
+                    toast.error("Working on process.");
+                }
             }
         };
 
         if (id && token) fetchCategory();
+        // if (id) fetchCategory();
     }, [id, token, setValue]);
 
     // Handle form submit
@@ -97,14 +97,19 @@ export default function EditDonationCat() {
 
             toast.success("Category updated successfully!");
             router.push("/general/donation/categories?page=view-category");
-        } catch (error: any) {
-            console.error(error);
-            toast.error(error?.response?.data?.message || "Error updating category");
+        } catch (error: unknown) {
+            if (axios.isAxiosError(error)) {
+                toast.error(error.response?.data?.message || "Error updating category.");
+            } else {
+                toast.error("Something went wrong.");
+            }
         }
+
+
     };
 
     return (
-        <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-xl shadow-md border">
+        <div className="max-w-5xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-md border">
             <h2 className="text-2xl font-semibold mb-6 text-center">
                 Edit Donation Category
             </h2>
@@ -117,7 +122,8 @@ export default function EditDonationCat() {
                     <Input
                         id="name"
                         {...register("name")}
-                        // , { required: "Category name is required" }
+                        defaultValue={donationData?.name}
+                    // , { required: "Category name is required" }
                     />
                 </div>
 
@@ -125,7 +131,7 @@ export default function EditDonationCat() {
                 <div>
                     <Label htmlFor="icon">Category Icon</Label>
                     <UploadImageBtn
-                        value={iconFile}
+                        value={donationData?.icon ?? null}
                         onChange={(file) => setIconFile(file)}
                         onRemove={() => setIconFile(null)}
                     />
@@ -137,9 +143,9 @@ export default function EditDonationCat() {
                         Category Status
                     </Label>
                     <Select
-                        value={statusValue}
+                        value={donationData?.status}
                         onValueChange={(value) => {
-                            setStatusValue(value);
+                            // setStatusValue(value);
                             setValue("status", value);
                         }}
                     >

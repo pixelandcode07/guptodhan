@@ -28,7 +28,7 @@ const fetchAllBuySellData = async () => {
     try {
         const baseUrl = process.env.NEXTAUTH_URL;
         // console.log("baseUrl:", baseUrl)
-        const { data: allCategory } = await axios.get(`${baseUrl}/api/v1/public/classifieds/ads`);
+        const { data: allCategory } = await axios.get(`${baseUrl}/api/v1/public/classifieds-categories/with-ad-counts`);
         // console.log("PostedData:", postedData);
         return allCategory.data || [];
     } catch (error) {
@@ -47,7 +47,7 @@ const fetchAllBuySellData = async () => {
 export default async function BuyandSellHome() {
     const banner = await fetchBanner();
     const allCategory = await fetchAllBuySellData();
-    console.log("allCategory=====>", allCategory)
+    // console.log("allCategory=====>", allCategory)
     return (
         <div className='mt-5 max-w-7xl mx-auto'>
             <BuyandSellBanner banner={banner} />
