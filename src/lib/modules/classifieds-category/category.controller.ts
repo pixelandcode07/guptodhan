@@ -147,17 +147,24 @@ const getCategoryById = async (
     });
 };
 // ✅ NEW: Get public categories with ad counts
-const getPublicCategoriesWithCounts = async (_req: NextRequest) => {
+const getPublicCategoriesWithCounts = async (req: NextRequest) => {
   await dbConnect();
-  const result = await ClassifiedCategoryServices.getPublicCategoriesWithCountsFromDB();
+
+  const { searchParams } = new URL(req.url);
+  const categoryId = searchParams.get('categoryId'); // UI থেকে পাঠাবে
+
+  const result = await ClassifiedCategoryServices.getPublicCategoriesWithCountsFromDB(categoryId || undefined);
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Public categories with ad counts retrieved successfully!',
+    message: categoryId
+      ? 'Specific category ad counts retrieved successfully!'
+      : 'All categories with ad counts retrieved successfully!',
     data: result,
   });
 };
+
 
 // Export all controller functions
 export const ClassifiedCategoryController = {
