@@ -88,6 +88,13 @@ export const category_columns: ColumnDef<Category>[] = [
   {
     accessorKey: "created_at",
     header: "Created At",
+    cell: ({ row }) => {
+      const value = row.getValue("created_at") as string
+      if (!value) return <span className="text-xs text-gray-500">-</span>
+      const d = new Date(value)
+      // Format as DD/MM/YYYY
+      return <span className="text-xs">{isNaN(d.getTime()) ? value : d.toLocaleDateString('en-GB')}</span>
+    },
   },
   {
     id: "action",
@@ -182,6 +189,13 @@ export const getCategoryColumns = ({ onEdit, onDelete }: CategoryColumnHandlers)
   {
     accessorKey: "created_at",
     header: "Created At",
+    cell: ({ row }) => {
+      const value = row.getValue("created_at") as string
+      if (!value) return <span className="text-xs text-gray-500">-</span>
+      const d = new Date(value)
+      // Format as DD/MM/YYYY
+      return <span className="text-xs">{isNaN(d.getTime()) ? value : d.toLocaleDateString('en-GB')}</span>
+    },
   },
   {
     id: "action",
