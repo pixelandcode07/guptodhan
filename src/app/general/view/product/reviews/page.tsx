@@ -1,11 +1,12 @@
 "use client";
 
 import { DataTable } from "@/components/TableHelper/data-table";
-import { Review, review_columns } from "@/components/TableHelper/review_columns";
+import { Review, createReviewColumns } from "@/components/TableHelper/review_columns";
 import { Input } from "@/components/ui/input";
 import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import axios from "axios";
+import { toast } from "sonner";
 
 export default function ViewAllReviewsPage() {
   const [data, setData] = useState<Review[]>([]);
@@ -22,16 +23,12 @@ export default function ViewAllReviewsPage() {
 
   const fetchReviews = useCallback(async () => {
     try {
-      console.log("Fetching reviews with:", { token: !!token, userRole });
-      
       const response = await axios.get("/api/v1/product-review", {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...(userRole ? { "x-user-role": userRole } : {}),
         },
       });
-
-      console.log("Reviews API Response:", response.data);
 
       type ApiReview = {
         _id?: string;
@@ -52,10 +49,9 @@ export default function ViewAllReviewsPage() {
         ? response.data.data
         : [];
 
-      console.log("Reviews found:", items.length, items);
-
       const mapped: Review[] = items.map((review, index) => ({
         id: index + 1,
+        dbId: review._id,
         image: review.userImage || "",
         product: String(review.productId ?? ""),
         rating: review.rating || 0,
@@ -69,51 +65,30 @@ export default function ViewAllReviewsPage() {
           : "",
       }));
 
-      console.log("Mapped reviews:", mapped);
       setData(mapped);
     } catch (error) {
       console.error("Failed to fetch reviews", error);
-      // Fallback to static data if API fails
-      setData([
-        {
-          id: 1,
-          image: "",
-          product: "RFL Polypropylene Classic Art Chair",
-          rating: 5,
-          review: "Excellent product! Very comfortable and stylish.",
-          reply_from_admin: "Thank you for your positive feedback!",
-          customer: "customer@example.com",
-          name: "John Doe",
-          status: "Active",
-          created_at: "2024-08-18 09:58:42 pm"
-        },
-        {
-          id: 2,
-          image: "",
-          product: "DJI Osmo Mobile 6 Smartphone Gimbal",
-          rating: 4,
-          review: "Good quality, easy to use. Would recommend.",
-          reply_from_admin: "",
-          customer: "customer2@example.com",
-          name: "Jane Smith",
-          status: "Active",
-          created_at: "2024-08-18 09:58:42 pm"
-        },
-        {
-          id: 3,
-          image: "",
-          product: "Organic Leg Piece",
-          rating: 3,
-          review: "Average quality, could be better.",
-          reply_from_admin: "We appreciate your feedback and will work on improving quality.",
-          customer: "customer3@example.com",
-          name: "Mike Johnson",
-          status: "Active",
-          created_at: "2024-08-18 09:58:42 pm"
-        }
-      ]);
+      setData([]);
     }
   }, [token, userRole]);
+
+  const handleDeleteReview = useCallback(async (reviewId: string) => {
+    try {
+      await axios.delete(`/api/v1/product-review/${reviewId}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(userRole ? { "x-user-role": userRole } : {}),
+        },
+      });
+
+      toast.success("Review deleted successfully!");
+      // Refresh the data after successful deletion
+      fetchReviews();
+    } catch (error) {
+      console.error("Failed to delete review:", error);
+      toast.error("Failed to delete review. Please try again.");
+    }
+  }, [token, userRole, fetchReviews]);
 
   useEffect(() => {
     fetchReviews();
@@ -150,7 +125,7 @@ export default function ViewAllReviewsPage() {
           />
         </span>
       </div>
-      <DataTable columns={review_columns} data={filteredData} />
+      <DataTable columns={createReviewColumns(handleDeleteReview)} data={filteredData} />
     </div>
   );
 }
