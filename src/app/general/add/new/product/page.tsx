@@ -2,7 +2,7 @@ import dbConnect from '@/lib/db';
 import ProductForm from './Components/ProductForm';
 import { StoreServices } from '@/lib/modules/vendor-store/vendorStore.service';
 import { CategoryServices } from '@/lib/modules/ecommerce-category/services/ecomCategory.service';
-import { BrandServices } from '@/lib/modules/brand/brand.service';
+import { BrandServices as ProductConfigBrandServices } from '@/lib/modules/product-config/services/brandName.service';
 import { ProductFlagServices } from '@/lib/modules/product-config/services/productFlag.service';
 import { ProductUnitServices } from '@/lib/modules/product-config/services/productUnit.service';
 import { ModelFormServices } from '@/lib/modules/product-config/services/modelCreate.service';
@@ -24,19 +24,24 @@ export default async function AddNewProductPage() {
         brandsData, 
         flagsData, 
         unitsData,
-        modelsData,     // Added
-        warrantiesData  // Added
+        modelsData,
+        warrantiesData,
+        simTypesData,
+        colorsData,
+        sizesData,
+        conditionsData,
+        storageTypesData
     ] = await Promise.all([
         StoreServices.getAllStoresFromDB(),
         CategoryServices.getAllCategoriesFromDB(),
-        BrandServices.getAllBrandsFromDB(),
+        ProductConfigBrandServices.getAllBrandsFromDB(),
         ProductFlagServices.getAllProductFlagsFromDB(),
         ProductUnitServices.getAllProductUnitsFromDB(),
-        ModelFormServices.getAllModelFormsFromDB(), // Assuming this service method exists
+        ModelFormServices.getAllModelFormsFromDB(),
         ProductWarrantyServices.getAllProductWarrantiesFromDB(), 
-        ProductSimTypeServices.getAllProductSimTypesFromDB(), // Assuming method exists
-        ProductColorServices.getAllProductColorsFromDB(),     // Assuming method exists
-        ProductSizeServices.getAllProductSizesFromDB(),       // Assuming method exists
+        ProductSimTypeServices.getActiveProductSimTypesFromDB(),
+        ProductColorServices.getAllProductColorsFromDB(),
+        ProductSizeServices.getAllProductSizesFromDB(),
         DeviceConditionServices.getAllDeviceConditionsFromDB(),
         StorageTypeServices.getAllStorageTypesFromDB(),
     ]);
@@ -48,8 +53,16 @@ export default async function AddNewProductPage() {
         brands: JSON.parse(JSON.stringify(brandsData || [])),
         flags: JSON.parse(JSON.stringify(flagsData || [])),
         units: JSON.parse(JSON.stringify(unitsData || [])),
-        models: JSON.parse(JSON.stringify(modelsData || [])),         // Added
-        warranties: JSON.parse(JSON.stringify(warrantiesData || [])), // Added
+        models: JSON.parse(JSON.stringify(modelsData || [])),
+        warranties: JSON.parse(JSON.stringify(warrantiesData || [])),
+        variantOptions: {
+            warranties: JSON.parse(JSON.stringify(warrantiesData || [])),
+            conditions: JSON.parse(JSON.stringify(conditionsData || [])),
+            simTypes: JSON.parse(JSON.stringify(simTypesData || [])),
+            colors: JSON.parse(JSON.stringify(colorsData || [])),
+            sizes: JSON.parse(JSON.stringify(sizesData || [])),
+            storageTypes: JSON.parse(JSON.stringify(storageTypesData || [])),
+        }
     };
 
     return (
