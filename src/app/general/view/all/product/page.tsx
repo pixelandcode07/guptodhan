@@ -2,7 +2,6 @@
 
 import { DataTable } from "@/components/TableHelper/data-table";
 import { Product, getProductColumns } from "@/components/TableHelper/product_columns";
-import { Input } from "@/components/ui/input";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useSession } from "next-auth/react";
@@ -38,11 +37,18 @@ type ApiStore = {
   status: 'active' | 'inactive';
 };
 
+type ApiFlag = {
+  _id: string;
+  name: string;
+  status: 'active' | 'inactive';
+};
+
 export default function ViewAllProductsPage() {
   const [rows, setRows] = useState<Product[]>([]);
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [storeMap, setStoreMap] = useState<Record<string, string>>({});
+  const [flagMap, setFlagMap] = useState<Record<string, string>>({});
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -104,11 +110,30 @@ export default function ViewAllProductsPage() {
     }
   }, [token, userRole]);
 
+  const fetchFlags = useCallback(async () => {
+    try {
+      const res = await axios.get('/api/v1/product-config/productFlag', {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(userRole ? { 'x-user-role': userRole } : {}),
+        },
+      });
+      const items: ApiFlag[] = Array.isArray(res.data?.data) ? res.data.data : [];
+      const active = items.filter(f => f.status === 'active');
+      const map: Record<string, string> = {};
+      for (const f of active) map[f._id] = f.name;
+      setFlagMap(map);
+    } catch {
+      setFlagMap({});
+    }
+  }, [token, userRole]);
+
   useEffect(() => {
     fetchProducts();
     fetchCategories();
     fetchStores();
-  }, [fetchProducts, fetchCategories, fetchStores]);
+    fetchFlags();
+  }, [fetchProducts, fetchCategories, fetchStores, fetchFlags]);
 
   useEffect(() => {
     const mapped: Product[] = products.map((p, idx) => {
@@ -118,6 +143,7 @@ export default function ViewAllProductsPage() {
       const storeName = typeof p.vendorStoreId === 'string'
         ? (storeMap[p.vendorStoreId] || p.vendorStoreId)
         : (p.vendorStoreId?.storeName || '');
+      const flagName = p.flag ? (flagMap[p.flag] || p.flag) : "";
       return {
         id: idx + 1,
         image: p.thumbnailImage || "",
@@ -127,13 +153,13 @@ export default function ViewAllProductsPage() {
         price: p.productPrice != null ? String(p.productPrice) : "",
         offer_price: p.discountPrice != null ? String(p.discountPrice) : "",
         stock: p.stock != null ? String(p.stock) : "",
-        flag: p.flag || "",
+        flag: flagName,
         status: p.status === 'active' ? 'Active' : 'Inactive',
         created_at: p.createdAt ? new Date(p.createdAt).toLocaleString() : "",
       };
     });
     setRows(mapped);
-  }, [products, categoryMap, storeMap]);
+  }, [products, categoryMap, storeMap, flagMap]);
 
   const onEdit = useCallback((product: Product) => {
     // Find the original product data to get the _id
