@@ -245,35 +245,72 @@ export function EcommerceModules({
   const isActive = (href: string) => pathname === href;
   const { data: session } = useSession();
   const [productCount, setProductCount] = useState<string>('0');
+  const [reviewCount, setReviewCount] = useState<string>('0');
+  const [qaCount, setQaCount] = useState<string>('0');
 
-  // Fetch product count
+  // Fetch all counts
   useEffect(() => {
-    const fetchProductCount = async () => {
+    const fetchAllCounts = async () => {
       try {
         const token = (session as { accessToken?: string; user?: { role?: string } })?.accessToken;
         const userRole = (session as { accessToken?: string; user?: { role?: string } })?.user?.role;
         
         if (!token) return;
 
-        const res = await axios.get('/api/v1/product', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            ...(userRole ? { 'x-user-role': userRole } : {}),
-          },
-        });
-        
-        const products = Array.isArray(res.data?.data) ? res.data.data : [];
-        setProductCount(products.length.toString());
+        // Fetch product count
+        try {
+          const productRes = await axios.get('/api/v1/product', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              ...(userRole ? { 'x-user-role': userRole } : {}),
+            },
+          });
+          const products = Array.isArray(productRes.data?.data) ? productRes.data.data : [];
+          setProductCount(products.length.toString());
+        } catch (error) {
+          console.error('Failed to fetch product count:', error);
+          setProductCount('0');
+        }
+
+        // Fetch review count
+        try {
+          const reviewRes = await axios.get('/api/v1/product-review', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              ...(userRole ? { 'x-user-role': userRole } : {}),
+            },
+          });
+          const reviews = Array.isArray(reviewRes.data?.data) ? reviewRes.data.data : [];
+          setReviewCount(reviews.length.toString());
+        } catch (error) {
+          console.error('Failed to fetch review count:', error);
+          setReviewCount('0');
+        }
+
+        // Fetch Q&A count
+        try {
+          const qaRes = await axios.get('/api/v1/product-qna', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              ...(userRole ? { 'x-user-role': userRole } : {}),
+            },
+          });
+          const qas = Array.isArray(qaRes.data?.data) ? qaRes.data.data : [];
+          setQaCount(qas.length.toString());
+        } catch (error) {
+          console.error('Failed to fetch Q&A count:', error);
+          setQaCount('0');
+        }
+
       } catch (error) {
-        console.error('Failed to fetch product count:', error);
-        setProductCount('0');
+        console.error('Failed to fetch counts:', error);
       }
     };
 
-    fetchProductCount();
+    fetchAllCounts();
   }, [session]);
 
-  // Create dynamic menu config with updated product count
+  // Create dynamic menu config with updated counts
   const dynamicMenuConfig: typeof MENU_CONFIG = {
     ...MENU_CONFIG,
     'Manage Products': {
@@ -284,6 +321,20 @@ export function EcommerceModules({
             ...item,
             title: `View All Products (${productCount})`,
             count: productCount,
+          };
+        }
+        if (item.url === '/general/view/product/reviews') {
+          return {
+            ...item,
+            title: `Products's Review (${reviewCount})`,
+            count: reviewCount,
+          };
+        }
+        if (item.url === '/general/view/product/question/answer') {
+          return {
+            ...item,
+            title: `Product Ques/Ans (${qaCount})`,
+            count: qaCount,
           };
         }
         return item;
@@ -355,6 +406,10 @@ export function EcommerceModules({
                                       ? 'bg-orange-500 text-white'
                                       : subItem.url === '/general/view/all/product'
                                       ? 'text-green-500'
+                                      : subItem.url === '/general/view/product/reviews'
+                                      ? 'text-blue-400'
+                                      : subItem.url === '/general/view/product/question/answer'
+                                      ? 'text-purple-400'
                                       : 'text-blue-400'
                                   }`}>
                                   {subItem.count}
