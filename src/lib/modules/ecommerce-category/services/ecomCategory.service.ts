@@ -15,6 +15,18 @@ const getAllCategoriesFromDB = async () => {
   return result;
 };
 
+// Get only featured categories (optimized for landing page)
+const getFeaturedCategoriesFromDB = async () => {
+  const result = await CategoryModel.find({ 
+    isFeatured: true, 
+    status: 'active' 
+  })
+    .select('name categoryIcon isFeatured status slug categoryId')
+    .sort({ name: 1 })
+    .lean();
+  return result;
+};
+
 // Get category by ID
 const getCategoryByIdFromDB = async (categoryId: string) => {
   const result = await CategoryModel.findOne({
@@ -50,6 +62,7 @@ const deleteCategoryFromDB = async (id: string) => {
 export const CategoryServices = {
   createCategoryInDB,
   getAllCategoriesFromDB,
+  getFeaturedCategoriesFromDB,
   getCategoryByIdFromDB,
   updateCategoryInDB,
   deleteCategoryFromDB,
