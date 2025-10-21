@@ -134,6 +134,18 @@ export default function ProductForm({ initialData }: any) {
             return toast.error("Please fill all required fields (*).");
         }
         
+        // Validate special offer date
+        if (specialOffer) {
+            if (!offerEndTime) {
+                return toast.error("Offer end time is required when special offer is enabled.");
+            }
+            const offerDate = new Date(offerEndTime);
+            const now = new Date();
+            if (offerDate <= now) {
+                return toast.error("Offer end time must be in the future.");
+            }
+        }
+        
         setIsSubmitting(true);
 
         try {
@@ -390,8 +402,14 @@ export default function ProductForm({ initialData }: any) {
                              </div>
                              {specialOffer && (
                                  <div>
-                                     <Label>Offer End Time</Label>
-                                     <Input type="datetime-local" value={offerEndTime} onChange={(e) => setOfferEndTime(e.target.value)} />
+                                     <Label>Offer End Time *</Label>
+                                     <Input 
+                                         type="datetime-local" 
+                                         value={offerEndTime} 
+                                         onChange={(e) => setOfferEndTime(e.target.value)}
+                                         min={new Date().toISOString().slice(0, 16)}
+                                         required
+                                     />
                                  </div>
                              )}
                          </CardContent>
