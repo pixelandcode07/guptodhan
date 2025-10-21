@@ -2,51 +2,113 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
+import axios from "axios";
+import { useSession } from "next-auth/react";
 import { type Sim } from "@/components/TableHelper/sim_columns";
 import SimsHeader from "./SimsHeader";
 import SimsFilters from "./SimsFilters";
 import SimsTable from "./SimsTable";
 import SimModal from "./SimModal";
 
-function getData(): Sim[] {
-  return [
-    { id: 1, name: "Dual e-SIM", status: "Active", created_at: "2023-06-05 10:25:43 am" },
-    { id: 2, name: "Dual SIM", status: "Active", created_at: "2023-06-05 10:25:36 am" },
-    { id: 3, name: "Single e-SIM", status: "Inactive", created_at: "2023-06-05 10:25:30 am" },
-    { id: 4, name: "Single SIM", status: "Active", created_at: "2023-06-05 10:25:24 am" },
-  ];
+// API types
+interface ApiSim {
+  _id: string;
+  simTypeId: string;
+  name: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+}
+
+// Extended Sim type to include database ID
+interface SimWithDbId extends Sim {
+  dbId?: string; // Store the actual database _id
 }
 
 export default function SimsClient() {
-  const [sims, setSims] = useState<Sim[]>([]);
+  const { data: session } = useSession();
+  const [sims, setSims] = useState<SimWithDbId[]>([]);
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Sim | null>(null);
+  const [editing, setEditing] = useState<SimWithDbId | null>(null);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | "Active" | "Inactive">("");
 
+  const fetchSims = useCallback(async () => {
+    try {
+      const token = (session as { accessToken?: string; user?: { role?: string } })?.accessToken;
+      const userRole = (session as { accessToken?: string; user?: { role?: string } })?.user?.role;
+
+      if (!token) {
+        console.error("No authentication token available");
+        setSims([]);
+        return;
+      }
+
+      const response = await axios.get("/api/v1/product-config/productSimType", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(userRole ? { "x-user-role": userRole } : {}),
+        },
+      });
+
+      const items: ApiSim[] = Array.isArray(response.data?.data) ? response.data.data : [];
+      const mapped: SimWithDbId[] = items.map((sim, index) => ({
+        id: index + 1,
+        dbId: sim._id, // Store the actual database ID
+        name: sim.name,
+        status: sim.status === 'active' ? 'Active' : 'Inactive',
+        created_at: sim.createdAt ? new Date(sim.createdAt).toLocaleString() : "",
+      }));
+
+      setSims(mapped);
+    } catch (error) {
+      console.error("Failed to fetch SIM types", error);
+      toast.error("Failed to load SIM types. Please try again.");
+      setSims([]);
+    }
+  }, [session]);
+
   useEffect(() => {
-    setSims(getData());
-  }, []);
+    fetchSims();
+  }, [fetchSims]);
 
   const onSubmit = async (data: { name: string; status?: string }) => {
     try {
+      const token = (session as { accessToken?: string; user?: { role?: string } })?.accessToken;
+      const userRole = (session as { accessToken?: string; user?: { role?: string } })?.user?.role;
+
+      if (!token) {
+        toast.error("Authentication required. Please log in again.");
+        return;
+      }
+
       if (editing) {
-        // Update existing SIM
-        setSims(prev => prev.map(sim => 
-          sim.id === editing.id 
-            ? { ...sim, name: data.name, status: data.status as "Active" | "Inactive" || "Active" }
-            : sim
-        ));
+        // Update existing SIM via API
+        await axios.patch(`/api/v1/product-config/productSimType/${editing.dbId}`, {
+          name: data.name,
+          status: data.status === "Inactive" ? "inactive" : "active",
+        }, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            ...(userRole ? { "x-user-role": userRole } : {}),
+            "Content-Type": "application/json",
+          }
+        });
+        await fetchSims();
         toast.success("SIM type updated successfully!");
       } else {
-        // Add new SIM
-        const newSim: Sim = {
-          id: Math.max(...sims.map(s => s.id)) + 1,
+        // Create new SIM via API
+        await axios.post(`/api/v1/product-config/productSimType`, {
+          simTypeId: `sim_${Date.now()}`,
           name: data.name,
-          status: "Active",
-          created_at: new Date().toLocaleString(),
-        };
-        setSims(prev => [newSim, ...prev]);
+          status: "active",
+        }, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            ...(userRole ? { "x-user-role": userRole } : {}),
+            "Content-Type": "application/json",
+          }
+        });
+        await fetchSims();
         toast.success("SIM type created successfully!");
       }
 
@@ -58,24 +120,45 @@ export default function SimsClient() {
     }
   };
 
-  const onEdit = useCallback((sim: Sim) => {
+  const onEdit = useCallback((sim: SimWithDbId) => {
     setEditing(sim);
     setOpen(true);
   }, []);
 
-  const onDelete = useCallback((sim: Sim) => {
-    setSims(prev => prev.filter(s => s.id !== sim.id));
-    toast.success("SIM type deleted successfully!");
-  }, []);
+  const onDelete = useCallback(async (sim: SimWithDbId) => {
+    try {
+      const token = (session as { accessToken?: string; user?: { role?: string } })?.accessToken;
+      const userRole = (session as { accessToken?: string; user?: { role?: string } })?.user?.role;
+
+      if (!token) {
+        toast.error("Authentication required. Please log in again.");
+        return;
+      }
+
+      // Delete via API using the database ID
+      await axios.delete(`/api/v1/product-config/productSimType/${sim.dbId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(userRole ? { "x-user-role": userRole } : {}),
+        }
+      });
+      
+      await fetchSims();
+      toast.success("SIM type deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting SIM type:", error);
+      toast.error("Failed to delete SIM type");
+    }
+  }, [session, fetchSims]);
 
   const filteredSims = useMemo(() => {
-    const bySearch = (s: Sim) => {
+    const bySearch = (s: SimWithDbId) => {
       if (!searchText) return true;
       const searchLower = searchText.toLowerCase();
       return s.name.toLowerCase().includes(searchLower);
     };
     
-    const byStatus = (s: Sim) => {
+    const byStatus = (s: SimWithDbId) => {
       if (!statusFilter) return true;
       return s.status === statusFilter;
     };

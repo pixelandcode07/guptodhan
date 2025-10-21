@@ -146,6 +146,27 @@ export default function ProductForm({ initialData }: any) {
             }
         }
         
+        // Validate variants if hasVariant is enabled
+        if (hasVariant) {
+            if (variants.length === 0) {
+                return toast.error("Please add at least one product variant.");
+            }
+            
+            // Validate each variant
+            for (let i = 0; i < variants.length; i++) {
+                const variant = variants[i];
+                if (!variant.stock || variant.stock <= 0) {
+                    return toast.error(`Variant ${i + 1}: Stock must be greater than 0.`);
+                }
+                if (!variant.price || variant.price <= 0) {
+                    return toast.error(`Variant ${i + 1}: Price must be greater than 0.`);
+                }
+                if (variant.discountPrice && variant.discountPrice >= variant.price) {
+                    return toast.error(`Variant ${i + 1}: Discount price must be less than regular price.`);
+                }
+            }
+        }
+        
         setIsSubmitting(true);
 
         try {
