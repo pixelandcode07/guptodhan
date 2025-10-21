@@ -9,8 +9,12 @@ const createOrderInDB = async (payload: Partial<IOrder>) => {
 };
 
 // Get all orders
-const getAllOrdersFromDB = async () => {
-  const result = await OrderModel.find({}).sort({ orderDate: -1 });
+const getAllOrdersFromDB = async (status?: string) => {
+  const filter: any = {};
+  if (status) {
+    filter.orderStatus = status;
+  }
+  const result = await OrderModel.find(filter).sort({ orderDate: -1 });
   return result;
 };
 

@@ -189,9 +189,11 @@ export const createOrderWithDetails = async (req: NextRequest) => {
 
 
 // Get all orders
-const getAllOrders = async () => {
+const getAllOrders = async (req: NextRequest) => {
   await dbConnect();
-  const result = await OrderServices.getAllOrdersFromDB();
+  const { searchParams } = new URL(req.url);
+  const status = searchParams.get('status');
+  const result = await OrderServices.getAllOrdersFromDB(status || undefined);
 
   return sendResponse({
     success: true,

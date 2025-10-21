@@ -18,6 +18,7 @@ export default function OrdersStats() {
     const [cancelledTotal, setCancelledTotal] = React.useState(0)
 
     React.useEffect(() => {
+        // Fetch all orders for statistics
         api.get('/product-order')
             .then((res) => {
                 const list = (res.data?.data ?? []) as ApiOrder[]
