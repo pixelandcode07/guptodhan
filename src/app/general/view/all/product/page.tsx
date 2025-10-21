@@ -161,6 +161,14 @@ export default function ViewAllProductsPage() {
     setRows(mapped);
   }, [products, categoryMap, storeMap, flagMap]);
 
+  const onView = useCallback((product: Product) => {
+    // Find the original product data to get the _id
+    const originalProduct = products.find(p => p.productTitle === product.name);
+    if (originalProduct) {
+      router.push(`/products/${originalProduct._id}`);
+    }
+  }, [products, router]);
+
   const onEdit = useCallback((product: Product) => {
     // Find the original product data to get the _id
     const originalProduct = products.find(p => p.productTitle === product.name);
@@ -198,15 +206,22 @@ export default function ViewAllProductsPage() {
       
       // Refresh the products list
       await fetchProducts();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting product:", error);
-      toast.error(error.response?.data?.message || "Failed to delete product");
+      let errorMessage = "Failed to delete product";
+      
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { message?: string } } };
+        errorMessage = axiosError.response?.data?.message || errorMessage;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsDeleting(false);
     }
   }, [productToDelete, products, token, userRole, fetchProducts]);
 
-  const columns = useMemo(() => getProductColumns({ onEdit, onDelete }), [onEdit, onDelete]);
+  const columns = useMemo(() => getProductColumns({ onView, onEdit, onDelete }), [onView, onEdit, onDelete]);
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">

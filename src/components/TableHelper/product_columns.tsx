@@ -136,7 +136,7 @@ export const getProductColumns = ({ onView, onEdit, onDelete }: ProductColumnHan
       const product = row.original as Product
       return (
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700 hover:bg-green-50">
+          <Button onClick={() => onView?.(product)} variant="ghost" size="sm" className="text-green-600 hover:text-green-700 hover:bg-green-50">
             <Eye className="w-4 h-4" />
           </Button>
           <Button onClick={() => onEdit?.(product)} variant="ghost" size="sm" className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50">
