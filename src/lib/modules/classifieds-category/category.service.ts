@@ -107,13 +107,17 @@ const getCategoryByIdFromDB = async (id: string) => {
 
 
 // ✅ getPublicCategoriesWithCountsFromDB
-const getPublicCategoriesWithCountsFromDB = async () => {
+const getPublicCategoriesWithCountsFromDB = async (categoryId?: string) => {
   try {
-    const categoriesWithCounts = await ClassifiedCategory.aggregate([
-      // ১️⃣ শুধুমাত্র active category নাও
-      { $match: { status: 'active' } },
+    const matchStage: any = { status: 'active' };
 
-      // ২️⃣ classifiedads collection থেকে JOIN করো
+    // যদি নির্দিষ্ট category পাঠানো হয় (UI থেকে)
+    if (categoryId) {
+      matchStage._id = new Types.ObjectId(categoryId);
+    }
+
+    const categoriesWithCounts = await ClassifiedCategory.aggregate([
+      { $match: matchStage },
       {
         $lookup: {
           from: 'classifiedads',
@@ -123,26 +127,20 @@ const getPublicCategoriesWithCountsFromDB = async () => {
           as: 'ads',
         },
       },
-
-      // ৩️⃣ adCount যোগ করো
       {
         $addFields: {
           adCount: { $size: '$ads' },
         },
       },
-
-      // ৪️⃣ শুধু দরকারি field রাখো
       {
         $project: {
           name: 1,
           icon: 1,
           status: 1,
           adCount: 1,
+          ads: 1, 
         },
       },
-
-      // ৫️⃣ নাম অনুযায়ী sort করো
-      { $sort: { name: 1 } },
     ]);
 
     return categoriesWithCounts;
@@ -151,6 +149,7 @@ const getPublicCategoriesWithCountsFromDB = async () => {
     return [];
   }
 };
+
 
 
 export const ClassifiedCategoryServices = {
