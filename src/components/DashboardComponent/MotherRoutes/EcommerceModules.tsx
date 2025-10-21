@@ -18,7 +18,9 @@ import {
   ShoppingCart,
   Truck,
 } from 'lucide-react';
-import { ElementType } from 'react';
+import { ElementType, useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import axios from 'axios';
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -96,9 +98,9 @@ const MENU_CONFIG: Record<
     items: [
       { title: 'Add New Product', url: '/general/add/new/product' },
       {
-        title: 'View All Products (829)',
+        title: 'View All Products',
         url: '/general/view/all/product',
-        count: '829',
+        count: '0', // This will be updated dynamically
       },
       {
         title: 'Bulk Upload New',
@@ -241,6 +243,53 @@ export function EcommerceModules({
 }) {
   const pathname = usePathname();
   const isActive = (href: string) => pathname === href;
+  const { data: session } = useSession();
+  const [productCount, setProductCount] = useState<string>('0');
+
+  // Fetch product count
+  useEffect(() => {
+    const fetchProductCount = async () => {
+      try {
+        const token = (session as { accessToken?: string; user?: { role?: string } })?.accessToken;
+        const userRole = (session as { accessToken?: string; user?: { role?: string } })?.user?.role;
+        
+        if (!token) return;
+
+        const res = await axios.get('/api/v1/product', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            ...(userRole ? { 'x-user-role': userRole } : {}),
+          },
+        });
+        
+        const products = Array.isArray(res.data?.data) ? res.data.data : [];
+        setProductCount(products.length.toString());
+      } catch (error) {
+        console.error('Failed to fetch product count:', error);
+        setProductCount('0');
+      }
+    };
+
+    fetchProductCount();
+  }, [session]);
+
+  // Create dynamic menu config with updated product count
+  const dynamicMenuConfig: typeof MENU_CONFIG = {
+    ...MENU_CONFIG,
+    'Manage Products': {
+      ...MENU_CONFIG['Manage Products'],
+      items: MENU_CONFIG['Manage Products'].items.map((item: ChildItem) => {
+        if (item.url === '/general/view/all/product') {
+          return {
+            ...item,
+            title: `View All Products (${productCount})`,
+            count: productCount,
+          };
+        }
+        return item;
+      }),
+    },
+  };
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
@@ -251,7 +300,7 @@ export function EcommerceModules({
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map(item => {
-            const cfg = MENU_CONFIG[item.title];
+            const cfg = dynamicMenuConfig[item.title];
             if (!cfg) return null;
 
             if (cfg.items.length === 0) {
@@ -287,7 +336,7 @@ export function EcommerceModules({
 
                 <CollapsibleContent>
                   <div className="pl-6">
-                    {cfg.items.map(subItem => {
+                    {cfg.items.map((subItem: ChildItem) => {
                       const active = isActive(subItem.url);
                       return (
                         <SidebarMenuItem key={subItem.url}>
@@ -304,7 +353,7 @@ export function EcommerceModules({
                                   className={`ml-auto text-xs px-2 py-1 rounded ${
                                     subItem.count === '0'
                                       ? 'bg-orange-500 text-white'
-                                      : subItem.count === '829'
+                                      : subItem.url === '/general/view/all/product'
                                       ? 'text-green-500'
                                       : 'text-blue-400'
                                   }`}>
