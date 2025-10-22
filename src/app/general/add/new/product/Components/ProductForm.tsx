@@ -19,6 +19,7 @@ import { Loader2, Save, X, UploadCloud } from 'lucide-react';
 import Image from 'next/image';
 import ProductVariantForm, { IProductOption } from './ProductVariantForm';
 import ProductImageGallery from './ProductImageGallery';
+import PricingInventory from './PricingInventory';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function ProductForm({ initialData }: any) {
@@ -40,7 +41,7 @@ export default function ProductForm({ initialData }: any) {
     const [galleryImages, setGalleryImages] = useState<File[]>([]);
     const [galleryImagePreviews, setGalleryImagePreviews] = useState<string[]>([]);
 
-    const [rewardPoints, setRewardPoints] = useState(0);
+    const [rewardPoints, setRewardPoints] = useState<number | undefined>(undefined);
     const [productCode, setProductCode] = useState('');
     const [videoUrl, setVideoUrl] = useState('');
     
@@ -65,13 +66,56 @@ export default function ProductForm({ initialData }: any) {
     const [metaTitle, setMetaTitle] = useState('');
     const [metaKeywords, setMetaKeywords] = useState('');
     const [metaDescription, setMetaDescription] = useState('');
-    const [price, setPrice] = useState(0);
-    const [discountPrice, setDiscountPrice] = useState(0);
-    const [stock, setStock] = useState(10);
+    const [price, setPrice] = useState<number | undefined>(undefined);
+    const [discountPrice, setDiscountPrice] = useState<number | undefined>(undefined);
+    const [stock, setStock] = useState<number | undefined>(undefined);
     
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { data: session } = useSession();
     const token = (session as any)?.accessToken;
+
+    // Pricing form data
+    const pricingFormData = {
+        price: price ?? '',
+        discountPrice: discountPrice ?? '',
+        rewardPoints: rewardPoints ?? '',
+        stock: stock ?? '',
+    };
+
+    // Handler functions for pricing component
+    const handlePricingInputChange = (field: string, value: unknown) => {
+        switch (field) {
+            case 'price':
+                setPrice(value === '' ? undefined : Number(value));
+                break;
+            case 'discountPrice':
+                setDiscountPrice(value === '' ? undefined : Number(value));
+                break;
+            case 'rewardPoints':
+                setRewardPoints(value === '' ? undefined : Number(value));
+                break;
+            case 'stock':
+                setStock(value === '' ? undefined : Number(value));
+                break;
+        }
+    };
+
+    const handlePricingNumberChange = (field: string, delta: number) => {
+        switch (field) {
+            case 'price':
+                setPrice(prev => Math.max(0, (prev || 0) + delta));
+                break;
+            case 'discountPrice':
+                setDiscountPrice(prev => Math.max(0, (prev || 0) + delta));
+                break;
+            case 'rewardPoints':
+                setRewardPoints(prev => Math.max(0, (prev || 0) + delta));
+                break;
+            case 'stock':
+                setStock(prev => Math.max(0, (prev || 0) + delta));
+                break;
+        }
+    };
     
     // All useEffects for dependent dropdowns (no changes here)
     useEffect(() => {
@@ -132,6 +176,11 @@ export default function ProductForm({ initialData }: any) {
         }
         if (!title || !store || !category) {
             return toast.error("Please fill all required fields (*).");
+        }
+        
+        // Validate pricing
+        if (!price || price <= 0) {
+            return toast.error("Price is required and must be greater than 0.");
         }
         
         // Validate special offer date
@@ -199,11 +248,11 @@ export default function ProductForm({ initialData }: any) {
                 photoGallery: validGalleryUrls.length > 0 ? validGalleryUrls : [thumbnailUrl],
                 thumbnailImage: thumbnailUrl, // এখন এটি সর্বদা একটি ভ্যালিড URL হবে
                 
-                productPrice: price,
+                productPrice: price || 0,
                 discountPrice: discountPrice || undefined,
-                stock: stock,
+                stock: stock || 0,
                 sku: productCode || undefined,
-                rewardPoints: rewardPoints,
+                rewardPoints: rewardPoints || 0,
                 category: category,
                 subCategory: subcategory || undefined,
                 childCategory: childCategory || undefined,
@@ -328,6 +377,13 @@ export default function ProductForm({ initialData }: any) {
                     </Card>
                     <Card>
                         <CardContent className="space-y-4 pt-6">
+                            {/* Pricing & Inventory Section */}
+                            <PricingInventory 
+                                formData={pricingFormData}
+                                handleInputChange={handlePricingInputChange}
+                                handleNumberChange={handlePricingNumberChange}
+                            />
+                            
                              <div>
                                  <Label>Product Code (SKU)</Label>
                                  <Input value={productCode} onChange={(e) => setProductCode(e.target.value)} />
