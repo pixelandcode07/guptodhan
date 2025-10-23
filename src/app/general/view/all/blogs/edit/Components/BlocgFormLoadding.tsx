@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function Loadding() {
+export default function BlogFormLoadding() {
   // ✅ Loading state UI (skeleton style)
 
   return (
