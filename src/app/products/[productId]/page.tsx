@@ -22,7 +22,8 @@ const qaData = [
   },
   {
     id: 2,
-    question: 'There appears to be a discrepancy in the serving information the serving information?',
+    question:
+      'There appears to be a discrepancy in the serving information the serving information?',
     answer: 'There appears to be a discrepancy in the serving information',
     user: 'Riya Sharma',
     timeAgo: '6 months ago',
