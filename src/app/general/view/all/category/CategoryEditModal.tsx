@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import UploadImageBtn from "@/components/ReusableComponents/UploadImageBtn";
+import { useSession } from "next-auth/react";
 
 type Category = {
   _id?: string;
@@ -27,6 +28,11 @@ export default function CategoryEditModal({ open, onOpenChange, data, onSaved, o
   onSaved: () => void;
   onOptimisticUpdate?: (update: { _id: string; name: string; slug: string; status: "Active" | "Inactive"; isFeatured: boolean; isNavbar: boolean }) => void;
 }) {
+  const { data: session } = useSession();
+  const s = session as (undefined | { accessToken?: string; user?: { role?: string } });
+  const token = s?.accessToken;
+  const userRole = s?.user?.role;
+  
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [isFeatured, setIsFeatured] = useState("no");
@@ -49,6 +55,13 @@ export default function CategoryEditModal({ open, onOpenChange, data, onSaved, o
 
   const onSubmit = async () => {
     if (!data?._id) return;
+    
+    // Security check - only allow admin users
+    if (userRole !== 'admin') {
+      toast.error('Access denied: Admin privileges required');
+      return;
+    }
+    
     try {
       const formData = new FormData();
       formData.append("name", name);
@@ -62,6 +75,10 @@ export default function CategoryEditModal({ open, onOpenChange, data, onSaved, o
       const res = await fetch(`/api/v1/ecommerce-category/ecomCategory/${data._id}`, {
         method: "PATCH",
         body: formData,
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          ...(userRole ? { 'x-user-role': userRole } : {}),
+        }
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.message || "Failed to update category");

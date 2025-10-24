@@ -10,6 +10,7 @@ import SizesFilters from "./SizesFilters";
 import SizesTable from "./SizesTable";
 import SizeModal from "./SizeModal";
 import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
+import FancyLoadingPage from "@/app/general/loading";
 
 
 type ApiSize = {
@@ -28,6 +29,7 @@ export default function SizesClient() {
   const userRole = s?.user?.role;
 
   const [sizes, setSizes] = useState<Size[]>([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Size | null>(null);
   const [searchText, setSearchText] = useState("");
@@ -38,6 +40,7 @@ export default function SizesClient() {
 
   const fetchSizes = useCallback(async () => {
     try {
+      setLoading(true);
       const response = await axios.get("/api/v1/product-config/productSize", { params: { _ts: Date.now() } });
       const apiSizes: ApiSize[] = response.data.data;
 
@@ -53,6 +56,8 @@ export default function SizesClient() {
     } catch (error) {
       console.error("Error fetching sizes:", error);
       toast.error("Failed to fetch sizes");
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -117,7 +122,7 @@ export default function SizesClient() {
 
       setOpen(false);
       setEditing(null);
-      await fetchSizes();
+      // Remove the fetchSizes() call since we're already updating the state
     } catch (error) {
       console.error("Error saving size:", error);
       toast.error(`Failed to ${editing ? "update" : "create"} size`);
@@ -178,6 +183,10 @@ export default function SizesClient() {
     setEditing(null);
     setOpen(true);
   }, []);
+
+  if (loading) {
+    return <FancyLoadingPage />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
