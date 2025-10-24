@@ -3,19 +3,18 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
 import UploadImage from '@/components/ReusableComponents/UploadImage';
-import { BannerPosition, TextPosition } from './types';
-import TopRow from './TopRow';
-import DetailsFields from './DetailsFields';
-import ButtonRow from './ButtonRow';
+import { BannerPosition, TextPosition } from '@/app/general/add/new/banner/Components/types';
+import TopRow from '@/app/general/add/new/banner/Components/TopRow';
+import DetailsFields from '@/app/general/add/new/banner/Components/DetailsFields';
+import ButtonRow from '@/app/general/add/new/banner/Components/ButtonRow';
 
-interface BannerFormProps {
-  initialData?: {
-    _id?: string;
-    bannerTitle?: string;
+interface EditBannerFormProps {
+  initialData: {
+    _id: string;
+    bannerTitle: string;
     subTitle?: string;
     bannerDescription?: string;
     buttonText?: string;
@@ -25,12 +24,11 @@ interface BannerFormProps {
     textPosition?: string;
     bannerImage?: string;
   };
-  onSuccess?: () => void;
-  onCancel?: () => void;
+  onSuccess: () => void;
+  onCancel: () => void;
 }
 
-export default function BannerForm({ initialData, onSuccess, onCancel }: BannerFormProps) {
-  const router = useRouter();
+export default function EditBannerForm({ initialData, onSuccess, onCancel }: EditBannerFormProps) {
   const { data: session } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -38,7 +36,6 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
   type SessionWithToken = { accessToken?: string; user?: { role?: string } };
   const sessionWithToken = session as SessionWithToken | null;
   const token = sessionWithToken?.accessToken;
-  const userRole = sessionWithToken?.user?.role;
   
   const [image, setImage] = useState<File | null>(null);
   const [bannerPosition, setBannerPosition] = useState<BannerPosition | ''>('');
@@ -50,31 +47,27 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
   const [bannerLink, setBannerLink] = useState('');
   const [buttonLink, setButtonLink] = useState('');
 
-  const isEditMode = !!initialData;
-
-  // Populate form with initial data for edit mode
+  // Populate form with initial data
   useEffect(() => {
-    if (initialData) {
-      setSubTitle(initialData.subTitle || '');
-      setTitle(initialData.bannerTitle || '');
-      setDescription(initialData.bannerDescription || '');
-      setButtonText(initialData.buttonText || '');
-      setBannerLink(initialData.bannerLink || '');
-      setButtonLink(initialData.buttonLink || '');
-      
-      // Map backend position values to frontend values
-      const positionMapping: Record<string, BannerPosition> = {
-        'top-homepage': 'Top (Homepage)',
-        'left-homepage': 'Left (Homepage)',
-        'right-homepage': 'Right (Homepage)',
-        'middle-homepage': 'Middle (Homepage)',
-        'bottom-homepage': 'Bottom (Homepage)',
-        'top-shoppage': 'Top (ShopPage)',
-      };
-      
-      setBannerPosition(positionMapping[initialData.bannerPosition || ''] || '');
-      setTextPosition(initialData.textPosition === 'left' ? 'Left' : 'Right');
-    }
+    setSubTitle(initialData.subTitle || '');
+    setTitle(initialData.bannerTitle || '');
+    setDescription(initialData.bannerDescription || '');
+    setButtonText(initialData.buttonText || '');
+    setBannerLink(initialData.bannerLink || '');
+    setButtonLink(initialData.buttonLink || '');
+    
+    // Map backend position values to frontend values
+    const positionMapping: Record<string, BannerPosition> = {
+      'top-homepage': 'Top (Homepage)',
+      'left-homepage': 'Left (Homepage)',
+      'right-homepage': 'Right (Homepage)',
+      'middle-homepage': 'Middle (Homepage)',
+      'bottom-homepage': 'Bottom (Homepage)',
+      'top-shoppage': 'Top (ShopPage)',
+    };
+    
+    setBannerPosition(positionMapping[initialData.bannerPosition || ''] || '');
+    setTextPosition(initialData.textPosition === 'left' ? 'Left' : 'Right');
   }, [initialData]);
 
   // Map frontend values to backend values
@@ -87,11 +80,11 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
       'Bottom (Homepage)': 'bottom-homepage',
       'Top (ShopPage)': 'top-shoppage',
     };
-    return mapping[position];
+    return mapping[position] || 'top-homepage';
   };
 
   const mapTextPosition = (position: TextPosition): string => {
-    return position.toLowerCase();
+    return position === 'Left' ? 'left' : 'right';
   };
 
   // URL validation function
@@ -106,59 +99,42 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
   };
 
   const handleSave = async () => {
+    if (!token) {
+      toast.error('Authentication required');
+      return;
+    }
+
+    if (!title.trim()) {
+      toast.error('Banner Title is required');
+      return;
+    }
+
+    if (!bannerPosition) {
+      toast.error('Banner Position is required');
+      return;
+    }
+
+    if (!textPosition) {
+      toast.error('Text Position is required');
+      return;
+    }
+
+    // Validate URLs if they are filled
+    if (bannerLink.trim() && !isValidUrl(bannerLink)) {
+      toast.error('Please enter a valid banner URL (e.g., https://example.com)');
+      return;
+    }
+
+    if (buttonLink.trim() && !isValidUrl(buttonLink)) {
+      toast.error('Please enter a valid button URL (e.g., https://example.com)');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
-      // Validate required fields
-      if (!image) {
-        toast.error('Please upload a banner image');
-        return;
-      }
-
-      if (!bannerPosition) {
-        toast.error('Please select a banner position');
-        return;
-      }
-
-      if (!textPosition) {
-        toast.error('Please select a text position');
-        return;
-      }
-
-      if (!subTitle.trim()) {
-        toast.error('Please enter a subtitle');
-        return;
-      }
-
-      if (!title.trim()) {
-        toast.error('Please enter a title');
-        return;
-      }
-
-      if (!description.trim()) {
-        toast.error('Please enter a description');
-        return;
-      }
-
-      if (!buttonText.trim()) {
-        toast.error('Please enter button text');
-        return;
-      }
-
-      // Validate URLs if they are filled
-      if (bannerLink.trim() && !isValidUrl(bannerLink)) {
-        toast.error('Please enter a valid banner URL (e.g., https://example.com)');
-        return;
-      }
-
-      if (buttonLink.trim() && !isValidUrl(buttonLink)) {
-        toast.error('Please enter a valid button URL (e.g., https://example.com)');
-        return;
-      }
-
-      // Create FormData for file upload
       const formData = new FormData();
-      formData.append('bannerImage', image);
+      if (image) formData.append('bannerImage', image);
       formData.append('bannerPosition', mapBannerPosition(bannerPosition));
       formData.append('textPosition', mapTextPosition(textPosition));
       formData.append('subTitle', subTitle.trim());
@@ -168,48 +144,22 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
       if (bannerLink.trim()) formData.append('bannerLink', bannerLink.trim());
       if (buttonLink.trim()) formData.append('buttonLink', buttonLink.trim());
 
-      console.log('Sending banner data via FormData');
-      console.log('Headers:', {
-        token: token ? 'Present' : 'Missing',
-        userRole: userRole || 'Missing',
-        isAdmin: userRole === 'admin'
+      const response = await axios.patch(`/api/v1/ecommerce-banners/${initialData._id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
       });
 
-      let response;
-      if (isEditMode && initialData?._id) {
-        // Update existing banner
-        response = await axios.patch(`/api/v1/ecommerce-banners/${initialData._id}`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      } else {
-        // Create new banner
-        response = await axios.post('/api/v1/ecommerce-banners', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      }
-
       if (response.data.success) {
-        const action = isEditMode ? 'updated' : 'created';
-        toast.success(`Banner ${action} successfully!`);
-        
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          router.push('/general/view/all/banners');
-        }
+        toast.success('Banner updated successfully!');
+        onSuccess();
       } else {
-        const action = isEditMode ? 'update' : 'create';
-        toast.error(`Failed to ${action} banner`);
+        toast.error('Failed to update banner');
       }
     } catch (error: unknown) {
-      console.error('Error creating banner:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create banner';
+      console.error('Error updating banner:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update banner';
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -257,17 +207,13 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
       </div>
 
       <div className="flex justify-center pb-5 gap-3">
-        {onCancel && (
-          <Button variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-        )}
+        <Button variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
         <Button onClick={handleSave} disabled={isSubmitting}>
-          {isSubmitting ? (isEditMode ? 'Updating Banner...' : 'Creating Banner...') : (isEditMode ? 'Update Banner' : 'Save Banner')}
+          {isSubmitting ? 'Updating Banner...' : 'Update Banner'}
         </Button>
       </div>
     </div>
   );
 }
-
-

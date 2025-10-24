@@ -119,7 +119,7 @@ export const createOrderWithDetails = async (req: NextRequest) => {
       orderId,
       userId: new Types.ObjectId(body.userId),
       storeId: body.storeId ? new Types.ObjectId(body.storeId) : undefined,
-      deliveryMethodId: new Types.ObjectId(body.deliveryMethodId),
+      deliveryMethodId: body.deliveryMethodId,
       paymentMethodId: new Types.ObjectId(body.paymentMethodId),
 
       shippingName: body.shippingName,
