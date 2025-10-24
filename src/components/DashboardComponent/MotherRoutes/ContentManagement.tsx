@@ -41,7 +41,7 @@ const testimonials = [
 ];
 
 const blog = [
-  { title: 'Blog Categories', url: '/general/add/new/category' },
+  { title: 'Blog Categories', url: '/general/view/all/category' },
   { title: 'Write a Blog', url: '/general/add/new/blog' },
   { title: 'View All Blogs', url: '/general/view/all/blogs' },
 ];
@@ -120,9 +120,10 @@ export function ContentManagement() {
                       <SidebarMenuItem key={sub.url}>
                         <SidebarMenuButton
                           asChild
-                          className={`flex items-center gap-2 ${active
-                            ? "bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5"
-                            : "text-white bg-[#132843] pl-5"
+                          className={`flex items-center gap-2 ${
+                            active
+                              ? 'bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5'
+                              : 'text-white bg-[#132843] pl-5'
                           }`}>
                           <Link href={sub.url}>
                             <span>{sub.title}</span>
