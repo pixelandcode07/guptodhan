@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +17,7 @@ import { useSession } from 'next-auth/react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import SectionTitle from '@/components/ui/SectionTitle';
+import Loadding from '../../all/faqs/Components/Loadding';
 
 type FactType = {
   factTitle: string;
@@ -27,21 +28,36 @@ type FactType = {
 
 export default function EditFactPage() {
   const searchParams = useSearchParams();
+  const id = searchParams!.get('id');
+
   const router = useRouter();
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
 
-  const id = searchParams.get('id') || '';
-
   // Prefill from search params
-  const [fact, setFact] = useState<FactType>({
-    factTitle: searchParams.get('factTitle') || '',
-    factCount: Number(searchParams.get('factCount')) || 0,
-    shortDescription: searchParams.get('shortDescription') || '',
-    status: (searchParams.get('status') as 'active' | 'inactive') || 'active',
-  });
+  const [fact, setFact] = useState({});
 
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const { data } = await axios.get('/api/v1/public/about/facts');
+        const filterData = data?.data?.filter(
+          (item: { _id: string | null }) => item._id === id
+        );
+
+        setFact(filterData[0]);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching facts:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +82,8 @@ export default function EditFactPage() {
       setLoading(false);
     }
   };
+
+  if (loading) return <Loadding />;
 
   return (
     <div className="mx-auto bg-white dark:bg-neutral-900 shadow-md rounded-2xl pt-6">

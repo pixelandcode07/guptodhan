@@ -33,7 +33,8 @@ export default function OpenGraphForm() {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { register, handleSubmit, reset, watch, setValue } = useForm<OgFormInputs>();
+  const { register, handleSubmit, reset, watch, setValue } =
+    useForm<OgFormInputs>();
 
   const ogImageFile = watch('ogImage');
   const existingOgImage = watch('existingOgImage');
@@ -41,7 +42,9 @@ export default function OpenGraphForm() {
   useEffect(() => {
     const fetchOgData = async () => {
       try {
-        const res = await axios.get('/api/v1/public/seo-settings?page=homepage');
+        const res = await axios.get(
+          '/api/v1/public/seo-settings?page=homepage'
+        );
         if (res.data.success && res.data.data) {
           reset({
             ogTitle: res.data.data.ogTitle,
@@ -53,7 +56,7 @@ export default function OpenGraphForm() {
           });
         }
       } catch (error) {
-        toast.error("Could not load existing Open Graph data.");
+        toast.error('Could not load existing Open Graph data.');
       } finally {
         setLoading(false);
       }
@@ -61,14 +64,20 @@ export default function OpenGraphForm() {
     fetchOgData();
   }, [reset]);
 
-  const handleOgSubmit: SubmitHandler<OgFormInputs> = async (data) => {
-    if (!token) return toast.error("Admin authentication failed.");
+  const handleOgSubmit: SubmitHandler<OgFormInputs> = async data => {
+    if (!token) return toast.error('Admin authentication failed.');
 
     // ✅ Frontend validation for file size
     if (data.ogImage && data.ogImage.length > 0) {
       const file = data.ogImage[0];
       if (file.size > MAX_FILE_SIZE) {
-        toast.error(`Image size must be less than 1MB. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+        toast.error(
+          `Image size must be less than 1MB. Current size: ${(
+            file.size /
+            1024 /
+            1024
+          ).toFixed(2)}MB`
+        );
         return;
       }
     }
@@ -81,16 +90,19 @@ export default function OpenGraphForm() {
       formData.append('ogTitle', data.ogTitle);
       formData.append('ogDescription', data.ogDescription);
       formData.append('metaTitle', data.metaTitle || data.ogTitle);
-      formData.append('metaDescription', data.metaDescription || data.ogDescription);
+      formData.append(
+        'metaDescription',
+        data.metaDescription || data.ogDescription
+      );
       formData.append('metaKeywords', data.metaKeywords || '');
-      
+
       if (data.ogImage && data.ogImage.length > 0) {
         formData.append('ogImage', data.ogImage[0]);
       }
 
       await axios.post('/api/v1/seo-settings', formData, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
         },
       });
@@ -116,7 +128,7 @@ export default function OpenGraphForm() {
             <Label htmlFor="ogTitle">Meta OG Title</Label>
             <Input
               id="ogTitle"
-              {...register("ogTitle", { required: true })}
+              {...register('ogTitle', { required: true })}
               placeholder="Enter Meta OG Title Here"
             />
           </div>
@@ -125,35 +137,75 @@ export default function OpenGraphForm() {
             <Label htmlFor="ogDescription">Meta OG Description</Label>
             <Textarea
               id="ogDescription"
-              {...register("ogDescription", { required: true })}
+              {...register('ogDescription', { required: true })}
               rows={5}
               placeholder="Write Meta OG Description Here"
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="w-full space-y-2">
             <Label htmlFor="ogImage">Meta OG Image</Label>
-            <p className="text-xs text-muted-foreground">Maximum file size: 1MB</p>
-            <Input
-              type="file"
+            <p className="text-xs text-muted-foreground">
+              Maximum file size: 1MB
+            </p>
+
+            <label
+              htmlFor="ogImage"
+              className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition h-48 overflow-hidden bg-gray-50">
+              {(ogImageFile && ogImageFile.length > 0) || existingOgImage ? (
+                <div className="relative w-full h-full">
+                  <img
+                    src={
+                      ogImageFile && ogImageFile.length > 0
+                        ? URL.createObjectURL(ogImageFile[0])
+                        : existingOgImage
+                    }
+                    alt="Preview"
+                    className="object-contain w-full h-full rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setValue('ogImage', null)}
+                    className="absolute top-2 px-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition">
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center p-6">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-8 h-8 text-gray-400 mb-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 16v-4m0 0V8m0 4h4m-4 0H8m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <p className="text-gray-500">
+                    Click to upload or drag & drop
+                  </p>
+                  <p className="text-xs text-gray-400">PNG, JPG (max 1MB)</p>
+                </div>
+              )}
+            </label>
+
+            <input
               id="ogImage"
-              {...register("ogImage")}
+              type="file"
               accept="image/*"
-              className="cursor-pointer"
+              className="hidden"
+              {...register('ogImage')}
             />
-            {(ogImageFile && ogImageFile.length > 0) || existingOgImage ? (
-              <div className="mt-2">
-                <img
-                  src={ogImageFile && ogImageFile.length > 0 ? URL.createObjectURL(ogImageFile[0]) : existingOgImage}
-                  alt="Current OG"
-                  className="h-32 rounded border object-cover"
-                />
-              </div>
-            ) : null}
           </div>
 
           <div className="flex justify-center space-x-4 pt-4">
-            <Button type="button" variant="destructive">Cancel</Button>
+            <Button type="button" variant="destructive">
+              Cancel
+            </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="animate-spin mr-2" />}
               {isSubmitting ? 'Updating...' : 'Update Info'}
