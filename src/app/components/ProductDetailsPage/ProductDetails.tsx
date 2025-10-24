@@ -4,10 +4,30 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import axios from 'axios';
 
 interface ProductDetailsProps {
   productId: string;
+}
+
+interface CartItem {
+  id: string;
+  seller: {
+    name: string;
+    verified: boolean;
+  };
+  product: {
+    id: string;
+    name: string;
+    image: string;
+    size: string;
+    color: string;
+    price: number;
+    originalPrice: number;
+    quantity: number;
+  };
 }
 
 interface ProductData {
@@ -24,11 +44,11 @@ interface ProductData {
   stock?: number;
   rewardPoints?: number;
   sku?: string;
-  category: any;
-  brand?: any;
-  productModel?: any;
+  category: { _id: string; name: string };
+  brand?: { _id: string; name: string };
+  productModel?: { _id: string; name: string };
   warranty: string;
-  vendorStoreId: any;
+  vendorStoreId: { _id: string; storeName: string };
   createdAt: string;
   updatedAt: string;
 }
@@ -38,6 +58,7 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string>('');
+  const router = useRouter();
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -65,6 +86,48 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
       fetchProduct();
     }
   }, [productId]);
+
+  const handleAddToCart = () => {
+    if (product) {
+      const cartItem: CartItem = {
+        id: product._id,
+        seller: {
+          name: product.vendorStoreId?.storeName || 'Store',
+          verified: true,
+        },
+        product: {
+          id: product._id,
+          name: product.productTitle,
+          image: product.thumbnailImage,
+          size: 'Standard',
+          color: 'Default',
+          price: product.discountPrice || product.productPrice,
+          originalPrice: product.productPrice,
+          quantity: 1,
+        },
+      };
+
+      const existingCart = JSON.parse(localStorage.getItem('cart') || '[]');
+      const existingItemIndex = existingCart.findIndex((item: CartItem) => item.product.id === product._id);
+
+      if (existingItemIndex >= 0) {
+        existingCart[existingItemIndex].product.quantity += 1;
+      } else {
+        existingCart.push(cartItem);
+      }
+
+      localStorage.setItem('cart', JSON.stringify(existingCart));
+
+      toast.success('Product added to cart successfully!', {
+        description: `${product.productTitle} has been added to your cart.`,
+        duration: 3000,
+      });
+
+      setTimeout(() => {
+        router.push('/home/product/shopping-cart');
+      }, 1500);
+    }
+  };
 
   if (loading) {
     return (
@@ -194,7 +257,11 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
           <Button className="bg-blue-600 hover:bg-blue-700 text-white flex-1">
             Buy Now
           </Button>
-          <Button variant="outline" className="flex-1">
+          <Button 
+            variant="outline" 
+            className="flex-1"
+            onClick={handleAddToCart}
+          >
             Add To Cart
           </Button>
         </div>

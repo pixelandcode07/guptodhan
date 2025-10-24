@@ -5,8 +5,9 @@ import OrderSummary from './components/OrderSummary'
 import AddressSelector from './components/AddressSelector'
 import DeliveryOptions, { DeliveryOption } from './components/DeliveryOptions'
 import ItemsList from './components/ItemsList'
+import OrderSuccessModal from './components/OrderSuccessModal'
+import { useSession } from 'next-auth/react'
 import axios from 'axios'
-import { toast } from 'sonner'
 
 // Cart item type definition
 export type CartItem = {
@@ -27,14 +28,34 @@ export type CartItem = {
   };
 };
 
+// User profile type definition
+interface UserProfile {
+  _id: string;
+  name: string;
+  email?: string;
+  phoneNumber?: string;
+  address: string;
+  profilePicture?: string;
+  isVerified: boolean;
+  isActive: boolean;
+  role: string;
+  rewardPoints: number;
+}
+
 export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem[] }) {
   const [selectedDelivery, setSelectedDelivery] = useState<DeliveryOption>('standard')
   const [deliveryCharge, setDeliveryCharge] = useState(0)
   const [loading, setLoading] = useState(true)
   const [selectedAddress, setSelectedAddress] = useState<'home' | 'office'>('home')
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [profileLoading, setProfileLoading] = useState(true)
+  const { data: session } = useSession()
+
+  // Modal state management
+  const [successModalOpen, setSuccessModalOpen] = useState(false)
+  const [successOrderId, setSuccessOrderId] = useState('')
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.product.quantity), 0)
-  const totalItems = cartItems.reduce((sum, item) => sum + item.product.quantity, 0)
   const totalSavings = cartItems.reduce((sum, item) => sum + ((item.product.originalPrice - item.product.price) * item.product.quantity), 0)
 
   // Calculate final delivery charge based on selected option
@@ -50,6 +71,67 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
   }
 
   const finalDeliveryCharge = getFinalDeliveryCharge()
+
+  // Modal helper functions
+  const showSuccessModal = (orderId: string) => {
+    setSuccessOrderId(orderId)
+    setSuccessModalOpen(true)
+    // Clear cart after successful order
+    localStorage.removeItem('cart')
+  }
+
+  const showError = (message: string) => {
+    // You can add a simple alert or console log for errors
+    console.error('Order Error:', message)
+    alert(`Order Error: ${message}`)
+  }
+
+  const handleSuccessModalClose = () => {
+    setSuccessModalOpen(false)
+  }
+
+  // Fetch user profile
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        setProfileLoading(true)
+        
+        if (!session?.user) {
+          console.log('No session found')
+          setProfileLoading(false)
+          return
+        }
+
+        // Get user ID from session
+        const userLike = (session?.user ?? {}) as { id?: string; _id?: string }
+        const userId = userLike.id || userLike._id
+
+        if (!userId) {
+          console.log('No user ID found in session')
+          setProfileLoading(false)
+          return
+        }
+
+        // Fetch user profile from API
+        const response = await axios.get('/api/v1/profile/me', {
+          headers: {
+            'x-user-id': userId,
+          }
+        })
+
+        if (response.data.success && response.data.data) {
+          setUserProfile(response.data.data)
+          console.log('User profile loaded:', response.data.data)
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error)
+      } finally {
+        setProfileLoading(false)
+      }
+    }
+
+    fetchUserProfile()
+  }, [session])
 
   // Fetch delivery charge based on location
   useEffect(() => {
@@ -74,10 +156,6 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
         console.error('Error fetching delivery charge:', error)
         // Fallback to default delivery charge
         setDeliveryCharge(100)
-        toast.error('Unable to fetch delivery charges', {
-          description: 'Using default delivery charge.',
-          duration: 3000,
-        })
       } finally {
         setLoading(false)
       }
@@ -124,30 +202,27 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
       // Validate COD order
       const validationErrors = validateCODOrder(paymentMethod)
       if (validationErrors.length > 0) {
-        toast.error('Order validation failed', {
-          description: validationErrors.join(', '),
-          duration: 4000,
-        })
+        showError(validationErrors.join(', '))
         return
       }
 
       // Prepare order data according to backend structure
       const orderData = {
-        userId: '507f1f77bcf86cd799439011', // Valid ObjectId format - replace with actual user ID
+        userId: userProfile?._id || '507f1f77bcf86cd799439011', // Use actual user ID from profile
         storeId: '507f1f77bcf86cd799439012', // Valid ObjectId format - replace with actual store ID  
         deliveryMethodId: selectedDelivery,
         paymentMethodId: '507f1f77bcf86cd799439013', // Valid ObjectId format - replace with actual payment method ID
         
-        // Shipping information (mock data - replace with actual form data)
-        shippingName: 'John Doe',
-        shippingPhone: '01712345678',
-        shippingEmail: 'john@example.com',
-        shippingStreetAddress: '123 Main Street',
-        shippingCity: 'Dhaka',
-        shippingDistrict: 'Dhaka',
-        shippingPostalCode: '1000',
+        // Shipping information from user profile
+        shippingName: userProfile?.name || 'Guest User',
+        shippingPhone: userProfile?.phoneNumber || '01700000000',
+        shippingEmail: userProfile?.email || 'guest@example.com',
+        shippingStreetAddress: userProfile?.address || 'Address not provided',
+        shippingCity: 'Dhaka', // Default city - can be extracted from address if needed
+        shippingDistrict: 'Dhaka', // Default district - can be extracted from address if needed
+        shippingPostalCode: '1000', // Default postal code
         shippingCountry: 'Bangladesh',
-        addressDetails: 'Near Central Mosque',
+        addressDetails: selectedAddress === 'home' ? 'Home Address' : 'Office Address',
         
         deliveryCharge: finalDeliveryCharge,
         paymentStatus: paymentMethod === 'cod' ? 'Pending' : 'Pending',
@@ -169,12 +244,8 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
       
       if (response.data.success) {
         const orderData = response.data.data
-        
-        // Show success message
-        toast.success('Order placed successfully!', {
-          description: `Order ID: ${orderData.order.orderId}. Total: ৳${(subtotal + finalDeliveryCharge).toLocaleString()}`,
-          duration: 5000,
-        })
+        let trackingId = ''
+        let trackingUrl = ''
         
         // If it's a Steadfast order, create the parcel
         if (selectedDelivery === 'steadfast' && orderData.needsSteadfastCreation) {
@@ -184,25 +255,18 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
             })
             
             if (steadfastResponse.data.success) {
-              toast.success('Steadfast parcel created!', {
-                description: `Tracking ID: ${steadfastResponse.data.data.trackingId}. You can track your order on Steadfast website.`,
-                duration: 6000,
-              })
+              trackingId = steadfastResponse.data.data.trackingId
+              trackingUrl = steadfastResponse.data.data.steadfastUrl
               
               // Store tracking info
               localStorage.setItem('lastOrderTracking', JSON.stringify({
                 orderId: orderData.order.orderId,
-                trackingId: steadfastResponse.data.data.trackingId,
-                trackingUrl: steadfastResponse.data.data.steadfastUrl,
+                trackingId: trackingId,
+                trackingUrl: trackingUrl,
               }))
             }
           } catch (error) {
             console.error('Error creating Steadfast parcel:', error)
-            toast.error('Order created but Steadfast parcel creation failed', {
-              description: 'Please contact support to create the parcel manually. Order ID: ' + orderData.order.orderId,
-              duration: 5000,
-            })
-            
             // Still store the order info even if Steadfast fails
             localStorage.setItem('lastOrderTracking', JSON.stringify({
               orderId: orderData.order.orderId,
@@ -213,29 +277,37 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
           }
         }
         
-        // Clear cart after successful order
-        localStorage.removeItem('cart')
+        // Show success modal
+        showSuccessModal(orderData.order.orderId)
         
-        // Redirect to order success page or home
-        setTimeout(() => {
-          window.location.href = '/home/UserProfile/orders'
-        }, 2000)
       }
     } catch (error) {
       console.error('Error placing order:', error)
-      toast.error('Failed to place order', {
-        description: 'Please try again or contact support.',
-        duration: 4000,
-      })
+      showError('Failed to place order. Please try again or contact support.')
     }
   }
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading delivery options...</p>
+          <p className="mt-2 text-gray-600">Loading ...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show warning if no user profile is available
+  if (!userProfile && session?.user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+            <p className="font-bold">Profile Information Required</p>
+            <p className="text-sm">Please complete your profile information to proceed with checkout.</p>
+            <p className="text-xs mt-2">Using default information for now.</p>
+          </div>
         </div>
       </div>
     )
@@ -266,6 +338,13 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
           />
         </div>
       </div>
+
+      {/* Order Success Modal */}
+      <OrderSuccessModal
+        open={successModalOpen}
+        onOpenChange={handleSuccessModalClose}
+        orderId={successOrderId}
+      />
     </div>
   )
 }

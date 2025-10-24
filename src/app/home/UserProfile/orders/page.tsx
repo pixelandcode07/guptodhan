@@ -48,7 +48,11 @@ export default function UserOrdersPage() {
         return
       }
 
-      const response = await api.get(`/product-order/user/${userId}`)
+      const response = await api.get(`/product-order/my-orders`, {
+        headers: {
+          'x-user-id': userId,
+        }
+      })
       const apiOrders = (response.data?.data ?? []) as ApiOrder[]
       
       const mappedOrders: OrderSummary[] = apiOrders.map((order) => ({
