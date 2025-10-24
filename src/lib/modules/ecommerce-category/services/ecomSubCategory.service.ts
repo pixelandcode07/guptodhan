@@ -26,7 +26,6 @@ const getAllSubCategoriesFromDB = async () => {
 const getSubCategoriesByCategoryFromDB = async (categoryId: string) => {
   const result = await SubCategoryModel.find({
     category: new Types.ObjectId(categoryId),
-    status: 'active',
   }).sort({ name: 1 });
   return result;
 };

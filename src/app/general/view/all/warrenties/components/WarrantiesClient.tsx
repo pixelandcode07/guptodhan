@@ -9,6 +9,7 @@ import type { Session } from "next-auth";
 import WarrantiesHeader from "./WarrantiesHeader";
 import WarrantiesTable from "./WarrantiesTable";
 import WarrantyModal from "./WarrantyModal";
+import DeleteWarrantyDialog from "./DeleteWarrantyDialog";
 
 export default function WarrantiesClient() {
   const [warranties, setWarranties] = useState<Warranty[]>([]);
@@ -16,6 +17,9 @@ export default function WarrantiesClient() {
   const [editing, setEditing] = useState<Warranty | null>(null);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | "Active" | "Inactive">("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [warrantyToDelete, setWarrantyToDelete] = useState<Warranty | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { data: session } = useSession();
   type AugmentedSession = Session & { accessToken?: string; user?: Session["user"] & { role?: string } };
   const s = session as AugmentedSession | null;
@@ -99,20 +103,10 @@ export default function WarrantiesClient() {
     setOpen(true);
   }, []);
 
-  const onDelete = useCallback(async (warranty: Warranty) => {
-    try {
-      await axios.delete(`/api/v1/product-config/warranty/${warranty._id}`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(userRole ? { "x-user-role": userRole } : {}),
-        }
-      });
-      await fetchWarranties();
-      toast.success("Warranty type deleted successfully!");
-    } catch {
-      toast.error("Failed to delete warranty type");
-    }
-  }, [fetchWarranties, token, userRole]);
+  const onDelete = useCallback((warranty: Warranty) => {
+    setWarrantyToDelete(warranty);
+    setDeleteOpen(true);
+  }, []);
 
   const filteredWarranties = useMemo(() => {
     const bySearch = (w: Warranty) => {
@@ -195,6 +189,39 @@ export default function WarrantiesClient() {
           onOpenChange={setOpen} 
           onSubmit={onSubmit} 
           editing={editing ? { name: editing.name, status: editing.status || "Active" } : null} 
+        />
+
+        <DeleteWarrantyDialog
+          open={deleteOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setWarrantyToDelete(null);
+              setIsDeleting(false);
+            }
+            setDeleteOpen(open);
+          }}
+          itemName={warrantyToDelete?.name}
+          isDeleting={isDeleting}
+          onConfirm={async () => {
+            if (!warrantyToDelete?._id) return;
+            setIsDeleting(true);
+            try {
+              await axios.delete(`/api/v1/product-config/warranty/${warrantyToDelete._id}`, {
+                headers: {
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                  ...(userRole ? { "x-user-role": userRole } : {}),
+                }
+              });
+              toast.success("Warranty type deleted successfully!");
+              setDeleteOpen(false);
+              setWarrantyToDelete(null);
+              await fetchWarranties();
+            } catch {
+              toast.error("Failed to delete warranty type");
+            } finally {
+              setIsDeleting(false);
+            }
+          }}
         />
       </div>
     </div>

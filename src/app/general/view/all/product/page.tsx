@@ -1,13 +1,14 @@
 "use client";
 
 import { DataTable } from "@/components/TableHelper/data-table";
-import { Product, product_columns } from "@/components/TableHelper/product_columns";
-import { Input } from "@/components/ui/input";
+import { Product, getProductColumns } from "@/components/TableHelper/product_columns";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useSession } from "next-auth/react";
 import type { Session } from "next-auth";
 import { toast } from "sonner";
+import DeleteProductDialog from "./components/DeleteProductDialog";
+import { useRouter } from "next/navigation";
 
 type ApiProduct = {
   _id: string;
@@ -36,11 +37,22 @@ type ApiStore = {
   status: 'active' | 'inactive';
 };
 
+type ApiFlag = {
+  _id: string;
+  name: string;
+  status: 'active' | 'inactive';
+};
+
 export default function ViewAllProductsPage() {
   const [rows, setRows] = useState<Product[]>([]);
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [storeMap, setStoreMap] = useState<Record<string, string>>({});
+  const [flagMap, setFlagMap] = useState<Record<string, string>>({});
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
   const { data: session } = useSession();
   type AugmentedSession = Session & { accessToken?: string; user?: Session["user"] & { role?: string } };
   const s = session as AugmentedSession | null;
@@ -98,11 +110,30 @@ export default function ViewAllProductsPage() {
     }
   }, [token, userRole]);
 
+  const fetchFlags = useCallback(async () => {
+    try {
+      const res = await axios.get('/api/v1/product-config/productFlag', {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(userRole ? { 'x-user-role': userRole } : {}),
+        },
+      });
+      const items: ApiFlag[] = Array.isArray(res.data?.data) ? res.data.data : [];
+      const active = items.filter(f => f.status === 'active');
+      const map: Record<string, string> = {};
+      for (const f of active) map[f._id] = f.name;
+      setFlagMap(map);
+    } catch {
+      setFlagMap({});
+    }
+  }, [token, userRole]);
+
   useEffect(() => {
     fetchProducts();
     fetchCategories();
     fetchStores();
-  }, [fetchProducts, fetchCategories, fetchStores]);
+    fetchFlags();
+  }, [fetchProducts, fetchCategories, fetchStores, fetchFlags]);
 
   useEffect(() => {
     const mapped: Product[] = products.map((p, idx) => {
@@ -112,6 +143,7 @@ export default function ViewAllProductsPage() {
       const storeName = typeof p.vendorStoreId === 'string'
         ? (storeMap[p.vendorStoreId] || p.vendorStoreId)
         : (p.vendorStoreId?.storeName || '');
+      const flagName = p.flag ? (flagMap[p.flag] || p.flag) : "";
       return {
         id: idx + 1,
         image: p.thumbnailImage || "",
@@ -121,13 +153,75 @@ export default function ViewAllProductsPage() {
         price: p.productPrice != null ? String(p.productPrice) : "",
         offer_price: p.discountPrice != null ? String(p.discountPrice) : "",
         stock: p.stock != null ? String(p.stock) : "",
-        flag: p.flag || "",
+        flag: flagName,
         status: p.status === 'active' ? 'Active' : 'Inactive',
         created_at: p.createdAt ? new Date(p.createdAt).toLocaleString() : "",
       };
     });
     setRows(mapped);
-  }, [products, categoryMap, storeMap]);
+  }, [products, categoryMap, storeMap, flagMap]);
+
+  const onView = useCallback((product: Product) => {
+    // Find the original product data to get the _id
+    const originalProduct = products.find(p => p.productTitle === product.name);
+    if (originalProduct) {
+      router.push(`/products/${originalProduct._id}`);
+    }
+  }, [products, router]);
+
+  const onEdit = useCallback((product: Product) => {
+    // Find the original product data to get the _id
+    const originalProduct = products.find(p => p.productTitle === product.name);
+    if (originalProduct) {
+      router.push(`/general/edit/product/${originalProduct._id}`);
+    }
+  }, [products, router]);
+
+  const onDelete = useCallback((product: Product) => {
+    setProductToDelete(product);
+    setDeleteOpen(true);
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    if (!productToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      // Find the original product data to get the _id
+      const originalProduct = products.find(p => p.productTitle === productToDelete.name);
+      if (!originalProduct) {
+        throw new Error("Product not found");
+      }
+
+      await axios.delete(`/api/v1/product/${originalProduct._id}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(userRole ? { "x-user-role": userRole } : {}),
+        },
+      });
+      
+      toast.success("Product deleted successfully!");
+      setDeleteOpen(false);
+      setProductToDelete(null);
+      
+      // Refresh the products list
+      await fetchProducts();
+    } catch (error: unknown) {
+      console.error("Error deleting product:", error);
+      let errorMessage = "Failed to delete product";
+      
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { message?: string } } };
+        errorMessage = axiosError.response?.data?.message || errorMessage;
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [productToDelete, products, token, userRole, fetchProducts]);
+
+  const columns = useMemo(() => getProductColumns({ onView, onEdit, onDelete }), [onView, onEdit, onDelete]);
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">
@@ -161,10 +255,24 @@ export default function ViewAllProductsPage() {
         <div className="mb-4 sm:mb-6">
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
             <div className="min-w-[840px]">
-              <DataTable columns={product_columns} data={rows} />
+              <DataTable columns={columns} data={rows} />
             </div>
           </div>
         </div>
+
+        <DeleteProductDialog
+          open={deleteOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setProductToDelete(null);
+              setIsDeleting(false);
+            }
+            setDeleteOpen(open);
+          }}
+          productName={productToDelete?.name}
+          isDeleting={isDeleting}
+          onConfirm={confirmDelete}
+        />
       </div>
     </div>
   );

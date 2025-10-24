@@ -65,7 +65,7 @@ export default function BrandModelSelection({ formData, handleInputChange, brand
                     <Select value={formData.model} onValueChange={(v) => handleInputChange('model', v)} disabled={!formData.brand || loadingModels}>
                         <SelectTrigger className="mt-1"><SelectValue placeholder={!formData.brand ? "Select brand first" : loadingModels ? "Loading..." : "Select Model"} /></SelectTrigger>
                         <SelectContent>
-                            {models.map((model) => (<SelectItem key={model._id} value={model._id}>{model.name}</SelectItem>))}
+                            {models.map((model) => (<SelectItem key={model._id} value={model._id} className="text-black">{model.modelName}</SelectItem>))}
                         </SelectContent>
                     </Select>
                 </div>

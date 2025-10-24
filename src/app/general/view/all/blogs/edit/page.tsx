@@ -8,11 +8,16 @@ import SectionTitle from '@/components/ui/SectionTitle';
 import { Button } from '@/components/ui/button';
 
 import RichTextEditor from '@/components/ReusableComponents/RichTextEditor';
-
 import TagsInput from './Components/TagsInput';
 import BlogSeoForm from './Components/BlogSeoForm';
-import BlogForm from './Components/BlogForm';
-import Loadding from './Components/loadding';
+import BlogForm, { BlogData } from './Components/BlogForm';
+import BlogFormLoadding from './Components/BlocgFormLoadding';
+
+interface SeoData {
+  metaTitle: string;
+  metaKeywords: string[];
+  metaDescription: string;
+}
 
 export default function EditBlogPage() {
   const searchParams = useSearchParams();
@@ -51,7 +56,6 @@ export default function EditBlogPage() {
           return;
         }
 
-        // Parent state update
         setBlogData({
           category: blog.category || '',
           title: blog.title || '',
@@ -99,7 +103,6 @@ export default function EditBlogPage() {
         status: 'active',
       };
 
-      // ✅ এখানে id সহ সঠিক API call
       const res = await axios.patch(`/api/v1/blog/${id}`, updatedData);
 
       if (res.data.success) {
@@ -116,9 +119,7 @@ export default function EditBlogPage() {
     }
   };
 
-  if (loading) {
-    return <Loadding />;
-  }
+  if (loading) return <BlogFormLoadding />;
 
   return (
     <div className="bg-white p-5 rounded-lg shadow space-y-6">

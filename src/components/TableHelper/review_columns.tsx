@@ -2,10 +2,22 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2 } from "lucide-react"
+import { Trash2 } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export type Review = {
   id: number
+  dbId?: string
   image: string
   product: string
   rating: number
@@ -17,7 +29,7 @@ export type Review = {
   created_at: string
 }
 
-export const review_columns: ColumnDef<Review>[] = [
+export const createReviewColumns = (onDelete: (reviewId: string) => void): ColumnDef<Review>[] => [
   {
     accessorKey: "id",
     header: "SL",
@@ -123,17 +135,40 @@ export const review_columns: ColumnDef<Review>[] = [
   {
     id: "action",
     header: "Action",
-    cell: () => {
+    cell: ({ row }) => {
+      const review = row.original;
       return (
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-            <Edit className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the review from{" "}
+                  <strong>{review.name}</strong> for product <strong>{review.product}</strong>.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => review.dbId && onDelete(review.dbId)}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Delete Review
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )
     },
   },
 ]
+
+// Backward compatibility - default columns without delete functionality
+export const review_columns = createReviewColumns(() => {});
