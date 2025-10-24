@@ -21,6 +21,24 @@ export default function BannersPage() {
   const [data, setData] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
   
+  // Get authentication data from session
+  type SessionWithToken = { accessToken?: string; user?: { role?: string } };
+  const sessionWithToken = session as SessionWithToken | null;
+  const token = sessionWithToken?.accessToken;
+  const userRole = sessionWithToken?.user?.role;
+  
+  // Security check - only allow admin users
+  if (userRole !== 'admin') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-8 text-center max-w-md">
+          <div className="text-red-600 font-semibold text-xl mb-3">Access Denied</div>
+          <p className="text-red-500">You need admin privileges to manage banners.</p>
+        </div>
+      </div>
+    );
+  }
+  
   // Modal states
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -29,13 +47,13 @@ export default function BannersPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [successMessage, setSuccessMessage] = useState({ title: '', message: '', action: '' });
   
-  // Get authentication data from session
-  type SessionWithToken = { accessToken?: string; user?: { role?: string } };
-  const sessionWithToken = session as SessionWithToken | null;
-  const token = sessionWithToken?.accessToken;
-  
   // Handler functions for edit and delete actions
   const handleEdit = (id: string) => {
+    // Security check - only allow admin users to edit
+    if (userRole !== 'admin') {
+      toast.error('Access denied: Admin privileges required');
+      return;
+    }
     const banner = data.find(b => b._id === id);
     if (banner) {
       setSelectedBanner(banner);
@@ -44,6 +62,11 @@ export default function BannersPage() {
   };
 
   const handleDelete = (id: string) => {
+    // Security check - only allow admin users to delete
+    if (userRole !== 'admin') {
+      toast.error('Access denied: Admin privileges required');
+      return;
+    }
     const banner = data.find(b => b._id === id);
     if (banner) {
       setSelectedBanner(banner);
@@ -54,11 +77,20 @@ export default function BannersPage() {
   const confirmDelete = async () => {
     if (!selectedBanner) return;
     
+    // Security check - only allow admin users to delete
+    if (userRole !== 'admin') {
+      toast.error('Access denied: Admin privileges required');
+      setDeleteModalOpen(false);
+      setSelectedBanner(null);
+      return;
+    }
+    
     try {
       setIsDeleting(true);
       const response = await axios.delete(`/api/v1/ecommerce-banners/${selectedBanner._id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
+          'x-user-role': userRole || '',
         },
       });
       
@@ -101,6 +133,7 @@ export default function BannersPage() {
       const response = await axios.get('/api/v1/ecommerce-banners', {
         headers: {
           Authorization: `Bearer ${token}`,
+          'x-user-role': userRole || '',
         },
       });
       if (response.data.success) {

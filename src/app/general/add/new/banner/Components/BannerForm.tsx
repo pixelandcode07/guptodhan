@@ -40,6 +40,16 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
   const token = sessionWithToken?.accessToken;
   const userRole = sessionWithToken?.user?.role;
   
+  // Security check - only allow admin users
+  if (userRole !== 'admin') {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+        <div className="text-red-600 font-semibold mb-2">Access Denied</div>
+        <p className="text-red-500">You need admin privileges to create banners.</p>
+      </div>
+    );
+  }
+  
   const [image, setImage] = useState<File | null>(null);
   const [bannerPosition, setBannerPosition] = useState<BannerPosition | ''>('');
   const [textPosition, setTextPosition] = useState<TextPosition | ''>('');
@@ -108,6 +118,12 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
   const handleSave = async () => {
     try {
       setIsSubmitting(true);
+      
+      // Security check - only allow admin users
+      if (userRole !== 'admin') {
+        toast.error('Access denied: Admin privileges required');
+        return;
+      }
 
       // Validate required fields
       if (!image) {
@@ -182,6 +198,7 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
           headers: {
             'Content-Type': 'multipart/form-data',
             Authorization: `Bearer ${token}`,
+            'x-user-role': userRole || '',
           },
         });
       } else {
@@ -190,6 +207,7 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
           headers: {
             'Content-Type': 'multipart/form-data',
             Authorization: `Bearer ${token}`,
+            'x-user-role': userRole || '',
           },
         });
       }
