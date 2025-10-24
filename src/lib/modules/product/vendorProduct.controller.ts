@@ -74,10 +74,10 @@ const getAllVendorProducts = async () => {
 // Get vendor product by ID
 const getVendorProductById = async (
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   const result = await VendorProductServices.getVendorProductByIdFromDB(id);
 
   return sendResponse({
@@ -132,10 +132,10 @@ const updateVendorProduct = async (
 // Delete vendor product
 const deleteVendorProduct = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   await VendorProductServices.deleteVendorProductFromDB(id);
 
   return sendResponse({

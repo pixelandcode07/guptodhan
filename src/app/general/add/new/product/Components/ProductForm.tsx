@@ -74,6 +74,11 @@ export default function ProductForm({ initialData }: any) {
     const { data: session } = useSession();
     const token = (session as any)?.accessToken;
 
+    // Keep initial IDs to set after dependent lists load (for edit mode)
+    const [initialSubcategoryId, setInitialSubcategoryId] = useState<string>('');
+    const [initialChildCategoryId, setInitialChildCategoryId] = useState<string>('');
+    const [initialModelId, setInitialModelId] = useState<string>('');
+
     // Pricing form data
     const pricingFormData = {
         price: price ?? '',
@@ -134,7 +139,10 @@ export default function ProductForm({ initialData }: any) {
                     const filteredModels = res.data?.data?.filter((m: any) => m.status === 'active') || [];
                     console.log('Filtered models:', filteredModels);
                     setModels(filteredModels); 
-                    setModel(''); 
+                    // If we have an initial model from edit mode, set it once models are loaded
+                    if (initialModelId) {
+                        setModel(initialModelId);
+                    }
                 } catch (error) { 
                     console.error('Failed to fetch models', error); 
                 } 
@@ -143,7 +151,114 @@ export default function ProductForm({ initialData }: any) {
             } 
         }; 
         fetchModels();
-    }, [brand, token]);
+    }, [brand, token, initialModelId]);
+
+    // When subcategories are loaded in edit mode, set initial subcategory
+    useEffect(() => {
+        if (initialSubcategoryId && subcategories.length > 0) {
+            setSubcategory(initialSubcategoryId);
+        }
+    }, [initialSubcategoryId, subcategories]);
+
+    // When child categories are loaded in edit mode, set initial child category
+    useEffect(() => {
+        if (initialChildCategoryId && childCategories.length > 0) {
+            setChildCategory(initialChildCategoryId);
+        }
+    }, [initialChildCategoryId, childCategories]);
+
+    // Fetch existing product details in edit mode and pre-fill form
+    useEffect(() => {
+        const fetchExistingProduct = async () => {
+            if (!isEditMode || !productId || !token) return;
+            try {
+                const res = await axios.get(`/api/v1/product/${productId}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                const p = res.data?.data;
+                if (!p) return;
+
+                // Basic fields
+                setTitle(p.productTitle || '');
+                setShortDescription(p.shortDescription || '');
+                setFullDescription(p.fullDescription || '');
+                setSpecification(p.specification || '');
+                setWarrantyPolicy(p.warrantyPolicy || '');
+                setTags(Array.isArray(p.productTag) ? p.productTag.join(', ') : '');
+
+                // Media previews (keep files empty; use URL previews)
+                setThumbnail(null);
+                setThumbnailPreview(p.thumbnailImage || null);
+                setGalleryImages([]);
+                setGalleryImagePreviews(Array.isArray(p.photoGallery) ? p.photoGallery : []);
+
+                // Pricing & inventory
+                setPrice(typeof p.productPrice === 'number' ? p.productPrice : undefined);
+                setDiscountPrice(typeof p.discountPrice === 'number' ? p.discountPrice : undefined);
+                setStock(typeof p.stock === 'number' ? p.stock : undefined);
+                setProductCode(p.sku || '');
+                setRewardPoints(typeof p.rewardPoints === 'number' ? p.rewardPoints : undefined);
+
+                // Selects
+                setStore(p.vendorStoreId || '');
+                setCategory(p.category || '');
+                setInitialSubcategoryId(p.subCategory || '');
+                setInitialChildCategoryId(p.childCategory || '');
+                setBrand(p.brand || '');
+                setInitialModelId(p.productModel || '');
+                setFlag(p.flag || '');
+                setWarranty(p.warranty || '');
+                setUnit(p.weightUnit || '');
+
+                // Offer
+                if (p.offerDeadline) {
+                    setSpecialOffer(true);
+                    const dt = new Date(p.offerDeadline);
+                    const isoLocal = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
+                        .toISOString()
+                        .slice(0, 16);
+                    setOfferEndTime(isoLocal);
+                } else {
+                    setSpecialOffer(false);
+                    setOfferEndTime('');
+                }
+
+                // SEO
+                setMetaTitle(p.metaTitle || '');
+                setMetaKeywords(p.metaKeyword || '');
+                setMetaDescription(p.metaDescription || '');
+
+                // Variants
+                const opts = Array.isArray(p.productOptions) ? p.productOptions : [];
+                if (opts.length > 0) {
+                    setHasVariant(true);
+                    const mapped = opts.map((opt: any, idx: number) => ({
+                        id: Date.now() + idx,
+                        image: null,
+                        imageUrl: opt.productImage || '',
+                        color: opt.color || '',
+                        size: opt.size || '',
+                        storage: opt.storage || '',
+                        simType: opt.simType || '',
+                        condition: opt.condition || '',
+                        warranty: opt.warranty || '',
+                        stock: typeof opt.stock === 'number' ? opt.stock : 0,
+                        price: typeof opt.price === 'number' ? opt.price : 0,
+                        discountPrice: typeof opt.discountPrice === 'number' ? opt.discountPrice : 0,
+                    }));
+                    setVariants(mapped);
+                } else {
+                    setHasVariant(false);
+                    setVariants([]);
+                }
+            } catch (err: any) {
+                console.error('Failed to load product for edit', err?.response?.data || err?.message);
+                toast.error('Failed to load product details for editing');
+            }
+        };
+
+        fetchExistingProduct();
+    }, [isEditMode, productId, token]);
 
     // ✅ পরিবর্তন ১: uploadFile ফাংশনকে আরও শক্তিশালী করা হয়েছে
     const uploadFile = async (file: File): Promise<string> => {

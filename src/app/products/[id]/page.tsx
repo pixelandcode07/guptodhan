@@ -37,7 +37,7 @@ export default function ProductDetailsPage({ params }: ProductDetailsProps) {
     <div className="max-w-7xl mx-auto py-7 ">
       <div className="grid grid-cols-1  xl:grid-cols-8 gap-3 ">
         <div className=" xl:col-span-6">
-          <ProductDetails />
+          <ProductDetails productId={params.id} />
         </div>
         <div className="xl:col-span-2">
           <DeliveryOption />
