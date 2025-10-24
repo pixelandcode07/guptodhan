@@ -40,7 +40,7 @@ export default function TagInput({
       {tags.map((tag, idx) => (
         <span
           key={idx}
-          className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-small">
+          className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
           {tag}
           <button
             type="button"
