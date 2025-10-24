@@ -2,6 +2,10 @@ import { ICategory } from '../interfaces/ecomCategory.interface';
 import { CategoryModel } from '../models/ecomCategory.model';
 import { Types } from 'mongoose';
 import { ClassifiedAd } from '../../classifieds/ad.model';
+import { ISubCategory } from '../interfaces/ecomSubCategory.interface';
+import { IChildCategory } from '../interfaces/ecomChildCategory.interface';
+import { SubCategoryModel } from '../models/ecomSubCategory.model';
+import { ChildCategoryModel } from '../models/ecomChildCategory.model';
 
 // Create category
 const createCategoryInDB = async (payload: Partial<ICategory>) => {
@@ -59,7 +63,35 @@ const deleteCategoryFromDB = async (id: string) => {
   return null;
 };
 
+export const getSubCategoriesWithChildren = async (categoryId: string) => {
+  // Get all subcategories for the main category
+  const subCategories: ISubCategory[] = await SubCategoryModel.find({
+    category: new Types.ObjectId(categoryId),
+  }).sort({ name: 1 });
+
+  // Map each subcategory to include its child categories
+  const result = await Promise.all(
+    subCategories.map(async (sub) => {
+      const childCategories: IChildCategory[] = await ChildCategoryModel.find({
+        subCategory: sub._id,
+      }).sort({ name: 1 });
+
+      return {
+        subCategoryId: sub.subCategoryId,
+        name: sub.name,
+        children: childCategories.map((child) => ({
+          childCategoryId: child.childCategoryId,
+          name: child.name,
+        })),
+      };
+    })
+  );
+
+  return result;
+};
+
 export const CategoryServices = {
+  getSubCategoriesWithChildren,
   createCategoryInDB,
   getAllCategoriesFromDB,
   getFeaturedCategoriesFromDB,
