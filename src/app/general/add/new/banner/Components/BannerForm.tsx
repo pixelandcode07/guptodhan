@@ -31,7 +31,7 @@ interface BannerFormProps {
 
 export default function BannerForm({ initialData, onSuccess, onCancel }: BannerFormProps) {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Get authentication data from session
@@ -39,16 +39,6 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
   const sessionWithToken = session as SessionWithToken | null;
   const token = sessionWithToken?.accessToken;
   const userRole = sessionWithToken?.user?.role;
-  
-  // Security check - only allow admin users
-  if (userRole !== 'admin') {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-        <div className="text-red-600 font-semibold mb-2">Access Denied</div>
-        <p className="text-red-500">You need admin privileges to create banners.</p>
-      </div>
-    );
-  }
   
   const [image, setImage] = useState<File | null>(null);
   const [bannerPosition, setBannerPosition] = useState<BannerPosition | ''>('');
@@ -118,12 +108,6 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
   const handleSave = async () => {
     try {
       setIsSubmitting(true);
-      
-      // Security check - only allow admin users
-      if (userRole !== 'admin') {
-        toast.error('Access denied: Admin privileges required');
-        return;
-      }
 
       // Validate required fields
       if (!image) {
@@ -184,21 +168,14 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
       if (bannerLink.trim()) formData.append('bannerLink', bannerLink.trim());
       if (buttonLink.trim()) formData.append('buttonLink', buttonLink.trim());
 
-      console.log('Sending banner data via FormData');
-      console.log('Headers:', {
-        token: token ? 'Present' : 'Missing',
-        userRole: userRole || 'Missing',
-        isAdmin: userRole === 'admin'
-      });
-
       let response;
       if (isEditMode && initialData?._id) {
         // Update existing banner
         response = await axios.patch(`/api/v1/ecommerce-banners/${initialData._id}`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`,
-            'x-user-role': userRole || '',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            ...(userRole ? { 'x-user-role': userRole } : {}),
           },
         });
       } else {
@@ -206,8 +183,8 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
         response = await axios.post('/api/v1/ecommerce-banners', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`,
-            'x-user-role': userRole || '',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            ...(userRole ? { 'x-user-role': userRole } : {}),
           },
         });
       }

@@ -32,15 +32,6 @@ export default function SliderForm() {
   const [buttonLink, setButtonLink] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Handle loading state
-  if (status === 'loading') {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-gray-500">Loading...</div>
-      </div>
-    );
-  }
-
   const handleSave = async () => {
     if (isSubmitting) return;
     try {
@@ -79,6 +70,7 @@ export default function SliderForm() {
       // 1) Upload image
       const formData = new FormData();
       formData.append('file', image);
+      
       const uploadRes = await fetch('/api/v1/upload', {
         method: 'POST',
         body: formData,

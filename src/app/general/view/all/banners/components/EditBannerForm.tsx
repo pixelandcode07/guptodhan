@@ -38,16 +38,6 @@ export default function EditBannerForm({ initialData, onSuccess, onCancel }: Edi
   const token = sessionWithToken?.accessToken;
   const userRole = sessionWithToken?.user?.role;
   
-  // Security check - only allow admin users
-  if (userRole !== 'admin') {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-        <div className="text-red-600 font-semibold mb-2">Access Denied</div>
-        <p className="text-red-500">You need admin privileges to edit banners.</p>
-      </div>
-    );
-  }
-  
   const [image, setImage] = useState<File | null>(null);
   const [bannerPosition, setBannerPosition] = useState<BannerPosition | ''>('');
   const [textPosition, setTextPosition] = useState<TextPosition | ''>('');
@@ -110,12 +100,6 @@ export default function EditBannerForm({ initialData, onSuccess, onCancel }: Edi
   };
 
   const handleSave = async () => {
-    // Security check - only allow admin users
-    if (userRole !== 'admin') {
-      toast.error('Access denied: Admin privileges required');
-      return;
-    }
-    
     if (!token) {
       toast.error('Authentication required');
       return;
