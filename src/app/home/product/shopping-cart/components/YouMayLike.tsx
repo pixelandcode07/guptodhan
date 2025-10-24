@@ -6,7 +6,13 @@ import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Recommendation } from '../ShoppingCartContent'
 
-export default function YouMayLike({ recommendations }: { recommendations: Recommendation[] }) {
+export default function YouMayLike({ 
+  recommendations,
+  onAddToCart 
+}: { 
+  recommendations: Recommendation[]
+  onAddToCart: (productId: string) => void
+}) {
   const [currentIndex, setCurrentIndex] = React.useState(0)
   const itemsPerView = 4
   const maxIndex = Math.max(0, recommendations.length - itemsPerView)
@@ -52,18 +58,32 @@ export default function YouMayLike({ recommendations }: { recommendations: Recom
       {/* Product Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {visibleItems.map((item) => (
-          <ProductCard key={item.id} product={item} />
+          <ProductCard 
+            key={item.id} 
+            product={item} 
+            onAddToCart={onAddToCart}
+          />
         ))}
       </div>
     </div>
   )
 }
 
-function ProductCard({ product }: { product: Recommendation }) {
+function ProductCard({ 
+  product, 
+  onAddToCart 
+}: { 
+  product: Recommendation
+  onAddToCart: (productId: string) => void
+}) {
   const discountPercentage = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
 
+  const handleAddToCart = () => {
+    onAddToCart(product.id);
+  };
+
   return (
-    <div className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+    <div className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
       {/* Product Image */}
       <div className="aspect-square bg-white relative">
         <Image
@@ -81,13 +101,22 @@ function ProductCard({ product }: { product: Recommendation }) {
         </h3>
         
         {/* Price */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-3">
           <span className="font-semibold text-gray-900">৳ {product.price.toLocaleString()}</span>
           <span className="text-sm text-gray-500 line-through">৳ {product.originalPrice.toLocaleString()}</span>
           <span className="text-xs bg-red-100 text-red-600 px-1 py-0.5 rounded">
             -{discountPercentage}%
           </span>
         </div>
+
+        {/* Add to Cart Button */}
+        <Button 
+          size="sm" 
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+          onClick={handleAddToCart}
+        >
+          Add to Cart
+        </Button>
       </div>
     </div>
   )

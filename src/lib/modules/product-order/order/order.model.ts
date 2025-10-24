@@ -6,7 +6,8 @@ const orderSchema = new Schema<IOrder>(
     orderId: { type: String, required: true, unique: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     storeId: { type: Schema.Types.ObjectId, ref: 'StoreModel', required: true },
-    deliveryMethodId: { type: Schema.Types.ObjectId, ref: 'DeliveryMethodModel', required: true },
+    deliveryMethodId: { type: String,
+      default: 'COD', },
     paymentMethodId: { type: Schema.Types.ObjectId, ref: 'PaymentMethodModel', required: true },
 
     shippingName: { type: String, required: true },
@@ -39,6 +40,7 @@ const orderSchema = new Schema<IOrder>(
     parcelId: { type: String },
     trackingId: { type: String },
     couponId: { type: Schema.Types.ObjectId, ref: 'CouponModel' },
+
 
     orderDetails: [{ type: Schema.Types.ObjectId, ref: 'OrderDetailsModel' }],
   },
