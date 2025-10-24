@@ -1,7 +1,23 @@
 import TableListToolbar from '@/components/TableHelper/TableListToolbar'
 import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { RefreshCw, Download, Filter } from 'lucide-react'
 
-export default function OrdersToolbar({ initialStatus, showBulkCourierEntry = false }: { initialStatus?: string, showBulkCourierEntry?: boolean }) {
+interface OrdersToolbarProps {
+    initialStatus?: string
+    showBulkCourierEntry?: boolean
+    onRefresh?: () => void
+    onExport?: () => void
+    onFilter?: () => void
+}
+
+export default function OrdersToolbar({ 
+    initialStatus, 
+    showBulkCourierEntry = false,
+    onRefresh,
+    onExport,
+    onFilter
+}: OrdersToolbarProps) {
     const router = useRouter();
     const normalized = (initialStatus || '').toLowerCase().replace(/\s+/g, '-');
     const statusOptions = ["Select Status", "Pending", "Approved", "Ready to Ship", "In Transit", "Delivered", "Cancelled"];
@@ -42,14 +58,56 @@ export default function OrdersToolbar({ initialStatus, showBulkCourierEntry = fa
     return (
         <div className="rounded-lg border border-[#e4e7eb] bg-white shadow-sm">
             <div className="px-3 py-2 md:px-4 md:py-3">
-                <TableListToolbar
-                    title={`${selectedLabel === 'Select Status' ? 'All' : selectedLabel} Orders`}
-                    statusOptions={statusOptions}
-                    selectedStatus={selectedLabel}
-                    onStatusChange={handleStatusChange}
-                    pageSizeOptions={[20, 50, 100]}
-                    onBulkCourierEntryClick={showBulkCourierEntry ? () => {} : undefined}
-                />
+                <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                        <TableListToolbar
+                            title={`${selectedLabel === 'Select Status' ? 'All' : selectedLabel} Orders`}
+                            statusOptions={statusOptions}
+                            selectedStatus={selectedLabel}
+                            onStatusChange={handleStatusChange}
+                            pageSizeOptions={[20, 50, 100]}
+                            onBulkCourierEntryClick={showBulkCourierEntry ? () => {} : undefined}
+                        />
+                    </div>
+                    
+                    <div className="flex items-center gap-2 ml-4">
+                        {onRefresh && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={onRefresh}
+                                className="flex items-center gap-2"
+                            >
+                                <RefreshCw className="h-4 w-4" />
+                                Refresh
+                            </Button>
+                        )}
+                        
+                        {onFilter && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={onFilter}
+                                className="flex items-center gap-2"
+                            >
+                                <Filter className="h-4 w-4" />
+                                Filter
+                            </Button>
+                        )}
+                        
+                        {onExport && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={onExport}
+                                className="flex items-center gap-2"
+                            >
+                                <Download className="h-4 w-4" />
+                                Export
+                            </Button>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     )

@@ -10,7 +10,7 @@ const createOrderInDB = async (payload: Partial<IOrder>) => {
 
 // Get all orders
 const getAllOrdersFromDB = async (status?: string) => {
-  const filter: any = {};
+  const filter: Record<string, unknown> = {};
   if (status) {
     filter.orderStatus = status;
   }
@@ -42,10 +42,22 @@ const deleteOrderFromDB = async (id: string) => {
   return null;
 };
 
+// Get order by ID
+const getOrderByIdFromDB = async (id: string) => {
+  const result = await OrderModel.findById(id)
+    .populate('userId', 'name email phoneNumber')
+    .populate('storeId', 'storeName')
+    .populate('orderDetails')
+    .populate('paymentMethodId', 'name')
+    .populate('couponId', 'couponCode discountAmount');
+  return result;
+};
+
 export const OrderServices = {
   createOrderInDB,
   getAllOrdersFromDB,
   getOrdersByUserFromDB,
+  getOrderByIdFromDB,
   updateOrderInDB,
   deleteOrderFromDB,
 };

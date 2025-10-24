@@ -251,10 +251,84 @@ const deleteOrder = async (req: NextRequest, { params }: { params: Promise<{ id:
   });
 };
 
+// Get orders for the authenticated user
+const getMyOrders = async (req: NextRequest) => {
+  await dbConnect();
+  
+  // Get user ID from headers (injected by middleware)
+  const userId = req.headers.get('x-user-id');
+  
+  if (!userId) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.UNAUTHORIZED,
+      message: 'User ID not found in request headers',
+      data: null,
+    });
+  }
+
+  const result = await OrderServices.getOrdersByUserFromDB(userId);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'User orders retrieved successfully!',
+    data: result,
+  });
+};
+
+// Get order by ID (for authenticated user)
+const getOrderById = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  await dbConnect();
+  const { id } = await params;
+  
+  // Get user ID from headers
+  const userId = req.headers.get('x-user-id');
+  
+  if (!userId) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.UNAUTHORIZED,
+      message: 'User ID not found in request headers',
+      data: null,
+    });
+  }
+
+  const result = await OrderServices.getOrderByIdFromDB(id);
+  
+  if (!result) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.NOT_FOUND,
+      message: 'Order not found',
+      data: null,
+    });
+  }
+
+  // Check if the order belongs to the authenticated user
+  if (result.userId.toString() !== userId) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.FORBIDDEN,
+      message: 'You can only view your own orders',
+      data: null,
+    });
+  }
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Order retrieved successfully!',
+    data: result,
+  });
+};
+
 export const OrderController = {
   createOrderWithDetails,
   getAllOrders,
   getOrdersByUser,
+  getMyOrders,
+  getOrderById,
   updateOrder,
   deleteOrder,
 };

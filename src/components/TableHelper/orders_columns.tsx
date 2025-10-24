@@ -2,6 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { Eye, Truck, CheckCircle2, Trash2 } from "lucide-react"
+import OrderDetailsModal from "@/components/OrderManagement/OrderDetailsModal"
 
 export type OrderRow = {
   id: string
@@ -11,9 +12,22 @@ export type OrderRow = {
   from: string
   name: string
   phone: string
+  email?: string
   total: number
   payment: string
   status: string
+  deliveryMethod?: string
+  trackingId?: string
+  parcelId?: string
+  customer?: {
+    name: string
+    email: string
+    phone: string
+  }
+  store?: {
+    name: string
+    id: string
+  }
 }
 
 export const ordersColumns: ColumnDef<OrderRow>[] = [
@@ -81,6 +95,21 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
     }
   },
   { 
+    accessorKey: "deliveryMethod", 
+    header: () => <span>Delivery</span>,
+    cell: ({ row }) => {
+      const method = row.getValue("deliveryMethod") as string;
+      const isCOD = method?.toLowerCase() === 'cod';
+      return (
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          isCOD ? "bg-orange-100 text-orange-800" : "bg-blue-100 text-blue-800"
+        }`}>
+          {method || 'COD'}
+        </span>
+      );
+    }
+  },
+  { 
     accessorKey: "status", 
     header: () => <span>Status</span>,
     cell: ({ row }) => {
@@ -105,11 +134,9 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
   {
     id: "actions",
     header: () => <span>Action</span>,
-    cell: () => (
+    cell: ({ row }) => (
       <div className="flex items-center gap-2">
-        <button className="p-1.5 rounded bg-blue-500/10 text-blue-600 hover:bg-blue-500/20" title="Order details">
-          <Eye size={14} />
-        </button>
+        <OrderDetailsModal order={row.original} />
         <button className="p-1.5 rounded bg-teal-500/10 text-teal-600 hover:bg-teal-500/20" title="Tracking the order">
           <Truck size={14} />
         </button>

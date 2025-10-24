@@ -6,6 +6,7 @@ import api from '@/lib/axios'
 import OrderList from '@/components/UserProfile/Order/OrderList'
 import OrderFilters from '@/components/UserProfile/Order/OrderFilters'
 import type { OrderStatus, OrderSummary } from '@/components/UserProfile/Order/types'
+import FancyLoadingPage from '@/app/general/loading'
 
 function mapOrderStatusToUI(status: string): OrderStatus {
   const s = status.toLowerCase()
@@ -22,12 +23,15 @@ type ApiOrder = {
   storeName?: string
   storeVerified?: boolean
   orderStatus?: string
+  paymentStatus?: string
+  deliveryMethodId?: string
   orderDate?: string
   createdAt?: string
   totalAmount?: number
   orderDetails?: unknown[]
   shippingName?: string
   trackingId?: string
+  parcelId?: string
   steadfastInvoice?: string
 }
 
@@ -41,10 +45,11 @@ export default function UserOrdersPage() {
     try {
       setLoading(true)
       const userLike = (session?.user ?? {}) as { id?: string; _id?: string }
-      const userId = userLike.id || userLike._id || '507f1f77bcf86cd799439011' // fallback for testing
+      const userId = userLike.id || userLike._id
       
       if (!userId) {
-        setLoading(false)
+        console.error('No user ID found in session')
+        setOrders([])
         return
       }
 
@@ -57,10 +62,15 @@ export default function UserOrdersPage() {
       
       const mappedOrders: OrderSummary[] = apiOrders.map((order) => ({
         id: order._id,
+        orderId: order.orderId,
         storeName: order.storeName || 'Store',
         storeVerified: !!order.storeVerified,
         status: mapOrderStatusToUI(order.orderStatus || 'Pending'),
+        paymentStatus: order.paymentStatus || 'Pending',
+        deliveryMethod: order.deliveryMethodId || 'COD',
         createdAt: new Date(order.orderDate ?? order.createdAt ?? Date.now()).toLocaleString(),
+        trackingId: order.trackingId,
+        parcelId: order.parcelId,
         items: [
           {
             id: order._id,
@@ -86,20 +96,7 @@ export default function UserOrdersPage() {
   }, [fetchUserOrders])
 
   if (loading) {
-    return (
-      <div className="p-6">
-        <h1 className="text-xl font-semibold px-4 mt-1 mb-4">My Orders</h1>
-        <div className="animate-pulse space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="border rounded-md p-4">
-              <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
+    return <FancyLoadingPage />;
   }
 
   return (
@@ -114,7 +111,7 @@ export default function UserOrdersPage() {
         <OrderList orders={orders} filter={filter} />
       </div>
       
-      {orders.length === 0 && (
+      {orders.length === 0 && !loading && (
         <div className="px-4 py-8 text-center text-gray-500">
           <p>No orders found.</p>
         </div>
