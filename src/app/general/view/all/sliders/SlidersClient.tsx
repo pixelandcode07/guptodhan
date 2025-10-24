@@ -7,10 +7,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Plus, ArrowUpDown } from 'lucide-react'
+import { useSession } from 'next-auth/react'
+import { toast } from 'sonner'
 
 export default function SlidersClient({ initialRows }: { initialRows: any[] }) {
+  const { data: session, status } = useSession();
+  
+  // Get authentication data from session
+  type SessionWithToken = { accessToken?: string; user?: { role?: string } };
+  const sessionWithToken = session as SessionWithToken | null;
+  const userRole = sessionWithToken?.user?.role;
+  
   const [rows, setRows] = useState<any[]>(initialRows || [])
   const [statusFilter, setStatusFilter] = useState('all')
+
+  // Handle loading state
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-gray-500">Loading...</div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     setRows(initialRows || [])
