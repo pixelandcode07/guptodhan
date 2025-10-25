@@ -4,6 +4,7 @@ import { IReview } from './productReview.interface';
 const reviewSchema = new Schema<IReview>(
   {
     reviewId: { type: String, required: true, unique: true },
+    productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     userName: { type: String, required: true, trim: true },
     userEmail: { type: String, required: true, trim: true },

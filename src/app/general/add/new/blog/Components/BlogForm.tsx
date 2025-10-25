@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -10,14 +12,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Dispatch, SetStateAction } from 'react';
 import FileUpload from '@/components/ReusableComponents/FileUpload';
+import { Loader2 } from 'lucide-react';
+import { Dispatch, SetStateAction } from 'react';
+import BlogFormLoadding from '@/app/general/view/all/blogs/edit/Components/BlocgFormLoadding';
 
+// -------------------- Interfaces --------------------
 export interface BlogData {
   category: string;
   title: string;
   shortDescription: string;
-  coverImageUrl: string; // URL instead of File
+  coverImageUrl: string;
 }
 
 interface BlogFormProps {
@@ -25,7 +30,20 @@ interface BlogFormProps {
   setFormData: Dispatch<SetStateAction<BlogData>>;
 }
 
+interface CategoryType {
+  _id: string;
+  name: string;
+  slug?: string;
+  status?: string;
+}
+
+// -------------------- Component --------------------
 export default function BlogForm({ formData, setFormData }: BlogFormProps) {
+  const [categories, setCategories] = useState<CategoryType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // -------------------- Handlers --------------------
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -37,8 +55,51 @@ export default function BlogForm({ formData, setFormData }: BlogFormProps) {
     setFormData(prev => ({ ...prev, category: value }));
   };
 
+  // -------------------- Fetch Categories --------------------
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setErrorMsg(null);
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+        const res = await axios.get(
+          `${baseUrl}/api/v1/ecommerce-category/ecomCategory`
+        );
+
+        const dataArray = Array.isArray(res?.data?.data)
+          ? res.data.data
+          : Array.isArray(res?.data)
+          ? res.data
+          : [];
+
+        const activeCategories = dataArray.filter(
+          (cat: any) =>
+            String(cat.status || 'active').toLowerCase() === 'active'
+        );
+
+        setCategories(activeCategories);
+
+        if (activeCategories.length === 0) {
+          setErrorMsg('No active categories found from API.');
+        }
+      } catch (error: any) {
+        setErrorMsg(error.message || 'Error fetching categories.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // -------------------- Conditional Render --------------------
+  if (loading) {
+    return <BlogFormLoadding />;
+  }
+
+  // -------------------- Render Form --------------------
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-fadeIn">
       {/* Left: File Upload */}
       <div className="col-span-1">
         <Label htmlFor="coverImage">
@@ -56,6 +117,7 @@ export default function BlogForm({ formData, setFormData }: BlogFormProps) {
 
       {/* Right: Form Fields */}
       <div className="col-span-1 md:col-span-3 space-y-4">
+        {/* Category Select */}
         <div>
           <Label htmlFor="category">
             Category <span className="text-red-500">*</span>
@@ -64,19 +126,26 @@ export default function BlogForm({ formData, setFormData }: BlogFormProps) {
             onValueChange={handleCategoryChange}
             value={formData.category}>
             <SelectTrigger className="w-full mt-2">
-              <SelectValue placeholder="Select One" />
+              <SelectValue placeholder="Select a category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="6">Buy & Sale</SelectItem>
-              <SelectItem value="5">Donation</SelectItem>
-              <SelectItem value="4">E-commerce</SelectItem>
-              <SelectItem value="1">Education</SelectItem>
-              <SelectItem value="2">Environment</SelectItem>
-              <SelectItem value="3">Human Rights</SelectItem>
+              {categories.length > 0 ? (
+                categories.map(cat => (
+                  <SelectItem key={cat._id} value={cat._id}>
+                    {cat.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="" disabled>
+                  No active categories found
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
+          {errorMsg && <p className="text-sm text-red-500 mt-2">{errorMsg}</p>}
         </div>
 
+        {/* Blog Title */}
         <div>
           <Label htmlFor="title">
             Blog Title <span className="text-red-500">*</span>
@@ -91,6 +160,7 @@ export default function BlogForm({ formData, setFormData }: BlogFormProps) {
           />
         </div>
 
+        {/* Short Description */}
         <div>
           <Label htmlFor="shortDescription">Short Description</Label>
           <Textarea

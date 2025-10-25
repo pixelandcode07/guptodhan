@@ -1,7 +1,9 @@
 import SectionTitle from '@/components/ui/SectionTitle';
 import ShipingForm from './Components/ShipingForm';
+import { ShippingPolicyServices } from '@/lib/modules/shipping-policy/shipping-policy.service';
 
-const page = () => {
+const page = async () => {
+  const initialData = await ShippingPolicyServices.getPublicPolicyFromDB();
   return (
     <div className="bg-white pt-5 ">
       <SectionTitle text="Shipping Policy Update Form" />
@@ -11,7 +13,7 @@ const page = () => {
         ">
           Write Shipping Policies Here :
         </p>
-        <ShipingForm />
+        <ShipingForm initialData={JSON.parse(JSON.stringify(initialData))} />
       </div>
     </div>
   );

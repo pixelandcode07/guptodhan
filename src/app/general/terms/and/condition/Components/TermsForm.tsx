@@ -8,51 +8,80 @@ import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { Loader2 } from 'lucide-react';
 
-// props-এর জন্য টাইপ ডিফাইন করা হয়েছে
+interface TermItem {
+  _id?: string;
+  termsId?: string;
+  category?: string;
+  description: string;
+}
+
 interface TermsFormProps {
-  initialData: {
-    _id?: string;
-    content: string;
-  } | null;
+  initialData: TermItem[] | null;
 }
 
 export default function TermsForm({ initialData }: TermsFormProps) {
   const { data: session } = useSession();
-  const token = (session as any)?.accessToken; // সেশন থেকে টোকেন নেওয়া হচ্ছে
+  const token = (session as any)?.accessToken;
 
-  const [content, setContent] = useState('');
+  const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // useEffect এখন props থেকে state সেট করবে
   useEffect(() => {
-    if (initialData) {
-      setContent(initialData.content || '');
+    if (initialData && initialData.length > 0) {
+      setDescription(initialData[0].description || '');
     }
   }, [initialData]);
 
   const handleSubmit = async () => {
-    if (!content.trim()) {
-      toast.error('Content cannot be empty.');
+    if (!description.trim()) {
+      toast.error('Description cannot be empty.');
       return;
     }
+
     if (!token) {
-        toast.error("Authentication failed. Please log in as an admin.");
-        return;
+      toast.error('Authentication failed. Please log in as an admin.');
+      return;
     }
 
     setLoading(true);
+
     try {
-      // ✅ POST API ব্যবহার করে ডেটা তৈরি বা আপডেট করা হচ্ছে
-      const res = await axios.post(
-        `/api/v1/terms-condition`,
-        { content },
-        { headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` 
-          } 
-        }
-      );
-      
+      let res;
+
+      // ✅ যদি _id থাকে, তাহলে update (PATCH)
+      if (initialData && initialData[0]?._id) {
+        res = await axios.patch(
+          `/api/v1/terms-condition/${initialData[0]._id}`,
+          {
+            termsId: initialData[0].termsId || 'auto-generated-id',
+            category: initialData[0].category,
+            description,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      } else {
+        // ✅ না থাকলে নতুন create (POST)
+        res = await axios.post(
+          `/api/v1/terms-condition`,
+          {
+            termsId: 'auto-generated-id',
+            category: '64f0b3a1234567890abcdef0', // চাইলে dynamic পাঠাতে পারো
+            description,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      }
+
       if (res.data.success) {
         toast.success('Terms & Conditions updated successfully!');
       } else {
@@ -68,7 +97,7 @@ export default function TermsForm({ initialData }: TermsFormProps) {
 
   return (
     <>
-      <RichTextEditor value={content} onChange={setContent} />
+      <RichTextEditor value={description} onChange={setDescription} />
       <div className="flex justify-center items-center py-7">
         <Button onClick={handleSubmit} disabled={loading}>
           {loading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
