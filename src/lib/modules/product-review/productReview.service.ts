@@ -40,10 +40,20 @@ const deleteReviewFromDB = async (id: string) => {
   return null;
 };
 
+// Get reviews by product
+const getReviewsByProductFromDB = async (productId: string) => {
+  const result = await ReviewModel.find({
+    productId: new Types.ObjectId(productId),
+  }).sort({ uploadedTime: -1 });
+  return result;
+};
+
+
 export const ReviewServices = {
   createReviewInDB,
   getAllReviewsFromDB,
   getReviewsByUserFromDB,
+  getReviewsByProductFromDB,
   updateReviewInDB,
   deleteReviewFromDB,
 };

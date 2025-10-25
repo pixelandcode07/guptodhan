@@ -45,6 +45,8 @@ export interface IVendorProduct extends Document {
   status: 'active' | 'inactive';
   createdAt: Date;
   updatedAt: Date;
+  // new add
+  sellCount: number;
 
   
   // New field

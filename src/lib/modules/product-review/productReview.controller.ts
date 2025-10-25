@@ -90,10 +90,29 @@ const deleteReview = async (req: NextRequest, { params }: { params: { id: string
     });
 };
 
+// Get reviews by product
+const getReviewsByProduct = async (
+  req: NextRequest,
+  { params }: { params: { productId: string } }
+) => {
+  await dbConnect();
+  const { productId } = params;
+  const result = await ReviewServices.getReviewsByProductFromDB(productId);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Product reviews retrieved successfully!',
+    data: result,
+  });
+};
+
+
 export const ReviewController = {
     createReview,
     getAllReviews,
     getReviewsByUser,
+    getReviewsByProduct,
     updateReview,
     deleteReview,
 };
