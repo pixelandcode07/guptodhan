@@ -35,9 +35,9 @@ const getAllProductSizes = async () => {
 };
 
 // Update product size
-const updateProductSize = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const updateProductSize = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const validatedData = updateProductSizeValidationSchema.parse(body);
 
@@ -52,9 +52,9 @@ const updateProductSize = async (req: NextRequest, { params }: { params: { id: s
 };
 
 // Delete product size
-const deleteProductSize = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const deleteProductSize = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     await ProductSizeServices.deleteProductSizeFromDB(id);
 
     return sendResponse({

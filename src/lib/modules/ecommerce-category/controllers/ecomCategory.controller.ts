@@ -82,6 +82,19 @@ const getAllCategories = async () => {
   });
 };
 
+// Get only featured categories (optimized for landing page)
+const getFeaturedCategories = async () => {
+  await dbConnect();
+  const result = await CategoryServices.getFeaturedCategoriesFromDB();
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Featured categories retrieved successfully!',
+    data: result,
+  });
+};
+
 // Update category (await params and accept multipart like Brand)
 const updateCategory = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
@@ -172,6 +185,7 @@ export const CategoryController = {
   getSubCategoriesByCategory,
   createCategory,
   getAllCategories,
+  getFeaturedCategories,
   updateCategory,
   deleteCategory,
 };

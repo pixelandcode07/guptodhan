@@ -73,12 +73,26 @@ export default function CategoriesClient() {
   useEffect(() => { fetchRows(); }, [fetchRows]);
 
   const onDelete = useCallback((row: Category) => {
+    // Security check - only allow admin users to delete
+    if (userRole !== 'admin') {
+      toast.error('Access denied: Admin privileges required');
+      return;
+    }
     setDeleting(row);
     setDeleteOpen(true);
-  }, []);
+  }, [userRole]);
 
   const confirmDelete = useCallback(async () => {
     if (!deleting?._id) return;
+    
+    // Security check - only allow admin users
+    if (userRole !== 'admin') {
+      toast.error('Access denied: Admin privileges required');
+      setDeleteOpen(false);
+      setDeleting(null);
+      return;
+    }
+    
     const id = deleting._id;
     const prev = rows;
     setDeleteLoading(true);
@@ -102,7 +116,18 @@ export default function CategoriesClient() {
     }
   }, [deleting, rows, token, userRole]);
 
-  const columns = useMemo(() => getCategoryColumns({ onEdit: (row) => { setEditing(row); setEditOpen(true); }, onDelete }), [onDelete]);
+  const columns = useMemo(() => getCategoryColumns({ 
+    onEdit: (row) => { 
+      // Security check - only allow admin users to edit
+      if (userRole !== 'admin') {
+        toast.error('Access denied: Admin privileges required');
+        return;
+      }
+      setEditing(row); 
+      setEditOpen(true); 
+    }, 
+    onDelete 
+  }), [onDelete, userRole]);
 
   const filtered = useMemo(() => {
     const byStatus = (r: Category) => statusFilter === "all" || r.status === statusFilter;

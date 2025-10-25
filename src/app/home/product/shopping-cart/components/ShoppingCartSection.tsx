@@ -8,10 +8,14 @@ import type { CartItem } from '../ShoppingCartContent'
 
 export default function ShoppingCartSection({ 
   cartItems, 
-  totalItems 
+  totalItems,
+  onUpdateQuantity,
+  onRemoveItem
 }: { 
   cartItems: CartItem[]
-  totalItems: number 
+  totalItems: number
+  onUpdateQuantity: (itemId: string, newQuantity: number) => void
+  onRemoveItem: (itemId: string) => void
 }) {
   return (
     <div className="bg-white rounded-lg p-6">
@@ -22,17 +26,41 @@ export default function ShoppingCartSection({
 
       <div className="space-y-6">
         {cartItems.map((item) => (
-          <CartItemCard key={item.id} item={item} />
+          <CartItemCard 
+            key={item.id} 
+            item={item} 
+            onUpdateQuantity={onUpdateQuantity}
+            onRemoveItem={onRemoveItem}
+          />
         ))}
       </div>
     </div>
   )
 }
 
-function CartItemCard({ item }: { item: CartItem }) {
+function CartItemCard({ 
+  item, 
+  onUpdateQuantity, 
+  onRemoveItem 
+}: { 
+  item: CartItem
+  onUpdateQuantity: (itemId: string, newQuantity: number) => void
+  onRemoveItem: (itemId: string) => void
+}) {
   const [quantity, setQuantity] = React.useState(item.product.quantity)
   const subtotal = item.product.price * quantity
   const savings = (item.product.originalPrice - item.product.price) * quantity
+
+  const handleQuantityChange = (newQuantity: number) => {
+    if (newQuantity >= 1) {
+      setQuantity(newQuantity)
+      onUpdateQuantity(item.id, newQuantity)
+    }
+  }
+
+  const handleRemove = () => {
+    onRemoveItem(item.id)
+  }
 
   return (
     <div className="border-b border-gray-200 pb-6 last:border-b-0">
@@ -79,7 +107,7 @@ function CartItemCard({ item }: { item: CartItem }) {
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                onClick={() => handleQuantityChange(Math.max(1, quantity - 1))}
               >
                 <Minus className="w-4 h-4" />
               </Button>
@@ -90,7 +118,7 @@ function CartItemCard({ item }: { item: CartItem }) {
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0"
-                onClick={() => setQuantity(quantity + 1)}
+                onClick={() => handleQuantityChange(quantity + 1)}
               >
                 <Plus className="w-4 h-4" />
               </Button>
@@ -108,7 +136,12 @@ function CartItemCard({ item }: { item: CartItem }) {
               <Heart className="w-4 h-4 mr-1" />
               Save for later
             </Button>
-            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-red-500">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-gray-600 hover:text-red-500"
+              onClick={handleRemove}
+            >
               <Trash2 className="w-4 h-4 mr-1" />
               Remove
             </Button>

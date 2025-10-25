@@ -33,10 +33,16 @@ export type Recommendation = {
 
 export default function ShoppingCartContent({ 
   cartItems, 
-  recommendations 
+  recommendations,
+  onUpdateQuantity,
+  onRemoveItem,
+  onAddToCart
 }: { 
   cartItems: CartItem[]
   recommendations: Recommendation[]
+  onUpdateQuantity: (itemId: string, newQuantity: number) => void
+  onRemoveItem: (itemId: string) => void
+  onAddToCart: (productId: string) => void
 }) {
   const totalItems = cartItems.reduce((sum, item) => sum + item.product.quantity, 0)
   const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.product.quantity), 0)
@@ -50,7 +56,12 @@ export default function ShoppingCartContent({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Shopping Cart Section */}
         <div className="lg:col-span-2">
-          <ShoppingCartSection cartItems={cartItems} totalItems={totalItems} />
+          <ShoppingCartSection 
+            cartItems={cartItems} 
+            totalItems={totalItems}
+            onUpdateQuantity={onUpdateQuantity}
+            onRemoveItem={onRemoveItem}
+          />
         </div>
 
         {/* Order Summary */}
@@ -65,7 +76,10 @@ export default function ShoppingCartContent({
 
       {/* You May Like Section */}
       <div className="mt-12">
-        <YouMayLike recommendations={recommendations} />
+        <YouMayLike 
+          recommendations={recommendations}
+          onAddToCart={onAddToCart}
+        />
       </div>
     </div>
   )

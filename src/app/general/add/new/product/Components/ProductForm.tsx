@@ -19,6 +19,7 @@ import { Loader2, Save, X, UploadCloud } from 'lucide-react';
 import Image from 'next/image';
 import ProductVariantForm, { IProductOption } from './ProductVariantForm';
 import ProductImageGallery from './ProductImageGallery';
+import PricingInventory from './PricingInventory';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function ProductForm({ initialData }: any) {
@@ -40,7 +41,7 @@ export default function ProductForm({ initialData }: any) {
     const [galleryImages, setGalleryImages] = useState<File[]>([]);
     const [galleryImagePreviews, setGalleryImagePreviews] = useState<string[]>([]);
 
-    const [rewardPoints, setRewardPoints] = useState(0);
+    const [rewardPoints, setRewardPoints] = useState<number | undefined>(undefined);
     const [productCode, setProductCode] = useState('');
     const [videoUrl, setVideoUrl] = useState('');
     
@@ -65,13 +66,61 @@ export default function ProductForm({ initialData }: any) {
     const [metaTitle, setMetaTitle] = useState('');
     const [metaKeywords, setMetaKeywords] = useState('');
     const [metaDescription, setMetaDescription] = useState('');
-    const [price, setPrice] = useState(0);
-    const [discountPrice, setDiscountPrice] = useState(0);
-    const [stock, setStock] = useState(10);
+    const [price, setPrice] = useState<number | undefined>(undefined);
+    const [discountPrice, setDiscountPrice] = useState<number | undefined>(undefined);
+    const [stock, setStock] = useState<number | undefined>(undefined);
     
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { data: session } = useSession();
     const token = (session as any)?.accessToken;
+
+    // Keep initial IDs to set after dependent lists load (for edit mode)
+    const [initialSubcategoryId, setInitialSubcategoryId] = useState<string>('');
+    const [initialChildCategoryId, setInitialChildCategoryId] = useState<string>('');
+    const [initialModelId, setInitialModelId] = useState<string>('');
+
+    // Pricing form data
+    const pricingFormData = {
+        price: price ?? '',
+        discountPrice: discountPrice ?? '',
+        rewardPoints: rewardPoints ?? '',
+        stock: stock ?? '',
+    };
+
+    // Handler functions for pricing component
+    const handlePricingInputChange = (field: string, value: unknown) => {
+        switch (field) {
+            case 'price':
+                setPrice(value === '' ? undefined : Number(value));
+                break;
+            case 'discountPrice':
+                setDiscountPrice(value === '' ? undefined : Number(value));
+                break;
+            case 'rewardPoints':
+                setRewardPoints(value === '' ? undefined : Number(value));
+                break;
+            case 'stock':
+                setStock(value === '' ? undefined : Number(value));
+                break;
+        }
+    };
+
+    const handlePricingNumberChange = (field: string, delta: number) => {
+        switch (field) {
+            case 'price':
+                setPrice(prev => Math.max(0, (prev || 0) + delta));
+                break;
+            case 'discountPrice':
+                setDiscountPrice(prev => Math.max(0, (prev || 0) + delta));
+                break;
+            case 'rewardPoints':
+                setRewardPoints(prev => Math.max(0, (prev || 0) + delta));
+                break;
+            case 'stock':
+                setStock(prev => Math.max(0, (prev || 0) + delta));
+                break;
+        }
+    };
     
     // All useEffects for dependent dropdowns (no changes here)
     useEffect(() => {
@@ -90,7 +139,10 @@ export default function ProductForm({ initialData }: any) {
                     const filteredModels = res.data?.data?.filter((m: any) => m.status === 'active') || [];
                     console.log('Filtered models:', filteredModels);
                     setModels(filteredModels); 
-                    setModel(''); 
+                    // If we have an initial model from edit mode, set it once models are loaded
+                    if (initialModelId) {
+                        setModel(initialModelId);
+                    }
                 } catch (error) { 
                     console.error('Failed to fetch models', error); 
                 } 
@@ -99,7 +151,114 @@ export default function ProductForm({ initialData }: any) {
             } 
         }; 
         fetchModels();
-    }, [brand, token]);
+    }, [brand, token, initialModelId]);
+
+    // When subcategories are loaded in edit mode, set initial subcategory
+    useEffect(() => {
+        if (initialSubcategoryId && subcategories.length > 0) {
+            setSubcategory(initialSubcategoryId);
+        }
+    }, [initialSubcategoryId, subcategories]);
+
+    // When child categories are loaded in edit mode, set initial child category
+    useEffect(() => {
+        if (initialChildCategoryId && childCategories.length > 0) {
+            setChildCategory(initialChildCategoryId);
+        }
+    }, [initialChildCategoryId, childCategories]);
+
+    // Fetch existing product details in edit mode and pre-fill form
+    useEffect(() => {
+        const fetchExistingProduct = async () => {
+            if (!isEditMode || !productId || !token) return;
+            try {
+                const res = await axios.get(`/api/v1/product/${productId}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                const p = res.data?.data;
+                if (!p) return;
+
+                // Basic fields
+                setTitle(p.productTitle || '');
+                setShortDescription(p.shortDescription || '');
+                setFullDescription(p.fullDescription || '');
+                setSpecification(p.specification || '');
+                setWarrantyPolicy(p.warrantyPolicy || '');
+                setTags(Array.isArray(p.productTag) ? p.productTag.join(', ') : '');
+
+                // Media previews (keep files empty; use URL previews)
+                setThumbnail(null);
+                setThumbnailPreview(p.thumbnailImage || null);
+                setGalleryImages([]);
+                setGalleryImagePreviews(Array.isArray(p.photoGallery) ? p.photoGallery : []);
+
+                // Pricing & inventory
+                setPrice(typeof p.productPrice === 'number' ? p.productPrice : undefined);
+                setDiscountPrice(typeof p.discountPrice === 'number' ? p.discountPrice : undefined);
+                setStock(typeof p.stock === 'number' ? p.stock : undefined);
+                setProductCode(p.sku || '');
+                setRewardPoints(typeof p.rewardPoints === 'number' ? p.rewardPoints : undefined);
+
+                // Selects
+                setStore(p.vendorStoreId || '');
+                setCategory(p.category || '');
+                setInitialSubcategoryId(p.subCategory || '');
+                setInitialChildCategoryId(p.childCategory || '');
+                setBrand(p.brand || '');
+                setInitialModelId(p.productModel || '');
+                setFlag(p.flag || '');
+                setWarranty(p.warranty || '');
+                setUnit(p.weightUnit || '');
+
+                // Offer
+                if (p.offerDeadline) {
+                    setSpecialOffer(true);
+                    const dt = new Date(p.offerDeadline);
+                    const isoLocal = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
+                        .toISOString()
+                        .slice(0, 16);
+                    setOfferEndTime(isoLocal);
+                } else {
+                    setSpecialOffer(false);
+                    setOfferEndTime('');
+                }
+
+                // SEO
+                setMetaTitle(p.metaTitle || '');
+                setMetaKeywords(p.metaKeyword || '');
+                setMetaDescription(p.metaDescription || '');
+
+                // Variants
+                const opts = Array.isArray(p.productOptions) ? p.productOptions : [];
+                if (opts.length > 0) {
+                    setHasVariant(true);
+                    const mapped = opts.map((opt: any, idx: number) => ({
+                        id: Date.now() + idx,
+                        image: null,
+                        imageUrl: opt.productImage || '',
+                        color: opt.color || '',
+                        size: opt.size || '',
+                        storage: opt.storage || '',
+                        simType: opt.simType || '',
+                        condition: opt.condition || '',
+                        warranty: opt.warranty || '',
+                        stock: typeof opt.stock === 'number' ? opt.stock : 0,
+                        price: typeof opt.price === 'number' ? opt.price : 0,
+                        discountPrice: typeof opt.discountPrice === 'number' ? opt.discountPrice : 0,
+                    }));
+                    setVariants(mapped);
+                } else {
+                    setHasVariant(false);
+                    setVariants([]);
+                }
+            } catch (err: any) {
+                console.error('Failed to load product for edit', err?.response?.data || err?.message);
+                toast.error('Failed to load product details for editing');
+            }
+        };
+
+        fetchExistingProduct();
+    }, [isEditMode, productId, token]);
 
     // ✅ পরিবর্তন ১: uploadFile ফাংশনকে আরও শক্তিশালী করা হয়েছে
     const uploadFile = async (file: File): Promise<string> => {
@@ -132,6 +291,11 @@ export default function ProductForm({ initialData }: any) {
         }
         if (!title || !store || !category) {
             return toast.error("Please fill all required fields (*).");
+        }
+        
+        // Validate pricing
+        if (!price || price <= 0) {
+            return toast.error("Price is required and must be greater than 0.");
         }
         
         // Validate special offer date
@@ -199,11 +363,11 @@ export default function ProductForm({ initialData }: any) {
                 photoGallery: validGalleryUrls.length > 0 ? validGalleryUrls : [thumbnailUrl],
                 thumbnailImage: thumbnailUrl, // এখন এটি সর্বদা একটি ভ্যালিড URL হবে
                 
-                productPrice: price,
+                productPrice: price || 0,
                 discountPrice: discountPrice || undefined,
-                stock: stock,
+                stock: stock || 0,
                 sku: productCode || undefined,
-                rewardPoints: rewardPoints,
+                rewardPoints: rewardPoints || 0,
                 category: category,
                 subCategory: subcategory || undefined,
                 childCategory: childCategory || undefined,
@@ -224,7 +388,7 @@ export default function ProductForm({ initialData }: any) {
             };
 
             if (isEditMode && productId) {
-                await axios.put(`/api/v1/product/${productId}`, productData, {
+                await axios.patch(`/api/v1/product/${productId}`, productData, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 toast.success("Product updated successfully!");
@@ -328,6 +492,13 @@ export default function ProductForm({ initialData }: any) {
                     </Card>
                     <Card>
                         <CardContent className="space-y-4 pt-6">
+                            {/* Pricing & Inventory Section */}
+                            <PricingInventory 
+                                formData={pricingFormData}
+                                handleInputChange={handlePricingInputChange}
+                                handleNumberChange={handlePricingNumberChange}
+                            />
+                            
                              <div>
                                  <Label>Product Code (SKU)</Label>
                                  <Input value={productCode} onChange={(e) => setProductCode(e.target.value)} />

@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { Plus, ArrowUpDown } from 'lucide-react'
 
 export default function SlidersClient({ initialRows }: { initialRows: any[] }) {
+  
   const [rows, setRows] = useState<any[]>(initialRows || [])
   const [statusFilter, setStatusFilter] = useState('all')
 

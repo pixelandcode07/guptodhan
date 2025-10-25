@@ -12,9 +12,12 @@ type Props = {
   setTextPosition: (v: TextPosition | '') => void;
   bannerLink: string;
   setBannerLink: (v: string) => void;
+  isValidUrl?: (url: string) => boolean;
 };
 
-export default function TopRow({ bannerPosition, setBannerPosition, textPosition, setTextPosition, bannerLink, setBannerLink }: Props) {
+export default function TopRow({ bannerPosition, setBannerPosition, textPosition, setTextPosition, bannerLink, setBannerLink, isValidUrl }: Props) {
+  const isBannerLinkValid = bannerLink.trim() === '' || (isValidUrl ? isValidUrl(bannerLink) : true);
+  
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div className="space-y-2">
@@ -47,7 +50,15 @@ export default function TopRow({ bannerPosition, setBannerPosition, textPosition
       </div>
       <div className="space-y-2">
         <Label>Banner Link</Label>
-        <Input className="h-10 w-full" value={bannerLink} onChange={(e) => setBannerLink(e.target.value)} placeholder="https://" />
+        <Input 
+          className={`h-10 w-full ${!isBannerLinkValid ? 'border-red-500 focus:border-red-500' : ''}`} 
+          value={bannerLink} 
+          onChange={(e) => setBannerLink(e.target.value)} 
+          placeholder="https://example.com" 
+        />
+        {!isBannerLinkValid && (
+          <p className="text-xs text-red-500">Please enter a valid URL</p>
+        )}
       </div>
     </div>
   );

@@ -4,6 +4,8 @@ import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ChevronDown } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 export default function OrderSummary({ 
   subtotal, 
@@ -14,8 +16,12 @@ export default function OrderSummary({
   totalSavings: number
   totalItems: number
 }) {
+  // Suppress unused variable warnings - these are used for future features
+  console.log('OrderSummary props:', { totalSavings, totalItems });
   const [couponCode, setCouponCode] = React.useState('')
   const [discount, setDiscount] = React.useState(0)
+  const [termsAccepted, setTermsAccepted] = React.useState(false)
+  const router = useRouter()
   const shipping = 0 // FREE shipping
   const total = subtotal - discount + shipping
 
@@ -26,6 +32,19 @@ export default function OrderSummary({
     } else if (couponCode.toLowerCase() === 'welcome') {
       setDiscount(500)
     }
+  }
+
+  const handleCheckout = () => {
+    if (!termsAccepted) {
+      toast.error('Please accept terms and conditions', {
+        description: 'You must agree to the terms and conditions to proceed.',
+        duration: 3000,
+      });
+      return;
+    }
+
+    // Navigate to shopping info page
+    router.push('/home/product/shoppinginfo');
   }
 
   return (
@@ -90,14 +109,23 @@ export default function OrderSummary({
       </div>
 
       {/* Checkout Button */}
-      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-medium mb-4">
+      <Button 
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-medium mb-4"
+        onClick={handleCheckout}
+        disabled={!termsAccepted}
+      >
         Proceed to Checkout
       </Button>
 
       {/* Terms and Conditions */}
       <div className="text-xs text-gray-500">
         <label className="flex items-start gap-2 cursor-pointer">
-          <input type="checkbox" className="mt-1" />
+          <input 
+            type="checkbox" 
+            className="mt-1" 
+            checked={termsAccepted}
+            onChange={(e) => setTermsAccepted(e.target.checked)}
+          />
           <span>
             I have read and agree to the{' '}
             <a href="#" className="text-blue-600 hover:underline">Terms and Conditions</a>,{' '}

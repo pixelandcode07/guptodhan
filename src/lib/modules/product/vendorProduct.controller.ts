@@ -74,10 +74,10 @@ const getAllVendorProducts = async () => {
 // Get vendor product by ID
 const getVendorProductById = async (
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   const result = await VendorProductServices.getVendorProductByIdFromDB(id);
 
   return sendResponse({
@@ -101,6 +101,9 @@ const updateVendorProduct = async (
   // ⚙️ এখানে আমরা টাইপ কাস্ট করছি ObjectId এর সাথে compatible করতে
   const payload = {
     ...validatedData,
+    vendorStoreId: validatedData.vendorStoreId
+        ? new Types.ObjectId(validatedData.vendorStoreId)
+        : undefined,
     category: validatedData.category
       ? new Types.ObjectId(validatedData.category)
       : undefined,
@@ -132,10 +135,10 @@ const updateVendorProduct = async (
 // Delete vendor product
 const deleteVendorProduct = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   await VendorProductServices.deleteVendorProductFromDB(id);
 
   return sendResponse({
