@@ -388,7 +388,7 @@ export default function ProductForm({ initialData }: any) {
             };
 
             if (isEditMode && productId) {
-                await axios.put(`/api/v1/product/${productId}`, productData, {
+                await axios.patch(`/api/v1/product/${productId}`, productData, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 toast.success("Product updated successfully!");

@@ -101,6 +101,9 @@ const updateVendorProduct = async (
   // ⚙️ এখানে আমরা টাইপ কাস্ট করছি ObjectId এর সাথে compatible করতে
   const payload = {
     ...validatedData,
+    vendorStoreId: validatedData.vendorStoreId
+        ? new Types.ObjectId(validatedData.vendorStoreId)
+        : undefined,
     category: validatedData.category
       ? new Types.ObjectId(validatedData.category)
       : undefined,
