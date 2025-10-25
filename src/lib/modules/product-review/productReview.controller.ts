@@ -41,9 +41,9 @@ const getAllReviews = async () => {
 };
 
 // Get reviews by user
-const getReviewsByUser = async (req: NextRequest, { params }: { params: { userId: string } }) => {
+const getReviewsByUser = async (req: NextRequest, { params }: { params: Promise<{ userId: string }> }) => {
     await dbConnect();
-    const { userId } = params;
+    const { userId } = await params;
     const result = await ReviewServices.getReviewsByUserFromDB(userId);
 
     return sendResponse({
@@ -55,9 +55,9 @@ const getReviewsByUser = async (req: NextRequest, { params }: { params: { userId
 };
 
 // Update review
-const updateReview = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const updateReview = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const validatedData = updateReviewValidationSchema.parse(body);
 
@@ -77,9 +77,9 @@ const updateReview = async (req: NextRequest, { params }: { params: { id: string
 };
 
 // Delete review
-const deleteReview = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const deleteReview = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     await ReviewServices.deleteReviewFromDB(id);
 
     return sendResponse({
@@ -93,10 +93,10 @@ const deleteReview = async (req: NextRequest, { params }: { params: { id: string
 // Get reviews by product
 const getReviewsByProduct = async (
   req: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) => {
   await dbConnect();
-  const { productId } = params;
+  const { productId } = await params;
   const result = await ReviewServices.getReviewsByProductFromDB(productId);
 
   return sendResponse({
