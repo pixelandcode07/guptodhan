@@ -32,7 +32,7 @@ export const category_columns: ColumnDef<Category>[] = [
     header: "Icon",
     cell: ({ row }) => {
       const url = row.getValue("categoryIcon") as string | undefined
-      return url ? <img src={url} alt="icon" className="w-6 h-6 object-cover rounded" /> : <span className="text-xs text-gray-500">-</span>
+      return url ? <img src={url} alt="icon" className="w-6 h-6 object-cover rounded" onError={(e) => { e.currentTarget.style.display = 'none'; }} /> : <span className="text-xs text-gray-500">-</span>
     },
   },
   {
@@ -40,7 +40,7 @@ export const category_columns: ColumnDef<Category>[] = [
     header: "Banner Image",
     cell: ({ row }) => {
       const url = row.getValue("categoryBanner") as string | undefined
-      return url ? <img src={url} alt="banner" className="w-12 h-6 object-cover rounded" /> : <span className="text-xs text-gray-500">-</span>
+      return url ? <img src={url} alt="banner" className="w-12 h-6 object-cover rounded" onError={(e) => { e.currentTarget.style.display = 'none'; }} /> : <span className="text-xs text-gray-500">-</span>
     },
   },
   {
@@ -133,7 +133,7 @@ export const getCategoryColumns = ({ onEdit, onDelete }: CategoryColumnHandlers)
     header: "Icon",
     cell: ({ row }) => {
       const url = row.getValue("categoryIcon") as string | undefined
-      return url ? <img src={url} alt="icon" className="w-6 h-6 object-cover rounded" /> : <span className="text-xs text-gray-500">-</span>
+      return url ? <img src={url} alt="icon" className="w-6 h-6 object-cover rounded" onError={(e) => { e.currentTarget.style.display = 'none'; }} /> : <span className="text-xs text-gray-500">-</span>
     },
   },
   {
@@ -141,7 +141,7 @@ export const getCategoryColumns = ({ onEdit, onDelete }: CategoryColumnHandlers)
     header: "Banner Image",
     cell: ({ row }) => {
       const url = row.getValue("categoryBanner") as string | undefined
-      return url ? <img src={url} alt="banner" className="w-12 h-6 object-cover rounded" /> : <span className="text-xs text-gray-500">-</span>
+      return url ? <img src={url} alt="banner" className="w-12 h-6 object-cover rounded" onError={(e) => { e.currentTarget.style.display = 'none'; }} /> : <span className="text-xs text-gray-500">-</span>
     },
   },
   {

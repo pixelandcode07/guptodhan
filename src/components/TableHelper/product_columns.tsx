@@ -35,8 +35,13 @@ export const getProductColumns = ({ onView, onEdit, onDelete, onToggleStatus }: 
     header: "Image",
     cell: ({ row }) => {
       const image = row.getValue("image") as string;
+      const product = row.original as Product;
       return (
-        <div className="w-16 h-12 bg-gray-100 rounded flex items-center justify-center">
+        <button
+          onClick={() => onView?.(product)}
+          className="w-16 h-12 bg-gray-100 rounded flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer"
+          title="Click to view product details"
+        >
           {image ? (
             <img src={image} alt="Product" className="w-full h-full object-cover rounded" />
           ) : (
@@ -44,7 +49,7 @@ export const getProductColumns = ({ onView, onEdit, onDelete, onToggleStatus }: 
               No Image
             </div>
           )}
-        </div>
+        </button>
       );
     },
   },
@@ -57,10 +62,15 @@ export const getProductColumns = ({ onView, onEdit, onDelete, onToggleStatus }: 
     header: "Name",
     cell: ({ row }) => {
       const name = row.getValue("name") as string;
+      const product = row.original as Product;
       return (
-        <div className="max-w-xs truncate" title={name}>
+        <button
+          onClick={() => onView?.(product)}
+          className="max-w-xs truncate text-left hover:text-blue-600 hover:underline transition-colors cursor-pointer"
+          title={`Click to view details: ${name}`}
+        >
           {name}
-        </div>
+        </button>
       );
     },
   },
