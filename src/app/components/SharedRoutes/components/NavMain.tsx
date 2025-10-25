@@ -1,4 +1,4 @@
-import { ChevronDown, Handbag, Heart, LogOut, Menu, User, X } from 'lucide-react';
+import { ChevronDown, Heart, LogOut, Menu, User, X } from 'lucide-react';
 import Image from 'next/image';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import LogInRegister from '../../LogInAndRegister/LogIn_Register';
@@ -7,6 +7,7 @@ import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { navigationData } from '@/data/navigation_data';
+import CartIcon from '@/components/CartIcon';
 
 export default function NavMain() {
   const { data: session } = useSession();
@@ -65,9 +66,8 @@ export default function NavMain() {
               <Heart />
               <span className="text-[#00005E] text-[12px]"> Whishlist</span>
             </li>
-            <li className="flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer">
-              <Handbag />
-              <span className="text-[#00005E] text-[12px]"> Cart</span>
+            <li>
+              <CartIcon />
             </li>
 
             {session ? (
@@ -117,6 +117,17 @@ export default function NavMain() {
      {/* Mobile HeroNav Below Main Nav */}
       {mobileOpen && (
         <div className="lg:hidden bg-[#000066] text-white w-full">
+          {/* Mobile Cart and Wishlist */}
+          <div className="flex justify-center gap-6 py-4 border-b border-gray-600">
+            <div className="flex flex-col items-center text-white">
+              <Heart className="w-6 h-6" />
+              <span className="text-xs mt-1">Wishlist</span>
+            </div>
+            <div className="flex flex-col items-center text-white">
+              <CartIcon showCount={true} className="text-white" />
+            </div>
+          </div>
+          
           <ul className="flex flex-col px-3 py-2 gap-1">
             {navigationData.map(nav => (
               <li key={nav.title}>

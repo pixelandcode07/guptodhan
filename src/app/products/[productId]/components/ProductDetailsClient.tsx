@@ -9,6 +9,7 @@ import { ArrowLeft, Package, Store, Tag, DollarSign, ShoppingCart, CreditCard, H
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import { useCart } from '@/contexts/CartContext';
 
 interface Review {
   _id: string;
@@ -80,10 +81,10 @@ interface ProductDetailsClientProps {
 export default function ProductDetailsClient({ productData }: ProductDetailsClientProps) {
   const router = useRouter();
   const { product, relatedData } = productData;
+  const { addToCart, isLoading: cartLoading } = useCart();
   const [selectedImage, setSelectedImage] = useState(product.thumbnailImage);
  
   const [quantity, setQuantity] = useState(1);
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
   
   // Review state management
@@ -149,15 +150,10 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
   };
 
   const handleAddToCart = async () => {
-    setIsAddingToCart(true);
     try {
-      // TODO: Implement add to cart functionality
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      toast.success('Product added to cart successfully!');
-    } catch {
-      toast.error('Failed to add product to cart');
-    } finally {
-      setIsAddingToCart(false);
+      await addToCart(product._id, quantity);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
     }
   };
 
@@ -363,11 +359,11 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   onClick={handleAddToCart}
-                  disabled={isAddingToCart || !product.stock || product.status !== 'active'}
+                  disabled={cartLoading || !product.stock || product.status !== 'active'}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 h-12"
                 >
                   <ShoppingCart className="w-4 h-4 mr-2" />
-                  {isAddingToCart ? 'Adding...' : 'Add to Cart'}
+                  {cartLoading ? 'Adding...' : 'Add to Cart'}
                 </Button>
                 <Button
                   onClick={handleBuyNow}
