@@ -32,7 +32,7 @@ type ApiOrder = {
     }
 }
 
-export default function OrdersTable({ initialStatus }: { initialStatus?: string }) {
+export default function OrdersTable({ initialStatus, onDataChange }: { initialStatus?: string; onDataChange?: (data: OrderRow[]) => void }) {
     const [rows, setRows] = React.useState<OrderRow[]>([])
     const [loading, setLoading] = React.useState(false)
     const [error, setError] = React.useState<string | null>(null)
@@ -88,6 +88,11 @@ export default function OrdersTable({ initialStatus }: { initialStatus?: string 
             }))
             
             setRows(mapped)
+            
+            // Notify parent component of data change
+            if (onDataChange) {
+                onDataChange(mapped)
+            }
         } catch (error: unknown) {
             console.error('Error fetching orders:', error)
             const errorMessage = error instanceof Error && 'response' in error 
@@ -99,7 +104,7 @@ export default function OrdersTable({ initialStatus }: { initialStatus?: string 
         } finally {
             setLoading(false)
         }
-    }, [initialStatus])
+    }, [initialStatus, onDataChange])
 
     React.useEffect(() => {
         fetchOrders()
@@ -127,20 +132,22 @@ export default function OrdersTable({ initialStatus }: { initialStatus?: string 
     }
 
     return (
-        <div className="w-full overflow-x-auto">
-            <div className="min-w-[800px]">
-                <DataTable columns={ordersColumns} data={rows} />
-                {rows.length === 0 && !loading && (
-                    <div className="px-3 py-8 text-center text-gray-500">
-                        <p>No orders found.</p>
-                        <button 
-                            onClick={fetchOrders}
-                            className="mt-2 px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
-                        >
-                            Refresh
-                        </button>
-                    </div>
-                )}
+        <div className="w-full">
+            <div className="overflow-x-auto">
+                <div className="min-w-[800px]">
+                    <DataTable columns={ordersColumns} data={rows} />
+                    {rows.length === 0 && !loading && (
+                        <div className="px-3 py-8 text-center text-gray-500">
+                            <p>No orders found.</p>
+                            <button 
+                                onClick={fetchOrders}
+                                className="mt-2 px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                            >
+                                Refresh
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     )
