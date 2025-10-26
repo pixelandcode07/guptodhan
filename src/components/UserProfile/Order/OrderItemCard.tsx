@@ -1,7 +1,7 @@
 import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CheckCircle } from 'lucide-react'
+import { CheckCircle, Package, ExternalLink } from 'lucide-react'
 import type { OrderSummary } from './types'
 import OrderStatusBadge from './OrderStatusBadge'
 
@@ -30,6 +30,21 @@ export default function OrderItemCard({ order }: { order: OrderSummary }) {
           <div className="text-xs text-gray-500">Size: {item.size ?? '—'}, Color: {item.color ?? '—'}</div>
           <div className="text-sm text-blue-600 font-semibold mt-1">{item.priceFormatted}</div>
           <div className="text-xs text-gray-500">Qty {item.quantity}</div>
+          
+          {/* Steadfast tracking information */}
+          {order.deliveryMethod === 'Steadfast COD' && order.trackingId && (
+            <div className="mt-2 flex items-center gap-2">
+              <Package className="h-3 w-3 text-blue-500" />
+              <span className="text-xs text-gray-600">Tracking: {order.trackingId}</span>
+              <Link 
+                href={`/home/product/tracking?trackingId=${order.trackingId}`}
+                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+              >
+                Track Order
+                <ExternalLink className="h-3 w-3" />
+              </Link>
+            </div>
+          )}
         </div>
       </Link>
     </div>

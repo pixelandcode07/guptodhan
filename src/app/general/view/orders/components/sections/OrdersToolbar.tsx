@@ -26,6 +26,7 @@ export default function OrdersToolbar({
         switch (slug) {
             case 'ready-to-ship': return 'Ready to Ship';
             case 'in-transit': return 'In Transit';
+            case 'steadfast': return 'Steadfast';
             default: return slug ? slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Select Status';
         }
     }
@@ -38,6 +39,7 @@ export default function OrdersToolbar({
             case 'In Transit': return 'in-transit';
             case 'Delivered': return 'delivered';
             case 'Cancelled': return 'cancelled';
+            case 'Steadfast': return 'steadfast';
             default: return '';
         }
     }

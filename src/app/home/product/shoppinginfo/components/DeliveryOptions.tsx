@@ -7,27 +7,23 @@ export type DeliveryOption = 'standard' | 'steadfast' | 'office'
 interface DeliveryOptionsProps {
   selectedDelivery: DeliveryOption
   onDeliveryChange: (option: DeliveryOption) => void
-  deliveryCharge: number
 }
 
 export default function DeliveryOptions({ 
   selectedDelivery, 
-  onDeliveryChange, 
-  deliveryCharge 
+  onDeliveryChange
 }: DeliveryOptionsProps) {
   const deliveryOptions = [
     {
       id: 'standard' as DeliveryOption,
       name: 'Standard Delivery',
       description: '3-5 business days',
-      price: deliveryCharge,
       icon: '🚚'
     },
     {
       id: 'steadfast' as DeliveryOption,
       name: 'Steadfast COD',
       description: '48 hours delivery',
-      price: deliveryCharge + 50,
       icon: '⚡',
       badge: 'COD AVAILABLE'
     },
@@ -35,7 +31,6 @@ export default function DeliveryOptions({
       id: 'office' as DeliveryOption,
       name: 'Office Delivery',
       description: '1-2 business days',
-      price: deliveryCharge + 30,
       icon: '🏢'
     }
   ]
@@ -71,15 +66,10 @@ export default function DeliveryOptions({
                 )}
               </div>
               <div className="text-xs text-gray-600 mb-2">{option.description}</div>
-              <div className="text-sm font-semibold text-gray-900">
-                ৳{option.price.toLocaleString()}
-              </div>
             </div>
           </label>
         ))}
       </div>
-      
-    
     </div>
   )
 }

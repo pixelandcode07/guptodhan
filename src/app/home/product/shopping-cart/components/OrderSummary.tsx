@@ -2,37 +2,24 @@
 
 import React from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { ChevronDown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 export default function OrderSummary({ 
   subtotal, 
   totalSavings, 
-  totalItems 
+  totalItems
 }: { 
   subtotal: number
   totalSavings: number
   totalItems: number
 }) {
-  // Suppress unused variable warnings - these are used for future features
-  console.log('OrderSummary props:', { totalSavings, totalItems });
-  const [couponCode, setCouponCode] = React.useState('')
-  const [discount, setDiscount] = React.useState(0)
   const [termsAccepted, setTermsAccepted] = React.useState(false)
   const router = useRouter()
-  const shipping = 0 // FREE shipping
-  const total = subtotal - discount + shipping
-
-  const handleApplyCoupon = () => {
-    // Mock coupon logic
-    if (couponCode.toLowerCase() === 'save10') {
-      setDiscount(Math.floor(subtotal * 0.1))
-    } else if (couponCode.toLowerCase() === 'welcome') {
-      setDiscount(500)
-    }
-  }
+  
+  // Use dynamic values from cart items
+  const total = subtotal
+  const finalSavings = totalSavings
 
   const handleCheckout = () => {
     if (!termsAccepted) {
@@ -49,72 +36,44 @@ export default function OrderSummary({
 
   return (
     <div className="bg-white rounded-lg p-6 sticky top-4">
-      <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Summary</h2>
+      <h2 className="text-xl font-semibold text-gray-900 mb-6">CART TOTALS</h2>
 
-      {/* Coupon Code */}
-      <div className="mb-6">
-        <div className="flex gap-2">
-          <Input
-            placeholder="Apply coupon code"
-            value={couponCode}
-            onChange={(e) => setCouponCode(e.target.value)}
-            className="flex-1"
-          />
-          <Button 
-            variant="outline" 
-            onClick={handleApplyCoupon}
-            disabled={!couponCode.trim()}
-          >
-            Apply
-          </Button>
-        </div>
-      </div>
 
-      {/* Voucher */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between p-3 border border-gray-200 rounded-md">
-          <span className="text-sm text-gray-600">Voucher</span>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">None of Applicable</span>
-            <ChevronDown className="w-4 h-4 text-gray-400" />
-          </div>
-        </div>
-      </div>
 
       {/* Price Breakdown */}
       <div className="space-y-3 mb-6">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Total items:</span>
+          <span className="text-gray-600">Subtotal ({totalItems} item{totalItems > 1 ? 's' : ''}):</span>
           <span className="font-medium">৳ {subtotal.toLocaleString()}</span>
         </div>
         
-        {discount > 0 && (
+        {totalSavings > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Discount:</span>
-            <span className="font-medium text-green-600">-৳ {discount.toLocaleString()}</span>
+            <span className="text-gray-600">Product Savings:</span>
+            <span className="font-medium text-green-600">-৳ {totalSavings.toLocaleString()}</span>
           </div>
         )}
-        
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Shipping:</span>
-          <span className="font-medium text-green-600">FREE</span>
-        </div>
         
         <div className="border-t border-gray-200 pt-3">
           <div className="flex justify-between text-lg font-semibold">
             <span>Total:</span>
             <span>৳ {total.toLocaleString()}</span>
           </div>
+          {finalSavings > 0 && (
+            <div className="text-sm text-green-600 mt-1">
+              You saved ৳ {finalSavings.toLocaleString()}!
+            </div>
+          )}
         </div>
       </div>
 
       {/* Checkout Button */}
       <Button 
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-medium mb-4"
+        className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 text-lg font-medium mb-4"
         onClick={handleCheckout}
         disabled={!termsAccepted}
       >
-        Proceed to Checkout
+        PROCEED TO CHECKOUT →
       </Button>
 
       {/* Terms and Conditions */}

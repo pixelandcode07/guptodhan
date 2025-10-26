@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from 'react'
 import OrderSummary from './components/OrderSummary'
-import AddressSelector from './components/AddressSelector'
 import DeliveryOptions, { DeliveryOption } from './components/DeliveryOptions'
 import ItemsList from './components/ItemsList'
 import OrderSuccessModal from './components/OrderSuccessModal'
+import OrderErrorModal from './components/OrderErrorModal'
+import InfoForm from './components/InfoForm'
+import FancyLoadingPage from '@/app/general/loading'
 import { useSession } from 'next-auth/react'
 import axios from 'axios'
 
@@ -45,29 +47,35 @@ interface UserProfile {
 export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem[] }) {
   const [selectedDelivery, setSelectedDelivery] = useState<DeliveryOption>('standard')
   const [deliveryCharge, setDeliveryCharge] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [selectedAddress, setSelectedAddress] = useState<'home' | 'office'>('home')
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [profileLoading, setProfileLoading] = useState(true)
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    district: '',
+    upazila: '',
+    address: '',
+    city: '',
+    postalCode: '',
+    country: 'Bangladesh'
+  })
   const { data: session } = useSession()
 
   // Modal state management
   const [successModalOpen, setSuccessModalOpen] = useState(false)
   const [successOrderId, setSuccessOrderId] = useState('')
+  const [errorModalOpen, setErrorModalOpen] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [lastPaymentMethod, setLastPaymentMethod] = useState<'cod' | 'card'>('cod')
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.product.quantity), 0)
   const totalSavings = cartItems.reduce((sum, item) => sum + ((item.product.originalPrice - item.product.price) * item.product.quantity), 0)
 
   // Calculate final delivery charge based on selected option
   const getFinalDeliveryCharge = () => {
-    switch (selectedDelivery) {
-      case 'steadfast':
-        return deliveryCharge + 50
-      case 'office':
-        return deliveryCharge + 30
-      default:
-        return deliveryCharge
-    }
+    // All delivery options use the same base delivery charge from API
+    return deliveryCharge
   }
 
   const finalDeliveryCharge = getFinalDeliveryCharge()
@@ -76,14 +84,17 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
   const showSuccessModal = (orderId: string) => {
     setSuccessOrderId(orderId)
     setSuccessModalOpen(true)
+    // Ensure error modal is closed when showing success
+    setErrorModalOpen(false)
     // Clear cart after successful order
     localStorage.removeItem('cart')
   }
 
   const showError = (message: string) => {
-    // You can add a simple alert or console log for errors
-    console.error('Order Error:', message)
-    alert(`Order Error: ${message}`)
+    setErrorMessage(message)
+    setErrorModalOpen(true)
+    // Ensure success modal is closed when showing error
+    setSuccessModalOpen(false)
   }
 
   const handleSuccessModalClose = () => {
@@ -133,51 +144,50 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
     fetchUserProfile()
   }, [session])
 
-  // Fetch delivery charge based on location
+  // Fetch delivery charge based on selected district and upazila
   useEffect(() => {
     const fetchDeliveryCharge = async () => {
+      if (!formData.district || !formData.upazila) {
+        setDeliveryCharge(0)
+        return
+      }
+
       try {
-        setLoading(true)
-        // Mock location data - replace with actual user location
-        const district = 'Dhaka'
-        const division = 'Dhaka'
-        
         const response = await axios.get(
-          `/api/v1/delivery-charge?districtName=${district}&divisionName=${division}`
+          `/api/v1/delivery-charge?districtName=${formData.district}&upazilaName=${formData.upazila}`
         )
         
         if (response.data.success && response.data.data.length > 0) {
           setDeliveryCharge(response.data.data[0].deliveryCharge)
         } else {
-          // Default delivery charge if not found
-          setDeliveryCharge(100)
+          // No delivery charge data found - set to 0
+          setDeliveryCharge(0)
         }
       } catch (error) {
         console.error('Error fetching delivery charge:', error)
-        // Fallback to default delivery charge
-        setDeliveryCharge(100)
-      } finally {
-        setLoading(false)
+        // No fallback - set to 0 if API fails
+        setDeliveryCharge(0)
       }
     }
 
     fetchDeliveryCharge()
-  }, [])
+  }, [formData.district, formData.upazila])
 
   // COD validation function
   const validateCODOrder = (paymentMethod: 'cod' | 'card') => {
     const errors: string[] = []
     
+    // Check if user is logged in
+    if (!session?.user) {
+      errors.push('User must be logged in to place order')
+    }
+    
+    // Check if form data is complete
+    if (!formData.name || !formData.phone || !formData.email || !formData.district || !formData.upazila || !formData.address || !formData.city || !formData.postalCode || !formData.country) {
+      errors.push('Please fill in all required delivery information')
+    }
+    
     if (paymentMethod === 'cod') {
-      // COD order limits
-      if (subtotal > 50000) {
-        errors.push('COD not available for orders above ৳50,000')
-      }
-      
-      if (subtotal < 500) {
-        errors.push('Minimum order amount for COD is ৳500')
-      }
-      
       // Check if cart is empty
       if (cartItems.length === 0) {
         errors.push('Your cart is empty')
@@ -187,11 +197,6 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
       if (!selectedDelivery) {
         errors.push('Please select a delivery method')
       }
-      
-      // Check for valid address
-      if (!selectedAddress) {
-        errors.push('Please select a delivery address')
-      }
     }
     
     return errors
@@ -199,6 +204,9 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
 
   const handlePlaceOrder = async (paymentMethod: 'cod' | 'card') => {
     try {
+      // Store the payment method for retry functionality
+      setLastPaymentMethod(paymentMethod)
+      
       // Validate COD order
       const validationErrors = validateCODOrder(paymentMethod)
       if (validationErrors.length > 0) {
@@ -213,22 +221,30 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
         deliveryMethodId: selectedDelivery,
         paymentMethodId: '507f1f77bcf86cd799439013', // Valid ObjectId format - replace with actual payment method ID
         
-        // Shipping information from user profile
-        shippingName: userProfile?.name || 'Guest User',
-        shippingPhone: userProfile?.phoneNumber || '01700000000',
-        shippingEmail: userProfile?.email || 'guest@example.com',
-        shippingStreetAddress: userProfile?.address || 'Address not provided',
-        shippingCity: 'Dhaka', // Default city - can be extracted from address if needed
-        shippingDistrict: 'Dhaka', // Default district - can be extracted from address if needed
-        shippingPostalCode: '1000', // Default postal code
-        shippingCountry: 'Bangladesh',
-        addressDetails: selectedAddress === 'home' ? 'Home Address' : 'Office Address',
+        // Shipping information from form data
+        shippingName: formData.name || userProfile?.name || 'Guest User',
+        shippingPhone: formData.phone || userProfile?.phoneNumber || '01700000000',
+        shippingEmail: formData.email || userProfile?.email || 'guest@example.com',
+        shippingStreetAddress: formData.address || userProfile?.address || 'Address not provided',
+        shippingCity: formData.city || 'Dhaka',
+        shippingDistrict: formData.district || 'Dhaka',
+        shippingPostalCode: formData.postalCode || '1000',
+        shippingCountry: formData.country || 'Bangladesh',
+        addressDetails: `${formData.address}, ${formData.upazila}, ${formData.district}`,
         
         deliveryCharge: finalDeliveryCharge,
+        totalAmount: subtotal + finalDeliveryCharge,
         paymentStatus: paymentMethod === 'cod' ? 'Pending' : 'Pending',
-        orderStatus: 'Pending',
+        orderStatus: selectedDelivery === 'steadfast' ? 'Pending' : 'Pending',
         orderForm: 'Website',
+        orderDate: new Date(),
         deliveryDate: new Date(Date.now() + (selectedDelivery === 'steadfast' ? 2 : 3) * 24 * 60 * 60 * 1000),
+        
+        // Steadfast-specific fields (will be populated after parcel creation)
+        ...(selectedDelivery === 'steadfast' && {
+          parcelId: null, // Will be updated after Steadfast API call
+          trackingId: null, // Will be updated after Steadfast API call
+        }),
         
         // Products array
         products: cartItems.map(item => ({
@@ -240,36 +256,72 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
         }))
       }
 
+      // Validate order data before sending
+      if (!orderData.userId || !orderData.storeId || !orderData.deliveryMethodId || !orderData.paymentMethodId) {
+        showError('Invalid order configuration. Please refresh the page and try again.')
+        return
+      }
+      
+      if (!orderData.shippingName || !orderData.shippingPhone || !orderData.shippingEmail) {
+        showError('Missing shipping information. Please fill in all required fields.')
+        return
+      }
+      
+      if (!orderData.products || orderData.products.length === 0) {
+        showError('No products in order. Please add items to your cart.')
+        return
+      }
+
       const response = await axios.post('/api/v1/product-order', orderData)
       
       if (response.data.success) {
         const orderData = response.data.data
-        let trackingId = ''
-        let trackingUrl = ''
+        let orderSuccessfullyCompleted = true
         
         // If it's a Steadfast order, create the parcel
-        if (selectedDelivery === 'steadfast' && orderData.needsSteadfastCreation) {
+        if (selectedDelivery === 'steadfast') {
           try {
             const steadfastResponse = await axios.post('/api/v1/product-order/steadfast', {
               orderId: orderData.order.orderId
             })
             
             if (steadfastResponse.data.success) {
-              trackingId = steadfastResponse.data.data.trackingId
-              trackingUrl = steadfastResponse.data.data.steadfastUrl
+              const consignmentId = steadfastResponse.data.data.consignmentId
+              const trackingCode = steadfastResponse.data.data.trackingCode
               
               // Store tracking info
               localStorage.setItem('lastOrderTracking', JSON.stringify({
                 orderId: orderData.order.orderId,
-                trackingId: trackingId,
-                trackingUrl: trackingUrl,
+                parcelId: consignmentId,
+                trackingId: trackingCode,
+                trackingUrl: `https://portal.packzy.com/track/${trackingCode}`,
               }))
+            } else {
+              // Steadfast API returned success: false
+              orderSuccessfullyCompleted = false
+              showError('Failed to create Steadfast parcel. Please contact support.')
             }
           } catch (error) {
             console.error('Error creating Steadfast parcel:', error)
+            orderSuccessfullyCompleted = false
+            
+            // Update order status to indicate Steadfast creation failed
+            try {
+              await axios.patch(`/api/v1/product-order/${orderData.order.orderId}`, {
+                orderStatus: 'Cancelled', // Steadfast creation failed
+                updatedAt: new Date()
+              })
+            } catch (updateError) {
+              console.error('Error updating order status:', updateError)
+            }
+            
+            // Show error for Steadfast failure
+            showError('Failed to create Steadfast parcel. Your order has been placed but needs manual processing. Please contact support.')
+            
             // Still store the order info even if Steadfast fails
             localStorage.setItem('lastOrderTracking', JSON.stringify({
               orderId: orderData.order.orderId,
+              parcelId: null,
               trackingId: null,
               trackingUrl: null,
               note: 'Steadfast parcel creation failed - contact support'
@@ -277,9 +329,14 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
           }
         }
         
-        // Show success modal
-        showSuccessModal(orderData.order.orderId)
+        // Only show success modal if order was successfully completed
+        if (orderSuccessfullyCompleted) {
+          showSuccessModal(orderData.order.orderId)
+        }
         
+      } else {
+        // API returned success: false
+        showError(response.data.message || 'Failed to place order. Please try again.')
       }
     } catch (error) {
       console.error('Error placing order:', error)
@@ -287,15 +344,8 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
     }
   }
 
-  if (loading || profileLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading ...</p>
-        </div>
-      </div>
-    )
+  if (profileLoading) {
+    return <FancyLoadingPage />
   }
 
   // Show warning if no user profile is available
@@ -317,14 +367,21 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
     <div className="min-h-screen bg-gray-50">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <AddressSelector 
-            selectedAddress={selectedAddress}
-            onAddressChange={setSelectedAddress}
+          <InfoForm 
+            onFormDataChange={setFormData}
+            initialData={{
+              name: userProfile?.name || '',
+              phone: userProfile?.phoneNumber || '',
+              email: userProfile?.email || '',
+              address: userProfile?.address || '',
+              city: 'Dhaka',
+              postalCode: '1000',
+              country: 'Bangladesh'
+            }}
           />
           <DeliveryOptions 
             selectedDelivery={selectedDelivery}
             onDeliveryChange={setSelectedDelivery}
-            deliveryCharge={deliveryCharge}
           />
           <ItemsList items={cartItems} />
         </div>
@@ -344,6 +401,17 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
         open={successModalOpen}
         onOpenChange={handleSuccessModalClose}
         orderId={successOrderId}
+      />
+
+      {/* Order Error Modal */}
+      <OrderErrorModal
+        open={errorModalOpen}
+        onOpenChange={setErrorModalOpen}
+        errorMessage={errorMessage}
+        onRetry={() => {
+          // Retry the last order attempt
+          handlePlaceOrder(lastPaymentMethod)
+        }}
       />
     </div>
   )

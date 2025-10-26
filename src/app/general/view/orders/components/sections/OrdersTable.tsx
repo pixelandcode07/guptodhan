@@ -91,7 +91,7 @@ export default function OrdersTable({ initialStatus }: { initialStatus?: string 
         } catch (error: unknown) {
             console.error('Error fetching orders:', error)
             const errorMessage = error instanceof Error && 'response' in error 
-                ? (error as any).response?.data?.message || 'Failed to fetch orders'
+                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to fetch orders'
                 : 'Failed to fetch orders'
             setError(errorMessage)
             toast.error('Failed to fetch orders')

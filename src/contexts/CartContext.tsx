@@ -1,7 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import axios from 'axios';
 
@@ -20,6 +19,9 @@ export type CartItem = {
     price: number;
     originalPrice: number;
     quantity: number;
+    shippingCost?: number;
+    freeShippingThreshold?: number;
+    discountPercentage?: number;
   };
 };
 
@@ -31,6 +33,10 @@ type CartContextType = {
   removeFromCart: (itemId: string) => void;
   clearCart: () => void;
   isLoading: boolean;
+  // Modal state
+  showAddToCartModal: boolean;
+  lastAddedProduct: CartItem | null;
+  closeAddToCartModal: () => void;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -50,7 +56,8 @@ type CartProviderProps = {
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [showAddToCartModal, setShowAddToCartModal] = useState(false);
+  const [lastAddedProduct, setLastAddedProduct] = useState<CartItem | null>(null);
 
   // Calculate total item count
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.product.quantity, 0);
@@ -88,6 +95,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
             : item
         );
         setCartItems(updatedCart);
+        setLastAddedProduct(updatedCart[existingItemIndex]);
         
         toast.success('Quantity updated!', {
           description: `${cartItems[existingItemIndex].product.name} quantity increased.`,
@@ -113,10 +121,14 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
             price: productData.discountPrice || productData.productPrice,
             originalPrice: productData.productPrice,
             quantity: quantity,
+            shippingCost: productData.shippingCost || 0,
+            freeShippingThreshold: productData.freeShippingThreshold || 0,
+            discountPercentage: productData.discountPercentage || 0,
           },
         };
         
         setCartItems(prev => [...prev, newCartItem]);
+        setLastAddedProduct(newCartItem);
         
         toast.success('Product added to cart!', {
           description: `${productData.productTitle} has been added to your cart.`,
@@ -124,8 +136,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         });
       }
 
-      // Redirect to shopping cart
-      router.push('/home/product/shopping-cart');
+      // Show the modal
+      setShowAddToCartModal(true);
     } catch (error) {
       console.error('Error adding product to cart:', error);
       toast.error('Failed to add product to cart', {
@@ -172,6 +184,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     });
   };
 
+  const closeAddToCartModal = () => {
+    setShowAddToCartModal(false);
+    setLastAddedProduct(null);
+  };
+
   const value: CartContextType = {
     cartItems,
     cartItemCount,
@@ -180,6 +197,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     removeFromCart,
     clearCart,
     isLoading,
+    showAddToCartModal,
+    lastAddedProduct,
+    closeAddToCartModal,
   };
 
   return (
