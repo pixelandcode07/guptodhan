@@ -7,6 +7,7 @@ import OrdersFilters from './sections/OrdersFilters';
 import OrdersTable from './sections/OrdersTable';
 import OrdersToolbar from './sections/OrdersToolbar';
 import { OrderRow } from '@/components/TableHelper/orders_columns';
+import { printOrders } from '../utils/printOrders';
 import { toast } from 'sonner';
 
 
@@ -16,6 +17,7 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
     const [showStats, setShowStats] = useState<boolean>(true);
     const [refreshKey, setRefreshKey] = useState(0);
     const [ordersData, setOrdersData] = useState<OrderRow[]>([]);
+    const [selectedOrders, setSelectedOrders] = useState<OrderRow[]>([]);
     
     const showBulkCourierEntry = normalizedStatus === 'ready-to-ship';
     const isBaseOrdersRoute = !normalizedStatus;
@@ -26,7 +28,9 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
     };
 
     const handleExport = () => {
-        if (ordersData.length === 0) {
+        const ordersToExport = selectedOrders.length > 0 ? selectedOrders : ordersData;
+        
+        if (ordersToExport.length === 0) {
             toast.error('No orders data available to export');
             return;
         }
@@ -35,7 +39,7 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
         const headers = ['SL', 'Order No', 'Order Date', 'Customer Name', 'Phone', 'Email', 'Total Amount', 'Payment Status', 'Order Status', 'Delivery Method', 'Tracking ID', 'Parcel ID'];
         const csvRows = [headers.join(',')];
 
-        ordersData.forEach(order => {
+        ordersToExport.forEach(order => {
             const values = [
                 order.sl || '',
                 order.orderNo || '',
@@ -58,7 +62,9 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         
-        const filename = `orders-${normalizedStatus || 'all'}-${new Date().toISOString().split('T')[0]}.csv`;
+        const filename = selectedOrders.length > 0 
+            ? `selected-orders-${new Date().toISOString().split('T')[0]}.csv`
+            : `orders-${normalizedStatus || 'all'}-${new Date().toISOString().split('T')[0]}.csv`;
         link.setAttribute('href', url);
         link.setAttribute('download', filename);
         link.style.visibility = 'hidden';
@@ -66,11 +72,38 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
         link.click();
         document.body.removeChild(link);
 
-        toast.success(`Exported ${ordersData.length} orders successfully`);
+        toast.success(`Exported ${ordersToExport.length} order(s) successfully`);
     };
 
     const handleFilter = () => {
         setShowFilters(!showFilters);
+    };
+
+    const handlePrintSelected = () => {
+        const ordersToPrint = selectedOrders.length > 0 ? selectedOrders : ordersData;
+        
+        if (ordersToPrint.length === 0) {
+            toast.error('No orders to print');
+            return;
+        }
+
+        // Get the status label for print title
+        const statusLabel = selectedOrders.length > 0 
+            ? `Selected Orders (${selectedOrders.length})`
+            : normalizedStatus 
+                ? normalizedStatus.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                : 'All';
+            
+        printOrders({
+            orders: ordersToPrint,
+            status: statusLabel,
+            onSuccess: () => {
+                toast.success(`Printing ${ordersToPrint.length} order(s)`);
+            },
+            onError: (error: string) => {
+                toast.error(error);
+            }
+        });
     };
 
     return (
@@ -108,9 +141,11 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                     <OrdersToolbar 
                         initialStatus={normalizedStatus} 
                         showBulkCourierEntry={showBulkCourierEntry}
+                        selectedCount={selectedOrders.length}
                         onRefresh={handleRefresh}
                         onExport={handleExport}
                         onFilter={handleFilter}
+                        onPrint={handlePrintSelected}
                     />
                 </div>
             </div>
@@ -119,6 +154,7 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                     key={refreshKey}
                     initialStatus={normalizedStatus}
                     onDataChange={setOrdersData}
+                    onSelectionChange={setSelectedOrders}
                 />
             </div>
         </div>

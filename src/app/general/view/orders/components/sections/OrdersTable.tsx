@@ -32,10 +32,11 @@ type ApiOrder = {
     }
 }
 
-export default function OrdersTable({ initialStatus, onDataChange }: { initialStatus?: string; onDataChange?: (data: OrderRow[]) => void }) {
+export default function OrdersTable({ initialStatus, onDataChange, onSelectionChange }: { initialStatus?: string; onDataChange?: (data: OrderRow[]) => void; onSelectionChange?: (selectedRows: OrderRow[]) => void }) {
     const [rows, setRows] = React.useState<OrderRow[]>([])
     const [loading, setLoading] = React.useState(false)
     const [error, setError] = React.useState<string | null>(null)
+    const [selectedRows, setSelectedRows] = React.useState<OrderRow[]>([])
 
     const fetchOrders = React.useCallback(async () => {
         try {
@@ -109,6 +110,58 @@ export default function OrdersTable({ initialStatus, onDataChange }: { initialSt
     React.useEffect(() => {
         fetchOrders()
     }, [fetchOrders])
+
+    // Track checkbox selections using DOM events
+    React.useEffect(() => {
+        const handleCheckboxChange = (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            if (target.type === 'checkbox' && target.hasAttribute('data-order-id')) {
+                const orderId = target.getAttribute('data-order-id');
+                const order = rows.find(row => row.id === orderId);
+                
+                if (order) {
+                    if (target.checked) {
+                        setSelectedRows(prev => {
+                            if (!prev.find(r => r.id === order.id)) {
+                                return [...prev, order];
+                            }
+                            return prev;
+                        });
+                    } else {
+                        setSelectedRows(prev => prev.filter(row => row.id !== order.id));
+                    }
+                }
+            }
+        };
+
+        const handleSelectAll = (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            const headerCheckbox = document.querySelector('thead input[type="checkbox"]') as HTMLInputElement;
+            
+            if (headerCheckbox && target === headerCheckbox) {
+                if (target.checked) {
+                    setSelectedRows(rows);
+                } else {
+                    setSelectedRows([]);
+                }
+            }
+        };
+
+        document.addEventListener('change', handleCheckboxChange);
+        document.addEventListener('change', handleSelectAll);
+
+        return () => {
+            document.removeEventListener('change', handleCheckboxChange);
+            document.removeEventListener('change', handleSelectAll);
+        };
+    }, [rows]);
+
+    // Notify parent of selection changes
+    React.useEffect(() => {
+        if (onSelectionChange) {
+            onSelectionChange(selectedRows);
+        }
+    }, [selectedRows, onSelectionChange])
 
     if (loading) {
         return <FancyLoadingPage />;

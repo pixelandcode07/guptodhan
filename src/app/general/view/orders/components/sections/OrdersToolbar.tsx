@@ -5,17 +5,21 @@ import { RefreshCw, Download, Filter } from 'lucide-react'
 interface OrdersToolbarProps {
     initialStatus?: string
     showBulkCourierEntry?: boolean
+    selectedCount?: number
     onRefresh?: () => void
     onExport?: () => void
     onFilter?: () => void
+    onPrint?: () => void
 }
 
 export default function OrdersToolbar({ 
     initialStatus, 
     showBulkCourierEntry = false,
+    selectedCount = 0,
     onRefresh,
     onExport,
-    onFilter
+    onFilter,
+    onPrint
 }: OrdersToolbarProps) {
     const router = useRouter();
     const normalized = (initialStatus || '').toLowerCase().replace(/\s+/g, '-');
@@ -57,8 +61,8 @@ export default function OrdersToolbar({
     };
 
     return (
-        <div className="rounded-lg border border-[#e4e7eb] bg-white shadow-sm overflow-x-hidden">
-            <div className="px-3 py-3 md:px-4 md:py-3">
+        <div className="rounded-lg border border-[#e4e7eb] bg-white shadow-sm w-full">
+            <div className="px-3 py-3 md:px-4 md:py-3 w-full overflow-x-auto">
                 {/* Header Row with Title and Action Buttons */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -68,6 +72,11 @@ export default function OrdersToolbar({
                         <span className="hidden sm:inline-flex items-center rounded-full bg-gray-100 text-gray-700 px-2.5 py-1 text-xs">
                             {selectedLabel}
                         </span>
+                        {selectedCount > 0 && (
+                            <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 px-2.5 py-1 text-xs font-medium">
+                                {selectedCount} selected
+                            </span>
+                        )}
                     </div>
                     
                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -110,12 +119,12 @@ export default function OrdersToolbar({
                 </div>
                 
                 {/* Controls Row - Status and Actions */}
-                <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 flex-wrap">
+                <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 flex-wrap min-w-fit">
                     {/* Status Dropdown */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                         <label className="text-xs md:text-sm text-gray-600 whitespace-nowrap">Status:</label>
                         <select
-                            className="h-9 border border-gray-300 rounded-md px-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 md:flex-none md:w-40"
+                            className="h-9 border border-gray-300 rounded-md px-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-40"
                             value={selectedLabel}
                             onChange={(e) => handleStatusChange(e.target.value)}
                         >
@@ -126,7 +135,7 @@ export default function OrdersToolbar({
                     </div>
                     
                     {/* Action Buttons */}
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
                         <Button 
                             variant="default" 
                             size="sm" 
@@ -141,7 +150,7 @@ export default function OrdersToolbar({
                             variant="default" 
                             size="sm" 
                             className="h-9 rounded-md px-3 text-xs md:text-sm bg-gray-900 text-white hover:bg-gray-800 whitespace-nowrap"
-                            onClick={() => {}}
+                            onClick={onPrint}
                         >
                             <span className="hidden lg:inline">Print Selected</span>
                             <span className="lg:hidden">Print</span>
@@ -171,9 +180,9 @@ export default function OrdersToolbar({
                     </div>
                     
                     {/* Right Side Controls */}
-                    <div className="flex items-center gap-2 ml-auto flex-shrink-0">
+                    <div className="flex items-center gap-2 ml-0 md:ml-auto flex-shrink-0">
                         <span className="text-xs md:text-sm text-gray-600 whitespace-nowrap">Show:</span>
-                        <select className="h-9 border border-gray-300 rounded-md px-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <select className="h-9 border border-gray-300 rounded-md px-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-16">
                             <option value="20">20</option>
                             <option value="50">50</option>
                             <option value="100">100</option>

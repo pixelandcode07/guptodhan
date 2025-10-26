@@ -193,8 +193,14 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
 export const ordersColumns: ColumnDef<OrderRow>[] = [
   {
     id: "select",
-    header: () => <input type="checkbox" />,
-    cell: () => <input type="checkbox" />,
+    header: () => <input type="checkbox" className="cursor-pointer" />,
+    cell: ({ row }) => (
+      <input 
+        type="checkbox" 
+        className="cursor-pointer"
+        data-order-id={row.original.id}
+      />
+    ),
     enableSorting: false,
   },
   { accessorKey: "sl", header: () => <span>SL</span> },
