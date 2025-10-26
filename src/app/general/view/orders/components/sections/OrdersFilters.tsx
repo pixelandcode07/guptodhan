@@ -144,6 +144,7 @@ export default function OrdersFilters() {
                     <option value="">Select One</option>
                     <option value="standard">Standard Delivery</option>
                     <option value="express">Express Delivery</option>
+                    <option value="steadfast">Steadfast COD</option>
                     <option value="pickup">Store Pickup</option>
                 </select>
             </div>

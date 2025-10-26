@@ -32,10 +32,11 @@ type ApiOrder = {
     }
 }
 
-export default function OrdersTable({ initialStatus }: { initialStatus?: string }) {
+export default function OrdersTable({ initialStatus, onDataChange, onSelectionChange }: { initialStatus?: string; onDataChange?: (data: OrderRow[]) => void; onSelectionChange?: (selectedRows: OrderRow[]) => void }) {
     const [rows, setRows] = React.useState<OrderRow[]>([])
     const [loading, setLoading] = React.useState(false)
     const [error, setError] = React.useState<string | null>(null)
+    const [selectedRows, setSelectedRows] = React.useState<OrderRow[]>([])
 
     const fetchOrders = React.useCallback(async () => {
         try {
@@ -88,10 +89,15 @@ export default function OrdersTable({ initialStatus }: { initialStatus?: string 
             }))
             
             setRows(mapped)
+            
+            // Notify parent component of data change
+            if (onDataChange) {
+                onDataChange(mapped)
+            }
         } catch (error: unknown) {
             console.error('Error fetching orders:', error)
             const errorMessage = error instanceof Error && 'response' in error 
-                ? (error as any).response?.data?.message || 'Failed to fetch orders'
+                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to fetch orders'
                 : 'Failed to fetch orders'
             setError(errorMessage)
             toast.error('Failed to fetch orders')
@@ -99,11 +105,63 @@ export default function OrdersTable({ initialStatus }: { initialStatus?: string 
         } finally {
             setLoading(false)
         }
-    }, [initialStatus])
+    }, [initialStatus, onDataChange])
 
     React.useEffect(() => {
         fetchOrders()
     }, [fetchOrders])
+
+    // Track checkbox selections using DOM events
+    React.useEffect(() => {
+        const handleCheckboxChange = (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            if (target.type === 'checkbox' && target.hasAttribute('data-order-id')) {
+                const orderId = target.getAttribute('data-order-id');
+                const order = rows.find(row => row.id === orderId);
+                
+                if (order) {
+                    if (target.checked) {
+                        setSelectedRows(prev => {
+                            if (!prev.find(r => r.id === order.id)) {
+                                return [...prev, order];
+                            }
+                            return prev;
+                        });
+                    } else {
+                        setSelectedRows(prev => prev.filter(row => row.id !== order.id));
+                    }
+                }
+            }
+        };
+
+        const handleSelectAll = (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            const headerCheckbox = document.querySelector('thead input[type="checkbox"]') as HTMLInputElement;
+            
+            if (headerCheckbox && target === headerCheckbox) {
+                if (target.checked) {
+                    setSelectedRows(rows);
+                } else {
+                    setSelectedRows([]);
+                }
+            }
+        };
+
+        document.addEventListener('change', handleCheckboxChange);
+        document.addEventListener('change', handleSelectAll);
+
+        return () => {
+            document.removeEventListener('change', handleCheckboxChange);
+            document.removeEventListener('change', handleSelectAll);
+        };
+    }, [rows]);
+
+    // Notify parent of selection changes
+    React.useEffect(() => {
+        if (onSelectionChange) {
+            onSelectionChange(selectedRows);
+        }
+    }, [selectedRows, onSelectionChange])
 
     if (loading) {
         return <FancyLoadingPage />;
@@ -127,20 +185,22 @@ export default function OrdersTable({ initialStatus }: { initialStatus?: string 
     }
 
     return (
-        <div className="w-full overflow-x-auto">
-            <div className="min-w-[800px]">
-                <DataTable columns={ordersColumns} data={rows} />
-                {rows.length === 0 && !loading && (
-                    <div className="px-3 py-8 text-center text-gray-500">
-                        <p>No orders found.</p>
-                        <button 
-                            onClick={fetchOrders}
-                            className="mt-2 px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
-                        >
-                            Refresh
-                        </button>
-                    </div>
-                )}
+        <div className="w-full">
+            <div className="overflow-x-auto">
+                <div className="min-w-[800px]">
+                    <DataTable columns={ordersColumns} data={rows} />
+                    {rows.length === 0 && !loading && (
+                        <div className="px-3 py-8 text-center text-gray-500">
+                            <p>No orders found.</p>
+                            <button 
+                                onClick={fetchOrders}
+                                className="mt-2 px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                            >
+                                Refresh
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     )

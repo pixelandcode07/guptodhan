@@ -20,6 +20,9 @@ function mapOrderStatusToUI(status: string): OrderStatus {
 type ApiOrder = {
   _id: string
   orderId: string
+  storeId?: {
+    storeName?: string
+  }
   storeName?: string
   storeVerified?: boolean
   orderStatus?: string
@@ -28,7 +31,19 @@ type ApiOrder = {
   orderDate?: string
   createdAt?: string
   totalAmount?: number
-  orderDetails?: unknown[]
+  orderDetails?: Array<{
+    _id: string
+    productId?: {
+      _id: string
+      productTitle?: string
+      thumbnailImage?: string
+      productPrice?: number
+      discountPrice?: number
+    }
+    quantity?: number
+    unitPrice?: number
+    totalPrice?: number
+  }>
   shippingName?: string
   trackingId?: string
   parcelId?: string
@@ -60,27 +75,36 @@ export default function UserOrdersPage() {
       })
       const apiOrders = (response.data?.data ?? []) as ApiOrder[]
       
-      const mappedOrders: OrderSummary[] = apiOrders.map((order) => ({
-        id: order._id,
-        orderId: order.orderId,
-        storeName: order.storeName || 'Store',
-        storeVerified: !!order.storeVerified,
-        status: mapOrderStatusToUI(order.orderStatus || 'Pending'),
-        paymentStatus: order.paymentStatus || 'Pending',
-        deliveryMethod: order.deliveryMethodId || 'COD',
-        createdAt: new Date(order.orderDate ?? order.createdAt ?? Date.now()).toLocaleString(),
-        trackingId: order.trackingId,
-        parcelId: order.parcelId,
-        items: [
-          {
-            id: order._id,
-            title: order.shippingName || `Order #${order.orderId}`,
-            thumbnailUrl: '/img/product/p-1.png',
-            priceFormatted: `৳ ${(order.totalAmount || 0).toLocaleString('en-US')}`,
-            quantity: Array.isArray(order.orderDetails) ? order.orderDetails.length : 1,
-          },
-        ],
-      }))
+      const mappedOrders: OrderSummary[] = apiOrders.map((order) => {
+        // Get the first product from order details
+        const firstProduct = order.orderDetails?.[0]?.productId
+        const productImage = firstProduct?.thumbnailImage || '/img/product/p-1.png'
+        const productName = firstProduct?.productTitle || order.shippingName || `Order #${order.orderId}`
+        const productPrice = firstProduct?.productPrice || order.totalAmount || 0
+        const totalQuantity = order.orderDetails?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 1
+        
+        return {
+          id: order._id,
+          orderId: order.orderId,
+          storeName: order.storeId?.storeName || order.storeName || 'Store',
+          storeVerified: !!order.storeVerified,
+          status: mapOrderStatusToUI(order.orderStatus || 'Pending'),
+          paymentStatus: order.paymentStatus || 'Pending',
+          deliveryMethod: order.deliveryMethodId || 'COD',
+          createdAt: new Date(order.orderDate ?? order.createdAt ?? Date.now()).toLocaleString(),
+          trackingId: order.trackingId,
+          parcelId: order.parcelId,
+          items: [
+            {
+              id: order._id,
+              title: productName,
+              thumbnailUrl: productImage,
+              priceFormatted: `৳ ${productPrice.toLocaleString('en-US')}`,
+              quantity: totalQuantity,
+            },
+          ],
+        }
+      })
       
       setOrders(mappedOrders)
     } catch (error) {

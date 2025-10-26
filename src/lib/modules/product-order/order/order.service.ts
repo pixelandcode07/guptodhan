@@ -20,7 +20,16 @@ const getAllOrdersFromDB = async (status?: string) => {
 
 // Get orders by user
 const getOrdersByUserFromDB = async (userId: string) => {
-  const result = await OrderModel.find({ userId: new Types.ObjectId(userId) }).sort({ orderDate: -1 });
+  const result = await OrderModel.find({ userId: new Types.ObjectId(userId) })
+    .populate({
+      path: 'orderDetails',
+      populate: {
+        path: 'productId',
+        select: 'productTitle thumbnailImage productPrice discountPrice'
+      }
+    })
+    .populate('storeId', 'storeName')
+    .sort({ orderDate: -1 });
   return result;
 };
 

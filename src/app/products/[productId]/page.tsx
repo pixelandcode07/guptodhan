@@ -11,7 +11,7 @@ import { notFound } from 'next/navigation';
 
 interface ProductPageProps {
   params: {
-    id: string;
+    productId: string;
   };
 }
 
@@ -22,7 +22,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   try {
     // Fetch the specific product by ID and all related data
     const [product, categoriesData, storesData, brandsData, subCategoriesData, childCategoriesData] = await Promise.all([
-      VendorProductServices.getVendorProductByIdFromDB(params.id),
+      VendorProductServices.getVendorProductByIdFromDB(params.productId),
       CategoryServices.getAllCategoriesFromDB(),
       StoreServices.getAllStoresFromDB(),
       BrandServices.getAllBrandsFromDB(),
@@ -86,7 +86,7 @@ export async function generateMetadata({ params }: ProductPageProps) {
   await dbConnect();
   
   try {
-    const product = await VendorProductServices.getVendorProductByIdFromDB(params.id);
+    const product = await VendorProductServices.getVendorProductByIdFromDB(params.productId);
     
     if (!product) {
       return {

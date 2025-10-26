@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import OrderSuccessModal from './OrderSuccessModal'
 import { toast } from 'sonner'
+import { useSession } from 'next-auth/react'
 import { DeliveryOption } from './DeliveryOptions'
 
 interface OrderSummaryProps {
@@ -25,6 +26,8 @@ export default function OrderSummary({
   const [payment, setPayment] = React.useState<'cod' | 'card'>('cod')
   const [open, setOpen] = React.useState(false)
   const [termsAccepted, setTermsAccepted] = React.useState(false)
+  const { data: session } = useSession()
+  const user = session?.user
   const total = Math.max(0, subtotal - discount + shipping)
 
   const handlePlaceOrder = () => {
@@ -165,7 +168,7 @@ export default function OrderSummary({
                 • Pay with cash when your order arrives<br/>
                 • No advance payment required<br/>
                 • Delivery person will collect the payment<br/>
-                • COD amount: ৳{total.toLocaleString()}
+               
               </p>
             </div>
           </div>
@@ -218,14 +221,7 @@ export default function OrderSummary({
         <button className="text-green-700 hover:underline text-xs">Remove</button>
       </div>
 
-      {/* Voucher */}
-      <div className="flex items-center justify-between p-3 border rounded-md text-sm mb-4">
-        <div className="flex items-center gap-2">
-          <span className="bg-yellow-100 text-yellow-700 text-[10px] px-1 rounded">V</span>
-          <span>Voucher</span>
-        </div>
-        <button className="text-gray-600 hover:underline">Applied</button>
-      </div>
+   
 
       {/* Total */}
       <div className="flex items-center justify-between text-lg font-semibold mb-4">
@@ -236,15 +232,23 @@ export default function OrderSummary({
       <Button 
         className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors" 
         onClick={handlePlaceOrder}
-        disabled={!termsAccepted}
+        disabled={!termsAccepted || !user}
       >
-        {termsAccepted 
-          ? (payment === 'cod' ? 'Place Order (Cash on Delivery)' : 'Place Order & Pay Online')
-          : 'Accept Terms to Place Order'
+        {!user 
+          ? 'Login Required to Place Order'
+          : !termsAccepted 
+            ? 'Accept Terms to Place Order'
+            : (payment === 'cod' ? 'Place Order (Cash on Delivery)' : 'Place Order & Pay Online')
         }
       </Button>
 
-      {!termsAccepted && (
+      {!user && (
+        <p className="text-xs text-red-500 mt-2 text-center">
+          Please login or register to place your order
+        </p>
+      )}
+
+      {user && !termsAccepted && (
         <p className="text-xs text-gray-500 mt-2 text-center">
           Please accept the terms and conditions to proceed with your order
         </p>
