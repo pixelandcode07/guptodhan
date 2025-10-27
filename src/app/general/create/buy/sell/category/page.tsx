@@ -3,6 +3,9 @@
 // import BuySellCreateForm from './components/BuySellCreateForm'
 // import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 // import ViewBuySellCategories from '@/app/general/view/buy/sell/categories/page'
+export default function create() {
+  return <div>hello world</div>;
+}
 
 // export default function BySellCategory() {
 //     return (
