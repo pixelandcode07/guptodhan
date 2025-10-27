@@ -3,7 +3,7 @@ import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import dbConnect from '@/lib/db';
 import { User } from '@/lib/modules/user/user.model';
-import { generateToken } from '@/lib/utils/jwt'; // ✅ আপনার JWT ইউটিলিটি ইম্পোর্ট করুন
+import { generateToken } from '@/lib/utils/jwt'; 
 
 export const authOptions = {
   providers: [
@@ -28,7 +28,6 @@ export const authOptions = {
               isVerified: true,
             });
           }
-          // ✅ পরবর্তী callback-এ পুরো ইউজার অবজেক্ট পাস করা হচ্ছে
           user.dbUser = existingUser;
           return true;
         } catch (error) {
@@ -40,15 +39,13 @@ export const authOptions = {
     },
 
     async jwt({ token, user }: { token: any; user: any }) {
-      // user অবজেক্টটি শুধুমাত্র প্রথমবার লগইনের সময় পাওয়া যায়
       if (user) {
-        const dbUser = user.dbUser; // signIn থেকে পাওয়া ইউজার অবজেক্ট
+        const dbUser = user.dbUser;
         
-        // NextAuth টোকেনে প্রয়োজনীয় তথ্য যোগ করা হচ্ছে
+        // NextAuth 
         token.role = dbUser.role;
         token.id = dbUser._id.toString();
 
-        // ✅ FIX: আপনার নিজের backend-এর জন্য custom accessToken তৈরি করা হচ্ছে
         const accessTokenPayload = { userId: dbUser._id, role: dbUser.role };
         token.accessToken = generateToken(
             accessTokenPayload,
@@ -60,22 +57,16 @@ export const authOptions = {
     },
 
     async session({ session, token }: { session: any; token: any }) {
-      // টোকেন থেকে সেশনে তথ্য যোগ করা হচ্ছে, যা frontend-এ পাওয়া যাবে
       if (session.user) {
         session.user.role = token.role;
         session.user.id = token.id;
       }
       
-      // ✅ FIX: session অবজেক্টে accessToken যোগ করা হচ্ছে
       session.accessToken = token.accessToken;
       
       return session;
     },
   },
-  // pages: {
-  //   signIn: '/login', // আপনার লগইন পেজের পাথ
-  //   error: '/api/auth/error',
-  // },
   secret: process.env.NEXTAUTH_SECRET,
 };
 
