@@ -124,7 +124,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
               name: item.productName || 'Unknown Product',
               image: item.productImage || '/img/product/p-1.png',
               size: 'Standard',
-              color: 'Default',
+              color: 'Default', 
               price: item.unitPrice || 0,
               originalPrice: item.unitPrice || 0,
               quantity: item.quantity || 1,
