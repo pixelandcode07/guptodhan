@@ -56,6 +56,10 @@ export const useProfile = () => {
         setProfile(response.data.data)
         console.log('Updated profile:', response.data.data)
         toast.success('Profile updated successfully!')
+        
+        // Dispatch event to update sidebar
+        window.dispatchEvent(new Event('profileUpdated'))
+        
         return true
       }
       return false
@@ -85,6 +89,10 @@ export const useProfile = () => {
       if (response.data?.success && response.data?.data) {
         setProfile(response.data.data)
         toast.success('Profile picture updated successfully!')
+        
+        // Dispatch event to update sidebar
+        window.dispatchEvent(new Event('profileUpdated'))
+        
         return true
       }
       return false

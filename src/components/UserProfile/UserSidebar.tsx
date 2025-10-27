@@ -56,6 +56,38 @@ export default function UserSidebar() {
     }
   }, [user, pathname]) // Refetch when navigating between pages
 
+  // Listen for profile update events
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      // Refetch profile data when update event is received
+      const fetchProfile = async () => {
+        try {
+          const response = await api.get('/profile/me')
+          if (response.data?.success && response.data?.data) {
+            setProfileData({
+              name: response.data.data.name || user?.name || 'Guest User',
+              image: response.data.data.profilePicture || user?.image || undefined,
+              createdAt: response.data.data.createdAt
+            })
+          }
+        } catch (error) {
+          console.error('Error fetching profile for sidebar:', error)
+        }
+      }
+      
+      if (user) {
+        fetchProfile()
+      }
+    }
+
+    // Listen for custom event dispatched when profile is updated
+    window.addEventListener('profileUpdated', handleProfileUpdate)
+
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate)
+    }
+  }, [user])
+
   // Use profile data if available, otherwise fall back to session data
   const displayName = profileData.name || user?.name || 'Guest User'
   const displayImage = profileData.image || user?.image
