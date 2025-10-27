@@ -5,9 +5,9 @@ import { StoreServices } from '@/lib/modules/vendor-store/vendorStore.service';
 import { BrandServices } from '@/lib/modules/brand/brand.service';
 import { SubCategoryServices } from '@/lib/modules/ecommerce-category/services/ecomSubCategory.service';
 import { ChildCategoryServices } from '@/lib/modules/ecommerce-category/services/ecomChildCategory.service';
-import ProductDetailsClient from './components/ProductDetailsClient';
 import HeroNav from '@/app/components/Hero/HeroNav';
 import { notFound } from 'next/navigation';
+import ProductDetailsClient from './components/ProductDetailsClient';
 
 interface ProductPageProps {
   params: {

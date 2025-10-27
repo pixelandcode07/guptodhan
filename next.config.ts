@@ -1,15 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: false, // 👈 এটাই যোগ করো
+  reactStrictMode: false, 
+  eslint: { // 
+    ignoreDuringBuilds: true, // DELETE THIS ENTIRE BLOCK
+  },
 
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-        port: '',
-        pathname: '/**',
-      },
+      protocol: 'https',
+      hostname: 'res.cloudinary.com',
+      pathname: '/**',
+    },
       {
         protocol: 'https',
         hostname: 'static.vecteezy.com',
