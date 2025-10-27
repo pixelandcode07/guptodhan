@@ -13,7 +13,6 @@ import { ZodError } from 'zod';
 import { Types } from 'mongoose';
 
 const createUser = async (userData: TUserInput) => {
-  // সার্ভিসকে কল করে মূল কাজটি করা হচ্ছে
   const result = await UserServices.createUserIntoDB(userData);
   return result;
 };
@@ -186,7 +185,7 @@ const deleteUserByAdmin = async (req: NextRequest, { params }: { params: { id: s
 
 export const UserController = {
   createUser,
-  registerServiceProvider, // ✅ Added service-provider register
+  registerServiceProvider,
   getMyProfile,
   updateMyProfile,
   getAllUsers,
