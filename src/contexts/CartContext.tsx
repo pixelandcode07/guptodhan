@@ -98,7 +98,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       if (response.data?.success && response.data?.data) {
         const apiCartItems = response.data.data;
         
-        // Transform API cart items to match CartItem type
+       
         interface ApiCartItem {
           _id?: string;
           cartID?: string;
@@ -114,7 +114,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           
           return {
             id: productIdStr || item._id?.toString() || '',
-            cartId: item.cartID || item._id?.toString() || '',
+            cartId: item.cartID || '', // Always use cartID from database
             seller: {
               name: 'Store',
               verified: true,
@@ -274,11 +274,22 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       // Calculate new total price
       const newTotalPrice = newQuantity * cartItem.product.price;
 
+      console.log('🛒 Updating cart item:', {
+        cartId: cartItem.cartId,
+        userId,
+        quantity: newQuantity,
+        unitPrice: cartItem.product.price,
+        totalPrice: newTotalPrice
+      });
+
       // Update via API
       const response = await api.patch(`/add-to-cart/get-cart/${userId}/${cartItem.cartId}`, {
         quantity: newQuantity,
+        unitPrice: cartItem.product.price, // Backend needs this to calculate totalPrice
         totalPrice: newTotalPrice,
       });
+
+      console.log('✅ Update response:', response.data);
 
       if (response.data?.success) {
         // Refetch cart items
