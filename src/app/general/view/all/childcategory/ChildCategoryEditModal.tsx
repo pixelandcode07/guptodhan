@@ -119,8 +119,21 @@ export default function ChildCategoryEditModal({
       if (subCategoryId) formData.append('subCategory', subCategoryId);
       if (iconFile) formData.append('childCategoryIcon', iconFile);
 
+      // Get session data for authentication
+      const session = await axios.get('/api/auth/session');
+      
+     
+      
+      const userRole = session?.data?.user?.role || 'user';
+      
+      console.log('✅ Extracted role for header:', userRole);
+      console.log('📤 Sending PATCH request with headers:', { 'x-user-role': userRole });
+      
       const res = await fetch(`/api/v1/ecommerce-category/ecomChildCategory/${data._id}`, {
         method: 'PATCH',
+        headers: {
+          'x-user-role': userRole,
+        },
         body: formData,
       });
 
