@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 
 interface PersonalInfoFormProps {
@@ -21,6 +21,13 @@ export default function PersonalInfoForm({
   const [name, setName] = useState(initialName)
   const [phone, setPhone] = useState(initialPhone)
   const [address, setAddress] = useState(initialAddress)
+
+  // Update local state when initial props change (after save)
+  useEffect(() => {
+    setName(initialName)
+    setPhone(initialPhone)
+    setAddress(initialAddress)
+  }, [initialName, initialPhone, initialAddress])
 
   const handleSave = () => {
     if (onSave) {
