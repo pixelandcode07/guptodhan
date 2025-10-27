@@ -6,20 +6,25 @@ import { Input } from '@/components/ui/input'
 interface PersonalInfoFormProps {
   initialName: string
   initialPhone: string
-  onSave?: (data: { name: string; phone: string }) => void
+  initialAddress?: string
+  onSave?: (data: { name: string; phoneNumber: string; address?: string }) => void
+  isLoading?: boolean
 }
 
 export default function PersonalInfoForm({ 
   initialName, 
   initialPhone,
-  onSave 
+  initialAddress = '',
+  onSave,
+  isLoading = false
 }: PersonalInfoFormProps) {
   const [name, setName] = useState(initialName)
   const [phone, setPhone] = useState(initialPhone)
+  const [address, setAddress] = useState(initialAddress)
 
   const handleSave = () => {
     if (onSave) {
-      onSave({ name, phone })
+      onSave({ name, phoneNumber: phone, address })
     }
   }
 
@@ -47,12 +52,21 @@ export default function PersonalInfoForm({
             onChange={(e) => setPhone(e.target.value)}
           />
         </div>
+        <div className="grid gap-2">
+          <label className="text-sm font-medium">Address</label>
+          <Input 
+            placeholder="Enter your address" 
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+          />
+        </div>
         <div className="pt-2">
           <button 
             onClick={handleSave}
-            className="w-48 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            disabled={isLoading}
+            className="w-48 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Save changes
+            {isLoading ? 'Saving...' : 'Save changes'}
           </button>
         </div>
       </div>
