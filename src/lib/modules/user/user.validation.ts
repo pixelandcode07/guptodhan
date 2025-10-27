@@ -124,6 +124,9 @@
     export const updateUserProfileValidationSchema = z.object({
       body: z.object({
         name: z.string().min(1, { message: 'Name cannot be empty.' }).optional(),
+        phoneNumber: z.string().regex(bdPhoneNumberRegex, {
+          message: 'Must be a valid Bangladeshi phone number.'
+        }).optional(),
         address: z.string().min(1, { message: 'Address cannot be empty.' }).optional(),
         profilePicture: z.string().url({ message: 'Profile picture must be a valid URL.' }).optional(),
       }),

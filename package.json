@@ -92,7 +92,7 @@
     "twilio": "^5.8.2",
     "use-places-autocomplete": "^4.0.1",
     "uuid": "^13.0.0",
-    "vercel": "^48.2.9",
+    "vercel": "^48.4.1",
     "zod": "^4.1.5"
   },
   "devDependencies": {
@@ -108,6 +108,7 @@
     "@types/react": "^19",
     "@types/react-color": "^3.0.13",
     "@types/react-dom": "^19",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
     "tailwindcss": "^4",
