@@ -53,7 +53,6 @@ const updateCartItem = async (_req: NextRequest, { params }: { params: Promise<{
 
   const payload: Partial<ICart> = {
     ...validatedData,
-    ...(validatedData.userID ? { userID: new Types.ObjectId(validatedData.userID) } : {}),
     ...(validatedData.productID ? { productID: new Types.ObjectId(validatedData.productID) } : {}),
     totalPrice:
       validatedData.quantity && validatedData.unitPrice
