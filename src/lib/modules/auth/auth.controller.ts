@@ -183,20 +183,17 @@ const registerServiceProvider = async (req: NextRequest) => {
 const googleLogin = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
-  const validatedData = googleLoginValidationSchema.parse(body);
+  const validated = googleLoginValidationSchema.parse(body);
+  const result = await AuthServices.loginWithGoogle(validated.idToken);
 
-  const result = await AuthServices.loginWithGoogle(validatedData.idToken);
-
-  const { refreshToken, ...dataForResponseBody } = result;
-
+  const { refreshToken, ...data } = result;
   const response = sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
     message: 'User logged in successfully with Google!',
-    data: dataForResponseBody,
+    data,
   });
 
-  // কুকিতে refreshToken সেট করা (মোবাইল অ্যাপ এটি সরাসরি ব্যবহার করবে না, কিন্তু ওয়েব ফ্লো-এর জন্য ভালো)
   response.cookies.set('refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -205,6 +202,7 @@ const googleLogin = async (req: NextRequest) => {
 
   return response;
 };
+
 
 export const AuthController = {
   loginUser,
