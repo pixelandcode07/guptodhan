@@ -1,9 +1,10 @@
 import { Schema, model, models } from 'mongoose';
 import { IPromoCode } from './promoCode.interface';
+import { v4 as uuidv4 } from 'uuid';
 
 const promoCodeSchema = new Schema<IPromoCode>(
   {
-    promoCodeId: { type: String, required: true, unique: true },
+    promoCodeId: { type: String, required: true, unique: true, default: () => `PC-${uuidv4().replace(/-/g, '').substring(0, 8)}`},
     title: { type: String, required: true, trim: true },
     icon: { type: String, required: true },
     startDate: { type: Date, required: true },
