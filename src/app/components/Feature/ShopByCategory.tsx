@@ -69,13 +69,7 @@ export function ShopByCategory() {
             } catch (err) {
                 console.error('Error fetching featured categories:', err)
                 setError('Failed to load featured categories')
-                // Fallback to static data if API fails
-                setCategories([
-                    { name: "Fashion & Apparel", imageUrl: "https://i.ibb.co/20qCx2JM/fashion.jpg", href: "#" },
-                    { name: "Electronics & Gadgets", imageUrl: "https://i.ibb.co/tPT8c5CP/gadget.jpg", href: "#" },
-                    { name: "Home & Living", imageUrl: "https://i.ibb.co/tPT8c5CP/gadget.jpg", href: "#" },
-                    { name: "Beauty & Personal Care", imageUrl: "https://i.ibb.co/mgtydqP/toyes.jpg", href: "#" },
-                ])
+                // Remove mock data fallback; keep categories empty on error
             } finally {
                 setLoading(false)
             }
@@ -116,7 +110,6 @@ export function ShopByCategory() {
                     <div className="flex items-center justify-center py-12">
                         <div className="text-center">
                             <p className="text-yellow-600 mb-2">{error}</p>
-                            <p className="text-gray-500 text-sm">Showing fallback categories</p>
                         </div>
                     </div>
                 </div>
@@ -129,9 +122,7 @@ export function ShopByCategory() {
             <div className="container mx-auto px-4 md:px-6">
                 {error && categories.length > 0 && (
                     <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                        <p className="text-yellow-800 text-sm">
-                            ⚠️ {error} - Showing fallback categories
-                        </p>
+                        <p className="text-yellow-800 text-sm">⚠️ {error}</p>
                     </div>
                 )}
                 

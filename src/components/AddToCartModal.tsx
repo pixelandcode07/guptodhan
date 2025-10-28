@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, CheckCircle, ArrowRight, X } from 'lucide-react';
+import { ShoppingCart, CheckCircle, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -48,6 +48,9 @@ export default function AddToCartModal({
           <DialogTitle className="text-xl font-semibold text-gray-900">
             Added to Cart!
           </DialogTitle>
+          <DialogDescription className="text-gray-900 font-medium">
+            Your item has been successfully added to your shopping cart.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -72,7 +75,7 @@ export default function AddToCartModal({
                 </span>
                 {product.originalPrice && product.originalPrice > product.price && (
                   <>
-                    <span className="text-xs text-gray-500 line-through">
+                    <span className="text-xs text-gray-900 line-through">
                       ৳ {product.originalPrice.toLocaleString()}
                     </span>
                     <Badge variant="destructive" className="text-xs px-1 py-0">
@@ -81,7 +84,7 @@ export default function AddToCartModal({
                   </>
                 )}
               </div>
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-xs text-gray-900 mt-1">
                 Quantity: {product.quantity}
               </p>
             </div>
