@@ -2,5 +2,6 @@ import { PromoCodeController } from "@/lib/modules/promo-code/promoCode.controll
 import { catchAsync } from "@/lib/middlewares/catchAsync";
 
 
+
 export const PATCH = catchAsync(PromoCodeController.updatePromoCode);
 export const DELETE = catchAsync(PromoCodeController.deletePromoCode);
