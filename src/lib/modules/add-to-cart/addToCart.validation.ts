@@ -17,9 +17,6 @@ export const createCartValidationSchema = z.object({
 // Update Cart validation
 export const updateCartValidationSchema = z.object({
   cartID: z.string().optional(),
-  userID: z.string().optional(),
-  userName: z.string().optional(),
-  userEmail: z.string().email().optional(),
   productID: z.string().optional(),
   productName: z.string().optional(),
   productImage: z.string().optional(),

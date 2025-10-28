@@ -43,9 +43,9 @@ const getAllCartItemsFromDB = async (userId: string) => {
 };
 
 // Update cart item (quantity, etc.)
-const updateCartItemInDB = async (cartID: string, userID: string, payload: Partial<ICart>) => {
+const updateCartItemInDB = async (cartID: string, userId: string, payload: Partial<ICart>) => {
   const result = await CartModel.findOneAndUpdate(
-    { cartID, userID: new Types.ObjectId(userID) },
+    { cartID, userID: new Types.ObjectId(userId) },
     {
       ...payload,
       totalPrice: payload.quantity && payload.unitPrice ? payload.quantity * payload.unitPrice : undefined,
@@ -74,10 +74,22 @@ const clearCartForUserInDB = async (userID: string) => {
   return null;
 };
 
+// Get a specific cart item by userId and cartId
+const getCartItemByUserAndCartIdFromDB = async (userId: string, cartId: string) => {
+  const result = await CartModel.findOne({
+    userID: new Types.ObjectId(userId),
+    cartID: cartId,
+  });
+
+  return result;
+};
+
+
 export const CartServices = {
   addToCartInDB,
   getAllCartItemsFromDB,
   updateCartItemInDB,
   deleteCartItemFromDB,
   clearCartForUserInDB,
+  getCartItemByUserAndCartIdFromDB
 };

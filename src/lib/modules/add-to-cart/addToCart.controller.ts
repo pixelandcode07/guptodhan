@@ -45,15 +45,14 @@ const getAllCartItems = async (_req: NextRequest, { params }: { params: Promise<
 };
 
 // Update cart item
-const updateCartItem = async (_req: NextRequest, { params }: { params: Promise<{ cartID: string; userID: string }> }) => {
+const updateCartItem = async (_req: NextRequest, { params }: { params: Promise<{ cartId: string; userId: string }> }) => {
   await dbConnect();
-  const { cartID, userID } = await params;
+  const { cartId, userId } = await params;
   const body = await _req.json();
   const validatedData = updateCartValidationSchema.parse(body);
 
   const payload: Partial<ICart> = {
     ...validatedData,
-    ...(validatedData.userID ? { userID: new Types.ObjectId(validatedData.userID) } : {}),
     ...(validatedData.productID ? { productID: new Types.ObjectId(validatedData.productID) } : {}),
     totalPrice:
       validatedData.quantity && validatedData.unitPrice
@@ -61,7 +60,7 @@ const updateCartItem = async (_req: NextRequest, { params }: { params: Promise<{
         : undefined,
   };
 
-  const result = await CartServices.updateCartItemInDB(cartID, userID, payload);
+  const result = await CartServices.updateCartItemInDB(cartId, userId, payload);
 
   return sendResponse({
     success: true,
@@ -101,10 +100,30 @@ const clearCartForUser = async (_req: NextRequest, { params }: { params: Promise
   });
 };
 
+// Get a specific cart item by userId and cartId
+const getCartItemByUserAndCartId = async (
+  _req: NextRequest,
+  { params }: { params: Promise<{ userId: string; cartId: string }> }
+) => {
+  await dbConnect();
+  const { userId, cartId } = await params;
+
+  const result = await CartServices.getCartItemByUserAndCartIdFromDB(userId, cartId);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Cart item retrieved successfully!',
+    data: result,
+  });
+};
+
+
 export const CartController = {
   addToCart,
   getAllCartItems,
   updateCartItem,
   deleteCartItem,
   clearCartForUser,
+  getCartItemByUserAndCartId
 };
