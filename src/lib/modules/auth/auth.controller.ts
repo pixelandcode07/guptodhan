@@ -186,7 +186,7 @@ const googleLoginHandler = async (req: NextRequest) => {
   const validated = googleLoginValidationSchema.parse(body);
   
   // এখানে আমরা AuthServices.loginWithGoogle এর বদলে সরাসরি loginWithGoogle ফাংশনটি কল করছি
-  const result = await loginWithGoogle(validated.idToken);
+  const result = await AuthServices.loginWithGoogle(validated.idToken);
 
   const { refreshToken, ...data } = result;
   const response = sendResponse({
