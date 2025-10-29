@@ -278,7 +278,8 @@ const loginWithGoogle = async (idToken: string) => {
   let decoded;
   try {
     decoded = await firebaseAdmin.auth().verifyIdToken(idToken);
-  } catch {
+  } catch (error) {
+    console.error('Firebase Admin Error:', error);
     throw new Error('Invalid Google ID Token.');
   }
 
@@ -294,7 +295,7 @@ const loginWithGoogle = async (idToken: string) => {
       role: 'user',
       isVerified: true,
       isActive: true,
-      address: 'N/A',
+      address: 'N/A', // আপনার ডিফল্ট অনুযায়ী
     });
   }
 
@@ -302,6 +303,7 @@ const loginWithGoogle = async (idToken: string) => {
   const accessToken = generateToken(jwtPayload, process.env.JWT_ACCESS_SECRET!, process.env.JWT_ACCESS_EXPIRES_IN!);
   const refreshToken = generateToken(jwtPayload, process.env.JWT_REFRESH_SECRET!, process.env.JWT_REFRESH_EXPIRES_IN!);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password, ...userWithoutPassword } = user.toObject();
   return { accessToken, refreshToken, user: userWithoutPassword };
 };
