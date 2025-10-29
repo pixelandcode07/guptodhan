@@ -9,6 +9,7 @@ import mongoose from 'mongoose';
 import { Vendor } from '../vendor/vendor.model';
 import { ServiceProvider } from '../service-provider/serviceProvider.model';
 import { User } from '../user/user.model';
+import { verifyGoogleToken } from '@/lib/utils/verifyGoogleToken';
 
 
 
@@ -275,30 +276,21 @@ const registerServiceProvider = async (payload: any) => {
 };
 
 const loginWithGoogle = async (idToken: string) => {
-  let decodedToken;
-  try {
-    decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
-  } catch (error) {
-    throw new Error('Invalid Google ID Token. Please try again.');
-  }
+  const payload = await verifyGoogleToken(idToken);
 
-  const { email, name, picture } = decodedToken;
-
-  if (!email) {
-    throw new Error('Google account does not have a verified email.');
-  }
+  const { email, name, picture } = payload!;
+  if (!email) throw new Error("Google account has no verified email.");
 
   let user = await User.findOne({ email });
-
   if (!user) {
     user = await User.create({
-      name: name || 'Google User',
-      email: email,
-      profilePicture: picture || '',
-      role: 'user',
-      isVerified: true, 
+      name: name || "Google User",
+      email,
+      profilePicture: picture || "",
+      role: "user",
+      isVerified: true,
       isActive: true,
-      address: 'N/A', 
+      address: "N/A",
     });
   }
 
@@ -308,21 +300,18 @@ const loginWithGoogle = async (idToken: string) => {
     role: user.role,
   };
 
-  const accessTokenSecret = process.env.JWT_ACCESS_SECRET;
-  const accessTokenExpiresIn = process.env.JWT_ACCESS_EXPIRES_IN;
-  const refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
-  const refreshTokenExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN;
+  const accessToken = generateToken(
+    jwtPayload,
+    process.env.JWT_ACCESS_SECRET!,
+    process.env.JWT_ACCESS_EXPIRES_IN!
+  );
+  const refreshToken = generateToken(
+    jwtPayload,
+    process.env.JWT_REFRESH_SECRET!,
+    process.env.JWT_REFRESH_EXPIRES_IN!
+  );
 
-  if (!accessTokenSecret || !accessTokenExpiresIn || !refreshTokenSecret || !refreshTokenExpiresIn) {
-    throw new Error('JWT configuration is missing.');
-  }
-
-  const accessToken = generateToken(jwtPayload, accessTokenSecret, accessTokenExpiresIn);
-  const refreshToken = generateToken(jwtPayload, refreshTokenSecret, refreshTokenExpiresIn);
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password, ...userWithoutPassword } = user.toObject();
-
   return { accessToken, refreshToken, user: userWithoutPassword };
 };
 

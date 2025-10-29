@@ -86,11 +86,11 @@ const deleteCartItem = async (_req: NextRequest, { params }: { params: Promise<{
 };
 
 // Clear all cart items for a user (after order confirmation)
-const clearCartForUser = async (_req: NextRequest, { params }: { params: Promise<{ userID: string }> }) => {
+const clearCartForUser = async (_req: NextRequest, { params }: { params: Promise<{ userId: string }> }) => {
   await dbConnect();
-  const { userID } = await params;
+  const { userId } = await params;
 
-  await CartServices.clearCartForUserInDB(userID);
+  await CartServices.clearCartForUserInDB(userId);
 
   return sendResponse({
     success: true,

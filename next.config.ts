@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false, 
-  eslint: { // 
-    ignoreDuringBuilds: true, // DELETE THIS ENTIRE BLOCK
-  },
+  
 
   images: {
     remotePatterns: [
@@ -86,9 +84,9 @@ const nextConfig = {
       },
     ],
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // eslint: {
+  //   ignoreDuringBuilds: true,
+  // },
   typescript: {
     ignoreBuildErrors: true,
   },
