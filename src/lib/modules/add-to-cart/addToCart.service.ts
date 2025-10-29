@@ -69,8 +69,8 @@ const deleteCartItemFromDB = async (cartID: string, userID: string) => {
 };
 
 // Clear all cart items for a user (after order confirmation)
-const clearCartForUserInDB = async (userID: string) => {
-  await CartModel.deleteMany({ userID: new Types.ObjectId(userID) });
+const clearCartForUserInDB = async (userId: string) => {
+  await CartModel.deleteMany({ userID: new Types.ObjectId(userId) });
   return null;
 };
 
