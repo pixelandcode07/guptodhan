@@ -180,11 +180,13 @@ const registerServiceProvider = async (req: NextRequest) => {
 };
 
 
-const googleLogin = async (req: NextRequest) => {
+const googleLoginHandler = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
   const validated = googleLoginValidationSchema.parse(body);
-  const result = await AuthServices.loginWithGoogle(validated.idToken);
+  
+  // এখানে আমরা AuthServices.loginWithGoogle এর বদলে সরাসরি loginWithGoogle ফাংশনটি কল করছি
+  const result = await loginWithGoogle(validated.idToken);
 
   const { refreshToken, ...data } = result;
   const response = sendResponse({
@@ -197,7 +199,7 @@ const googleLogin = async (req: NextRequest) => {
   response.cookies.set('refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: 30 * 24 * 60 * 60, // 30 দিন
   });
 
   return response;
@@ -215,5 +217,5 @@ export const AuthController = {
   resetPasswordWithToken,
   registerVendor,
   registerServiceProvider,
-  googleLogin,
+  googleLoginHandler,
 };
