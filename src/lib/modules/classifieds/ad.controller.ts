@@ -163,6 +163,21 @@ const deleteAd = async (req: NextRequest, { params }: { params: { id: string } }
   return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad deleted', data: null });
 };
 
+// ✅ NEW: ক্যাটাগরি ID দিয়ে বিজ্ঞাপন GET করার কন্ট্রোলার
+const getPublicAdsByCategoryId = async (_req: NextRequest, { params }: { params: Promise<{ categoryId: string }> }) => {
+    await dbConnect();
+    const { categoryId } = await params;
+    const result = await ClassifiedAdServices.getPublicAdsByCategoryIdFromDB(categoryId);
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Ads for category retrieved successfully!',
+        data: result,
+    });
+};
+
+
+
 export const ClassifiedAdController = { 
   createAd, 
   getAllAds, 
@@ -171,4 +186,5 @@ export const ClassifiedAdController = {
   deleteAd, 
   getPublicAds,
   getPublicAdById, 
+  getPublicAdsByCategoryId,
 };

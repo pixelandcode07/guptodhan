@@ -13,7 +13,6 @@ import { ZodError } from 'zod';
 import { Types } from 'mongoose';
 
 const createUser = async (userData: TUserInput) => {
-  // সার্ভিসকে কল করে মূল কাজটি করা হচ্ছে
   const result = await UserServices.createUserIntoDB(userData);
   return result;
 };
@@ -24,7 +23,6 @@ const registerServiceProvider = async (req: NextRequest) => {
 
     const formData = await req.formData();
 
-    // FormData থেকে সব ডেটা সংগ্রহ করা হচ্ছে
     const payload: Record<string, any> = {};
     for (const [key, value] of formData.entries()) {
       if (key !== 'cv' && key !== 'profilePicture' && key !== 'subCategories') {
@@ -33,7 +31,6 @@ const registerServiceProvider = async (req: NextRequest) => {
     }
     payload.subCategories = formData.getAll('subCategories');
 
-    // ফাইল আপলোড
     const cvFile = formData.get('cv') as File | null;
     if (cvFile) {
       const buffer = Buffer.from(await cvFile.arrayBuffer());
@@ -48,10 +45,9 @@ const registerServiceProvider = async (req: NextRequest) => {
       payload.profilePicture = uploadResult.secure_url;
     }
 
-    // Zod দিয়ে validate করা হচ্ছে
     UserValidations.registerServiceProviderValidationSchema.parse(payload);
 
-    // serviceCategory এবং subCategories কে ObjectId তে convert করা
+    // serviceCategory
     const result = await UserServices.createServiceProviderIntoDB({
       name: payload.name,
       email: payload.email,
@@ -120,11 +116,13 @@ const updateMyProfile = async (req: NextRequest) => {
   const file = formData.get('profilePicture') as File | null;
   const name = formData.get('name') as string;
   const address = formData.get('address') as string;
+  const phoneNumber = formData.get('phoneNumber') as string;
 
-  const payload: { name?: string; address?: string; profilePicture?: string } = {};
+  const payload: { name?: string; address?: string; profilePicture?: string; phoneNumber?:string} = {};
 
   if (name) payload.name = name;
   if (address) payload.address = address;
+  if (phoneNumber) payload.phoneNumber = phoneNumber;
 
   if (file) {
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -187,7 +185,7 @@ const deleteUserByAdmin = async (req: NextRequest, { params }: { params: { id: s
 
 export const UserController = {
   createUser,
-  registerServiceProvider, // ✅ Added service-provider register
+  registerServiceProvider,
   getMyProfile,
   updateMyProfile,
   getAllUsers,

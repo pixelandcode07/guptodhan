@@ -80,17 +80,17 @@ const getAllPromoCodes = async () => {
 };
 
 // Get promo code by code string
-const getPromoCodeByCode = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-    await dbConnect();
-    const { id } = await params;
-    const result = await PromoCodeServices.getPromoCodeByCodeFromDB(id);
+export const getPromoCodeByCode = async (req: NextRequest,{ params }: { params: Promise<{ code: string }> } ) => {
+  await dbConnect();
+  const { code } = await params;
+  const result = await PromoCodeServices.getPromoCodeByCodeFromDB(code);
 
-    return sendResponse({
-        success: true,
-        statusCode: result ? StatusCodes.OK : StatusCodes.NOT_FOUND,
-        message: result ? 'Promo code retrieved successfully!' : 'Promo code not found.',
-        data: result,
-    });
+  return sendResponse({
+    success: true,
+    statusCode: result ? StatusCodes.OK : StatusCodes.NOT_FOUND,
+    message: result ? 'Promo code retrieved successfully!' : 'Promo code not found.',
+    data: result,
+  });
 };
 
 // Update promo code

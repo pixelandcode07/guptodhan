@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 // Create category validation
 export const createCategoryValidationSchema = z.object({
-  categoryId: z.string().min(1, { message: 'Category ID is required.' }),
+  categoryId: z.string().optional(), // Make optional since controller generates it
   name: z.string().min(1, { message: 'Category name is required.' }),
-  categoryIcon: z.string().min(1, { message: 'Category icon is required.' }),
+  categoryIcon: z.string().optional(), // Make optional since controller handles file upload
   categoryBanner: z.string().optional(),
   isFeatured: z.boolean().optional(),
   isNavbar: z.boolean().optional(),

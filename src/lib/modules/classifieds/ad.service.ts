@@ -2,7 +2,7 @@
 import { IClassifiedAd } from './ad.interface';
 import { ClassifiedAd } from './ad.model';
 import { deleteFromCloudinary } from '@/lib/utils/cloudinary';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 
 const createAdInDB = async (payload: Partial<IClassifiedAd>) => {
   return await ClassifiedAd.create(payload);
@@ -87,6 +87,18 @@ const deleteAdFromDB = async (adId: string, userId: string) => {
   }
 };
 
+// ✅ NEW: একটি নির্দিষ্ট ক্যাটাগরির সব বিজ্ঞাপন খোঁজার ফাংশন
+const getPublicAdsByCategoryIdFromDB = async (categoryId: string) => {
+  return await ClassifiedAd.find({ 
+    category: new Types.ObjectId(categoryId), // ক্যাটাগরি ID দিয়ে খোঁজা হচ্ছে
+    status: 'active'  
+  })
+    .populate('user', 'name profilePicture')
+    .populate('category', 'name')
+    .populate('subCategory', 'name')
+    .sort({ createdAt: -1 });
+};
+
 export const ClassifiedAdServices = {
   createAdInDB,
   searchAdsInDB,
@@ -95,4 +107,5 @@ export const ClassifiedAdServices = {
   deleteAdFromDB,
   getAllPublicAdsFromDB,
   getPublicAdByIdFromDB,
+  getPublicAdsByCategoryIdFromDB,
 };

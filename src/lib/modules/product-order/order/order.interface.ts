@@ -4,7 +4,7 @@ export interface IOrder extends Document {
   orderId: string;
   userId: Types.ObjectId;
   storeId: Types.ObjectId;
-  deliveryMethodId: Types.ObjectId;
+  deliveryMethodId: string;
   paymentMethodId: Types.ObjectId;
 
   shippingName: string;
@@ -29,6 +29,7 @@ export interface IOrder extends Document {
   parcelId?: string;
   trackingId?: string;
   couponId?: Types.ObjectId;
+
 
   orderDetails: Types.ObjectId[];
 

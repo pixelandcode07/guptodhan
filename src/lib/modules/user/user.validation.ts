@@ -22,7 +22,6 @@
   serviceCategory: z.string({ required_error: 'Service category is required.' }),
   subCategories: z.array(z.string()).min(1, 'At least one skill/sub-category must be selected.'),
   
-  // ফাইল আপলোডের পর এই 필্ডগুলো যোগ হয়, তাই এগুলো optional
   profilePicture: z.string().url('Invalid URL for profile picture.').optional(),
   cvUrl: z.string().url('Invalid URL for CV.').optional(),
   bio: z.string().optional(),
@@ -80,32 +79,11 @@
           .enum(['user', 'vendor', 'admin', 'service-provider'])
           .default('user'),
       }).refine(data => data.email || data.phoneNumber, {
-        // এই refine ফাংশনটি নিশ্চিত করে যে দুটির মধ্যে অন্তত একটি দেওয়া হয়েছে
         message: "Either email or phone number must be provided.",
-        path: ["email"], // এররটি কোন ফিল্ডে দেখানো হবে
+        path: ["email"], 
       }),
     });
 
-    // export const createUserValidationSchema = z.object({
-    //   body: z.object({
-    //     // name: z.string().min(1).optional(),
-    //     // email: z.email().optional(),
-    //     // password: z.string().min(8).optional(),
-    //     phoneNumber: z
-    //       .string()
-    //       .transform((val) => val.replace(/^\+880/, '0')) // Convert +880 to 0
-    //       .refine((val) => bdPhoneNumberRegex.test(val), {
-    //         message: 'Must be a valid 11-digit Bangladeshi phone number (e.g., 017...).',
-    //       }),
-    //     // profilePicture: z.string().url().optional(),
-    //     // address: z.string().min(1).optional(),
-    //     // role: z.enum(['user', 'vendor', 'admin', 'service-provider']).default('user'),
-    //   })
-    //   // .refine(data => data.email || data.phoneNumber, {
-    //   //   message: 'Either email or phone number must be provided.',
-    //   //   path: ['email'],
-    //   // }),
-    // });
 
 
     export const updateUserValidationSchema = z.object({
@@ -124,6 +102,9 @@
     export const updateUserProfileValidationSchema = z.object({
       body: z.object({
         name: z.string().min(1, { message: 'Name cannot be empty.' }).optional(),
+        phoneNumber: z.string().regex(bdPhoneNumberRegex, {
+          message: 'Must be a valid Bangladeshi phone number.'
+        }).optional(),
         address: z.string().min(1, { message: 'Address cannot be empty.' }).optional(),
         profilePicture: z.string().url({ message: 'Profile picture must be a valid URL.' }).optional(),
       }),

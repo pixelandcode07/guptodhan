@@ -70,8 +70,23 @@ export default function ChildCategory() {
                 status: 'active'
             });
 
+            // Get session data for authentication
+            const session = await axios.get('/api/auth/session');
+            
+            console.log('🔐 Full session response:', session.data);
+            console.log('👤 User data:', session?.data?.user);
+            console.log('🎭 User role:', session?.data?.user?.role);
+            
+            const userRole = session?.data?.user?.role || 'user';
+            
+            console.log('✅ Extracted role for header:', userRole);
+            console.log('📤 Sending POST request with headers:', { 'x-user-role': userRole });
+            
             const response = await fetch('/api/v1/ecommerce-category/ecomChildCategory', {
                 method: 'POST',
+                headers: {
+                    'x-user-role': userRole,
+                },
                 body: formData,
             });
 

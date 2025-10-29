@@ -90,9 +90,21 @@ const createChildCategory = async (req: NextRequest) => {
 };
 
 // Get all child categories
-const getAllChildCategories = async () => {
+const getAllChildCategories = async (req: NextRequest) => {
   await dbConnect();
-  const result = await ChildCategoryServices.getAllChildCategoriesFromDB();
+  
+  // Check if subCategoryId query parameter is provided
+  const { searchParams } = new URL(req.url);
+  const subCategoryId = searchParams.get('subCategoryId');
+  
+  let result;
+  if (subCategoryId) {
+    // Filter by subcategory if subCategoryId is provided
+    result = await ChildCategoryServices.getChildCategoriesBySubCategoryFromDB(subCategoryId);
+  } else {
+    // Get all child categories if no filter
+    result = await ChildCategoryServices.getAllChildCategoriesFromDB();
+  }
 
   return sendResponse({
     success: true,

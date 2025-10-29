@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { firebaseAdmin } from '@/lib/firebaseAdmin';
-import { User } from '../user/user.model';
 import {  TChangePassword, TLoginUser } from './auth.interface';
 import { generateToken, verifyToken } from '@/lib/utils/jwt';
 import { connectRedis, redisClient } from '@/lib/redis';
@@ -9,6 +8,8 @@ import { sendEmail } from '@/lib/utils/email';
 import mongoose from 'mongoose';
 import { Vendor } from '../vendor/vendor.model';
 import { ServiceProvider } from '../service-provider/serviceProvider.model';
+import { User } from '../user/user.model';
+import { verifyGoogleToken } from '@/lib/utils/verifyGoogleToken';
 
 
 
@@ -232,21 +233,37 @@ const registerVendor = async (payload: any) => {
 };
 
 const registerServiceProvider = async (payload: any) => {
-  const { name, email, password, phoneNumber, address, ...providerData } = payload;
-  const userData = { name, email, password, phoneNumber, address, role: 'service-provider' };
+  const { 
+    name, 
+    email, 
+    password, 
+    phoneNumber, 
+    address, 
+    // The rest of the payload contains the service provider info
+    ...providerData 
+  } = payload;
+
+  // ✅ FIX: Add the providerData directly to the user object
+  const userData = { 
+    name, 
+    email, 
+    password, 
+    phoneNumber, 
+    address, 
+    role: 'service-provider',
+    serviceProviderInfo: providerData // Embed the service data directly as defined in your schema
+  };
 
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
+
+    // Create the user with the embedded info
     const newUser = (await User.create([userData], { session }))[0];
     if (!newUser) { throw new Error('Failed to create user'); }
 
-    providerData.user = newUser._id;
-    const newProvider = (await ServiceProvider.create([providerData], { session }))[0];
-    if (!newProvider) { throw new Error('Failed to create service provider profile'); }
-    
-    newUser.serviceProviderInfo = newProvider._id;
-    await newUser.save({ session });
+    // ❗ REMOVED: No need to create a separate ServiceProvider document
+    // ❗ REMOVED: The line that was causing the error (newUser.serviceProviderInfo = newProvider._id;)
 
     await session.commitTransaction();
     return newUser;
@@ -258,7 +275,45 @@ const registerServiceProvider = async (payload: any) => {
   }
 };
 
+const loginWithGoogle = async (idToken: string) => {
+  const payload = await verifyGoogleToken(idToken);
 
+  const { email, name, picture } = payload!;
+  if (!email) throw new Error("Google account has no verified email.");
+
+  let user = await User.findOne({ email });
+  if (!user) {
+    user = await User.create({
+      name: name || "Google User",
+      email,
+      profilePicture: picture || "",
+      role: "user",
+      isVerified: true,
+      isActive: true,
+      address: "N/A",
+    });
+  }
+
+  const jwtPayload = {
+    userId: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  };
+
+  const accessToken = generateToken(
+    jwtPayload,
+    process.env.JWT_ACCESS_SECRET!,
+    process.env.JWT_ACCESS_EXPIRES_IN!
+  );
+  const refreshToken = generateToken(
+    jwtPayload,
+    process.env.JWT_REFRESH_SECRET!,
+    process.env.JWT_REFRESH_EXPIRES_IN!
+  );
+
+  const { password, ...userWithoutPassword } = user.toObject();
+  return { accessToken, refreshToken, user: userWithoutPassword };
+};
 
 export const AuthServices = {
   loginUser,
@@ -271,4 +326,5 @@ export const AuthServices = {
   resetPasswordWithToken,
   registerVendor,
   registerServiceProvider,
+  loginWithGoogle,
 };

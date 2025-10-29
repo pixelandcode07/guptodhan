@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,12 +24,17 @@ type FormData = {
   childCategoryName?: string;
 };
 
+interface Category { _id: string; name: string; status: 'active' | 'inactive'; }
+
 export default function BrandForm() {
   const { data: session } = useSession();
   type AugmentedSession = Session & { accessToken?: string; user?: Session["user"] & { role?: string } };
   const s = session as AugmentedSession | null;
   const token = s?.accessToken;
   const userRole = s?.user?.role;
+
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -42,6 +47,33 @@ export default function BrandForm() {
     subcategoryName: "",
     childCategoryName: "",
   });
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      if (!token) return;
+      try {
+        setLoading(true);
+        const response = await axios.get('/api/v1/ecommerce-category/ecomCategory', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            ...(userRole ? { 'x-user-role': userRole } : {}),
+          },
+        });
+        
+        if (response.data.success) {
+          setCategories(response.data.data.filter((cat: Category) => cat.status === 'active'));
+        }
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+        toast.error('Failed to load categories');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, [token, userRole]);
 
   const handleInputChange = (field: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -117,7 +149,14 @@ export default function BrandForm() {
         <h1 className="text-2xl font-bold">Add New Brand</h1>
       </div>
 
-      <Card className="max-w-4xl mx-auto">
+      {loading ? (
+        <Card className="max-w-4xl mx-auto">
+          <CardContent className="p-8 text-center">
+            <div className="text-gray-500">Loading categories...</div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="max-w-4xl mx-auto">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <div className="w-1 h-6 bg-blue-500"></div>
@@ -174,6 +213,7 @@ export default function BrandForm() {
                 childCategory: formData.childCategory,
               }}
               handleInputChange={handleCategoryChange}
+              categories={categories}
             />
 
             {/* Selected Categories Display */}
@@ -201,6 +241,7 @@ export default function BrandForm() {
           </form>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }

@@ -1,25 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import UploadImage from '@/components/ReusableComponents/UploadImage';
-import { Loader2 } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import UploadImageBtn from "@/components/ReusableComponents/UploadImageBtn";
+import { useSession } from "next-auth/react";
 
 type Category = {
   _id?: string;
@@ -52,14 +41,16 @@ export default function CategoryEditModal({
     isNavbar: boolean;
   }) => void;
 }) {
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-
-  const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
-  const [isFeatured, setIsFeatured] = useState('no');
-  const [isNavbar, setIsNavbar] = useState('no');
-  const [status, setStatus] = useState('active');
+  const { data: session } = useSession();
+  const s = session as (undefined | { accessToken?: string; user?: { role?: string } });
+  const token = s?.accessToken;
+  const userRole = s?.user?.role;
+  
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [isFeatured, setIsFeatured] = useState("no");
+  const [isNavbar, setIsNavbar] = useState("no");
+  const [status, setStatus] = useState("active");
   const [iconFile, setIconFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
 
@@ -88,25 +79,32 @@ export default function CategoryEditModal({
   }, [data, open]);
 
   const onSubmit = async () => {
-    if (!data?._id) return; // Safety check
+    if (!data?._id) return;
+    
+    // Security check - only allow admin users
+    if (userRole !== 'admin') {
+      toast.error('Access denied: Admin privileges required');
+      return;
+    }
+    
     try {
       const formData = new FormData();
-      formData.append('name', name);
-      formData.append('slug', slug);
-      formData.append('status', status);
-      formData.append('isFeatured', isFeatured === 'yes' ? 'true' : 'false');
-      formData.append('isNavbar', isNavbar === 'yes' ? 'true' : 'false');
-      if (iconFile) formData.append('categoryIcon', iconFile);
-      if (bannerFile) formData.append('categoryBanner', bannerFile);
+      formData.append("name", name);
+      formData.append("slug", slug);
+      formData.append("status", status);
+      formData.append("isFeatured", isFeatured === "yes" ? "true" : "false");
+      formData.append("isNavbar", isNavbar === "yes" ? "true" : "false");
+      if (iconFile) formData.append("categoryIcon", iconFile);
+      if (bannerFile) formData.append("categoryBanner", bannerFile);
 
-      const res = await fetch(
-        `/api/v1/ecommerce-category/ecomCategory/${data._id}`,
-        {
-          method: 'PATCH',
-          body: formData,
+      const res = await fetch(`/api/v1/ecommerce-category/ecomCategory/${data._id}`, {
+        method: "PATCH",
+        body: formData,
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          ...(userRole ? { 'x-user-role': userRole } : {}),
         }
-      );
-
+      });
       const json = await res.json();
       if (!res.ok)
         throw new Error(json?.message || 'Failed to update category');

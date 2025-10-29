@@ -42,6 +42,24 @@ export const getSizeColumns = ({ onDelete, onEdit }: SizeColumnHandlers): Column
   {
     accessorKey: 'created_at',
     header: 'Created At',
+    cell: ({ row }) => {
+      const createdAt = row.getValue('created_at') as string;
+      if (!createdAt) return <span className="text-gray-400">-</span>;
+      
+      try {
+        const date = new Date(createdAt);
+        const formattedDate = date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        return <span className="text-sm text-gray-600">{formattedDate}</span>;
+      } catch {
+        return <span className="text-gray-400">Invalid Date</span>;
+      }
+    },
   },
   {
     id: 'action',

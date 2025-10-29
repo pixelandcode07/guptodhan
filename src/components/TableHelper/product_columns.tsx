@@ -22,9 +22,10 @@ export type ProductColumnHandlers = {
   onView?: (product: Product) => void
   onEdit?: (product: Product) => void
   onDelete?: (product: Product) => void
+  onToggleStatus?: (product: Product) => void
 }
 
-export const getProductColumns = ({ onView, onEdit, onDelete }: ProductColumnHandlers): ColumnDef<Product>[] => [
+export const getProductColumns = ({ onView, onEdit, onDelete, onToggleStatus }: ProductColumnHandlers): ColumnDef<Product>[] => [
   {
     accessorKey: "id",
     header: "SL",
@@ -34,8 +35,13 @@ export const getProductColumns = ({ onView, onEdit, onDelete }: ProductColumnHan
     header: "Image",
     cell: ({ row }) => {
       const image = row.getValue("image") as string;
+      const product = row.original as Product;
       return (
-        <div className="w-16 h-12 bg-gray-100 rounded flex items-center justify-center">
+        <button
+          onClick={() => onView?.(product)}
+          className="w-16 h-12 bg-gray-100 rounded flex items-center justify-center hover:bg-gray-200 transition-colors cursor-pointer"
+          title="Click to view product details"
+        >
           {image ? (
             <img src={image} alt="Product" className="w-full h-full object-cover rounded" />
           ) : (
@@ -43,7 +49,7 @@ export const getProductColumns = ({ onView, onEdit, onDelete }: ProductColumnHan
               No Image
             </div>
           )}
-        </div>
+        </button>
       );
     },
   },
@@ -56,10 +62,15 @@ export const getProductColumns = ({ onView, onEdit, onDelete }: ProductColumnHan
     header: "Name",
     cell: ({ row }) => {
       const name = row.getValue("name") as string;
+      const product = row.original as Product;
       return (
-        <div className="max-w-xs truncate" title={name}>
+        <button
+          onClick={() => onView?.(product)}
+          className="max-w-xs truncate text-left hover:text-blue-600 hover:underline transition-colors cursor-pointer"
+          title={`Click to view details: ${name}`}
+        >
           {name}
-        </div>
+        </button>
       );
     },
   },
@@ -120,12 +131,20 @@ export const getProductColumns = ({ onView, onEdit, onDelete }: ProductColumnHan
     header: "Status",
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
+      const product = row.original as Product;
+      
       return (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          status === "Active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-        }`}>
+        <button
+          onClick={() => onToggleStatus?.(product)}
+          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md ${
+            status === "Active" 
+              ? "bg-green-100 text-green-800 hover:bg-green-200" 
+              : "bg-red-100 text-red-800 hover:bg-red-200"
+          }`}
+          title={`Click to ${status === "Active" ? "deactivate" : "activate"} this product`}
+        >
           {status}
-        </span>
+        </button>
       );
     },
   },

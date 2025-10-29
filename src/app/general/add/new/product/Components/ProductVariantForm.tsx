@@ -165,9 +165,9 @@ export default function ProductVariantForm({ variants, setVariants, variantData 
                                     </Select>
                                 </td>
                                 
-                                <td className="p-2"><Input type="number" value={variant.stock} onChange={(e) => handleVariantChange(index, 'stock', Number(e.target.value))} required /></td>
-                                <td className="p-2"><Input type="number" value={variant.price} onChange={(e) => handleVariantChange(index, 'price', Number(e.target.value))} required /></td>
-                                <td className="p-2"><Input type="number" value={variant.discountPrice || 0} onChange={(e) => handleVariantChange(index, 'discountPrice', Number(e.target.value))} /></td>
+                                <td className="p-2"><Input type="number" value={variant.stock} onChange={(e) => handleVariantChange(index, 'stock', Number(e.target.value))} required className="w-24 min-w-[100px]" /></td>
+                                <td className="p-2"><Input type="number" value={variant.price} onChange={(e) => handleVariantChange(index, 'price', Number(e.target.value))} required className="w-24 min-w-[100px]" /></td>
+                                <td className="p-2"><Input type="number" value={variant.discountPrice || 0} onChange={(e) => handleVariantChange(index, 'discountPrice', Number(e.target.value))} className="w-24 min-w-[100px]" /></td>
                                 <td className="p-2 text-center">
                                     <Button type="button" variant="ghost" size="sm" className="text-red-500" onClick={() => removeVariant(index)}>
                                         <Trash2 className="h-4 w-4" />

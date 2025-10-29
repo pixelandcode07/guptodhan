@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import FancyLoadingPage from "@/app/general/loading";
 
 type ApiBrand = {
   _id: string
@@ -37,7 +38,7 @@ export default function BrandsClient() {
   const userRole = s?.user?.role
 
   const [brands, setBrands] = useState<Brand[]>([])
-  const [, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [searchText, setSearchText] = useState("")
   const [statusFilter, setStatusFilter] = useState<"" | "Active" | "Inactive">("")
 
@@ -151,6 +152,10 @@ export default function BrandsClient() {
     const result = brands.filter((b) => bySearch(b) && byStatus(b))
     return result.map((b, idx) => ({ ...b, id: idx + 1 }))
   }, [brands, searchText, statusFilter])
+
+  if (loading) {
+    return <FancyLoadingPage />;
+  }
 
   return (
     <div className="m-5 p-5 border ">
