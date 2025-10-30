@@ -41,7 +41,13 @@ export default function SizesClient() {
   const fetchSizes = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get("/api/v1/product-config/productSize", { params: { _ts: Date.now() } });
+      const response = await axios.get("/api/v1/product-config/productSize", {
+        params: { _ts: Date.now() },
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(userRole ? { "x-user-role": userRole } : {}),
+        },
+      });
       const apiSizes: ApiSize[] = response.data.data;
 
       const mapped: Size[] = apiSizes.map((f, index) => ({
@@ -59,7 +65,7 @@ export default function SizesClient() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token, userRole]);
 
   useEffect(() => {
     fetchSizes();
