@@ -46,12 +46,7 @@ export default function UnitsClient() {
   const fetchUnits = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get("/api/v1/product-config/productUnit", {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(userRole ? { "x-user-role": userRole } : {}),
-        },
-      });
+      const response = await axios.get("/api/v1/product-config/productUnit");
 
       const mappedUnits: Unit[] = response.data.data.map((u: ApiUnit, index: number) => ({
         _id: u._id,
@@ -77,7 +72,7 @@ export default function UnitsClient() {
     } finally {
       setLoading(false);
     }
-  }, [token, userRole]);
+  }, []);
 
   useEffect(() => {
     fetchUnits();
