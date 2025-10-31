@@ -5,7 +5,7 @@ import {
   createCategoryValidationSchema, 
   updateCategoryValidationSchema 
 } from '../validations/ecomCategory.validation';
-import { CategoryServices } from '../services/ecomCategory.service';
+import { CategoryServices, getSubCategoriesWithChildren } from '../services/ecomCategory.service';
 import dbConnect from '@/lib/db';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 
@@ -16,7 +16,7 @@ const createCategory = async (req: NextRequest) => {
 
     const formData = await req.formData();
 
-    const categoryId = (formData.get('categoryId') as string) || '';
+    // const categoryId = (formData.get('categoryId') as string) || '';
     const name = (formData.get('name') as string) || '';
     const isFeaturedStr = (formData.get('isFeatured') as string) || 'false';
     const isNavbarStr = (formData.get('isNavbar') as string) || 'false';
@@ -41,7 +41,6 @@ const createCategory = async (req: NextRequest) => {
     }
 
     const payload = {
-      categoryId,
       name,
       categoryIcon: iconUrl,
       categoryBanner: bannerUrl,
@@ -79,6 +78,19 @@ const getAllCategories = async () => {
     success: true,
     statusCode: StatusCodes.OK,
     message: 'Categories retrieved successfully!',
+    data: result,
+  });
+};
+
+// Get only featured categories (optimized for landing page)
+const getFeaturedCategories = async () => {
+  await dbConnect();
+  const result = await CategoryServices.getFeaturedCategoriesFromDB();
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Featured categories retrieved successfully!',
     data: result,
   });
 };
@@ -151,9 +163,29 @@ const deleteCategory = async (req: NextRequest, { params }: { params: Promise<{ 
   });
 };
 
+export const getSubCategoriesByCategory = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ categoryId: string }> }
+) => {
+  await dbConnect();
+
+  const { categoryId } = await params;
+
+  const subCategories = await getSubCategoriesWithChildren(categoryId);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Subcategories with children retrieved successfully!',
+    data: subCategories,
+  });
+};
+
 export const CategoryController = {
+  getSubCategoriesByCategory,
   createCategory,
   getAllCategories,
+  getFeaturedCategories,
   updateCategory,
   deleteCategory,
 };

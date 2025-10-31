@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import FancyLoadingPage from "@/app/general/loading";
 
 type ApiBrand = {
   _id: string
@@ -37,7 +38,7 @@ export default function BrandsClient() {
   const userRole = s?.user?.role
 
   const [brands, setBrands] = useState<Brand[]>([])
-  const [, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [searchText, setSearchText] = useState("")
   const [statusFilter, setStatusFilter] = useState<"" | "Active" | "Inactive">("")
 
@@ -52,6 +53,9 @@ export default function BrandsClient() {
   })
   const [featuredModalOpen, setFeaturedModalOpen] = useState(false)
   const [featuredBrand, setFeaturedBrand] = useState<Brand | null>(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [brandToDelete, setBrandToDelete] = useState<Brand | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const fetchBrands = useCallback(async () => {
     setLoading(true)
@@ -128,20 +132,10 @@ export default function BrandsClient() {
     setEditOpen(true)
   }, [])
 
-  const onDelete = useCallback(async (brand: Brand) => {
-    try {
-      await axios.delete(`/api/v1/product-config/brandName/${brand._id}`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(userRole ? { "x-user-role": userRole } : {}),
-        },
-      })
-      await fetchBrands()
-      toast.success("Brand deleted")
-    } catch {
-      toast.error("Delete failed")
-    }
-  }, [token, userRole])
+  const onDelete = useCallback((brand: Brand) => {
+    setBrandToDelete(brand)
+    setDeleteOpen(true)
+  }, [])
 
   const onToggleFeatured = useCallback((brand: Brand) => {
     setFeaturedBrand(brand)
@@ -158,6 +152,10 @@ export default function BrandsClient() {
     const result = brands.filter((b) => bySearch(b) && byStatus(b))
     return result.map((b, idx) => ({ ...b, id: idx + 1 }))
   }, [brands, searchText, statusFilter])
+
+  if (loading) {
+    return <FancyLoadingPage />;
+  }
 
   return (
     <div className="m-5 p-5 border ">
@@ -328,6 +326,54 @@ export default function BrandsClient() {
               }}
             >
               {featuredBrand?.featured === "Featured" ? "Remove Featured" : "Set as Featured"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteOpen} onOpenChange={(open) => {
+        if (!open) {
+          setBrandToDelete(null)
+          setIsDeleting(false)
+        }
+        setDeleteOpen(open)
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Brand</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p>
+              Are you sure you want to delete "{brandToDelete?.name}"? This action cannot be undone.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" disabled={isDeleting} onClick={() => setDeleteOpen(false)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              disabled={isDeleting}
+              onClick={async () => {
+                if (!brandToDelete) return
+                setIsDeleting(true)
+                try {
+                  await axios.delete(`/api/v1/product-config/brandName/${brandToDelete._id}`, {
+                    headers: {
+                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                      ...(userRole ? { "x-user-role": userRole } : {}),
+                    },
+                  })
+                  toast.success("Brand deleted")
+                  setDeleteOpen(false)
+                  setBrandToDelete(null)
+                  await fetchBrands()
+                } catch {
+                  toast.error("Delete failed")
+                } finally {
+                  setIsDeleting(false)
+                }
+              }}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>

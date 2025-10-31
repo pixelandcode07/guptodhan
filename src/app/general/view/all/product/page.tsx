@@ -1,133 +1,30 @@
-"use client";
+import dbConnect from '@/lib/db';
+import { VendorProductServices } from '@/lib/modules/product/vendorProduct.service';
+import { CategoryServices } from '@/lib/modules/ecommerce-category/services/ecomCategory.service';
+import { StoreServices } from '@/lib/modules/vendor-store/vendorStore.service';
+import { ProductFlagServices } from '@/lib/modules/product-config/services/productFlag.service';
+import ProductTableClient from './components/ProductTableClient';
 
-import { DataTable } from "@/components/TableHelper/data-table";
-import { Product, product_columns } from "@/components/TableHelper/product_columns";
-import { Input } from "@/components/ui/input";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import axios from "axios";
-import { useSession } from "next-auth/react";
-import type { Session } from "next-auth";
-import { toast } from "sonner";
+// This is now a Server Component
+export default async function ViewAllProductsPage() {
+  await dbConnect();
 
-type ApiProduct = {
-  _id: string;
-  productId: string;
-  productTitle: string;
-  category?: { name?: string } | string;
-  vendorStoreId?: { storeName?: string } | string;
-  productPrice?: number;
-  discountPrice?: number;
-  stock?: number;
-  flag?: string;
-  status: 'active' | 'inactive';
-  createdAt: string;
-  thumbnailImage?: string;
-};
+  // Fetch all necessary data on the server
+  const [productsData, categoriesData, storesData, flagsData] = await Promise.all([
+    VendorProductServices.getAllVendorProductsFromDB(),
+    CategoryServices.getAllCategoriesFromDB(),
+    StoreServices.getAllStoresFromDB(),
+    ProductFlagServices.getAllProductFlagsFromDB(),
+  ]);
 
-type ApiCategory = {
-  _id: string;
-  name: string;
-  status: 'active' | 'inactive';
-};
+  // Transform data to plain objects
+  const initialData = {
+    products: JSON.parse(JSON.stringify(productsData || [])),
+    categories: JSON.parse(JSON.stringify(categoriesData || [])),
+    stores: JSON.parse(JSON.stringify(storesData || [])),
+    flags: JSON.parse(JSON.stringify(flagsData || [])),
+  };
 
-type ApiStore = {
-  _id: string;
-  storeName: string;
-  status: 'active' | 'inactive';
-};
-
-export default function ViewAllProductsPage() {
-  const [rows, setRows] = useState<Product[]>([]);
-  const [products, setProducts] = useState<ApiProduct[]>([]);
-  const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
-  const [storeMap, setStoreMap] = useState<Record<string, string>>({});
-  const { data: session } = useSession();
-  type AugmentedSession = Session & { accessToken?: string; user?: Session["user"] & { role?: string } };
-  const s = session as AugmentedSession | null;
-  const token = s?.accessToken;
-  const userRole = s?.user?.role;
-
-  const fetchProducts = useCallback(async () => {
-    try {
-      const res = await axios.get('/api/v1/product', {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(userRole ? { 'x-user-role': userRole } : {}),
-        },
-      });
-      const items: ApiProduct[] = Array.isArray(res.data?.data) ? res.data.data : [];
-      setProducts(items);
-    } catch {
-      toast.error('Failed to load products');
-    }
-  }, [token, userRole]);
-
-  const fetchCategories = useCallback(async () => {
-    try {
-      const res = await axios.get('/api/v1/ecommerce-category/ecomCategory', {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(userRole ? { 'x-user-role': userRole } : {}),
-        },
-      });
-      const items: ApiCategory[] = Array.isArray(res.data?.data) ? res.data.data : [];
-      const active = items.filter(c => c.status === 'active');
-      const map: Record<string, string> = {};
-      for (const c of active) map[c._id] = c.name;
-      setCategoryMap(map);
-    } catch {
-      setCategoryMap({});
-    }
-  }, [token, userRole]);
-
-  const fetchStores = useCallback(async () => {
-    try {
-      const res = await axios.get('/api/v1/vendor-store', {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(userRole ? { 'x-user-role': userRole } : {}),
-        },
-      });
-      const items: ApiStore[] = Array.isArray(res.data?.data) ? res.data.data : [];
-      const active = items.filter(s => s.status === 'active');
-      const map: Record<string, string> = {};
-      for (const st of active) map[st._id] = st.storeName;
-      setStoreMap(map);
-    } catch {
-      setStoreMap({});
-    }
-  }, [token, userRole]);
-
-  useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-    fetchStores();
-  }, [fetchProducts, fetchCategories, fetchStores]);
-
-  useEffect(() => {
-    const mapped: Product[] = products.map((p, idx) => {
-      const categoryName = typeof p.category === 'string'
-        ? (categoryMap[p.category] || p.category)
-        : (p.category?.name || '');
-      const storeName = typeof p.vendorStoreId === 'string'
-        ? (storeMap[p.vendorStoreId] || p.vendorStoreId)
-        : (p.vendorStoreId?.storeName || '');
-      return {
-        id: idx + 1,
-        image: p.thumbnailImage || "",
-        category: categoryName,
-        name: p.productTitle || "",
-        store: storeName,
-        price: p.productPrice != null ? String(p.productPrice) : "",
-        offer_price: p.discountPrice != null ? String(p.discountPrice) : "",
-        stock: p.stock != null ? String(p.stock) : "",
-        flag: p.flag || "",
-        status: p.status === 'active' ? 'Active' : 'Inactive',
-        created_at: p.createdAt ? new Date(p.createdAt).toLocaleString() : "",
-      };
-    });
-    setRows(mapped);
-  }, [products, categoryMap, storeMap]);
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">
@@ -157,14 +54,8 @@ export default function ViewAllProductsPage() {
           </div>
         </div>
 
-        {/* Table Section */}
-        <div className="mb-4 sm:mb-6">
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
-            <div className="min-w-[840px]">
-              <DataTable columns={product_columns} data={rows} />
-            </div>
-          </div>
-        </div>
+        {/* Client Component for Interactive Table */}
+        <ProductTableClient initialData={initialData} />
       </div>
     </div>
   );

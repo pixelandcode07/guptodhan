@@ -9,8 +9,14 @@ const createVendorProductInDB = async (payload: Partial<IVendorProduct>) => {
   return result;
 };
 
-// Get all active products (optional: sorted by title)
+// Get all products (both active and inactive) - used for sidebar count
 const getAllVendorProductsFromDB = async () => {
+  const result = await VendorProductModel.find({}).sort({ productTitle: 1 });
+  return result;
+};
+
+// Get only active products - used for product listing pages
+const getActiveVendorProductsFromDB = async () => {
   const result = await VendorProductModel.find({ status: 'active' }).sort({ productTitle: 1 });
   return result;
 };
@@ -88,9 +94,43 @@ const removeProductOptionFromDB = async (id: string, index: number) => {
   return product;
 };
 
+
+// Get 6 products with running offers 
+const getRunningOffersFromDB = async () => {
+  const result = await VendorProductModel.aggregate([
+    {
+      $match: {
+        status: 'active',
+        offerDeadline: { $gt: new Date() },
+      },
+    },
+    { $sample: { size: 6 } },
+  ]);
+  return result;
+};
+
+// Get 6 best-selling products (highest sellCount)
+const getBestSellingProductsFromDB = async () => {
+  const result = await VendorProductModel.find({ status: 'active' })
+    .sort({ sellCount: -1 })
+    .limit(6);
+  return result;
+};
+
+// ✅ Get 12 random active products
+const getRandomProductsFromDB = async () => {
+  const result = await VendorProductModel.aggregate([
+    { $match: { status: 'active' } },
+    { $sample: { size: 12 } },
+  ]);
+  return result;
+};
+
+
 export const VendorProductServices = {
   createVendorProductInDB,
   getAllVendorProductsFromDB,
+  getActiveVendorProductsFromDB,
   getVendorProductByIdFromDB,
   getVendorProductsByCategoryFromDB,
   getVendorProductsByBrandFromDB,
@@ -98,4 +138,8 @@ export const VendorProductServices = {
   deleteVendorProductFromDB,
   addProductOptionInDB,
   removeProductOptionFromDB,
+
+  getRunningOffersFromDB,
+  getBestSellingProductsFromDB,
+  getRandomProductsFromDB,
 };

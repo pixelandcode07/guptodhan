@@ -48,7 +48,8 @@ export default function ThemeColorCard({ initialColors }: Props) {
         setActivePicker(null);
       }
     };
-    if (activePicker) document.addEventListener('mousedown', handleClickOutside);
+    if (activePicker)
+      document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [activePicker]);
 
@@ -64,8 +65,8 @@ export default function ThemeColorCard({ initialColors }: Props) {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) {
-        toast.error("Authentication failed. Please log in as an admin.");
-        return;
+      toast.error('Authentication failed. Please log in as an admin.');
+      return;
     }
     setIsLoading(true);
     const toastId = toast.loading('Saving theme colors...');
@@ -83,7 +84,7 @@ export default function ThemeColorCard({ initialColors }: Props) {
       const url = colors.id
         ? `/api/v1/theme-settings/${colors.id}`
         : `/api/v1/theme-settings`;
-      
+
       const method = colors.id ? 'PATCH' : 'POST';
 
       const res = await axios({
@@ -91,17 +92,20 @@ export default function ThemeColorCard({ initialColors }: Props) {
         url,
         data: payload,
         headers: {
-          'Authorization': `Bearer ${token}` // ✅ ধাপ ৩: API কলে টোকেন পাঠান
-        }
+          Authorization: `Bearer ${token}`, // ✅ ধাপ ৩: API কলে টোকেন পাঠান
+        },
       });
-      
+
       if (res.data?.success) {
-        toast.success(colors.id ? 'Theme colors updated!' : 'Theme created!', { id: toastId });
+        toast.success(colors.id ? 'Theme colors updated!' : 'Theme created!', {
+          id: toastId,
+        });
         setColors(mapId(res.data.data)); // রেসপন্স থেকে state আপডেট করা
       }
-
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update theme.', { id: toastId });
+      toast.error(error.response?.data?.message || 'Failed to update theme.', {
+        id: toastId,
+      });
     } finally {
       setIsLoading(false);
       setActivePicker(null);
@@ -109,7 +113,9 @@ export default function ThemeColorCard({ initialColors }: Props) {
   };
 
   return (
-    <form onSubmit={handleUpdate} className="w-full bg-white relative p-4 sm:p-6 md:p-10">
+    <form
+      onSubmit={handleUpdate}
+      className="w-full bg-white relative p-4 sm:p-6 md:p-10">
       <div className="flex w-full justify-center items-center">
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
           {Object.entries(colors)
@@ -123,7 +129,9 @@ export default function ThemeColorCard({ initialColors }: Props) {
                   <div
                     className="w-10 h-8 sm:w-12 sm:h-10 rounded border cursor-pointer"
                     style={{ backgroundColor: value }}
-                    onClick={() => setActivePicker(activePicker === key ? null : key)}
+                    onClick={() =>
+                      setActivePicker(activePicker === key ? null : key)
+                    }
                   />
                   <input
                     type="text"
@@ -136,7 +144,9 @@ export default function ThemeColorCard({ initialColors }: Props) {
                   <div ref={pickerRef} className="absolute z-50 mt-2">
                     <ChromePicker
                       color={value}
-                      onChange={(c: ColorResult) => handleChange(key as keyof ThemeColors, c.hex)}
+                      onChange={(c: ColorResult) =>
+                        handleChange(key as keyof ThemeColors, c.hex)
+                      }
                     />
                   </div>
                 )}
@@ -145,12 +155,16 @@ export default function ThemeColorCard({ initialColors }: Props) {
         </div>
       </div>
       <div className="flex flex-row justify-center gap-4 mt-8 pb-5">
-        <Button type="button" variant="destructive" onClick={handleCancel} disabled={isLoading}>
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={handleCancel}
+          disabled={isLoading}>
           Cancel
         </Button>
         <Button type="submit" disabled={isLoading}>
           {isLoading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
-          {isLoading ? 'Saving...' : (colors.id ? 'Update' : 'Create')}
+          {isLoading ? 'Saving...' : colors.id ? 'Update' : 'Create'}
         </Button>
       </div>
     </form>

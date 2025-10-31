@@ -53,7 +53,7 @@ export default function CategorySelection({ formData, handleInputChange, categor
             setLoading(prev => ({ ...prev, child: true }));
             try {
                 // Assuming you have an endpoint to get child categories by sub-category ID
-                const res = await axios.get(`/api/v1/ecommerce-category/ecomChildCategory?subCategory=${subCategoryId}`, { headers: { Authorization: `Bearer ${token}` } });
+                const res = await axios.get(`/api/v1/ecommerce-category/ecomChildCategory?subCategoryId=${subCategoryId}`, { headers: { Authorization: `Bearer ${token}` } });
                 setChildCategories(res.data?.data?.filter((c: ChildCategory) => c.status === 'active') || []);
             } catch (error) { console.error('Failed to fetch child categories:', error); }
             finally { setLoading(prev => ({ ...prev, child: false })); }

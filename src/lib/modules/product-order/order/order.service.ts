@@ -9,14 +9,27 @@ const createOrderInDB = async (payload: Partial<IOrder>) => {
 };
 
 // Get all orders
-const getAllOrdersFromDB = async () => {
-  const result = await OrderModel.find({}).sort({ orderDate: -1 });
+const getAllOrdersFromDB = async (status?: string) => {
+  const filter: Record<string, unknown> = {};
+  if (status) {
+    filter.orderStatus = status;
+  }
+  const result = await OrderModel.find(filter).sort({ orderDate: -1 });
   return result;
 };
 
 // Get orders by user
 const getOrdersByUserFromDB = async (userId: string) => {
-  const result = await OrderModel.find({ userId: new Types.ObjectId(userId) }).sort({ orderDate: -1 });
+  const result = await OrderModel.find({ userId: new Types.ObjectId(userId) })
+    .populate({
+      path: 'orderDetails',
+      populate: {
+        path: 'productId',
+        select: 'productTitle thumbnailImage productPrice discountPrice'
+      }
+    })
+    .populate('storeId', 'storeName')
+    .sort({ orderDate: -1 });
   return result;
 };
 
@@ -38,10 +51,22 @@ const deleteOrderFromDB = async (id: string) => {
   return null;
 };
 
+// Get order by ID
+const getOrderByIdFromDB = async (id: string) => {
+  const result = await OrderModel.findById(id)
+    .populate('userId', 'name email phoneNumber')
+    .populate('storeId', 'storeName')
+    .populate('orderDetails')
+    .populate('paymentMethodId', 'name')
+    .populate('couponId', 'couponCode discountAmount');
+  return result;
+};
+
 export const OrderServices = {
   createOrderInDB,
   getAllOrdersFromDB,
   getOrdersByUserFromDB,
+  getOrderByIdFromDB,
   updateOrderInDB,
   deleteOrderFromDB,
 };

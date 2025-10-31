@@ -3,7 +3,7 @@
 import React from 'react'
 import ShoppingCartSection from './components/ShoppingCartSection'
 import OrderSummary from './components/OrderSummary'
-import YouMayLike from './components/YouMayLike'
+import { useCart } from '@/contexts/CartContext'
 
 export type CartItem = {
   id: string
@@ -20,24 +20,20 @@ export type CartItem = {
     price: number
     originalPrice: number
     quantity: number
+    shippingCost?: number
+    freeShippingThreshold?: number
+    discountPercentage?: number
   }
 }
 
-export type Recommendation = {
-  id: string
-  name: string
-  price: number
-  originalPrice: number
-  image: string
-}
-
 export default function ShoppingCartContent({ 
-  cartItems, 
-  recommendations 
+  onUpdateQuantity,
+  onRemoveItem
 }: { 
-  cartItems: CartItem[]
-  recommendations: Recommendation[]
+  onUpdateQuantity: (itemId: string, newQuantity: number) => void
+  onRemoveItem: (itemId: string) => void
 }) {
+  const { cartItems } = useCart()
   const totalItems = cartItems.reduce((sum, item) => sum + item.product.quantity, 0)
   const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.product.quantity), 0)
   const totalSavings = cartItems.reduce((sum, item) => sum + ((item.product.originalPrice - item.product.price) * item.product.quantity), 0)
@@ -50,22 +46,22 @@ export default function ShoppingCartContent({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Shopping Cart Section */}
         <div className="lg:col-span-2">
-          <ShoppingCartSection cartItems={cartItems} totalItems={totalItems} />
+          <ShoppingCartSection 
+            cartItems={cartItems} 
+            totalItems={totalItems}
+            onUpdateQuantity={onUpdateQuantity}
+            onRemoveItem={onRemoveItem}
+          />
         </div>
 
         {/* Order Summary */}
         <div className="lg:col-span-1">
-          <OrderSummary 
+          <OrderSummary
             subtotal={subtotal}
             totalSavings={totalSavings}
             totalItems={totalItems}
           />
         </div>
-      </div>
-
-      {/* You May Like Section */}
-      <div className="mt-12">
-        <YouMayLike recommendations={recommendations} />
       </div>
     </div>
   )

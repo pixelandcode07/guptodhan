@@ -1,15 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: false, // 👈 এটাই যোগ করো
+  reactStrictMode: false, 
+  
 
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-        port: '',
-        pathname: '/**',
-      },
+      protocol: 'https',
+      hostname: 'res.cloudinary.com',
+      pathname: '/**',
+    },
       {
         protocol: 'https',
         hostname: 'static.vecteezy.com',
@@ -58,11 +58,35 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'cdn-icons-png.flaticon.com',
+        port: '',
+        pathname: '/**',
+      },
+                                                                                                                                        {
+        protocol: 'https',
+        hostname: 'cdn-icons.flaticon.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // eslint: {
+  //   ignoreDuringBuilds: true,
+  // },
   typescript: {
     ignoreBuildErrors: true,
   },

@@ -4,6 +4,7 @@ import React, { useState, FormEvent, useEffect } from 'react';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 // Import UI Components
 import { Button } from '@/components/ui/button';
@@ -18,9 +19,15 @@ import { Loader2, Save, X, UploadCloud } from 'lucide-react';
 import Image from 'next/image';
 import ProductVariantForm, { IProductOption } from './ProductVariantForm';
 import ProductImageGallery from './ProductImageGallery';
+import PricingInventory from './PricingInventory';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function ProductForm({ initialData }: any) {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const productId = searchParams?.get('id');
+    const isEditMode = !!productId;
+    
     // --- State Management ---
     const [title, setTitle] = useState('');
     const [shortDescription, setShortDescription] = useState('');
@@ -32,8 +39,9 @@ export default function ProductForm({ initialData }: any) {
     const [thumbnail, setThumbnail] = useState<File | null>(null);
     const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
     const [galleryImages, setGalleryImages] = useState<File[]>([]);
+    const [galleryImagePreviews, setGalleryImagePreviews] = useState<string[]>([]);
 
-    const [rewardPoints, setRewardPoints] = useState(0);
+    const [rewardPoints, setRewardPoints] = useState<number | undefined>(undefined);
     const [productCode, setProductCode] = useState('');
     const [videoUrl, setVideoUrl] = useState('');
     
@@ -58,13 +66,61 @@ export default function ProductForm({ initialData }: any) {
     const [metaTitle, setMetaTitle] = useState('');
     const [metaKeywords, setMetaKeywords] = useState('');
     const [metaDescription, setMetaDescription] = useState('');
-    const [price, setPrice] = useState(0);
-    const [discountPrice, setDiscountPrice] = useState(0);
-    const [stock, setStock] = useState(10);
+    const [price, setPrice] = useState<number | undefined>(undefined);
+    const [discountPrice, setDiscountPrice] = useState<number | undefined>(undefined);
+    const [stock, setStock] = useState<number | undefined>(undefined);
     
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { data: session } = useSession();
     const token = (session as any)?.accessToken;
+
+    // Keep initial IDs to set after dependent lists load (for edit mode)
+    const [initialSubcategoryId, setInitialSubcategoryId] = useState<string>('');
+    const [initialChildCategoryId, setInitialChildCategoryId] = useState<string>('');
+    const [initialModelId, setInitialModelId] = useState<string>('');
+
+    // Pricing form data
+    const pricingFormData = {
+        price: price ?? '',
+        discountPrice: discountPrice ?? '',
+        rewardPoints: rewardPoints ?? '',
+        stock: stock ?? '',
+    };
+
+    // Handler functions for pricing component
+    const handlePricingInputChange = (field: string, value: unknown) => {
+        switch (field) {
+            case 'price':
+                setPrice(value === '' ? undefined : Number(value));
+                break;
+            case 'discountPrice':
+                setDiscountPrice(value === '' ? undefined : Number(value));
+                break;
+            case 'rewardPoints':
+                setRewardPoints(value === '' ? undefined : Number(value));
+                break;
+            case 'stock':
+                setStock(value === '' ? undefined : Number(value));
+                break;
+        }
+    };
+
+    const handlePricingNumberChange = (field: string, delta: number) => {
+        switch (field) {
+            case 'price':
+                setPrice(prev => Math.max(0, (prev || 0) + delta));
+                break;
+            case 'discountPrice':
+                setDiscountPrice(prev => Math.max(0, (prev || 0) + delta));
+                break;
+            case 'rewardPoints':
+                setRewardPoints(prev => Math.max(0, (prev || 0) + delta));
+                break;
+            case 'stock':
+                setStock(prev => Math.max(0, (prev || 0) + delta));
+                break;
+        }
+    };
     
     // All useEffects for dependent dropdowns (no changes here)
     useEffect(() => {
@@ -74,8 +130,135 @@ export default function ProductForm({ initialData }: any) {
         const fetchChildCategories = async () => { if (subcategory && token) { try { const res = await axios.get(`/api/v1/ecommerce-category/ecomChildCategory?subCategoryId=${subcategory}`, { headers: { Authorization: `Bearer ${token}` } }); setChildCategories(res.data?.data || []); setChildCategory(''); } catch (error) { console.error('Failed to fetch child categories', error); } } else { setChildCategories([]); } }; fetchChildCategories();
     }, [subcategory, token]);
     useEffect(() => {
-        const fetchModels = async () => { if (brand && token) { try { const res = await axios.get(`/api/v1/product-models?brandId=${brand}`, { headers: { Authorization: `Bearer ${token}` } }); setModels(res.data?.data || []); setModel(''); } catch (error) { console.error('Failed to fetch models', error); } } else { setModels([]); } }; fetchModels();
-    }, [brand, token]);
+        const fetchModels = async () => { 
+            if (brand && token) { 
+                try { 
+                    console.log('Fetching models for brand:', brand);
+                    const res = await axios.get(`/api/v1/product-config/modelName?brandId=${brand}`, { headers: { Authorization: `Bearer ${token}` } }); 
+                    console.log('Models API response:', res.data?.data);
+                    const filteredModels = res.data?.data?.filter((m: any) => m.status === 'active') || [];
+                    console.log('Filtered models:', filteredModels);
+                    setModels(filteredModels); 
+                    // If we have an initial model from edit mode, set it once models are loaded
+                    if (initialModelId) {
+                        setModel(initialModelId);
+                    }
+                } catch (error) { 
+                    console.error('Failed to fetch models', error); 
+                } 
+            } else { 
+                setModels([]); 
+            } 
+        }; 
+        fetchModels();
+    }, [brand, token, initialModelId]);
+
+    // When subcategories are loaded in edit mode, set initial subcategory
+    useEffect(() => {
+        if (initialSubcategoryId && subcategories.length > 0) {
+            setSubcategory(initialSubcategoryId);
+        }
+    }, [initialSubcategoryId, subcategories]);
+
+    // When child categories are loaded in edit mode, set initial child category
+    useEffect(() => {
+        if (initialChildCategoryId && childCategories.length > 0) {
+            setChildCategory(initialChildCategoryId);
+        }
+    }, [initialChildCategoryId, childCategories]);
+
+    // Fetch existing product details in edit mode and pre-fill form
+    useEffect(() => {
+        const fetchExistingProduct = async () => {
+            if (!isEditMode || !productId || !token) return;
+            try {
+                const res = await axios.get(`/api/v1/product/${productId}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                const p = res.data?.data;
+                if (!p) return;
+
+                // Basic fields
+                setTitle(p.productTitle || '');
+                setShortDescription(p.shortDescription || '');
+                setFullDescription(p.fullDescription || '');
+                setSpecification(p.specification || '');
+                setWarrantyPolicy(p.warrantyPolicy || '');
+                setTags(Array.isArray(p.productTag) ? p.productTag.join(', ') : '');
+
+                // Media previews (keep files empty; use URL previews)
+                setThumbnail(null);
+                setThumbnailPreview(p.thumbnailImage || null);
+                setGalleryImages([]);
+                setGalleryImagePreviews(Array.isArray(p.photoGallery) ? p.photoGallery : []);
+
+                // Pricing & inventory
+                setPrice(typeof p.productPrice === 'number' ? p.productPrice : undefined);
+                setDiscountPrice(typeof p.discountPrice === 'number' ? p.discountPrice : undefined);
+                setStock(typeof p.stock === 'number' ? p.stock : undefined);
+                setProductCode(p.sku || '');
+                setRewardPoints(typeof p.rewardPoints === 'number' ? p.rewardPoints : undefined);
+
+                // Selects
+                setStore(p.vendorStoreId || '');
+                setCategory(p.category || '');
+                setInitialSubcategoryId(p.subCategory || '');
+                setInitialChildCategoryId(p.childCategory || '');
+                setBrand(p.brand || '');
+                setInitialModelId(p.productModel || '');
+                setFlag(p.flag || '');
+                setWarranty(p.warranty || '');
+                setUnit(p.weightUnit || '');
+
+                // Offer
+                if (p.offerDeadline) {
+                    setSpecialOffer(true);
+                    const dt = new Date(p.offerDeadline);
+                    const isoLocal = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
+                        .toISOString()
+                        .slice(0, 16);
+                    setOfferEndTime(isoLocal);
+                } else {
+                    setSpecialOffer(false);
+                    setOfferEndTime('');
+                }
+
+                // SEO
+                setMetaTitle(p.metaTitle || '');
+                setMetaKeywords(p.metaKeyword || '');
+                setMetaDescription(p.metaDescription || '');
+
+                // Variants
+                const opts = Array.isArray(p.productOptions) ? p.productOptions : [];
+                if (opts.length > 0) {
+                    setHasVariant(true);
+                    const mapped = opts.map((opt: any, idx: number) => ({
+                        id: Date.now() + idx,
+                        image: null,
+                        imageUrl: opt.productImage || '',
+                        color: opt.color || '',
+                        size: opt.size || '',
+                        storage: opt.storage || '',
+                        simType: opt.simType || '',
+                        condition: opt.condition || '',
+                        warranty: opt.warranty || '',
+                        stock: typeof opt.stock === 'number' ? opt.stock : 0,
+                        price: typeof opt.price === 'number' ? opt.price : 0,
+                        discountPrice: typeof opt.discountPrice === 'number' ? opt.discountPrice : 0,
+                    }));
+                    setVariants(mapped);
+                } else {
+                    setHasVariant(false);
+                    setVariants([]);
+                }
+            } catch (err: any) {
+                console.error('Failed to load product for edit', err?.response?.data || err?.message);
+                toast.error('Failed to load product details for editing');
+            }
+        };
+
+        fetchExistingProduct();
+    }, [isEditMode, productId, token]);
 
     // ✅ পরিবর্তন ১: uploadFile ফাংশনকে আরও শক্তিশালী করা হয়েছে
     const uploadFile = async (file: File): Promise<string> => {
@@ -103,25 +286,67 @@ export default function ProductForm({ initialData }: any) {
         if (!token) return toast.error("Authentication required.");
         
         // ✅ পরিবর্তন ২: ক্লায়েন্ট সাইডে প্রাথমিক ভ্যালিডেশন
-        if (!thumbnail) {
+        if (!isEditMode && !thumbnail) {
             return toast.error("Thumbnail image is required.");
         }
         if (!title || !store || !category) {
             return toast.error("Please fill all required fields (*).");
         }
         
+        // Validate pricing
+        if (!price || price <= 0) {
+            return toast.error("Price is required and must be greater than 0.");
+        }
+        
+        // Validate special offer date
+        if (specialOffer) {
+            if (!offerEndTime) {
+                return toast.error("Offer end time is required when special offer is enabled.");
+            }
+            const offerDate = new Date(offerEndTime);
+            const now = new Date();
+            if (offerDate <= now) {
+                return toast.error("Offer end time must be in the future.");
+            }
+        }
+        
+        // Validate variants if hasVariant is enabled
+        if (hasVariant) {
+            if (variants.length === 0) {
+                return toast.error("Please add at least one product variant.");
+            }
+            
+            // Validate each variant
+            for (let i = 0; i < variants.length; i++) {
+                const variant = variants[i];
+                if (!variant.stock || variant.stock <= 0) {
+                    return toast.error(`Variant ${i + 1}: Stock must be greater than 0.`);
+                }
+                if (!variant.price || variant.price <= 0) {
+                    return toast.error(`Variant ${i + 1}: Price must be greater than 0.`);
+                }
+                if (variant.discountPrice && variant.discountPrice >= variant.price) {
+                    return toast.error(`Variant ${i + 1}: Discount price must be less than regular price.`);
+                }
+            }
+        }
+        
         setIsSubmitting(true);
 
         try {
             // thumbnail এবং gallery image আপলোড করা
-            const thumbnailUrl = await uploadFile(thumbnail);
+            let thumbnailUrl = thumbnailPreview; // Use existing thumbnail if in edit mode
+            if (thumbnail) {
+                thumbnailUrl = await uploadFile(thumbnail);
+            }
 
-            const galleryUrls = await Promise.all(
-                galleryImages.map(file => uploadFile(file))
-            );
-
-            // নিশ্চিত করা যে কোনো null বা undefined ভ্যালু নেই
-            const validGalleryUrls = galleryUrls.filter(url => !!url);
+            let validGalleryUrls = galleryImagePreviews || []; // Use existing gallery images if in edit mode
+            if (galleryImages.length > 0) {
+                const galleryUrls = await Promise.all(
+                    galleryImages.map(file => uploadFile(file))
+                );
+                validGalleryUrls = galleryUrls.filter(url => !!url);
+            }
 
             const productData = {
                 productId: productCode || `PROD-${Date.now()}`,
@@ -138,11 +363,11 @@ export default function ProductForm({ initialData }: any) {
                 photoGallery: validGalleryUrls.length > 0 ? validGalleryUrls : [thumbnailUrl],
                 thumbnailImage: thumbnailUrl, // এখন এটি সর্বদা একটি ভ্যালিড URL হবে
                 
-                productPrice: price,
+                productPrice: price || 0,
                 discountPrice: discountPrice || undefined,
-                stock: stock,
+                stock: stock || 0,
                 sku: productCode || undefined,
-                rewardPoints: rewardPoints,
+                rewardPoints: rewardPoints || 0,
                 category: category,
                 subCategory: subcategory || undefined,
                 childCategory: childCategory || undefined,
@@ -162,15 +387,22 @@ export default function ProductForm({ initialData }: any) {
                 }))) : [],
             };
 
-            await axios.post('/api/v1/product', productData, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            toast.success("Product created successfully!");
+            if (isEditMode && productId) {
+                await axios.patch(`/api/v1/product/${productId}`, productData, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                toast.success("Product updated successfully!");
+                router.push('/general/view/all/product');
+            } else {
+                await axios.post('/api/v1/product', productData, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                toast.success("Product created successfully!");
+            }
         } catch (error: any) {
             // এখন uploadFile থেকে আসা এররও এখানে ধরা পড়বে
             console.error("Submission Error:", error.response?.data || error.message);
-            toast.error(error.response?.data?.message || error.message || "Failed to create product.");
+            toast.error(error.response?.data?.message || error.message || `Failed to ${isEditMode ? 'update' : 'create'} product.`);
         } finally {
             setIsSubmitting(false);
         }
@@ -198,7 +430,7 @@ export default function ProductForm({ initialData }: any) {
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
-                    <Save className="mr-2 h-4 w-4" /> Save Product
+                    <Save className="mr-2 h-4 w-4" /> {isEditMode ? "Update Product" : "Save Product"}
                 </Button>
             </div>
 
@@ -260,6 +492,13 @@ export default function ProductForm({ initialData }: any) {
                     </Card>
                     <Card>
                         <CardContent className="space-y-4 pt-6">
+                            {/* Pricing & Inventory Section */}
+                            <PricingInventory 
+                                formData={pricingFormData}
+                                handleInputChange={handlePricingInputChange}
+                                handleNumberChange={handlePricingNumberChange}
+                            />
+                            
                              <div>
                                  <Label>Product Code (SKU)</Label>
                                  <Input value={productCode} onChange={(e) => setProductCode(e.target.value)} />
@@ -314,7 +553,7 @@ export default function ProductForm({ initialData }: any) {
                                  <Select value={model} onValueChange={setModel} disabled={!brand || models.length === 0}>
                                      <SelectTrigger><SelectValue placeholder="Select Brand First" /></SelectTrigger>
                                      <SelectContent>
-                                         {models.map((m: any) => <SelectItem key={m._id} value={m._id}>{m.name}</SelectItem>)}
+                                         {models.map((m: any) => <SelectItem key={m._id} value={m._id} className="text-black">{m.modelName}</SelectItem>)}
                                      </SelectContent>
                                  </Select>
                              </div>
@@ -355,8 +594,14 @@ export default function ProductForm({ initialData }: any) {
                              </div>
                              {specialOffer && (
                                  <div>
-                                     <Label>Offer End Time</Label>
-                                     <Input type="datetime-local" value={offerEndTime} onChange={(e) => setOfferEndTime(e.target.value)} />
+                                     <Label>Offer End Time *</Label>
+                                     <Input 
+                                         type="datetime-local" 
+                                         value={offerEndTime} 
+                                         onChange={(e) => setOfferEndTime(e.target.value)}
+                                         min={new Date().toISOString().slice(0, 16)}
+                                         required
+                                     />
                                  </div>
                              )}
                          </CardContent>
@@ -407,7 +652,7 @@ export default function ProductForm({ initialData }: any) {
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
-                    <Save className="mr-2 h-4 w-4" /> Save Product
+                    <Save className="mr-2 h-4 w-4" /> {isEditMode ? "Update Product" : "Save Product"}
                 </Button>
             </div>
         </form>

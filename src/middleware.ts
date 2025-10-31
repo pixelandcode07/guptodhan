@@ -25,6 +25,7 @@ const adminRoutes = [
     "/api/v1/donation-categories",
     "/api/v1/theme-settings",
     "/app/api/v1/donation-categories/[id]",
+   
 ];
 
 // যেকোনো লগইন করা ইউজারের জন্য সুরক্ষিত API রুট

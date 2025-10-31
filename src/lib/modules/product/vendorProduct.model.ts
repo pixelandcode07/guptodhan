@@ -49,6 +49,8 @@ const vendorProductSchema = new Schema<IVendorProduct>(
     metaKeyword: { type: String },
     metaDescription: { type: String },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+    // new add
+    sellCount: { type: Number, default: 0 },
 
     // New field: productOptions
     productOptions: [productOptionSchema],

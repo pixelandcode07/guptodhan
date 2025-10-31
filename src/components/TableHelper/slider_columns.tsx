@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useState } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import UploadImage from "@/components/ReusableComponents/UploadImage"
+import { useSession } from "next-auth/react"
 
 // Avoid exporting types to prevent deploy issues per request
 
@@ -114,7 +116,17 @@ export const slider_columns: ColumnDef<any>[] = [
     header: "Action",
     cell: ({ row }) => {
       const item = row.original as any;
+      const { data: session } = useSession();
+      
+      // Get authentication data from session
+      type SessionWithToken = { accessToken?: string; user?: { role?: string } };
+      const sessionWithToken = session as SessionWithToken | null;
+      const token = sessionWithToken?.accessToken;
+      const userRole = sessionWithToken?.user?.role;
+      
       const [open, setOpen] = useState(false)
+      const [imageFile, setImageFile] = useState<File | null>(null)
+      const [imageRemoved, setImageRemoved] = useState(false)
       const [form, setForm] = useState<any>({
         image: item?.slider || "",
         textPosition: item?.textPosition || "",
@@ -133,10 +145,44 @@ export const slider_columns: ColumnDef<any>[] = [
         if (!item?._id) return;
         await toast.promise(
           (async () => {
+            let imageUrl = form.image;
+            
+            // Handle image removal
+            if (imageRemoved) {
+              imageUrl = ""; // Set empty string to remove image
+            }
+            // Upload new image if a new file is selected
+            else if (imageFile) {
+              const uploadFormData = new FormData();
+              uploadFormData.append('file', imageFile);
+              
+              const uploadRes = await fetch('/api/v1/upload', {
+                method: 'POST',
+                body: uploadFormData,
+                headers: {
+                  ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                  ...(userRole ? { 'x-user-role': userRole } : {}),
+                },
+              });
+              
+              if (!uploadRes.ok) {
+                throw new Error('Failed to upload image');
+              }
+              
+              const uploadData = await uploadRes.json();
+              imageUrl = uploadData.url;
+            }
+            
+            // Update slider with new data
+            const updateData = {
+              ...form,
+              image: imageUrl,
+            };
+            
             const res = await fetch(`/api/v1/slider-form/${item._id}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(form),
+              body: JSON.stringify(updateData),
             })
             if (!res.ok) {
               const j = await res.json().catch(() => ({}));
@@ -147,7 +193,7 @@ export const slider_columns: ColumnDef<any>[] = [
         )
         setOpen(false)
         // notify client wrapper to merge update
-        window.dispatchEvent(new CustomEvent('slider-updated', { detail: { _id: item._id, update: form } }))
+        window.dispatchEvent(new CustomEvent('slider-updated', { detail: { _id: item._id, update: { ...form, image: imageUrl } } }))
       }
 
       const onDelete = async () => {
@@ -192,12 +238,32 @@ export const slider_columns: ColumnDef<any>[] = [
               </DialogHeader>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm">Image URL</label>
-                  <Input value={form.image} onChange={(e) => onChange('image', e.target.value)} placeholder="https://" />
+                  <label className="text-sm">Image</label>
+                  <UploadImage 
+                    name="sliderImage"
+                    preview={form.image} 
+                    onChange={(name, file) => {
+                      setImageFile(file);
+                      if (file === null) {
+                        setImageRemoved(true);
+                        setForm(prev => ({ ...prev, image: "" }));
+                      } else {
+                        setImageRemoved(false);
+                      }
+                    }}
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm">Text Position</label>
-                  <Input value={form.textPosition} onChange={(e) => onChange('textPosition', e.target.value)} placeholder="Left | Right" />
+                  <Select value={form.textPosition} onValueChange={(v) => onChange('textPosition', v)}>
+                    <SelectTrigger className="h-10 w-full">
+                      <SelectValue placeholder="Select text position" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Left">Left</SelectItem>
+                      <SelectItem value="Right">Right</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm">Slider Link</label>

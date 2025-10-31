@@ -19,11 +19,16 @@ export interface OrderItemSummary {
 
 export interface OrderSummary {
   id: string
+  orderId: string
   storeName: string
   storeVerified: boolean
   status: OrderStatus
+  paymentStatus?: string
+  deliveryMethod?: string
   items: OrderItemSummary[]
   createdAt: string
+  trackingId?: string
+  parcelId?: string
 }
 
 

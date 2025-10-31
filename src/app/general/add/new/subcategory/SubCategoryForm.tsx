@@ -60,8 +60,15 @@ export default function SubCategoryForm() {
       if (data.iconFile) formData.append('subCategoryIcon', data.iconFile);
       if (data.bannerFile) formData.append('subCategoryBanner', data.bannerFile);
 
+      // Get session data for authentication
+      const session = await axios.get('/api/auth/session');
+      const userRole = session?.data?.user?.role || 'user';
+      
       const response = await fetch('/api/v1/ecommerce-category/ecomSubCategory', {
         method: 'POST',
+        headers: {
+          'x-user-role': userRole,
+        },
         body: formData,
       });
       

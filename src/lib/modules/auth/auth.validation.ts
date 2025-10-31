@@ -68,3 +68,8 @@ export const registerServiceProviderValidationSchema = z.object({
   bio: z.string().optional(),
   skills: z.array(z.string()).min(1),
 });
+
+// --- Zod Validation Schema ---
+export const googleLoginValidationSchema = z.object({
+  idToken: z.string({ required_error: 'Google ID Token is required.' }),
+});

@@ -3,9 +3,8 @@ import { Types } from 'mongoose';
 import { TUserInput, TUser } from './user.interface';
 import { User } from './user.model';
 import { deleteFromCloudinary } from '@/lib/utils/cloudinary';
-import bcrypt from 'bcrypt'; // <-- bcrypt ইম্পোর্ট
+import bcrypt from 'bcrypt'; 
 
-// আগের সব ফাংশন অপরিবর্তিত থাকবে
 const createUserIntoDB = async (payload: TUserInput): Promise<Partial<TUser> | null> => {
   const query = [];
   if (payload.email) query.push({ email: payload.email });
@@ -50,7 +49,6 @@ const deleteUserFromDB = async (id: string): Promise<Partial<TUser> | null> => {
   ).select('-password');
 };
 
-// ✅ নতুন ফাংশন: Service Provider Create
 // Service Provider Create
 const createServiceProviderIntoDB = async (payload: any) => {
   const hashedPassword = await bcrypt.hash(payload.password, 12);
@@ -64,7 +62,7 @@ const createServiceProviderIntoDB = async (payload: any) => {
     role: 'service-provider',
   };
 
-  // serviceProviderInfo তৈরি শুধুমাত্র valid data থাকলে
+  // serviceProviderInfo 
   if (payload.serviceCategory || (Array.isArray(payload.subCategories) && payload.subCategories.length > 0) || payload.cvUrl || payload.bio) {
     const serviceProviderInfo: any = {};
 
@@ -79,7 +77,6 @@ const createServiceProviderIntoDB = async (payload: any) => {
     if (payload.cvUrl) serviceProviderInfo.cvUrl = payload.cvUrl;
     serviceProviderInfo.bio = payload.bio || '';
 
-    // শুধু তখনই assign করো যখন object এ অন্তত একটি field আছে
     if (Object.keys(serviceProviderInfo).length > 0) {
       userPayload.serviceProviderInfo = serviceProviderInfo;
     }
@@ -98,5 +95,5 @@ export const UserServices = {
   getMyProfileFromDB,
   updateMyProfileInDB,
   deleteUserFromDB,
-  createServiceProviderIntoDB, // <-- শুধু add করা
+  createServiceProviderIntoDB, 
 };

@@ -65,7 +65,20 @@ export default function ChildCategoriesClient() {
     
     setDeleteLoading(true);
     try {
-      await axios.delete(`/api/v1/ecommerce-category/ecomChildCategory/${deleting._id}`);
+      // Get session data for authentication
+      const session = await axios.get('/api/auth/session');
+      
+     
+      const userRole: string = (session?.data?.user?.role as string) || 'user';
+      
+  
+   
+      
+      await axios.delete(`/api/v1/ecommerce-category/ecomChildCategory/${deleting._id}`, {
+        headers: {
+          'x-user-role': userRole,
+        },
+      });
       // Optimistic update - remove from UI immediately
       setRows(prev => prev.filter(r => r._id !== deleting._id).map((r, idx) => ({ ...r, id: idx + 1 })));
       toast.success("Child category deleted successfully!");

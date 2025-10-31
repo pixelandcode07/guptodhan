@@ -48,14 +48,25 @@ interface ProductVariantFormProps {
 
 export default function ProductVariantForm({ variants, setVariants, variantData }: ProductVariantFormProps) {
     
-    const handleVariantChange = (index: number, field: keyof IProductOption, value: any) => {
+    const handleVariantChange = (index: number, field: keyof IProductOption, value: string | number | File | null) => {
         const updatedVariants = [...variants];
         updatedVariants[index] = { ...updatedVariants[index], [field]: value };
         setVariants(updatedVariants);
     };
 
     const addVariant = () => {
-        setVariants([...variants, { id: Date.now(), stock: 0, price: 0 }]);
+        setVariants([...variants, { 
+            id: Date.now(), 
+            stock: 0, 
+            price: 0,
+            color: '',
+            size: '',
+            storage: '',
+            simType: '',
+            condition: '',
+            warranty: '',
+            discountPrice: 0
+        }]);
     };
 
     const removeVariant = (index: number) => {
@@ -64,7 +75,10 @@ export default function ProductVariantForm({ variants, setVariants, variantData 
 
     return (
         <div className="border p-4 rounded-lg bg-gray-50/50">
-            <p className="text-red-500 text-sm mb-4 text-center font-semibold">Product Variant (Insert the Base Variant First)</p>
+            <div className="mb-4">
+                <p className="text-blue-600 text-sm font-semibold text-center">Product Variants</p>
+                <p className="text-gray-600 text-xs text-center mt-1">Add different variations of your product (color, size, storage, etc.)</p>
+            </div>
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-100">
@@ -78,6 +92,7 @@ export default function ProductVariantForm({ variants, setVariants, variantData 
                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Warranty</th>
                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Stock*</th>
                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Price*</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Discount Price</th>
                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Action</th>
                         </tr>
                     </thead>
@@ -119,7 +134,13 @@ export default function ProductVariantForm({ variants, setVariants, variantData 
                                     <Select onValueChange={(v) => handleVariantChange(index, 'simType', v)}>
                                         <SelectTrigger><SelectValue placeholder="Select SIM"/></SelectTrigger>
                                         <SelectContent>
-                                            {variantData?.simTypes?.map(sim => <SelectItem key={sim._id} value={sim._id}>{sim.name}</SelectItem>)}
+                                            {variantData?.simTypes?.length > 0 ? (
+                                                variantData.simTypes.map(sim => (
+                                                    <SelectItem key={sim._id} value={sim._id}>{sim.name}</SelectItem>
+                                                ))
+                                            ) : (
+                                                <div className="p-3 text-sm text-gray-500">No SIM types available</div>
+                                            )}
                                         </SelectContent>
                                     </Select>
                                 </td>
@@ -144,8 +165,9 @@ export default function ProductVariantForm({ variants, setVariants, variantData 
                                     </Select>
                                 </td>
                                 
-                                <td className="p-2"><Input type="number" value={variant.stock} onChange={(e) => handleVariantChange(index, 'stock', Number(e.target.value))} required /></td>
-                                <td className="p-2"><Input type="number" value={variant.price} onChange={(e) => handleVariantChange(index, 'price', Number(e.target.value))} required /></td>
+                                <td className="p-2"><Input type="number" value={variant.stock} onChange={(e) => handleVariantChange(index, 'stock', Number(e.target.value))} required className="w-24 min-w-[100px]" /></td>
+                                <td className="p-2"><Input type="number" value={variant.price} onChange={(e) => handleVariantChange(index, 'price', Number(e.target.value))} required className="w-24 min-w-[100px]" /></td>
+                                <td className="p-2"><Input type="number" value={variant.discountPrice || 0} onChange={(e) => handleVariantChange(index, 'discountPrice', Number(e.target.value))} className="w-24 min-w-[100px]" /></td>
                                 <td className="p-2 text-center">
                                     <Button type="button" variant="ghost" size="sm" className="text-red-500" onClick={() => removeVariant(index)}>
                                         <Trash2 className="h-4 w-4" />
@@ -157,8 +179,17 @@ export default function ProductVariantForm({ variants, setVariants, variantData 
                 </table>
             </div>
             <div className="mt-4 flex justify-center">
-                <Button type="button" className="bg-teal-500 hover:bg-teal-600 text-white" onClick={addVariant}>+ Add Another Variant</Button>
+                <Button type="button" className="bg-teal-500 hover:bg-teal-600 text-white" onClick={addVariant}>
+                    + Add Another Variant
+                </Button>
             </div>
+            {variants.length === 0 && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <p className="text-yellow-800 text-sm text-center">
+                        ⚠️ No variants added. Click &quot;Add Another Variant&quot; to create your first product variant.
+                    </p>
+                </div>
+            )}
         </div>
     );
 }
