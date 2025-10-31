@@ -81,13 +81,21 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
   const finalDeliveryCharge = getFinalDeliveryCharge()
 
   // Modal helper functions
-  const showSuccessModal = (orderId: string) => {
+  const showSuccessModal = async (orderId: string) => {
     setSuccessOrderId(orderId)
     setSuccessModalOpen(true)
     // Ensure error modal is closed when showing success
     setErrorModalOpen(false)
-    // Clear cart after successful order
-    localStorage.removeItem('cart')
+    
+    // Clear cart from database after successful order
+    if (userProfile?._id) {
+      try {
+        await axios.delete(`/api/v1/add-to-cart/get-cart/${userProfile._id}`)
+        console.log('Cart cleared from database successfully')
+      } catch (error) {
+        console.error('Error clearing cart from database:', error)
+      }
+    }
   }
 
   const showError = (message: string) => {
@@ -182,6 +190,11 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
       errors.push('User must be logged in to place order')
     }
     
+    // Check if user profile exists with valid ID
+    if (!userProfile?._id) {
+      errors.push('User profile information is missing. Please complete your profile.')
+    }
+    
     // Check if form data is complete
     if (!formData.name || !formData.phone || !formData.email || !formData.district || !formData.upazila || !formData.address || !formData.city || !formData.postalCode || !formData.country) {
       errors.push('Please fill in all required delivery information')
@@ -216,10 +229,10 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
 
       // Prepare order data according to backend structure
       const orderData = {
-        userId: userProfile?._id || '507f1f77bcf86cd799439011', // Use actual user ID from profile
-        storeId: '507f1f77bcf86cd799439012', // Valid ObjectId format - replace with actual store ID  
+        userId: userProfile?._id,
+        storeId: undefined as unknown as string, // must be provided by UI/state
         deliveryMethodId: selectedDelivery,
-        paymentMethodId: '507f1f77bcf86cd799439013', // Valid ObjectId format - replace with actual payment method ID
+        paymentMethodId: undefined as unknown as string, // must be provided by UI/state
         
         // Shipping information from form data
         shippingName: formData.name || userProfile?.name || 'Guest User',
@@ -257,8 +270,8 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
       }
 
       // Validate order data before sending
-      if (!orderData.userId || !orderData.storeId || !orderData.deliveryMethodId || !orderData.paymentMethodId) {
-        showError('Invalid order configuration. Please refresh the page and try again.')
+      if (!orderData.userId || !orderData.deliveryMethodIdDisabled) {
+        showError('Invalid order configuration. User ID and delivery method are required.')
         return
       }
       

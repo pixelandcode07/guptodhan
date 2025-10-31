@@ -59,8 +59,10 @@ export default function UserOrdersPage() {
   const fetchUserOrders = useCallback(async () => {
     try {
       setLoading(true)
-      const userLike = (session?.user ?? {}) as { id?: string; _id?: string }
-      const userId = userLike.id || userLike._id
+      const userLike = (session?.user ?? {}) as { id?: string; _id?: string; role?: string }
+      const userId = userLike._id || userLike.id
+      const token = (session as { accessToken?: string })?.accessToken
+      const userRole = userLike.role
       
       if (!userId) {
         console.error('No user ID found in session')
@@ -71,6 +73,8 @@ export default function UserOrdersPage() {
       const response = await api.get(`/product-order/my-orders`, {
         headers: {
           'x-user-id': userId,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(userRole ? { 'x-user-role': userRole } : {}),
         }
       })
       const apiOrders = (response.data?.data ?? []) as ApiOrder[]

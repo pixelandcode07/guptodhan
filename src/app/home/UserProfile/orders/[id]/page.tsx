@@ -68,22 +68,27 @@ export default function OrderDetailsPage({ params }: PageProps) {
   const userPhone = user.phone ?? '—'
 
   React.useEffect(() => {
-    const userLike = (session?.user ?? {}) as { id?: string; _id?: string }
-    const userId = userLike.id || userLike._id
-    if (!userId || !params.id) return
-    api
-      .get(`/product-order/${userId}`)
-      .then((res) => {
-        const list = (res.data?.data ?? []) as ApiOrder[]
-        const found = list.find((o) => String(o._id) === params.id)
-        if (!found) return
-        // Get the first product from order details
+    const fetchOrder = async () => {
+      const userLike = (session?.user ?? {}) as { id?: string; _id?: string }
+      const userId = userLike._id || userLike.id
+      if (!userId || !params.id) return
+
+      // Optional token like other routes
+      const token = (session as { accessToken?: string })?.accessToken
+      const headers: Record<string, string> = { 'x-user-id': userId }
+      if (token) headers['Authorization'] = `Bearer ${token}`
+
+      try {
+        const res = await api.get(`/product-order/${params.id}`, { headers })
+        const found = (res.data?.data ?? null) as ApiOrder | null
+        if (!found) { setOrder(null); return }
+
         const firstProduct = found.orderDetails?.[0]?.productId
         const productImage = firstProduct?.thumbnailImage || '/img/product/p-1.png'
         const productName = firstProduct?.productTitle || found.shippingName || 'Order'
         const productPrice = firstProduct?.productPrice || found.totalAmount || 0
         const totalQuantity = found.orderDetails?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 1
-        
+
         const mapped: OrderSummary = {
           id: found._id,
           orderId: found.orderId || found._id,
@@ -106,8 +111,12 @@ export default function OrderDetailsPage({ params }: PageProps) {
           ],
         }
         setOrder(mapped)
-      })
-      .catch(() => setOrder(null))
+      } catch {
+        setOrder(null)
+      }
+    }
+
+    fetchOrder()
   }, [session, params.id])
 
   return (
