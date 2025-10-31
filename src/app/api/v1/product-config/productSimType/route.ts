@@ -2,5 +2,5 @@ import { ProductSimTypeController } from "@/lib/modules/product-config/controlle
 import { catchAsync } from "@/lib/middlewares/catchAsync";
 import { checkRole } from "@/lib/middlewares/checkRole";
 
-export const GET = catchAsync(checkRole(["admin"])(ProductSimTypeController.getAllProductSimTypes));
+export const GET = catchAsync(ProductSimTypeController.getAllProductSimTypes);
 export const POST = catchAsync(checkRole(["admin"])(ProductSimTypeController.createProductSimType));

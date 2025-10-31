@@ -2,5 +2,5 @@ import { BrandController } from "@/lib/modules/product-config/controllers/brandN
 import { catchAsync } from "@/lib/middlewares/catchAsync";
 import { checkRole } from "@/lib/middlewares/checkRole";
 
-export const GET = catchAsync(checkRole(["admin"])(BrandController.getAllBrands));
+export const GET = catchAsync(BrandController.getAllBrands);
 export const POST = catchAsync(checkRole(["admin"])(BrandController.createBrand));
