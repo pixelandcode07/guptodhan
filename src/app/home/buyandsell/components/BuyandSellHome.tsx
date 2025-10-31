@@ -29,7 +29,7 @@ const fetchAllBuySellData = async () => {
         const baseUrl = process.env.NEXTAUTH_URL;
         // console.log("baseUrl:", baseUrl)
         const { data: allCategory } = await axios.get(`${baseUrl}/api/v1/public/classifieds-categories/with-ad-counts`);
-        // console.log("PostedData:", postedData);
+        console.log("PostedData:", allCategory);
         return allCategory.data || [];
     } catch (error) {
         console.error("Error fetching Buy and Sell All Data:", error);
