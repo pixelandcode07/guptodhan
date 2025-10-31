@@ -43,10 +43,6 @@ export default function SizesClient() {
       setLoading(true);
       const response = await axios.get("/api/v1/product-config/productSize", {
         params: { _ts: Date.now() },
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(userRole ? { "x-user-role": userRole } : {}),
-        },
       });
       const apiSizes: ApiSize[] = response.data.data;
 
@@ -65,7 +61,7 @@ export default function SizesClient() {
     } finally {
       setLoading(false);
     }
-  }, [token, userRole]);
+  }, []);
 
   useEffect(() => {
     fetchSizes();
