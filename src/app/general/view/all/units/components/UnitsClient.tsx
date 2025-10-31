@@ -10,6 +10,7 @@ import UnitsFilters from "./UnitsFilters";
 import UnitsTable from "./UnitsTable";
 import UnitModal from "./UnitModal";
 import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
+import FancyLoadingPage from "@/app/general/loading";
 
 type Session = {
   user?: {
@@ -28,7 +29,7 @@ type ApiUnit = {
 
 export default function UnitsClient() {
   const [units, setUnits] = useState<Unit[]>([]);
-  const [, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Unit | null>(null);
   const [searchText, setSearchText] = useState("");
@@ -46,12 +47,7 @@ export default function UnitsClient() {
   const fetchUnits = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get("/api/v1/product-config/productUnit", {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(userRole ? { "x-user-role": userRole } : {}),
-        },
-      });
+      const response = await axios.get("/api/v1/product-config/productUnit");
 
       const mappedUnits: Unit[] = response.data.data.map((u: ApiUnit, index: number) => ({
         _id: u._id,
@@ -77,7 +73,7 @@ export default function UnitsClient() {
     } finally {
       setLoading(false);
     }
-  }, [token, userRole]);
+  }, []);
 
   useEffect(() => {
     fetchUnits();
@@ -196,6 +192,9 @@ export default function UnitsClient() {
   }, [units, searchText, statusFilter]);
 
   return (
+    loading ? (
+      <FancyLoadingPage />
+    ) : (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">
         {/* Header Section */}
@@ -248,5 +247,6 @@ export default function UnitsClient() {
         />
       </div>
     </div>
+    )
   );
 }
