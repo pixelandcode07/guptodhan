@@ -10,6 +10,7 @@ import InfoForm from './components/InfoForm'
 import FancyLoadingPage from '@/app/general/loading'
 import { useSession } from 'next-auth/react'
 import axios from 'axios'
+import { toast } from 'sonner'
 
 // Cart item type definition
 export type CartItem = {
@@ -228,11 +229,11 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
       }
 
       // Prepare order data according to backend structure
+      // Backend will automatically fetch storeId from first product and paymentMethodId from default COD method
       const orderData = {
         userId: userProfile?._id,
-        storeId: undefined as unknown as string, // must be provided by UI/state
+        // storeId and paymentMethodId will be automatically determined by backend
         deliveryMethodId: selectedDelivery,
-        paymentMethodId: undefined as unknown as string, // must be provided by UI/state
         
         // Shipping information from form data
         shippingName: formData.name || userProfile?.name || 'Guest User',
@@ -265,12 +266,14 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
           vendorId: item.id, // Using cart item id as vendor id
           quantity: item.product.quantity,
           unitPrice: item.product.originalPrice,
-          discountPrice: item.product.price
+          discountPrice: item.product.price,
+          size: item.product.size,
+          color: item.product.color
         }))
       }
 
       // Validate order data before sending
-      if (!orderData.userId || !orderData.deliveryMethodIdDisabled) {
+      if (!orderData.userId || !orderData.deliveryMethodId) {
         showError('Invalid order configuration. User ID and delivery method are required.')
         return
       }
@@ -312,7 +315,12 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
             } else {
               // Steadfast API returned success: false
               orderSuccessfullyCompleted = false
-              showError('Failed to create Steadfast parcel. Please contact support.')
+              const errorMsg = 'Failed to create Steadfast parcel. Please contact support.'
+              toast.error('Steadfast parcel creation failed', {
+                description: errorMsg,
+                duration: 4000,
+              })
+              showError(errorMsg)
             }
           } catch (error) {
             console.error('Error creating Steadfast parcel:', error)
@@ -329,7 +337,12 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
             }
             
             // Show error for Steadfast failure
-            showError('Failed to create Steadfast parcel. Your order has been placed but needs manual processing. Please contact support.')
+            const errorMsg = 'Failed to create Steadfast parcel. Your order has been placed but needs manual processing. Please contact support.'
+            toast.error('Steadfast parcel creation failed', {
+              description: errorMsg,
+              duration: 5000,
+            })
+            showError(errorMsg)
             
             // Still store the order info even if Steadfast fails
             localStorage.setItem('lastOrderTracking', JSON.stringify({
@@ -344,16 +357,31 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
         
         // Only show success modal if order was successfully completed
         if (orderSuccessfullyCompleted) {
+          // Show success toast and modal
+          toast.success('Order placed successfully!', {
+            description: `Your order #${orderData.order.orderId} has been placed.`,
+            duration: 3000,
+          })
           showSuccessModal(orderData.order.orderId)
         }
         
       } else {
         // API returned success: false
-        showError(response.data.message || 'Failed to place order. Please try again.')
+        const errorMsg = response.data.message || 'Failed to place order. Please try again.'
+        toast.error('Order failed', {
+          description: errorMsg,
+          duration: 4000,
+        })
+        showError(errorMsg)
       }
     } catch (error) {
       console.error('Error placing order:', error)
-      showError('Failed to place order. Please try again or contact support.')
+      const errorMsg = 'Failed to place order. Please try again or contact support.'
+      toast.error('Order failed', {
+        description: errorMsg,
+        duration: 4000,
+      })
+      showError(errorMsg)
     }
   }
 

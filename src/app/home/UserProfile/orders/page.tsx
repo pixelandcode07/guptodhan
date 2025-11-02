@@ -39,10 +39,13 @@ type ApiOrder = {
       thumbnailImage?: string
       productPrice?: number
       discountPrice?: number
+      photoGallery?: string[]
     }
     quantity?: number
     unitPrice?: number
     totalPrice?: number
+    size?: string
+    color?: string
   }>
   shippingName?: string
   trackingId?: string
@@ -70,22 +73,121 @@ export default function UserOrdersPage() {
         return
       }
 
-      const response = await api.get(`/product-order/my-orders`, {
+      const response = await api.get(`/product-order?userId=${userId}`, {
         headers: {
-          'x-user-id': userId,
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...(userRole ? { 'x-user-role': userRole } : {}),
         }
       })
       const apiOrders = (response.data?.data ?? []) as ApiOrder[]
       
+      // Debug: log first order to see structure
+      if (apiOrders.length > 0) {
+        console.log('First order from API:', JSON.stringify(apiOrders[0], null, 2))
+        if (apiOrders[0].orderDetails && apiOrders[0].orderDetails.length > 0) {
+          console.log('First orderDetail:', JSON.stringify(apiOrders[0].orderDetails[0], null, 2))
+          console.log('productId type:', typeof apiOrders[0].orderDetails[0].productId)
+          console.log('productId value:', apiOrders[0].orderDetails[0].productId)
+        }
+      }
+      
       const mappedOrders: OrderSummary[] = apiOrders.map((order) => {
-        // Get the first product from order details
-        const firstProduct = order.orderDetails?.[0]?.productId
-        const productImage = firstProduct?.thumbnailImage || '/img/product/p-1.png'
-        const productName = firstProduct?.productTitle || order.shippingName || `Order #${order.orderId}`
-        const productPrice = firstProduct?.productPrice || order.totalAmount || 0
-        const totalQuantity = order.orderDetails?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 1
+        // Map all order items from orderDetails
+        const items = (order.orderDetails || []).map((detail, index) => {
+          // Check if productId is populated (object with product data) or just an ID
+          let product: { productTitle?: string; thumbnailImage?: string; photoGallery?: string[] | string; productPrice?: number; _id?: string } | null = null
+          
+          if (detail.productId) {
+            // Check if productId is an object (populated) or a string/primitive (not populated)
+            if (typeof detail.productId === 'object' && detail.productId !== null) {
+              const productObj = detail.productId as Record<string, unknown>
+              
+              // Check if it's populated by looking for product-specific fields
+              // Populated objects will have productTitle, thumbnailImage, etc.
+              // Non-populated ObjectIds will only have _id or be a plain object with just _id
+              const hasProductFields = 'productTitle' in productObj || 
+                                       'thumbnailImage' in productObj || 
+                                       'photoGallery' in productObj ||
+                                       'productPrice' in productObj
+              
+              if (hasProductFields) {
+                // It's populated - use it
+                product = productObj as { productTitle?: string; thumbnailImage?: string; photoGallery?: string[] | string; productPrice?: number; _id?: string }
+              } else {
+                // Check if it's just an ObjectId wrapper (only has _id)
+                const keys = Object.keys(productObj)
+                if (keys.length === 1 && keys[0] === '_id') {
+                  // It's just an ObjectId, not populated
+                  product = null
+                } else if (keys.length === 0) {
+                  // Empty object
+                  product = null
+                } else {
+                  // Has other fields but not product fields - might be populated differently
+                  // Log for debugging
+                  console.warn('Unexpected productId structure:', productObj)
+                  product = null
+                }
+              }
+            } else if (typeof detail.productId === 'string') {
+              // productId is just a string ID, not populated
+              product = null
+            }
+          }
+          
+          // Debug for first item
+          if (index === 0) {
+            console.log(`OrderDetail ${index}:`, detail)
+            console.log(`productId type:`, typeof detail.productId)
+            console.log(`productId value:`, detail.productId)
+            console.log(`Extracted product:`, product)
+            if (product) {
+              console.log(`  - productTitle:`, product.productTitle)
+              console.log(`  - thumbnailImage:`, product.thumbnailImage)
+              console.log(`  - photoGallery:`, product.photoGallery)
+            }
+          }
+          
+          // Get product image - check populated product object first
+          let productImage = '/img/product/p-1.png'
+          if (product) {
+            if (product.thumbnailImage) {
+              productImage = product.thumbnailImage
+            } else if (product.photoGallery) {
+              const gallery = Array.isArray(product.photoGallery) ? product.photoGallery : [product.photoGallery]
+              if (gallery.length > 0 && gallery[0]) {
+                productImage = gallery[0]
+              }
+            }
+          }
+          
+          // Get product name - use populated product title if available
+          const productName = product?.productTitle || order.shippingName || `Product ${index + 1}`
+          
+          // Get price - prefer orderDetails unitPrice, fallback to product price
+          const productPrice = detail.unitPrice || product?.productPrice || 0
+          
+          return {
+            id: detail._id || `${order._id}_${index}`,
+            title: productName,
+            thumbnailUrl: productImage,
+            priceFormatted: `৳ ${productPrice.toLocaleString('en-US')}`,
+            quantity: detail.quantity || 1,
+            size: detail.size || 'Standard',
+            color: detail.color || 'Default',
+          }
+        })
+        
+        // If no items, create a fallback item
+        const orderItems = items.length > 0 ? items : [{
+          id: order._id,
+          title: `Order #${order.orderId}`,
+          thumbnailUrl: '/img/product/p-1.png',
+          priceFormatted: `৳ ${(order.totalAmount || 0).toLocaleString('en-US')}`,
+          quantity: 1,
+          size: 'Standard',
+          color: 'Default',
+        }]
         
         return {
           id: order._id,
@@ -98,15 +200,7 @@ export default function UserOrdersPage() {
           createdAt: new Date(order.orderDate ?? order.createdAt ?? Date.now()).toLocaleString(),
           trackingId: order.trackingId,
           parcelId: order.parcelId,
-          items: [
-            {
-              id: order._id,
-              title: productName,
-              thumbnailUrl: productImage,
-              priceFormatted: `৳ ${productPrice.toLocaleString('en-US')}`,
-              quantity: totalQuantity,
-            },
-          ],
+          items: orderItems,
         }
       })
       

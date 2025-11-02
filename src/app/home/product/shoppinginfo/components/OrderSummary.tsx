@@ -40,23 +40,9 @@ export default function OrderSummary({
     }
 
     // Call the parent's place order function
+    // The parent (ShoppingInfoContent) will handle success/error toasts and modals
+    // No need to show toast here as it causes redundancy
     onPlaceOrder(payment);
-
-    // Handle different payment methods
-    if (payment === 'cod') {
-      toast.success('Order placed successfully!', {
-        description: `Cash on delivery order placed. Total amount: ৳${total.toLocaleString()}. You will pay when the order arrives.`,
-        duration: 4000,
-      });
-    } else {
-      toast.success('Redirecting to payment...', {
-        description: 'You will be redirected to the secure payment gateway.',
-        duration: 3000,
-      });
-    }
-
-    // Open the success modal
-    setOpen(true);
   }
 
   const getDeliveryMethodName = (method: DeliveryOption) => {
