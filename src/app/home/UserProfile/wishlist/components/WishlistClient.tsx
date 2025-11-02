@@ -97,7 +97,7 @@ export default function WishlistClient({ initialWishlistItems = [] }: WishlistCl
     }
   }
 
-  const handleAddToCart = async (productId: string | { _id: string }) => {
+  const handleAddToCart = async (productId: string | { _id: string }, wishlistItemId: string) => {
     // Extract product ID
     const id = typeof productId === 'object' ? productId._id : productId
     
@@ -107,16 +107,36 @@ export default function WishlistClient({ initialWishlistItems = [] }: WishlistCl
     }
     
     try {
-      // Use CartContext addToCart which handles:
-      // 1. API call to /api/v1/add-to-cart
-      // 2. Database update (via CartServices.addToCartInDB)
-      // 3. localStorage sync (automatic via CartContext)
-      // 4. UI update (cart count badge updates automatically)
+      // Step 1: Add to cart (handles API, DB update, localStorage, UI update)
       await addToCartContext(id, 1)
-      // Success toast is already shown by CartContext
+      
+      // Step 2: Remove from wishlist after successful cart addition
+      try {
+        const deleteResponse = await axios.delete(`/api/v1/wishlist/${wishlistItemId}`)
+        
+        if (deleteResponse.data.success) {
+          // Remove from local state immediately
+          setWishlistItems(prev => prev.filter(item => item._id !== wishlistItemId))
+          // Refresh wishlist count in context (updates navbar badge)
+          await refreshWishlist()
+          
+          // Show confirmation toast
+          toast.success('Added to cart and removed from wishlist', {
+            description: 'Product has been moved to your shopping cart',
+            duration: 3000,
+          })
+        } else {
+          console.warn('Product added to cart but failed to remove from wishlist')
+        }
+      } catch (wishlistError) {
+        console.error('Error removing from wishlist after adding to cart:', wishlistError)
+        // Don't show error to user as cart addition was successful
+        // The item will still be removed from wishlist on next page refresh
+      }
     } catch (error) {
       console.error('Error adding to cart:', error)
       // Error toast is handled by CartContext
+      throw error
     }
   }
 
@@ -144,7 +164,7 @@ export default function WishlistClient({ initialWishlistItems = [] }: WishlistCl
 interface WishlistGridProps {
   items: WishlistProduct[]
   onRemove: (wishlistId: string) => void
-  onAddToCart: (productId: string | { _id: string }) => void
+  onAddToCart: (productId: string | { _id: string }, wishlistItemId: string) => void
 }
 
 function WishlistGrid({ items, onRemove, onAddToCart }: WishlistGridProps) {
@@ -178,7 +198,7 @@ function WishlistGrid({ items, onRemove, onAddToCart }: WishlistGridProps) {
 interface WishlistItemProps {
   item: WishlistProduct
   onRemove: (wishlistId: string) => void
-  onAddToCart: (productId: string | { _id: string }) => void
+  onAddToCart: (productId: string | { _id: string }, wishlistItemId: string) => void
 }
 
 function WishlistItem({ item, onRemove, onAddToCart }: WishlistItemProps) {
@@ -188,7 +208,8 @@ function WishlistItem({ item, onRemove, onAddToCart }: WishlistItemProps) {
   const handleAddToCartClick = async () => {
     setIsAddingToCart(true)
     try {
-      await onAddToCart(item.productID)
+      // Pass both productId and wishlist item _id so it can be removed after adding to cart
+      await onAddToCart(item.productID, item._id)
     } finally {
       setIsAddingToCart(false)
     }
