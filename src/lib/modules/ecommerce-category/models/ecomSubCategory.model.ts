@@ -18,4 +18,4 @@ const subCategorySchema = new Schema<ISubCategory>(
 );
 
 export const SubCategoryModel =
-  models.SubCategoryModel || model<ISubCategory>('SubCategoryModel', subCategorySchema, 'ecomsubcategorymodels');
+  models.SubCategoryModel || model<ISubCategory>('SubCategoryModel', subCategorySchema);
