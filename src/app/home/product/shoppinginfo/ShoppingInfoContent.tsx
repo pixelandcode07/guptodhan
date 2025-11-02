@@ -11,6 +11,7 @@ import FancyLoadingPage from '@/app/general/loading'
 import { useSession } from 'next-auth/react'
 import axios from 'axios'
 import { toast } from 'sonner'
+import { AppliedCoupon } from './components/CouponSection'
 
 // Cart item type definition
 export type CartItem = {
@@ -69,9 +70,32 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
   const [errorModalOpen, setErrorModalOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [lastPaymentMethod, setLastPaymentMethod] = useState<'cod' | 'card'>('cod')
+  
+  // Coupon state management
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null)
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.product.quantity), 0)
   const totalSavings = cartItems.reduce((sum, item) => sum + ((item.product.originalPrice - item.product.price) * item.product.quantity), 0)
+  
+  // Calculate coupon discount (using API values only, no hardcoded values)
+  const calculateCouponDiscount = (): number => {
+    if (!appliedCoupon) return 0
+    
+    // Handle both "Percentage" and "percentage" formats (case-insensitive)
+    const typeLower = appliedCoupon.type.toLowerCase().trim()
+    const isPercentage = typeLower === 'percentage' || typeLower.includes('percentage')
+    
+    if (isPercentage) {
+      // Percentage discount - value from API is the percentage (e.g., 10 for 10%)
+      const couponDiscount = (subtotal * appliedCoupon.value) / 100
+      return Math.round(couponDiscount * 100) / 100 // Round to 2 decimal places
+    } else {
+      // Fixed amount discount - value from API is the fixed amount
+      return Math.min(appliedCoupon.value, subtotal) // Don't exceed subtotal
+    }
+  }
+
+  const couponDiscount = calculateCouponDiscount()
 
   // Calculate final delivery charge based on selected option
   const getFinalDeliveryCharge = () => {
@@ -247,7 +271,7 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
         addressDetails: `${formData.address}, ${formData.upazila}, ${formData.district}`,
         
         deliveryCharge: finalDeliveryCharge,
-        totalAmount: subtotal + finalDeliveryCharge,
+        totalAmount: subtotal - couponDiscount + finalDeliveryCharge,
         paymentStatus: paymentMethod === 'cod' ? 'Pending' : 'Pending',
         orderStatus: selectedDelivery === 'steadfast' ? 'Pending' : 'Pending',
         orderForm: 'Website',
@@ -269,7 +293,10 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
           discountPrice: item.product.price,
           size: item.product.size,
           color: item.product.color
-        }))
+        })),
+        
+        // Coupon ID if coupon is applied
+        couponId: appliedCoupon?._id || undefined
       }
 
       // Validate order data before sending
@@ -357,11 +384,7 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
         
         // Only show success modal if order was successfully completed
         if (orderSuccessfullyCompleted) {
-          // Show success toast and modal
-          toast.success('Order placed successfully!', {
-            description: `Your order #${orderData.order.orderId} has been placed.`,
-            duration: 3000,
-          })
+          // Show success modal only (no toast notification)
           showSuccessModal(orderData.order.orderId)
         }
         
@@ -433,6 +456,8 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
             shipping={finalDeliveryCharge}
             onPlaceOrder={handlePlaceOrder}
             selectedDelivery={selectedDelivery}
+            appliedCoupon={appliedCoupon}
+            onCouponApplied={setAppliedCoupon}
           />
         </div>
       </div>
