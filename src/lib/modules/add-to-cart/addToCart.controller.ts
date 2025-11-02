@@ -71,11 +71,11 @@ const updateCartItem = async (_req: NextRequest, { params }: { params: Promise<{
 };
 
 // Delete cart item
-const deleteCartItem = async (_req: NextRequest, { params }: { params: Promise<{ cartID: string; userID: string }> }) => {
+const deleteCartItem = async (_req: NextRequest, { params }: { params: Promise<{ cartId: string; userId: string }> }) => {
   await dbConnect();
-  const { cartID, userID } = await params;
+  const { cartId, userId } = await params;
 
-  await CartServices.deleteCartItemFromDB(cartID, userID);
+  await CartServices.deleteCartItemFromDB(cartId, userId);
 
   return sendResponse({
     success: true,

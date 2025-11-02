@@ -10,6 +10,8 @@ import InfoForm from './components/InfoForm'
 import FancyLoadingPage from '@/app/general/loading'
 import { useSession } from 'next-auth/react'
 import axios from 'axios'
+import { toast } from 'sonner'
+import { AppliedCoupon } from './components/CouponSection'
 
 // Cart item type definition
 export type CartItem = {
@@ -68,9 +70,32 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
   const [errorModalOpen, setErrorModalOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [lastPaymentMethod, setLastPaymentMethod] = useState<'cod' | 'card'>('cod')
+  
+  // Coupon state management
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null)
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.product.quantity), 0)
   const totalSavings = cartItems.reduce((sum, item) => sum + ((item.product.originalPrice - item.product.price) * item.product.quantity), 0)
+  
+  // Calculate coupon discount (using API values only, no hardcoded values)
+  const calculateCouponDiscount = (): number => {
+    if (!appliedCoupon) return 0
+    
+    // Handle both "Percentage" and "percentage" formats (case-insensitive)
+    const typeLower = appliedCoupon.type.toLowerCase().trim()
+    const isPercentage = typeLower === 'percentage' || typeLower.includes('percentage')
+    
+    if (isPercentage) {
+      // Percentage discount - value from API is the percentage (e.g., 10 for 10%)
+      const couponDiscount = (subtotal * appliedCoupon.value) / 100
+      return Math.round(couponDiscount * 100) / 100 // Round to 2 decimal places
+    } else {
+      // Fixed amount discount - value from API is the fixed amount
+      return Math.min(appliedCoupon.value, subtotal) // Don't exceed subtotal
+    }
+  }
+
+  const couponDiscount = calculateCouponDiscount()
 
   // Calculate final delivery charge based on selected option
   const getFinalDeliveryCharge = () => {
@@ -81,13 +106,21 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
   const finalDeliveryCharge = getFinalDeliveryCharge()
 
   // Modal helper functions
-  const showSuccessModal = (orderId: string) => {
+  const showSuccessModal = async (orderId: string) => {
     setSuccessOrderId(orderId)
     setSuccessModalOpen(true)
     // Ensure error modal is closed when showing success
     setErrorModalOpen(false)
-    // Clear cart after successful order
-    localStorage.removeItem('cart')
+    
+    // Clear cart from database after successful order
+    if (userProfile?._id) {
+      try {
+        await axios.delete(`/api/v1/add-to-cart/get-cart/${userProfile._id}`)
+        console.log('Cart cleared from database successfully')
+      } catch (error) {
+        console.error('Error clearing cart from database:', error)
+      }
+    }
   }
 
   const showError = (message: string) => {
@@ -182,6 +215,11 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
       errors.push('User must be logged in to place order')
     }
     
+    // Check if user profile exists with valid ID
+    if (!userProfile?._id) {
+      errors.push('User profile information is missing. Please complete your profile.')
+    }
+    
     // Check if form data is complete
     if (!formData.name || !formData.phone || !formData.email || !formData.district || !formData.upazila || !formData.address || !formData.city || !formData.postalCode || !formData.country) {
       errors.push('Please fill in all required delivery information')
@@ -215,11 +253,11 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
       }
 
       // Prepare order data according to backend structure
+      // Backend will automatically fetch storeId from first product and paymentMethodId from default COD method
       const orderData = {
-        userId: userProfile?._id || '507f1f77bcf86cd799439011', // Use actual user ID from profile
-        storeId: '507f1f77bcf86cd799439012', // Valid ObjectId format - replace with actual store ID  
+        userId: userProfile?._id,
+        // storeId and paymentMethodId will be automatically determined by backend
         deliveryMethodId: selectedDelivery,
-        paymentMethodId: '507f1f77bcf86cd799439013', // Valid ObjectId format - replace with actual payment method ID
         
         // Shipping information from form data
         shippingName: formData.name || userProfile?.name || 'Guest User',
@@ -233,7 +271,7 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
         addressDetails: `${formData.address}, ${formData.upazila}, ${formData.district}`,
         
         deliveryCharge: finalDeliveryCharge,
-        totalAmount: subtotal + finalDeliveryCharge,
+        totalAmount: subtotal - couponDiscount + finalDeliveryCharge,
         paymentStatus: paymentMethod === 'cod' ? 'Pending' : 'Pending',
         orderStatus: selectedDelivery === 'steadfast' ? 'Pending' : 'Pending',
         orderForm: 'Website',
@@ -252,13 +290,18 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
           vendorId: item.id, // Using cart item id as vendor id
           quantity: item.product.quantity,
           unitPrice: item.product.originalPrice,
-          discountPrice: item.product.price
-        }))
+          discountPrice: item.product.price,
+          size: item.product.size,
+          color: item.product.color
+        })),
+        
+        // Coupon ID if coupon is applied
+        couponId: appliedCoupon?._id || undefined
       }
 
       // Validate order data before sending
-      if (!orderData.userId || !orderData.storeId || !orderData.deliveryMethodId || !orderData.paymentMethodId) {
-        showError('Invalid order configuration. Please refresh the page and try again.')
+      if (!orderData.userId || !orderData.deliveryMethodId) {
+        showError('Invalid order configuration. User ID and delivery method are required.')
         return
       }
       
@@ -299,7 +342,12 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
             } else {
               // Steadfast API returned success: false
               orderSuccessfullyCompleted = false
-              showError('Failed to create Steadfast parcel. Please contact support.')
+              const errorMsg = 'Failed to create Steadfast parcel. Please contact support.'
+              toast.error('Steadfast parcel creation failed', {
+                description: errorMsg,
+                duration: 4000,
+              })
+              showError(errorMsg)
             }
           } catch (error) {
             console.error('Error creating Steadfast parcel:', error)
@@ -316,7 +364,12 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
             }
             
             // Show error for Steadfast failure
-            showError('Failed to create Steadfast parcel. Your order has been placed but needs manual processing. Please contact support.')
+            const errorMsg = 'Failed to create Steadfast parcel. Your order has been placed but needs manual processing. Please contact support.'
+            toast.error('Steadfast parcel creation failed', {
+              description: errorMsg,
+              duration: 5000,
+            })
+            showError(errorMsg)
             
             // Still store the order info even if Steadfast fails
             localStorage.setItem('lastOrderTracking', JSON.stringify({
@@ -331,16 +384,27 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
         
         // Only show success modal if order was successfully completed
         if (orderSuccessfullyCompleted) {
+          // Show success modal only (no toast notification)
           showSuccessModal(orderData.order.orderId)
         }
         
       } else {
         // API returned success: false
-        showError(response.data.message || 'Failed to place order. Please try again.')
+        const errorMsg = response.data.message || 'Failed to place order. Please try again.'
+        toast.error('Order failed', {
+          description: errorMsg,
+          duration: 4000,
+        })
+        showError(errorMsg)
       }
     } catch (error) {
       console.error('Error placing order:', error)
-      showError('Failed to place order. Please try again or contact support.')
+      const errorMsg = 'Failed to place order. Please try again or contact support.'
+      toast.error('Order failed', {
+        description: errorMsg,
+        duration: 4000,
+      })
+      showError(errorMsg)
     }
   }
 
@@ -392,6 +456,8 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
             shipping={finalDeliveryCharge}
             onPlaceOrder={handlePlaceOrder}
             selectedDelivery={selectedDelivery}
+            appliedCoupon={appliedCoupon}
+            onCouponApplied={setAppliedCoupon}
           />
         </div>
       </div>

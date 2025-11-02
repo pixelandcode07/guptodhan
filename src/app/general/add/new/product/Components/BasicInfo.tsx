@@ -26,7 +26,7 @@ export default function BasicInfo({ formData, handleInputChange }: BasicInfoProp
       </h2>
       
       <div className="space-y-6">
-        <div>
+        <div className="mb-6">
           <Label htmlFor="title" className="text-sm font-medium">
             Product Title<span className="text-red-500">*</span>
           </Label>
@@ -39,7 +39,7 @@ export default function BasicInfo({ formData, handleInputChange }: BasicInfoProp
           />
         </div>
 
-        <div>
+        <div className="mb-6">
           <Label htmlFor="shortDescription" className="text-sm font-medium">
             Short Description (Max 255 Characters)
           </Label>

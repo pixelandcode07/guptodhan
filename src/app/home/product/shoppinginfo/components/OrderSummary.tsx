@@ -4,6 +4,7 @@ import React from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import OrderSuccessModal from './OrderSuccessModal'
+import CouponSection, { AppliedCoupon } from './CouponSection'
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
 import { DeliveryOption } from './DeliveryOptions'
@@ -14,21 +15,46 @@ interface OrderSummaryProps {
   shipping?: number
   onPlaceOrder: (paymentMethod: 'cod' | 'card') => void
   selectedDelivery: DeliveryOption
+  appliedCoupon: AppliedCoupon | null
+  onCouponApplied: (coupon: AppliedCoupon | null) => void
 }
 
 export default function OrderSummary({
   subtotal,
-  discount = 200,
+  discount = 0,
   shipping = 0,
   onPlaceOrder,
-  selectedDelivery
+  selectedDelivery,
+  appliedCoupon,
+  onCouponApplied
 }: OrderSummaryProps) {
   const [payment, setPayment] = React.useState<'cod' | 'card'>('cod')
   const [open, setOpen] = React.useState(false)
   const [termsAccepted, setTermsAccepted] = React.useState(false)
   const { data: session } = useSession()
   const user = session?.user
-  const total = Math.max(0, subtotal - discount + shipping)
+  
+  // Calculate coupon discount (using API values only)
+  const calculateCouponDiscount = (): number => {
+    if (!appliedCoupon) return 0
+    
+    // Handle both "Percentage" and "percentage" formats (case-insensitive)
+    const typeLower = appliedCoupon.type.toLowerCase().trim()
+    const isPercentage = typeLower === 'percentage' || typeLower.includes('percentage')
+    
+    if (isPercentage) {
+      // Percentage discount - value from API is the percentage (e.g., 10 for 10%)
+      const couponDiscount = (subtotal * appliedCoupon.value) / 100
+      return Math.round(couponDiscount * 100) / 100 // Round to 2 decimal places
+    } else {
+      // Fixed amount discount - value from API is the fixed amount
+      return Math.min(appliedCoupon.value, subtotal) // Don't exceed subtotal
+    }
+  }
+
+  const couponDiscount = calculateCouponDiscount()
+  const totalDiscount = discount + couponDiscount
+  const total = Math.max(0, subtotal - totalDiscount + shipping)
 
   const handlePlaceOrder = () => {
     if (!termsAccepted) {
@@ -40,23 +66,9 @@ export default function OrderSummary({
     }
 
     // Call the parent's place order function
+    // The parent (ShoppingInfoContent) will handle success/error toasts and modals
+    // No need to show toast here as it causes redundancy
     onPlaceOrder(payment);
-
-    // Handle different payment methods
-    if (payment === 'cod') {
-      toast.success('Order placed successfully!', {
-        description: `Cash on delivery order placed. Total amount: ৳${total.toLocaleString()}. You will pay when the order arrives.`,
-        duration: 4000,
-      });
-    } else {
-      toast.success('Redirecting to payment...', {
-        description: 'You will be redirected to the secure payment gateway.',
-        duration: 3000,
-      });
-    }
-
-    // Open the success modal
-    setOpen(true);
   }
 
   const getDeliveryMethodName = (method: DeliveryOption) => {
@@ -190,16 +202,33 @@ export default function OrderSummary({
         </div>
       )}
 
+      {/* Coupon Section */}
+      <div className="mb-6">
+        <CouponSection
+          subtotal={subtotal}
+          appliedCoupon={appliedCoupon}
+          onCouponApplied={onCouponApplied}
+        />
+      </div>
+
       {/* Totals */}
       <div className="space-y-2 text-sm mb-4">
         <div className="flex justify-between">
           <span className="text-gray-600">Subtotal</span>
           <span className="text-gray-900">৳ {subtotal.toLocaleString()}</span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-gray-600">Discount</span>
-          <span className="text-green-600">-৳ {discount.toLocaleString()}</span>
-        </div>
+        {discount > 0 && (
+          <div className="flex justify-between">
+            <span className="text-gray-600">Product Discount</span>
+            <span className="text-green-600">-৳ {discount.toLocaleString()}</span>
+          </div>
+        )}
+        {couponDiscount > 0 && (
+          <div className="flex justify-between">
+            <span className="text-gray-600">Coupon Discount</span>
+            <span className="text-green-600">-৳ {couponDiscount.toLocaleString()}</span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="text-gray-600">Delivery ({getDeliveryMethodName(selectedDelivery)})</span>
           <span className="text-gray-900">৳ {shipping.toLocaleString()}</span>
@@ -207,21 +236,12 @@ export default function OrderSummary({
         <div className="border-t pt-2">
           <div className="flex justify-between">
             <span className="text-gray-600">Total Items</span>
-            <span className="text-gray-900">{subtotal > 0 ? Math.round(subtotal / 1000) : 0} items</span>
+            <span className="text-gray-900">
+              {subtotal > 0 ? Math.ceil(subtotal / 100) : 0} items
+            </span>
           </div>
         </div>
       </div>
-
-      {/* Coupon applied banner */}
-      <div className="bg-green-100 text-green-700 text-sm rounded-md p-3 mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span>✓</span>
-          <span>Coupon applied</span>
-        </div>
-        <button className="text-green-700 hover:underline text-xs">Remove</button>
-      </div>
-
-   
 
       {/* Total */}
       <div className="flex items-center justify-between text-lg font-semibold mb-4">
@@ -272,4 +292,6 @@ export default function OrderSummary({
     </div>
   )
 }
+
+
 

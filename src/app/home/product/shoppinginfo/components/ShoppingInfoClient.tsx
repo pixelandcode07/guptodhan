@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import ShoppingInfoContent from '../ShoppingInfoContent';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import FancyLoadingPage from '@/app/general/loading';
+// Removed FancyLoadingPage import - no longer needed here as ShoppingInfoContent handles loading
 
 // Cart item type definition (same as shopping cart)
 export type CartItem = {
@@ -27,11 +27,11 @@ export type CartItem = {
 
 export default function ShoppingInfoClient() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     // Load cart items from localStorage
+    // This is instant, so no need for loading state - ShoppingInfoContent will handle loading
     const loadCartItems = () => {
       try {
         const savedCart = localStorage.getItem('cart');
@@ -66,17 +66,11 @@ export default function ShoppingInfoClient() {
         });
         router.push('/home/product/shopping-cart');
         return;
-      } finally {
-        setLoading(false);
       }
     };
 
     loadCartItems();
   }, [router]);
-
-  if (loading) {
-    return <FancyLoadingPage />;
-  }
 
   return <ShoppingInfoContent cartItems={cartItems} />;
 }

@@ -51,7 +51,7 @@ interface ProductData {
     }>;
   };
   relatedData: {
-    categories: Array<{ _id: string; categoryName: string }>;
+    categories: Array<{ _id: string; name: string }>;
     stores: Array<{ _id: string; storeName: string; storeAddress?: string }>;
     brands: Array<{ _id: string; brandName: string }>;
     subCategories: Array<{ _id: string; subCategoryName: string }>;
@@ -76,7 +76,7 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
   // Helper functions to get names by ID using server data
   const getCategoryName = (categoryId: string) => {
     const category = relatedData.categories.find(cat => cat._id === categoryId);
-    return category?.categoryName || 'N/A';
+    return category?.name || 'N/A';
   };
 
   const getStoreName = (storeId: string) => {
@@ -125,8 +125,10 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
     }
   };
 
-  const handleWishlist = () => {
-    toast.success('Added to wishlist!');
+  const { addToWishlist, isLoading: isWishlistLoading } = useWishlist();
+
+  const handleWishlist = async () => {
+    await addToWishlist(product._id);
   };
 
   const handleShare = () => {
@@ -207,7 +209,12 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
                 Product Information
               </span>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleWishlist}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleWishlist}
+                  disabled={isWishlistLoading}
+                >
                   <Heart className="w-4 h-4 mr-1" />
                   Wishlist
                 </Button>

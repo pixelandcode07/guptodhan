@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSession } from 'next-auth/react'
 import { toast } from 'sonner'
 import axios from 'axios'
-import FancyLoadingPage from '@/app/general/loading'
+// Removed unused FancyLoadingPage import - replaced with inline spinner
 
 interface District {
   district: string
@@ -187,7 +187,10 @@ export default function InfoForm({ onFormDataChange, initialData }: InfoFormProp
     <div className="bg-white rounded-lg p-6 space-y-6">
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <FancyLoadingPage />
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-sm text-gray-600">Loading districts...</p>
+          </div>
         </div>
       ) : (
         <>

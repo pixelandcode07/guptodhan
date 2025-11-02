@@ -31,6 +31,17 @@ const createProductSimType = async (req: NextRequest) => {
     });
   } catch (error) {
     console.error('Error creating Product SIM Type:', error);
+    // Detect Mongo duplicate key error (E11000) and return 409 Conflict
+    const text = String((error as Error)?.message || '');
+    const isDuplicate = /E11000|duplicate key|already exists/i.test(text);
+    if (isDuplicate) {
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.CONFLICT,
+        message: 'Product SIM Type already exists',
+        data: null,
+      });
+    }
     return sendResponse({
       success: false,
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,

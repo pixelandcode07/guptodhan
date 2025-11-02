@@ -111,12 +111,23 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
 
   useEffect(() => {
     const mapped: Product[] = products.map((p, idx) => {
-      const categoryName = typeof p.category === 'string'
-        ? (categoryMap[p.category] || p.category)
-        : (p.category?.name || '');
-      const storeName = typeof p.vendorStoreId === 'string'
-        ? (storeMap[p.vendorStoreId] || p.vendorStoreId)
-        : (p.vendorStoreId?.storeName || '');
+      let categoryName = '';
+      if (typeof p.category === 'string') {
+        categoryName = categoryMap[p.category] || p.category;
+      } else if (p.category && typeof p.category === 'object' && 'name' in p.category) {
+        categoryName = p.category.name || '';
+      }
+      // Show "N/A" if category name is empty or not found
+      categoryName = categoryName || 'N/A';
+      
+      let storeName = '';
+      if (typeof p.vendorStoreId === 'string') {
+        storeName = storeMap[p.vendorStoreId] || p.vendorStoreId;
+      } else if (p.vendorStoreId && typeof p.vendorStoreId === 'object' && 'storeName' in p.vendorStoreId) {
+        storeName = p.vendorStoreId.storeName || '';
+      }
+      storeName = storeName || 'N/A';
+      
       const flagName = p.flag ? (flagMap[p.flag] || p.flag) : "";
       return {
         id: idx + 1,
