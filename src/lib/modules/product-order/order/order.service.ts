@@ -2,6 +2,24 @@ import { IOrder } from './order.interface';
 import { OrderModel } from './order.model';
 import { Types } from 'mongoose';
 
+// Import all models to ensure they're registered before populate
+// These side-effect imports MUST execute before any populate operations
+import '@/lib/modules/product/vendorProduct.model';
+import '@/lib/modules/vendor-store/vendorStore.model';
+import '@/lib/modules/vendor/vendor.model';
+import '@/lib/modules/promo-code/promoCode.model'; // Import PromoCodeModel for couponId populate
+import '../orderDetails/orderDetails.model';
+
+// Explicitly reference models to ensure they're registered
+// This prevents "MissingSchemaError" during populate operations
+import { StoreModel } from '@/lib/modules/vendor-store/vendorStore.model';
+import { VendorProductModel } from '@/lib/modules/product/vendorProduct.model';
+import { Vendor } from '@/lib/modules/vendor/vendor.model';
+
+// Force model registration by referencing them (side-effect)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _ = { StoreModel, VendorProductModel, Vendor };
+
 // Create a new order
 const createOrderInDB = async (payload: Partial<IOrder>) => {
   const result = await OrderModel.create(payload);
@@ -10,27 +28,57 @@ const createOrderInDB = async (payload: Partial<IOrder>) => {
 
 // Get all orders
 const getAllOrdersFromDB = async (status?: string) => {
-  const filter: Record<string, unknown> = {};
-  if (status) {
-    filter.orderStatus = status;
+  try {
+    const filter: Record<string, unknown> = {};
+    if (status) {
+      filter.orderStatus = status;
+    }
+    const result = await OrderModel.find(filter)
+      .populate('userId', 'name email phoneNumber')
+      .populate('storeId', 'storeName')
+      .populate({
+        path: 'orderDetails',
+        populate: {
+          path: 'productId',
+          select: 'productTitle thumbnailImage productPrice discountPrice photoGallery',
+          model: 'VendorProductModel'
+        }
+      })
+      .populate('paymentMethodId', 'name')
+      .populate({
+        path: 'couponId',
+        select: 'code value type title minimumOrderAmount',
+        model: 'PromoCodeModel'
+      })
+      .sort({ orderDate: -1 })
+      .lean(); // Use lean() to get plain JavaScript objects for better serialization
+    return result;
+  } catch (error) {
+    console.error('Error in getAllOrdersFromDB:', error);
+    throw error;
   }
-  const result = await OrderModel.find(filter).sort({ orderDate: -1 });
-  return result;
 };
 
 // Get orders by user
 const getOrdersByUserFromDB = async (userId: string) => {
-  const result = await OrderModel.find({ userId: new Types.ObjectId(userId) })
-    .populate({
-      path: 'orderDetails',
-      populate: {
-        path: 'productId',
-        select: 'productTitle thumbnailImage productPrice discountPrice'
-      }
-    })
-    .populate('storeId', 'storeName')
-    .sort({ orderDate: -1 });
-  return result;
+  try {
+    const result = await OrderModel.find({ userId: new Types.ObjectId(userId) })
+      .populate({
+        path: 'orderDetails',
+        populate: {
+          path: 'productId',
+          select: 'productTitle thumbnailImage productPrice discountPrice photoGallery',
+          model: 'VendorProductModel'
+        }
+      })
+      .populate('storeId', 'storeName')
+      .sort({ orderDate: -1 })
+      .lean(); // Use lean() to get plain JavaScript objects for better serialization
+    return result;
+  } catch (error) {
+    console.error('Error in getOrdersByUserFromDB:', error);
+    throw error;
+  }
 };
 
 // Update order
@@ -56,9 +104,21 @@ const getOrderByIdFromDB = async (id: string) => {
   const result = await OrderModel.findById(id)
     .populate('userId', 'name email phoneNumber')
     .populate('storeId', 'storeName')
-    .populate('orderDetails')
+    .populate({
+      path: 'orderDetails',
+      populate: {
+        path: 'productId',
+        select: 'productTitle thumbnailImage productPrice discountPrice photoGallery',
+        model: 'VendorProductModel'
+      }
+    })
     .populate('paymentMethodId', 'name')
-    .populate('couponId', 'couponCode discountAmount');
+    .populate({
+      path: 'couponId',
+      select: 'code value type title minimumOrderAmount',
+      model: 'PromoCodeModel'
+    })
+    .lean(); // Use lean() to get plain JavaScript objects for better serialization
   return result;
 };
 

@@ -45,7 +45,14 @@ export default function WishlistClient({ initialRows }: { initialRows: Wishlist[
         userName?: string;
         userEmail?: string;
         userID?: string;
-        productID?: string;
+        productID?: string | {
+          _id?: string;
+          productTitle?: string;
+          thumbnailImage?: string;
+          photoGallery?: string[];
+          productPrice?: number;
+          discountPrice?: number;
+        };
         createdAt?: string;
       };
 
@@ -55,25 +62,37 @@ export default function WishlistClient({ initialRows }: { initialRows: Wishlist[
 
       console.log("Items found:", items.length, items);
 
-      const mapped: Wishlist[] = items.map((w, index) => ({
-        id: index + 1,
-        category: "",
-        image: "",
-        product: String(w.productID ?? ""),
-        customer_name: String(w.userName ?? ""),
-        email: String(w.userEmail ?? ""),
-        contact: "",
-        created_at: w.createdAt
-          ? new Date(w.createdAt).toLocaleString()
-          : "",
-      }));
+      const mapped: Wishlist[] = items.map((w, index) => {
+        // Extract product information
+        const product = typeof w.productID === 'object' && w.productID !== null
+          ? w.productID
+          : null;
+        
+        const productTitle = product?.productTitle || '';
+        const productImage = product?.thumbnailImage || 
+          (product?.photoGallery && product.photoGallery.length > 0 ? product.photoGallery[0] : '') ||
+          '';
+        
+        return {
+          id: index + 1,
+          category: "",
+          image: productImage,
+          product: productTitle || String(w.productID ?? ""),
+          customer_name: String(w.userName ?? ""),
+          email: String(w.userEmail ?? ""),
+          contact: "",
+          created_at: w.createdAt
+            ? new Date(w.createdAt).toLocaleString()
+            : "",
+        };
+      });
 
       console.log("Mapped wishlists:", mapped);
       setRows(mapped);
     } catch (error) {
       console.error("Failed to fetch wishlists", error);
     }
-  }, [token, userRole]);
+  }, [token, userRole, userId]);
 
   useEffect(() => {
     fetchWishlists();

@@ -10,6 +10,8 @@ export interface IOrderDetails extends Document {
   unitPrice: number;
   discountPrice?: number;
   totalPrice: number;
+  size?: string;
+  color?: string;
 
   createdAt?: Date;
   updatedAt?: Date;
