@@ -51,7 +51,7 @@ interface ProductData {
     }>;
   };
   relatedData: {
-    categories: Array<{ _id: string; categoryName: string }>;
+    categories: Array<{ _id: string; name: string }>;
     stores: Array<{ _id: string; storeName: string; storeAddress?: string }>;
     brands: Array<{ _id: string; brandName: string }>;
     subCategories: Array<{ _id: string; subCategoryName: string }>;
@@ -76,7 +76,7 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
   // Helper functions to get names by ID using server data
   const getCategoryName = (categoryId: string) => {
     const category = relatedData.categories.find(cat => cat._id === categoryId);
-    return category?.categoryName || 'N/A';
+    return category?.name || 'N/A';
   };
 
   const getStoreName = (storeId: string) => {
