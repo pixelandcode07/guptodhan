@@ -7,6 +7,7 @@ import { Types } from 'mongoose';
 import '@/lib/modules/product/vendorProduct.model';
 import '@/lib/modules/vendor-store/vendorStore.model';
 import '@/lib/modules/vendor/vendor.model';
+import '@/lib/modules/promo-code/promoCode.model'; // Import PromoCodeModel for couponId populate
 import '../orderDetails/orderDetails.model';
 
 // Explicitly reference models to ensure they're registered
@@ -44,7 +45,11 @@ const getAllOrdersFromDB = async (status?: string) => {
         }
       })
       .populate('paymentMethodId', 'name')
-      .populate('couponId', 'couponCode discountAmount')
+      .populate({
+        path: 'couponId',
+        select: 'code value type title minimumOrderAmount',
+        model: 'PromoCodeModel'
+      })
       .sort({ orderDate: -1 })
       .lean(); // Use lean() to get plain JavaScript objects for better serialization
     return result;
@@ -108,7 +113,11 @@ const getOrderByIdFromDB = async (id: string) => {
       }
     })
     .populate('paymentMethodId', 'name')
-    .populate('couponId', 'couponCode discountAmount')
+    .populate({
+      path: 'couponId',
+      select: 'code value type title minimumOrderAmount',
+      model: 'PromoCodeModel'
+    })
     .lean(); // Use lean() to get plain JavaScript objects for better serialization
   return result;
 };

@@ -42,7 +42,7 @@ const orderSchema = new Schema<IOrder>(
 
     parcelId: { type: String },
     trackingId: { type: String },
-    couponId: { type: Schema.Types.ObjectId, ref: 'CouponModel' },
+    couponId: { type: Schema.Types.ObjectId, ref: 'PromoCodeModel' },
 
 
     orderDetails: [{ type: Schema.Types.ObjectId, ref: 'OrderDetailsModel' }],
