@@ -229,12 +229,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         // Set last added product and show modal
         setLastAddedProduct(newCartItem);
         setShowAddToCartModal(true);
-        
-        // Show success message
-        toast.success('Product added to cart!', {
-          description: `${productData.productTitle} has been added to your cart.`,
-          duration: 2000,
-        });
       }
     } catch (error: unknown) {
       console.error('Error adding product to cart:', error);
