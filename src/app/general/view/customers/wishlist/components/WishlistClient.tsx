@@ -92,7 +92,7 @@ export default function WishlistClient({ initialRows }: { initialRows: Wishlist[
     } catch (error) {
       console.error("Failed to fetch wishlists", error);
     }
-  }, [token, userRole]);
+  }, [token, userRole, userId]);
 
   useEffect(() => {
     fetchWishlists();

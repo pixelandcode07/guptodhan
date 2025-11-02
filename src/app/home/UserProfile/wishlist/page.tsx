@@ -28,28 +28,74 @@ async function getUserWishlist(userId: string): Promise<WishlistProduct[]> {
       .lean()
     
     // Transform the result to match WishlistProduct interface
+    // Convert all ObjectIds to strings and ensure proper serialization
     return result.map((item: unknown) => {
-      const wishlistItem = item as {
-        _id: string
-        wishlistID: string
-        productID: {
-          _id: string
-          productTitle: string
-          thumbnailImage: string
+      type RawWishlistItem = {
+        _id?: { toString?: () => string } | string | unknown
+        wishlistID?: string
+        productID?: {
+          _id?: { toString?: () => string } | string | unknown
+          productTitle?: string
+          thumbnailImage?: string
           photoGallery?: string[]
-          productPrice: number
+          productPrice?: number
           discountPrice?: number
         } | string
-        createdAt: Date | string
+        createdAt?: Date | string
+      }
+      
+      const wishlistItem = item as RawWishlistItem
+      
+      // Convert _id to string if it's an ObjectId/Buffer
+      const id = (wishlistItem._id && typeof wishlistItem._id === 'object' && 'toString' in wishlistItem._id && typeof wishlistItem._id.toString === 'function')
+        ? wishlistItem._id.toString()
+        : String(wishlistItem._id || '')
+      
+      // Handle productID - convert if it's populated (object) or keep as string
+      let productID: WishlistProduct['productID']
+      if (wishlistItem.productID && typeof wishlistItem.productID === 'object' && !Array.isArray(wishlistItem.productID)) {
+        // Product is populated
+        const populatedProduct = wishlistItem.productID as {
+          _id?: { toString?: () => string } | string | unknown
+          productTitle?: string
+          thumbnailImage?: string
+          photoGallery?: string[]
+          productPrice?: number
+          discountPrice?: number
+        }
+        
+        const productId = (populatedProduct._id && typeof populatedProduct._id === 'object' && 'toString' in populatedProduct._id && typeof populatedProduct._id.toString === 'function')
+          ? populatedProduct._id.toString()
+          : String(populatedProduct._id || '')
+        
+        productID = {
+          _id: productId,
+          productTitle: populatedProduct.productTitle || '',
+          thumbnailImage: populatedProduct.thumbnailImage || '',
+          photoGallery: Array.isArray(populatedProduct.photoGallery) ? populatedProduct.photoGallery : undefined,
+          productPrice: populatedProduct.productPrice || 0,
+          discountPrice: populatedProduct.discountPrice
+        }
+      } else {
+        // Product is just an ID string
+        productID = String(wishlistItem.productID || '')
+      }
+      
+      // Convert createdAt to string
+      let createdAt: string
+      if (wishlistItem.createdAt instanceof Date) {
+        createdAt = wishlistItem.createdAt.toISOString()
+      } else if (wishlistItem.createdAt) {
+        createdAt = String(wishlistItem.createdAt)
+      } else {
+        createdAt = new Date().toISOString()
       }
       
       return {
-        _id: wishlistItem._id,
-        wishlistID: wishlistItem.wishlistID,
-        productID: wishlistItem.productID,
-        createdAt: wishlistItem.createdAt instanceof Date 
-          ? wishlistItem.createdAt.toISOString() 
-          : String(wishlistItem.createdAt)
+        _id: id,
+        wishlistID: String(wishlistItem.wishlistID || ''),
+        productID: productID,
+        createdAt: createdAt
       } as WishlistProduct
     })
   } catch (error) {
