@@ -125,8 +125,10 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
     }
   };
 
-  const handleWishlist = () => {
-    toast.success('Added to wishlist!');
+  const { addToWishlist, isLoading: isWishlistLoading } = useWishlist();
+
+  const handleWishlist = async () => {
+    await addToWishlist(product._id);
   };
 
   const handleShare = () => {
@@ -207,7 +209,12 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
                 Product Information
               </span>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleWishlist}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleWishlist}
+                  disabled={isWishlistLoading}
+                >
                   <Heart className="w-4 h-4 mr-1" />
                   Wishlist
                 </Button>

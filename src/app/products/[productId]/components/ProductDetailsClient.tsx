@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { useCart } from '@/contexts/CartContext';
+import { useWishlist } from '@/contexts/WishlistContext';
 
 interface Review {
   _id: string;
@@ -171,8 +172,10 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
     }
   };
 
-  const handleWishlist = () => {
-    toast.success('Added to wishlist!');
+  const { addToWishlist, isLoading: isWishlistLoading } = useWishlist();
+
+  const handleWishlist = async () => {
+    await addToWishlist(product._id);
   };
 
   const handleShare = () => {
@@ -253,7 +256,13 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
                 Product Information
               </span>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleWishlist} className="flex-1 sm:flex-none">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleWishlist} 
+                  disabled={isWishlistLoading}
+                  className="flex-1 sm:flex-none"
+                >
                   <Heart className="w-4 h-4 mr-1" />
                   <span className="hidden sm:inline">Wishlist</span>
                 </Button>
