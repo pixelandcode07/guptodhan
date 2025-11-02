@@ -6,9 +6,8 @@ const orderSchema = new Schema<IOrder>(
     orderId: { type: String, required: true, unique: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     storeId: { type: Schema.Types.ObjectId, ref: 'StoreModel', required: true },
-    deliveryMethodId: { type: String,
-      default: 'COD', },
-    paymentMethodId: { type: Schema.Types.ObjectId, ref: 'PaymentMethodModel', required: true },
+    deliveryMethodId: { type: String, default: 'COD' },
+    paymentMethod: { type: String, default: 'COD' },
 
     shippingName: { type: String, required: true },
     shippingPhone: { type: String, required: true },

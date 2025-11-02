@@ -5,7 +5,7 @@ export interface IOrder extends Document {
   userId: Types.ObjectId;
   storeId: Types.ObjectId;
   deliveryMethodId: string;
-  paymentMethodId: Types.ObjectId;
+  paymentMethod: string;
 
   shippingName: string;
   shippingPhone: string;
