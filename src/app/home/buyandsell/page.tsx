@@ -8,7 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
     try {
         // Optional: Fetch some public data (like total ads or popular categories)
-        const { data } = await axios.get(`${baseUrl}/api/v1/public/buyandsell/overview`);
+        const { data } = await axios.get(`${baseUrl}/api/v1/public/classifieds-categories/with-ad-counts`);
         const stats = data?.data || {};
 
         const title = `Buy & Sell - ${stats.totalAds ?? "Thousands"} Ads | Guptodhan Marketplace`;

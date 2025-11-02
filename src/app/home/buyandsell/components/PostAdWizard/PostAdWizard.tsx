@@ -94,59 +94,6 @@ export default function PostAdWizard() {
   };
 
   // -------------------- Submit Handler --------------------
-  // const onSubmit = async (data: FormData) => {
-  //   try {
-  //     const formData = new FormData();
-
-  //     // Append all fields to FormData
-  //     formData.append('title', data.title);
-  //     formData.append('category', data.category?._id || '');
-  //     if (data.subCategory?._id) formData.append('subCategory', data.subCategory._id);
-  //     formData.append('division', data.division?.value || '');
-  //     formData.append('district', data.district?.value || '');
-  //     formData.append('upazila', data.upazila?.value || '');
-  //     formData.append('condition', data.condition);
-  //     formData.append('authenticity', data.authenticity);
-  //     if (data.brand) formData.append('brand', data.brand);
-  //     if (data.productModel) formData.append('productModel', data.productModel);
-  //     if (data.edition) formData.append('edition', data.edition);
-  //     formData.append('description', data.description);
-  //     formData.append('price', data.price.toString());
-  //     formData.append('isNegotiable', data.isNegotiable.toString());
-
-  //     data.images.forEach((img) => {
-  //       if (img instanceof File) {
-  //         formData.append('images', img);
-  //       }
-  //     });
-  //     formData.append('contactDetails[name]', data.contactDetails.name);
-  //     if (data.contactDetails.email) formData.append('contactDetails[email]', data.contactDetails.email);
-  //     formData.append('contactDetails[phone]', data.contactDetails.phone);
-  //     formData.append('contactDetails[isPhoneHidden]', data.contactDetails.isPhoneHidden.toString());
-
-  //     // POST request
-  //     // const res = await fetch('/api/v1/classifieds/ads', {
-  //     //   method: 'POST',
-  //     //   body: formData,
-  //     // });
-  //     const res = await axios.post('/api/v1/classifieds/ads', formData, {
-  //       headers: {
-  //         // "Content-Type": "multipart/form-data",
-  //         Authorization: `Bearer ${token}`,
-  //         // "x-user-role": adminRole,
-  //       },
-  //     });
-
-  //     if (!res.ok) throw new Error('Failed to submit ad');
-
-  //     toast.success('Ad submitted successfully!');
-  //     form.reset();
-  //     setActiveTab('step1');
-  //   } catch (err) {
-  //     console.error(err);
-  //     toast.error('Failed to submit ad');
-  //   }
-  // };
 
   const onSubmit = async (data: FormData) => {
     try {
