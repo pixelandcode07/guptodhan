@@ -54,7 +54,7 @@ export default function FlagsClient() {
         id: index + 1,
         productFlagId: f.productFlagId,
         name: f.name,
-        icon: f.icon,
+        icon: f.icon || '', // Ensure icon is always a string
         status: f.status === "active" ? "Active" : "Inactive",
         featured: f.featured ? "Featured" : "Not Featured",
         created_at: f.createdAt,
@@ -100,9 +100,8 @@ export default function FlagsClient() {
         name: data.name,
         ...(editing && { status: data.status }),
       };
-      if (data.icon && data.icon.trim() !== "") {
-        payload.icon = data.icon;
-      }
+      // Always include icon field, even if empty, to ensure it's saved
+      payload.icon = data.icon && data.icon.trim() !== "" ? data.icon : '';
 
       if (editing) {
         // Optimistic update for status and name/icon
