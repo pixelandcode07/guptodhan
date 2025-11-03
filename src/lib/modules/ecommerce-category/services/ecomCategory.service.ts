@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 import { ClassifiedAd } from '../../classifieds/ad.model';
 import { ISubCategory } from '../interfaces/ecomSubCategory.interface';
 import { IChildCategory } from '../interfaces/ecomChildCategory.interface';
+import {  } from '../models/ecomCategory.model';
 import { SubCategoryModel } from '../models/ecomSubCategory.model';
 import { ChildCategoryModel } from '../models/ecomChildCategory.model';
 
@@ -63,26 +64,41 @@ const deleteCategoryFromDB = async (id: string) => {
   return null;
 };
 
-export const getSubCategoriesWithChildren = async (categoryId: string) => {
-  // Get all subcategories for the main category
-  const subCategories: ISubCategory[] = await SubCategoryModel.find({
-    category: new Types.ObjectId(categoryId),
-  }).sort({ name: 1 });
 
-  // Map each subcategory to include its child categories
+export const getAllSubCategoriesWithChildren = async () => {
+  // Get all main categories
+  const mainCategories = await CategoryModel.find().sort({ name: 1 });
+
+  // Map each main category
   const result = await Promise.all(
-    subCategories.map(async (sub) => {
-      const childCategories: IChildCategory[] = await ChildCategoryModel.find({
-        subCategory: sub._id,
+    mainCategories.map(async (main) => {
+      // Get all subcategories for this main category
+      const subCategories: ISubCategory[] = await SubCategoryModel.find({
+        category: new Types.ObjectId(main._id),
       }).sort({ name: 1 });
 
+      // Map each subcategory to include its children
+      const subWithChildren = await Promise.all(
+        subCategories.map(async (sub) => {
+          const childCategories: IChildCategory[] = await ChildCategoryModel.find({
+            subCategory: sub._id,
+          }).sort({ name: 1 });
+
+          return {
+            subCategoryId: sub.subCategoryId,
+            name: sub.name,
+            children: childCategories.map((child) => ({
+              childCategoryId: child.childCategoryId,
+              name: child.name,
+            })),
+          };
+        })
+      );
+
       return {
-        subCategoryId: sub.subCategoryId,
-        name: sub.name,
-        children: childCategories.map((child) => ({
-          childCategoryId: child.childCategoryId,
-          name: child.name,
-        })),
+        mainCategoryId: main._id,
+        name: main.name,
+        subCategories: subWithChildren,
       };
     })
   );
@@ -91,11 +107,12 @@ export const getSubCategoriesWithChildren = async (categoryId: string) => {
 };
 
 export const CategoryServices = {
-  getSubCategoriesWithChildren,
   createCategoryInDB,
   getAllCategoriesFromDB,
   getFeaturedCategoriesFromDB,
   getCategoryByIdFromDB,
   updateCategoryInDB,
   deleteCategoryFromDB,
+
+  getAllSubCategoriesWithChildren
 };
