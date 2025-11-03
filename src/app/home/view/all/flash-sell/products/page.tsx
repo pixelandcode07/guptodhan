@@ -1,8 +1,19 @@
 
 import { fetchFlashSaleData } from '@/lib/MainHomePage';
+import { generateGuptodhanMetadata } from '@/lib/metadata/generateGuptodhanMetadata';
 import { ProductCardType } from '@/types/ProductCardType';
 import Image from 'next/image'
 import Link from 'next/link';
+
+export async function generateMetadata() {
+    return generateGuptodhanMetadata({
+        title: "Flash Sell | Guptodhan",
+        description:
+            "Buy and sell new or used items in your city. Explore verified ads across electronics, vehicles, real estate, fashion, and more — only on Guptodhan.",
+        urlPath: "/home/view/all/flash-sell/products",
+        imageUrl: "/og-images/guptodhan-marketplace-banner.jpg",
+    })
+}
 
 export default async function FlashProductsPage() {
     const flashSaleData: ProductCardType[] = await fetchFlashSaleData();

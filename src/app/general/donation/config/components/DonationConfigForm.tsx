@@ -151,10 +151,10 @@ export type DonationFormInputs = {
 
 export default function DonationConfigForm() {
     const { data: session } = useSession()
-    const token = (session as unknown as { accessToken?: string })?.accessToken
-    console.log("token2==>", token)
-    // const token = (session?.user as { accessToken?: string; role?: string })?.accessToken
-    // console.log("token==>", token)
+    // const token = (session as unknown as { accessToken?: string })?.accessToken
+    // console.log("token2==>", token)
+    const token = (session?.user as { accessToken?: string; role?: string })?.accessToken
+    console.log("token==>", token)
     const adminRole = (session?.user as { role?: string })?.role === 'admin'
 
     const {
@@ -226,7 +226,7 @@ export default function DonationConfigForm() {
                 {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
 
                 {/* Image Upload */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
                     <Label className="col-span-12 md:col-span-2">Image</Label>
                     <Controller
                         name="image"
