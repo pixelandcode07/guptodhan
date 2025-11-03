@@ -13,7 +13,7 @@ const setDonationConfig = async (req: NextRequest) => {
   try {
     const formData = await req.formData();
     const imageFile = formData.get('image') as File | null;
-    
+
     const payload: Record<string, any> = {};
     for (const [key, value] of formData.entries()) {
       if (key !== 'image') {
@@ -33,7 +33,7 @@ const setDonationConfig = async (req: NextRequest) => {
     return sendResponse({ success: true, statusCode: StatusCodes.CREATED, message: 'Donation config set successfully!', data: result });
   } catch (error) {
     if (error instanceof ZodError) {
-        return sendResponse({ success: false, statusCode: StatusCodes.BAD_REQUEST, message: 'Validation failed', data: error.issues });
+      return sendResponse({ success: false, statusCode: StatusCodes.BAD_REQUEST, message: 'Validation failed', data: error.issues });
     }
     return sendResponse({ success: false, statusCode: StatusCodes.INTERNAL_SERVER_ERROR, message: (error as Error).message });
   }
@@ -41,15 +41,15 @@ const setDonationConfig = async (req: NextRequest) => {
 
 // যে কেউ কনফিগারেশন দেখতে পারবে
 const getDonationConfig = async (_req: NextRequest) => {
-    await dbConnect();
-    const result = await DonationConfigServices.getDonationConfigFromDB();
-    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Donation config retrieved!', data: result });
+  await dbConnect();
+  const result = await DonationConfigServices.getDonationConfigFromDB();
+  return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Donation config retrieved!', data: result });
 };
 
 const deleteDonationConfig = async (_req: NextRequest) => {
-    await dbConnect();
-    await DonationConfigServices.deleteDonationConfigFromDB();
-    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Donation config deleted successfully!', data: null });
+  await dbConnect();
+  await DonationConfigServices.deleteDonationConfigFromDB();
+  return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Donation config deleted successfully!', data: null });
 };
 
 export const DonationConfigController = {

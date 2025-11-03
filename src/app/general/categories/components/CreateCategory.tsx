@@ -13,7 +13,6 @@ import { toast } from "sonner"
 
 export type Inputs = {
   category_name: string
-  // sub_category_name: string
   category_image: File | null
 }
 
@@ -48,7 +47,7 @@ export default function CreateCategory() {
       })
 
       toast.success("Category created successfully!")
-      router.push("/general/categories?page=view") // redirect to view tab
+      router.push("/general/categories?page=view-category") // redirect to view tab
     } catch (error) {
       console.log(error)
       toast.error("Failed to create category")

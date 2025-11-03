@@ -53,12 +53,12 @@ const deleteCategoryFromDB = async (id: string) => {
   const category = await ClassifiedCategory.findById(categoryId);
   if (!category) { throw new Error("Category not found"); }
   if (category.icon) {
-      await deleteFromCloudinary(category.icon);
+    await deleteFromCloudinary(category.icon);
   }
-  
+
   // Step 5: Finally, delete the parent category itself
   await ClassifiedCategory.findByIdAndDelete(categoryId);
-  
+
   return null;
 };
 
@@ -111,7 +111,6 @@ const getPublicCategoriesWithCountsFromDB = async (categoryId?: string) => {
   try {
     const matchStage: any = { status: 'active' };
 
-    // যদি নির্দিষ্ট category পাঠানো হয় (UI থেকে)
     if (categoryId) {
       matchStage._id = new Types.ObjectId(categoryId);
     }

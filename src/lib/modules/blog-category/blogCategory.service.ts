@@ -17,7 +17,7 @@ const getAllBlogCategoriesFromDB = async (filters: { status?: string; searchTerm
   }
 
   if (searchTerm) {
-    query.name = { $regex: searchTerm, $options: 'i' }; // Case-insensitive search by name
+    query.name = { $regex: searchTerm, $options: 'i' }; 
   }
 
   return await BlogCategoryModel.find(query).sort({ createdAt: -1 });
