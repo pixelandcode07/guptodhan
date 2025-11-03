@@ -1,17 +1,13 @@
 import { Schema, model, models } from 'mongoose';
 import { IOrder } from './order.interface';
-// Import models to ensure they're registered before schema definition
-// This side-effect import ensures StoreModel is registered before OrderModel schema references it
-import '@/lib/modules/vendor-store/vendorStore.model';
 
 const orderSchema = new Schema<IOrder>(
   {
     orderId: { type: String, required: true, unique: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     storeId: { type: Schema.Types.ObjectId, ref: 'StoreModel', required: true },
-    deliveryMethodId: { type: String,
-      default: 'COD', },
-    paymentMethodId: { type: Schema.Types.ObjectId, ref: 'PaymentMethodModel', required: true },
+    deliveryMethodId: { type: String, default: 'COD' },
+    paymentMethod: { type: String, default: 'COD' },
 
     shippingName: { type: String, required: true },
     shippingPhone: { type: String, required: true },
@@ -42,7 +38,7 @@ const orderSchema = new Schema<IOrder>(
 
     parcelId: { type: String },
     trackingId: { type: String },
-    couponId: { type: Schema.Types.ObjectId, ref: 'PromoCodeModel' },
+    couponId: { type: Schema.Types.ObjectId, ref: 'CouponModel' },
 
 
     orderDetails: [{ type: Schema.Types.ObjectId, ref: 'OrderDetailsModel' }],
