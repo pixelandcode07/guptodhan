@@ -53,12 +53,12 @@ const deleteCategoryFromDB = async (id: string) => {
   const category = await ClassifiedCategory.findById(categoryId);
   if (!category) { throw new Error("Category not found"); }
   if (category.icon) {
-      await deleteFromCloudinary(category.icon);
+    await deleteFromCloudinary(category.icon);
   }
-  
+
   // Step 5: Finally, delete the parent category itself
   await ClassifiedCategory.findByIdAndDelete(categoryId);
-  
+
   return null;
 };
 

@@ -13,6 +13,8 @@ import { IClassifiedAd } from './ad.interface';
 
 const createAd = async (req: NextRequest) => {
   await dbConnect();
+
+
   // 1️⃣ Token verification
   const authHeader = req.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) throw new Error('Authorization token missing.');
@@ -51,7 +53,7 @@ const createAd = async (req: NextRequest) => {
   const validatedData = createAdValidationSchema.parse(payload);
   console.log("📝 Validated data:", validatedData);
 
- // 5️⃣ Build type-safe payload for Mongo
+  // 5️⃣ Build type-safe payload for Mongo
   const payloadForService: Partial<IClassifiedAd> = {
     user: new Types.ObjectId(userId),
     title: validatedData.title,
@@ -85,7 +87,9 @@ const createAd = async (req: NextRequest) => {
     message: 'Ad posted successfully!',
     data: result,
   });
-};
+}
+
+
 
 const getAllAds = async (_req: NextRequest) => {
   await dbConnect();
@@ -101,27 +105,27 @@ const getSingleAd = async (_req: NextRequest, { params }: { params: { id: string
 
 // ✅ NEW: সকল পাবলিক বিজ্ঞাপন GET করার জন্য
 const getPublicAds = async (_req: NextRequest) => {
-    await dbConnect();
-    const result = await ClassifiedAdServices.getAllPublicAdsFromDB();
-    return sendResponse({
-        success: true,
-        statusCode: StatusCodes.OK,
-        message: 'Public ads retrieved successfully!',
-        data: result,
-    });
+  await dbConnect();
+  const result = await ClassifiedAdServices.getAllPublicAdsFromDB();
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Public ads retrieved successfully!',
+    data: result,
+  });
 };
 
 // ✅ NEW: একটি নির্দিষ্ট বিজ্ঞাপন GET করার জন্য
 const getPublicAdById = async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-    await dbConnect();
-    const { id } = await params;
-    const result = await ClassifiedAdServices.getPublicAdByIdFromDB(id);
-    return sendResponse({
-        success: true,
-        statusCode: StatusCodes.OK,
-        message: 'Ad retrieved successfully!',
-        data: result,
-    });
+  await dbConnect();
+  const { id } = await params;
+  const result = await ClassifiedAdServices.getPublicAdByIdFromDB(id);
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Ad retrieved successfully!',
+    data: result,
+  });
 };
 
 const updateAd = async (req: NextRequest, { params }: { params: { id: string } }) => {
@@ -140,13 +144,13 @@ const updateAd = async (req: NextRequest, { params }: { params: { id: string } }
     productModel: validatedData.productModel,
     edition: validatedData.edition,
     contactDetails: validatedData.contactDetails
-  ? {
-      name: validatedData.contactDetails.name ?? '',
-      phone: validatedData.contactDetails.phone ?? '',
-      email: validatedData.contactDetails.email,
-      isPhoneHidden: validatedData.contactDetails.isPhoneHidden ?? false,
-    }
-  : undefined,
+      ? {
+        name: validatedData.contactDetails.name ?? '',
+        phone: validatedData.contactDetails.phone ?? '',
+        email: validatedData.contactDetails.email,
+        isPhoneHidden: validatedData.contactDetails.isPhoneHidden ?? false,
+      }
+      : undefined,
   };
 
   const result = await ClassifiedAdServices.updateAdInDB(params.id, userId, payloadForService);
@@ -180,7 +184,7 @@ const getPublicAdsByCategoryId = async (_req: NextRequest, { params }: { params:
 
 export const ClassifiedAdController = { 
   createAd, 
-  getAllAds, 
+  getAllAds,
   getSingleAd, 
   updateAd, 
   deleteAd, 
