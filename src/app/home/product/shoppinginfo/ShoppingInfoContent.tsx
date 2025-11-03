@@ -12,6 +12,9 @@ import { useSession } from 'next-auth/react'
 import axios from 'axios'
 import { toast } from 'sonner'
 import { AppliedCoupon } from './components/CouponSection'
+import { useGeoData } from '@/hooks/useGeoData'
+import { useDeliveryCharge } from '@/hooks/useDeliveryCharge'
+import { useUpazilas } from '@/hooks/useUpazilas'
 
 // Cart item type definition
 export type CartItem = {
@@ -48,7 +51,6 @@ interface UserProfile {
 
 export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem[] }) {
   const [selectedDelivery, setSelectedDelivery] = useState<DeliveryOption>('standard')
-  const [deliveryCharge, setDeliveryCharge] = useState(0)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [profileLoading, setProfileLoading] = useState(true)
   const [formData, setFormData] = useState({
@@ -63,6 +65,11 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
     country: 'Bangladesh'
   })
   const { data: session } = useSession()
+
+  // Call the hooks to retrieve the cached Geo data and delivery charge
+  const { geoData, geoLoading } = useGeoData()
+  const { deliveryCharge } = useDeliveryCharge(formData.district, formData.upazila)
+  const { upazilas } = useUpazilas(formData.district)
 
   // Modal state management
   const [successModalOpen, setSuccessModalOpen] = useState(false)
@@ -97,13 +104,8 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
 
   const couponDiscount = calculateCouponDiscount()
 
-  // Calculate final delivery charge based on selected option
-  const getFinalDeliveryCharge = () => {
-    // All delivery options use the same base delivery charge from API
-    return deliveryCharge
-  }
-
-  const finalDeliveryCharge = getFinalDeliveryCharge()
+  // Calculate final delivery charge - use the SWR hook result directly
+  const finalDeliveryCharge = deliveryCharge
 
   // Modal helper functions
   const showSuccessModal = async (orderId: string) => {
@@ -176,35 +178,6 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
 
     fetchUserProfile()
   }, [session])
-
-  // Fetch delivery charge based on selected district and upazila
-  useEffect(() => {
-    const fetchDeliveryCharge = async () => {
-      if (!formData.district || !formData.upazila) {
-        setDeliveryCharge(0)
-        return
-      }
-
-      try {
-        const response = await axios.get(
-          `/api/v1/delivery-charge?districtName=${formData.district}&upazilaName=${formData.upazila}`
-        )
-        
-        if (response.data.success && response.data.data.length > 0) {
-          setDeliveryCharge(response.data.data[0].deliveryCharge)
-        } else {
-          // No delivery charge data found - set to 0
-          setDeliveryCharge(0)
-        }
-      } catch (error) {
-        console.error('Error fetching delivery charge:', error)
-        // No fallback - set to 0 if API fails
-        setDeliveryCharge(0)
-      }
-    }
-
-    fetchDeliveryCharge()
-  }, [formData.district, formData.upazila])
 
   // COD validation function
   const validateCODOrder = (paymentMethod: 'cod' | 'card') => {
@@ -408,7 +381,10 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
     }
   }
 
-  if (profileLoading) {
+  // Upazilas are fetched from API based on selected district
+
+  // Ensure you wait for BOTH profile data (manual) and geo data (SWR)
+  if (profileLoading || geoLoading) {
     return <FancyLoadingPage />
   }
 
@@ -442,6 +418,8 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
               postalCode: '1000',
               country: 'Bangladesh'
             }}
+            districts={geoData.allDistricts}
+            upazilas={upazilas}
           />
           <DeliveryOptions 
             selectedDelivery={selectedDelivery}
