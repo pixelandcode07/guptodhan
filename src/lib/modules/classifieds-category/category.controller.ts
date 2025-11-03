@@ -11,6 +11,7 @@ import {
 import { ClassifiedCategoryServices } from './category.service';
 import dbConnect from '@/lib/db';
 import { IClassifiedCategory } from './category.interface';
+import { ClassifiedAdServices } from '../classifieds/ad.service';
 
 // Create Category
 const createCategory = async (req: NextRequest) => {
@@ -166,6 +167,32 @@ const getPublicCategoriesWithCounts = async (req: NextRequest) => {
 };
 
 
+const searchAds = async (req: NextRequest) => {
+  await dbConnect();
+  const { searchParams } = new URL(req.url);
+  
+  const filters: Record<string, any> = {};
+  
+  // Read all possible filters from the URL query
+  if (searchParams.get('category')) filters.category = searchParams.get('category');
+  if (searchParams.get('subCategory')) filters.subCategory = searchParams.get('subCategory');
+  if (searchParams.get('brand')) filters.brand = searchParams.get('brand');
+  if (searchParams.get('division')) filters.division = searchParams.get('division');
+  if (searchParams.get('district')) filters.district = searchParams.get('district');
+  if (searchParams.get('upazila')) filters.upazila = searchParams.get('upazila');
+  if (searchParams.get('minPrice')) filters.minPrice = searchParams.get('minPrice');
+  if (searchParams.get('maxPrice')) filters.maxPrice = searchParams.get('maxPrice');
+  
+  const result = await ClassifiedAdServices.searchAdsInDB(filters);
+  
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'Ads retrieved based on search criteria', 
+    data: result 
+  });
+};
+
 // Export all controller functions
 export const ClassifiedCategoryController = {
     createCategory,
@@ -176,4 +203,5 @@ export const ClassifiedCategoryController = {
     getPublicCategories,
     getCategoryById,
     getPublicCategoriesWithCounts,
+    searchAds,
 };
