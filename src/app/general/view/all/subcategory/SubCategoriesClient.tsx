@@ -9,6 +9,7 @@ import SubcategoriesHeader from "./SubcategoriesHeader";
 import SubcategoriesFilters from "./SubcategoriesFilters";
 import DeleteSubcategoryDialog from "./DeleteSubcategoryDialog";
 import SubCategoryEditModal from "./SubCategoryEditModal";
+import { useSession } from "next-auth/react";
 
 type ApiSubCategory = {
   _id: string;
@@ -25,6 +26,10 @@ type ApiSubCategory = {
 };
 
 export default function SubCategoriesClient() {
+  const { data: session } = useSession();
+  const s = session as (undefined | { accessToken?: string; user?: { role?: string } });
+  const token = s?.accessToken;
+  const userRole = s?.user?.role;
   const [rows, setRows] = useState<SubCategory[]>([]);
   const [statusFilter, setStatusFilter] = useState<"" | "Active" | "Inactive" | "all">("all");
   const [searchText, setSearchText] = useState("");
@@ -75,7 +80,12 @@ export default function SubCategoriesClient() {
     setDeleteLoading(true);
     setRows((r) => r.filter((x) => x._id !== id).map((x, idx) => ({ ...x, id: idx + 1 })));
     try {
-      await axios.delete(`/api/v1/ecommerce-category/ecomSubCategory/${id}`);
+      await axios.delete(`/api/v1/ecommerce-category/ecomSubCategory/${id}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(userRole ? { "x-user-role": userRole } : {}),
+        },
+      });
       toast.success("Subcategory deleted successfully!");
       setDeleteOpen(false);
       setDeleting(null);
@@ -86,7 +96,7 @@ export default function SubCategoriesClient() {
     } finally {
       setDeleteLoading(false);
     }
-  }, [deleting, rows]);
+  }, [deleting, rows, token, userRole]);
 
   const columns = useMemo(() => getSubCategoryColumns({ onEdit: (row) => { setEditing(row); setEditOpen(true); }, onDelete }), [onDelete]);
 

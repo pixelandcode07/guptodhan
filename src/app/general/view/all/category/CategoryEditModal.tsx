@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import UploadImageBtn from "@/components/ReusableComponents/UploadImageBtn";
+import { Loader2 } from "lucide-react";
+import UploadImage from "@/components/ReusableComponents/UploadImage";
 import { useSession } from "next-auth/react";
 
 type Category = {
@@ -53,6 +54,8 @@ export default function CategoryEditModal({
   const [status, setStatus] = useState("active");
   const [iconFile, setIconFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     if (open) {

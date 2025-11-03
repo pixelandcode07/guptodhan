@@ -42,10 +42,6 @@ export default function CategoriesClient() {
     try {
       const res = await axios.get("/api/v1/ecommerce-category/ecomCategory", {
         params: { _ts: Date.now() },
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(userRole ? { "x-user-role": userRole } : {}),
-        },
       });
       const items: ApiCategory[] = res.data.data || [];
       const mapped: Category[] = items.map((it, index) => ({
@@ -68,7 +64,7 @@ export default function CategoriesClient() {
       const msg = err?.response?.data?.message || err?.message || "Failed to fetch categories";
       toast.error(msg);
     }
-  }, [token, userRole]);
+  }, []);
 
   useEffect(() => { fetchRows(); }, [fetchRows]);
 

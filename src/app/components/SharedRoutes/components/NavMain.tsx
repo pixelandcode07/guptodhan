@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { navigationData } from '@/data/navigation_data';
 import CartIcon from '@/components/CartIcon';
+import WishlistIcon from '@/components/WishlistIcon';
 
 export default function NavMain() {
   const { data: session } = useSession();
@@ -62,9 +63,8 @@ export default function NavMain() {
       <div className="hidden md:flex">
         <Dialog>
           <ul className="flex gap-4 text-base">
-            <li className="flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer">
-              <Heart />
-              <span className="text-[#00005E] text-[12px]"> Whishlist</span>
+            <li>
+              <WishlistIcon className="text-[#00005E]" />
             </li>
             <li>
               <CartIcon />
@@ -119,10 +119,7 @@ export default function NavMain() {
         <div className="lg:hidden bg-[#000066] text-white w-full">
           {/* Mobile Cart and Wishlist */}
           <div className="flex justify-center gap-6 py-4 border-b border-gray-600">
-            <div className="flex flex-col items-center text-white">
-              <Heart className="w-6 h-6" />
-              <span className="text-xs mt-1">Wishlist</span>
-            </div>
+            <WishlistIcon className="text-white" />
             <div className="flex flex-col items-center text-white">
               <CartIcon showCount={true} className="text-white" />
             </div>

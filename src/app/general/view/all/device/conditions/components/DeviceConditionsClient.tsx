@@ -7,6 +7,8 @@ import { type DeviceCondition } from "@/components/TableHelper/device_condition_
 import DeviceConditionsHeader from "./DeviceConditionsHeader";
 import DeviceConditionsTable from "./DeviceConditionsTable";
 import DeviceConditionModal from "./DeviceConditionModal";
+import { useSession } from "next-auth/react";
+import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
 
 async function fetchDeviceConditions(): Promise<DeviceCondition[]> {
   const { data } = await api.get("/product-config/deviceCondition");
@@ -25,7 +27,11 @@ export default function DeviceConditionsClient() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<DeviceCondition | null>(null);
   const [searchText, setSearchText] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"" | "Active" | "Inactive">("");
+  // const [statusFilter, setStatusFilter] = useState<"" | "Active" | "Inactive">("");
+  const { data: session } = useSession();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState<DeviceCondition | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -39,16 +45,30 @@ export default function DeviceConditionsClient() {
     })();
   }, []);
 
-  const onSubmit = async (data: { name: string; status?: string }) => {
+  const onSubmit = async (data: { name: string }) => {
     try {
+      const s = session as { accessToken?: string; user?: { role?: string } } | null;
+      const token = s?.accessToken;
+      const userRole = s?.user?.role;
+
       if (editing && editing._id) {
         await api.patch(`/product-config/deviceCondition/${editing._id}`, {
           deviceCondition: data.name,
+        }, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(userRole ? { "x-user-role": userRole } : {}),
+          }
         });
         toast.success("Device condition updated successfully!");
       } else {
         await api.post(`/product-config/deviceCondition`, {
           deviceCondition: data.name,
+        }, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(userRole ? { "x-user-role": userRole } : {}),
+          }
         });
         toast.success("Device condition created successfully!");
       }
@@ -68,18 +88,35 @@ export default function DeviceConditionsClient() {
     setOpen(true);
   }, []);
 
-  const onDelete = useCallback(async (condition: DeviceCondition) => {
+  const onDelete = useCallback((condition: DeviceCondition) => {
+    setDeleting(condition);
+    setDeleteOpen(true);
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    if (!deleting || !deleting._id) return;
     try {
-      if (!condition._id) throw new Error("Missing id");
-      await api.delete(`/product-config/deviceCondition/${condition._id}`);
-      const list = await fetchDeviceConditions();
-      setConditions(list);
+      setDeleteLoading(true);
+      const s = session as { accessToken?: string; user?: { role?: string } } | null;
+      const token = s?.accessToken;
+      const userRole = s?.user?.role;
+      await api.delete(`/product-config/deviceCondition/${deleting._id}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(userRole ? { "x-user-role": userRole } : {}),
+        }
+      });
+      setConditions(prev => prev.filter(c => c._id !== deleting._id));
+      setDeleteOpen(false);
+      setDeleting(null);
       toast.success("Device condition deleted successfully!");
     } catch (error) {
       console.error("Failed to delete device condition", error);
       toast.error("Failed to delete device condition");
+    } finally {
+      setDeleteLoading(false);
     }
-  }, []);
+  }, [deleting, session]);
 
   const filteredConditions = useMemo(() => {
     const bySearch = (c: DeviceCondition) => {
@@ -87,15 +124,9 @@ export default function DeviceConditionsClient() {
       const searchLower = searchText.toLowerCase();
       return c.name.toLowerCase().includes(searchLower);
     };
-    
-    const byStatus = (c: DeviceCondition) => {
-      if (!statusFilter) return true;
-      return c.status === statusFilter;
-    };
-    
-    const result = conditions.filter((c) => bySearch(c) && byStatus(c));
+    const result = conditions.filter((c) => bySearch(c));
     return result.map((c, idx) => ({ ...c, id: idx + 1 }));
-  }, [conditions, searchText, statusFilter]);
+  }, [conditions, searchText]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -125,22 +156,6 @@ export default function DeviceConditionsClient() {
                   className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs sm:text-sm focus:border-blue-500 focus:ring-blue-500 transition-colors h-10 sm:h-auto"
                 />
               </div>
-
-              {/* Status Filter */}
-              <div className="space-y-2">
-                <label className="text-xs sm:text-sm font-medium text-gray-700">
-                  Status Filter
-                </label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs sm:text-sm focus:border-blue-500 focus:ring-blue-500 transition-colors bg-white h-10 sm:h-auto"
-                >
-                  <option value="">All Status</option>
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div>
             </div>
           </div>
         </div>
@@ -161,7 +176,16 @@ export default function DeviceConditionsClient() {
           open={open} 
           onOpenChange={setOpen} 
           onSubmit={onSubmit} 
-          editing={editing ? { name: editing.name, status: editing.status || "Active" } : null} 
+          editing={editing ? { name: editing.name } : null} 
+        />
+
+        {/* Delete Confirmation Modal */}
+        <DeleteConfirmationDialog
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          itemName={deleting?.name}
+          loading={deleteLoading}
+          onConfirm={confirmDelete}
         />
       </div>
     </div>
