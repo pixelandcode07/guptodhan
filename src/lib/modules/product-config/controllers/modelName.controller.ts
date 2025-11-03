@@ -14,25 +14,20 @@ const createModelForm = async (req: NextRequest) => {
         const body = await req.json();
         console.log('Received body:', body);
         
-        // Since we're using static brand names from dropdown, we'll use a placeholder ObjectId
-        // The brand name will be stored as a string in the model
-        const placeholderBrandId = "000000000000000000000000"; // 24-character ObjectId placeholder
+        const placeholderBrandId = "000000000000000000000000"; 
 
         const validatedData = createModelFormValidationSchema.parse({
             ...body,
             brand: placeholderBrandId,
         });
-        console.log('Validated data:', validatedData);
 
         const payload = {
             ...validatedData,
             brand: new Types.ObjectId(validatedData.brand),
-            brandName: body.brand, // Store the actual brand name as a separate field
+            brandName: body.brand,
         };
-        console.log('Payload:', payload);
 
         const result = await ModelFormServices.createModelFormInDB(payload);
-        console.log('Created result:', result);
 
         return sendResponse({
             success: true,

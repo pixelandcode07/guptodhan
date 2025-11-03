@@ -6,19 +6,15 @@ import { ClassifiedAd } from '../../classifieds/ad.model';
 
 // Create subcategory
 const createSubCategoryInDB = async (payload: Partial<ISubCategory>) => {
-  //console.log('💾 Creating subcategory in database with payload:', payload);
   const result = await SubCategoryModel.create(payload);
- // console.log('✅ Subcategory created successfully:', { id: result._id, name: result.name });
   return result;
 };
 
 // Get all subcategories (both active and inactive)
 const getAllSubCategoriesFromDB = async () => {
-  //console.log('🔍 Fetching all subcategories from database...');
   const result = await SubCategoryModel.find({})
     .populate('category', 'name')
     .sort({ name: 1 });
-  //console.log('📊 Found subcategories:', result.length, result.map(r => ({ id: r._id, name: r.name, category: r.category })));
   return result;
 };
 

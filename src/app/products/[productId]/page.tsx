@@ -10,19 +10,20 @@ import { notFound } from 'next/navigation';
 import ProductDetailsClient from './components/ProductDetailsClient';
 
 interface ProductPageProps {
-  params: {
+  params: Promise<{
     productId: string;
-  };
+  }>;
 }
 
 // This is a Server Component for dynamic product routes
 export default async function ProductPage({ params }: ProductPageProps) {
   await dbConnect();
+  const { productId } = await params;
   
   try {
     // Fetch the specific product by ID and all related data
     const [product, categoriesData, storesData, brandsData, subCategoriesData, childCategoriesData] = await Promise.all([
-      VendorProductServices.getVendorProductByIdFromDB(params.productId),
+      VendorProductServices.getVendorProductByIdFromDB(productId),
       CategoryServices.getAllCategoriesFromDB(),
       StoreServices.getAllStoresFromDB(),
       BrandServices.getAllBrandsFromDB(),
@@ -84,9 +85,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
 // Generate metadata for SEO
 export async function generateMetadata({ params }: ProductPageProps) {
   await dbConnect();
+  const { productId } = await params;
   
   try {
-    const product = await VendorProductServices.getVendorProductByIdFromDB(params.productId);
+    const product = await VendorProductServices.getVendorProductByIdFromDB(productId);
     
     if (!product) {
       return {

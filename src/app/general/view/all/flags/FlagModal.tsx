@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import FileUpload from "@/components/ReusableComponents/FileUpload";
+import UploadImage from "@/components/ReusableComponents/UploadImage";
+import axios from "axios";
+import { toast } from "sonner";
 
 interface FlagModalProps {
   open: boolean;
@@ -26,6 +28,7 @@ export default function FlagModal({ open, onOpenChange, onSubmit, editing, loadi
     icon: "",
     status: "active",
   });
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (editing) {
@@ -48,8 +51,35 @@ export default function FlagModal({ open, onOpenChange, onSubmit, editing, loadi
     onSubmit(formData);
   };
 
-  const handleUploadComplete = (_name: string, url: string) => {
-    setFormData(prev => ({ ...prev, icon: url }));
+  const handleImageChange = async (_name: string, file: File | null) => {
+    if (!file) {
+      // If file is removed, clear the icon
+      setFormData(prev => ({ ...prev, icon: '' }));
+      return;
+    }
+
+    // Upload file to Cloudinary
+    setUploading(true);
+    try {
+      const formDataToUpload = new FormData();
+      formDataToUpload.append('file', file);
+
+      const response = await axios.post('/api/v1/image/upload', formDataToUpload, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (response.data?.secure_url) {
+        setFormData(prev => ({ ...prev, icon: response.data.secure_url }));
+        toast.success("Image uploaded successfully!");
+      } else {
+        toast.error("Failed to upload image");
+      }
+    } catch (error) {
+      console.error("Image upload error:", error);
+      toast.error("Failed to upload image. Please try again.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -72,12 +102,15 @@ export default function FlagModal({ open, onOpenChange, onSubmit, editing, loadi
 
           <div className="space-y-2">
             <Label htmlFor="icon">Flag Icon</Label>
-            <FileUpload
-              label="Upload flag icon"
+            <UploadImage
               name="icon"
+              label="Upload flag icon"
               preview={formData.icon || undefined}
-              onUploadComplete={handleUploadComplete}
+              onChange={handleImageChange}
             />
+            {uploading && (
+              <p className="text-xs text-gray-500">Uploading image...</p>
+            )}
           </div>
 
           {editing && (
@@ -99,11 +132,11 @@ export default function FlagModal({ open, onOpenChange, onSubmit, editing, loadi
           )}
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={!!loading}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={!!loading || uploading}>
               Close
             </Button>
-            <Button type="submit" disabled={!!loading}>
-              {loading ? "Saving..." : "Save"}
+            <Button type="submit" disabled={!!loading || uploading}>
+              {loading ? "Saving..." : uploading ? "Uploading..." : "Save"}
             </Button>
           </div>
         </form>

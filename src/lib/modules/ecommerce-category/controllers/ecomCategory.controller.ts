@@ -5,7 +5,7 @@ import {
   createCategoryValidationSchema, 
   updateCategoryValidationSchema 
 } from '../validations/ecomCategory.validation';
-import { CategoryServices, getSubCategoriesWithChildren } from '../services/ecomCategory.service';
+import { CategoryServices, getAllSubCategoriesWithChildren } from '../services/ecomCategory.service';
 import dbConnect from '@/lib/db';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 
@@ -163,29 +163,29 @@ const deleteCategory = async (req: NextRequest, { params }: { params: Promise<{ 
   });
 };
 
-export const getSubCategoriesByCategory = async (
-  req: NextRequest,
-  { params }: { params: Promise<{ categoryId: string }> }
-) => {
+
+
+
+// ------------------ 
+export const getAllSubCategories = async (req: NextRequest) => {
   await dbConnect();
 
-  const { categoryId } = await params;
-
-  const subCategories = await getSubCategoriesWithChildren(categoryId);
+  const allCategories = await getAllSubCategoriesWithChildren();
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Subcategories with children retrieved successfully!',
-    data: subCategories,
+    message: 'All main categories with their subcategories and children retrieved successfully!',
+    data: allCategories,
   });
 };
 
 export const CategoryController = {
-  getSubCategoriesByCategory,
   createCategory,
   getAllCategories,
   getFeaturedCategories,
   updateCategory,
   deleteCategory,
+
+  getAllSubCategories
 };

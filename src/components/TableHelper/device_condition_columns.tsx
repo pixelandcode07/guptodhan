@@ -8,7 +8,6 @@ export type DeviceCondition = {
   _id?: string
   id: number
   name: string
-  status?: "Active" | "Inactive"
   created_at: string
 }
 
@@ -29,23 +28,6 @@ export const getDeviceConditionColumns = ({ onEdit, onDelete }: DeviceConditionC
   {
     accessorKey: "name",
     header: "Name",
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const status = row.getValue("status") as string;
-      if (!status) return <span className="text-gray-400">-</span>;
-      return (
-        <div className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          status === "Active" 
-            ? "bg-green-100 text-green-800" 
-            : "bg-red-100 text-red-800"
-        }`}>
-          {status}
-        </div>
-      );
-    },
   },
   {
     accessorKey: "created_at",

@@ -7,7 +7,7 @@ export default function FooterLinks() {
     <div className="bg-gray-100">
       <div className="max-w-7xl mx-auto grid justify-between py-20 grid-cols-1 md:grid-cols-12 gap-4">
         <div className="image col-span-2">
-          <Image src="/logo.png" width={130} height={44} alt="logo" />
+          <Image src="/img/logo.png" width={130} height={44} alt="logo" />
         </div>
         <div className="col-span-10">
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-4">

@@ -14,12 +14,9 @@ import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 // Create a new child category
 const createChildCategory = async (req: NextRequest) => {
   try {
-    console.log('🚀 Starting child category creation...');
     await dbConnect();
-    console.log('✅ Database connected');
     
     const form = await req.formData();
-    console.log('✅ Form data parsed');
     
     const childCategoryId = (form.get('childCategoryId') as string) || '';
     const name = (form.get('name') as string) || '';
@@ -29,7 +26,6 @@ const createChildCategory = async (req: NextRequest) => {
     const status = (form.get('status') as string) || 'active';
     const iconFile = form.get('childCategoryIcon') as File | null;
 
-    console.log('📝 Form data extracted:', { childCategoryId, name, category, subCategory, slug, status });
     
     // Validate category and subcategory ID formats
     if (!category || !Types.ObjectId.isValid(category)) {
@@ -41,10 +37,8 @@ const createChildCategory = async (req: NextRequest) => {
 
     let iconUrl = '';
     if (iconFile) {
-      console.log('📤 Uploading icon file...');
       const b = Buffer.from(await iconFile.arrayBuffer());
       iconUrl = (await uploadToCloudinary(b, 'ecommerce-childcategory/icons')).secure_url;
-      console.log('✅ Icon uploaded:', iconUrl);
     }
 
     const payload = { 
@@ -56,20 +50,16 @@ const createChildCategory = async (req: NextRequest) => {
       slug, 
       status 
     };
-    console.log('📋 Payload prepared:', payload);
     
     const validatedData = createChildCategoryValidationSchema.parse(payload);
-    console.log('✅ Data validated');
 
     const finalPayload = {
       ...validatedData,
       category: new Types.ObjectId(validatedData.category),
       subCategory: new Types.ObjectId(validatedData.subCategory),
     };
-    console.log('🔧 Final payload:', finalPayload);
 
     const result = await ChildCategoryServices.createChildCategoryInDB(finalPayload);
-    console.log('✅ Child category created in database:', result);
 
     return sendResponse({
       success: true,
@@ -131,16 +121,12 @@ const getChildCategoriesBySubCategory = async (req: NextRequest, { params }: { p
 // Update child category (await params; accept multipart form-data like create)
 const updateChildCategory = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
-    console.log('🚀 Starting child category update...');
     await dbConnect();
-    console.log('✅ Database connected');
     
     const { id } = await params;
-    console.log('📝 Updating child category ID:', id);
 
     // Accept multipart form-data to support icon updates
     const form = await req.formData();
-    console.log('✅ Form data parsed');
 
     const name = (form.get('name') as string) ?? undefined;
     const slug = (form.get('slug') as string) ?? undefined;
@@ -150,7 +136,6 @@ const updateChildCategory = async (req: NextRequest, { params }: { params: Promi
 
     const iconFile = form.get('childCategoryIcon') as File | null;
 
-    console.log('📝 Form data extracted:', { name, slug, status, categoryId, subCategoryId });
 
     const updatePayload: Record<string, unknown> = {};
     if (name !== undefined) updatePayload.name = name;
@@ -167,17 +152,13 @@ const updateChildCategory = async (req: NextRequest, { params }: { params: Promi
     }
 
     if (iconFile) {
-      console.log('📤 Uploading icon file...');
       const b = Buffer.from(await iconFile.arrayBuffer());
       updatePayload.icon = (await uploadToCloudinary(b, 'ecommerce-childcategory/icons')).secure_url;
-      console.log('✅ Icon uploaded:', updatePayload.icon);
     }
 
-    console.log('📋 Update payload prepared:', updatePayload);
 
     // Validate using schema (fields optional)
     const validatedData = updateChildCategoryValidationSchema.parse(updatePayload);
-    console.log('✅ Data validated');
 
     // Convert string IDs -> ObjectId for DB
     const dbPayload: Partial<IChildCategory> = {};
@@ -198,7 +179,6 @@ const updateChildCategory = async (req: NextRequest, { params }: { params: Promi
     }
 
     const result = await ChildCategoryServices.updateChildCategoryInDB(id, dbPayload);
-    console.log('✅ Child category updated in database:', result);
 
     return sendResponse({
       success: true,

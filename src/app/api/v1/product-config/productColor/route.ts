@@ -2,5 +2,5 @@ import {ProductColorController} from "@/lib/modules/product-config/controllers/p
 import {catchAsync} from "@/lib/middlewares/catchAsync";
 import { checkRole } from "@/lib/middlewares/checkRole";
 
-export const GET = catchAsync(checkRole(["admin"])(ProductColorController.getAllProductColors));
+export const GET = catchAsync(ProductColorController.getAllProductColors);
 export const POST = catchAsync(checkRole(["admin"])(ProductColorController.createProductColor));

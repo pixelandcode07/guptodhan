@@ -1,26 +1,25 @@
 'use client';
 
 import PageHeader from '@/components/ReusableComponents/PageHeader';
-import { flashSale } from '@/data/flash_sale_data';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Banner from '../../../../public/img/banner2.jpg';
 import Link from 'next/link';
+import { ProductCardType } from '@/types/ProductCardType';
 
-export default function FlashSale() {
-  const router = useRouter();
+
+interface FlashSaleProps {
+  flashSaleData: ProductCardType[];
+}
+
+export default function FlashSale({ flashSaleData }: FlashSaleProps) {
   const [itemsToShow, setItemsToShow] = useState(6);
 
   useEffect(() => {
     const updateItems = () => {
-      if (window.innerWidth < 640) {
-        setItemsToShow(2); // mobile
-      } else if (window.innerWidth < 1024) {
-        setItemsToShow(4); // tablet
-      } else {
-        setItemsToShow(6); // laptop/desktop
-      }
+      if (window.innerWidth < 640) setItemsToShow(2);
+      else if (window.innerWidth < 1024) setItemsToShow(4);
+      else setItemsToShow(6);
     };
 
     updateItems();
@@ -34,36 +33,32 @@ export default function FlashSale() {
         <PageHeader
           title="Flash Sale"
           buttonLabel="Shop All Products"
-          onButtonClick={() => router.push('/view/all/products')}
+          // onButtonClick={() => router.push('/view/all/products')}
+          buttonHref="/home/view/all/flash-sell/products"
         />
 
-        {/* Product Grid */}
         <div className="grid justify-center items-center grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 px-4">
-          {flashSale.slice(0, itemsToShow).map((item, idx) => (
-            <Link href={`/products/${item.productName}`} key={idx}>
-              <div className="bg-white rounded-md overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer">
-                {/* Product Image */}
+          {flashSaleData.slice(0, itemsToShow).map((item) => (
+            <Link href={`/products/${item._id}`} key={item._id}>
+              <div className="bg-white rounded-md border-2 border-gray-200 hover:border-blue-300 overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer">
                 <div className="w-full h-36 flex items-center justify-center overflow-hidden">
                   <Image
-                    src={item.productImage}
-                    alt={item.productName}
+                    src={item.thumbnailImage}
+                    alt={item.productTitle}
                     width={150}
                     height={150}
-                    className="object-contain"
+                    className="p-1 rounded-md w-full h-[20vh] border-b-2 border-gray-200"
                   />
                 </div>
 
-                {/* Product Details */}
                 <div className="p-2">
-                  <h3 className="text-sm font-medium truncate">{item.productName}</h3>
-                  <p className="text-[#0084CB] font-semibold text-base">
-                    ₹{item.productActualPrice}
-                  </p>
+                  <h3 className="text-sm font-medium truncate">{item.productTitle}</h3>
+                  <p className="text-[#0084CB] font-semibold text-base">₹{item.discountPrice}</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-xs text-gray-500 line-through">
-                      ₹{item.productDiscountPrice}
+                    <p className="text-xs text-gray-500 line-through">₹{item.productPrice}</p>
+                    <p className="text-xs text-red-500">
+                      -{Math.round(((item.productPrice - item.discountPrice) / item.productPrice) * 100)}%
                     </p>
-                    <p className="text-xs text-red-500">-15%</p>
                   </div>
                 </div>
               </div>
@@ -71,7 +66,6 @@ export default function FlashSale() {
           ))}
         </div>
 
-        {/* Banner Section */}
         <div className="banner pt-5 lg:py-10 px-4">
           <Image
             src={Banner}

@@ -28,12 +28,7 @@ export default function WarrantiesClient() {
 
   const fetchWarranties = useCallback(async () => {
     try {
-      const { data } = await axios.get("/api/v1/product-config/warranty", {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(userRole ? { "x-user-role": userRole } : {}),
-        },
-      });
+      const { data } = await axios.get("/api/v1/product-config/warranty");
       type ApiWarranty = {
         _id: string;
         warrantyName: string;
@@ -52,7 +47,7 @@ export default function WarrantiesClient() {
     } catch {
       toast.error("Failed to fetch warranties");
     }
-  }, [token, userRole]);
+  }, []);
 
   useEffect(() => {
     fetchWarranties();

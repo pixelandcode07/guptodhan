@@ -32,10 +32,11 @@ export const getFlagColumns = ({ onEdit, onDelete, onToggleFeatured }: FlagColum
     accessorKey: "icon",
     header: "Icon",
     cell: ({ row }) => {
-      const icon = row.getValue("icon") as string;
+      const flag = row.original as Flag;
+      const icon = flag.icon;
       return (
         <div className="flex items-center">
-          {icon ? (
+          {icon && icon.trim() !== '' ? (
             <img
               src={icon}
               alt="Flag icon"

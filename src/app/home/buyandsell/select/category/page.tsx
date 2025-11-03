@@ -1,6 +1,6 @@
 import React from 'react'
-import SelectItems from '../../components/SelectItems'
-import PostAdWizard from '../../components/PostAdWizard'
+import PostAdWizard from '../../components/PostAdWizard/PostAdWizard'
+
 
 export default function SelectCategoryPage() {
     return (
