@@ -15,12 +15,9 @@ import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 // Create a new subcategory
 const createSubCategory = async (req: NextRequest) => {
   try {
-    console.log('🚀 Starting subcategory creation...');
     await dbConnect();
-    console.log('✅ Database connected');
     
     const form = await req.formData();
-    console.log('✅ Form data parsed');
     
     const subCategoryId = (form.get('subCategoryId') as string) || '';
     const name = (form.get('name') as string) || '';
@@ -31,7 +28,6 @@ const createSubCategory = async (req: NextRequest) => {
     const iconFile = form.get('subCategoryIcon') as File | null;
     const bannerFile = form.get('subCategoryBanner') as File | null;
 
-    console.log('📝 Form data extracted:', { subCategoryId, name, category, slug, status, isFeatured });
     
     // Validate category ID format
     if (!category || !Types.ObjectId.isValid(category)) {
@@ -41,16 +37,12 @@ const createSubCategory = async (req: NextRequest) => {
     let iconUrl = '';
     let bannerUrl = '';
     if (iconFile) {
-      console.log('📤 Uploading icon file...');
       const b = Buffer.from(await iconFile.arrayBuffer());
       iconUrl = (await uploadToCloudinary(b, 'ecommerce-subcategory/icons')).secure_url;
-      console.log('✅ Icon uploaded:', iconUrl);
     }
     if (bannerFile) {
-      console.log('📤 Uploading banner file...');
       const b = Buffer.from(await bannerFile.arrayBuffer());
       bannerUrl = (await uploadToCloudinary(b, 'ecommerce-subcategory/banners')).secure_url;
-      console.log('✅ Banner uploaded:', bannerUrl);
     }
 
     const payload = { 
@@ -63,19 +55,15 @@ const createSubCategory = async (req: NextRequest) => {
       slug, 
       status 
     };
-    console.log('📋 Payload prepared:', payload);
     
     const validatedData = createSubCategoryValidationSchema.parse(payload);
-    console.log('✅ Data validated');
 
     const finalPayload = {
       ...validatedData,
       category: new Types.ObjectId(validatedData.category),
     };
-    console.log('🔧 Final payload:', finalPayload);
 
     const result = await SubCategoryServices.createSubCategoryInDB(finalPayload);
-    console.log('✅ Subcategory created in database:', result);
 
     return sendResponse({
       success: true,
@@ -125,16 +113,12 @@ const getSubCategoriesByCategory = async (req: NextRequest, { params }: { params
 // Update subcategory (await params; accept multipart form-data like create)
 const updateSubCategory = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
-    console.log('🚀 Starting subcategory update...');
     await dbConnect();
-    console.log('✅ Database connected');
     
     const { id } = await params;
-    console.log('📝 Updating subcategory ID:', id);
 
     // Accept multipart form-data to support icon/banner updates
     const form = await req.formData();
-    console.log('✅ Form data parsed');
 
     const name = (form.get('name') as string) ?? undefined;
     const slug = (form.get('slug') as string) ?? undefined;
@@ -146,7 +130,6 @@ const updateSubCategory = async (req: NextRequest, { params }: { params: Promise
     const iconFile = form.get('subCategoryIcon') as File | null;
     const bannerFile = form.get('subCategoryBanner') as File | null;
 
-    console.log('📝 Form data extracted:', { name, slug, status, isFeaturedStr, isNavbarStr, categoryId });
 
     const updatePayload: any = {};
     if (name !== undefined) updatePayload.name = name;
@@ -166,24 +149,18 @@ const updateSubCategory = async (req: NextRequest, { params }: { params: Promise
     }
 
     if (iconFile) {
-      console.log('📤 Uploading icon file...');
       const b = Buffer.from(await iconFile.arrayBuffer());
       updatePayload.subCategoryIcon = (await uploadToCloudinary(b, 'ecommerce-subcategory/icons')).secure_url;
-      console.log('✅ Icon uploaded:', updatePayload.subCategoryIcon);
     }
 
     if (bannerFile) {
-      console.log('📤 Uploading banner file...');
       const b = Buffer.from(await bannerFile.arrayBuffer());
       updatePayload.subCategoryBanner = (await uploadToCloudinary(b, 'ecommerce-subcategory/banners')).secure_url;
-      console.log('✅ Banner uploaded:', updatePayload.subCategoryBanner);
     }
 
-    console.log('📋 Update payload prepared:', updatePayload);
 
     // Validate using schema (fields optional)
     const validatedData = updateSubCategoryValidationSchema.parse(updatePayload);
-    console.log('✅ Data validated');
 
     // Convert string category -> ObjectId for DB
     const dbPayload: Partial<ISubCategory> = { ...(validatedData as any) };
@@ -192,7 +169,6 @@ const updateSubCategory = async (req: NextRequest, { params }: { params: Promise
     }
 
     const result = await SubCategoryServices.updateSubCategoryInDB(id, dbPayload);
-    console.log('✅ Subcategory updated in database:', result);
 
     return sendResponse({
       success: true,
