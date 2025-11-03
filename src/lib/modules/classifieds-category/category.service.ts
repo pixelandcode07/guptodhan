@@ -111,7 +111,6 @@ const getPublicCategoriesWithCountsFromDB = async (categoryId?: string) => {
   try {
     const matchStage: any = { status: 'active' };
 
-    // যদি নির্দিষ্ট category পাঠানো হয় (UI থেকে)
     if (categoryId) {
       matchStage._id = new Types.ObjectId(categoryId);
     }
