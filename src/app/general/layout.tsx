@@ -12,12 +12,12 @@ export default async function GeneralLayout({
   const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true';
 
   return (
-    <div className="flex w-full">
+    <div className="flex w-full overflow-x-hidden">
       <SidebarProvider defaultOpen={defaultOpen}>
         <AppSidebar />
-        <main className="w-full">
+        <main className="w-full overflow-x-hidden">
           <DashNavbar />
-          <div className="md:px-4">
+          <div className="md:px-4 overflow-x-hidden">
             {children}
           </div>
         </main>
