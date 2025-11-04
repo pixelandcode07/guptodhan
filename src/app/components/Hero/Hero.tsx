@@ -1,8 +1,10 @@
-import React from 'react';
+
 import HeroImage from './HeroImage';
 import HeroFooter from './HeroFooter';
-import HeroNav from './HeroNav';
+// import HeroNav from './HeroNav';
 import { fetchEcommerceBanners, fetchNavigationCategoryData } from '@/lib/MainHomePage';
+import { NavigationMenuDemo } from './HeroNavTrial';
+// import HeroNavOld from './HeroNavOld';
 
 export default async function Hero() {
   const [categories, ecommerceBanners] = await Promise.all([
@@ -15,7 +17,9 @@ export default async function Hero() {
   return (
     <div>
       <nav className="hidden lg:block">
-        <HeroNav categories={categories} />
+        {/* <HeroNav categories={categories} /> */}
+        {/* <HeroNavOld categories={categories} /> */}
+        <NavigationMenuDemo categories={categories} />
       </nav>
 
       <main>

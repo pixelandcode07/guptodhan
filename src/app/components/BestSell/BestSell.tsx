@@ -6,12 +6,17 @@ import { useEffect, useState } from 'react';
 import Banner from '../../../../public/img/banner3.png';
 import Link from 'next/link';
 import { ProductCardType } from '@/types/ProductCardType';
+import { EcommerceBannerType } from '@/types/ecommerce-banner-type';
 
 interface BestSellProps {
   bestSellingData: ProductCardType[];
 }
 
-export default function BestSell({ bestSellingData }: BestSellProps) {
+interface HeroImageProps {
+  topShoppage: EcommerceBannerType[];
+}
+
+export default function BestSell({ bestSellingData, topShoppage }: BestSellProps & HeroImageProps) {
   const [itemsToShow, setItemsToShow] = useState(6);
 
   useEffect(() => {
@@ -65,7 +70,7 @@ export default function BestSell({ bestSellingData }: BestSellProps) {
                       -
                       {Math.round(
                         ((item.productPrice - item.discountPrice) / item.productPrice) *
-                          100
+                        100
                       )}
                       %
                     </p>
@@ -78,13 +83,24 @@ export default function BestSell({ bestSellingData }: BestSellProps) {
 
         {/* Banner */}
         <div className="banner pt-5 lg:py-10 px-4">
-          <Image
-            src={Banner}
-            width={1000}
-            height={300}
-            alt="banner"
-            className="w-full"
-          />
+          {topShoppage ? (
+            <Link
+              href={topShoppage[0].bannerLink || '#'}
+              className=""
+            >
+              <Image
+                src={topShoppage[0].bannerImage}
+                alt={topShoppage[0].bannerTitle}
+                width={1000}
+                height={300}
+                className="w-full"
+              />
+            </Link>
+          ) : (
+            <div className="banner pt-5 lg:py-10 px-4">
+              Left Banner Not Found
+            </div>
+          )}
         </div>
       </div>
     </div>

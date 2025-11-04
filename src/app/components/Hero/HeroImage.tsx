@@ -8,36 +8,33 @@ interface HeroImageProps {
   bottomBanners: EcommerceBannerType[];
 }
 
-// ✅ Server Component (no 'use client')
+
 export default async function HeroImage({
   leftBanners,
   rightBanners,
   bottomBanners,
 }: HeroImageProps) {
   return (
-    <div className="max-w-[80vw] mx-auto px-4 py-6 space-y-6">
-      {/* 🔹 Top Grid Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="md:max-w-[80vw] mx-auto px-4 py-6 space-y-6">
+      <div className="grid  md:grid-cols-3 gap-4">
         {/* LEFT SIDE → Shows RIGHT banner on desktop */}
-        <div className="md:col-span-2 order-2 md:order-1">
+        <div className="md:col-span-2 ">
           {leftBanners.length > 0 ? (
             <Link
-              key={leftBanners[0]._id}
               href={leftBanners[0].bannerLink || '#'}
-              className="block w-full h-[250px] md:h-[350px] lg:h-[400px] relative rounded-lg overflow-hidden group"
+              className="block w-full h-[200px] md:h-full relative rounded-lg overflow-hidden group"
             >
               <Image
                 src={leftBanners[0].bannerImage}
                 alt={leftBanners[0].bannerTitle}
                 fill
                 style={{ objectFit: 'cover' }}
-                priority
-                className="transition-transform duration-300 group-hover:scale-105"
+                className="transition-transform duration-300 group-hover:scale-105 w-full h-full object-contain"
               />
             </Link>
           ) : (
-            <div className="w-full h-[400px] bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
-              Right Banner Not Found
+            <div className="w-full h-[200px] bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
+              Left Banner Not Found
             </div>
           )}
         </div>
@@ -81,28 +78,6 @@ export default async function HeroImage({
           ) : (
             <div className="w-full h-[200px] bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
               Bottom Banner Not Found
-            </div>
-          )}
-        </div>
-
-        {/* 🟩 Mobile-only LEFT banner */}
-        <div className="md:hidden order-1">
-          {leftBanners.length > 0 ? (
-            <Link
-              href={leftBanners[0].bannerLink || '#'}
-              className="block w-full h-[200px] relative rounded-lg overflow-hidden group"
-            >
-              <Image
-                src={leftBanners[0].bannerImage}
-                alt={leftBanners[0].bannerTitle}
-                fill
-                style={{ objectFit: 'cover' }}
-                className="transition-transform duration-300 group-hover:scale-105"
-              />
-            </Link>
-          ) : (
-            <div className="w-full h-[200px] bg-gray-100 rounded-lg flex items-center justify-center text-gray-500">
-              Left Banner Not Found
             </div>
           )}
         </div>
