@@ -1,5 +1,5 @@
-import { CategoryController } from "@/lib/modules/vendor-category/controllers/vendorCategory.controller";
 import { catchAsync } from "@/lib/middlewares/catchAsync";
+import { CategoryController } from "@/lib/modules/ecommerce-category/controllers/ecomCategory.controller";
 
 export const PATCH = catchAsync(CategoryController.updateCategory);
 export const DELETE = catchAsync(CategoryController.deleteCategory);
