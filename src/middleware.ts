@@ -23,8 +23,8 @@ const adminRoutes = [
     "/api/v1/donation-categories",
     "/api/v1/theme-settings",
     "/api/v1/donation-categories/[id]",
-    'api/v1/ecommerce-banners',
-    'api/v1/ecommerce-banners/[id]',
+    '/api/v1/ecommerce-banners',
+    '/api/v1/ecommerce-banners/[id]',
 
    
 ];

@@ -23,6 +23,7 @@ interface EditBannerFormProps {
     bannerPosition?: string;
     textPosition?: string;
     bannerImage?: string;
+    status?: 'active' | 'inactive';
   };
   onSuccess: () => void;
   onCancel: () => void;
@@ -47,6 +48,7 @@ export default function EditBannerForm({ initialData, onSuccess, onCancel }: Edi
   const [buttonText, setButtonText] = useState('');
   const [bannerLink, setBannerLink] = useState('');
   const [buttonLink, setButtonLink] = useState('');
+  const [status, setStatus] = useState<'active' | 'inactive'>('active');
 
   // Populate form with initial data
   useEffect(() => {
@@ -56,6 +58,7 @@ export default function EditBannerForm({ initialData, onSuccess, onCancel }: Edi
     setButtonText(initialData.buttonText || '');
     setBannerLink(initialData.bannerLink || '');
     setButtonLink(initialData.buttonLink || '');
+    setStatus((initialData as any).status === 'inactive' ? 'inactive' : 'active');
     
     // Map backend position values to frontend values
     const positionMapping: Record<string, BannerPosition> = {
@@ -144,6 +147,7 @@ export default function EditBannerForm({ initialData, onSuccess, onCancel }: Edi
       formData.append('buttonText', buttonText.trim());
       if (bannerLink.trim()) formData.append('bannerLink', bannerLink.trim());
       if (buttonLink.trim()) formData.append('buttonLink', buttonLink.trim());
+      formData.append('status', status);
 
       const response = await axios.patch(`/api/v1/ecommerce-banners/${initialData._id}`, formData, {
         headers: {
@@ -179,6 +183,21 @@ export default function EditBannerForm({ initialData, onSuccess, onCancel }: Edi
             onChange={(name, file) => setImage(file)}
           />
           <p className="text-[11px] text-gray-500 mt-2">Please upload jpg, jpeg, png file of 500px × 262px</p>
+        </div>
+        <div className="lg:col-span-2">
+          <label className="text-sm font-medium text-gray-700">Status</label>
+          <div className="mt-2 flex gap-4">
+            <button
+              type="button"
+              onClick={() => setStatus('active')}
+              className={`px-3 py-1 rounded border ${status==='active' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-700'}`}
+            >Active</button>
+            <button
+              type="button"
+              onClick={() => setStatus('inactive')}
+              className={`px-3 py-1 rounded border ${status==='inactive' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700'}`}
+            >Inactive</button>
+          </div>
         </div>
         <div className="lg:col-span-2 space-y-6">
           <TopRow
