@@ -20,7 +20,7 @@ export default function WishlistClient({ initialRows }: { initialRows: Wishlist[
   const s = session as Session | null;
   const token = s?.accessToken;
   const userRole = s?.user?.role;
-  const userId = s?.user?.id;
+  
 
   useEffect(() => {
     setRows(initialRows || []);
@@ -28,7 +28,7 @@ export default function WishlistClient({ initialRows }: { initialRows: Wishlist[
 
   const fetchWishlists = useCallback(async () => {
     try {
-      console.log("Fetching wishlists with:", { token: !!token, userRole, userId });
+     
       
       const response = await axios.get("/api/v1/wishlist", {
         headers: {
@@ -37,7 +37,9 @@ export default function WishlistClient({ initialRows }: { initialRows: Wishlist[
         },
       });
 
-      console.log("API Response:", response.data);
+
+     // console.log('WishlistClient token:', token, 'role:', userRole);
+     
 
       type ApiWishlist = {
         _id?: string;
@@ -92,7 +94,7 @@ export default function WishlistClient({ initialRows }: { initialRows: Wishlist[
     } catch (error) {
       console.error("Failed to fetch wishlists", error);
     }
-  }, [token, userRole, userId]);
+  }, [token, userRole]);
 
   useEffect(() => {
     fetchWishlists();
