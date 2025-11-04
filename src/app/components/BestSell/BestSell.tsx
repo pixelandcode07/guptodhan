@@ -3,7 +3,6 @@
 import PageHeader from '@/components/ReusableComponents/PageHeader';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import Banner from '../../../../public/img/banner3.png';
 import Link from 'next/link';
 import { ProductCardType } from '@/types/ProductCardType';
 import { EcommerceBannerType } from '@/types/ecommerce-banner-type';

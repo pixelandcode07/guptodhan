@@ -3,7 +3,7 @@ import HeroImage from './HeroImage';
 import HeroFooter from './HeroFooter';
 // import HeroNav from './HeroNav';
 import { fetchEcommerceBanners, fetchNavigationCategoryData } from '@/lib/MainHomePage';
-import { NavigationMenuDemo } from './HeroNavTrial';
+import { HeroNav } from './HeroNav';
 // import HeroNavOld from './HeroNavOld';
 
 export default async function Hero() {
@@ -17,9 +17,7 @@ export default async function Hero() {
   return (
     <div>
       <nav className="hidden lg:block">
-        {/* <HeroNav categories={categories} /> */}
-        {/* <HeroNavOld categories={categories} /> */}
-        <NavigationMenuDemo categories={categories} />
+        <HeroNav categories={categories} />
       </nav>
 
       <main>
