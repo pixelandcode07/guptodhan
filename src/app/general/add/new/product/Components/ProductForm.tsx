@@ -6,7 +6,6 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-// Import UI Components
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,13 +21,14 @@ import ProductImageGallery from './ProductImageGallery';
 import PricingInventory from './PricingInventory';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-export default function ProductForm({ initialData }: any) {
+export default function ProductForm({ initialData, productId: propProductId }: any) {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const productId = searchParams?.get('id');
+    const productIdParam = searchParams?.get('id');
+    const productIdParamValue = propProductId || productIdParam;
+    const productId = productIdParamValue && productIdParamValue !== 'undefined' && productIdParamValue.trim() !== '' ? productIdParamValue : null;
     const isEditMode = !!productId;
     
-    // --- State Management ---
     const [title, setTitle] = useState('');
     const [shortDescription, setShortDescription] = useState('');
     const [fullDescription, setFullDescription] = useState('');
@@ -73,13 +73,9 @@ export default function ProductForm({ initialData }: any) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { data: session } = useSession();
     const token = (session as any)?.accessToken;
-
-    // Keep initial IDs to set after dependent lists load (for edit mode)
     const [initialSubcategoryId, setInitialSubcategoryId] = useState<string>('');
     const [initialChildCategoryId, setInitialChildCategoryId] = useState<string>('');
     const [initialModelId, setInitialModelId] = useState<string>('');
-
-    // Pricing form data
     const pricingFormData = {
         price: price ?? '',
         discountPrice: discountPrice ?? '',
@@ -87,7 +83,6 @@ export default function ProductForm({ initialData }: any) {
         stock: stock ?? '',
     };
 
-    // Handler functions for pricing component
     const handlePricingInputChange = (field: string, value: unknown) => {
         switch (field) {
             case 'price':
@@ -122,7 +117,6 @@ export default function ProductForm({ initialData }: any) {
         }
     };
     
-    // All useEffects for dependent dropdowns (no changes here)
     useEffect(() => {
         const fetchSubcategories = async () => { if (category && token) { try { const res = await axios.get(`/api/v1/ecommerce-category/ecomSubCategory/category/${category}`, { headers: { Authorization: `Bearer ${token}` } }); setSubcategories(res.data?.data || []); setSubcategory(''); setChildCategories([]); setChildCategory(''); } catch (error) { console.error('Failed to fetch subcategories', error); } } else { setSubcategories([]); } }; fetchSubcategories();
     }, [category, token]);
@@ -139,7 +133,6 @@ export default function ProductForm({ initialData }: any) {
                     const filteredModels = res.data?.data?.filter((m: any) => m.status === 'active') || [];
                     console.log('Filtered models:', filteredModels);
                     setModels(filteredModels); 
-                    // If we have an initial model from edit mode, set it once models are loaded
                     if (initialModelId) {
                         setModel(initialModelId);
                     }
@@ -153,21 +146,18 @@ export default function ProductForm({ initialData }: any) {
         fetchModels();
     }, [brand, token, initialModelId]);
 
-    // When subcategories are loaded in edit mode, set initial subcategory
     useEffect(() => {
         if (initialSubcategoryId && subcategories.length > 0) {
             setSubcategory(initialSubcategoryId);
         }
     }, [initialSubcategoryId, subcategories]);
 
-    // When child categories are loaded in edit mode, set initial child category
     useEffect(() => {
         if (initialChildCategoryId && childCategories.length > 0) {
             setChildCategory(initialChildCategoryId);
         }
     }, [initialChildCategoryId, childCategories]);
 
-    // Fetch existing product details in edit mode and pre-fill form
     useEffect(() => {
         const fetchExistingProduct = async () => {
             if (!isEditMode || !productId || !token) return;
@@ -178,7 +168,6 @@ export default function ProductForm({ initialData }: any) {
                 const p = res.data?.data;
                 if (!p) return;
 
-                // Basic fields
                 setTitle(p.productTitle || '');
                 setShortDescription(p.shortDescription || '');
                 setFullDescription(p.fullDescription || '');
@@ -186,20 +175,17 @@ export default function ProductForm({ initialData }: any) {
                 setWarrantyPolicy(p.warrantyPolicy || '');
                 setTags(Array.isArray(p.productTag) ? p.productTag.join(', ') : '');
 
-                // Media previews (keep files empty; use URL previews)
                 setThumbnail(null);
                 setThumbnailPreview(p.thumbnailImage || null);
                 setGalleryImages([]);
                 setGalleryImagePreviews(Array.isArray(p.photoGallery) ? p.photoGallery : []);
 
-                // Pricing & inventory
                 setPrice(typeof p.productPrice === 'number' ? p.productPrice : undefined);
                 setDiscountPrice(typeof p.discountPrice === 'number' ? p.discountPrice : undefined);
                 setStock(typeof p.stock === 'number' ? p.stock : undefined);
                 setProductCode(p.sku || '');
                 setRewardPoints(typeof p.rewardPoints === 'number' ? p.rewardPoints : undefined);
 
-                // Selects
                 setStore(p.vendorStoreId || '');
                 setCategory(p.category || '');
                 setInitialSubcategoryId(p.subCategory || '');
@@ -210,7 +196,6 @@ export default function ProductForm({ initialData }: any) {
                 setWarranty(p.warranty || '');
                 setUnit(p.weightUnit || '');
 
-                // Offer
                 if (p.offerDeadline) {
                     setSpecialOffer(true);
                     const dt = new Date(p.offerDeadline);
@@ -223,12 +208,10 @@ export default function ProductForm({ initialData }: any) {
                     setOfferEndTime('');
                 }
 
-                // SEO
                 setMetaTitle(p.metaTitle || '');
                 setMetaKeywords(p.metaKeyword || '');
                 setMetaDescription(p.metaDescription || '');
 
-                // Variants
                 const opts = Array.isArray(p.productOptions) ? p.productOptions : [];
                 if (opts.length > 0) {
                     setHasVariant(true);
@@ -253,14 +236,17 @@ export default function ProductForm({ initialData }: any) {
                 }
             } catch (err: any) {
                 console.error('Failed to load product for edit', err?.response?.data || err?.message);
-                toast.error('Failed to load product details for editing');
+                const errorMessage = err?.response?.data?.message || 'Failed to load product details for editing';
+                toast.error(errorMessage);
+                if (err?.response?.status === 400 || !productId) {
+                    router.replace('/general/add/new/product');
+                }
             }
         };
 
         fetchExistingProduct();
-    }, [isEditMode, productId, token]);
+    }, [isEditMode, productId, token, router]);
 
-    // ✅ পরিবর্তন ১: uploadFile ফাংশনকে আরও শক্তিশালী করা হয়েছে
     const uploadFile = async (file: File): Promise<string> => {
         const formData = new FormData();
         formData.append('file', file);
@@ -268,15 +254,13 @@ export default function ProductForm({ initialData }: any) {
             const response = await axios.post('/api/v1/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` },
             });
-            const url = response.data?.url; // API থেকে আসা URL
+            const url = response.data?.url;
             if (!url || typeof url !== 'string') {
-                // যদি URL না আসে বা স্ট্রিং না হয়, তাহলে error throw করবে
                 throw new Error(`API did not return a valid URL for file: ${file.name}`);
             }
             return url;
         } catch (error) {
             console.error(`Failed to upload file ${file.name}:`, error);
-            // আপলোড ব্যর্থ হলে একটি এরর থ্রো করবে যা handleSubmit-এর catch ব্লকে ধরা পড়বে
             throw new Error(`Could not upload ${file.name}. Please try again.`);
         }
     };
@@ -285,7 +269,6 @@ export default function ProductForm({ initialData }: any) {
         e.preventDefault();
         if (!token) return toast.error("Authentication required.");
         
-        // ✅ পরিবর্তন ২: ক্লায়েন্ট সাইডে প্রাথমিক ভ্যালিডেশন
         if (!isEditMode && !thumbnail) {
             return toast.error("Thumbnail image is required.");
         }
@@ -293,12 +276,10 @@ export default function ProductForm({ initialData }: any) {
             return toast.error("Please fill all required fields (*).");
         }
         
-        // Validate pricing
         if (!price || price <= 0) {
             return toast.error("Price is required and must be greater than 0.");
         }
         
-        // Validate special offer date
         if (specialOffer) {
             if (!offerEndTime) {
                 return toast.error("Offer end time is required when special offer is enabled.");
@@ -310,13 +291,11 @@ export default function ProductForm({ initialData }: any) {
             }
         }
         
-        // Validate variants if hasVariant is enabled
         if (hasVariant) {
             if (variants.length === 0) {
                 return toast.error("Please add at least one product variant.");
             }
             
-            // Validate each variant
             for (let i = 0; i < variants.length; i++) {
                 const variant = variants[i];
                 if (!variant.stock || variant.stock <= 0) {
@@ -334,13 +313,12 @@ export default function ProductForm({ initialData }: any) {
         setIsSubmitting(true);
 
         try {
-            // thumbnail এবং gallery image আপলোড করা
-            let thumbnailUrl = thumbnailPreview; // Use existing thumbnail if in edit mode
+            let thumbnailUrl = thumbnailPreview;
             if (thumbnail) {
                 thumbnailUrl = await uploadFile(thumbnail);
             }
 
-            let validGalleryUrls = galleryImagePreviews || []; // Use existing gallery images if in edit mode
+            let validGalleryUrls = galleryImagePreviews || [];
             if (galleryImages.length > 0) {
                 const galleryUrls = await Promise.all(
                     galleryImages.map(file => uploadFile(file))
@@ -359,9 +337,8 @@ export default function ProductForm({ initialData }: any) {
                 productTag: tags ? tags.split(',').map(t => t.trim()) : [],
                 videoUrl: videoUrl || undefined,
                 
-                // ✅ পরিবর্তন ৩: আপলোড করা URL ব্যবহার করা
                 photoGallery: validGalleryUrls.length > 0 ? validGalleryUrls : [thumbnailUrl],
-                thumbnailImage: thumbnailUrl, // এখন এটি সর্বদা একটি ভ্যালিড URL হবে
+                thumbnailImage: thumbnailUrl,
                 
                 productPrice: price || 0,
                 discountPrice: discountPrice || undefined,
@@ -400,7 +377,6 @@ export default function ProductForm({ initialData }: any) {
                 toast.success("Product created successfully!");
             }
         } catch (error: any) {
-            // এখন uploadFile থেকে আসা এররও এখানে ধরা পড়বে
             console.error("Submission Error:", error.response?.data || error.message);
             toast.error(error.response?.data?.message || error.message || `Failed to ${isEditMode ? 'update' : 'create'} product.`);
         } finally {
@@ -419,11 +395,8 @@ export default function ProductForm({ initialData }: any) {
         }
     };
     
-    // JSX কোডে কোনো পরিবর্তন প্রয়োজন নেই, তাই এটি সংক্ষিপ্ত করা হলো
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
-            {/* ... আপনার JSX কোড এখানে থাকবে ... */}
-            {/* ... কোনো পরিবর্তন নেই ... */}
              <div className="flex justify-end gap-2 sticky top-4 z-10 bg-gray-50/80 backdrop-blur-sm py-2 px-4 rounded-lg shadow-sm -mt-4">
                 <Button type="button" variant="destructive">
                     <X className="mr-2 h-4 w-4" /> Discard
@@ -492,7 +465,6 @@ export default function ProductForm({ initialData }: any) {
                     </Card>
                     <Card>
                         <CardContent className="space-y-4 pt-6">
-                            {/* Pricing & Inventory Section */}
                             <PricingInventory 
                                 formData={pricingFormData}
                                 handleInputChange={handlePricingInputChange}
@@ -616,7 +588,6 @@ export default function ProductForm({ initialData }: any) {
                         <Switch id="hasVariantSwitch" checked={hasVariant} onCheckedChange={setHasVariant} />
                     </div>
                     {hasVariant && (
-                        // ✅ পরিবর্তন: initialData.variantOptions পাস করা হচ্ছে
                         <ProductVariantForm 
                             variants={variants} 
                             setVariants={setVariants}

@@ -4,12 +4,11 @@ import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
+import { useParams } from 'next/navigation'
 import api from '@/lib/axios'
 import { CheckCircle, Package, ExternalLink } from 'lucide-react'
 import type { OrderStatus, OrderSummary, OrderItemSummary } from '@/components/UserProfile/Order/types'
 import OrderStatusBadge from '@/components/UserProfile/Order/OrderStatusBadge'
-
-type PageProps = { params: { id: string } }
 
 function mapOrderStatusToUI(status: string): OrderStatus {
   const s = status.toLowerCase()
@@ -78,16 +77,18 @@ type ApiOrder = {
   parcelId?: string
 }
 
-export default function OrderDetailsPage({ params }: PageProps) {
+export default function OrderDetailsPage() {
   const [order, setOrder] = React.useState<OrderWithDetails | null>(null)
   const [orderData, setOrderData] = React.useState<ApiOrder | null>(null)
   const { data: session } = useSession()
+  const params = useParams()
+  const orderId = params?.id as string
 
   React.useEffect(() => {
     const fetchOrder = async () => {
       const userLike = (session?.user ?? {}) as { id?: string; _id?: string }
       const userId = userLike._id || userLike.id
-      if (!userId || !params.id) return
+      if (!userId || !orderId) return
 
       // Optional token like other routes
       const token = (session as { accessToken?: string })?.accessToken
@@ -95,7 +96,7 @@ export default function OrderDetailsPage({ params }: PageProps) {
       if (token) headers['Authorization'] = `Bearer ${token}`
 
       try {
-        const res = await api.get(`/product-order/${params.id}`, { headers })
+        const res = await api.get(`/product-order/${orderId}`, { headers })
         const found = (res.data?.data ?? null) as ApiOrder | null
         if (!found) { 
           setOrder(null)
@@ -181,7 +182,7 @@ export default function OrderDetailsPage({ params }: PageProps) {
     }
 
     fetchOrder()
-  }, [session, params.id])
+  }, [session, orderId, params])
 
   return (
     <div className="p-6">
