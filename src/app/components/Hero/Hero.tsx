@@ -3,12 +3,16 @@ import React from 'react';
 import HeroImage from './HeroImage';
 import HeroFooter from './HeroFooter';
 import HeroNav from './HeroNav';
+import { fetchNavigationCategoryData } from '@/lib/MainHomePage';
 
-export default function Hero() {
+export default async function Hero() {
+  const [categories] = await Promise.all([
+    fetchNavigationCategoryData()
+  ]);
   return (
     <div>
       <nav className="hidden lg:block">
-        <HeroNav />
+        <HeroNav categories={categories} />
       </nav>
 
       <main>
