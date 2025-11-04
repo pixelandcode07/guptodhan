@@ -131,6 +131,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       const flagName = p.flag ? (flagMap[p.flag] || p.flag) : "";
       return {
         id: idx + 1,
+        _id: p._id,  // Store MongoDB ID for navigation
         image: p.thumbnailImage || "",
         category: categoryName,
         name: p.productTitle || "",
@@ -147,16 +148,34 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   }, [products, categoryMap, storeMap, flagMap]);
 
   const onView = useCallback((product: Product) => {
-    const originalProduct = products.find(p => p.productTitle === product.name);
-    if (originalProduct) {
-      router.push(`/products/${originalProduct._id}`);
+    if (product._id) {
+      router.push(`/products/${product._id}`);
+    } else {
+      // Fallback: try to find by name if _id is missing
+      const originalProduct = products.find(p => p.productTitle === product.name);
+      if (originalProduct) {
+        router.push(`/products/${originalProduct._id}`);
+      } else {
+        toast.error('Product ID not found');
+      }
     }
   }, [products, router]);
 
   const onEdit = useCallback((product: Product) => {
-    const originalProduct = products.find(p => p.productTitle === product.name);
-    if (originalProduct) {
-      router.push(`/general/edit/product/${originalProduct._id}`);
+    console.log('Edit button clicked for product:', product);
+    if (product._id) {
+      console.log('Navigating to edit page with ID:', product._id);
+      router.push(`/general/edit/product/${product._id}`);
+    } else {
+      // Fallback: try to find by name if _id is missing
+      const originalProduct = products.find(p => p.productTitle === product.name);
+      if (originalProduct && originalProduct._id) {
+        console.log('Found product by name, navigating with ID:', originalProduct._id);
+        router.push(`/general/edit/product/${originalProduct._id}`);
+      } else {
+        toast.error('Product ID not found. Cannot edit product.');
+        console.error('Product not found for editing:', product);
+      }
     }
   }, [products, router]);
 
@@ -173,9 +192,9 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   const confirmStatusToggle = useCallback(async () => {
     if (!productToToggle) return;
     
-    const originalProduct = products.find(p => p.productTitle === productToToggle.name);
-    if (!originalProduct) {
-      toast.error("Product not found");
+    const productId = productToToggle._id || products.find(p => p.productTitle === productToToggle.name)?._id;
+    if (!productId) {
+      toast.error("Product ID not found");
       return;
     }
 
@@ -183,7 +202,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     setIsToggling(true);
     
     try {
-      await axios.patch(`/api/v1/product/${originalProduct._id}`, 
+      await axios.patch(`/api/v1/product/${productId}`, 
         { status: newStatus },
         { 
           headers: {
@@ -218,12 +237,12 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     
     setIsDeleting(true);
     try {
-      const originalProduct = products.find(p => p.productTitle === productToDelete.name);
-      if (!originalProduct) {
-        throw new Error("Product not found");
+      const productId = productToDelete._id || products.find(p => p.productTitle === productToDelete.name)?._id;
+      if (!productId) {
+        throw new Error("Product ID not found");
       }
 
-      await axios.delete(`/api/v1/product/${originalProduct._id}`, {
+      await axios.delete(`/api/v1/product/${productId}`, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...(userRole ? { "x-user-role": userRole } : {}),

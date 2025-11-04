@@ -58,12 +58,17 @@ export default function OrderItemCard({ order }: { order: OrderSummary }) {
           
           {/* Steadfast tracking information */}
           {(order.deliveryMethod === 'steadfast' || order.deliveryMethod === 'Steadfast COD') && order.trackingId && (
-            <div className="mt-2 flex items-center gap-2">
-              <Package className="h-3 w-3 text-blue-500" />
-              <span className="text-xs text-gray-600">Tracking: {order.trackingId}</span>
-              <Link 
-                href={`/home/product/tracking?trackingId=${order.trackingId}`}
-                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+            <div className="mt-2 flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-2 text-xs">
+                <Package className="h-3 w-3 text-blue-600" />
+                <span className="text-gray-600">Tracking:</span>
+                <p className="m-0 font-mono select-text text-blue-700 bg-blue-50 px-2 py-[2px] rounded">
+                  {order.trackingId}
+                </p>
+              </div>
+              <Link
+                href={`/home/product/tracking?trackingId=${encodeURIComponent(order.trackingId as string)}`}
+                className="inline-flex items-center gap-1 text-xs text-white bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded"
               >
                 Track Order
                 <ExternalLink className="h-3 w-3" />

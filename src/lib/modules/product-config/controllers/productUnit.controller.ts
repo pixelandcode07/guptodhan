@@ -35,9 +35,9 @@ const getAllProductUnits = async () => {
 };
 
 // Update product unit
-const updateProductUnit = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const updateProductUnit = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const validatedData = updateProductUnitValidationSchema.parse(body);
 
@@ -52,9 +52,9 @@ const updateProductUnit = async (req: NextRequest, { params }: { params: { id: s
 };
 
 // Delete product unit
-const deleteProductUnit = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const deleteProductUnit = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     await ProductUnitServices.deleteProductUnitFromDB(id);
 
     return sendResponse({
