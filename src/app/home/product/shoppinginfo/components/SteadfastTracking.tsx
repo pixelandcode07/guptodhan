@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -32,7 +33,9 @@ interface TrackingData {
 }
 
 export default function SteadfastTracking() {
-  const [trackingId, setTrackingId] = useState('')
+  const searchParams = useSearchParams()
+  const initialId = searchParams?.get('trackingId') || ''
+  const [trackingId, setTrackingId] = useState(initialId)
   const [trackingData, setTrackingData] = useState<TrackingData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -61,6 +64,17 @@ export default function SteadfastTracking() {
       setLoading(false)
     }
   }
+
+  // Auto-track when trackingId is present in the URL
+  useEffect(() => {
+    if (initialId) {
+      // defer to allow component mount
+      setTimeout(() => {
+        handleTrack()
+      }, 0)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialId])
 
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {

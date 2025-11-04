@@ -1,13 +1,10 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useSession } from 'next-auth/react'
-import { toast } from 'sonner'
-import axios from 'axios'
-// Removed unused FancyLoadingPage import - replaced with inline spinner
 
 interface District {
   district: string
@@ -37,9 +34,11 @@ interface FormData {
 interface InfoFormProps {
   onFormDataChange: (data: FormData) => void
   initialData?: Partial<FormData>
+  districts?: District[]
+  upazilas?: Upazila[]
 }
 
-export default function InfoForm({ onFormDataChange, initialData }: InfoFormProps) {
+export default function InfoForm({ onFormDataChange, initialData, districts = [], upazilas = [] }: InfoFormProps) {
   const { data: session } = useSession()
   const user = session?.user
   
@@ -55,92 +54,23 @@ export default function InfoForm({ onFormDataChange, initialData }: InfoFormProp
     country: initialData?.country || 'Bangladesh'
   })
 
-  const [districts, setDistricts] = useState<District[]>([])
-  const [upazilas, setUpazilas] = useState<Upazila[]>([])
-  const [loading, setLoading] = useState(true)
-  const [upazilaLoading, setUpazilaLoading] = useState(false)
-
-  // Fetch districts from API
-  useEffect(() => {
-    const fetchDistricts = async () => {
-      try {
-        setLoading(true)
-        const response = await axios.get('/api/v1/upazila-thana')
-        
-        console.log('API Response:', response.data) // Debug log
-        
-        if (response.data.success && response.data.data) {
-          // Extract unique districts from the response
-          const uniqueDistricts = response.data.data.reduce((acc: District[], current: Upazila) => {
-            if (!acc.find(item => item.district === current.district)) {
-              acc.push({ district: current.district })
-            }
-            return acc
-          }, [])
-          
-          console.log('Unique Districts:', uniqueDistricts) // Debug log
-          setDistricts(uniqueDistricts)
-        } else {
-          console.error('API response not successful:', response.data)
-          toast.error('Failed to load districts - invalid response')
-        }
-      } catch (error) {
-        console.error('Error fetching districts:', error)
-        toast.error('Failed to load districts')
-        // Set some default districts as fallback
-        setDistricts([
-          { district: 'Dhaka' },
-          { district: 'Chattogram' },
-          { district: 'Sylhet' },
-          { district: 'Rajshahi' },
-          { district: 'Khulna' }
-        ])
-      } finally {
-        setLoading(false)
+  // Handle district change - update city, postal code, and reset upazila
+  const handleDistrictChange = (districtName: string) => {
+    const cityName = districtName
+    const postalCode = getPostalCodeByDistrict(districtName)
+    
+    // Reset upazila selection and update city when district changes
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        district: districtName,
+        upazila: '',
+        city: cityName,
+        postalCode: postalCode
       }
-    }
-
-    fetchDistricts()
-  }, [])
-
-  // Fetch upazilas when district changes
-  const handleDistrictChange = async (districtName: string) => {
-    try {
-      setUpazilaLoading(true)
-      
-      // For now, we'll fetch all upazilas and filter by district
-      // This is not optimal but works until we have a proper API route
-      const response = await axios.get('/api/v1/upazila-thana')
-      
-      if (response.data.success && response.data.data) {
-        // Filter upazilas by selected district
-        const districtUpazilas = response.data.data.filter((upazila: Upazila) => 
-          upazila.district === districtName
-        )
-        
-        setUpazilas(districtUpazilas)
-        
-        // Update city and postal code based on selected district
-        const cityName = districtName
-        const postalCode = getPostalCodeByDistrict(districtName)
-        
-        // Reset upazila selection and update city when district changes
-        setFormData(prev => ({
-          ...prev,
-          district: districtName,
-          upazila: '',
-          city: cityName,
-          postalCode: postalCode
-        }))
-      }
-    } catch (error) {
-      console.error('Error fetching upazilas:', error)
-      toast.error('Failed to load upazilas')
-      // Set empty upazilas array as fallback
-      setUpazilas([])
-    } finally {
-      setUpazilaLoading(false)
-    }
+      onFormDataChange(newData)
+      return newData
+    })
   }
 
   // Helper function to get postal code based on district name
@@ -185,23 +115,14 @@ export default function InfoForm({ onFormDataChange, initialData }: InfoFormProp
 
   return (
     <div className="bg-white rounded-lg p-6 space-y-6">
-      {loading ? (
-        <div className="flex items-center justify-center py-8">
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-sm text-gray-600">Loading districts...</p>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-gray-900">Delivery Information</h1>
+        {!user && (
+          <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">
+            Login required to place order
           </div>
-        </div>
-      ) : (
-        <>
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold text-gray-900">Delivery Information</h1>
-            {!user && (
-              <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">
-                Login required to place order
-              </div>
-            )}
-          </div>
+        )}
+      </div>
 
       {/* Contact Information */}
       <section className="space-y-3">
@@ -246,10 +167,10 @@ export default function InfoForm({ onFormDataChange, initialData }: InfoFormProp
             <Select 
               value={formData.district} 
               onValueChange={handleDistrictChange}
-              disabled={!user || loading}
+              disabled={!user}
             >
               <SelectTrigger>
-                <SelectValue placeholder={loading ? "Loading districts..." : "Select district"} />
+                <SelectValue placeholder="Select district" />
               </SelectTrigger>
               <SelectContent>
                 {districts.map((district) => (
@@ -265,10 +186,10 @@ export default function InfoForm({ onFormDataChange, initialData }: InfoFormProp
             <Select 
               value={formData.upazila} 
               onValueChange={(value) => updateFormData('upazila', value)}
-              disabled={!user || upazilaLoading || !formData.district}
+              disabled={!user || !formData.district}
             >
               <SelectTrigger>
-                <SelectValue placeholder={upazilaLoading ? "Loading upazilas..." : "Select upazila/thana"} />
+                <SelectValue placeholder="Select upazila/thana" />
               </SelectTrigger>
               <SelectContent>
                 {upazilas.map((upazila) => (
@@ -357,8 +278,6 @@ export default function InfoForm({ onFormDataChange, initialData }: InfoFormProp
             <span className="text-orange-600">Please fill in all required fields</span>
           )}
         </div>
-      )}
-        </>
       )}
     </div>
   )

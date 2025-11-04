@@ -78,6 +78,17 @@ const getVendorProductById = async (
 ) => {
   await dbConnect();
   const { id } = await params;
+  
+  // Validate ID: must be a valid MongoDB ObjectId and not "undefined"
+  if (!id || id === 'undefined' || id.trim() === '' || !Types.ObjectId.isValid(id)) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.BAD_REQUEST,
+      message: 'Invalid product ID provided',
+      data: null,
+    });
+  }
+
   const result = await VendorProductServices.getVendorProductByIdFromDB(id);
 
   return sendResponse({
@@ -95,6 +106,17 @@ const updateVendorProduct = async (
 ) => {
   await dbConnect();
   const { id } = await params;
+  
+  // Validate ID: must be a valid MongoDB ObjectId and not "undefined"
+  if (!id || id === 'undefined' || id.trim() === '' || !Types.ObjectId.isValid(id)) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.BAD_REQUEST,
+      message: 'Invalid product ID provided',
+      data: null,
+    });
+  }
+
   const body = await req.json();
   const validatedData = updateVendorProductValidationSchema.parse(body);
 
@@ -139,6 +161,17 @@ const deleteVendorProduct = async (
 ) => {
   await dbConnect();
   const { id } = await params;
+  
+  // Validate ID: must be a valid MongoDB ObjectId and not "undefined"
+  if (!id || id === 'undefined' || id.trim() === '' || !Types.ObjectId.isValid(id)) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.BAD_REQUEST,
+      message: 'Invalid product ID provided',
+      data: null,
+    });
+  }
+
   await VendorProductServices.deleteVendorProductFromDB(id);
 
   return sendResponse({
