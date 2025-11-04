@@ -1,5 +1,5 @@
+import ProductForm from '@/app/general/add/new/product/Components/ProductForm';
 import React, { Suspense } from 'react'; // Import Suspense
-import ProductForm from '../components/ProductForm';
 
 
 export default function ProductFormPage() {
