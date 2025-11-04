@@ -1,13 +1,13 @@
-import React, { Suspense } from 'react' // 1. Suspense import করুন
+import React, { Suspense } from 'react' 
 import HeroNav from '@/app/components/Hero/HeroNav'
 import SteadfastTracking from '@/app/home/product/shoppinginfo/components/SteadfastTracking'
-import FancyLoadingPage from '@/app/general/loading' // অথবা যেকোনো loading component
+import FancyLoadingPage from '@/app/general/loading'
 
 export default function TrackingPage() {
   return (
     <>
       <HeroNav />
-      {/* 2. SteadfastTracking-কে Suspense দিয়ে wrap করুন */}
+      {/* 2. SteadfastTracking Suspense wrap */}
       <Suspense fallback={<FancyLoadingPage />}> 
         <SteadfastTracking />
       </Suspense>
