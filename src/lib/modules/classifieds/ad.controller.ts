@@ -49,11 +49,11 @@ const createAd = async (req: NextRequest) => {
   if (payload.price) payload.price = Number(payload.price);
   if (payload.isNegotiable) payload.isNegotiable = payload.isNegotiable === 'true';
 
-  // 4️⃣ Validation
+  // Validation
   const validatedData = createAdValidationSchema.parse(payload);
   console.log("📝 Validated data:", validatedData);
 
-  // 5️⃣ Build type-safe payload for Mongo
+  // Build type-safe payload for Mongo
   const payloadForService: Partial<IClassifiedAd> = {
     user: new Types.ObjectId(userId),
     title: validatedData.title,
@@ -103,7 +103,6 @@ const getSingleAd = async (_req: NextRequest, { params }: { params: { id: string
   return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad retrieved', data: result });
 };
 
-// ✅ NEW: সকল পাবলিক বিজ্ঞাপন GET করার জন্য
 const getPublicAds = async (_req: NextRequest) => {
   await dbConnect();
   const result = await ClassifiedAdServices.getAllPublicAdsFromDB();
@@ -115,7 +114,6 @@ const getPublicAds = async (_req: NextRequest) => {
   });
 };
 
-// ✅ NEW: একটি নির্দিষ্ট বিজ্ঞাপন GET করার জন্য
 const getPublicAdById = async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
   const { id } = await params;
@@ -167,7 +165,6 @@ const deleteAd = async (req: NextRequest, { params }: { params: { id: string } }
   return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad deleted', data: null });
 };
 
-// ✅ NEW: ক্যাটাগরি ID দিয়ে বিজ্ঞাপন GET করার কন্ট্রোলার
 const getPublicAdsByCategoryId = async (_req: NextRequest, { params }: { params: Promise<{ categoryId: string }> }) => {
     await dbConnect();
     const { categoryId } = await params;
