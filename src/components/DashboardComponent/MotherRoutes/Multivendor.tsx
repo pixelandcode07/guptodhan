@@ -9,7 +9,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   Collapsible,
@@ -17,6 +16,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const vendor = [
   { title: 'Add Category', url: '/general/create/vendor/category' },
@@ -46,6 +46,9 @@ export function Multivendor({
 }: {
   items: { title: string; url: string; icon: ElementType }[];
 }) {
+  const pathname = usePathname();
+  const isActive = (href: string) => pathname === href;
+
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>
@@ -54,63 +57,75 @@ export function Multivendor({
 
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map(item => (
+          {items.map((item) => (
             <Collapsible key={item.title} className="group/collapsible">
-              {/* (defaultOpen) - Collapsible class */}
               {/* Parent Button */}
               <CollapsibleTrigger asChild>
                 <SidebarMenuItem>
-                  <SidebarMenuButton>
+                  <SidebarMenuButton className="flex items-center gap-2 text-white bg-[#132843] pl-5 hover:bg-[#051b38] hover:text-white rounded-md">
                     <item.icon />
                     <span>{item.title}</span>
                     <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </CollapsibleTrigger>
+
               {/* Child Items */}
               <CollapsibleContent>
                 <div className="pl-6">
-                  {item?.title === 'Vendors' &&
-                    vendor.map(subItem => (
-                      <SidebarMenuItem key={subItem?.url}>
-                        {' '}
-                        <Link href={subItem?.url}>
+                  {item.title === 'Vendors' &&
+                    vendor.map((subItem) => {
+                      const active = isActive(subItem.url);
+                      return (
+                        <SidebarMenuItem key={subItem.url}>
                           <SidebarMenuButton
-                            className="flex items-center gap-2"
-                            asChild>
-                            {/* <subItem.icon className="h-4 w-4" /> */}
-                            <span>{subItem?.title}</span>
-                          </SidebarMenuButton>{' '}
-                        </Link>
-                      </SidebarMenuItem>
-                    ))}
+                            asChild
+                            className={`flex items-center gap-2 ${active
+                                ? 'bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5'
+                                : 'text-white bg-[#132843] pl-5'
+                              }`}
+                          >
+                            <Link href={subItem.url}>{subItem.title}</Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+
                   {item.title === 'Stores' &&
-                    stores.map(sub => (
-                      <SidebarMenuItem key={sub.url}>
-                        <SidebarMenuButton asChild>
-                          <Link
-                            href={sub.url}
-                            className="flex items-center gap-2">
-                            {/* <sub.icon className="h-4 w-4" /> */}
-                            <span>{sub.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
+                    stores.map((sub) => {
+                      const active = isActive(sub.url);
+                      return (
+                        <SidebarMenuItem key={sub.url}>
+                          <SidebarMenuButton
+                            asChild
+                            className={`flex items-center gap-2 ${active
+                                ? 'bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5'
+                                : 'text-white bg-[#132843] pl-5'
+                              }`}
+                          >
+                            <Link href={sub.url}>{sub.title}</Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
 
                   {item.title === 'Withdrawal' &&
-                    withdrawal.map(sub => (
-                      <SidebarMenuItem key={sub.url}>
-                        <SidebarMenuButton asChild>
-                          <Link
-                            href={sub.url}
-                            className="flex items-center gap-2">
-                            {/* <sub.icon className="h-4 w-4" /> */}
-                            <span>{sub.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
+                    withdrawal.map((sub) => {
+                      const active = isActive(sub.url);
+                      return (
+                        <SidebarMenuItem key={sub.url}>
+                          <SidebarMenuButton
+                            asChild
+                            className={`flex items-center gap-2 ${active
+                                ? 'bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5'
+                                : 'text-white bg-[#132843] pl-5'
+                              }`}
+                          >
+                            <Link href={sub.url}>{sub.title}</Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
                 </div>
               </CollapsibleContent>
             </Collapsible>

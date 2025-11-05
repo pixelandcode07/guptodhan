@@ -6,7 +6,7 @@ import BuyandSellItems from "./BuyandSellItems";
 export interface CategoryDataType {
     _id: string;
     name: string;
-    icon?: string; // ✅ Corrected the type
+    icon?: string;
     status: 'active' | 'inactive';
 }
 
