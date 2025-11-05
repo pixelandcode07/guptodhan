@@ -24,3 +24,12 @@ export interface ClassifiedAdType {
   };
   status?: 'active' | 'sold' | 'inactive';
 }
+
+export interface CategoryData {
+  _id: string;
+  name: string;
+  adCount: number;
+  parentPath: string[];
+  icon?: string;
+  status?: 'active' | 'inactive';
+}
