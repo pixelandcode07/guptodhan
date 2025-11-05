@@ -7,6 +7,8 @@ import axios from "axios";
 import { useSession } from "next-auth/react";
 import type { Session } from "next-auth";
 import { toast } from "sonner";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import { useRouter } from "next/navigation";
 import StatusToggleDialog from "./StatusToggleDialog";
@@ -271,8 +273,90 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
 
   const columns = useMemo(() => getProductColumns({ onView, onEdit, onDelete, onToggleStatus }), [onView, onEdit, onDelete, onToggleStatus]);
 
+  const downloadCSV = useCallback(() => {
+    if (rows.length === 0) {
+      toast.error('No products data available to export');
+      return;
+    }
+
+    // Prepare CSV headers
+    const headers = [
+      'ID',
+      'Product Name',
+      'Category',
+      'Store',
+      'Price',
+      'Offer Price',
+      'Stock',
+      'Flag',
+      'Status',
+      'Created At'
+    ];
+
+    // Convert product data to CSV format
+    const csvData = rows.map(product => [
+      product.id,
+      product.name,
+      product.category,
+      product.store,
+      product.price,
+      product.offer_price,
+      product.stock,
+      product.flag || '',
+      product.status,
+      product.created_at
+    ]);
+
+    // Combine headers and data, escape quotes and wrap in quotes
+    const csvContent = [headers, ...csvData]
+      .map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `products_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast.success(`Exported ${rows.length} product(s) successfully`);
+  }, [rows]);
+
   return (
     <>
+      {/* Filters Section with Download Button */}
+      <div className="mb-4 sm:mb-6">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
+          <div className="mb-4">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Filters</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+            <div className="space-y-2">
+              <label className="text-xs sm:text-sm font-medium text-gray-700">Search by Product Name</label>
+              <input
+                type="text"
+                placeholder="Search by product name..."
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs sm:text-sm focus:border-blue-500 focus:ring-blue-500 transition-colors h-10 sm:h-auto"
+              />
+            </div>
+            <div className="flex items-end">
+              <Button 
+                onClick={downloadCSV}
+                className="h-10 w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-medium"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download CSV
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Table Section */}
       <div className="mb-4 sm:mb-6">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-x-auto">

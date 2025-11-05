@@ -35,25 +35,6 @@ export default async function ViewAllProductsPage() {
           </div>
         </div>
 
-        {/* Filters Section */}
-        <div className="mb-4 sm:mb-6">
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900">Filters</h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs sm:text-sm font-medium text-gray-700">Search by Product Name</label>
-                <input
-                  type="text"
-                  placeholder="Search by product name..."
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs sm:text-sm focus:border-blue-500 focus:ring-blue-500 transition-colors h-10 sm:h-auto"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Client Component for Interactive Table */}
         <ProductTableClient initialData={initialData} />
       </div>
