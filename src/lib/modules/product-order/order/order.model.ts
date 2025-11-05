@@ -36,6 +36,8 @@ const orderSchema = new Schema<IOrder>(
     orderDate: { type: Date, required: true },
     deliveryDate: { type: Date, required: true },
 
+    //CRITICAL FIX: Added transactionId field with index naeem vai
+    transactionId: { type: String, sparse: true, index: true },
     parcelId: { type: String },
     trackingId: { type: String },
     couponId: { type: Schema.Types.ObjectId, ref: 'CouponModel' },
@@ -45,6 +47,10 @@ const orderSchema = new Schema<IOrder>(
   },
   { timestamps: true }
 );
+
+//  Add compound index for faster queries naeem vai
+orderSchema.index({ transactionId: 1, paymentStatus: 1 });
+orderSchema.index({ userId: 1, orderDate: -1 });
 
 export const OrderModel =
   models.OrderModel || model<IOrder>('OrderModel', orderSchema);
