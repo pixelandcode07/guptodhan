@@ -180,7 +180,24 @@ const getPublicAdsByCategoryId = async (_req: NextRequest, { params }: { params:
     });
 };
 
+const getFiltersForCategory = async (req: NextRequest) => {
+  await dbConnect();
+  const { searchParams } = new URL(req.url);
+  const categoryId = searchParams.get('categoryId');
 
+  if (!categoryId) {
+    throw new Error('Category ID is required to get filters.');
+  }
+  
+  const result = await ClassifiedAdServices.getFiltersForCategoryFromDB(categoryId);
+  
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'Filter data retrieved successfully', 
+    data: result 
+  });
+};
 
 export const ClassifiedAdController = { 
   createAd, 
@@ -191,4 +208,5 @@ export const ClassifiedAdController = {
   getPublicAds,
   getPublicAdById, 
   getPublicAdsByCategoryId,
+  getFiltersForCategory,
 };
