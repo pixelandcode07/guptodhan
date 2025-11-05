@@ -13,13 +13,21 @@ const searchAdsInDB = async (filters: Record<string, any>) => {
   if (filters.division) query.division = new RegExp(`^${filters.division}$`, 'i');
   if (filters.district) query.district = new RegExp(`^${filters.district}$`, 'i');
   if (filters.upazila) query.upazila = new RegExp(`^${filters.upazila}$`, 'i');
+  if (filters.category) query.category = new Types.ObjectId(filters.category);
+  if (filters.subCategory) query.subCategory = new Types.ObjectId(filters.subCategory);
+  if (filters.brand) query.brand = new Types.ObjectId(filters.brand);
+
+  if (filters.minPrice || filters.maxPrice) {
+    query.price = {};
+    if (filters.minPrice) query.price.$gte = Number(filters.minPrice);
+    if (filters.maxPrice) query.price.$lte = Number(filters.maxPrice);
+  }
 
   return await ClassifiedAd.find(query)
     .populate('user', 'name profilePicture')
     .populate('category', 'name')
     .populate('subCategory', 'name')
     .populate('brand', 'name logo')
-    .populate('productModel', 'name')
     .sort({ createdAt: -1 });
 };
 
@@ -99,6 +107,90 @@ const getPublicAdsByCategoryIdFromDB = async (categoryId: string) => {
     .sort({ createdAt: -1 });
 };
 
+
+const getFiltersForCategoryFromDB = async (categoryId: string) => {
+  try {
+    const categoryObjectId = new Types.ObjectId(categoryId);
+
+    const result = await ClassifiedAd.aggregate([
+// macting cateogires
+      {
+        $match: {
+          category: categoryObjectId,
+          status: 'active'
+        }
+      },
+      // count location and brand
+      {
+        $facet: {
+          // location count
+          locations: [
+            { $group: { _id: "$district", count: { $sum: 1 } } },
+            { $project: { _id: 0, name: "$_id", count: 1 } },
+            { $sort: { count: -1 } }
+          ],
+          //brand count
+          brands: [
+            { $match: { brand: { $exists: true, $ne: null } } }, // শুধু ব্র্যান্ড আছে এমন বিজ্ঞাপন
+            {
+              $lookup: { 
+                from: 'brands', 
+                localField: 'brand',
+                foreignField: '_id',
+                as: 'brandDetails'
+              }
+            },
+            { $unwind: '$brandDetails' }, 
+            { $group: { _id: "$brandDetails.name", count: { $sum: 1 } } },
+            { $project: { _id: 0, name: "$_id", count: 1 } },
+            { $sort: { name: 1 } }
+          ],
+          // if need sub categories count
+          subCategories: [
+            { $match: { subCategory: { $exists: true, $ne: null } } },
+            {
+              $lookup: {
+                from: 'classifiedsubcategories', 
+                localField: 'subCategory',
+                foreignField: '_id',
+                as: 'subCategoryDetails'
+              }
+            },
+            { $unwind: '$subCategoryDetails' },
+            { $group: { _id: "$subCategoryDetails.name", count: { $sum: 1 } } },
+            { $project: { _id: 0, name: "$_id", count: 1 } },
+            { $sort: { name: 1 } }
+          ]
+        }
+      }
+    ]);
+
+    // $facet 
+    return result[0];
+
+  } catch (error) {
+    console.error("Error aggregating filters:", error);
+    throw new Error("Failed to aggregate filter data.");
+  }
+};
+
+const getAllAdsForAdminFromDB = async () => {
+  return await ClassifiedAd.find({})
+    .populate('user', 'name') // Posted By (Name only)
+    .populate('category', 'name')
+    .sort({ createdAt: -1 });
+}
+
+const updateAdStatusInDB = async (adId: string, status: 'active' | 'inactive' | 'sold') => {
+  const ad = await ClassifiedAd.findById(adId);
+  if (!ad) {
+    throw new Error('Ad not found!');
+  }
+  ad.status = status;
+  await ad.save();
+  return ad;
+};
+
 export const ClassifiedAdServices = {
   createAdInDB,
   searchAdsInDB,
@@ -108,4 +200,7 @@ export const ClassifiedAdServices = {
   getAllPublicAdsFromDB,
   getPublicAdByIdFromDB,
   getPublicAdsByCategoryIdFromDB,
+  getFiltersForCategoryFromDB,
+  getAllAdsForAdminFromDB,
+  updateAdStatusInDB,
 };

@@ -6,58 +6,111 @@ import { PaymentService } from './payment.service';
 
 const initiatePayment = async (req: NextRequest) => {
     await dbConnect();
-    const { orderId } = await req.json();
-    const url = await PaymentService.initPayment(orderId);
-    return sendResponse({ 
-        success: true, 
-        statusCode: StatusCodes.OK,
-        message: 'Payment session initiated successfully.',
-        data: { url } 
-    });
+    
+    try {
+        const { orderId } = await req.json();
+        
+        if (!orderId) {
+            return sendResponse({ 
+                success: false, 
+                statusCode: StatusCodes.BAD_REQUEST,
+                message: 'Order ID is required.',
+                data: null 
+            });
+        }
+
+        const url = await PaymentService.initPayment(orderId);
+        
+        return sendResponse({ 
+            success: true, 
+            statusCode: StatusCodes.OK,
+            message: 'Payment session initiated successfully.',
+            data: { url } 
+        });
+    } catch (error: any) {
+        console.error('Payment Initiation Error:', error);
+        return sendResponse({ 
+            success: false, 
+            statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+            message: error.message || 'Failed to initiate payment.',
+            data: null 
+        });
+    }
 };
 
 const handleSuccess = async (req: NextRequest, { params }: { params: { transactionId: string } }) => {
     await dbConnect();
-    const { transactionId } = params;
-    await PaymentService.handleSuccessfulPayment(transactionId);
     
-    const redirectUrl = new URL(`/payment/success?tran_id=${transactionId}`, process.env.FRONTEND_URL);
-    return NextResponse.redirect(redirectUrl);
+    try {
+        const { transactionId } = params;
+        await PaymentService.handleSuccessfulPayment(transactionId);
+        
+        // ✅ FIX: Redirect to success page with transaction details
+        const redirectUrl = new URL(`/payment/success?tran_id=${transactionId}`, process.env.FRONTEND_URL || process.env.NEXTAUTH_URL);
+        return NextResponse.redirect(redirectUrl);
+    } catch (error: any) {
+        console.error('Success Handler Error:', error);
+        
+        // ✅ FIX: Redirect to error page if something goes wrong
+        const redirectUrl = new URL(`/payment/error?message=${encodeURIComponent(error.message)}`, process.env.FRONTEND_URL || process.env.NEXTAUTH_URL);
+        return NextResponse.redirect(redirectUrl);
+    }
 };
 
 const handleFail = async (req: NextRequest, { params }: { params: { transactionId: string } }) => {
     await dbConnect();
-    const { transactionId } = params;
-    await PaymentService.handleFailedPayment(transactionId);
+    
+    try {
+        const { transactionId } = params;
+        await PaymentService.handleFailedPayment(transactionId);
 
-    const redirectUrl = new URL(`/payment/fail?tran_id=${transactionId}`, process.env.FRONTEND_URL);
-    return NextResponse.redirect(redirectUrl);
+        // ✅ FIX: Redirect to fail page with transaction details
+        const redirectUrl = new URL(`/payment/fail?tran_id=${transactionId}`, process.env.FRONTEND_URL || process.env.NEXTAUTH_URL);
+        return NextResponse.redirect(redirectUrl);
+    } catch (error: any) {
+        console.error('Fail Handler Error:', error);
+        
+        const redirectUrl = new URL(`/payment/error?message=${encodeURIComponent(error.message)}`, process.env.FRONTEND_URL || process.env.NEXTAUTH_URL);
+        return NextResponse.redirect(redirectUrl);
+    }
 };
 
 const handleCancel = async (req: NextRequest, { params }: { params: { transactionId: string } }) => {
     await dbConnect();
-    const { transactionId } = params;
-    await PaymentService.handleCancelledPayment(transactionId);
+    
+    try {
+        const { transactionId } = params;
+        await PaymentService.handleCancelledPayment(transactionId);
 
-    const redirectUrl = new URL(`/payment/cancel?tran_id=${transactionId}`, process.env.FRONTEND_URL);
-    return NextResponse.redirect(redirectUrl);
+        // ✅ FIX: Redirect to cancel page with transaction details
+        const redirectUrl = new URL(`/payment/cancel?tran_id=${transactionId}`, process.env.FRONTEND_URL || process.env.NEXTAUTH_URL);
+        return NextResponse.redirect(redirectUrl);
+    } catch (error: any) {
+        console.error('Cancel Handler Error:', error);
+        
+        const redirectUrl = new URL(`/payment/error?message=${encodeURIComponent(error.message)}`, process.env.FRONTEND_URL || process.env.NEXTAUTH_URL);
+        return NextResponse.redirect(redirectUrl);
+    }
 };
 
 const handleIpn = async (req: NextRequest) => {
     await dbConnect();
-    const ipnData = Object.fromEntries(await req.formData());
     
     try {
+        const ipnData = Object.fromEntries(await req.formData());
+        console.log('📨 IPN Data Received:', ipnData);
+        
         await PaymentService.validateAndProcessIPN(ipnData);
-        // ✅ FIX: Added statusCode and data properties
+        
         return sendResponse({ 
             success: true, 
             statusCode: StatusCodes.OK,
-            message: 'IPN received successfully.',
+            message: 'IPN received and processed successfully.',
             data: null
         });
     } catch (error: any) {
-        // ✅ FIX: Added statusCode and data properties
+        console.error('IPN Handler Error:', error);
+        
         return sendResponse({
             success: false,
             statusCode: StatusCodes.BAD_REQUEST,

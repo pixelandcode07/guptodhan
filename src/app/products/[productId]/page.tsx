@@ -5,9 +5,10 @@ import { StoreServices } from '@/lib/modules/vendor-store/vendorStore.service';
 import { BrandServices } from '@/lib/modules/brand/brand.service';
 import { SubCategoryServices } from '@/lib/modules/ecommerce-category/services/ecomSubCategory.service';
 import { ChildCategoryServices } from '@/lib/modules/ecommerce-category/services/ecomChildCategory.service';
-import HeroNav from '@/app/components/Hero/HeroNav';
 import { notFound } from 'next/navigation';
 import ProductDetailsClient from './components/ProductDetailsClient';
+import { HeroNav } from '@/app/components/Hero/HeroNav';
+import { MainCategory } from '@/types/navigation-menu';
 
 interface ProductPageProps {
   params: Promise<{
@@ -47,11 +48,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
         models: [], // Empty for now since we don't have getAllProductModelsFromDB
       }
     };
+  const categoriesInfo: MainCategory[] = [];
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
         {/* HeroNav - Category Navigation */}
-        <HeroNav />
+        <HeroNav categories={categoriesInfo} />
+        
 
         <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">
           {/* Header Section */}
