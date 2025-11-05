@@ -166,6 +166,23 @@ const getFiltersForCategoryFromDB = async (categoryId: string) => {
   }
 };
 
+const getAllAdsForAdminFromDB = async () => {
+  return await ClassifiedAd.find({})
+    .populate('user', 'name') // Posted By (Name only)
+    .populate('category', 'name')
+    .sort({ createdAt: -1 });
+}
+
+const updateAdStatusInDB = async (adId: string, status: 'active' | 'inactive' | 'sold') => {
+  const ad = await ClassifiedAd.findById(adId);
+  if (!ad) {
+    throw new Error('Ad not found!');
+  }
+  ad.status = status;
+  await ad.save();
+  return ad;
+};
+
 export const ClassifiedAdServices = {
   createAdInDB,
   searchAdsInDB,
@@ -176,4 +193,6 @@ export const ClassifiedAdServices = {
   getPublicAdByIdFromDB,
   getPublicAdsByCategoryIdFromDB,
   getFiltersForCategoryFromDB,
+  getAllAdsForAdminFromDB,
+  updateAdStatusInDB,
 };
