@@ -196,6 +196,36 @@ const getFiltersForCategory = async (req: NextRequest) => {
   });
 };
 
+const getAllAdsForAdmin = async (_req: NextRequest) => {
+  await dbConnect();
+  const result = await ClassifiedAdServices.getAllAdsForAdminFromDB();
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'All ads for admin retrieved',
+    data: result,
+  });
+};
+
+const updateAdStatus = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  await dbConnect();
+  const { id } = await params;
+  const { status } = await req.json();
+
+  if (!['active', 'inactive', 'sold'].includes(status)) {
+    throw new Error('Invalid status value.');
+  }
+
+  const result = await ClassifiedAdServices.updateAdStatusInDB(id, status);
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Ad status updated successfully!',
+    data: result,
+  });
+};
+
+
 export const ClassifiedAdController = { 
   createAd, 
   getAllAds,
@@ -206,4 +236,6 @@ export const ClassifiedAdController = {
   getPublicAdById, 
   getPublicAdsByCategoryId,
   getFiltersForCategory,
+  updateAdStatus,
+  getAllAdsForAdmin,
 };
