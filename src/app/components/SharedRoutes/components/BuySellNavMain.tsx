@@ -23,7 +23,7 @@ export default function BuySellNavMain() {
             <div className="search  hidden md:flex items-center justify-center w-full max-w-md mx-auto relative">
                 {/* Search functionality */}
                 <SearchBar />
-                <SearchBar />
+                {/* <SearchBar /> */}
             </div>
             <div>
                 <Dialog>

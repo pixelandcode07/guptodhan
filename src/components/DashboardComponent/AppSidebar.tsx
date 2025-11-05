@@ -117,26 +117,6 @@ const data = {
     },
   ],
   donations: [
-    // {
-    //   title: 'Donation Config',
-    //   url: '/general/donation/config',
-    //   icon: LayoutDashboard,
-    // },
-    // {
-    //   title: 'Donation Categories',
-    //   url: '*',
-    //   icon: LayoutDashboard,
-    // },
-    // {
-    //   title: 'Donation Listing',
-    //   url: '/general/donation/listing',
-    //   icon: LayoutDashboard,
-    // },
-    // {
-    //   title: 'Donation Request',
-    //   url: '/general/donation/requests',
-    //   icon: LayoutDashboard,
-    // },
     {
       title: 'Dashboard',
       url: '/general/donation/dashboard',
