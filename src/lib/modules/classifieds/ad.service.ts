@@ -99,6 +99,73 @@ const getPublicAdsByCategoryIdFromDB = async (categoryId: string) => {
     .sort({ createdAt: -1 });
 };
 
+
+const getFiltersForCategoryFromDB = async (categoryId: string) => {
+  try {
+    const categoryObjectId = new Types.ObjectId(categoryId);
+
+    const result = await ClassifiedAd.aggregate([
+      // ধাপ ১: শুধুমাত্র এই ক্যাটাগরির فعال বিজ্ঞাপনগুলো ম্যাচ করুন
+      {
+        $match: {
+          category: categoryObjectId,
+          status: 'active'
+        }
+      },
+      // ধাপ ২: একই সাথে লোকেশন এবং ব্র্যান্ড অনুযায়ী গণনা করুন
+      {
+        $facet: {
+          // শাখা ক: লোকেশন অনুযায়ী গণনা
+          locations: [
+            { $group: { _id: "$district", count: { $sum: 1 } } },
+            { $project: { _id: 0, name: "$_id", count: 1 } },
+            { $sort: { count: -1 } }
+          ],
+          // শাখা খ: ব্র্যান্ড অনুযায়ী গণনা
+          brands: [
+            { $match: { brand: { $exists: true, $ne: null } } }, // শুধু ব্র্যান্ড আছে এমন বিজ্ঞাপন
+            {
+              $lookup: { // ব্র্যান্ড কালেকশন থেকে ব্র্যান্ডের নাম আনুন
+                from: 'brands', // আপনার Brand মডেলের কালেকশনের নাম
+                localField: 'brand',
+                foreignField: '_id',
+                as: 'brandDetails'
+              }
+            },
+            { $unwind: '$brandDetails' }, // অ্যারে থেকে অবজেক্টে রূপান্তর
+            { $group: { _id: "$brandDetails.name", count: { $sum: 1 } } },
+            { $project: { _id: 0, name: "$_id", count: 1 } },
+            { $sort: { name: 1 } }
+          ],
+          // শাখা গ: সাব-ক্যাটাগরি অনুযায়ী গণনা (যদি প্রয়োজন হয়)
+          subCategories: [
+            { $match: { subCategory: { $exists: true, $ne: null } } },
+            {
+              $lookup: {
+                from: 'classifiedsubcategories', // আপনার SubCategory মডেলের কালেকশনের নাম
+                localField: 'subCategory',
+                foreignField: '_id',
+                as: 'subCategoryDetails'
+              }
+            },
+            { $unwind: '$subCategoryDetails' },
+            { $group: { _id: "$subCategoryDetails.name", count: { $sum: 1 } } },
+            { $project: { _id: 0, name: "$_id", count: 1 } },
+            { $sort: { name: 1 } }
+          ]
+        }
+      }
+    ]);
+
+    // $facet একটি অ্যারে ফেরত পাঠায়, আমরা প্রথম (এবং একমাত্র) এলিমেন্টটি নেব
+    return result[0];
+
+  } catch (error) {
+    console.error("Error aggregating filters:", error);
+    throw new Error("Failed to aggregate filter data.");
+  }
+};
+
 export const ClassifiedAdServices = {
   createAdInDB,
   searchAdsInDB,
@@ -108,4 +175,5 @@ export const ClassifiedAdServices = {
   getAllPublicAdsFromDB,
   getPublicAdByIdFromDB,
   getPublicAdsByCategoryIdFromDB,
+  getFiltersForCategoryFromDB,
 };
