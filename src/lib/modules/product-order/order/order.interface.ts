@@ -26,6 +26,7 @@ export interface IOrder extends Document {
   orderDate: Date;
   deliveryDate: Date;
 
+  transactionId?: string; //for sslcomerze naeem vai
   parcelId?: string;
   trackingId?: string;
   couponId?: Types.ObjectId;
