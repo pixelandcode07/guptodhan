@@ -5,7 +5,7 @@ import { HeroNav } from '@/app/components/Hero/HeroNav';
 import { MainCategory } from '@/types/navigation-menu';
 
 export default function ShoppingCartPage() {
-  const categoriesData: MainCategory[] = [];
+  const categoriesData: MainCategory [] = [];
   return (
     <>
       <HeroNav categories={categoriesData} />
