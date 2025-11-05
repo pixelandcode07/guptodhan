@@ -26,6 +26,7 @@ const adminRoutes = [
     '/api/v1/ecommerce-banners',
     '/api/v1/ecommerce-banners/[id]',
 
+
    
 ];
 const protectedApiRoutes = [
@@ -58,6 +59,7 @@ const protectedApiRoutes = [
     '/api/v1/product-order',
     '/api/v1/wishlist',
     '/api/v1/add-to-cart',
+    '/api/v1/payment/init'
    
 ];
 

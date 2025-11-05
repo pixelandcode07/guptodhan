@@ -1,10 +1,7 @@
 import mongoose from 'mongoose';
-import { IOrder } from '../product-order/order/order.interface';
 import { OrderModel } from '../product-order/order/order.model';
-import { IOrderDetails } from '../product-order/orderDetails/orderDetails.interface';
 import { initPaymentSession, validatePayment } from '../sslcommerz/sslcommerz.service';
 import { v4 as uuidv4 } from 'uuid';
-import { User } from '../user/user.model'; // Assuming the user model path
 
 const initPayment = async (orderId: string) => {
     const order = await OrderModel.findById(orderId).populate('userId');

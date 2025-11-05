@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendResponse } from '@/lib/utils/sendResponse';
 import { StatusCodes } from 'http-status-codes';
 import dbConnect from '@/lib/db';
-import { OrderModel } from '../product-order/order/order.model'; // Corrected import
 import { PaymentService } from './payment.service';
 
 const initiatePayment = async (req: NextRequest) => {
