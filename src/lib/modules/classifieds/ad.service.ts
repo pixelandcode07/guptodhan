@@ -105,44 +105,44 @@ const getFiltersForCategoryFromDB = async (categoryId: string) => {
     const categoryObjectId = new Types.ObjectId(categoryId);
 
     const result = await ClassifiedAd.aggregate([
-      // ধাপ ১: শুধুমাত্র এই ক্যাটাগরির فعال বিজ্ঞাপনগুলো ম্যাচ করুন
+// macting cateogires
       {
         $match: {
           category: categoryObjectId,
           status: 'active'
         }
       },
-      // ধাপ ২: একই সাথে লোকেশন এবং ব্র্যান্ড অনুযায়ী গণনা করুন
+      // count location and brand
       {
         $facet: {
-          // শাখা ক: লোকেশন অনুযায়ী গণনা
+          // location count
           locations: [
             { $group: { _id: "$district", count: { $sum: 1 } } },
             { $project: { _id: 0, name: "$_id", count: 1 } },
             { $sort: { count: -1 } }
           ],
-          // শাখা খ: ব্র্যান্ড অনুযায়ী গণনা
+          //brand count
           brands: [
             { $match: { brand: { $exists: true, $ne: null } } }, // শুধু ব্র্যান্ড আছে এমন বিজ্ঞাপন
             {
-              $lookup: { // ব্র্যান্ড কালেকশন থেকে ব্র্যান্ডের নাম আনুন
-                from: 'brands', // আপনার Brand মডেলের কালেকশনের নাম
+              $lookup: { 
+                from: 'brands', 
                 localField: 'brand',
                 foreignField: '_id',
                 as: 'brandDetails'
               }
             },
-            { $unwind: '$brandDetails' }, // অ্যারে থেকে অবজেক্টে রূপান্তর
+            { $unwind: '$brandDetails' }, 
             { $group: { _id: "$brandDetails.name", count: { $sum: 1 } } },
             { $project: { _id: 0, name: "$_id", count: 1 } },
             { $sort: { name: 1 } }
           ],
-          // শাখা গ: সাব-ক্যাটাগরি অনুযায়ী গণনা (যদি প্রয়োজন হয়)
+          // if need sub categories count
           subCategories: [
             { $match: { subCategory: { $exists: true, $ne: null } } },
             {
               $lookup: {
-                from: 'classifiedsubcategories', // আপনার SubCategory মডেলের কালেকশনের নাম
+                from: 'classifiedsubcategories', 
                 localField: 'subCategory',
                 foreignField: '_id',
                 as: 'subCategoryDetails'
@@ -157,7 +157,7 @@ const getFiltersForCategoryFromDB = async (categoryId: string) => {
       }
     ]);
 
-    // $facet একটি অ্যারে ফেরত পাঠায়, আমরা প্রথম (এবং একমাত্র) এলিমেন্টটি নেব
+    // $facet 
     return result[0];
 
   } catch (error) {
