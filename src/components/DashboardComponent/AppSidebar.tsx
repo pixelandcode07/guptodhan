@@ -14,8 +14,10 @@ import {
   Box,
   Bug,
   ChartNoAxesCombined,
+  ClipboardList,
   Code,
   DollarSign,
+  HeartHandshake,
   House,
   LayoutDashboard,
   Logs,
@@ -116,24 +118,34 @@ const data = {
   ],
   donations: [
     {
-      title: 'Donation Config',
+      title: 'Dashboard',
+      url: '/general/donation/dashboard',
+      icon: ChartNoAxesCombined,
+    },
+    {
+      title: 'User Management',
+      url: '/general/donation/user-management',
+      icon: UserCog,
+    },
+    {
+      title: 'Donations',
+      url: '/general/donation/donate-list',
+      icon: HeartHandshake,
+    },
+    {
+      title: 'Claims',
+      url: '/general/donation/donate-item-claim-list',
+      icon: ClipboardList,
+    },
+    {
+      title: 'Categories',
+      url: '/general/donation/categories',
+      icon: Logs,
+    },
+    {
+      title: 'Setting',
       url: '/general/donation/config',
-      icon: LayoutDashboard,
-    },
-    {
-      title: 'Donation Categories',
-      url: '*',
-      icon: LayoutDashboard,
-    },
-    {
-      title: 'Donation Listing',
-      url: '/general/donation/listing',
-      icon: LayoutDashboard,
-    },
-    {
-      title: 'Donation Request',
-      url: '/general/donation/requests',
-      icon: LayoutDashboard,
+      icon: Settings,
     },
   ],
 

@@ -18,12 +18,12 @@ export default function BuySellNavMain() {
     return (
         <div className='bg-[#FFFFFF] text-black flex w-full justify-between items-center py-5 md:px-15 border-2'>
             <Link href={'/'} className="logo">
-                <Image src="/logo.png" width={130} height={44} alt="logo" />
+                <Image src="/img/logo.png" width={130} height={44} alt="logo" />
             </Link>
             <div className="search  hidden md:flex items-center justify-center w-full max-w-md mx-auto relative">
                 {/* Search functionality */}
                 <SearchBar />
-                <SearchBar />
+                {/* <SearchBar /> */}
             </div>
             <div>
                 <Dialog>

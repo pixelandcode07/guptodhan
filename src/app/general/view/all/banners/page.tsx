@@ -2,7 +2,6 @@
 
 import { DataTable } from "@/components/TableHelper/data-table";
 import { Banner, getBannerColumns } from "@/components/TableHelper/banner_columns";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown } from "lucide-react";
 import AddBannerButton from "./components/AddBannerButton";
@@ -17,7 +16,7 @@ import FancyLoadingPage from "@/app/general/loading";
 
 
 export default function BannersPage() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [data, setData] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -132,31 +131,26 @@ export default function BannersPage() {
   }
   
   return (
-    <div className="m-5 p-5 border">
-      <div className="mb-6">
-        <h1 className="text-lg font-semibold border-l-2 border-blue-500">
-          <span className="pl-5">Banners List</span>
-        </h1>
-      </div>
-      
-      <div className="flex items-center justify-end mb-4">
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex items-center gap-2">
-            <span>Search:</span>
-            <Input type="text" className="border border-gray-500 w-64" />
-          </div>
-          <div className="flex items-center gap-2">
-            <AddBannerButton />
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
-              <ArrowUpDown className="w-4 h-4" />
-              Rearrange Banners
-            </Button>
-          </div>
+    <div className="m-5">
+      {/* Header */}
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-xl font-semibold tracking-tight">Banners</h1>
+        <div className="flex items-center gap-2">
+          <AddBannerButton />
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
+            <ArrowUpDown className="w-4 h-4" />
+            Rearrange
+          </Button>
         </div>
       </div>
-      
-      <DataTable columns={columns} data={data} />
-      
+
+      {/* Table Card */}
+      <div className="bg-white rounded-lg shadow-sm border">
+        <div className="p-4 w-full overflow-x-auto">
+          <DataTable columns={columns} data={data} />
+        </div>
+      </div>
+
       {/* Modals */}
       <DeleteConfirmationModal
         open={deleteModalOpen}

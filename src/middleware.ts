@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { StatusCodes } from 'http-status-codes';
 
-// ✅ FIX: রুটগুলো সঠিকভাবে ভাগ করা হয়েছে
-// শুধুমাত্র অ্যাডমিনদের জন্য পেজ এবং API রুট
 const adminRoutes = [
     "/general",
     "/api/v1/users",
@@ -24,11 +22,12 @@ const adminRoutes = [
     "/api/v1/integrations",
     "/api/v1/donation-categories",
     "/api/v1/theme-settings",
-    "/app/api/v1/donation-categories/[id]",
+    "/api/v1/donation-categories/[id]",
+    '/api/v1/ecommerce-banners',
+    '/api/v1/ecommerce-banners/[id]',
+
    
 ];
-
-// যেকোনো লগইন করা ইউজারের জন্য সুরক্ষিত API রুট
 const protectedApiRoutes = [
     '/api/v1/auth/change-password',
     '/api/otp/send-email',
@@ -57,6 +56,9 @@ const protectedApiRoutes = [
     '/api/v1/donation-categories',
     '/api/v1/donation-campaigns',
     '/api/v1/product-order',
+    '/api/v1/wishlist',
+    '/api/v1/add-to-cart',
+   
 ];
 
 export async function middleware(req: NextRequest) {

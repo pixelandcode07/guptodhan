@@ -35,9 +35,9 @@ const getAllStorageTypes = async () => {
 };
 
 // Update storage type
-const updateStorageType = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const updateStorageType = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const validatedData = updateStorageTypeValidationSchema.parse(body);
 
@@ -52,9 +52,9 @@ const updateStorageType = async (req: NextRequest, { params }: { params: { id: s
 };
 
 // Delete storage type
-const deleteStorageType = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const deleteStorageType = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     await StorageTypeServices.deleteStorageTypeFromDB(id);
 
     return sendResponse({

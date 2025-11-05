@@ -13,6 +13,7 @@ export const createBannerSchema = z.object({
   bannerDescription: z.string().optional(),
   buttonText: z.string().optional(),
   buttonLink: z.string().url().optional(),
+  status: z.enum(['active', 'inactive']).optional(),
 });
 
 export const updateBannerSchema = createBannerSchema.partial(); 

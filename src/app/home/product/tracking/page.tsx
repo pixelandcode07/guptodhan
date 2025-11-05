@@ -1,12 +1,16 @@
-import React from 'react'
-import HeroNav from '@/app/components/Hero/HeroNav'
+import React, { Suspense } from 'react' 
 import SteadfastTracking from '@/app/home/product/shoppinginfo/components/SteadfastTracking'
+import FancyLoadingPage from '@/app/general/loading'
+import { HeroNav } from '@/app/components/Hero/HeroNav'
 
 export default function TrackingPage() {
   return (
     <>
       <HeroNav />
-      <SteadfastTracking />
+      {/* 2. SteadfastTracking Suspense wrap */}
+      <Suspense fallback={<FancyLoadingPage />}> 
+        <SteadfastTracking />
+      </Suspense>
     </>
   )
 }

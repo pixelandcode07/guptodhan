@@ -11,6 +11,7 @@ import { BannerPosition, TextPosition } from './types';
 import TopRow from './TopRow';
 import DetailsFields from './DetailsFields';
 import ButtonRow from './ButtonRow';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface BannerFormProps {
   initialData?: {
@@ -49,6 +50,7 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
   const [buttonText, setButtonText] = useState('');
   const [bannerLink, setBannerLink] = useState('');
   const [buttonLink, setButtonLink] = useState('');
+  const [bannerStatus, setBannerStatus] = useState<'active' | 'inactive'>('active');
 
   const isEditMode = !!initialData;
 
@@ -74,6 +76,8 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
       
       setBannerPosition(positionMapping[initialData.bannerPosition || ''] || '');
       setTextPosition(initialData.textPosition === 'left' ? 'Left' : 'Right');
+      // Default status to active if not provided
+      setBannerStatus(((initialData as any).status === 'inactive') ? 'inactive' : 'active');
     }
   }, [initialData]);
 
@@ -167,6 +171,7 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
       formData.append('buttonText', buttonText.trim());
       if (bannerLink.trim()) formData.append('bannerLink', bannerLink.trim());
       if (buttonLink.trim()) formData.append('buttonLink', buttonLink.trim());
+      formData.append('status', bannerStatus);
 
       let response;
       if (isEditMode && initialData?._id) {
@@ -248,6 +253,20 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
             setButtonLink={setButtonLink}
             isValidUrl={isValidUrl}
           />
+          <div>
+            <label className="text-sm font-medium text-gray-700">Status</label>
+            <div className="mt-2 max-w-xs">
+              <Select value={bannerStatus} onValueChange={(v) => setBannerStatus(v as 'active' | 'inactive')}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
       </div>
 

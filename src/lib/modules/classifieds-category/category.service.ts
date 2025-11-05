@@ -53,12 +53,12 @@ const deleteCategoryFromDB = async (id: string) => {
   const category = await ClassifiedCategory.findById(categoryId);
   if (!category) { throw new Error("Category not found"); }
   if (category.icon) {
-      await deleteFromCloudinary(category.icon);
+    await deleteFromCloudinary(category.icon);
   }
-  
+
   // Step 5: Finally, delete the parent category itself
   await ClassifiedCategory.findByIdAndDelete(categoryId);
-  
+
   return null;
 };
 
@@ -111,7 +111,6 @@ const getPublicCategoriesWithCountsFromDB = async (categoryId?: string) => {
   try {
     const matchStage: any = { status: 'active' };
 
-    // যদি নির্দিষ্ট category পাঠানো হয় (UI থেকে)
     if (categoryId) {
       matchStage._id = new Types.ObjectId(categoryId);
     }
@@ -150,7 +149,35 @@ const getPublicCategoriesWithCountsFromDB = async (categoryId?: string) => {
   }
 };
 
+const searchAdsInDB = async (filters: Record<string, any>) => {
+  const query: Record<string, any> = { status: 'active' };
 
+  // --- Location Filters ---
+  if (filters.division) query.division = new RegExp(`^${filters.division}$`, 'i');
+  if (filters.district) query.district = new RegExp(`^${filters.district}$`, 'i');
+  if (filters.upazila) query.upazila = new RegExp(`^${filters.upazila}$`, 'i');
+
+  // --- Category & Brand Filters ---
+  if (filters.category) query.category = new Types.ObjectId(filters.category);
+  if (filters.subCategory) query.subCategory = new Types.ObjectId(filters.subCategory);
+  if (filters.brand) query.brand = new Types.ObjectId(filters.brand);
+
+  // --- Price Range Filter ---
+  if (filters.minPrice || filters.maxPrice) {
+    query.price = {};
+    if (filters.minPrice) query.price.$gte = Number(filters.minPrice);
+    if (filters.maxPrice) query.price.$lte = Number(filters.maxPrice);
+  }
+  
+  console.log("Final Query:", query); // For debugging
+
+  return await ClassifiedAd.find(query)
+    .populate('user', 'name profilePicture')
+    .populate('category', 'name')
+    .populate('subCategory', 'name')
+    .populate('brand', 'name logo')
+    .sort({ createdAt: -1 });
+};
 
 export const ClassifiedCategoryServices = {
   createCategoryInDB,
@@ -161,4 +188,5 @@ export const ClassifiedCategoryServices = {
   getPublicCategoriesFromDB,
   getCategoryByIdFromDB,
   getPublicCategoriesWithCountsFromDB,
+  searchAdsInDB,
 };
