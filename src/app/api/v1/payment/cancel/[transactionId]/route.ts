@@ -1,2 +1,2 @@
 import { PaymentController } from '@/lib/modules/payment/payment.controller';
-export const POST = PaymentController.handleFailOrCancel;
+export const POST = PaymentController.handleCancel;

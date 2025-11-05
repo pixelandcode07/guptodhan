@@ -67,4 +67,3 @@ export const districts: District[] = [
   { en: 'Thakurgaon', bn: 'ঠাকুরগাঁও' },
 ];
 
-

@@ -99,6 +99,90 @@ const getPublicAdsByCategoryIdFromDB = async (categoryId: string) => {
     .sort({ createdAt: -1 });
 };
 
+
+const getFiltersForCategoryFromDB = async (categoryId: string) => {
+  try {
+    const categoryObjectId = new Types.ObjectId(categoryId);
+
+    const result = await ClassifiedAd.aggregate([
+// macting cateogires
+      {
+        $match: {
+          category: categoryObjectId,
+          status: 'active'
+        }
+      },
+      // count location and brand
+      {
+        $facet: {
+          // location count
+          locations: [
+            { $group: { _id: "$district", count: { $sum: 1 } } },
+            { $project: { _id: 0, name: "$_id", count: 1 } },
+            { $sort: { count: -1 } }
+          ],
+          //brand count
+          brands: [
+            { $match: { brand: { $exists: true, $ne: null } } }, // শুধু ব্র্যান্ড আছে এমন বিজ্ঞাপন
+            {
+              $lookup: { 
+                from: 'brands', 
+                localField: 'brand',
+                foreignField: '_id',
+                as: 'brandDetails'
+              }
+            },
+            { $unwind: '$brandDetails' }, 
+            { $group: { _id: "$brandDetails.name", count: { $sum: 1 } } },
+            { $project: { _id: 0, name: "$_id", count: 1 } },
+            { $sort: { name: 1 } }
+          ],
+          // if need sub categories count
+          subCategories: [
+            { $match: { subCategory: { $exists: true, $ne: null } } },
+            {
+              $lookup: {
+                from: 'classifiedsubcategories', 
+                localField: 'subCategory',
+                foreignField: '_id',
+                as: 'subCategoryDetails'
+              }
+            },
+            { $unwind: '$subCategoryDetails' },
+            { $group: { _id: "$subCategoryDetails.name", count: { $sum: 1 } } },
+            { $project: { _id: 0, name: "$_id", count: 1 } },
+            { $sort: { name: 1 } }
+          ]
+        }
+      }
+    ]);
+
+    // $facet 
+    return result[0];
+
+  } catch (error) {
+    console.error("Error aggregating filters:", error);
+    throw new Error("Failed to aggregate filter data.");
+  }
+};
+
+const getAllAdsForAdminFromDB = async () => {
+  return await ClassifiedAd.find({})
+    .populate('user', 'name') // Posted By (Name only)
+    .populate('category', 'name')
+    .sort({ createdAt: -1 });
+}
+
+const updateAdStatusInDB = async (adId: string, status: 'active' | 'inactive' | 'sold') => {
+  const ad = await ClassifiedAd.findById(adId);
+  if (!ad) {
+    throw new Error('Ad not found!');
+  }
+  ad.status = status;
+  await ad.save();
+  return ad;
+};
+
 export const ClassifiedAdServices = {
   createAdInDB,
   searchAdsInDB,
@@ -108,4 +192,7 @@ export const ClassifiedAdServices = {
   getAllPublicAdsFromDB,
   getPublicAdByIdFromDB,
   getPublicAdsByCategoryIdFromDB,
+  getFiltersForCategoryFromDB,
+  getAllAdsForAdminFromDB,
+  updateAdStatusInDB,
 };

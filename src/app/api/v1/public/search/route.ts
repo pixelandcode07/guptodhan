@@ -5,4 +5,4 @@ import { catchAsync } from '@/lib/middlewares/catchAsync';
  * @description Search and filter classified ads. (Public)
  * @method GET
  */
-export const GET = catchAsync(ClassifiedAdController.searchAds);
+export const GET = catchAsync(ClassifiedAdController.getPublicAdById);

@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 export type CartItem = {
   id: string;
   seller: {
+    id: string;
     name: string;
     verified: boolean;
   };
