@@ -28,7 +28,7 @@ export function HeroNav({ categories }: HeroNavProps) {
 
     return (
         <NavigationMenu viewport={isMobile}>
-            <div className="flex justify-between items-center lg:gap-24 xl:gap-52">
+            <div className="flex justify-between items-center lg:gap-7 xl:gap-36">
                 <div>
                     <NavigationMenuList className="">
                         {
