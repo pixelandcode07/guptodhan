@@ -2,7 +2,6 @@
 const nextConfig = {
   reactStrictMode: false, 
   
-
   images: {
     remotePatterns: [
       {
@@ -79,6 +78,12 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'guptodhan.com',
         port: '',
         pathname: '/**',
       },

@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import ShoppingInfoContent from '../ShoppingInfoContent';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-// Removed FancyLoadingPage import - no longer needed here as ShoppingInfoContent handles loading
 
 // Cart item type definition (same as shopping cart)
 export type CartItem = {
