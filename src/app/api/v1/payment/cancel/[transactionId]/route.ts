@@ -1,2 +1,6 @@
 import { PaymentController } from '@/lib/modules/payment/payment.controller';
-export const POST = PaymentController.handleCancel;
+
+// POST /api/v1/payment/cancel/:transactionId
+export const POST = async (req: Request, ctx: { params: { transactionId: string } }) => {
+    return PaymentController.handleCancel(req, ctx);
+};
