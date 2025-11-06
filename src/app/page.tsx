@@ -5,6 +5,7 @@ import FlashSale from './components/FlashSale/FlashSale';
 import Hero from './components/Hero/Hero';
 import JustForYou from './components/JustForYou/JustForYou';
 import { fetchBestSellingData, fetchEcommerceBanners, fetchFlashSaleData, fetchJustForYouData } from '@/lib/MainHomePage';
+import { fetchFeaturedCategories } from '@/lib/MainHomePage/fetchFeaturedCategoryData';
 
 export async function generateMetadata() {
   return generateGuptodhanMetadata({
@@ -17,25 +18,26 @@ export async function generateMetadata() {
 }
 
 export default async function MainHomePage() {
-  const [flashSaleData, bestSellingData, justForYouData, ecommerceBanners] = await Promise.all([
+  const [flashSaleData, bestSellingData, justForYouData, ecommerceBanners, featuredData] = await Promise.all([
     fetchFlashSaleData(),
     fetchBestSellingData(),
     fetchJustForYouData(),
-    fetchEcommerceBanners()
+    fetchEcommerceBanners(),
+    fetchFeaturedCategories()
   ]);
 
-
-const { middleHomepage, topShoppage } = ecommerceBanners || {};
+  console.log("featuredData", featuredData)
+  const { middleHomepage, topShoppage } = ecommerceBanners;
 
 
   return (
     <div className="bg-gray-100">
       <Hero />
-      <Feature />
+      <Feature featuredData={featuredData} />
       <FlashSale
         flashSaleData={flashSaleData}
         middleHomepage={middleHomepage}
-        // topShoppage={topShoppage}
+      // topShoppage={topShoppage}
       />
       <BestSell bestSellingData={bestSellingData} topShoppage={topShoppage} />
       <JustForYou justForYouData={justForYouData} />
