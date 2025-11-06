@@ -17,7 +17,7 @@ const getAllStoresFromDB = async () => {
 
 // Get store by ID
 const getStoreByIdFromDB = async (id: string) => {
-  const result = await StoreModel.findById(new Types.ObjectId(id));
+  const result = await StoreModel.findById(id);
   if (!result) {
     throw new Error('Store not found.');
   }
