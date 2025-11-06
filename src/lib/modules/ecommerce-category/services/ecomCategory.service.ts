@@ -67,7 +67,7 @@ const deleteCategoryFromDB = async (id: string) => {
 
 export const getAllSubCategoriesWithChildren = async () => {
   // Get all main categories
-  const mainCategories = await CategoryModel.find().sort({ name: 1 });
+  const mainCategories = await CategoryModel.find({isNavbar: true}).sort({ name: 1 });
 
   // Map each main category
   const result = await Promise.all(
