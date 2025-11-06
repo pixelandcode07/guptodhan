@@ -77,18 +77,24 @@ const handleFail = async (req: NextRequest, { params }: { params: { transactionI
 
 const handleCancel = async (req: NextRequest, { params }: { params: { transactionId: string } }) => {
     await dbConnect();
-    
+
     try {
         const { transactionId } = params;
         await PaymentService.handleCancelledPayment(transactionId);
 
-        // ✅ FIX: Redirect to cancel page with transaction details
-        const redirectUrl = new URL(`/payment/cancel?tran_id=${transactionId}`, process.env.FRONTEND_URL || process.env.NEXTAUTH_URL);
+        // Redirect to cancel page
+        const redirectUrl = new URL(
+            `/payment/cancel?tran_id=${transactionId}`,
+            process.env.FRONTEND_URL || process.env.NEXTAUTH_URL
+        );
         return NextResponse.redirect(redirectUrl);
     } catch (error: any) {
         console.error('Cancel Handler Error:', error);
-        
-        const redirectUrl = new URL(`/payment/error?message=${encodeURIComponent(error.message)}`, process.env.FRONTEND_URL || process.env.NEXTAUTH_URL);
+
+        const redirectUrl = new URL(
+            `/payment/error?message=${encodeURIComponent(error.message)}`,
+            process.env.FRONTEND_URL || process.env.NEXTAUTH_URL
+        );
         return NextResponse.redirect(redirectUrl);
     }
 };
