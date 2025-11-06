@@ -4,24 +4,35 @@ import React from 'react'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import type { CartItem } from '../ShoppingCartContent'
 
 export default function OrderSummary({ 
   subtotal, 
   totalSavings, 
-  totalItems
+  totalItems,
+  selectedCartItems
 }: { 
   subtotal: number
   totalSavings: number
   totalItems: number
+  selectedCartItems: CartItem[]
 }) {
   const [termsAccepted, setTermsAccepted] = React.useState(false)
   const router = useRouter()
   
-  // Use dynamic values from cart items
+  // Use dynamic values from selected cart items
   const total = subtotal
   const finalSavings = totalSavings
 
   const handleCheckout = () => {
+    if (selectedCartItems.length === 0) {
+      toast.error('Please select at least one item to checkout', {
+        description: 'You must select items from your cart to proceed.',
+        duration: 3000,
+      });
+      return;
+    }
+
     if (!termsAccepted) {
       toast.error('Please accept terms and conditions', {
         description: 'You must agree to the terms and conditions to proceed.',
@@ -30,15 +41,31 @@ export default function OrderSummary({
       return;
     }
 
-    // Navigate to shopping info page
-    router.push('/home/product/shoppinginfo');
+    // Save only selected items to localStorage for checkout
+    try {
+      localStorage.setItem('cart', JSON.stringify(selectedCartItems));
+      // Navigate to shopping info page
+      router.push('/home/product/shoppinginfo');
+    } catch (error) {
+      console.error('Error saving cart to localStorage:', error);
+      toast.error('Failed to save cart items', {
+        description: 'Please try again.',
+        duration: 3000,
+      });
+    }
   }
 
   return (
     <div className="bg-white rounded-lg p-6 sticky top-4">
       <h2 className="text-xl font-semibold text-gray-900 mb-6">CART TOTALS</h2>
 
-
+      {selectedCartItems.length === 0 && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+          <p className="text-sm text-yellow-800">
+            ⚠️ No items selected. Please select items to checkout.
+          </p>
+        </div>
+      )}
 
       {/* Price Breakdown */}
       <div className="space-y-3 mb-6">
@@ -69,9 +96,9 @@ export default function OrderSummary({
 
       {/* Checkout Button */}
       <Button 
-        className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 text-lg font-medium mb-4"
+        className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 text-lg font-medium mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={handleCheckout}
-        disabled={!termsAccepted}
+        disabled={!termsAccepted || selectedCartItems.length === 0}
       >
         PROCEED TO CHECKOUT →
       </Button>
