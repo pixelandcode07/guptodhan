@@ -272,7 +272,12 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
 
   return (
     <>
-      <FiltersBar search={search} onSearchChange={setSearch} onSearchEnter={handleSearchEnter} isSearching={false} onDownloadCSV={onDownloadCSV} />
+      <FiltersBar
+        search={search}
+        onSearchChange={setSearch}
+        isSearching={false}
+        onDownloadCSV={onDownloadCSV}
+      />
 
       <div className="mb-4 sm:mb-6">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
