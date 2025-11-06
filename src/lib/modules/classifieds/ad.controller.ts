@@ -49,11 +49,11 @@ const createAd = async (req: NextRequest) => {
   if (payload.price) payload.price = Number(payload.price);
   if (payload.isNegotiable) payload.isNegotiable = payload.isNegotiable === 'true';
 
-  // 4️⃣ Validation
+  // Validation
   const validatedData = createAdValidationSchema.parse(payload);
   console.log("📝 Validated data:", validatedData);
 
-  // 5️⃣ Build type-safe payload for Mongo
+  // Build type-safe payload for Mongo
   const payloadForService: Partial<IClassifiedAd> = {
     user: new Types.ObjectId(userId),
     title: validatedData.title,
@@ -103,7 +103,6 @@ const getSingleAd = async (_req: NextRequest, { params }: { params: { id: string
   return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad retrieved', data: result });
 };
 
-// ✅ NEW: সকল পাবলিক বিজ্ঞাপন GET করার জন্য
 const getPublicAds = async (_req: NextRequest) => {
   await dbConnect();
   const result = await ClassifiedAdServices.getAllPublicAdsFromDB();
@@ -115,7 +114,6 @@ const getPublicAds = async (_req: NextRequest) => {
   });
 };
 
-// ✅ NEW: একটি নির্দিষ্ট বিজ্ঞাপন GET করার জন্য
 const getPublicAdById = async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
   const { id } = await params;
@@ -167,7 +165,6 @@ const deleteAd = async (req: NextRequest, { params }: { params: { id: string } }
   return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad deleted', data: null });
 };
 
-// ✅ NEW: ক্যাটাগরি ID দিয়ে বিজ্ঞাপন GET করার কন্ট্রোলার
 const getPublicAdsByCategoryId = async (_req: NextRequest, { params }: { params: Promise<{ categoryId: string }> }) => {
     await dbConnect();
     const { categoryId } = await params;
@@ -180,7 +177,81 @@ const getPublicAdsByCategoryId = async (_req: NextRequest, { params }: { params:
     });
 };
 
+const getFiltersForCategory = async (req: NextRequest) => {
+  await dbConnect();
+  const { searchParams } = new URL(req.url);
+  const categoryId = searchParams.get('categoryId');
 
+  if (!categoryId) {
+    throw new Error('Category ID is required to get filters.');
+  }
+  
+  const result = await ClassifiedAdServices.getFiltersForCategoryFromDB(categoryId);
+  
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'Filter data retrieved successfully', 
+    data: result 
+  });
+};
+
+const getAllAdsForAdmin = async (_req: NextRequest) => {
+  await dbConnect();
+  const result = await ClassifiedAdServices.getAllAdsForAdminFromDB();
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'All ads for admin retrieved',
+    data: result,
+  });
+};
+
+const updateAdStatus = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  await dbConnect();
+  const { id } = await params;
+  const { status } = await req.json();
+
+  if (!['active', 'inactive', 'sold'].includes(status)) {
+    throw new Error('Invalid status value.');
+  }
+
+  const result = await ClassifiedAdServices.updateAdStatusInDB(id, status);
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Ad status updated successfully!',
+    data: result,
+  });
+};
+
+
+const searchAds = async (req: NextRequest) => {
+  await dbConnect();
+  const { searchParams } = new URL(req.url);
+  
+  const filters: Record<string, any> = {};
+  
+  // URL থেকে সব ফিল্টার সংগ্রহ করা হচ্ছে
+  if (searchParams.get('category')) filters.category = searchParams.get('category');
+  if (searchParams.get('subCategory')) filters.subCategory = searchParams.get('subCategory');
+  if (searchParams.get('brand')) filters.brand = searchParams.get('brand');
+  if (searchParams.get('division')) filters.division = searchParams.get('division');
+  if (searchParams.get('district')) filters.district = searchParams.get('district');
+  if (searchParams.get('upazila')) filters.upazila = searchParams.get('upazila');
+  if (searchParams.get('minPrice')) filters.minPrice = searchParams.get('minPrice');
+  if (searchParams.get('maxPrice')) filters.maxPrice = searchParams.get('maxPrice');
+  
+  // ✅ searchAdsInDB সার্ভিস ফাংশনটিকে ফিল্টারসহ কল করা হচ্ছে
+  const result = await ClassifiedAdServices.searchAdsInDB(filters);
+  
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'Ads retrieved based on search criteria', 
+    data: result 
+  });
+};
 
 export const ClassifiedAdController = { 
   createAd, 
@@ -191,4 +262,8 @@ export const ClassifiedAdController = {
   getPublicAds,
   getPublicAdById, 
   getPublicAdsByCategoryId,
+  getFiltersForCategory,
+  updateAdStatus,
+  getAllAdsForAdmin,
+  searchAds,
 };

@@ -17,6 +17,7 @@ export type OrderRow = {
   phone: string
   email?: string
   total: number
+  deliveryCharge?: number
   payment: string
   status: string
   deliveryMethod?: string

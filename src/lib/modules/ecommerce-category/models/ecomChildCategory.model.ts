@@ -9,7 +9,7 @@ const childCategorySchema = new Schema<IChildCategory>(
     category: { type: Schema.Types.ObjectId, ref: 'CategoryModel', required: true },
     subCategory: { type: Schema.Types.ObjectId, ref: 'SubCategoryModel', required: true },
     name: { type: String, required: true, trim: true },
-    icon: { type: String }, // Made optional
+    icon: { type: String }, 
     slug: { type: String, required: true, unique: true },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
   },

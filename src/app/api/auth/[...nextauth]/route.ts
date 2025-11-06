@@ -53,6 +53,7 @@ export const authOptions = {
             process.env.JWT_ACCESS_EXPIRES_IN!
         );
       }
+      console.log("access tokens", token)
       return token;
     },
 

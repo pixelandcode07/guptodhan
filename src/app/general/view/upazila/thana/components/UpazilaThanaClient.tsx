@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Plus } from "lucide-react"
 import api from "@/lib/axios"
 import { toast } from "sonner"
-import { districts } from "@/data/districts"
 
 type ApiUpazila = {
   _id: string
@@ -32,6 +31,7 @@ function mapToRow(item: ApiUpazila, index: number): UpazilaThana {
 
 export default function UpazilaThanaClient() {
   const [rows, setRows] = React.useState<UpazilaThana[]>([])
+  const [districts, setDistricts] = React.useState<string[]>([])
   const [search, setSearch] = React.useState("")
   const [open, setOpen] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
@@ -42,6 +42,7 @@ export default function UpazilaThanaClient() {
   const [nameEn, setNameEn] = React.useState("")
   const [nameBn, setNameBn] = React.useState("")
   const [website, setWebsite] = React.useState("")
+  const [editingId, setEditingId] = React.useState<string | undefined>(undefined)
 
   const fetchList = React.useCallback(() => {
     setLoading(true)
@@ -49,8 +50,15 @@ export default function UpazilaThanaClient() {
       .then(res => {
         const list = (res.data?.data ?? []) as ApiUpazila[]
         setRows(list.map(mapToRow))
+        
+        // Extract unique districts from the API data
+        const uniqueDistricts = Array.from(new Set(list.map(item => item.district).filter(Boolean)))
+        setDistricts(uniqueDistricts.sort())
       })
-      .catch(() => setRows([]))
+      .catch(() => {
+        setRows([])
+        setDistricts([])
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -75,7 +83,7 @@ export default function UpazilaThanaClient() {
     setNameEn(row.upazila_thana_english)
     setNameBn(row.upazila_thana_bangla)
     setWebsite(row.website && row.website !== '-' ? row.website : '')
-    ;(onEdit as unknown as { _id?: string })._id = row._id
+    setEditingId(row._id)
   }
 
   const onDelete = (row: UpazilaThana) => {
@@ -110,7 +118,6 @@ export default function UpazilaThanaClient() {
       const websiteLink = website
         ? (/^https?:\/\//i.test(website) ? website : `https://${website}`)
         : undefined
-      const editingId = (onEdit as unknown as { _id?: string })._id
       if (editingId) {
         await api.patch(`/upazila-thana/${editingId}` , {
           district,
@@ -133,13 +140,22 @@ export default function UpazilaThanaClient() {
       setNameEn("")
       setNameBn("")
       setWebsite("")
-      ;(onEdit as unknown as { _id?: string })._id = undefined
+      setEditingId(undefined)
       fetchList()
     } catch {
       toast.error("Failed to create Upazila/Thana")
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleCloseModal = () => {
+    setOpen(false)
+    setDistrict("")
+    setNameEn("")
+    setNameBn("")
+    setWebsite("")
+    setEditingId(undefined)
   }
 
   return (
@@ -175,34 +191,57 @@ export default function UpazilaThanaClient() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-[92%] max-w-lg rounded-md bg-white shadow-lg">
             <div className="flex items-center justify-between px-4 py-3 border-b">
-              <h3 className="text-sm font-semibold">Add New Upazila/Thana</h3>
-              <button onClick={()=>setOpen(false)} className="text-gray-500 hover:text-gray-700">×</button>
+              <h3 className="text-sm font-semibold">{editingId ? 'Edit' : 'Add New'} Upazila/Thana</h3>
+              <button onClick={handleCloseModal} className="text-gray-500 hover:text-gray-700">×</button>
             </div>
             <div className="p-4 space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">District<span className="text-rose-600">*</span></label>
-                <select value={district} onChange={e=>setDistrict(e.target.value)} className="h-10 w-full border border-gray-300 rounded-md px-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-200">
+                <select 
+                  value={district} 
+                  onChange={e=>setDistrict(e.target.value)} 
+                  className="h-10 w-full border border-gray-300 rounded-md px-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  disabled={loading}
+                >
                   <option value="">Select One</option>
                   {districts.map(d => (
-                    <option key={d.en} value={d.en}>{d.en} ({d.bn})</option>
+                    <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Upazila/Thana Name<span className="text-rose-600">*</span></label>
-                <input value={nameEn} onChange={e=>setNameEn(e.target.value)} className="h-10 w-full border border-gray-300 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" placeholder="" />
+                <label className="block text-xs font-medium text-gray-700 mb-1">Upazila/Thana Name (English)<span className="text-rose-600">*</span></label>
+                <input 
+                  value={nameEn} 
+                  onChange={e=>setNameEn(e.target.value)} 
+                  className="h-10 w-full border border-gray-300 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" 
+                  placeholder="Enter name in English"
+                  disabled={loading}
+                />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Upazila/Thana Name (Bangla)</label>
-                <input value={nameBn} onChange={e=>setNameBn(e.target.value)} className="h-10 w-full border border-gray-300 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" placeholder="" />
+                <label className="block text-xs font-medium text-gray-700 mb-1">Upazila/Thana Name (Bangla)<span className="text-rose-600">*</span></label>
+                <input 
+                  value={nameBn} 
+                  onChange={e=>setNameBn(e.target.value)} 
+                  className="h-10 w-full border border-gray-300 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" 
+                  placeholder="Enter name in Bangla"
+                  disabled={loading}
+                />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Website</label>
-                <input value={website} onChange={e=>setWebsite(e.target.value)} className="h-10 w-full border border-gray-300 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" placeholder="https://" />
+                <input 
+                  value={website} 
+                  onChange={e=>setWebsite(e.target.value)} 
+                  className="h-10 w-full border border-gray-300 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" 
+                  placeholder="https://"
+                  disabled={loading}
+                />
               </div>
             </div>
             <div className="flex items-center justify-end gap-2 px-4 py-3 border-t">
-              <Button variant="secondary" className="h-9" onClick={()=>setOpen(false)} disabled={loading}>Close</Button>
+              <Button variant="secondary" className="h-9" onClick={handleCloseModal} disabled={loading}>Close</Button>
               <Button className="h-9 bg-blue-600 hover:bg-blue-700 disabled:opacity-60" onClick={onCreate} disabled={loading}>
                 {loading ? "Saving..." : "Save Now"}
               </Button>
@@ -239,5 +278,3 @@ export default function UpazilaThanaClient() {
     </div>
   )
 }
-
-

@@ -8,8 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Eye, Truck, CheckCircle2, Package, MapPin } from 'lucide-react';
+import { Eye, Truck, CheckCircle2, Package, MapPin, Download } from 'lucide-react';
 import api from '@/lib/axios';
+import { generateInvoice } from './utils/invoiceGenerator';
 
 interface OrderDetailsModalProps {
   order: {
@@ -19,6 +20,7 @@ interface OrderDetailsModalProps {
     phone: string;
     email?: string;
     total: number;
+    deliveryCharge?: number;
     payment: string;
     status: string;
     deliveryMethod?: string;
@@ -100,6 +102,30 @@ export default function OrderDetailsModal({ order, onStatusUpdate }: OrderDetail
       toast.error('Failed to create Steadfast shipment');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadInvoice = () => {
+    try {
+      generateInvoice({
+        id: order.id,
+        orderNo: order.orderNo,
+        name: order.name,
+        phone: order.phone,
+        email: order.email,
+        total: order.total,
+        deliveryCharge: order.deliveryCharge,
+        payment: order.payment,
+        status: orderStatus,
+        deliveryMethod: order.deliveryMethod,
+        trackingId: trackingId || order.trackingId,
+        parcelId: parcelId || order.parcelId,
+        customer: order.customer,
+        store: order.store,
+      });
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      toast.error('Failed to generate invoice');
     }
   };
 
@@ -236,7 +262,16 @@ export default function OrderDetailsModal({ order, onStatusUpdate }: OrderDetail
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t">
+          <div className="flex gap-3 pt-4 border-t flex-wrap">
+            <Button
+              onClick={handleDownloadInvoice}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Download Invoice
+            </Button>
+            
             {canShip && isCOD && (
               <Button
                 onClick={handleCreateSteadfastShipment}

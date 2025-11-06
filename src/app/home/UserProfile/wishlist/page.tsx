@@ -27,8 +27,7 @@ async function getUserWishlist(userId: string): Promise<WishlistProduct[]> {
       .sort({ createdAt: -1 })
       .lean()
     
-    // Transform the result to match WishlistProduct interface
-    // Convert all ObjectIds to strings and ensure proper serialization
+    
     return result.map((item: unknown) => {
       type RawWishlistItem = {
         _id?: { toString?: () => string } | string | unknown

@@ -15,6 +15,7 @@ type ApiOrder = {
     shippingPhone?: string
     shippingEmail?: string
     totalAmount?: number
+    deliveryCharge?: number
     paymentStatus?: string
     orderStatus?: string
     deliveryMethodId?: string
@@ -72,6 +73,7 @@ export default function OrdersTable({ initialStatus, onDataChange, onSelectionCh
                 phone: o.shippingPhone || '-',
                 email: o.shippingEmail || '-',
                 total: typeof o.totalAmount === 'number' ? o.totalAmount : 0,
+                deliveryCharge: typeof o.deliveryCharge === 'number' ? o.deliveryCharge : undefined,
                 payment: o.paymentStatus || '-',
                 status: o.orderStatus || 'Pending',
                 deliveryMethod: o.deliveryMethodId || 'COD',
