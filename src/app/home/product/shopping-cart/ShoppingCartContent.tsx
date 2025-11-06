@@ -4,6 +4,7 @@ import React from 'react'
 import ShoppingCartSection from './components/ShoppingCartSection'
 import OrderSummary from './components/OrderSummary'
 import { useCart } from '@/contexts/CartContext'
+import { useCartSelection } from './components/useCartSelection'
 
 export type CartItem = {
   id: string
@@ -34,21 +35,28 @@ export default function ShoppingCartContent({
   onRemoveItem: (itemId: string) => void
 }) {
   const { cartItems } = useCart()
-  const totalItems = cartItems.reduce((sum, item) => sum + item.product.quantity, 0)
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.product.quantity), 0)
-  const totalSavings = cartItems.reduce((sum, item) => sum + ((item.product.originalPrice - item.product.price) * item.product.quantity), 0)
+  const {
+    selectedCartItems,
+    isAllSelected,
+    handleToggleSelect,
+    handleSelectAll,
+    selectedSubtotal,
+    selectedTotalSavings,
+    selectedTotalItems,
+  } = useCartSelection({ cartItems })
 
   return (
     <div className="min-h-screen bg-gray-50">
-     
-
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Shopping Cart Section */}
         <div className="lg:col-span-2">
           <ShoppingCartSection 
-            cartItems={cartItems} 
-            totalItems={totalItems}
+            cartItems={cartItems}
+            selectedItems={selectedCartItems.map(item => item.id)}
+            isAllSelected={isAllSelected}
+            onToggleSelect={handleToggleSelect}
+            onSelectAll={handleSelectAll}
             onUpdateQuantity={onUpdateQuantity}
             onRemoveItem={onRemoveItem}
           />
@@ -57,9 +65,10 @@ export default function ShoppingCartContent({
         {/* Order Summary */}
         <div className="lg:col-span-1">
           <OrderSummary
-            subtotal={subtotal}
-            totalSavings={totalSavings}
-            totalItems={totalItems}
+            subtotal={selectedSubtotal}
+            totalSavings={selectedTotalSavings}
+            totalItems={selectedTotalItems}
+            selectedCartItems={selectedCartItems}
           />
         </div>
       </div>

@@ -5,7 +5,8 @@ import dbConnect from '@/lib/db'
 import { WishlistModel } from '@/lib/wishlist/wishlist.model'
 import { Types } from 'mongoose'
 import WishlistHeader from './components/WishlistHeader'
-import WishlistClient, { WishlistProduct } from './components/WishlistClient'
+import WishlistClient from './components/WishlistClient'
+import type { WishlistProduct } from './types'
 
 // Ensure VendorProductModel is registered
 import '@/lib/modules/product/vendorProduct.model'
