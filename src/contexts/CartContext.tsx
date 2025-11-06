@@ -31,7 +31,7 @@ export type CartItem = {
 type CartContextType = {
   cartItems: CartItem[];
   cartItemCount: number;
-  addToCart: (productId: string, quantity?: number) => Promise<void>;
+  addToCart: (productId: string, quantity?: number, skipModal?: boolean) => Promise<void>;
   updateQuantity: (itemId: string, newQuantity: number) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -168,7 +168,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     }
   }, [cartItems, isInitialLoad]);
 
-  const addToCart = async (productId: string, quantity: number = 1) => {
+  const addToCart = async (productId: string, quantity: number = 1, skipModal: boolean = false) => {
     const userId = getUserId();
     if (!userId) {
       toast.error('Please login to add items to cart');
@@ -226,9 +226,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           },
         };
         
-        // Set last added product and show modal
+        // Set last added product and show modal only if not skipping
         setLastAddedProduct(newCartItem);
-        setShowAddToCartModal(true);
+        if (!skipModal) {
+          setShowAddToCartModal(true);
+        }
       }
     } catch (error: unknown) {
       console.error('Error adding product to cart:', error);
