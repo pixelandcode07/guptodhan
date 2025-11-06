@@ -2,8 +2,6 @@ import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import { OrderModel } from '../product-order/order/order.model';
 import { initPaymentSession, validatePayment } from '../sslcommerz/sslcommerz.service';
-import { OrderModel } from '../product-order/order/order.model';
-import { v4 as uuidv4 } from 'uuid';
 
 const initPayment = async (orderId: string) => {
     const order = await OrderModel.findById(orderId).populate('userId');
