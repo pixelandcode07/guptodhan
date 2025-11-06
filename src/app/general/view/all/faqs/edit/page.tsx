@@ -23,7 +23,7 @@ const BASE_URL =
 export default function FAQEditForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const id = searchParams.get('id'); // ✅ URL থেকে ID নিচ্ছে
+  const id = searchParams.get('_id'); // ✅ URL থেকে ID নিচ্ছে
 
   const [categories, setCategories] = useState<any[]>([]);
   const [category, setCategory] = useState('');
