@@ -67,7 +67,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   const [productToToggle, setProductToToggle] = useState<Product | null>(null);
   const [isToggling, setIsToggling] = useState(false);
   const [search, setSearch] = useState<string>("");
-  const [isSearching, setIsSearching] = useState(false);
   const router = useRouter();
   const { data: session } = useSession();
   type AugmentedSession = Session & { accessToken?: string; user?: Session["user"] & { role?: string } };
@@ -92,11 +91,9 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     setFlagMap(flagMap);
   }, [initialData]);
 
-  const fetchProducts = useCallback(async (q?: string) => {
+  const fetchProductsInitial = useCallback(async () => {
     try {
-      setIsSearching(!!q);
       const res = await axios.get('/api/v1/product', {
-        params: q ? { search: q } : undefined,
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...(userRole ? { 'x-user-role': userRole } : {}),
@@ -106,8 +103,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       setProducts(items);
     } catch {
       toast.error('Failed to load products');
-    } finally {
-      setIsSearching(false);
     }
   }, [token, userRole]);
 
@@ -147,6 +142,16 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     });
     setRows(mapped);
   }, [products, categoryMap, storeMap, flagMap]);
+
+  useEffect(() => {
+    fetchProductsInitial()
+  }, [fetchProductsInitial])
+
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return rows
+    return rows.filter(r => r.name.toLowerCase().includes(q))
+  }, [rows, search])
 
   const onView = useCallback((product: Product) => {
     if (product._id) {
@@ -206,7 +211,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       toast.success(`Product ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully!`);
       setStatusToggleOpen(false);
       setProductToToggle(null);
-      await fetchProducts(search || undefined);
+      setProducts(prev => prev.map(p => p._id === productId ? { ...p, status: newStatus as 'active' | 'inactive' } : p))
     } catch (error: unknown) {
       console.error("Error toggling product status:", error);
       let errorMessage = "Failed to update product status";
@@ -218,7 +223,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     } finally {
       setIsToggling(false);
     }
-  }, [productToToggle, products, token, userRole, fetchProducts, search]);
+  }, [productToToggle, products, token, userRole]);
 
   const confirmDelete = useCallback(async () => {
     if (!productToDelete) return;
@@ -237,7 +242,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       toast.success("Product deleted successfully!");
       setDeleteOpen(false);
       setProductToDelete(null);
-      await fetchProducts(search || undefined);
+      setProducts(prev => prev.filter(p => p._id !== productId))
     } catch (error: unknown) {
       console.error("Error deleting product:", error);
       let errorMessage = "Failed to delete product";
@@ -249,16 +254,9 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     } finally {
       setIsDeleting(false);
     }
-  }, [productToDelete, products, token, userRole, fetchProducts, search]);
+  }, [productToDelete, products, token, userRole]);
 
   const columns = useMemo(() => getProductColumns({ onView, onEdit, onDelete, onToggleStatus }), [onView, onEdit, onDelete, onToggleStatus]);
-
-  useEffect(() => {
-    const id = setTimeout(() => {
-      fetchProducts(search.trim() ? search.trim() : undefined)
-    }, 400)
-    return () => clearTimeout(id)
-  }, [search, fetchProducts])
 
   const onDownloadCSV = useCallback(() => {
     if (!downloadProductsCSV(rows)) {
@@ -268,14 +266,18 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     }
   }, [rows])
 
+  const handleSearchEnter = useCallback((v: string) => {
+    setSearch(v)
+  }, [])
+
   return (
     <>
-      <FiltersBar search={search} onSearchChange={setSearch} isSearching={isSearching} onDownloadCSV={onDownloadCSV} />
+      <FiltersBar search={search} onSearchChange={setSearch} onSearchEnter={handleSearchEnter} isSearching={false} onDownloadCSV={onDownloadCSV} />
 
       <div className="mb-4 sm:mb-6">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
           <div className="min-w-[840px]">
-            <DataTable columns={columns} data={rows} />
+            <DataTable columns={columns} data={filteredRows} />
           </div>
         </div>
       </div>
