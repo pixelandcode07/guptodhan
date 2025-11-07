@@ -15,6 +15,8 @@ import { SelectOption, LocationDataProps } from '@/types/locationType';
 import { ClassifiedAdType } from '@/types/classifiedAdType';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
+import { MoveLeft } from 'lucide-react';
 
 // -------------------- Form Data Type --------------------
 type FormData = ClassifiedAdType & {
@@ -25,6 +27,8 @@ type FormData = ClassifiedAdType & {
   subCategory?: SubCategory | null;
 };
 
+
+
 // -------------------- Component --------------------
 export default function PostAdWizard() {
   const [activeTab, setActiveTab] = useState<'step1' | 'step2' | 'step3'>('step1');
@@ -32,7 +36,10 @@ export default function PostAdWizard() {
   const [selectedSubCategory, setSelectedSubCategory] = useState<SubCategory | null>(null);
 
   const { data: session } = useSession()
+  // const token = session?.user?.accessToken
   const token = session?.accessToken
+  console.log("Token in session:", token);
+  // console.log("Token under user:", token);
   // const adminRole = (session?.user as { role?: string })?.role === "admin"
 
   // -------------------- react-hook-form --------------------
@@ -132,6 +139,7 @@ export default function PostAdWizard() {
       await axios.post('/api/v1/classifieds/ads', formData, {
         headers: {
           Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
         },
       });
 
@@ -146,7 +154,13 @@ export default function PostAdWizard() {
 
   return (
     <div className="max-w-6xl mx-auto py-10 min-h-6/12">
-      <h1 className="text-3xl font-bold text-center mb-10">Post Your Ad</h1>
+      <h1 className="text-3xl font-bold text-center mb-10 md:hidden">Post Your Ad</h1>
+      <div className='flex justify-between items-center mb-10 px-10'>
+        <h1 className="text-3xl font-bold hidden md:block"> Post Your Ad</h1>
+        <Button className='hidden md:block'>
+          <Link href="/home/buyandsell" className='flex justify-center items-center gap-2'><MoveLeft className='w-4 h-4 text-gray-100' /> <span>Back to Buy & Sell</span></Link>
+        </Button>
+      </div>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
