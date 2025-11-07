@@ -15,12 +15,12 @@ const initPayment = async (orderId: string) => {
         throw new Error('User details not found for this order.');
     }
 
-    // ✅ FIX: Check if payment already initiated
+    // ✅ Check if payment already initiated
     if (order.transactionId) {
         throw new Error('Payment already initiated for this order. Please use the existing payment link or contact support.');
     }
 
-    // ✅ FIX: Validate order amount
+    // ✅ Validate order amount
     if (order.totalAmount <= 0) {
         throw new Error('Invalid order amount.');
     }
@@ -46,9 +46,10 @@ const initPayment = async (orderId: string) => {
             paymentStatus: 'Pending' 
         });
 
+        console.log(`✅ Payment initiated for order: ${order.orderId}, Transaction: ${transactionId}`);
         return gatewayUrl;
     } catch (error: any) {
-        console.error('SSLCommerz Init Error:', error);
+        console.error('❌ SSLCommerz Init Error:', error);
         throw new Error(`Failed to initiate payment: ${error.message}`);
     }
 };
@@ -58,21 +59,21 @@ const handleSuccessfulPayment = async (transactionId: string) => {
     session.startTransaction();
     
     try {
-        // ✅ FIX: Find order first to check status
+        // ✅ Find order first to check status
         const order = await OrderModel.findOne({ transactionId });
         
         if (!order) {
             throw new Error('Order not found for this transaction.');
         }
 
-        // ✅ FIX: Prevent duplicate processing (idempotency)
+        // ✅ Prevent duplicate processing (idempotency)
         if (order.paymentStatus === 'Paid') {
             console.log(`⚠️ Payment already processed for transaction: ${transactionId}`);
             await session.commitTransaction();
             return order;
         }
 
-        // ✅ FIX: Update order with proper status
+        // ✅ Update order with proper status
         const updatedOrder = await OrderModel.findOneAndUpdate(
             { transactionId, paymentStatus: { $ne: 'Paid' } },
             { 
@@ -96,7 +97,7 @@ const handleSuccessfulPayment = async (transactionId: string) => {
         return updatedOrder;
     } catch (error) {
         await session.abortTransaction();
-        console.error('Error handling successful payment:', error);
+        console.error('❌ Error handling successful payment:', error);
         throw error;
     } finally {
         session.endSession();
@@ -124,7 +125,7 @@ const handleFailedPayment = async (transactionId: string) => {
         
         return order;
     } catch (error) {
-        console.error('Error handling failed payment:', error);
+        console.error('❌ Error handling failed payment:', error);
         throw error;
     }
 };
@@ -147,12 +148,12 @@ const handleCancelledPayment = async (transactionId: string) => {
         console.log(`🚫 Payment cancelled for transaction: ${transactionId}`);
         return order;
     } catch (error) {
-        console.error('Error handling cancelled payment:', error);
+        console.error('❌ Error handling cancelled payment:', error);
         throw error;
     }
 };
 
-// ✅ MAJOR FIX: Added transaction support and idempotency for IPN
+// ✅ Added transaction support and idempotency for IPN
 const validateAndProcessIPN = async (ipnData: any) => {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -193,26 +194,26 @@ const validateAndProcessIPN = async (ipnData: any) => {
         }
 
         // Step 5: Update order with transaction
-        await OrderModel.findOneAndUpdate(
+        const updatedOrder = await OrderModel.findOneAndUpdate(
             { transactionId: ipnData.tran_id, paymentStatus: { $ne: 'Paid' } },
             { 
                 paymentStatus: 'Paid', 
                 orderStatus: 'Processing',
                 paymentMethod: 'SSLCommerz'
             },
-            { session }
+            { new: true, session }
         );
 
         await session.commitTransaction();
         console.log(`✅ IPN processed successfully for transaction: ${ipnData.tran_id}`);
         
         // ✅ TODO: Send confirmation email
-        // await sendPaymentConfirmationEmail(order);
+        // await sendPaymentConfirmationEmail(updatedOrder);
         
-        return { message: 'IPN processed successfully', order };
+        return { message: 'IPN processed successfully', order: updatedOrder };
     } catch (error: any) {
         await session.abortTransaction();
-        console.error('Error processing IPN:', error);
+        console.error('❌ Error processing IPN:', error);
         throw error;
     } finally {
         session.endSession();
