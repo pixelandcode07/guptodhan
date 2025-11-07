@@ -28,7 +28,7 @@ const initiatePayment = async (req: NextRequest) => {
             data: { url } 
         });
     } catch (error: any) {
-        console.error('Payment Initiation Error:', error);
+        console.error('❌ Payment Initiation Error:', error);
         return sendResponse({ 
             success: false, 
             statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
@@ -45,14 +45,20 @@ const handleSuccess = async (req: NextRequest, { params }: { params: { transacti
         const { transactionId } = params;
         await PaymentService.handleSuccessfulPayment(transactionId);
         
-        // ✅ FIX: Redirect to success page with transaction details
-        const redirectUrl = new URL(`/payment/success?tran_id=${transactionId}`, process.env.FRONTEND_URL || process.env.NEXTAUTH_URL);
+        // ✅ Redirect to success page with transaction details
+        const redirectUrl = new URL(
+            `/payment/success?tran_id=${transactionId}`, 
+            process.env.FRONTEND_URL || process.env.NEXTAUTH_URL
+        );
         return NextResponse.redirect(redirectUrl);
     } catch (error: any) {
-        console.error('Success Handler Error:', error);
+        console.error('❌ Success Handler Error:', error);
         
-        // ✅ FIX: Redirect to error page if something goes wrong
-        const redirectUrl = new URL(`/payment/error?message=${encodeURIComponent(error.message)}`, process.env.FRONTEND_URL || process.env.NEXTAUTH_URL);
+        // ✅ Redirect to error page if something goes wrong
+        const redirectUrl = new URL(
+            `/payment/error?message=${encodeURIComponent(error.message)}`, 
+            process.env.FRONTEND_URL || process.env.NEXTAUTH_URL
+        );
         return NextResponse.redirect(redirectUrl);
     }
 };
@@ -64,13 +70,19 @@ const handleFail = async (req: NextRequest, { params }: { params: { transactionI
         const { transactionId } = params;
         await PaymentService.handleFailedPayment(transactionId);
 
-        // ✅ FIX: Redirect to fail page with transaction details
-        const redirectUrl = new URL(`/payment/fail?tran_id=${transactionId}`, process.env.FRONTEND_URL || process.env.NEXTAUTH_URL);
+        // ✅ Redirect to fail page with transaction details
+        const redirectUrl = new URL(
+            `/payment/fail?tran_id=${transactionId}`, 
+            process.env.FRONTEND_URL || process.env.NEXTAUTH_URL
+        );
         return NextResponse.redirect(redirectUrl);
     } catch (error: any) {
-        console.error('Fail Handler Error:', error);
+        console.error('❌ Fail Handler Error:', error);
         
-        const redirectUrl = new URL(`/payment/error?message=${encodeURIComponent(error.message)}`, process.env.FRONTEND_URL || process.env.NEXTAUTH_URL);
+        const redirectUrl = new URL(
+            `/payment/error?message=${encodeURIComponent(error.message)}`, 
+            process.env.FRONTEND_URL || process.env.NEXTAUTH_URL
+        );
         return NextResponse.redirect(redirectUrl);
     }
 };
@@ -82,14 +94,14 @@ const handleCancel = async (req: NextRequest, { params }: { params: { transactio
         const { transactionId } = params;
         await PaymentService.handleCancelledPayment(transactionId);
 
-        // Redirect to cancel page
+        // ✅ Redirect to cancel page
         const redirectUrl = new URL(
             `/payment/cancel?tran_id=${transactionId}`,
             process.env.FRONTEND_URL || process.env.NEXTAUTH_URL
         );
         return NextResponse.redirect(redirectUrl);
     } catch (error: any) {
-        console.error('Cancel Handler Error:', error);
+        console.error('❌ Cancel Handler Error:', error);
 
         const redirectUrl = new URL(
             `/payment/error?message=${encodeURIComponent(error.message)}`,
@@ -115,7 +127,7 @@ const handleIpn = async (req: NextRequest) => {
             data: null
         });
     } catch (error: any) {
-        console.error('IPN Handler Error:', error);
+        console.error('❌ IPN Handler Error:', error);
         
         return sendResponse({
             success: false,
