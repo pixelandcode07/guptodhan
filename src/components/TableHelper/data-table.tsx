@@ -1,7 +1,6 @@
-"use client"
+"use client";
 
-import * as React from "react"
-
+import * as React from "react";
 import {
   ColumnDef,
   flexRender,
@@ -11,7 +10,7 @@ import {
   getSortedRowModel,
   SortingState,
   useReactTable,
-} from "@tanstack/react-table"
+} from "@tanstack/react-table";
 
 import {
   Table,
@@ -20,27 +19,31 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { PaginationControls } from "./PaginationControls"
-import { SortableColumnHeader } from "./SortHeader"
-import { Input } from "../ui/input"
-import Link from "next/link"
-import { ArrowUpNarrowWide } from "lucide-react"
+} from "@/components/ui/table";
+import { PaginationControls } from "./PaginationControls";
+import { SortableColumnHeader } from "./SortHeader";
+import { Input } from "../ui/input";
+import Link from "next/link";
+import { ArrowUpNarrowWide } from "lucide-react";
 
 interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
-  data: TData[]
-  rearrangePath?: string
+  columns: ColumnDef<TData, TValue>[];
+  data: TData[];
+  /** NEW – setter for optimistic updates */
+  setData?: React.Dispatch<React.SetStateAction<TData[]>>;
+  rearrangePath?: string;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  rearrangePath
+  setData,
+  rearrangePath,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [globalFilter, setGlobalFilter] = React.useState("") // Search
-  const [pageSize, setPageSize] = React.useState(10) // Entities
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [globalFilter, setGlobalFilter] = React.useState("");
+  const [pageSize, setPageSize] = React.useState(10);
+
   const table = useReactTable({
     data,
     columns,
@@ -50,24 +53,20 @@ export function DataTable<TData, TValue>({
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    defaultColumn: {
-      enableSorting: true,
-    },
-    state: {
-      sorting,
-      globalFilter,
-    },
-    initialState: {
-      pagination: {
-        pageSize: pageSize,
-      },
-    },
-  })
+    state: { sorting, globalFilter },
+    initialState: { pagination: { pageSize } },
+    meta: { setData },
+  });
+
+  // sync pageSize changes
+  React.useEffect(() => {
+    table.setPageSize(pageSize);
+  }, [pageSize, table]);
 
   return (
     <div className="overflow-hidden rounded-md border">
       {/* Top Controls */}
-      <div className="flex justify-between items-center p-2">
+      <div className="flex flex-col sm:flex-row justify-between items-center p-2 gap-3">
         {/* Show entries */}
         <div className="flex items-center gap-2">
           Show
@@ -75,19 +74,14 @@ export function DataTable<TData, TValue>({
             type="number"
             min={1}
             value={pageSize}
-            onChange={(e) => {
-              const size = Number(e.target.value)
-              setPageSize(size)
-              table.setPageSize(size)
-            }}
+            onChange={(e) => setPageSize(Number(e.target.value))}
             className="w-20 border border-gray-500"
           />
           entries
         </div>
 
-        {/* Search + Optional Rearrange */}
-        <div className="flex items-center justify-center gap-2">
-          
+        {/* Search + Rearrange */}
+        <div className="flex items-center gap-2">
           <div className="flex items-center gap-2">
             Search:
             <Input
@@ -99,13 +93,13 @@ export function DataTable<TData, TValue>({
             />
           </div>
 
-          {/* ✅ Rearrange Button (if route given) */}
           {rearrangePath && (
             <Link
               href={rearrangePath}
-              className="px-3 py-1 border rounded bg-[#00c2b2] text-white flex justify-center items-center text-base"
+              className="px-3 py-1 border rounded bg-[#00c2b2] text-white flex items-center gap-1 text-base"
             >
-              <ArrowUpNarrowWide /> Rearrange Categories
+              <ArrowUpNarrowWide className="h-4 w-4" />
+              Rearrange Categories
             </Link>
           )}
         </div>
@@ -118,13 +112,13 @@ export function DataTable<TData, TValue>({
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
                 const canSort =
-                  header.column.getCanSort?.() && header.column.id !== "actions"
+                  header.column.getCanSort?.() && header.column.id !== "action";
                 const renderedHeader = header.isPlaceholder
                   ? null
                   : flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )
+                      header.column.columnDef.header,
+                      header.getContext()
+                    );
                 return (
                   <TableHead key={header.id}>
                     {canSort && renderedHeader ? (
@@ -135,11 +129,12 @@ export function DataTable<TData, TValue>({
                       renderedHeader
                     )}
                   </TableHead>
-                )
+                );
               })}
             </TableRow>
           ))}
         </TableHeader>
+
         <TableBody>
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
@@ -163,9 +158,10 @@ export function DataTable<TData, TValue>({
           )}
         </TableBody>
       </Table>
+
       <div className="py-4">
         <PaginationControls table={table} />
       </div>
     </div>
-  )
+  );
 }

@@ -32,8 +32,8 @@ export default function MobileFooter() {
                 </li>
                 <li>
                     <Link
-                        href="/categories"
-                        className={`text-sm flex flex-col items-center ${isActive("/categories") ? "text-[#0097E9]" : "text-gray-800"
+                        href="/home/buyandsell/categories"
+                        className={`text-sm flex flex-col items-center ${isActive("/home/buyandsell/categories") ? "text-[#0097E9]" : "text-gray-800"
                             }`}
                     >
                         <LayoutPanelTopIcon size={20} />

@@ -15,7 +15,7 @@ export default async function HeroImage({
   bottomBanners,
 }: HeroImageProps) {
   return (
-    <div className="md:max-w-[80vw] mx-auto px-4 py-6 space-y-6">
+    // <div className="md:max-w-[80vw] mx-auto px-4 py-6 space-y-6">
       <div className="grid  md:grid-cols-3 gap-4">
         {/* LEFT SIDE → Shows RIGHT banner on desktop */}
         <div className="md:col-span-2 ">
@@ -82,6 +82,6 @@ export default async function HeroImage({
           )}
         </div>
       </div>
-    </div>
+    // {/* </div> */}
   );
 }

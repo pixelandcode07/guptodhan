@@ -1,35 +1,35 @@
+import { BannerDataType } from '@/types/BuySellBannerType';
 import Image from 'next/image'
-import React from 'react'
-// import BuySellBanner from '../../../../../public/img/buysell/buysell-banner.png'
-
-interface BannerData {
-    bannerImage: string;
-    bannerDescription: string;
-    status: string;
-    _id: string;
-}
-
 
 interface BuyandSellBannerProps {
-    banner: BannerData[];
+    banner: BannerDataType[];
 }
 
 export default async function BuyandSellBanner({ banner }: BuyandSellBannerProps) {
-    // console.log(banner)
-
     return (
         <div className="space-y-5">
             {banner.map((bannerImg) =>
                 bannerImg.status === "active" ? (
                     <div key={bannerImg._id} className="banner py-5">
                         {/* Banner Image */}
-                        <Image
-                            src={bannerImg.bannerImage}
-                            width={1000}
-                            height={300}
-                            alt="banner"
-                            className="w-full h-[300px] object-cover rounded-md"
-                        />
+                        <div className='hidden md:block'>
+                            <Image
+                                src={bannerImg.bannerImage}
+                                width={1000}
+                                height={300}
+                                alt="banner"
+                                className="w-full h-[300px] object-cover rounded-md"
+                            />
+                        </div>
+                        <div className='md:hidden'>
+                            <Image
+                                src={bannerImg.bannerImage}
+                                width={1000}
+                                height={200}
+                                alt="banner"
+                                className="w-full h-[200px] object-cover rounded-md"
+                            />
+                        </div>
                         {/* Banner Text */}
                         {/* <div
                             className="mt-2 text-gray-700"

@@ -20,7 +20,7 @@ export default async function Hero() {
         <HeroNav categories={categories} />
       </nav>
 
-      <main>
+      <main className='md:max-w-[90vw] mx-auto py-2 md:py-5 px-1 md:px-10'>
         <HeroImage
           leftBanners={leftBanners}
           rightBanners={rightBanners}

@@ -15,25 +15,39 @@ const createAd = async (req: NextRequest) => {
   await dbConnect();
 
 
+
   // 1️⃣ Token verification
   const authHeader = req.headers.get('authorization');
+  console.log("=== CREATE AD START ===");
+  console.log("Auth header:", authHeader);
   if (!authHeader?.startsWith('Bearer ')) throw new Error('Authorization token missing.');
   const token = authHeader.split(' ')[1];
+  console.log("Token:", token);
+
   const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
+  console.log("Decoded:", decoded);
   const userId = decoded.userId as string;
 
   // 2️⃣ FormData & images
   const formData = await req.formData();
   const images = formData.getAll('images') as File[];
+  console.log("Images:", images);
+  console.log("Images length:", images.length);
+  console.log("First image:", images[0]);
+  console.log("First image type:", images[0]?.constructor?.name);
   if (!images.length) throw new Error('At least one image is required.');
 
   const uploadResults = await Promise.all(
     images.map(async file => uploadToCloudinary(Buffer.from(await file.arrayBuffer()), 'classified-ads'))
   );
-
+  console.log("Upload results:", uploadResults);
+  
   const imageUrls = uploadResults.map(r => r.secure_url);
+  console.log("Image URLs:", imageUrls);
+
   // 3️⃣ Payload mapping
   const payload: any = { images: imageUrls, user: userId, };
+  console.log("Payload before validation:", payload);
   for (const [key, value] of formData.entries()) {
     if (key !== 'images' && typeof value === 'string') {
       if (key.startsWith('contactDetails.')) {
@@ -48,10 +62,10 @@ const createAd = async (req: NextRequest) => {
   // Convert types
   if (payload.price) payload.price = Number(payload.price);
   if (payload.isNegotiable) payload.isNegotiable = payload.isNegotiable === 'true';
-
+console.log("Payload before validation:", payload);
   // Validation
   const validatedData = createAdValidationSchema.parse(payload);
-  console.log("📝 Validated data:", validatedData);
+  console.log("Validated data:", validatedData);
 
   // Build type-safe payload for Mongo
   const payloadForService: Partial<IClassifiedAd> = {
@@ -166,15 +180,15 @@ const deleteAd = async (req: NextRequest, { params }: { params: { id: string } }
 };
 
 const getPublicAdsByCategoryId = async (_req: NextRequest, { params }: { params: Promise<{ categoryId: string }> }) => {
-    await dbConnect();
-    const { categoryId } = await params;
-    const result = await ClassifiedAdServices.getPublicAdsByCategoryIdFromDB(categoryId);
-    return sendResponse({
-        success: true,
-        statusCode: StatusCodes.OK,
-        message: 'Ads for category retrieved successfully!',
-        data: result,
-    });
+  await dbConnect();
+  const { categoryId } = await params;
+  const result = await ClassifiedAdServices.getPublicAdsByCategoryIdFromDB(categoryId);
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Ads for category retrieved successfully!',
+    data: result,
+  });
 };
 
 const getFiltersForCategory = async (req: NextRequest) => {
@@ -185,14 +199,14 @@ const getFiltersForCategory = async (req: NextRequest) => {
   if (!categoryId) {
     throw new Error('Category ID is required to get filters.');
   }
-  
+
   const result = await ClassifiedAdServices.getFiltersForCategoryFromDB(categoryId);
-  
-  return sendResponse({ 
-    success: true, 
-    statusCode: StatusCodes.OK, 
-    message: 'Filter data retrieved successfully', 
-    data: result 
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Filter data retrieved successfully',
+    data: result
   });
 };
 
@@ -229,9 +243,9 @@ const updateAdStatus = async (req: NextRequest, { params }: { params: Promise<{ 
 const searchAds = async (req: NextRequest) => {
   await dbConnect();
   const { searchParams } = new URL(req.url);
-  
+
   const filters: Record<string, any> = {};
-  
+
   // URL থেকে সব ফিল্টার সংগ্রহ করা হচ্ছে
   if (searchParams.get('category')) filters.category = searchParams.get('category');
   if (searchParams.get('subCategory')) filters.subCategory = searchParams.get('subCategory');
@@ -241,26 +255,26 @@ const searchAds = async (req: NextRequest) => {
   if (searchParams.get('upazila')) filters.upazila = searchParams.get('upazila');
   if (searchParams.get('minPrice')) filters.minPrice = searchParams.get('minPrice');
   if (searchParams.get('maxPrice')) filters.maxPrice = searchParams.get('maxPrice');
-  
+
   // ✅ searchAdsInDB সার্ভিস ফাংশনটিকে ফিল্টারসহ কল করা হচ্ছে
   const result = await ClassifiedAdServices.searchAdsInDB(filters);
-  
-  return sendResponse({ 
-    success: true, 
-    statusCode: StatusCodes.OK, 
-    message: 'Ads retrieved based on search criteria', 
-    data: result 
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Ads retrieved based on search criteria',
+    data: result
   });
 };
 
-export const ClassifiedAdController = { 
-  createAd, 
+export const ClassifiedAdController = {
+  createAd,
   getAllAds,
-  getSingleAd, 
-  updateAd, 
-  deleteAd, 
+  getSingleAd,
+  updateAd,
+  deleteAd,
   getPublicAds,
-  getPublicAdById, 
+  getPublicAdById,
   getPublicAdsByCategoryId,
   getFiltersForCategory,
   updateAdStatus,

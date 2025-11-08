@@ -18,7 +18,7 @@ export default function JustForYou({ justForYouData }: JustForYouProps) {
   };
 
   return (
-    <div className="bg-gray-100 max-w-7xl mx-auto py-15">
+    <div className="bg-gray-100 mb-0 my-3 md:p-6 mt-2 md:max-w-[90vw] mx-auto">
       <PageHeader
         title="Just For You"
       />

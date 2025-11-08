@@ -33,7 +33,7 @@ export default function FlashSale({ flashSaleData, middleHomepage }: FlashSalePr
   }, []);
 
   return (
-    <div className="bg-gray-100 pt-15">
+    <div className="bg-gray-100 mb-0 my-3 md:p-6 mt-2 md:max-w-[90vw] mx-auto">
       <div className="max-w-7xl mx-auto">
         <PageHeader
           title="Flash Sale"

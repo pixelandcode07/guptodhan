@@ -286,9 +286,8 @@ export default async function CategoryItemsPage({ params }: { params: Promise<{ 
               {[1, 2, 3, 4, 5].map((p) => (
                 <button
                   key={p}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-                    p === 1 ? "bg-green-600 text-white" : "bg-white text-gray-700 hover:bg-gray-100"
-                  }`}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition ${p === 1 ? "bg-green-600 text-white" : "bg-white text-gray-700 hover:bg-gray-100"
+                    }`}
                 >
                   {p}
                 </button>
@@ -303,3 +302,4 @@ export default async function CategoryItemsPage({ params }: { params: Promise<{ 
     </div>
   );
 }
+

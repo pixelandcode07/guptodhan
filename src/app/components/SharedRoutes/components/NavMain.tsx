@@ -29,7 +29,7 @@ export default function NavMain() {
   return (
     <div> 
 
-    <div className="bg-[#0097E9] md:bg-[#FFFFFF] text-black md:max-w-[89vw] m-auto  flex justify-between items-center py-2 md:py-5 px-1 md:px-10 border-2 md:border-0">
+    <div className="bg-[#0097E9] md:bg-[#FFFFFF] text-black md:max-w-[90vw] m-auto flex justify-between items-center py-2 md:py-5 px-1 md:px-1 lg:px-10 border-2 md:border-0">
       <div className="flex justify-between items-center gap2">
         <div className="flex lg:block items-center">
           {/* <button
@@ -51,12 +51,12 @@ export default function NavMain() {
           </Link>
         </div>
         {/* Search functionality for mobile view */}
-        <div className="search flex lg:hidden max-w-1/2 items-center justify-center w-full  my-2 md:my-5 relative">
+        <div className="search flex md:hidden max-w-1/2 items-center justify-center w-full  my-2 md:my-5 relative">
           <SearchBar />
         </div>
       </div>
       {/* Search functionality for Laptop view */}
-      <div className="search hidden   lg:flex items-center justify-center w-full max-w-md mx-auto relative">
+      <div className="search hidden md:flex items-center justify-center w-full max-w-[30vw] lg:max-w-md mx-auto relative">
         <SearchBar />
       </div>
 

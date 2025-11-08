@@ -25,8 +25,6 @@ export default async function MainHomePage() {
     fetchEcommerceBanners(),
     fetchFeaturedCategories()
   ]);
-
-  console.log("featuredData", featuredData)
   const { middleHomepage, topShoppage } = ecommerceBanners;
 
 
