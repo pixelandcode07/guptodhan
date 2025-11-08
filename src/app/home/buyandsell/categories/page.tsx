@@ -5,7 +5,7 @@ import Link from 'next/link';
 export default async function BuySellCategories() {
     const allCategory = await fetchAllBuySellData();
     return (
-        <div className="px-5 py-3">
+        <div className="px-5 py-3 mb-20">
             {/* Scrollable Container */}
             <div className="grid grid-cols-2 gap-5 overflow-y-auto scrollbar-hide space-y-3">
                 {allCategory?.map((cat) => (

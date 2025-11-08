@@ -115,7 +115,7 @@ export default function PostAdWizard() {
       formData.append('upazila', data.upazila?.value || '');
       formData.append('condition', data.condition || '');
       formData.append('authenticity', data.authenticity || '');
-      if (data.brand) formData.append('brand', data.brand.value || data.brand); // if using Creatable
+      if (data.brand) formData.append('brand', data.brand.value || data.brand);
       if (data.productModel) formData.append('productModel', data.productModel.value || data.productModel);
       if (data.edition) formData.append('edition', data.edition.value || data.edition);
       formData.append('description', data.description || '');
