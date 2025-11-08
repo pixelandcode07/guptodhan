@@ -14,7 +14,7 @@ export default async function BusinessCategories() {
     return (
       <div className="m-5 p-5 border rounded-lg bg-red-50 text-red-700">
         <p className="font-semibold">Access Denied</p>
-        <p>You must be logged in as an admin to view this page.</p>
+        <p>You must be logged in as an admin to view this page clearance.</p>
       </div>
     );
   }
