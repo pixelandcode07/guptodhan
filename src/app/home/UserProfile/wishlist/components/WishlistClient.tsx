@@ -7,24 +7,13 @@ import Link from 'next/link'
 import axios from 'axios'
 import { Heart, Trash2, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import FancyLoadingPage from '@/app/general/loading'
 import { useWishlist } from '@/contexts/WishlistContext'
 import { useCart } from '@/contexts/CartContext'
-
-export interface WishlistProduct {
-  _id: string
-  wishlistID: string
-  productID: {
-    _id: string
-    productTitle: string
-    thumbnailImage: string
-    photoGallery?: string[]
-    productPrice: number
-    discountPrice?: number
-  } | string
-  createdAt: string
-}
+import { useWishlistSelection } from './useWishlistSelection'
+import type { WishlistProduct } from '../types'
 
 interface WishlistClientProps {
   initialWishlistItems?: WishlistProduct[]
@@ -117,6 +106,8 @@ export default function WishlistClient({ initialWishlistItems = [] }: WishlistCl
         if (deleteResponse.data.success) {
           // Remove from local state immediately
           setWishlistItems(prev => prev.filter(item => item._id !== wishlistItemId))
+          // Deselect if selected
+          deselect(wishlistItemId)
           // Refresh wishlist count in context (updates navbar badge)
           await refreshWishlist()
           
@@ -140,6 +131,23 @@ export default function WishlistClient({ initialWishlistItems = [] }: WishlistCl
     }
   }
 
+  const {
+    selectedItems,
+    isAddingSelected,
+    isAllSelected,
+    handleToggleSelect,
+    handleSelectAll,
+    handleAddSelectedToCart,
+    deselect,
+  } = useWishlistSelection({ 
+    wishlistItems, 
+    addToCart: addToCartContext, 
+    refreshWishlist,
+    removeFromLocal: (ids: string[]) => {
+      setWishlistItems(prev => prev.filter(i => !ids.includes(i._id)))
+    }
+  })
+
   if (loading && wishlistItems.length === 0) {
     return <FancyLoadingPage />
   }
@@ -158,16 +166,47 @@ export default function WishlistClient({ initialWishlistItems = [] }: WishlistCl
     )
   }
 
-  return <WishlistGrid items={wishlistItems} onRemove={handleRemoveFromWishlist} onAddToCart={handleAddToCart} />
+  return (
+    <WishlistGrid 
+      items={wishlistItems} 
+      onRemove={handleRemoveFromWishlist} 
+      onAddToCart={handleAddToCart}
+      selectedItems={selectedItems}
+      onToggleSelect={handleToggleSelect}
+      onSelectAll={handleSelectAll}
+      isAllSelected={isAllSelected}
+      onAddSelectedToCart={handleAddSelectedToCart}
+      isAddingSelected={isAddingSelected}
+      isCartLoading={isCartLoading}
+    />
+  )
 }
 
 interface WishlistGridProps {
   items: WishlistProduct[]
   onRemove: (wishlistId: string) => void
   onAddToCart: (productId: string | { _id: string }, wishlistItemId: string) => void
+  selectedItems: Set<string>
+  onToggleSelect: (wishlistItemId: string) => void
+  onSelectAll: (checked: boolean) => void
+  isAllSelected: boolean
+  onAddSelectedToCart: () => void
+  isAddingSelected: boolean
+  isCartLoading: boolean
 }
 
-function WishlistGrid({ items, onRemove, onAddToCart }: WishlistGridProps) {
+function WishlistGrid({ 
+  items, 
+  onRemove, 
+  onAddToCart,
+  selectedItems,
+  onToggleSelect,
+  onSelectAll,
+  isAllSelected,
+  onAddSelectedToCart,
+  isAddingSelected,
+  isCartLoading
+}: WishlistGridProps) {
   if (items.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm p-12 text-center">
@@ -182,15 +221,55 @@ function WishlistGrid({ items, onRemove, onAddToCart }: WishlistGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {items.map((item) => (
-        <WishlistItem
-          key={item._id}
-          item={item}
-          onRemove={onRemove}
-          onAddToCart={onAddToCart}
-        />
-      ))}
+    <div className="space-y-4">
+      {/* Selection Controls */}
+      {items.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-2 border-gray-200">
+          <div className="flex items-center gap-3">
+            <Checkbox
+              checked={isAllSelected}
+              onCheckedChange={onSelectAll}
+              aria-label="Select all items"
+              className="w-5 h-5"
+            />
+            <label 
+              className="text-sm font-medium text-gray-700 cursor-pointer select-none" 
+              onClick={() => onSelectAll(!isAllSelected)}
+            >
+              Select All
+            </label>
+            {selectedItems.size > 0 && (
+              <span className="text-sm text-blue-600 font-semibold">
+                ({selectedItems.size} {selectedItems.size === 1 ? 'item' : 'items'} selected)
+              </span>
+            )}
+          </div>
+          {selectedItems.size > 0 && (
+            <Button
+              onClick={onAddSelectedToCart}
+              disabled={isAddingSelected || isCartLoading}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              {isAddingSelected || isCartLoading ? 'Adding...' : `Add ${selectedItems.size} to Cart`}
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Wishlist Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {items.map((item) => (
+          <WishlistItem
+            key={item._id}
+            item={item}
+            onRemove={onRemove}
+            onAddToCart={onAddToCart}
+            isSelected={selectedItems.has(item._id)}
+            onToggleSelect={onToggleSelect}
+          />
+        ))}
+      </div>
     </div>
   )
 }
@@ -199,13 +278,16 @@ interface WishlistItemProps {
   item: WishlistProduct
   onRemove: (wishlistId: string) => void
   onAddToCart: (productId: string | { _id: string }, wishlistItemId: string) => void
+  isSelected: boolean
+  onToggleSelect: (wishlistItemId: string) => void
 }
 
-function WishlistItem({ item, onRemove, onAddToCart }: WishlistItemProps) {
+function WishlistItem({ item, onRemove, onAddToCart, isSelected, onToggleSelect }: WishlistItemProps) {
   const { isLoading: isCartLoading } = useCart()
   const [isAddingToCart, setIsAddingToCart] = React.useState(false)
   
-  const handleAddToCartClick = async () => {
+  const handleAddToCartClick = async (e: React.MouseEvent) => {
+    e.stopPropagation()
     setIsAddingToCart(true)
     try {
       // Pass both productId and wishlist item _id so it can be removed after adding to cart
@@ -214,6 +296,16 @@ function WishlistItem({ item, onRemove, onAddToCart }: WishlistItemProps) {
       setIsAddingToCart(false)
     }
   }
+
+  const handleRemoveClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onRemove(item._id)
+  }
+
+  const handleCardClick = () => {
+    onToggleSelect(item._id)
+  }
+  
   // Extract product data
   const product = typeof item.productID === 'object' && item.productID !== null
     ? item.productID
@@ -228,21 +320,57 @@ function WishlistItem({ item, onRemove, onAddToCart }: WishlistItemProps) {
     '/img/product/p-1.png'
 
   return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-      <Link href={`/products/${productId}`}>
-        <div className="relative aspect-square bg-gray-100">
+    <div 
+      className={`bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer border-2 ${
+        isSelected 
+          ? 'border-blue-500 shadow-blue-100 bg-blue-50/30' 
+          : 'border-gray-200 hover:border-gray-300'
+      }`}
+      onClick={handleCardClick}
+    >
+      {/* Checkbox overlay on image */}
+      <div className="relative aspect-square bg-gray-100 group">
+        <Link href={`/products/${productId}`} onClick={(e) => e.stopPropagation()}>
           <Image
             src={thumbnailImage}
             alt={productTitle}
             fill
-            className="object-cover"
+            className={`object-cover transition-opacity ${isSelected ? 'opacity-90' : ''}`}
+          />
+        </Link>
+        
+        {/* Selection overlay */}
+        {isSelected && (
+          <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
+            <div className="bg-blue-500 text-white rounded-full p-2 shadow-lg">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          </div>
+        )}
+
+        {/* Checkbox in top-left corner */}
+        <div 
+          className="absolute top-3 left-3 z-10 bg-white/95 backdrop-blur-sm rounded-md p-1.5 shadow-md hover:bg-white transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect(item._id)}
+            aria-label={`Select ${productTitle}`}
+            className="w-5 h-5"
           />
         </div>
-      </Link>
+      </div>
       
       <div className="p-4">
-        <Link href={`/products/${productId}`}>
-          <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-blue-600 transition-colors">
+        <Link href={`/products/${productId}`} onClick={(e) => e.stopPropagation()}>
+          <h3 className={`font-semibold mb-2 line-clamp-2 transition-colors ${
+            isSelected 
+              ? 'text-blue-700' 
+              : 'text-gray-900 hover:text-blue-600'
+          }`}>
             {productTitle}
           </h3>
         </Link>
@@ -258,11 +386,11 @@ function WishlistItem({ item, onRemove, onAddToCart }: WishlistItemProps) {
           )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
           <Button
             variant="outline"
             size="sm"
-            className="flex-1"
+            className={`flex-1 ${isSelected ? 'border-blue-500 text-blue-600 hover:bg-blue-50' : ''}`}
             onClick={handleAddToCartClick}
             disabled={isAddingToCart || isCartLoading}
           >
@@ -272,7 +400,7 @@ function WishlistItem({ item, onRemove, onAddToCart }: WishlistItemProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onRemove(item._id)}
+            onClick={handleRemoveClick}
             className="text-red-600 hover:text-red-700 hover:bg-red-50"
           >
             <Trash2 className="w-4 h-4" />

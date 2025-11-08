@@ -14,7 +14,7 @@ export async function generateMetadata() {
 
 export default function BuySellPage() {
     return (
-        <div>
+        <div className="px-2 md:max-w-[80vw] mx-auto">
             <BuyandSellHome />
         </div>
     )

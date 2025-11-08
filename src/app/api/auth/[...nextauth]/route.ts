@@ -53,7 +53,7 @@ export const authOptions = {
             process.env.JWT_ACCESS_EXPIRES_IN!
         );
       }
-      console.log("access tokens", token)
+      // console.log("access tokens", token)
       return token;
     },
 
@@ -61,6 +61,7 @@ export const authOptions = {
       if (session.user) {
         session.user.role = token.role;
         session.user.id = token.id;
+        session.user.accessToken = token.accessToken;
       }
       
       session.accessToken = token.accessToken;

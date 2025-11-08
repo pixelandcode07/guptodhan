@@ -11,14 +11,14 @@ export const createAdValidationSchema = z.object({
   condition: z.enum(['new', 'used']),
   authenticity: z.string(),
   description: z.string().min(20),
-  price: z.number().positive(),
-  isNegotiable: z.boolean().optional(),
+  price: z.coerce.number().positive(), 
+  isNegotiable: z.coerce.boolean().optional(),
   images: z.array(z.string().url()).min(1),
   contactDetails: z.object({
     name: z.string(),
     phone: z.string(),
-    isPhoneHidden: z.boolean().default(false),
-    email: z.string().optional(),
+    isPhoneHidden: z.coerce.boolean().default(false),
+    email: z.string().email().optional(),
   }),
   brand: z.string().optional(),
   productModel: z.string().optional(),
@@ -31,21 +31,25 @@ export const updateAdValidationSchema = z.object({
   division: z.string().optional(),
   district: z.string().optional(),
   upazila: z.string().optional(),
-  price: z.number().positive().optional(),
+  price: z.coerce.number().positive().optional(),
+
   category: z.string().optional(),
   subCategory: z.string().optional(),
   condition: z.enum(['new', 'used']).optional(),
   authenticity: z.string().optional(),
   description: z.string().min(20).optional(),
-  isNegotiable: z.boolean().optional(),
+  isNegotiable: z.coerce.boolean().optional(),
+
   contactDetails: z
     .object({
       name: z.string().optional(),
       phone: z.string().optional(),
-      isPhoneHidden: z.boolean().optional(),
-      email: z.string().optional(),
+      isPhoneHidden: z.coerce.boolean().optional(),
+
+      email: z.string().email().optional(),
     })
     .optional(),
+
   brand: z.string().optional(),
   productModel: z.string().optional(),
   edition: z.string().optional(),

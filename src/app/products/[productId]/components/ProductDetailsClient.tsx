@@ -161,11 +161,12 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
   const handleBuyNow = async () => {
     setIsBuyingNow(true);
     try {
-      // TODO: Implement buy now functionality
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      toast.success('Redirecting to checkout...');
-      // router.push('/checkout');
-    } catch {
+      // Add product to cart first (skip modal for Buy Now)
+      await addToCart(product._id, quantity, true);
+      // Redirect to checkout page
+      router.push('/home/product/shoppinginfo');
+    } catch (error) {
+      console.error('Error in buy now:', error);
       toast.error('Failed to proceed to checkout');
     } finally {
       setIsBuyingNow(false);

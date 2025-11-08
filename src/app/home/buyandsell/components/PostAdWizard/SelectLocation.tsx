@@ -41,7 +41,7 @@ export default function SelectLocation({
                     exit="exit"
                     className="space-y-4"
                 >
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-5 md:px-20">
                         <div>
                             <Label className="mb-2">Division</Label>
                             <Controller
@@ -74,12 +74,12 @@ export default function SelectLocation({
                         </div>
                     </div>
 
-                    <div>
+                    <div className="px-5 md:px-20">
                         <Label className="mb-2">Details</Label>
                         <Textarea {...register('details')} placeholder="Write your address..." />
                     </div>
 
-                    <div className="flex justify-between mt-6">
+                    <div className="flex justify-between mt-6 px-5 md:px-20">
                         <Button type="button" variant="outline" onClick={onBack}>
                             Back
                         </Button>

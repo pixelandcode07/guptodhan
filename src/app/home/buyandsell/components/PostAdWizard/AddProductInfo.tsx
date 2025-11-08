@@ -57,7 +57,7 @@ export default function AddProductInfo({ form, onBack, onSubmit }: AddProductInf
           exit="exit"
           className="space-y-4"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-5 md:px-10">
             {/* Left Column */}
             <div className="space-y-4">
               {/* Condition */}
@@ -68,10 +68,16 @@ export default function AddProductInfo({ form, onBack, onSubmit }: AddProductInf
                   control={control}
                   render={({ field }) => (
                     <RadioGroup value={field.value} onValueChange={field.onChange} className="flex gap-2 mt-2">
-                      <RadioGroupItem value="new" id="new" />
-                      <Label htmlFor="new">New</Label>
-                      <RadioGroupItem value="used" id="used" />
-                      <Label htmlFor="used">Used</Label>
+                      <div className='flex gap-24'>
+                        <div className='flex items-center gap-2'>
+                          <RadioGroupItem value="new" id="new" />
+                          <Label htmlFor="new">New</Label>
+                        </div>
+                        <div className='flex items-center gap-2'>
+                          <RadioGroupItem value="used" id="used" />
+                          <Label htmlFor="used">Used</Label>
+                        </div>
+                      </div>
                     </RadioGroup>
                   )}
                 />
@@ -85,10 +91,16 @@ export default function AddProductInfo({ form, onBack, onSubmit }: AddProductInf
                   control={control}
                   render={({ field }) => (
                     <RadioGroup value={field.value} onValueChange={field.onChange} className="flex gap-2 mt-2">
-                      <RadioGroupItem value="original" id="original" />
-                      <Label htmlFor="original">Original</Label>
-                      <RadioGroupItem value="refurbished" id="refurbished" />
-                      <Label htmlFor="refurbished">Refurbished</Label>
+                      <div className='flex gap-16'>
+                        <div className='flex items-center gap-2'>
+                          <RadioGroupItem value="original" id="original" />
+                          <Label htmlFor="original">Original</Label>
+                        </div>
+                        <div className='flex items-center gap-2'>
+                          <RadioGroupItem value="refurbished" id="refurbished" />
+                          <Label htmlFor="refurbished">Refurbished</Label>
+                        </div>
+                      </div>
                     </RadioGroup>
                   )}
                 />
@@ -96,7 +108,7 @@ export default function AddProductInfo({ form, onBack, onSubmit }: AddProductInf
 
               {/* Brand */}
               <div>
-                <Label>Brand</Label>
+                <Label className='mb-2'>Brand</Label>
                 <Controller
                   name="brand"
                   control={control}
@@ -114,7 +126,7 @@ export default function AddProductInfo({ form, onBack, onSubmit }: AddProductInf
 
               {/* Model */}
               <div>
-                <Label>Model</Label>
+                <Label className='mb-2'>Model</Label>
                 <Controller
                   name="productModel"
                   control={control}
@@ -132,7 +144,7 @@ export default function AddProductInfo({ form, onBack, onSubmit }: AddProductInf
 
               {/* Edition */}
               <div>
-                <Label>Edition</Label>
+                <Label className='mb-2'>Edition</Label>
                 <Controller
                   name="edition"
                   control={control}
@@ -150,19 +162,19 @@ export default function AddProductInfo({ form, onBack, onSubmit }: AddProductInf
 
               {/* Title */}
               <div>
-                <Label>Title</Label>
+                <Label className='mb-2'>Title</Label>
                 <Input {...register('title', { required: true })} />
               </div>
 
               {/* Description */}
               <div>
-                <Label>Description</Label>
+                <Label className='mb-2'>Description</Label>
                 <Textarea {...register('description', { required: true })} />
               </div>
 
               {/* Price */}
               <div>
-                <Label>Price</Label>
+                <Label className='mb-2'>Price</Label>
                 <Input type="number" {...register('price', { required: true })} />
               </div>
 
@@ -211,15 +223,15 @@ export default function AddProductInfo({ form, onBack, onSubmit }: AddProductInf
               {/* Contact */}
               <div className="space-y-4">
                 <div>
-                  <Label>Your Name</Label>
+                  <Label className='mb-2'>Your Name</Label>
                   <Input {...register('contactDetails.name', { required: true })} />
                 </div>
                 <div>
-                  <Label>Email</Label>
+                  <Label className='mb-2'>Email</Label>
                   <Input type="email" {...register('contactDetails.email')} />
                 </div>
                 <div>
-                  <Label>Phone Number</Label>
+                  <Label className='mb-2'>Phone Number</Label>
                   <Input {...register('contactDetails.phone', { required: true })} />
                 </div>
                 <div>
@@ -243,7 +255,7 @@ export default function AddProductInfo({ form, onBack, onSubmit }: AddProductInf
           </div>
 
           {/* Navigation */}
-          <div className="flex justify-between mt-6">
+          <div className="flex justify-between my-10 px-5 md:px-10">
             <Button type="button" variant="outline" onClick={onBack}>
               Back
             </Button>
