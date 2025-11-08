@@ -18,7 +18,7 @@ export default function EditVendorCategoryForm({ category, token }: Props) {
   const [slug, setSlug] = useState(category.slug);
   const [status, setStatus] = useState(category.status);
   const [loading, setLoading] = useState(false);
-  // const router = useRouter();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +33,7 @@ export default function EditVendorCategoryForm({ category, token }: Props) {
           error: (err) => err.message,
         }
       );
-      // router.push("/general/view/vendor/categories");
+      router.push("/general/view/vendor/categories");
     } catch (error) {
       // toast handles it
     } finally {
