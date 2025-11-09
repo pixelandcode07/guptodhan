@@ -240,32 +240,65 @@ const updateAdStatus = async (req: NextRequest, { params }: { params: Promise<{ 
 };
 
 
+// const searchAds = async (req: NextRequest) => {
+//   await dbConnect();
+//   const { searchParams } = new URL(req.url);
+
+//   const filters: Record<string, any> = {};
+
+//   // URL থেকে সব ফিল্টার সংগ্রহ করা হচ্ছে
+//   if (searchParams.get('category')) filters.category = searchParams.get('category');
+//   if (searchParams.get('subCategory')) filters.subCategory = searchParams.get('subCategory');
+//   if (searchParams.get('brand')) filters.brand = searchParams.get('brand');
+//   if (searchParams.get('division')) filters.division = searchParams.get('division');
+//   if (searchParams.get('district')) filters.district = searchParams.get('district');
+//   if (searchParams.get('upazila')) filters.upazila = searchParams.get('upazila');
+//   if (searchParams.get('minPrice')) filters.minPrice = searchParams.get('minPrice');
+//   if (searchParams.get('maxPrice')) filters.maxPrice = searchParams.get('maxPrice');
+
+//   // ✅ searchAdsInDB সার্ভিস ফাংশনটিকে ফিল্টারসহ কল করা হচ্ছে
+//   const result = await ClassifiedAdServices.searchAdsInDB(filters);
+
+//   return sendResponse({
+//     success: true,
+//     statusCode: StatusCodes.OK,
+//     message: 'Ads retrieved based on search criteria',
+//     data: result
+//   });
+// };
+
+// src/lib/modules/classifieds/ad.controller.ts
+
 const searchAds = async (req: NextRequest) => {
   await dbConnect();
   const { searchParams } = new URL(req.url);
 
   const filters: Record<string, any> = {};
 
-  // URL থেকে সব ফিল্টার সংগ্রহ করা হচ্ছে
+  // একাধিক মান সাপোর্ট (subCategory=Phone&subCategory=Accessories)
+  const getAll = (key: string) => searchParams.getAll(key);
+
   if (searchParams.get('category')) filters.category = searchParams.get('category');
-  if (searchParams.get('subCategory')) filters.subCategory = searchParams.get('subCategory');
-  if (searchParams.get('brand')) filters.brand = searchParams.get('brand');
+  if (getAll('subCategory').length > 0) filters.subCategory = getAll('subCategory');
+  if (getAll('brand').length > 0) filters.brand = getAll('brand');
   if (searchParams.get('division')) filters.division = searchParams.get('division');
-  if (searchParams.get('district')) filters.district = searchParams.get('district');
+  if (getAll('district').length > 0) filters.district = getAll('district')[0]; // প্রথমটা নাও
   if (searchParams.get('upazila')) filters.upazila = searchParams.get('upazila');
   if (searchParams.get('minPrice')) filters.minPrice = searchParams.get('minPrice');
   if (searchParams.get('maxPrice')) filters.maxPrice = searchParams.get('maxPrice');
+  if (searchParams.get('title')) filters.title = searchParams.get('title');
 
-  // ✅ searchAdsInDB সার্ভিস ফাংশনটিকে ফিল্টারসহ কল করা হচ্ছে
   const result = await ClassifiedAdServices.searchAdsInDB(filters);
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
     message: 'Ads retrieved based on search criteria',
-    data: result
+    data: result,
   });
 };
+
+
 
 export const ClassifiedAdController = {
   createAd,

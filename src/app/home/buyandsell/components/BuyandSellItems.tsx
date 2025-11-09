@@ -22,7 +22,7 @@ export default function BuyandSellItems({ allCategory }: BuyandSellItemsProps) {
 
   useEffect(() => {
     const checkScreenSize = () => {
-      setIsMobile(window.innerWidth < 768); // md: = 768px
+      setIsMobile(window.innerWidth < 768);
     };
 
     checkScreenSize();
@@ -53,7 +53,7 @@ export default function BuyandSellItems({ allCategory }: BuyandSellItemsProps) {
         {displayedCategories?.map((cat) => (
           <Link
             key={cat._id}
-            href={`/home/buyandsell/buy-sell/category/category-items/${cat._id}`}
+            href={`/home/buyandsell/category-items/${cat._id}`}
             className="group flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm border hover:shadow-md transition-all cursor-pointer"
           >
             <div className="flex shrink-0">

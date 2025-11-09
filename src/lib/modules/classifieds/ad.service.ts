@@ -8,19 +8,68 @@ const createAdInDB = async (payload: Partial<IClassifiedAd>) => {
   return await ClassifiedAd.create(payload);
 };
 
+// const searchAdsInDB = async (filters: Record<string, any>) => {
+//   const query: Record<string, any> = { status: 'active' };
+//   if (filters.division) query.division = new RegExp(`^${filters.division}$`, 'i');
+//   if (filters.district) query.district = new RegExp(`^${filters.district}$`, 'i');
+//   if (filters.upazila) query.upazila = new RegExp(`^${filters.upazila}$`, 'i');
+//   if (filters.category) query.category = new Types.ObjectId(filters.category);
+//   if (filters.subCategory) query.subCategory = new Types.ObjectId(filters.subCategory);
+//   if (filters.brand) query.brand = new Types.ObjectId(filters.brand);
+
+//   if (filters.minPrice || filters.maxPrice) {
+//     query.price = {};
+//     if (filters.minPrice) query.price.$gte = Number(filters.minPrice);
+//     if (filters.maxPrice) query.price.$lte = Number(filters.maxPrice);
+//   }
+
+//   return await ClassifiedAd.find(query)
+//     .populate('user', 'name profilePicture')
+//     .populate('category', 'name')
+//     .populate('subCategory', 'name')
+//     .populate('brand', 'name logo')
+//     .sort({ createdAt: -1 });
+// };
+
+// src/lib/modules/classifieds/ad.service.ts
+
 const searchAdsInDB = async (filters: Record<string, any>) => {
   const query: Record<string, any> = { status: 'active' };
+
+  // ক্যাটাগরি → ObjectId
+  if (filters.category) {
+    query.category = new Types.ObjectId(filters.category);
+  }
+
+  // সাব-ক্যাটাগরি → নাম দিয়ে সার্চ (একাধিক হতে পারে)
+  if (filters.subCategory) {
+    const subCats = Array.isArray(filters.subCategory)
+      ? filters.subCategory
+      : [filters.subCategory];
+    query['subCategory.name'] = { $in: subCats.map(s => new RegExp(`^${s}$`, 'i')) };
+  }
+
+  // ব্র্যান্ড → নাম দিয়ে সার্চ (একাধিক হতে পারে)
+  if (filters.brand) {
+    const brands = Array.isArray(filters.brand) ? filters.brand : [filters.brand];
+    query['brand.name'] = { $in: brands.map(b => new RegExp(`^${b}$`, 'i')) };
+  }
+
+  // লোকেশন
   if (filters.division) query.division = new RegExp(`^${filters.division}$`, 'i');
   if (filters.district) query.district = new RegExp(`^${filters.district}$`, 'i');
   if (filters.upazila) query.upazila = new RegExp(`^${filters.upazila}$`, 'i');
-  if (filters.category) query.category = new Types.ObjectId(filters.category);
-  if (filters.subCategory) query.subCategory = new Types.ObjectId(filters.subCategory);
-  if (filters.brand) query.brand = new Types.ObjectId(filters.brand);
 
+  // প্রাইস
   if (filters.minPrice || filters.maxPrice) {
     query.price = {};
     if (filters.minPrice) query.price.$gte = Number(filters.minPrice);
     if (filters.maxPrice) query.price.$lte = Number(filters.maxPrice);
+  }
+
+  // টাইটেল সার্চ
+  if (filters.title) {
+    query.title = { $regex: filters.title, $options: 'i' };
   }
 
   return await ClassifiedAd.find(query)
@@ -30,6 +79,8 @@ const searchAdsInDB = async (filters: Record<string, any>) => {
     .populate('brand', 'name logo')
     .sort({ createdAt: -1 });
 };
+
+
 
 const getSingleAdFromDB = async (adId: string) => {
   return await ClassifiedAd.findById(adId)
