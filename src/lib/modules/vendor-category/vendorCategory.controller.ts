@@ -59,7 +59,7 @@ const getSingleVendorCategory = async (_req: NextRequest, { params }: { params: 
 // Update vendor category
 const updateVendorCategory = async (req: NextRequest, { params }: { params: { id: string } }) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   const body = await req.json();
   const validatedData = updateVendorCategoryValidationSchema.parse(body);
 
@@ -76,7 +76,7 @@ const updateVendorCategory = async (req: NextRequest, { params }: { params: { id
 // Delete vendor category
 const deleteVendorCategory = async (_req: NextRequest, { params }: { params: { id: string } }) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
 
   await VendorCategoryServices.deleteVendorCategoryFromDB(id);
 
