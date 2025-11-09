@@ -33,8 +33,8 @@ export default function FlashSale({ flashSaleData, middleHomepage }: FlashSalePr
   }, []);
 
   return (
-    <div className="bg-gray-100 mb-0 my-3 md:p-6 mt-2 md:max-w-[90vw] mx-auto">
-      <div className="max-w-7xl mx-auto">
+    <div className="bg-gray-100 max-w-[95vw] xl:max-w-[90vw] mx-auto px-4">
+      <div className="">
         <PageHeader
           title="Flash Sale"
           buttonLabel="Shop All Products"
@@ -42,7 +42,7 @@ export default function FlashSale({ flashSaleData, middleHomepage }: FlashSalePr
           buttonHref="/home/view/all/flash-sell/products"
         />
 
-        <div className="grid justify-center items-center grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 px-4">
+        <div className="grid justify-around items-center grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 px-4">
           {flashSaleData.slice(0, itemsToShow).map((item) => (
             <Link href={`/products/${item._id}`} key={item._id}>
               <div className="bg-white rounded-md border-2 border-gray-200 hover:border-blue-300 overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer">

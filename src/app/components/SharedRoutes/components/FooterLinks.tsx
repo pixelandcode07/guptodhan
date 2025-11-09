@@ -5,7 +5,7 @@ import React from 'react';
 export default function FooterLinks() {
   return (
     <div className="bg-gray-100">
-      <div className="max-w-7xl mx-auto grid justify-between py-20 grid-cols-1 md:grid-cols-12 gap-4">
+      <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 grid justify-between py-20 grid-cols-1 md:grid-cols-12 gap-4">
         <div className="image col-span-2">
           <Image src="/img/logo.png" width={130} height={44} alt="logo" />
         </div>

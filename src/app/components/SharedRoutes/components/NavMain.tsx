@@ -28,8 +28,8 @@ export default function NavMain() {
 
   return (
     <div> 
-
-    <div className="bg-[#0097E9] md:bg-[#FFFFFF] text-black md:max-w-[90vw] m-auto flex justify-between items-center py-2 md:py-5 px-1 md:px-1 lg:px-10 border-2 md:border-0">
+{/* bg-[#0097E9] md:bg-[#FFFFFF] text-black md:max-w-[90vw] m-auto flex justify-between items-center py-2 md:py-5 px-1 md:px-1 lg:px-10 border-2 md:border-0 */}
+    <div className="bg-[#0097E9] md:bg-[#FFFFFF] text-black max-w-[95vw] xl:max-w-[90vw] mx-auto flex justify-between items-center py-2 md:py-5 px-1 md:px-1 lg:px-10 border-2 md:border-0">
       <div className="flex justify-between items-center gap2">
         <div className="flex lg:block items-center">
           {/* <button

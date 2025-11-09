@@ -31,8 +31,8 @@ export default function BestSell({ bestSellingData, topShoppage }: BestSellProps
   }, []);
 
   return (
-    <div className="bg-gray-100 mb-0 my-3 md:p-6 mt-2 md:max-w-[90vw] mx-auto">
-      <div className="max-w-7xl mx-auto">
+    <div className="bg-gray-100 max-w-[95vw] xl:max-w-[90vw] mx-auto px-4">
+      <div className="">
         <PageHeader
           title="Best Selling"
           buttonLabel="Shop All Products"
