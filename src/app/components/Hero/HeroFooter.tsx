@@ -25,18 +25,18 @@ export default function HeroFooter() {
           </Link>
         ))}
       </div>
-      <div className="lg:hidden flex justify-center items-center gap-4 py-2 px-4 bg-white rounded-md overflow-x-auto">
+      <div className="lg:hidden flex justify-center items-center gap-4 py-2 md:px-4 bg-white rounded-md overflow-x-auto">
         <div className="flex items-center justify-center py-4 md:px-6 rounded-md">
           <Button variant={'HomeBuy'} size={'lg'} className="rounded-none">
-            <House size={32} />
+            <House size={32} className='hidden md:block'  />
             <Link href={'/home/buyandsell'}>Buy & Sale</Link>
           </Button>
           <Button variant={'HomeDoante'} size={'lg'} className="rounded-none">
-            <HandCoins size={32} />
+            <HandCoins size={32} className='hidden md:block' />
             <Link href={'/home/donate'}>Donation</Link>
           </Button>
           <Button variant={'HomeServices'} size={'lg'} className="rounded-none">
-            <HeartHandshake size={32} />
+            <HeartHandshake size={32} className='hidden md:block' />
             <Link href={'/home/donate'}>Services</Link>
           </Button>
         </div>
