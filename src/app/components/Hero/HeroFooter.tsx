@@ -8,17 +8,17 @@ import React from 'react';
 export default function HeroFooter() {
   return (
     <>
-      <div className="hidden lg:flex justify-center bg-gray-100 items-center gap-4 py-2 px-20  rounded-md overflow-x-auto">
+      <div className="max-w-[90vw] mx-auto px-4 hidden lg:flex justify-around bg-gray-100 items-center gap-4 py-2 rounded-md overflow-x-auto">
         {heroFooterData.map((item, idx) => (
           <Link
             key={idx}
             href={item.href}
-            className="flex bg-white items-center justify-center gap-2 py-4 px-6 rounded-md">
+            className="flex bg-white items-center justify-around gap-2 py-4 px-6 rounded-md">
             <div>
               <Image src={item.icon} alt="hero-image" width={40} height={40} />
             </div>
             <div>
-              <h6 className="text-[#00005E] font-medium text-base">
+              <h6 className="text-[#00005E] font-medium text-[10px] leading-[14px] tracking-[0.5px]">
                 {item.title}
               </h6>
             </div>
