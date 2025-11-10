@@ -57,7 +57,6 @@ const createVendorProduct = async (req: NextRequest) => {
 };
 
 
-
 // Get all vendor products
 const getAllVendorProducts = async () => {
   await dbConnect();
@@ -67,6 +66,19 @@ const getAllVendorProducts = async () => {
     success: true,
     statusCode: StatusCodes.OK,
     message: 'Vendor products retrieved successfully!',
+    data: result,
+  });
+};
+
+// get all active vendor products
+const getActiveVendorProducts = async () => {
+  await dbConnect();
+  const result = await VendorProductServices.getActiveVendorProductsFromDB(); 
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Active vendor products retrieved successfully!',
     data: result,
   });
 };
@@ -197,14 +209,42 @@ const getLandingPageProducts = async () => {
   });
 };
 
+// GET search vendor products
+const searchVendorProducts = async (req: NextRequest) => {
+  await dbConnect();
+  const { searchParams } = new URL(req.url);
+  const query = searchParams.get("query") || "";
+
+  // If no query provided, return empty array (optional)
+  if (!query) {
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: "No search query provided.",
+      data: [],
+    });
+  }
+
+  const result = await VendorProductServices.searchVendorProductsFromDB(query);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Search results retrieved successfully!",
+    data: result,
+  });
+};
+
 
 
 export const VendorProductController = {
   createVendorProduct,
   getAllVendorProducts,
+  getActiveVendorProducts,
   getVendorProductById,
   updateVendorProduct,
   deleteVendorProduct,
 
-  getLandingPageProducts
+  getLandingPageProducts,
+  searchVendorProducts
 };

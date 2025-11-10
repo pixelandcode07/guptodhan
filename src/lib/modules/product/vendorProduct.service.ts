@@ -1,6 +1,5 @@
 import { get } from "http";
 import { IVendorProduct } from "./vendorProduct.interface";
-import { ProductFlag } from "../product-config/models/productFlag.model";
 import { VendorProductModel } from "./vendorProduct.model";
 import { Types } from "mongoose";
 import "../product-config/models/brandName.model";
@@ -106,7 +105,7 @@ const removeProductOptionFromDB = async (id: string, index: number) => {
   return product;
 };
 
-// ✅ landing page products: running offers, best-selling, and random products
+// landing page products: running offers, best-selling, and random products
 const getLandingPageProductsFromDB = async () => {
 
   const totalCount = await VendorProductModel.countDocuments({ status: 'active' });
@@ -136,6 +135,19 @@ const getLandingPageProductsFromDB = async () => {
   };
 };
 
+// Search vendor products by name (for autocomplete)
+const searchVendorProductsFromDB = async (query: string) => {
+
+  const result = await VendorProductModel.find({
+    name: { $regex: query, $options: "i" },
+    status: "active",
+  })
+    .select("name image price _id") 
+    .limit(10);
+
+  return result;
+};
+
 export const VendorProductServices = {
   createVendorProductInDB,
   getAllVendorProductsFromDB,
@@ -149,4 +161,5 @@ export const VendorProductServices = {
   removeProductOptionFromDB,
 
   getLandingPageProductsFromDB,
+  searchVendorProductsFromDB
 };
