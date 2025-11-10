@@ -9,6 +9,7 @@ import { ArrowLeft, Package, Store, Tag, DollarSign, ShoppingCart, CreditCard, H
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import { useWishlist } from '@/contexts/WishlistContext';
 
 interface ProductData {
   product: {
