@@ -7,6 +7,7 @@ import { IChildCategory } from '../interfaces/ecomChildCategory.interface';
 import {  } from '../models/ecomCategory.model';
 import { SubCategoryModel } from '../models/ecomSubCategory.model';
 import { ChildCategoryModel } from '../models/ecomChildCategory.model';
+import { VendorProductModel } from '../../product/vendorProduct.model';
 
 // Create category
 const createCategoryInDB = async (payload: Partial<ICategory>) => {
@@ -30,6 +31,17 @@ const getFeaturedCategoriesFromDB = async () => {
     .sort({ name: 1 })
     .lean();
   return result;
+};
+
+// Get all main category products
+export const getProductIdsByCategoryFromDB = async (categoryId: string) => {
+  const products = await VendorProductModel.find({ category: categoryId, status: 'active' })
+    .select('_id')
+    .lean();
+  
+  console.log('Products found for category:', categoryId, products);
+  // Return array of _id strings only
+  return products.map(p => p._id.toString());
 };
 
 // Get category by ID
@@ -131,5 +143,6 @@ export const CategoryServices = {
   deleteCategoryFromDB,
 
   getAllSubCategoriesWithChildren,
-  reorderMainCategoriesService
+  reorderMainCategoriesService,
+  getProductIdsByCategoryFromDB
 };

@@ -9,6 +9,7 @@ import { VendorProductServices } from './vendorProduct.service';
 import dbConnect from '@/lib/db';
 import { Types } from 'mongoose';
 import { IVendorProduct } from './vendorProduct.interface';
+import { ca } from 'zod/v4/locales';
 
 // Create a new vendor product
 const createVendorProduct = async (req: NextRequest) => {
@@ -79,6 +80,60 @@ const getActiveVendorProducts = async () => {
     success: true,
     statusCode: StatusCodes.OK,
     message: 'Active vendor products retrieved successfully!',
+    data: result,
+  });
+};
+
+// Get vendor products by category Id
+const getVendorProductsByCategory = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  await dbConnect();
+  const resolvedParams = await params;
+  const categoryId = resolvedParams.id;
+  const result = await VendorProductServices.getVendorProductsByCategoryFromDB(categoryId);
+
+  return sendResponse({ 
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: `Vendor products for category ${categoryId} retrieved successfully!`,
+    data: result,
+  });
+}
+
+// Get vendor products by sub-category Id
+const getVendorProductsBySubCategory = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  await dbConnect();
+  const resolvedParams = await params;
+  const subCategoryId = resolvedParams.id;
+  const result = await VendorProductServices.getVendorProductsBySubCategoryFromDB(subCategoryId);
+
+  return sendResponse({ 
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: `Vendor products for sub-category ${subCategoryId} retrieved successfully!`,
+    data: result,
+  });
+};
+
+// Get vendor products by child-category Id
+const getVendorProductsByChildCategory = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  await dbConnect();
+  const resolvedParams = await params;
+  const childCategoryId = resolvedParams.id;
+  const result = await VendorProductServices.getVendorProductsByChildCategoryFromDB(childCategoryId);
+
+  return sendResponse({ 
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: `Vendor products for child-category ${childCategoryId} retrieved successfully!`,
     data: result,
   });
 };
@@ -241,6 +296,9 @@ export const VendorProductController = {
   createVendorProduct,
   getAllVendorProducts,
   getActiveVendorProducts,
+  getVendorProductsByCategory,
+  getVendorProductsBySubCategory,
+  getVendorProductsByChildCategory,
   getVendorProductById,
   updateVendorProduct,
   deleteVendorProduct,

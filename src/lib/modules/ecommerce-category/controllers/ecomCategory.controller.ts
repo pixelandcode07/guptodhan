@@ -82,6 +82,27 @@ const getAllCategories = async () => {
   });
 };
 
+// GET product IDs by category
+export const getProductIdsByCategory = async (req: NextRequest, {  params }: { params: Promise<{ id: string }> }) => {
+  const resolvedParams = await params;
+  const categoryId = resolvedParams.id;
+  console.log('Params received in controller:', categoryId);
+  
+  await dbConnect();
+  
+  // Use the extracted categoryId
+  const productIds = await CategoryServices.getProductIdsByCategoryFromDB(categoryId);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: `Product IDs for category ${categoryId} retrieved successfully!`,
+    data: productIds, 
+  });
+
+};
+
+
 // Get only featured categories (optimized for landing page)
 const getFeaturedCategories = async () => {
   await dbConnect();
@@ -218,5 +239,6 @@ export const CategoryController = {
   deleteCategory,
 
   getAllSubCategories,
-  reorderMainCategories
+  reorderMainCategories,
+  getProductIdsByCategory
 };

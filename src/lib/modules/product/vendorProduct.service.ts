@@ -33,6 +33,24 @@ const getVendorProductsByCategoryFromDB = async (categoryId: string) => {
   return result;
 };
 
+// Get products by sub-category
+const getVendorProductsBySubCategoryFromDB = async (subCategoryId: string) => {
+  const result = await VendorProductModel.find({
+    subCategory: new Types.ObjectId(subCategoryId),
+    status: "active",
+  }).sort({ productTitle: 1 });
+  return result;
+};
+
+// Get products by child-category
+const getVendorProductsByChildCategoryFromDB = async (childCategoryId: string) => {
+  const result = await VendorProductModel.find({
+    childCategory: new Types.ObjectId(childCategoryId),
+    status: "active",
+  }).sort({ productTitle: 1 });
+  return result;
+};
+
 // Get products by brand
 const getVendorProductsByBrandFromDB = async (brandId: string) => {
   const result = await VendorProductModel.find({
@@ -154,6 +172,8 @@ export const VendorProductServices = {
   getActiveVendorProductsFromDB,
   getVendorProductByIdFromDB,
   getVendorProductsByCategoryFromDB,
+  getVendorProductsBySubCategoryFromDB,
+  getVendorProductsByChildCategoryFromDB,
   getVendorProductsByBrandFromDB,
   updateVendorProductInDB,
   deleteVendorProductFromDB,
