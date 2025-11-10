@@ -21,6 +21,7 @@ const _ = { StoreModel, VendorProductModel, Vendor };
 
 const createOrderInDB = async (payload: Partial<IOrder>) => {
   const result = await OrderModel.create(payload);
+  console.log(result)
   return result;
 };
 

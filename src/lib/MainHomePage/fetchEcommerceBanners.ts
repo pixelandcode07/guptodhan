@@ -29,7 +29,7 @@ export async function fetchEcommerceBanners(): Promise<{
             ),
             axios.get<ApiResponse<EcommerceBannerType[]>>(
                 `${baseUrl}/api/v1/public/ecommerce-banners?position=top-shoppage`
-            ),
+            ),  
         ]);
 
         return {
