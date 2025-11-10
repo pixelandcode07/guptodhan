@@ -39,7 +39,7 @@ const vendorProductSchema = new Schema<IVendorProduct>(
     category: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
     subCategory: { type: Schema.Types.ObjectId, ref: 'SubCategory' },
     childCategory: { type: Schema.Types.ObjectId, ref: 'ChildCategory' },
-    brand: { type: Schema.Types.ObjectId, ref: 'Brand' }, // ✅ FIX: 'BrandModel' থেকে 'Brand'
+    brand: { type: Schema.Types.ObjectId }, // ✅ FIX: 'BrandModel' থেকে 'Brand'
     productModel: { type: Schema.Types.ObjectId, ref: 'ProductModel' }, // ✅ FIX: String থেকে ObjectId করা হয়েছে
     flag: { type: String },
     warranty: { type: String },

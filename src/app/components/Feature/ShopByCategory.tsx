@@ -22,7 +22,6 @@ export function ShopByCategory({ featuredData }: FeatureProps) {
     return (
 
         <section className="w-full py-10">
-            <div className="container mx-auto px-4 md:px-6">
 
                 <Carousel
                     setApi={setApi}
@@ -30,7 +29,7 @@ export function ShopByCategory({ featuredData }: FeatureProps) {
                         align: "start",
                         loop: true,
                     }}
-                    className="w-full max-w-7xl mx-auto"
+                    className="w-full "
                 >
                     <CarouselContent className="-ml-2 md:-ml-4">
                         {featuredData.length > 0 ? (
@@ -84,7 +83,6 @@ export function ShopByCategory({ featuredData }: FeatureProps) {
                         <ArrowRight className="text-[#0084CB]" />
                     </Button>
                 </div>
-            </div>
         </section>
     )
 }
