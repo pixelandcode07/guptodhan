@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 import { sendResponse } from '@/lib/utils/sendResponse';
 import { createPKSliderValidationSchema, updatePKSliderValidationSchema } from './sliderForm.validation';
-import { SliderServices } from './sliderForm.service';
+import { reorderSlidersService, SliderServices } from './sliderForm.service';
 import dbConnect from '@/lib/db';
 
 // Create a new slider
@@ -81,10 +81,39 @@ const deleteSlider = async (req: NextRequest, context: { params: { id: string } 
   });
 };
 
+// Reorder sliders (drag-and-drop)
+const reorderSliders = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  const { orderedIds } = body;
+
+  // Validate input
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.BAD_REQUEST,
+      message: 'Invalid request: "orderedIds" must be a non-empty array.',
+      data: null,
+    });
+  }
+
+  // Call the reorder service
+  const result = await reorderSlidersService(orderedIds);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: result.message || 'Sliders reordered successfully!',
+    data: null,
+  });
+};
+
 export const SliderController = {
   createSlider,
   getAllSliders,
   getSliderById,
   updateSlider,
   deleteSlider,
+
+  reorderSliders
 };

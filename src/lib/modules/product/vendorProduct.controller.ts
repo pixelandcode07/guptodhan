@@ -182,44 +182,22 @@ const deleteVendorProduct = async (
   });
 };
 
-// ✅ Get 6 random running offer products
-const getRunningOfferProducts = async () => {
+
+// GET landing page products
+const getLandingPageProducts = async () => {
   await dbConnect();
-  const result = await VendorProductServices.getRunningOffersFromDB();
+
+  const result = await VendorProductServices.getLandingPageProductsFromDB();
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Running offer products retrieved successfully!',
+    message: 'Home page products retrieved successfully!',
     data: result,
   });
 };
 
-// Get 6 best-selling products
-const getBestSellingProducts = async () => {
-  await dbConnect();
-  const result = await VendorProductServices.getBestSellingProductsFromDB();
 
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Best selling products retrieved successfully!',
-    data: result,
-  });
-};
-
-// Get 12 random products
-const getRandomProducts = async () => {
-  await dbConnect();
-  const result = await VendorProductServices.getRandomProductsFromDB();
-
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Random products retrieved successfully!',
-    data: result,
-  });
-};
 
 export const VendorProductController = {
   createVendorProduct,
@@ -228,7 +206,5 @@ export const VendorProductController = {
   updateVendorProduct,
   deleteVendorProduct,
 
-  getRunningOfferProducts,
-  getBestSellingProducts,
-  getRandomProducts,
+  getLandingPageProducts
 };

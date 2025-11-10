@@ -10,4 +10,5 @@ export interface IBrand extends Document {
   childCategory: string; 
   status: 'active' | 'inactive'; 
   featured: 'featured' | 'not_featured';
+  orderCount: number;
 }

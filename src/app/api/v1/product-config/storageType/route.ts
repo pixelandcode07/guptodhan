@@ -4,3 +4,4 @@ import { checkRole } from "@/lib/middlewares/checkRole";
 
 export const GET = catchAsync(StorageTypeController.getAllStorageTypes);
 export const POST = catchAsync(checkRole(["admin"])(StorageTypeController.createStorageType));
+export const PATCH = catchAsync(checkRole(["admin"])(StorageTypeController.reorderStorageTypes));

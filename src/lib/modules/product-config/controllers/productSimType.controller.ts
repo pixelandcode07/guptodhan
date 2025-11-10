@@ -64,6 +64,19 @@ const getAllProductSimTypes = async () => {
   });
 };
 
+// Get all active Product SIM Types
+const getAllActiveProductSimTypes = async () => {
+  await dbConnect();
+  const result = await ProductSimTypeServices.getActiveProductSimTypesFromDB();
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Active Product SIM Types retrieved successfully!',
+    data: result,
+  });
+};
+
 // Update Product SIM Type
 const updateProductSimType = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
@@ -104,6 +117,7 @@ const deleteProductSimType = async (req: NextRequest, { params }: { params: Prom
 export const ProductSimTypeController = {
   createProductSimType,
   getAllProductSimTypes,
+  getAllActiveProductSimTypes,
   updateProductSimType,
   deleteProductSimType,
 };

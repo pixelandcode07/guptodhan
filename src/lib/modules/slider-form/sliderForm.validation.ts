@@ -13,6 +13,7 @@ export const createPKSliderValidationSchema = z.object({
   buttonLink: z.string().min(1, { message: 'Button link is required.' }),
   status: z.enum(['active', 'inactive']).optional(),
   createdAt: z.date().optional(),
+  orderCount: z.number().optional(),
 });
 
 // Update PK Slider validation
@@ -28,4 +29,5 @@ export const updatePKSliderValidationSchema = z.object({
   buttonLink: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),
   createdAt: z.date().optional(),
+  orderCount: z.number().optional(),
 });

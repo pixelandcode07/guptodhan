@@ -16,7 +16,7 @@ const createCategoryInDB = async (payload: Partial<ICategory>) => {
 
 // Get all categories (sorted by name)
 const getAllCategoriesFromDB = async () => {
-  const result = await CategoryModel.find({}).sort({ name: 1 });
+  const result = await CategoryModel.find({}).sort({ orderCount: 1 });
   return result;
 };
 
@@ -106,6 +106,22 @@ export const getAllSubCategoriesWithChildren = async () => {
   return result;
 };
 
+// rearrange ecommerce main categories 
+export const reorderMainCategoriesService = async (orderedIds: string[]) => {
+  if (!orderedIds || orderedIds.length === 0) {
+    throw new Error('orderedIds array is empty');
+  }
+
+  // Loop and update orderCount = index
+  const updatePromises = orderedIds.map((id, index) =>
+    CategoryModel.findByIdAndUpdate(id, { orderCount: index }, { new: true })
+  );
+
+  await Promise.all(updatePromises);
+
+  return { message: 'Main categories reordered successfully!' };
+};
+
 export const CategoryServices = {
   createCategoryInDB,
   getAllCategoriesFromDB,
@@ -114,5 +130,6 @@ export const CategoryServices = {
   updateCategoryInDB,
   deleteCategoryFromDB,
 
-  getAllSubCategoriesWithChildren
+  getAllSubCategoriesWithChildren,
+  reorderMainCategoriesService
 };

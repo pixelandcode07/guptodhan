@@ -22,22 +22,29 @@ const createBlogCategory = async (req: NextRequest) => {
 };
 
 // Get all blog categories
-const getAllBlogCategories = async (req: NextRequest) => {
+export const getAllBlogCategories = async (req: NextRequest) => {
   await dbConnect();
-  const { searchParams } = new URL(req.url);
 
-  const filters = {
-    status: searchParams.get('status') || undefined,
-    searchTerm: searchParams.get('searchTerm') || undefined,
-  };
-
-  const result = await BlogCategoryServices.getAllBlogCategoriesFromDB(filters);
+  const data = await BlogCategoryServices.getAllBlogCategoriesFromDB();
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Blog categories retrieved successfully!',
-    data: result,
+    message: 'All blog categories retrieved successfully!',
+    data,
+  });
+};
+
+export const getAllActiveBlogCategories = async (req: NextRequest) => {
+  await dbConnect();
+
+  const data = await BlogCategoryServices.getAllActiveBlogCategoriesFromDB();
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'All active blog categories retrieved successfully!',
+    data,
   });
 };
 
@@ -91,6 +98,7 @@ const deleteBlogCategory = async (_req: NextRequest, { params }: { params: { id:
 export const BlogCategoryController = {
   createBlogCategory,
   getAllBlogCategories,
+  getAllActiveBlogCategories,
   getSingleBlogCategory,
   updateBlogCategory,
   deleteBlogCategory,

@@ -32,6 +32,18 @@ const getAllProductColors = async () => {
     });
 };
 
+const getAllActiveProductColors = async () => {
+    await dbConnect();
+    const result = await ProductColorServices.getAllActiveProductColorsFromDB();
+
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Active product colors retrieved successfully!',
+        data: result,
+    });
+};
+
 const updateProductColor = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
     const { id } = await params;
@@ -64,6 +76,7 @@ const deleteProductColor = async (req: NextRequest, { params }: { params: Promis
 export const ProductColorController = {
     createProductColor,
     getAllProductColors,
+    getAllActiveProductColors,
     updateProductColor,
     deleteProductColor,
 };

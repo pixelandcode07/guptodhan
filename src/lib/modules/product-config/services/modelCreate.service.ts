@@ -15,6 +15,12 @@ const getAllModelFormsFromDB = async () => {
   return result;
 };
 
+// Get all active model forms
+const getAllActiveModelFormsFromDB = async () => {
+  const result = await ModelForm.find({ status: 'active' }).sort({ modelName: 1 });
+  return result;
+};
+
 // Get model forms by brand
 const getModelFormsByBrandFromDB = async (brandId: string) => {
   const result = await ModelForm.find({
@@ -59,6 +65,7 @@ const deleteModelFormFromDB = async (id: string) => {
 export const ModelFormServices = {
   createModelFormInDB,
   getAllModelFormsFromDB,
+  getAllActiveModelFormsFromDB,
   getModelFormsByBrandFromDB,
   getModelFormByIdFromDB,
   updateModelFormInDB,
