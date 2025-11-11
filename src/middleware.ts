@@ -62,7 +62,8 @@ const protectedApiRoutes = [
   '/api/v1/wishlist',
   '/api/v1/add-to-cart',
   '/api/v1/payment/init',
-  "/api/v1/crm-modules/support-ticket"
+  "/api/v1/crm-modules/support-ticket",
+  "/home/UserProfile/support-tickets"
 ];
 
 export async function middleware(req: NextRequest) {
