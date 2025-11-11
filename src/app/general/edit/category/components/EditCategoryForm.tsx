@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import UploadImage from "@/components/ReusableComponents/UploadImage";
+import { useRouter } from "next/navigation";
 
 type Category = {
   _id: string;
@@ -28,6 +29,7 @@ export default function EditCategoryForm({
   token?: string;
   userRole?: string;
 }) {
+  const router = useRouter();
   const [name, setName] = useState(category?.name || "");
   const [slug, setSlug] = useState(category?.slug || "");
   const [isFeatured, setIsFeatured] = useState(category?.isFeatured ? "yes" : "no");
@@ -78,6 +80,7 @@ export default function EditCategoryForm({
         throw new Error(json?.message || "Failed to update category");
       }
       toast.success("Category updated");
+      router.push("/general/view/all/category");
     } catch (e: unknown) {
       const err = e as { message?: string };
       toast.error(err?.message || "Failed to update category");
