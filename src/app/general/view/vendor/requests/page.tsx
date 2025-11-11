@@ -1,356 +1,38 @@
-import { DataTable } from '@/components/TableHelper/data-table'
-import { Payment, vendor_req_columns } from '@/components/TableHelper/vendor_req_columns'
-import { Input } from '@/components/ui/input'
-
-const getData = async (): Promise<Payment[]> => {
-    return [
-        {
-            serial: '1',
-            vendor_id: 1,
-            owner_name: 'Jimmy',
-            owner_email: 'wendy26@vasquez.com',
-            owner_phone: '01867290988',
-            Business_name: 'Shannon-Knight',
-            trade_license_number: 41870791677,
-            store: 'No',
-            verified: 'Yes',
-            status: 'pending',
-            created_at: '2024-09-03',
-        },
-        {
-            serial: '2',
-            vendor_id: 2,
-            owner_name: 'Heather',
-            owner_email: 'jameswheeler@ingram-jones.info',
-            owner_phone: '01778024863',
-            Business_name: 'Meyer LLC',
-            trade_license_number: 87704912830,
-            store: 'No',
-            verified: 'Yes',
-            status: 'active',
-            created_at: '2024-01-08',
-        },
-        {
-            serial: '3',
-            vendor_id: 3,
-            owner_name: 'Melissa',
-            owner_email: 'taylorparker@hotmail.com',
-            owner_phone: '01597314742',
-            Business_name: 'Thompson-Cruz',
-            trade_license_number: 22481898956,
-            store: 'No',
-            verified: 'Yes',
-            status: 'pending',
-            created_at: '2024-10-03',
-        },
-        {
-            serial: '4',
-            vendor_id: 4,
-            owner_name: 'Andrea',
-            owner_email: 'jonathan73@moore.com',
-            owner_phone: '01335177003',
-            Business_name: 'Frank, Zavala and Williams',
-            trade_license_number: 90588177896,
-            store: 'No',
-            verified: 'No',
-            status: 'inactive',
-            created_at: '2024-12-27',
-        },
-        {
-            serial: '5',
-            vendor_id: 5,
-            owner_name: 'Jeremy',
-            owner_email: 'harrislydia@neal.org',
-            owner_phone: '01469494982',
-            Business_name: 'Fuentes PLC',
-            trade_license_number: 93364266452,
-            store: 'Yes',
-            verified: 'Yes',
-            status: 'pending',
-            created_at: '2025-04-05',
-        },
-        {
-            serial: '6',
-            vendor_id: 6,
-            owner_name: 'Renee',
-            owner_email: 'jayraymond@greene.com',
-            owner_phone: '01547616447',
-            Business_name: 'Carroll PLC',
-            trade_license_number: 77327304859,
-            store: 'Yes',
-            verified: 'Yes',
-            status: 'inactive',
-            created_at: '2023-09-14',
-        },
-        {
-            serial: '7',
-            vendor_id: 7,
-            owner_name: 'William',
-            owner_email: 'millerchristine@gmail.com',
-            owner_phone: '01424640026',
-            Business_name: 'Mccarthy and Sons',
-            trade_license_number: 30216204688,
-            store: 'No',
-            verified: 'No',
-            status: 'active',
-            created_at: '2025-02-11',
-        },
-        {
-            serial: '8',
-            vendor_id: 8,
-            owner_name: 'Cameron',
-            owner_email: 'michaelamcmahon@gmail.com',
-            owner_phone: '01932201553',
-            Business_name: 'Adams and Sons',
-            trade_license_number: 64161416744,
-            store: 'Yes',
-            verified: 'No',
-            status: 'active',
-            created_at: '2024-11-08',
-        },
-        {
-            serial: '9',
-            vendor_id: 9,
-            owner_name: 'Lauren',
-            owner_email: 'julie61@yahoo.com',
-            owner_phone: '01448845944',
-            Business_name: 'Reynolds-Wilson',
-            trade_license_number: 94386269097,
-            store: 'No',
-            verified: 'Yes',
-            status: 'active',
-            created_at: '2023-09-23',
-        },
-        {
-            serial: '10',
-            vendor_id: 10,
-            owner_name: 'Robert',
-            owner_email: 'shermantodd@ortiz.com',
-            owner_phone: '01584654483',
-            Business_name: 'Petty, Garcia and Hurst',
-            trade_license_number: 37561287209,
-            store: 'No',
-            verified: 'No',
-            status: 'inactive',
-            created_at: '2024-06-25',
-        },
-        {
-            serial: '11',
-            vendor_id: 11,
-            owner_name: 'Nicholas',
-            owner_email: 'twilliams@gmail.com',
-            owner_phone: '01814442786',
-            Business_name: 'Rivas-Ortiz',
-            trade_license_number: 27030459792,
-            store: 'No',
-            verified: 'Yes',
-            status: 'inactive',
-            created_at: '2025-03-10',
-        },
-        {
-            serial: '12',
-            vendor_id: 12,
-            owner_name: 'James',
-            owner_email: 'angela89@gmail.com',
-            owner_phone: '01554494165',
-            Business_name: 'Everett-Smith',
-            trade_license_number: 68713388469,
-            store: 'No',
-            verified: 'Yes',
-            status: 'pending',
-            created_at: '2025-02-10',
-        },
-        {
-            serial: '13',
-            vendor_id: 13,
-            owner_name: 'Jordan',
-            owner_email: 'shannondavies@ball.org',
-            owner_phone: '01428201683',
-            Business_name: 'Wright, Jones and Valentine',
-            trade_license_number: 34357689902,
-            store: 'Yes',
-            verified: 'No',
-            status: 'pending',
-            created_at: '2024-10-23',
-        },
-        {
-            serial: '14',
-            vendor_id: 14,
-            owner_name: 'Kevin',
-            owner_email: 'hansenemily@hotmail.com',
-            owner_phone: '01569704128',
-            Business_name: 'Owens-Hoffman',
-            trade_license_number: 23931842003,
-            store: 'Yes',
-            verified: 'No',
-            status: 'active',
-            created_at: '2024-06-28',
-        },
-        {
-            serial: '15',
-            vendor_id: 15,
-            owner_name: 'Carolyn',
-            owner_email: 'mcneiljon@cox-wallace.biz',
-            owner_phone: '01995059811',
-            Business_name: 'Guerrero, Obrien and Atkinson',
-            trade_license_number: 56827943563,
-            store: 'Yes',
-            verified: 'No',
-            status: 'active',
-            created_at: '2025-06-01',
-        },
-        {
-            serial: '16',
-            vendor_id: 16,
-            owner_name: 'Debra',
-            owner_email: 'keithperez@gmail.com',
-            owner_phone: '01884908759',
-            Business_name: 'Leblanc LLC',
-            trade_license_number: 97976757324,
-            store: 'Yes',
-            verified: 'No',
-            status: 'pending',
-            created_at: '2024-01-01',
-        },
-        {
-            serial: '17',
-            vendor_id: 17,
-            owner_name: 'Nancy',
-            owner_email: 'kellibass@york-mclaughlin.com',
-            owner_phone: '01695589243',
-            Business_name: 'Miller Group',
-            trade_license_number: 89001077068,
-            store: 'No',
-            verified: 'Yes',
-            status: 'pending',
-            created_at: '2023-12-29',
-        },
-        {
-            serial: '18',
-            vendor_id: 18,
-            owner_name: 'Lisa',
-            owner_email: 'keithbrewer@hotmail.com',
-            owner_phone: '01837056998',
-            Business_name: 'Shea, Jenkins and Moore',
-            trade_license_number: 96108256758,
-            store: 'No',
-            verified: 'Yes',
-            status: 'inactive',
-            created_at: '2023-11-13',
-        },
-        {
-            serial: '19',
-            vendor_id: 19,
-            owner_name: 'Marc',
-            owner_email: 'robert19@brown-pitts.info',
-            owner_phone: '01452301547',
-            Business_name: 'Turner-Harris',
-            trade_license_number: 15272078233,
-            store: 'No',
-            verified: 'Yes',
-            status: 'active',
-            created_at: '2024-02-22',
-        },
-        {
-            serial: '20',
-            vendor_id: 20,
-            owner_name: 'Marc',
-            owner_email: 'samuel02@gmail.com',
-            owner_phone: '01721065856',
-            Business_name: 'Rosales-Dominguez',
-            trade_license_number: 14885246982,
-            store: 'Yes',
-            verified: 'No',
-            status: 'active',
-            created_at: '2023-09-17',
-        },
-        {
-            serial: '21',
-            vendor_id: 21,
-            owner_name: 'Carly',
-            owner_email: 'brian68@gmail.com',
-            owner_phone: '01976095142',
-            Business_name: 'Sanders-Myers',
-            trade_license_number: 57128990354,
-            store: 'No',
-            verified: 'No',
-            status: 'active',
-            created_at: '2025-01-02',
-        },
-        {
-            serial: '22',
-            vendor_id: 22,
-            owner_name: 'Stacey',
-            owner_email: 'miguelramirez@warren.org',
-            owner_phone: '01631778889',
-            Business_name: 'Tran PLC',
-            trade_license_number: 15911132417,
-            store: 'No',
-            verified: 'No',
-            status: 'inactive',
-            created_at: '2023-11-28',
-        },
-        {
-            serial: '23',
-            vendor_id: 23,
-            owner_name: 'Jorge',
-            owner_email: 'tiffany64@yahoo.com',
-            owner_phone: '01575247509',
-            Business_name: 'Padilla Group',
-            trade_license_number: 84143469031,
-            store: 'Yes',
-            verified: 'No',
-            status: 'inactive',
-            created_at: '2025-07-07',
-        },
-        {
-            serial: '24',
-            vendor_id: 24,
-            owner_name: 'Bailey',
-            owner_email: 'kimberly58@yahoo.com',
-            owner_phone: '01723688487',
-            Business_name: 'Barnes-Garcia',
-            trade_license_number: 81107969009,
-            store: 'Yes',
-            verified: 'Yes',
-            status: 'active',
-            created_at: '2025-02-20',
-        },
-        {
-            serial: '25',
-            vendor_id: 25,
-            owner_name: 'Melissa',
-            owner_email: 'jonathanjones@ward.com',
-            owner_phone: '01839260640',
-            Business_name: 'Hampton-Kirk',
-            trade_license_number: 94609468828,
-            store: 'Yes',
-            verified: 'No',
-            status: 'pending',
-            created_at: '2024-07-31',
-        }
-    ]
-}
+// app/admin/vendors/VendorRequest.tsx
+import { DataTable } from '@/components/TableHelper/data-table';
+import { vendor_req_columns } from '@/components/TableHelper/vendor_req_columns';
+import { fetchAllVendors } from '@/lib/MultiVendorApis/fetchAllVendors';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { Vendor } from '@/types/VendorType';
 
 export default async function VendorRequest() {
-    const data = await getData();
+    const session = await getServerSession(authOptions);
+    const token = session?.accessToken as string | undefined;
+
+    if (!token) {
+        return (
+            <div className="m-5 p-5 border rounded bg-red-50 text-red-700">
+                <p className="font-semibold">Access Denied</p>
+                <p>You must be logged in as an admin.</p>
+            </div>
+        );
+    }
+
+    const vendors: Vendor[] = await fetchAllVendors(token);
+
     return (
-        <div className="m-5 p-5 border ">
-            <div >
-                <h1 className="text-lg font-semibold border-l-2 border-blue-500">
-                    <span className="pl-5">Category List</span>
+        <div className="m-5 p-5 border rounded-lg bg-white">
+            <div className="mb-6">
+                <h1 className="text-lg font-semibold border-l-4 border-blue-500 pl-3">
+                    Vendor Requests
                 </h1>
             </div>
-            <div className="md:flex justify-between my-5 space-y-2.5">
-                <p>Show (Pagination) entries</p>
-                <span className="md:flex gap-4 space-y-2.5">
-                    <span className="flex items-center gap-2">
-                        Search:
-                        <Input type="text" className="border border-gray-500" />
-                    </span>
-                </span>
-            </div>
-            <DataTable columns={vendor_req_columns} data={data} />
+            {vendors.length === 0 ? (
+                <p className="text-gray-500">No vendor requests found.</p>
+            ) : (
+                <DataTable columns={vendor_req_columns} data={vendors} />
+            )}
         </div>
-    )
+    );
 }
