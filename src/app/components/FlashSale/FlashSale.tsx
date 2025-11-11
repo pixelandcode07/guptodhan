@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { ProductCardType } from '@/types/ProductCardType';
 import { EcommerceBannerType } from '@/types/ecommerce-banner-type';
 
-
 interface FlashSaleProps {
   flashSaleData: ProductCardType[];
 }
@@ -17,7 +16,6 @@ interface HeroImageProps {
 }
 
 export default function FlashSale({ flashSaleData, middleHomepage }: FlashSaleProps & HeroImageProps) {
-
   const [itemsToShow, setItemsToShow] = useState(6);
 
   useEffect(() => {
@@ -38,12 +36,11 @@ export default function FlashSale({ flashSaleData, middleHomepage }: FlashSalePr
         <PageHeader
           title="Flash Sale"
           buttonLabel="Shop All Products"
-          // onButtonClick={() => router.push('/view/all/products')}
           buttonHref="/home/view/all/flash-sell/products"
         />
 
         <div className="grid justify-center items-center grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 px-4">
-          {flashSaleData.slice(0, itemsToShow).map((item) => (
+          {flashSaleData?.slice(0, itemsToShow).map((item) => (
             <Link href={`/products/${item._id}`} key={item._id}>
               <div className="bg-white rounded-md border-2 border-gray-200 hover:border-blue-300 overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer">
                 <div className="w-full h-36 flex items-center justify-center overflow-hidden">
@@ -71,22 +68,20 @@ export default function FlashSale({ flashSaleData, middleHomepage }: FlashSalePr
           ))}
         </div>
 
+        {/* Banner Section */}
         <div className="banner pt-5 lg:py-10 px-4">
-          {middleHomepage ? (
-            <Link
-              href={middleHomepage[0].bannerLink || '#'}
-              className=""
-            >
+          {middleHomepage && middleHomepage.length > 0 ? (
+            <Link href={middleHomepage[0]?.bannerLink || '#'}>
               <Image
-                src={middleHomepage[0].bannerImage}
-                alt={middleHomepage[0].bannerTitle}
+                src={middleHomepage[0]?.bannerImage || '/default-banner.jpg'}
+                alt={middleHomepage[0]?.bannerTitle || 'Banner'}
                 width={1000}
                 height={300}
                 className="w-full"
               />
             </Link>
           ) : (
-            <div className="banner pt-5 lg:py-10 px-4">
+            <div className="text-center py-10 text-gray-500">
               Left Banner Not Found
             </div>
           )}
