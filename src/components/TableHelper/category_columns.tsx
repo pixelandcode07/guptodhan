@@ -3,6 +3,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 
 export type Category = {
   _id?: string;
@@ -239,16 +240,14 @@ export const getCategoryColumns = ({
       const data = row.original as Category;
       return (
         <div className="flex items-center gap-2">
-          <Button
-            onClick={() => {
-              console.log('Edit button clicked', data);
-              onEdit(data);
-            }}
-            variant="ghost"
-            size="sm"
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-            <Edit className="w-4 h-4" />
-          </Button>
+          <Link href={`/general/edit/category/${data._id}?name=${encodeURIComponent(data.name)}`}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+              <Edit className="w-4 h-4" />
+            </Button>
+          </Link>
 
           <Button
             onClick={() => onDelete(data)}
