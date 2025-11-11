@@ -1,4 +1,5 @@
 "use client"
+import RearrangeButton from "@/components/ReusableComponents/RearrangeButton"
 
 import { Button } from "@/components/ui/button";
 import { Plus, Package } from "lucide-react";
@@ -29,16 +30,7 @@ export default function SizesHeader({ onAddNew }: SizesHeaderProps) {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3">
-          <Link
-            href="/general/view/all/sizes/rearrange"
-            className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium text-gray-700 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-            </svg>
-            <span className="hidden sm:inline">Rearrange Size</span>
-            <span className="sm:hidden">Rearrange</span>
-          </Link>
+          <RearrangeButton href="/general/rearrange/sizes" label="Rearrange Size" />
           <Button 
             className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 w-full sm:w-auto h-10 sm:h-auto text-sm sm:text-base" 
             onClick={onAddNew}
