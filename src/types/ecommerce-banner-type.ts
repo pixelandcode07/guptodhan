@@ -20,3 +20,22 @@ export interface EcommerceBannerType {
     buttonLink?: string;
     status: 'active' | 'inactive';
 }
+
+export interface EcommerceSliderBannerType {
+    _id: string;
+    sliderId: string;
+    image: string;
+    textPosition: 'Left' | 'Right' | 'Center';
+    sliderLink: string;
+    subTitleWithColor: string;
+    bannerTitleWithColor: string;
+    bannerDescriptionWithColor: string;
+    buttonWithColor: string;
+    buttonLink: string;
+    status: 'active' | 'inactive';
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+}
+
+

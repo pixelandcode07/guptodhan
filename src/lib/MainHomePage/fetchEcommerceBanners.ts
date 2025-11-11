@@ -1,9 +1,10 @@
-import { ApiResponse, EcommerceBannerType } from '@/types/ecommerce-banner-type';
+import { ApiResponse, EcommerceBannerType, EcommerceSliderBannerType } from '@/types/ecommerce-banner-type';
 import axios from 'axios';
 
 
 export async function fetchEcommerceBanners(): Promise<{
-    leftBanners: EcommerceBannerType[];
+    // leftBanners: EcommerceBannerType[];
+    leftBanners: EcommerceSliderBannerType[];
     rightBanners: EcommerceBannerType[];
     bottomBanners: EcommerceBannerType[];
     middleHomepage: EcommerceBannerType[];
@@ -13,8 +14,9 @@ export async function fetchEcommerceBanners(): Promise<{
 
     try {
         const [leftRes, rightRes, bottomRes, middleHomeRes, topShopRes] = await Promise.all([
-            axios.get<ApiResponse<EcommerceBannerType[]>>(
-                `${baseUrl}/api/v1/public/ecommerce-banners?position=left-homepage`
+            axios.get<ApiResponse<EcommerceSliderBannerType[]>>(
+                // `${baseUrl}/api/v1/public/ecommerce-banners?position=left-homepage`
+                `${baseUrl}/api/v1/slider-form`
             ),
             axios.get<ApiResponse<EcommerceBannerType[]>>(
                 `${baseUrl}/api/v1/public/ecommerce-banners?position=right-homepage`
