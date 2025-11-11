@@ -1,30 +1,35 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 import { sendResponse } from '@/lib/utils/sendResponse';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 import {
   createSupportTicketValidationSchema,
-  updateSupportTicketValidationSchema,
+  updateTicketStatusValidationSchema,
+  addReplyValidationSchema,
 } from './supportTicket.validation';
 import { SupportTicketServices } from './supportTicket.service';
 import dbConnect from '@/lib/db';
+import { verifyToken } from '@/lib/utils/jwt';
 
-const createSupportTicket = async (req: NextRequest) => {
+const createTicket = async (req: NextRequest) => {
   await dbConnect();
+  
+  // --- Get User ID from token ---
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) throw new Error('Authorization token missing.');
+  const token = authHeader.split(' ')[1];
+  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
+  const userId = (decoded as any).userId;
+  if (!userId) throw new Error('Invalid token.');
+  
   const formData = await req.formData();
-
-  const customer = formData.get('customer') as string;
   const subject = formData.get('subject') as string;
+  const message = formData.get('message') as string;
   const attachmentFile = formData.get('attachment') as File | null;
 
-  const payload: { customer: string; subject: string; attachment?: string } = {
-    customer,
-    subject,
-  };
+  const payload: any = { reporter: userId, subject, message };
 
-  if (attachmentFile) {
+  if (attachmentFile && attachmentFile.size > 0) {
     const buffer = Buffer.from(await attachmentFile.arrayBuffer());
     const uploadResult = await uploadToCloudinary(buffer, 'support-tickets');
     payload.attachment = uploadResult.secure_url;
@@ -41,20 +46,23 @@ const createSupportTicket = async (req: NextRequest) => {
   });
 };
 
-const getAllSupportTickets = async (_req: NextRequest) => {
+const getAllTickets = async (req: NextRequest) => {
   await dbConnect();
-  const result = await SupportTicketServices.getAllSupportTicketsFromDB();
+  const { searchParams } = new URL(req.url);
+  const status = searchParams.get('status') || undefined;
+
+  const result = await SupportTicketServices.getAllTicketsFromDB(status);
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'All support tickets retrieved successfully!',
+    message: 'Support tickets retrieved successfully!',
     data: result,
   });
 };
 
-const getSupportTicketById = async (_req: NextRequest, { params }: { params: { id: string } }) => {
+const getTicketById = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   const result = await SupportTicketServices.getSupportTicketByIdFromDB(id);
   return sendResponse({
     success: true,
@@ -64,24 +72,61 @@ const getSupportTicketById = async (_req: NextRequest, { params }: { params: { i
   });
 };
 
-const updateSupportTicket = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const updateTicketStatus = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   const body = await req.json();
-  const validatedData = updateSupportTicketValidationSchema.parse(body);
-  const result = await SupportTicketServices.updateSupportTicketInDB(id, validatedData);
+  const { status, note } = updateTicketStatusValidationSchema.parse(body);
+  const result = await SupportTicketServices.updateTicketStatusInDB(id, status, note);
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Support ticket updated successfully!',
+    message: 'Support ticket status updated!',
     data: result,
   });
 };
 
-const deleteSupportTicket = async (_req: NextRequest, { params }: { params: { id: string } }) => {
+const addReply = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
+  
+  // --- Get User Role from token ---
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) throw new Error('Authorization token missing.');
+  const token = authHeader.split(' ')[1];
+  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
+  const userRole = (decoded as any).role;
+  
+  const formData = await req.formData();
+  const message = formData.get('message') as string;
+  const attachmentFile = formData.get('attachment') as File | null;
+  
+  const payload: any = { 
+    sender: userRole === 'admin' ? 'admin' : 'user',
+    message 
+  };
+
+  if (attachmentFile && attachmentFile.size > 0) {
+    const buffer = Buffer.from(await attachmentFile.arrayBuffer());
+    const uploadResult = await uploadToCloudinary(buffer, 'support-tickets');
+    payload.attachment = uploadResult.secure_url;
+  }
+  
+  const validatedData = addReplyValidationSchema.parse(payload);
+  const result = await SupportTicketServices.addReplyToTicketInDB(id, validatedData);
+  
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Reply added successfully!',
+    data: result,
+  });
+};
+
+const deleteTicket = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  await dbConnect();
+  const { id } = await params;
   await SupportTicketServices.deleteSupportTicketFromDB(id);
 
   return sendResponse({
@@ -92,59 +137,23 @@ const deleteSupportTicket = async (_req: NextRequest, { params }: { params: { id
   });
 };
 
-// ----------- FILTERED STATUS HANDLERS -----------
-const getPendingTickets = async () => {
+const getTicketStats = async (req: NextRequest) => {
   await dbConnect();
-  const result = await SupportTicketServices.getPendingTicketsFromDB();
+  const result = await SupportTicketServices.getTicketStatsFromDB();
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Pending support tickets retrieved successfully!',
-    data: result,
-  });
-};
-
-const getResolvedTickets = async () => {
-  await dbConnect();
-  const result = await SupportTicketServices.getResolvedTicketsFromDB();
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Resolved support tickets retrieved successfully!',
-    data: result,
-  });
-};
-
-const getRejectedTickets = async () => {
-  await dbConnect();
-  const result = await SupportTicketServices.getRejectedTicketsFromDB();
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Rejected support tickets retrieved successfully!',
-    data: result,
-  });
-};
-
-const getOnHoldTickets = async () => {
-  await dbConnect();
-  const result = await SupportTicketServices.getOnHoldTicketsFromDB();
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'On-hold support tickets retrieved successfully!',
+    message: 'Ticket stats retrieved successfully!',
     data: result,
   });
 };
 
 export const SupportTicketController = {
-  createSupportTicket,
-  getAllSupportTickets,
-  getSupportTicketById,
-  updateSupportTicket,
-  deleteSupportTicket,
-  getPendingTickets,
-  getResolvedTickets,
-  getRejectedTickets,
-  getOnHoldTickets,
+  createTicket,
+  getAllTickets,
+  getTicketById,
+  updateTicketStatus,
+  addReply,
+  deleteTicket,
+  getTicketStats,
 };
