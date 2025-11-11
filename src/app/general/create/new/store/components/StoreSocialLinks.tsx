@@ -1,6 +1,6 @@
 import { Input } from '@/components/ui/input'
 import React from 'react'
-import { Inputs } from './CreateNewStoreFrom'
+import { Inputs } from '@/types/Inputs'
 import { FieldErrors, UseFormRegister } from 'react-hook-form'
 
 export default function StoreSocialLinks({ register, errors }: {
@@ -129,3 +129,4 @@ export default function StoreSocialLinks({ register, errors }: {
         </>
     )
 }
+

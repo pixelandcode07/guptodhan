@@ -10,6 +10,7 @@ export interface IStore extends Document {
   storeEmail: string;
   vendorShortDescription: string;
   fullDescription: string;
+  commission: number;
   storeSocialLinks: {
     facebook?: string;
     whatsapp?: string;

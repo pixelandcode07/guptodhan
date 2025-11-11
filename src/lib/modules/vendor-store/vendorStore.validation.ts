@@ -2,12 +2,12 @@ import { z } from 'zod';
 
 // Define a reusable social links schema
 const socialLinksSchema = z.object({
-  facebook: z.string().url().optional(),
-  whatsapp: z.string().url().optional(),
-  linkedIn: z.string().url().optional(),
-  tiktok: z.string().url().optional(),
-  twitter: z.string().url().optional(),
-  instagram: z.string().url().optional(),
+  facebook: z.string().url().optional().nullable(),
+  whatsapp: z.string().url().optional().nullable(),
+  instagram: z.string().url().optional().nullable(),
+  linkedIn: z.string().url().optional().nullable(),
+  twitter: z.string().url().optional().nullable(),
+  tiktok: z.string().url().optional().nullable(),
 });
 
 // Create store validation
@@ -28,6 +28,7 @@ export const createStoreValidationSchema = z.object({
   fullDescription: z
     .string()
     .min(1, { message: 'Full description is required.' }),
+  commission: z.number().min(0).max(100).optional(),
   storeSocialLinks: socialLinksSchema.optional(),
   storeMetaTitle: z.string().optional(),
   storeMetaKeywords: z.array(z.string()).optional(),
