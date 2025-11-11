@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 import { sendResponse } from '@/lib/utils/sendResponse';
@@ -10,24 +11,33 @@ import {
 import { SupportTicketServices } from './supportTicket.service';
 import dbConnect from '@/lib/db';
 import { verifyToken } from '@/lib/utils/jwt';
+import { Types } from 'mongoose'; // ✅ Types ইম্পোর্ট করুন
+import { ISupportTicket, ISupportTicketConversation } from './supportTicket.interface'; // ✅ Interface ইম্পোর্ট করুন
 
+/**
+ * @description একটি নতুন সাপোর্ট টিকেট তৈরি করে।
+ * @method POST
+ */
 const createTicket = async (req: NextRequest) => {
   await dbConnect();
-  
-  // --- Get User ID from token ---
+
   const authHeader = req.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) throw new Error('Authorization token missing.');
   const token = authHeader.split(' ')[1];
   const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
   const userId = (decoded as any).userId;
-  if (!userId) throw new Error('Invalid token.');
-  
+  if (!userId) throw new Error('Invalid token: User ID not found.');
+
   const formData = await req.formData();
   const subject = formData.get('subject') as string;
   const message = formData.get('message') as string;
   const attachmentFile = formData.get('attachment') as File | null;
 
-  const payload: any = { reporter: userId, subject, message };
+  const payload: any = {
+    reporter: userId,
+    subject: subject,
+    message: message,
+  };
 
   if (attachmentFile && attachmentFile.size > 0) {
     const buffer = Buffer.from(await attachmentFile.arrayBuffer());
@@ -36,7 +46,14 @@ const createTicket = async (req: NextRequest) => {
   }
 
   const validatedData = createSupportTicketValidationSchema.parse(payload);
-  const result = await SupportTicketServices.createSupportTicketInDB(validatedData);
+  
+  // ✅ FIX 1: reporter (string) কে ObjectId তে রূপান্তর করা হয়েছে
+  const payloadForService: Partial<ISupportTicket> = {
+      ...validatedData,
+      reporter: new Types.ObjectId(validatedData.reporter),
+  };
+
+  const result = await SupportTicketServices.createSupportTicketInDB(payloadForService);
 
   return sendResponse({
     success: true,
@@ -46,6 +63,10 @@ const createTicket = async (req: NextRequest) => {
   });
 };
 
+/**
+ * @description সব সাপোর্ট টিকেট (বা স্ট্যাটাস অনুযায়ী ফিল্টার করা) নিয়ে আসে।
+ * @method GET
+ */
 const getAllTickets = async (req: NextRequest) => {
   await dbConnect();
   const { searchParams } = new URL(req.url);
@@ -60,6 +81,10 @@ const getAllTickets = async (req: NextRequest) => {
   });
 };
 
+/**
+ * @description একটি নির্দিষ্ট টিকেট ID দিয়ে খুঁজে বের করে।
+ * @method GET
+ */
 const getTicketById = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
   const { id } = await params;
@@ -72,6 +97,10 @@ const getTicketById = async (req: NextRequest, { params }: { params: Promise<{ i
   });
 };
 
+/**
+ * @description অ্যাডমিন কর্তৃক টিকেটের স্ট্যাটাস (Pending, Solved) আপডেট করে।
+ * @method PATCH
+ */
 const updateTicketStatus = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
   const { id } = await params;
@@ -87,11 +116,14 @@ const updateTicketStatus = async (req: NextRequest, { params }: { params: Promis
   });
 };
 
+/**
+ * @description একটি টিকেটে নতুন রিপ্লাই (অ্যাডমিন বা ইউজার) যোগ করে।
+ * @method POST
+ */
 const addReply = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
   const { id } = await params;
   
-  // --- Get User Role from token ---
   const authHeader = req.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) throw new Error('Authorization token missing.');
   const token = authHeader.split(' ')[1];
@@ -114,7 +146,14 @@ const addReply = async (req: NextRequest, { params }: { params: Promise<{ id: st
   }
   
   const validatedData = addReplyValidationSchema.parse(payload);
-  const result = await SupportTicketServices.addReplyToTicketInDB(id, validatedData);
+  
+  // ✅ FIX 2: অনুপস্থিত timestamp যোগ করা হয়েছে
+  const replyPayload: ISupportTicketConversation = {
+      ...validatedData,
+      timestamp: new Date(),
+  };
+
+  const result = await SupportTicketServices.addReplyToTicketInDB(id, replyPayload);
   
   return sendResponse({
     success: true,
@@ -124,6 +163,10 @@ const addReply = async (req: NextRequest, { params }: { params: Promise<{ id: st
   });
 };
 
+/**
+ * @description একটি টিকেট ডিলিট করে।
+ * @method DELETE
+ */
 const deleteTicket = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
   const { id } = await params;
@@ -137,6 +180,10 @@ const deleteTicket = async (req: NextRequest, { params }: { params: Promise<{ id
   });
 };
 
+/**
+ * @description স্ট্যাটাস অনুযায়ী সব টিকেটের মোট সংখ্যা গণনা করে।
+ * @method GET
+ */
 const getTicketStats = async (req: NextRequest) => {
   await dbConnect();
   const result = await SupportTicketServices.getTicketStatsFromDB();
@@ -144,6 +191,24 @@ const getTicketStats = async (req: NextRequest) => {
     success: true,
     statusCode: StatusCodes.OK,
     message: 'Ticket stats retrieved successfully!',
+    data: result,
+  });
+};
+
+/**
+ * @description শুধুমাত্র লগইন করা ইউজারের টিকেটগুলো ফেরত পাঠায়।
+ * @method GET
+ */
+const getMySupportTickets = async (req: NextRequest) => {
+  await dbConnect();
+  const userId = req.headers.get('x-user-id');
+  if (!userId) throw new Error('User ID not found in token.');
+
+  const result = await SupportTicketServices.getTicketsByReporterIdFromDB(userId);
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'User support tickets retrieved successfully!',
     data: result,
   });
 };
@@ -156,4 +221,5 @@ export const SupportTicketController = {
   addReply,
   deleteTicket,
   getTicketStats,
+  getMySupportTickets,
 };
