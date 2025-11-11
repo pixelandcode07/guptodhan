@@ -75,6 +75,7 @@ import StoreMetaInfo from './StoreMetaInfo';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
 import { Inputs } from '@/types/Inputs';
+import { toast } from 'sonner';
 
 export default function CreateNewStoreFrom() {
     const { data: session } = useSession();
@@ -159,11 +160,11 @@ export default function CreateNewStoreFrom() {
                 },
             });
 
-            alert('Store created successfully!');
+            toast.success('Store created successfully!');
             console.log(res.data);
         } catch (err: any) {
             console.error('Error:', err);
-            alert(err.response?.data?.message || 'Failed to create store');
+            toast.error(err.response?.data?.message || 'Failed to create store');
         }
     };
 
