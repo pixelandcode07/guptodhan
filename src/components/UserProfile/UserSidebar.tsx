@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useSession } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, User, ShoppingBag, RotateCcw, Star, MapPin, KeyRound, LogOut, Calendar } from 'lucide-react'
+import { LayoutDashboard, User, ShoppingBag, RotateCcw, Star, MapPin, KeyRound, LogOut, Calendar, Headset } from 'lucide-react'
 import api from '@/lib/axios'
 
 const items = [
@@ -14,6 +14,7 @@ const items = [
   { title: 'My Order', url: '/home/UserProfile/orders', icon: ShoppingBag },
   { title: 'My Return', url: '/home/UserProfile/returns', icon: RotateCcw },
   { title: 'My Review', url: '/home/UserProfile/reviews', icon: Star },
+  { title: 'Support Tickets', url: '/home/UserProfile/support-tickets', icon: Headset },
   { title: 'Saved Address', url: '/home/UserProfile/addresses', icon: MapPin },
   { title: 'Change Password', url: '/home/UserProfile/change-password', icon: KeyRound },
   { title: 'Logout', url: '/logout', icon: LogOut },
