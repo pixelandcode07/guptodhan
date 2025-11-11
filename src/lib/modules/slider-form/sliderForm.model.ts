@@ -14,6 +14,7 @@ const pkSliderSchema = new Schema<IPKSlider>(
     buttonLink: { type: String, required: true },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
     createdAt: { type: Date, default: Date.now },
+    orderCount: { type: Number, required: false, default: 0 },
   },
   { timestamps: true }
 );

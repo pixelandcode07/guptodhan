@@ -1,7 +1,8 @@
-import { get } from 'http';
-import { IVendorProduct } from './vendorProduct.interface';
-import { VendorProductModel } from './vendorProduct.model';
-import { Types } from 'mongoose';
+import { get } from "http";
+import { IVendorProduct } from "./vendorProduct.interface";
+import { VendorProductModel } from "./vendorProduct.model";
+import { Types } from "mongoose";
+import "../product-config/models/brandName.model";
 
 // Create vendor product
 const createVendorProductInDB = async (payload: Partial<IVendorProduct>) => {
@@ -17,7 +18,9 @@ const getAllVendorProductsFromDB = async () => {
 
 // Get only active products - used for product listing pages
 const getActiveVendorProductsFromDB = async () => {
-  const result = await VendorProductModel.find({ status: 'active' }).sort({ productTitle: 1 });
+  const result = await VendorProductModel.find({ status: "active" }).sort({
+    productTitle: 1,
+  });
   return result;
 };
 
@@ -25,7 +28,25 @@ const getActiveVendorProductsFromDB = async () => {
 const getVendorProductsByCategoryFromDB = async (categoryId: string) => {
   const result = await VendorProductModel.find({
     category: new Types.ObjectId(categoryId),
-    status: 'active',
+    status: "active",
+  }).sort({ productTitle: 1 });
+  return result;
+};
+
+// Get products by sub-category
+const getVendorProductsBySubCategoryFromDB = async (subCategoryId: string) => {
+  const result = await VendorProductModel.find({
+    subCategory: new Types.ObjectId(subCategoryId),
+    status: "active",
+  }).sort({ productTitle: 1 });
+  return result;
+};
+
+// Get products by child-category
+const getVendorProductsByChildCategoryFromDB = async (childCategoryId: string) => {
+  const result = await VendorProductModel.find({
+    childCategory: new Types.ObjectId(childCategoryId),
+    status: "active",
   }).sort({ productTitle: 1 });
   return result;
 };
@@ -34,7 +55,7 @@ const getVendorProductsByCategoryFromDB = async (categoryId: string) => {
 const getVendorProductsByBrandFromDB = async (brandId: string) => {
   const result = await VendorProductModel.find({
     brand: new Types.ObjectId(brandId),
-    status: 'active',
+    status: "active",
   }).sort({ productTitle: 1 });
   return result;
 };
@@ -43,17 +64,21 @@ const getVendorProductsByBrandFromDB = async (brandId: string) => {
 const getVendorProductByIdFromDB = async (id: string) => {
   const result = await VendorProductModel.findById(id);
   if (!result) {
-    throw new Error('Vendor product not found');
+    throw new Error("Vendor product not found");
   }
   return result;
 };
 
-
 // Update vendor product (including productOptions if provided)
-const updateVendorProductInDB = async (id: string, payload: Partial<IVendorProduct>) => {
-  const result = await VendorProductModel.findByIdAndUpdate(id, payload, { new: true });
+const updateVendorProductInDB = async (
+  id: string,
+  payload: Partial<IVendorProduct>
+) => {
+  const result = await VendorProductModel.findByIdAndUpdate(id, payload, {
+    new: true,
+  });
   if (!result) {
-    throw new Error('Vendor product not found to update.');
+    throw new Error("Vendor product not found to update.");
   }
   return result;
 };
@@ -62,7 +87,7 @@ const updateVendorProductInDB = async (id: string, payload: Partial<IVendorProdu
 const deleteVendorProductFromDB = async (id: string) => {
   const result = await VendorProductModel.findByIdAndDelete(id);
   if (!result) {
-    throw new Error('Vendor product not found to delete.');
+    throw new Error("Vendor product not found to delete.");
   }
   return null;
 };
@@ -75,7 +100,7 @@ const addProductOptionInDB = async (id: string, option: any) => {
     { new: true }
   );
   if (!result) {
-    throw new Error('Vendor product not found to add option.');
+    throw new Error("Vendor product not found to add option.");
   }
   return result;
 };
@@ -84,48 +109,62 @@ const addProductOptionInDB = async (id: string, option: any) => {
 const removeProductOptionFromDB = async (id: string, index: number) => {
   const product = await VendorProductModel.findById(id);
   if (!product) {
-    throw new Error('Vendor product not found to remove option.');
+    throw new Error("Vendor product not found to remove option.");
   }
-  if (!product.productOptions || index < 0 || index >= product.productOptions.length) {
-    throw new Error('Invalid product option index.');
+  if (
+    !product.productOptions ||
+    index < 0 ||
+    index >= product.productOptions.length
+  ) {
+    throw new Error("Invalid product option index.");
   }
   product.productOptions.splice(index, 1);
   await product.save();
   return product;
 };
 
+// landing page products: running offers, best-selling, and random products
+const getLandingPageProductsFromDB = async () => {
 
-// Get 6 products with running offers 
-const getRunningOffersFromDB = async () => {
-  const result = await VendorProductModel.aggregate([
-    {
-      $match: {
-        status: 'active',
-        offerDeadline: { $gt: new Date() },
-      },
-    },
-    { $sample: { size: 6 } },
+  const totalCount = await VendorProductModel.countDocuments({ status: 'active' });
+  const randomSkip = Math.floor(Math.random() * Math.max(totalCount - 12, 0));
+
+  
+  const [runningOffers, bestSelling, randomProducts] = await Promise.all([
+    VendorProductModel.find({
+      status: "active",
+      offerDeadline: { $gt: new Date() },
+    }).sort({ createdAt: -1 }).limit(6),
+
+
+    VendorProductModel.find({ status: "active" })
+      .sort({ sellCount: -1 })
+      .limit(6),
+
+    VendorProductModel.find({ status: 'active' })
+      .skip(randomSkip)
+      .limit(12),
   ]);
-  return result;
+
+  return {
+    runningOffers,
+    bestSelling,
+    randomProducts,
+  };
 };
 
-// Get 6 best-selling products (highest sellCount)
-const getBestSellingProductsFromDB = async () => {
-  const result = await VendorProductModel.find({ status: 'active' })
-    .sort({ sellCount: -1 })
-    .limit(6);
+// Search vendor products by name (for autocomplete)
+const searchVendorProductsFromDB = async (query: string) => {
+
+  const result = await VendorProductModel.find({
+    name: { $regex: query, $options: "i" },
+    status: "active",
+  })
+    .select("name image price _id") 
+    .limit(10);
+
   return result;
 };
-
-// ✅ Get 12 random active products
-const getRandomProductsFromDB = async () => {
-  const result = await VendorProductModel.aggregate([
-    { $match: { status: 'active' } },
-    { $sample: { size: 12 } },
-  ]);
-  return result;
-};
-
 
 export const VendorProductServices = {
   createVendorProductInDB,
@@ -133,13 +172,14 @@ export const VendorProductServices = {
   getActiveVendorProductsFromDB,
   getVendorProductByIdFromDB,
   getVendorProductsByCategoryFromDB,
+  getVendorProductsBySubCategoryFromDB,
+  getVendorProductsByChildCategoryFromDB,
   getVendorProductsByBrandFromDB,
   updateVendorProductInDB,
   deleteVendorProductFromDB,
   addProductOptionInDB,
   removeProductOptionFromDB,
 
-  getRunningOffersFromDB,
-  getBestSellingProductsFromDB,
-  getRandomProductsFromDB,
+  getLandingPageProductsFromDB,
+  searchVendorProductsFromDB
 };

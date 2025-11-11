@@ -9,7 +9,7 @@ const createPKSliderInDB = async (payload: Partial<IPKSlider>) => {
 
 // Get all active sliders (sorted by created time descending)
 const getAllSlidersFromDB = async () => {
-  const result = await PKSliderModel.find({ status: 'active' }).sort({ createdAt: -1 });
+  const result = await PKSliderModel.find({}).sort({ orderCount: 1 });
   return result;
 };
 
@@ -40,10 +40,28 @@ const deleteSliderFromDB = async (id: string) => {
   return null;
 };
 
+// rearrange sliders
+export const reorderSlidersService = async (orderedIds: string[]) => {
+  if (!orderedIds || orderedIds.length === 0) {
+    throw new Error('orderedIds array is empty');
+  }
+
+  // Loop and update orderCount = index
+  const updatePromises = orderedIds.map((id, index) =>
+    PKSliderModel.findByIdAndUpdate(id, { orderCount: index }, { new: true })
+  );
+
+  await Promise.all(updatePromises);
+
+  return { message: 'Sliders reordered successfully!' };
+};
+
 export const SliderServices = {
   createPKSliderInDB,
   getAllSlidersFromDB,
   getSliderByIdFromDB,
   updateSliderInDB,
   deleteSliderFromDB,
+
+  reorderSlidersService
 };

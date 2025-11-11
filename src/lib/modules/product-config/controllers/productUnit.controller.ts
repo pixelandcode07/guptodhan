@@ -34,6 +34,19 @@ const getAllProductUnits = async () => {
     });
 };
 
+// Get all active product units
+const getAllActiveProductUnits = async () => {
+    await dbConnect();
+    const result = await ProductUnitServices.getAllActiveProductUnitsFromDB();
+
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Active product units retrieved successfully!',
+        data: result,
+    });
+};
+
 // Update product unit
 const updateProductUnit = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
@@ -68,6 +81,7 @@ const deleteProductUnit = async (req: NextRequest, { params }: { params: Promise
 export const ProductUnitController = {
     createProductUnit,
     getAllProductUnits,
+    getAllActiveProductUnits,
     updateProductUnit,
     deleteProductUnit,
 };

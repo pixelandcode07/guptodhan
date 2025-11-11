@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 import { sendResponse } from '@/lib/utils/sendResponse';
 import { createProductSizeValidationSchema, updateProductSizeValidationSchema } from '../validations/productSize.validation';
-import { ProductSizeServices } from '../services/productSize.service';
+import { ProductSizeServices, reorderProductSizesService } from '../services/productSize.service';
 import dbConnect from '@/lib/db';
 
 // Create a new product size
@@ -30,6 +30,19 @@ const getAllProductSizes = async () => {
         success: true,
         statusCode: StatusCodes.OK,
         message: 'Product sizes retrieved successfully!',
+        data: result,
+    });
+};
+
+// Get all active product sizes
+const getAllActiveProductSizes = async () => {
+    await dbConnect();
+    const result = await ProductSizeServices.getAllActiveProductSizesFromDB();
+
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Active product sizes retrieved successfully!',
         data: result,
     });
 };
@@ -65,9 +78,39 @@ const deleteProductSize = async (req: NextRequest, { params }: { params: Promise
     });
 };
 
+// Reorder product size (drag-and-drop)
+const reorderProductSizes = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  const { orderedIds } = body;
+
+  // Validate input
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.BAD_REQUEST,
+      message: 'Invalid request: "orderedIds" must be a non-empty array.',
+      data: null,
+    });
+  }
+
+  // Call the reorder service
+  const result = await reorderProductSizesService(orderedIds);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: result.message || 'Product sizes reordered successfully!',
+    data: null,
+  });
+};
+
 export const ProductSizeController = {
     createProductSize,
     getAllProductSizes,
+    getAllActiveProductSizes,
     updateProductSize,
     deleteProductSize,
+
+    reorderProductSizes
 };

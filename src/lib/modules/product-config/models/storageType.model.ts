@@ -7,6 +7,7 @@ const storageTypeSchema = new Schema<IStorageType>(
     ram: { type: String, required: true, trim: true },
     rom: { type: String, required: true, trim: true },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+    orderCount: { type: Number, required: false, default: 0 },
   },
   { timestamps: true }
 );

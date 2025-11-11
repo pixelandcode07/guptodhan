@@ -12,4 +12,5 @@ export interface IPKSlider extends Document {
   buttonLink: string;
   status: 'active' | 'inactive';
   createdAt: Date;
+  orderCount: number;
 }

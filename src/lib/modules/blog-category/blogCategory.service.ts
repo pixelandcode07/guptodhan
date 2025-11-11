@@ -8,20 +8,15 @@ const createBlogCategoryInDB = async (payload: Partial<IBlogCategory>) => {
 };
 
 // Get all blog categories (optional filters: status, searchTerm)
-const getAllBlogCategoriesFromDB = async (filters: { status?: string; searchTerm?: string }) => {
-  const { status, searchTerm } = filters;
-  const query: any = {};
-
-  if (status) {
-    query.status = status;
-  }
-
-  if (searchTerm) {
-    query.name = { $regex: searchTerm, $options: 'i' }; 
-  }
-
-  return await BlogCategoryModel.find(query).sort({ createdAt: -1 });
+const getAllBlogCategoriesFromDB = async () => {
+  return BlogCategoryModel.find().sort({ createdAt: -1 });
 };
+
+// Get all active blog categories
+const getAllActiveBlogCategoriesFromDB = async () => {
+  return BlogCategoryModel.find({ status: 'active' }).sort({ createdAt: -1 });
+};
+
 
 // Get single blog category by ID
 const getSingleBlogCategoryFromDB = async (id: string) => {
@@ -53,6 +48,7 @@ const deleteBlogCategoryFromDB = async (id: string) => {
 export const BlogCategoryServices = {
   createBlogCategoryInDB,
   getAllBlogCategoriesFromDB,
+  getAllActiveBlogCategoriesFromDB,
   getSingleBlogCategoryFromDB,
   updateBlogCategoryInDB,
   deleteBlogCategoryFromDB,

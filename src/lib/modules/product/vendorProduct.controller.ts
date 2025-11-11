@@ -9,6 +9,7 @@ import { VendorProductServices } from './vendorProduct.service';
 import dbConnect from '@/lib/db';
 import { Types } from 'mongoose';
 import { IVendorProduct } from './vendorProduct.interface';
+import { ca } from 'zod/v4/locales';
 
 // Create a new vendor product
 const createVendorProduct = async (req: NextRequest) => {
@@ -57,7 +58,6 @@ const createVendorProduct = async (req: NextRequest) => {
 };
 
 
-
 // Get all vendor products
 const getAllVendorProducts = async () => {
   await dbConnect();
@@ -67,6 +67,73 @@ const getAllVendorProducts = async () => {
     success: true,
     statusCode: StatusCodes.OK,
     message: 'Vendor products retrieved successfully!',
+    data: result,
+  });
+};
+
+// get all active vendor products
+const getActiveVendorProducts = async () => {
+  await dbConnect();
+  const result = await VendorProductServices.getActiveVendorProductsFromDB(); 
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Active vendor products retrieved successfully!',
+    data: result,
+  });
+};
+
+// Get vendor products by category Id
+const getVendorProductsByCategory = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  await dbConnect();
+  const resolvedParams = await params;
+  const categoryId = resolvedParams.id;
+  const result = await VendorProductServices.getVendorProductsByCategoryFromDB(categoryId);
+
+  return sendResponse({ 
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: `Vendor products for category ${categoryId} retrieved successfully!`,
+    data: result,
+  });
+}
+
+// Get vendor products by sub-category Id
+const getVendorProductsBySubCategory = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  await dbConnect();
+  const resolvedParams = await params;
+  const subCategoryId = resolvedParams.id;
+  const result = await VendorProductServices.getVendorProductsBySubCategoryFromDB(subCategoryId);
+
+  return sendResponse({ 
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: `Vendor products for sub-category ${subCategoryId} retrieved successfully!`,
+    data: result,
+  });
+};
+
+// Get vendor products by child-category Id
+const getVendorProductsByChildCategory = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  await dbConnect();
+  const resolvedParams = await params;
+  const childCategoryId = resolvedParams.id;
+  const result = await VendorProductServices.getVendorProductsByChildCategoryFromDB(childCategoryId);
+
+  return sendResponse({ 
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: `Vendor products for child-category ${childCategoryId} retrieved successfully!`,
     data: result,
   });
 };
@@ -182,53 +249,60 @@ const deleteVendorProduct = async (
   });
 };
 
-// ✅ Get 6 random running offer products
-const getRunningOfferProducts = async () => {
+
+// GET landing page products
+const getLandingPageProducts = async () => {
   await dbConnect();
-  const result = await VendorProductServices.getRunningOffersFromDB();
+
+  const result = await VendorProductServices.getLandingPageProductsFromDB();
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Running offer products retrieved successfully!',
+    message: 'Home page products retrieved successfully!',
     data: result,
   });
 };
 
-// Get 6 best-selling products
-const getBestSellingProducts = async () => {
+// GET search vendor products
+const searchVendorProducts = async (req: NextRequest) => {
   await dbConnect();
-  const result = await VendorProductServices.getBestSellingProductsFromDB();
+  const { searchParams } = new URL(req.url);
+  const query = searchParams.get("query") || "";
+
+  // If no query provided, return empty array (optional)
+  if (!query) {
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: "No search query provided.",
+      data: [],
+    });
+  }
+
+  const result = await VendorProductServices.searchVendorProductsFromDB(query);
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Best selling products retrieved successfully!',
+    message: "Search results retrieved successfully!",
     data: result,
   });
 };
 
-// Get 12 random products
-const getRandomProducts = async () => {
-  await dbConnect();
-  const result = await VendorProductServices.getRandomProductsFromDB();
 
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Random products retrieved successfully!',
-    data: result,
-  });
-};
 
 export const VendorProductController = {
   createVendorProduct,
   getAllVendorProducts,
+  getActiveVendorProducts,
+  getVendorProductsByCategory,
+  getVendorProductsBySubCategory,
+  getVendorProductsByChildCategory,
   getVendorProductById,
   updateVendorProduct,
   deleteVendorProduct,
 
-  getRunningOfferProducts,
-  getBestSellingProducts,
-  getRandomProducts,
+  getLandingPageProducts,
+  searchVendorProducts
 };

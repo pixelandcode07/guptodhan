@@ -10,6 +10,7 @@ export const createBrandValidationSchema = z.object({
   subCategory: z.string().min(1, 'Sub-category is required.'),
   children: z.array(z.string()).optional(),
   status: z.enum(['active', 'inactive']).optional(),
+  orderCount: z.number().optional(),
 });
 
 // Update brand validation
@@ -23,4 +24,5 @@ export const updateBrandValidationSchema = z.object({
   childCategory: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),
   featured: z.enum(['featured', 'not_featured']).optional(),
+  orderCount: z.number().optional(),
 });

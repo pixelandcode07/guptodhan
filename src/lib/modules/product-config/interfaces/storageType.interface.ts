@@ -6,4 +6,5 @@ export interface IStorageType extends Document {
   rom: string;
   status: 'active' | 'inactive';
   createdAt: Date;
+  orderCount: number;
 }

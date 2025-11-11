@@ -10,4 +10,5 @@ export interface ICategory extends Document {
   slug: string;
   status: 'active' | 'inactive';
   createdAt: Date;
+  orderCount: number;
 }

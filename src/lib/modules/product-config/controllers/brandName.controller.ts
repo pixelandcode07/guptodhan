@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 import { sendResponse } from '@/lib/utils/sendResponse';
 import { updateBrandValidationSchema } from '../validations/brandName.validation';
-import { BrandServices } from '../services/brandName.service';
+import { BrandServices, reorderBrandNamesService } from '../services/brandName.service';
 import { IBrand } from '../interfaces/brandName.interface';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 import dbConnect from '@/lib/db';
@@ -101,6 +101,19 @@ const getAllBrands = async () => {
     });
 };
 
+// Get all active brands Name
+const getAllActiveBrandsName = async () => {
+    await dbConnect();
+    const result = await BrandServices.getAllActiveBrandsName();
+
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Active brands retrieved successfully!',
+        data: result,
+    });
+};
+
 // Update brand
 const updateBrand = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
@@ -151,9 +164,39 @@ const deleteBrand = async (req: NextRequest, { params }: { params: Promise<{ id:
     });
 };
 
+// Reorder brand names (drag-and-drop)
+const reorderBrandNames = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  const { orderedIds } = body;
+
+  // Validate input
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.BAD_REQUEST,
+      message: 'Invalid request: "orderedIds" must be a non-empty array.',
+      data: null,
+    });
+  }
+
+  // Call the reorder service
+  const result = await reorderBrandNamesService(orderedIds);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: result.message || 'Brand names reordered successfully!',
+    data: null,
+  });
+};
+
 export const BrandController = {
     createBrand,
     getAllBrands,
+    getAllActiveBrandsName,
     updateBrand,
     deleteBrand,
+
+    reorderBrandNames
 };

@@ -7,4 +7,5 @@ export interface IProductFlag extends Document {
   status: 'active' | 'inactive';
   featured: boolean;
   createdAt: Date;
+  orderCount: number;
 }

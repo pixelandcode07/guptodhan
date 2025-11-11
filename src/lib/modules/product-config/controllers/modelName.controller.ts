@@ -80,6 +80,19 @@ const getAllModelForms = async () => {
     });
 };
 
+// Get all active model forms
+const getAllActiveModelForms = async () => {
+    await dbConnect();
+    const result = await ModelFormServices.getAllActiveModelFormsFromDB();  
+
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Active model forms retrieved successfully!',
+        data: result,
+    });
+};
+
 // Get all model forms by brand
 const getModelFormsByBrand = async (req: NextRequest) => {
     await dbConnect();
@@ -141,6 +154,7 @@ const deleteModelForm = async (req: NextRequest, { params }: { params: Promise<{
 export const ModelFormController = {
     createModelForm,
     getAllModelForms,
+    getAllActiveModelForms,
     getModelFormsByBrand,
     updateModelForm,
     deleteModelForm,

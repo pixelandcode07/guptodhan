@@ -14,6 +14,12 @@ const getAllProductUnitsFromDB = async () => {
   return result;
 };
 
+// Get all active product units
+const getAllActiveProductUnitsFromDB = async () => {
+  const result = await ProductUnit.find({ status: 'active' }).sort({ name: 1 });
+  return result;
+};
+
 // Get single product unit by ID
 const getProductUnitByIdFromDB = async (id: string) => {
   const result = await ProductUnit.findById(id);
@@ -49,6 +55,7 @@ const deleteProductUnitFromDB = async (id: string) => {
 export const ProductUnitServices = {
   createProductUnitInDB,
   getAllProductUnitsFromDB,
+  getAllActiveProductUnitsFromDB,
   getProductUnitByIdFromDB,
   updateProductUnitInDB,
   deleteProductUnitFromDB,

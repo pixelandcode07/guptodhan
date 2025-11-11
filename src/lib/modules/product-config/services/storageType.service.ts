@@ -10,7 +10,13 @@ const createStorageTypeInDB = async (payload: Partial<IStorageType>) => {
 
 // Get all storage types (filtering handled client-side)
 const getAllStorageTypesFromDB = async () => {
-  const result = await StorageType.find({}).sort({ ram: 1, rom: 1 });
+  const result = await StorageType.find({}).sort({ orderCount: 1 });
+  return result;
+};
+
+// Get all storage types with 'active' status
+const getAllActiveStorageTypesFromDB = async () => {
+  const result = await StorageType.find({ status: 'active' }).sort({ orderCount: 1 });
   return result;
 };
 
@@ -46,10 +52,29 @@ const deleteStorageTypeFromDB = async (id: string) => {
   return null;
 };
 
+// rearrange storage types 
+export const reorderStorageTypesService = async (orderedIds: string[]) => {
+  if (!orderedIds || orderedIds.length === 0) {
+    throw new Error('orderedIds array is empty');
+  }
+
+  // Loop and update orderCount = index
+  const updatePromises = orderedIds.map((id, index) =>
+    StorageType.findByIdAndUpdate(id, { orderCount: index }, { new: true })
+  );
+
+  await Promise.all(updatePromises);
+
+  return { message: 'Storage types reordered successfully!' };
+};
+
 export const StorageTypeServices = {
   createStorageTypeInDB,
   getAllStorageTypesFromDB,
+  getAllActiveStorageTypesFromDB,
   getStorageTypeByIdFromDB,
   updateStorageTypeInDB,
   deleteStorageTypeFromDB,
+
+  reorderStorageTypesService
 };
