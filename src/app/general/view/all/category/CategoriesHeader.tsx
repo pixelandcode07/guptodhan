@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Plus, FolderTree } from "lucide-react";
 import Link from "next/link";
+import RearrangeButton from "@/components/ReusableComponents/RearrangeButton";
 
 interface CategoriesHeaderProps {
   onAddClickHref?: string;
@@ -24,7 +25,7 @@ export default function CategoriesHeader({ onAddClickHref = "/general/add/new/ca
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link href={onRearrangeHref} className="px-3 py-2 border rounded bg-white hover:bg-gray-50 text-sm sm:text-base">Rearrange</Link>
+          <RearrangeButton href={onRearrangeHref} label="Rearrange" />
           <Button asChild className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 w-full sm:w-auto h-10 sm:h-auto text-sm sm:text-base">
             <Link href={onAddClickHref}>
               <Plus className="w-4 h-4 mr-2" />

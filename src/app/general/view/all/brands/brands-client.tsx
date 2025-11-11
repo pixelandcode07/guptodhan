@@ -6,6 +6,7 @@ import { DataTable } from "@/components/TableHelper/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Move } from "lucide-react";
+import RearrangeButton from "@/components/ReusableComponents/RearrangeButton";
 import Link from "next/link";
 import { Brand, getBrandColumns } from "@/components/TableHelper/brand_columns";
 import { useSession } from "next-auth/react";
@@ -165,20 +166,17 @@ export default function BrandsClient() {
         </h1>
       </div>
       <div className="flex items-center justify-end gap-4 mb-4">
-        <span className="flex items-center gap-2">
+        {/* <span className="flex items-center gap-2">
           <span>Search:</span>
           <Input value={searchText} onChange={(e) => setSearchText(e.target.value)} type="text" className="border border-gray-500" />
-        </span>
+        </span> */}
         <Button className="bg-green-600 hover:bg-green-700" asChild>
           <Link href="/general/add/new/brand">
             <Plus className="w-4 h-4 mr-2" />
             Add New Brand
           </Link>
         </Button>
-        <Button variant="outline">
-          <Move className="w-4 h-4 mr-2" />
-          Rearrange Brand
-        </Button>
+        <RearrangeButton href="/general/rearrange/brands" label="Rearrange Brand" />
       </div>
 
       {/* Table Filters Row */}
