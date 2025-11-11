@@ -485,6 +485,28 @@ const getOrderById = async (req: NextRequest, { params }: { params: Promise<{ id
   });
 };
 
+const getSalesReport = async (req: NextRequest) => {
+    await dbConnect();
+    const { searchParams } = new URL(req.url);
+
+    const filters = {
+        startDate: searchParams.get('startDate') || undefined,
+        endDate: searchParams.get('endDate') || undefined,
+        orderStatus: searchParams.get('orderStatus') || undefined,
+        paymentStatus: searchParams.get('paymentStatus') || undefined,
+        paymentMethod: searchParams.get('paymentMethod') || undefined,
+    };
+
+    const result = await OrderServices.getSalesReportFromDB(filters);
+
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Sales report retrieved successfully!',
+        data: result,
+    });
+};
+
 export const OrderController = {
   createOrderWithDetails,
   getAllOrders,
@@ -493,4 +515,5 @@ export const OrderController = {
   getOrderById,
   updateOrder,
   deleteOrder,
+  getSalesReport,
 };
