@@ -56,7 +56,7 @@ const getTicketStatsFromDB = async () => {
 const getSupportTicketByIdFromDB = async (id: string) => {
   const result = await SupportTicket.findById(id)
     .populate('reporter', 'name email profilePicture')
-    .lean();
+    
   if (!result) {
     throw new Error('Support ticket not found');
   }
@@ -112,6 +112,12 @@ const deleteSupportTicketFromDB = async (id: string) => {
   return null;
 };
 
+const getTicketsByReporterIdFromDB = async (userId: string) => {
+  return await SupportTicket.find({ reporter: new Types.ObjectId(userId) })
+    .sort({ createdAt: -1 })
+    .lean();
+};
+
 export const SupportTicketServices = {
   createSupportTicketInDB,
   getAllTicketsFromDB,
@@ -120,4 +126,5 @@ export const SupportTicketServices = {
   addReplyToTicketInDB,
   deleteSupportTicketFromDB,
   getTicketStatsFromDB,
+  getTicketsByReporterIdFromDB,
 };
