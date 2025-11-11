@@ -11,6 +11,8 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { ISupportTicket } from '@/lib/modules/crm-modules/support-ticket/supportTicket.interface';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 interface TicketViewClientProps {
     initialTicket: ISupportTicket;
