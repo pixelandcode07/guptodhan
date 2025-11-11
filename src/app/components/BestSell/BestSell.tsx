@@ -9,13 +9,10 @@ import { EcommerceBannerType } from '@/types/ecommerce-banner-type';
 
 interface BestSellProps {
   bestSellingData: ProductCardType[];
+  topShoppage?: EcommerceBannerType[];
 }
 
-interface HeroImageProps {
-  topShoppage: EcommerceBannerType[];
-}
-
-export default function BestSell({ bestSellingData, topShoppage }: BestSellProps & HeroImageProps) {
+export default function BestSell({ bestSellingData, topShoppage = [] }: BestSellProps) {
   const [itemsToShow, setItemsToShow] = useState(6);
 
   useEffect(() => {
@@ -66,12 +63,7 @@ export default function BestSell({ bestSellingData, topShoppage }: BestSellProps
                       ₹{item.productPrice}
                     </p>
                     <p className="text-xs text-red-500">
-                      -
-                      {Math.round(
-                        ((item.productPrice - item.discountPrice) / item.productPrice) *
-                        100
-                      )}
-                      %
+                      -{Math.round(((item.productPrice - item.discountPrice) / item.productPrice) * 100)}%
                     </p>
                   </div>
                 </div>
@@ -82,14 +74,14 @@ export default function BestSell({ bestSellingData, topShoppage }: BestSellProps
 
         {/* Banner */}
         <div className="banner pt-5 lg:py-10 px-4">
-          {topShoppage ? (
+          {topShoppage.length > 0 ? (
             <Link
               href={topShoppage[0].bannerLink || '#'}
               className=""
             >
               <Image
-                src={topShoppage[0].bannerImage}
-                alt={topShoppage[0].bannerTitle}
+                src={topShoppage[0].bannerImage || '/default-banner.jpg'}
+                alt={topShoppage[0].bannerTitle || 'Top Shop Banner'}
                 width={1000}
                 height={300}
                 className="w-full"
@@ -97,7 +89,7 @@ export default function BestSell({ bestSellingData, topShoppage }: BestSellProps
             </Link>
           ) : (
             <div className="banner pt-5 lg:py-10 px-4">
-              Left Banner Not Found
+              Top Banner Not Found
             </div>
           )}
         </div>
