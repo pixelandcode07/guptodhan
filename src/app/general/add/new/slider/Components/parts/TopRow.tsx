@@ -29,7 +29,7 @@ export default function TopRow({ textPosition, setTextPosition, sliderLink, setS
       </div>
       <div className="space-y-2">
         <Label>Slider Link</Label>
-        <Input className="h-10 w-full" value={sliderLink} onChange={(e) => setSliderLink(e.target.value)} placeholder="https://" />
+        <Input type="url" className="h-10 w-full" value={sliderLink} onChange={(e) => setSliderLink(e.target.value)} placeholder="https://" />
       </div>
     </div>
   );
