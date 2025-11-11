@@ -121,6 +121,7 @@ import { formatDistanceToNowStrict } from 'date-fns';
 
 interface BestSellProps {
   bestSellingData: ProductCardType[];
+  topShoppage?: EcommerceBannerType[];
 }
 interface HeroImageProps {
   topShoppage: EcommerceBannerType[];
