@@ -56,21 +56,47 @@ export const vendor_req_columns: ColumnDef<Vendor>[] = [
       );
     },
   },
+  // {
+  //   accessorKey: 'status',
+  //   header: 'Status',
+  //   cell: ({ row }) => {
+  //     const status = row.getValue('status') as string;
+  //     return (
+  //       <div
+  //         className={cn(
+  //           `p-1 rounded-md w-max text-xs font-medium`,
+  //           status === 'pending' && 'bg-yellow-100 text-yellow-700',
+  //           status === 'approved' && 'bg-green-100 text-green-700',
+  //           status === 'rejected' && 'bg-red-100 text-red-700'
+  //         )}
+  //       >
+  //         {status.charAt(0).toUpperCase() + status.slice(1)}
+  //       </div>
+  //     );
+  //   },
+  // },
   {
     accessorKey: 'status',
     header: 'Status',
     cell: ({ row }) => {
-      const status = row.getValue('status') as string;
+      const rawStatus = row.getValue('status');
+      const status = typeof rawStatus === 'string' ? rawStatus.toLowerCase() : null;
+
+      const displayStatus = status
+        ? status.charAt(0).toUpperCase() + status.slice(1)
+        : 'Unknown';
+
       return (
         <div
           className={cn(
-            `p-1 rounded-md w-max text-xs font-medium`,
+            'p-1 rounded-md w-max text-xs font-medium',
             status === 'pending' && 'bg-yellow-100 text-yellow-700',
             status === 'approved' && 'bg-green-100 text-green-700',
-            status === 'rejected' && 'bg-red-100 text-red-700'
+            status === 'rejected' && 'bg-red-100 text-red-700',
+            !status && 'bg-gray-100 text-gray-600'
           )}
         >
-          {status.charAt(0).toUpperCase() + status.slice(1)}
+          {displayStatus}
         </div>
       );
     },
@@ -136,7 +162,7 @@ export const vendor_req_columns: ColumnDef<Vendor>[] = [
           <Button
             size="icon"
             className="h-8 w-8 bg-blue-600 hover:bg-blue-700"
-            asChild // এটা দরকার যাতে Button এর ভিতর Link কাজ করে
+            asChild
             title="Edit Vendor"
           >
             <Link href={`/general/edit/vendor/${vendor._id}`}>
