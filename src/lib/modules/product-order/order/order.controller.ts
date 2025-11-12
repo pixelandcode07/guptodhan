@@ -14,7 +14,6 @@ import { v4 as uuidv4 } from 'uuid';
 // These MUST be imported before OrderServices is used
 import '@/lib/modules/product/vendorProduct.model';
 import '@/lib/modules/vendor-store/vendorStore.model';
-import '@/lib/modules/vendor/vendor.model';
 
 // // Create a new order
 // const createOrder = async (req: NextRequest) => {

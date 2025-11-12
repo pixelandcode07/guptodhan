@@ -8,6 +8,8 @@ export async function fetchBestSellingData(): Promise<ProductCardType[]> {
         const res = await axios.get(`${baseUrl}/api/v1/product/bestSelling`, {
             headers: { 'Cache-Control': 'no-store' },
         });
+        console.log("🌍 bestselling product:", res);
+
 
         if (res.data?.success && Array.isArray(res.data.data)) {
             return res.data.data.map((item: ProductCardType) => ({

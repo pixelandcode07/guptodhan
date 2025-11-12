@@ -5,7 +5,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Badge, Clock, Zap } from 'lucide-react';
+import { Clock, Zap } from 'lucide-react';
+import { Badge } from "@/components/ui/badge"
 import { ProductCardType } from '@/types/ProductCardType';
 import { EcommerceBannerType } from '@/types/ecommerce-banner-type';
 import { formatDistanceToNowStrict } from 'date-fns';
@@ -82,6 +83,7 @@ export default function FlashSale({
         {/* Cards Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 mt-6">
           <AnimatePresence mode="popLayout">
+            
             {visible.map((ad, idx) => {
               const discountPct = Math.round(
                 ((ad.productPrice - ad.discountPrice) / ad.productPrice) * 100
@@ -129,11 +131,12 @@ export default function FlashSale({
                       )}
 
                       {/* Low-stock warning */}
-                      {ad.stock < 10 && ad.stock > 0 && (
-                        <div className="absolute bottom-2 left-2 bg-orange-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">
-                          Only {ad.stock} left
-                        </div>
-                      )}
+                     {ad.stock !== undefined && ad.stock < 10 && ad.stock > 0 && (
+  <div className="absolute bottom-2 left-2 bg-orange-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">
+    Only {ad.stock} left
+  </div>
+)}
+
                     </div>
 
                     {/* ---- Content ---- */}
