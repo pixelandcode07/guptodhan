@@ -6,10 +6,10 @@ import { generateToken, verifyToken } from '@/lib/utils/jwt';
 import { connectRedis, redisClient } from '@/lib/redis';
 import { sendEmail } from '@/lib/utils/email';
 import mongoose from 'mongoose';
-import { Vendor } from '../vendor/vendor.model';
 import { ServiceProvider } from '../service-provider/serviceProvider.model';
 import { User } from '../user/user.model';
 import { verifyGoogleToken } from '@/lib/utils/verifyGoogleToken';
+import { Vendor } from '../vendors/vendor.model';
 
 
 
@@ -216,7 +216,6 @@ const registerVendor = async (payload: any) => {
     if (!newUser) { throw new Error('Failed to create user'); }
 
     vendorData.user = newUser._id;
-    vendorData.status = vendorData.status || 'pending';
     const newVendor = (await Vendor.create([vendorData], { session }))[0];
     if (!newVendor) { throw new Error('Failed to create vendor profile'); }
 

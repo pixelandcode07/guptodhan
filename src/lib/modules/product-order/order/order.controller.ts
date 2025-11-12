@@ -14,7 +14,6 @@ import { v4 as uuidv4 } from 'uuid';
 // These MUST be imported before OrderServices is used
 import '@/lib/modules/product/vendorProduct.model';
 import '@/lib/modules/vendor-store/vendorStore.model';
-import '@/lib/modules/vendor/vendor.model';
 
 // // Create a new order
 // const createOrder = async (req: NextRequest) => {
@@ -439,8 +438,11 @@ const getOrderById = async (req: NextRequest, { params }: { params: Promise<{ id
   
   // Get user ID from headers
   const userId = req.headers.get('x-user-id');
+  const userRole = req.headers.get('x-user-role')?.toLowerCase();
   
-  if (!userId) {
+  const isPrivileged = userRole === 'admin' || userRole === 'super_admin' || userRole === 'superadmin';
+
+  if (!userId && !isPrivileged) {
     return sendResponse({
       success: false,
       statusCode: StatusCodes.UNAUTHORIZED,
@@ -468,7 +470,7 @@ const getOrderById = async (req: NextRequest, { params }: { params: Promise<{ id
         ? (orderResult.userId as { _id: Types.ObjectId })._id.toString()
         : orderResult.userId?.toString() || '')
     : '';
-  if (orderUserId && orderUserId !== userId) {
+  if (!isPrivileged && orderUserId && orderUserId !== userId) {
     return sendResponse({
       success: false,
       statusCode: StatusCodes.FORBIDDEN,

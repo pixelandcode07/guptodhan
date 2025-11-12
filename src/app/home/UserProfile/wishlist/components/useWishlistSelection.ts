@@ -5,9 +5,16 @@ import axios from 'axios'
 import { toast } from 'sonner'
 import type { WishlistProduct } from '../types'
 
+type AddToCartOptions =
+  | boolean
+  | {
+      skipModal?: boolean;
+      silent?: boolean;
+    };
+
 type UseWishlistSelectionArgs = {
   wishlistItems: WishlistProduct[]
-  addToCart: (productId: string, quantity?: number, skipModal?: boolean) => Promise<void>
+  addToCart: (productId: string, quantity?: number, options?: AddToCartOptions) => Promise<void>
   refreshWishlist: () => Promise<void>
   removeFromLocal: (ids: string[]) => void
 }
@@ -62,7 +69,7 @@ export function useWishlistSelection({ wishlistItems, addToCart, refreshWishlist
             continue
           }
 
-          await addToCart(productId, 1, true)
+          await addToCart(productId, 1, { skipModal: true, silent: true })
 
           try {
             const res = await axios.delete(`/api/v1/wishlist/${wishlistItemId}`)

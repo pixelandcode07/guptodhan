@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { DataTable } from "@/components/TableHelper/data-table";
 import { getCategoryColumns, type Category } from "@/components/TableHelper/category_columns";
 import { useSession } from "next-auth/react";
-import CategoryEditModal from "./CategoryEditModal";
 import CategoriesHeader from "./CategoriesHeader";
 import CategoriesFilters from "./CategoriesFilters";
 import DeleteCategoryDialog from "./DeleteCategoryDialog";
@@ -31,8 +30,6 @@ export default function CategoriesClient() {
   const userRole = s?.user?.role;
   const [rows, setRows] = useState<Category[]>([]);
   const [statusFilter, setStatusFilter] = useState<"" | "Active" | "Inactive" | "all">("all");
-  const [editOpen, setEditOpen] = useState(false);
-  const [editing, setEditing] = useState<Category | null>(null);
   const [searchText, setSearchText] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState<Category | null>(null);
@@ -113,17 +110,9 @@ export default function CategoriesClient() {
   }, [deleting, rows, token, userRole]);
 
   const columns = useMemo(() => getCategoryColumns({ 
-    onEdit: (row) => { 
-      // Security check - only allow admin users to edit
-      if (userRole !== 'admin') {
-        toast.error('Access denied: Admin privileges required');
-        return;
-      }
-      setEditing(row); 
-      setEditOpen(true); 
-    }, 
+    onEdit: () => {}, 
     onDelete 
-  }), [onDelete, userRole]);
+  }), [onDelete]);
 
   const filtered = useMemo(() => {
     const byStatus = (r: Category) => statusFilter === "all" || r.status === statusFilter;
@@ -144,23 +133,6 @@ export default function CategoriesClient() {
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <DataTable columns={columns} data={filtered} />
         </div>
-
-        <CategoryEditModal
-          open={editOpen}
-          onOpenChange={setEditOpen}
-          data={editing}
-          onSaved={fetchRows}
-          onOptimisticUpdate={(u) => {
-            setRows((prev) => prev.map((r) => r._id === u._id ? {
-              ...r,
-              name: u.name,
-              slug: u.slug,
-              status: u.status,
-              isFeatured: u.isFeatured,
-              isNavbar: u.isNavbar,
-            } : r));
-          }}
-        />
 
         <DeleteCategoryDialog
           open={deleteOpen}

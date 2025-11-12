@@ -21,11 +21,11 @@ export default function DetailsFields({ subTitle, setSubTitle, title, setTitle, 
         <Input value={subTitle} onChange={(e) => setSubTitle(e.target.value)} placeholder="Write Sub Title Here" />
       </div>
       <div className="space-y-2">
-        <Label>Banner Title</Label>
+        <Label>Slider Title</Label>
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Write Title Here" />
       </div>
       <div className="space-y-2">
-        <Label>Banner Description</Label>
+        <Label>Slider Description</Label>
         <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Write Description Here" />
       </div>
     </div>

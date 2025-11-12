@@ -19,8 +19,8 @@ export interface IVendorProduct extends Document {
   vendorStoreId: Types.ObjectId;
   shortDescription: string;
   fullDescription: string;
-  specification: string;
-  warrantyPolicy: string;
+  specification?: string;
+  warrantyPolicy?: string;
   productTag?: string[];
   videoUrl?: string;
   photoGallery: string[];

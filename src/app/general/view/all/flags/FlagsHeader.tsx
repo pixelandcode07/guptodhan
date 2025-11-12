@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Plus, Flag } from "lucide-react";
+import RearrangeButton from "@/components/ReusableComponents/RearrangeButton";
 
 interface FlagsHeaderProps {
   onAddClick: () => void;
@@ -25,7 +26,8 @@ export default function FlagsHeader({ onAddClick }: FlagsHeaderProps) {
           </div>
         </div>
 
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 flex items-center gap-2">
+          <RearrangeButton href="/general/rearrange/flags" label="Rearrange Flags" />
           <Button 
             className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 w-full sm:w-auto h-10 sm:h-auto text-sm sm:text-base" 
             onClick={onAddClick}
