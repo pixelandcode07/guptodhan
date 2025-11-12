@@ -31,49 +31,79 @@ export default function ProductImageGallery({ galleryImages, setGalleryImages }:
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Product Image Gallery</CardTitle>
+    <Card className="shadow-sm border-gray-200 flex-1 flex flex-col min-h-0">
+      <CardHeader className="pb-4 border-b border-gray-100">
+        <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
+          Product Image Gallery
+        </CardTitle>
+        <p className="text-sm text-gray-500 mt-1">Upload multiple product images</p>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div 
-          {...getRootProps()} 
-          className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors"
-        >
-          <input {...getInputProps()} />
-          <UploadCloud className="h-12 w-12 text-gray-500 mb-2" />
-          {isDragActive ? (
-            <p className="text-gray-700">Drop the files here ...</p>
-          ) : (
-            <p className="text-gray-700">Drag & Drop files here or click to browse</p>
-          )}
-        </div>
-
-        {galleryImages.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
-            {galleryImages.map((file, index) => (
-              <div key={index} className="relative aspect-square rounded-md overflow-hidden border">
-                <Image
-                  src={URL.createObjectURL(file)}
-                  alt={`Gallery image ${index + 1}`}
-                  fill
-                  style={{ objectFit: 'cover' }}
-                />
-                <Button 
-                  type="button" 
-                  variant="destructive" 
-                  size="icon" 
-                  className="absolute top-1 right-1 h-6 w-6 rounded-full"
-                  onClick={(e) => { 
-                    e.stopPropagation(); // Prevent the dropzone from opening on click
-                    removeImage(index); 
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+      <CardContent className="pt-6 space-y-4 flex-1 flex flex-col min-h-0">
+        {galleryImages.length === 0 ? (
+          <div 
+            {...getRootProps()} 
+            className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors min-h-[300px] flex-1"
+          >
+            <input {...getInputProps()} />
+            <UploadCloud className="h-16 w-16 text-gray-400 mb-4" />
+            {isDragActive ? (
+              <p className="text-gray-700 font-medium text-lg">Drop the images here...</p>
+            ) : (
+              <div className="text-center">
+                <p className="text-gray-700 font-medium text-lg mb-2">Drag & Drop images here</p>
+                <p className="text-gray-500 text-sm">or click to browse and select multiple images</p>
+                <p className="text-gray-400 text-xs mt-3">Supported formats: JPG, PNG, GIF</p>
               </div>
-            ))}
+            )}
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {galleryImages.map((file, index) => (
+                <div key={index} className="relative aspect-square rounded-md overflow-hidden border group">
+                  <Image
+                    src={URL.createObjectURL(file)}
+                    alt={`Gallery image ${index + 1}`}
+                    fill
+                    style={{ objectFit: 'cover' }}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="destructive" 
+                    size="icon" 
+                    className="absolute top-2 right-2 h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                    onClick={(e) => { 
+                      e.stopPropagation();
+                      removeImage(index); 
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                  <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                    {index + 1}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Add More Images Section */}
+            <div 
+              {...getRootProps()} 
+              className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50/50 hover:bg-gray-100 hover:border-blue-400 transition-colors mt-4"
+            >
+              <input {...getInputProps()} />
+              <UploadCloud className="h-10 w-10 text-gray-400 mb-2" />
+              {isDragActive ? (
+                <p className="text-gray-600 text-sm font-medium">Drop more images here...</p>
+              ) : (
+                <div className="text-center">
+                  <p className="text-gray-600 text-sm font-medium mb-1">Add more images</p>
+                  <p className="text-gray-500 text-xs">Drag & drop or click to browse</p>
+                  <p className="text-gray-400 text-xs mt-2">Currently {galleryImages.length} image{galleryImages.length !== 1 ? 's' : ''} uploaded</p>
+                </div>
+              )}
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
