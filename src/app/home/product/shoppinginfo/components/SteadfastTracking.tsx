@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Package, Clock, CheckCircle, Truck, AlertCircle } from 'lucide-react'
 import axios from 'axios'
-import FancyLoadingPage from '@/app/general/loading'
+import TrackingSkeleton from '../../tracking/components/TrackingSkeleton'
 
 interface TrackingData {
   orderId: string
@@ -107,7 +107,7 @@ export default function SteadfastTracking() {
   }
 
   if (loading) {
-    return <FancyLoadingPage />
+    return <TrackingSkeleton />
   }
 
   return (

@@ -1,8 +1,8 @@
 import React, { Suspense } from 'react' 
 import SteadfastTracking from '@/app/home/product/shoppinginfo/components/SteadfastTracking'
-import FancyLoadingPage from '@/app/general/loading'
 import { HeroNav } from '@/app/components/Hero/HeroNav'
 import { MainCategory } from '@/types/navigation-menu'
+import TrackingSkeleton from './components/TrackingSkeleton'
 
 export default function TrackingPage() {
   const categoryData: MainCategory[]=[]
@@ -10,7 +10,7 @@ export default function TrackingPage() {
     <>
       <HeroNav categories={categoryData} />
       {/* 2. SteadfastTracking Suspense wrap */}
-      <Suspense fallback={<FancyLoadingPage />}> 
+      <Suspense fallback={<TrackingSkeleton />}> 
         <SteadfastTracking />
       </Suspense>
     </>
