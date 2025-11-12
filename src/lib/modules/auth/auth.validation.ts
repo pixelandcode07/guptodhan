@@ -54,10 +54,13 @@ export const registerVendorValidationSchema = z.object({
   tradeLicenseNumber: z.string().min(1, { message: 'Trade license number is required.' }),
   businessAddress: z.string().min(1, { message: 'Business address is required.' }),
   ownerName: z.string().min(1, { message: 'Owner name is required.' }),
-
+  status: z.enum(['pending', 'approved', 'rejected']).optional(),
   ownerNidUrl: z.string().url({ message: 'A valid NID card image URL is required.' }),
   tradeLicenseUrl: z.string().url({ message: 'A valid trade license image URL is required.' }),
-});
+}).transform((data) => ({
+  ...data,
+  status: data.status || 'pending',
+}));;
 
 export const registerServiceProviderValidationSchema = z.object({
   name: z.string().min(1),

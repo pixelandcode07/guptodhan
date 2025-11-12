@@ -216,6 +216,7 @@ const registerVendor = async (payload: any) => {
     if (!newUser) { throw new Error('Failed to create user'); }
 
     vendorData.user = newUser._id;
+    vendorData.status = vendorData.status || 'pending';
     const newVendor = (await Vendor.create([vendorData], { session }))[0];
     if (!newVendor) { throw new Error('Failed to create vendor profile'); }
 
