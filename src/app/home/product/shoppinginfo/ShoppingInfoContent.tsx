@@ -7,7 +7,7 @@ import ItemsList from './components/ItemsList'
 import OrderSuccessModal from './components/OrderSuccessModal'
 import OrderErrorModal from './components/OrderErrorModal'
 import InfoForm from './components/InfoForm'
-import FancyLoadingPage from '@/app/general/loading'
+import ShoppingInfoSkeleton from './components/ShoppingInfoSkeleton'
 import { useSession } from 'next-auth/react'
 import axios from 'axios'
 import { toast } from 'sonner'
@@ -294,7 +294,7 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
 	}
 
 	if (profileLoading || geoLoading) {
-		return <FancyLoadingPage />
+		return <ShoppingInfoSkeleton />
 	}
 
 	if (!userProfile && session?.user) {
