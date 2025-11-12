@@ -19,6 +19,7 @@ import Image from 'next/image';
 import ProductVariantForm, { IProductOption } from './ProductVariantForm';
 import ProductImageGallery from './ProductImageGallery';
 import PricingInventory from './PricingInventory';
+import TagInput from './TagInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function ProductForm({ initialData, productId: propProductId }: any) {
@@ -34,7 +35,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
     const [fullDescription, setFullDescription] = useState('');
     const [specification, setSpecification] = useState('');
     const [warrantyPolicy, setWarrantyPolicy] = useState('');
-    const [tags, setTags] = useState('');
+    const [productTags, setProductTags] = useState<string[]>([]);
     
     const [thumbnail, setThumbnail] = useState<File | null>(null);
     const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
@@ -64,7 +65,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
     const [hasVariant, setHasVariant] = useState(false);
     const [variants, setVariants] = useState<IProductOption[]>([]);
     const [metaTitle, setMetaTitle] = useState('');
-    const [metaKeywords, setMetaKeywords] = useState('');
+    const [metaKeywordTags, setMetaKeywordTags] = useState<string[]>([]);
     const [metaDescription, setMetaDescription] = useState('');
     const [price, setPrice] = useState<number | undefined>(undefined);
     const [discountPrice, setDiscountPrice] = useState<number | undefined>(undefined);
@@ -173,7 +174,12 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 setFullDescription(p.fullDescription || '');
                 setSpecification(p.specification || '');
                 setWarrantyPolicy(p.warrantyPolicy || '');
-                setTags(Array.isArray(p.productTag) ? p.productTag.join(', ') : '');
+                const parsedProductTags = Array.isArray(p.productTag)
+                    ? p.productTag.filter((tag: string) => typeof tag === 'string').map((tag: string) => tag.trim()).filter(Boolean)
+                    : typeof p.productTag === 'string'
+                        ? p.productTag.split(',').map((tag: string) => tag.trim()).filter(Boolean)
+                        : [];
+                setProductTags(parsedProductTags);
 
                 setThumbnail(null);
                 setThumbnailPreview(p.thumbnailImage || null);
@@ -209,7 +215,12 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 }
 
                 setMetaTitle(p.metaTitle || '');
-                setMetaKeywords(p.metaKeyword || '');
+                const parsedMetaKeywords = Array.isArray(p.metaKeyword)
+                    ? p.metaKeyword.filter((keyword: string) => typeof keyword === 'string').map((keyword: string) => keyword.trim()).filter(Boolean)
+                    : typeof p.metaKeyword === 'string'
+                        ? p.metaKeyword.split(',').map((keyword: string) => keyword.trim()).filter(Boolean)
+                        : [];
+                setMetaKeywordTags(parsedMetaKeywords);
                 setMetaDescription(p.metaDescription || '');
 
                 const opts = Array.isArray(p.productOptions) ? p.productOptions : [];
@@ -334,7 +345,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 fullDescription: fullDescription,
                 specification: specification,
                 warrantyPolicy: warrantyPolicy,
-                productTag: tags ? tags.split(',').map(t => t.trim()) : [],
+                productTag: productTags,
                 videoUrl: videoUrl || undefined,
                 
                 photoGallery: validGalleryUrls.length > 0 ? validGalleryUrls : [thumbnailUrl],
@@ -355,7 +366,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 weightUnit: unit || undefined,
                 offerDeadline: offerEndTime ? new Date(offerEndTime) : undefined,
                 metaTitle: metaTitle || undefined,
-                metaKeyword: metaKeywords || undefined,
+                metaKeyword: metaKeywordTags.length > 0 ? metaKeywordTags.join(', ') : undefined,
                 metaDescription: metaDescription || undefined,
                 status: 'active',
                 productOptions: hasVariant ? await Promise.all(variants.map(async variant => ({
@@ -375,6 +386,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 toast.success("Product created successfully!");
+                router.push('/general/view/all/product');
             }
         } catch (error: any) {
             console.error("Submission Error:", error.response?.data || error.message);
@@ -396,8 +408,9 @@ export default function ProductForm({ initialData, productId: propProductId }: a
     };
     
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
-             <div className="flex justify-end gap-2 sticky top-4 z-10 bg-gray-50/80 backdrop-blur-sm py-2 px-4 rounded-lg shadow-sm -mt-4">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+            {/* Sticky Action Bar */}
+            <div className="flex justify-end gap-2 sticky top-4 z-10 bg-gray-50/80 backdrop-blur-sm py-2 px-4 rounded-lg shadow-sm -mt-4">
                 <Button type="button" variant="destructive">
                     <X className="mr-2 h-4 w-4" /> Discard
                 </Button>
@@ -407,181 +420,429 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 </Button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                <div className="lg:col-span-2 space-y-6">
-                    <Card>
-                        <CardContent className="space-y-4 pt-6">
-                             <div>
-                                 <Label>Title *</Label>
-                                 <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter Product Name Here" required />
-                             </div>
-                             <div>
-                                 <Label>Short Description (Max 255 Characters)</Label>
-                                 <Textarea value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} maxLength={255} placeholder="Enter Short Description Here" />
-                             </div>
-                             <div>
-                                <Tabs defaultValue="description" className="w-full">
-                                    <TabsList className="grid w-full grid-cols-3 bg-gray-100">
-                                        <TabsTrigger value="description">Full Description</TabsTrigger>
-                                        <TabsTrigger value="specification">Specification</TabsTrigger>
-                                        <TabsTrigger value="warranty">Warranty Policy</TabsTrigger>
-                                    </TabsList>
-                                    <TabsContent value="description" className="mt-4 border rounded-md p-2"><RichTextEditor value={fullDescription} onChange={setFullDescription} /></TabsContent>
-                                    <TabsContent value="specification" className="mt-4 border rounded-md p-2"><RichTextEditor value={specification} onChange={setSpecification} /></TabsContent>
-                                    <TabsContent value="warranty" className="mt-4 border rounded-md p-2"><RichTextEditor value={warrantyPolicy} onChange={setWarrantyPolicy} /></TabsContent>
-                                </Tabs>
-                             </div>
-                             <div>
-                                 <Label>Tags (for search result)</Label>
-                                 <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="e.g., Fashion, Dress, Shirt" />
-                             </div>
-                         </CardContent>
+            {/* Main Content Grid */}
+            <div className="space-y-4 sm:space-y-6">
+                {/* Row 1: Basic Information and Thumbnail Image */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                    {/* Basic Information Card */}
+                    <Card className="shadow-sm border-gray-200 flex flex-col h-full">
+                        <CardHeader className="pb-4 border-b border-gray-100">
+                            <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">
+                                Basic Information
+                            </CardTitle>
+                            <p className="text-sm text-gray-500 mt-1">Essential product details</p>
+                        </CardHeader>
+                        <CardContent className="pt-6 space-y-5 flex-1">
+                            <div className="space-y-2">
+                                <Label htmlFor="title" className="text-sm font-medium text-gray-700">
+                                    Product Title <span className="text-red-500">*</span>
+                                </Label>
+                                <Input 
+                                    id="title"
+                                    value={title} 
+                                    onChange={(e) => setTitle(e.target.value)} 
+                                    placeholder="Enter product name" 
+                                    required 
+                                    className="h-11"
+                                />
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <Label htmlFor="shortDescription" className="text-sm font-medium text-gray-700">
+                                    Short Description
+                                    <span className="text-xs text-gray-500 ml-2">(Max 255 characters)</span>
+                                </Label>
+                                <Textarea 
+                                    id="shortDescription"
+                                    value={shortDescription} 
+                                    onChange={(e) => setShortDescription(e.target.value)} 
+                                    maxLength={255} 
+                                    placeholder="Brief description of your product" 
+                                    className="min-h-[100px] resize-none"
+                                />
+                                <div className="text-xs text-gray-500 text-right">
+                                    {shortDescription.length}/255
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="productTags" className="text-sm font-medium text-gray-700">
+                                    Product Tags
+                                    <span className="text-xs text-gray-500 ml-2">(Press comma or enter to add)</span>
+                                </Label>
+                                <TagInput
+                                    id="productTags"
+                                    value={productTags}
+                                    onChange={setProductTags}
+                                    placeholder="Type a tag and press comma or enter"
+                                />
+                            </div>
+                        </CardContent>
                     </Card>
 
-                    {!hasVariant && <ProductImageGallery galleryImages={galleryImages} setGalleryImages={setGalleryImages} />}
+                    {/* Thumbnail Upload Card */}
+                    <Card className="shadow-sm border-gray-200 flex flex-col h-full">
+                        <CardHeader className="pb-4 border-b border-gray-100">
+                            <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
+                                Thumbnail Image <span className="text-red-500">*</span>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-6 flex-1">
+                            <label 
+                                htmlFor="thumbnail-upload" 
+                                className="cursor-pointer group block w-full h-full"
+                            >
+                                <div className="flex items-center justify-center w-full h-full min-h-[300px] border-2 border-dashed border-gray-300 rounded-lg p-4 transition-colors hover:border-blue-400 hover:bg-blue-50/50">
+                                    {thumbnailPreview ? (
+                                        <div className="relative w-full h-full min-h-[300px] rounded-md overflow-hidden">
+                                            <Image 
+                                                src={thumbnailPreview} 
+                                                alt="Thumbnail Preview" 
+                                                fill 
+                                                style={{ objectFit: 'contain' }} 
+                                                className="rounded-md" 
+                                            />
+                                            <Button 
+                                                type="button" 
+                                                variant="destructive" 
+                                                size="icon" 
+                                                className="absolute top-2 right-2 h-8 w-8 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10" 
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setThumbnail(null);
+                                                    setThumbnailPreview(null);
+                                                }}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center text-gray-500">
+                                            <UploadCloud className="mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-2 text-gray-400" />
+                                            <p className="text-sm font-medium">Click to upload</p>
+                                            <p className="text-xs text-gray-400 mt-1">or drag and drop</p>
+                                        </div>
+                                    )}
+                                </div>
+                                <Input 
+                                    id="thumbnail-upload" 
+                                    type="file" 
+                                    className="hidden" 
+                                    onChange={handleThumbnailChange} 
+                                    accept="image/*" 
+                                />
+                            </label>
+                        </CardContent>
+                    </Card>
                 </div>
 
-                <div className="lg:col-span-1 space-y-6">
-                    <Card>
-                        <CardHeader><CardTitle>Product Thumbnail Image *</CardTitle></CardHeader>
-                        <CardContent className="flex items-center justify-center h-48 border-2 border-dashed rounded-lg p-2">
-                             <label htmlFor="thumbnail-upload" className="cursor-pointer text-center flex flex-col items-center justify-center h-full w-full">
-                                 {thumbnailPreview ? (
-                                     <div className="relative w-full h-full">
-                                         <Image src={thumbnailPreview} alt="Thumbnail Preview" fill style={{ objectFit: 'contain' }} className="rounded-md" />
-                                         <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 rounded-full" onClick={() => { setThumbnail(null); setThumbnailPreview(null); }}>
-                                             <X className="h-4 w-4" />
-                                         </Button>
-                                     </div>
-                                 ) : (
-                                     <div className="text-center text-gray-500">
-                                         <UploadCloud className="mx-auto h-12 w-12" />
-                                         <p>Drag and drop a file here or click</p>
-                                     </div>
-                                 )}
-                                 <Input id="thumbnail-upload" type="file" className="hidden" onChange={handleThumbnailChange} accept="image/*" />
-                             </label>
-                         </CardContent>
+                {/* Row 2: Detailed Information and Pricing & Inventory */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                    {/* Detailed Information Card */}
+                    <Card className="shadow-sm border-gray-200 flex flex-col h-full">
+                        <CardHeader className="pb-4 border-b border-gray-100">
+                            <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
+                                Detailed Information
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-6 flex-1">
+                            <Tabs defaultValue="description" className="w-full h-full flex flex-col">
+                                <TabsList className="grid w-full grid-cols-3 bg-gray-50 h-auto p-1">
+                                    <TabsTrigger value="description" className="text-xs sm:text-sm py-2.5 data-[state=active]:bg-white">
+                                        Description
+                                    </TabsTrigger>
+                                    <TabsTrigger value="specification" className="text-xs sm:text-sm py-2.5 data-[state=active]:bg-white">
+                                        Specification
+                                    </TabsTrigger>
+                                    <TabsTrigger value="warranty" className="text-xs sm:text-sm py-2.5 data-[state=active]:bg-white">
+                                        Warranty
+                                    </TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="description" className="mt-4 border border-gray-200 rounded-lg p-3 sm:p-4 flex-1">
+                                    <RichTextEditor value={fullDescription} onChange={setFullDescription} />
+                                </TabsContent>
+                                <TabsContent value="specification" className="mt-4 border border-gray-200 rounded-lg p-3 sm:p-4 flex-1">
+                                    <RichTextEditor value={specification} onChange={setSpecification} />
+                                </TabsContent>
+                                <TabsContent value="warranty" className="mt-4 border border-gray-200 rounded-lg p-3 sm:p-4 flex-1">
+                                    <RichTextEditor value={warrantyPolicy} onChange={setWarrantyPolicy} />
+                                </TabsContent>
+                            </Tabs>
+                        </CardContent>
                     </Card>
-                    <Card>
-                        <CardContent className="space-y-4 pt-6">
+
+                    {/* Pricing & Inventory Card */}
+                    <Card className="shadow-sm border-gray-200 flex flex-col h-full">
+                        <CardHeader className="pb-4 border-b border-gray-100">
+                            <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
+                                Pricing & Inventory
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-6 space-y-4 flex-1">
                             <PricingInventory 
                                 formData={pricingFormData}
                                 handleInputChange={handlePricingInputChange}
                                 handleNumberChange={handlePricingNumberChange}
                             />
                             
-                             <div>
-                                 <Label>Product Code (SKU)</Label>
-                                 <Input value={productCode} onChange={(e) => setProductCode(e.target.value)} />
-                             </div>
-                            <div>
-                                <Label>Select Store *</Label>
-                                <Select value={store} onValueChange={setStore} required>
-                                    <SelectTrigger><SelectValue placeholder="Select One" /></SelectTrigger>
-                                    <SelectContent>
-                                        {initialData?.stores?.map((s: any) => <SelectItem key={s._id} value={s._id}>{s.storeName}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
+                            <div className="space-y-2">
+                                <Label htmlFor="sku" className="text-sm font-medium text-gray-700">
+                                    Product Code (SKU)
+                                </Label>
+                                <Input 
+                                    id="sku"
+                                    value={productCode} 
+                                    onChange={(e) => setProductCode(e.target.value)} 
+                                    placeholder="Enter SKU"
+                                    className="h-11"
+                                />
                             </div>
-                            <div>
-                                <Label>Category *</Label>
-                                <Select value={category} onValueChange={setCategory} required>
-                                    <SelectTrigger><SelectValue placeholder="Select One" /></SelectTrigger>
-                                    <SelectContent>
-                                        {initialData?.categories?.map((c: any) => <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Row 3: Product Image Gallery and Product Details */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                    {/* Product Image Gallery - Only show when no variants */}
+                    {!hasVariant && (
+                        <ProductImageGallery galleryImages={galleryImages} setGalleryImages={setGalleryImages} />
+                    )}
+
+                    {/* Product Details Card */}
+                    <Card className={`shadow-sm border-gray-200 flex flex-col h-full ${!hasVariant ? '' : 'lg:col-span-2'}`}>
+                        <CardHeader className="pb-4 border-b border-gray-100">
+                            <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
+                                Product Details
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-6 flex-1">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="store" className="text-sm font-medium text-gray-700">
+                                        Store <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Select value={store} onValueChange={setStore} required>
+                                        <SelectTrigger id="store" className="h-11 w-full">
+                                            <SelectValue placeholder="Select store" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {initialData?.stores?.map((s: any) => (
+                                                <SelectItem key={s._id} value={s._id}>
+                                                    {s.storeName}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="category" className="text-sm font-medium text-gray-700">
+                                        Category <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Select value={category} onValueChange={setCategory} required>
+                                        <SelectTrigger id="category" className="h-11 w-full">
+                                            <SelectValue placeholder="Select category" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {initialData?.categories?.map((c: any) => (
+                                                <SelectItem key={c._id} value={c._id}>
+                                                    {c.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="subcategory" className="text-sm font-medium text-gray-700">
+                                        Subcategory
+                                    </Label>
+                                    <Select 
+                                        value={subcategory} 
+                                        onValueChange={setSubcategory} 
+                                        disabled={!category || subcategories.length === 0}
+                                    >
+                                        <SelectTrigger id="subcategory" className="h-11 w-full">
+                                            <SelectValue placeholder={!category ? "Select category first" : "Select subcategory"} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {subcategories.map((sc: any) => (
+                                                <SelectItem key={sc._id} value={sc._id}>
+                                                    {sc.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="childCategory" className="text-sm font-medium text-gray-700">
+                                        Child Category
+                                    </Label>
+                                    <Select 
+                                        value={childCategory} 
+                                        onValueChange={setChildCategory} 
+                                        disabled={!subcategory || childCategories.length === 0}
+                                    >
+                                        <SelectTrigger id="childCategory" className="h-11 w-full">
+                                            <SelectValue placeholder={!subcategory ? "Select subcategory first" : "Select child category"} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {childCategories.map((cc: any) => (
+                                                <SelectItem key={cc._id} value={cc._id}>
+                                                    {cc.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="brand" className="text-sm font-medium text-gray-700">
+                                        Brand
+                                    </Label>
+                                    <Select value={brand} onValueChange={setBrand}>
+                                        <SelectTrigger id="brand" className="h-11 w-full">
+                                            <SelectValue placeholder="Select brand" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {initialData?.brands?.map((b: any) => (
+                                                <SelectItem key={b._id} value={b._id}>
+                                                    {b.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="model" className="text-sm font-medium text-gray-700">
+                                        Model
+                                    </Label>
+                                    <Select 
+                                        value={model} 
+                                        onValueChange={setModel} 
+                                        disabled={!brand || models.length === 0}
+                                    >
+                                        <SelectTrigger id="model" className="h-11 w-full">
+                                            <SelectValue placeholder={!brand ? "Select brand first" : "Select model"} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {models.map((m: any) => (
+                                                <SelectItem key={m._id} value={m._id}>
+                                                    {m.modelName}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="flag" className="text-sm font-medium text-gray-700">
+                                        Flag
+                                    </Label>
+                                    <Select value={flag} onValueChange={setFlag}>
+                                        <SelectTrigger id="flag" className="h-11 w-full">
+                                            <SelectValue placeholder="Select" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {initialData?.flags?.map((f: any) => (
+                                                <SelectItem key={f._id} value={f._id}>
+                                                    {f.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="unit" className="text-sm font-medium text-gray-700">
+                                        Unit
+                                    </Label>
+                                    <Select value={unit} onValueChange={setUnit}>
+                                        <SelectTrigger id="unit" className="h-11 w-full">
+                                            <SelectValue placeholder="Select" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {initialData?.units?.map((u: any) => (
+                                                <SelectItem key={u._id} value={u._id}>
+                                                    {u.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="warranty" className="text-sm font-medium text-gray-700">
+                                        Warranty
+                                    </Label>
+                                    <Select value={warranty} onValueChange={setWarranty}>
+                                        <SelectTrigger id="warranty" className="h-11 w-full">
+                                            <SelectValue placeholder="Select warranty" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {initialData?.warranties?.map((w: any) => (
+                                                <SelectItem key={w._id} value={w._id}>
+                                                    {w.warrantyName}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="videoUrl" className="text-sm font-medium text-gray-700">
+                                        Video URL
+                                    </Label>
+                                    <Input 
+                                        id="videoUrl"
+                                        value={videoUrl} 
+                                        onChange={(e) => setVideoUrl(e.target.value)} 
+                                        placeholder="https://..."
+                                        className="h-11"
+                                    />
+                                </div>
                             </div>
-                            <div>
-                                <Label>Subcategory</Label>
-                                <Select value={subcategory} onValueChange={setSubcategory} disabled={!category || subcategories.length === 0}>
-                                    <SelectTrigger><SelectValue placeholder="Select Category First" /></SelectTrigger>
-                                    <SelectContent>
-                                        {subcategories.map((sc: any) => <SelectItem key={sc._id} value={sc._id}>{sc.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
+
+                            <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100">
+                                <div>
+                                    <Label htmlFor="specialOffer" className="text-sm font-medium text-gray-700 cursor-pointer">
+                                        Special Offer
+                                    </Label>
+                                    <p className="text-xs text-gray-500 mt-0.5">Enable time-limited offers</p>
+                                </div>
+                                <Switch 
+                                    id="specialOffer"
+                                    checked={specialOffer} 
+                                    onCheckedChange={setSpecialOffer} 
+                                />
                             </div>
-                            <div>
-                                <Label>Child Category</Label>
-                                <Select value={childCategory} onValueChange={setChildCategory} disabled={!subcategory || childCategories.length === 0}>
-                                    <SelectTrigger><SelectValue placeholder="Select Subcategory First" /></SelectTrigger>
-                                    <SelectContent>
-                                        {childCategories.map((cc: any) => <SelectItem key={cc._id} value={cc._id}>{cc.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                             <div>
-                                 <Label>Brand</Label>
-                                 <Select value={brand} onValueChange={setBrand}>
-                                     <SelectTrigger><SelectValue placeholder="Select One" /></SelectTrigger>
-                                     <SelectContent>
-                                         {initialData?.brands?.map((b: any) => <SelectItem key={b._id} value={b._id}>{b.name}</SelectItem>)}
-                                     </SelectContent>
-                                 </Select>
-                             </div>
-                             <div>
-                                 <Label>Model</Label>
-                                 <Select value={model} onValueChange={setModel} disabled={!brand || models.length === 0}>
-                                     <SelectTrigger><SelectValue placeholder="Select Brand First" /></SelectTrigger>
-                                     <SelectContent>
-                                         {models.map((m: any) => <SelectItem key={m._id} value={m._id} className="text-black">{m.modelName}</SelectItem>)}
-                                     </SelectContent>
-                                 </Select>
-                             </div>
-                             <div>
-                                 <Label>Flag</Label>
-                                 <Select value={flag} onValueChange={setFlag}>
-                                     <SelectTrigger><SelectValue placeholder="Select One" /></SelectTrigger>
-                                     <SelectContent>
-                                         {initialData?.flags?.map((f: any) => <SelectItem key={f._id} value={f._id}>{f.name}</SelectItem>)}
-                                     </SelectContent>
-                                 </Select>
-                             </div>
-                             <div>
-                                 <Label>Unit</Label>
-                                 <Select value={unit} onValueChange={setUnit}>
-                                     <SelectTrigger><SelectValue placeholder="Select One" /></SelectTrigger>
-                                     <SelectContent>
-                                         {initialData?.units?.map((u: any) => <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>)}
-                                     </SelectContent>
-                                 </Select>
-                             </div>
-                             <div>
-                                 <Label>Warranty</Label>
-                                 <Select value={warranty} onValueChange={setWarranty}>
-                                     <SelectTrigger><SelectValue placeholder="Select One" /></SelectTrigger>
-                                     <SelectContent>
-                                         {initialData?.warranties?.map((w: any) => <SelectItem key={w._id} value={w._id}>{w.warrantyName}</SelectItem>)}
-                                     </SelectContent>
-                                 </Select>
-                             </div>
-                             <div>
-                                 <Label>Video URL</Label>
-                                 <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
-                             </div>
-                             <div className="flex items-center justify-between">
-                                 <Label>Special Offer</Label>
-                                 <Switch checked={specialOffer} onCheckedChange={setSpecialOffer} />
-                             </div>
-                             {specialOffer && (
-                                 <div>
-                                     <Label>Offer End Time *</Label>
-                                     <Input 
-                                         type="datetime-local" 
-                                         value={offerEndTime} 
-                                         onChange={(e) => setOfferEndTime(e.target.value)}
-                                         min={new Date().toISOString().slice(0, 16)}
-                                         required
-                                     />
-                                 </div>
-                             )}
-                         </CardContent>
+
+                            {specialOffer && (
+                                <div className="space-y-2 pt-4 mt-4 border-t border-gray-100">
+                                    <Label htmlFor="offerEndTime" className="text-sm font-medium text-gray-700">
+                                        Offer End Time <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input 
+                                        id="offerEndTime"
+                                        type="datetime-local" 
+                                        value={offerEndTime} 
+                                        onChange={(e) => setOfferEndTime(e.target.value)}
+                                        min={new Date().toISOString().slice(0, 16)}
+                                        required
+                                        className="h-11"
+                                    />
+                                </div>
+                            )}
+                        </CardContent>
                     </Card>
                 </div>
             </div>
 
-           <Card>
+            {/* Product Variants Section - Keep original simple design */}
+            <Card>
                 <CardContent className="p-6">
                     <div className="flex items-center justify-center space-x-3 mb-4">
                         <Label htmlFor="hasVariantSwitch">Product Has Variant?</Label>
@@ -597,26 +858,57 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader><CardTitle>Product SEO Information (Optional)</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                         <div>
-                             <Label>Meta Title</Label>
-                             <Input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} />
-                         </div>
-                         <div>
-                             <Label>Meta Keywords</Label>
-                             <Input value={metaKeywords} onChange={(e) => setMetaKeywords(e.target.value)} />
-                         </div>
-                     </div>
-                     <div>
-                         <Label>Meta Description</Label>
-                         <Textarea value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} />
-                     </div>
-                 </CardContent>
+            {/* SEO Information Card */}
+            <Card className="shadow-sm border-gray-200">
+                <CardHeader className="pb-4 border-b border-gray-100">
+                    <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
+                        SEO Information
+                    </CardTitle>
+                    <p className="text-sm text-gray-500 mt-1">Optional: Improve search engine visibility</p>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="metaTitle" className="text-sm font-medium text-gray-700">
+                                Meta Title
+                            </Label>
+                            <Input 
+                                id="metaTitle"
+                                value={metaTitle} 
+                                onChange={(e) => setMetaTitle(e.target.value)} 
+                                placeholder="SEO title"
+                                className="h-11"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="metaKeywords" className="text-sm font-medium text-gray-700">
+                                Meta Keywords
+                                <span className="text-xs text-gray-500 ml-2">(Press comma or enter to add)</span>
+                            </Label>
+                            <TagInput
+                                id="metaKeywords"
+                                value={metaKeywordTags}
+                                onChange={setMetaKeywordTags}
+                                placeholder="Type a keyword and press comma or enter"
+                            />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="metaDescription" className="text-sm font-medium text-gray-700">
+                            Meta Description
+                        </Label>
+                        <Textarea 
+                            id="metaDescription"
+                            value={metaDescription} 
+                            onChange={(e) => setMetaDescription(e.target.value)} 
+                            placeholder="SEO description"
+                            className="min-h-[100px] resize-none"
+                        />
+                    </div>
+                </CardContent>
             </Card>
 
+            {/* Bottom Action Buttons */}
             <div className="flex justify-end gap-2">
                 <Button type="button" variant="destructive">
                     <X className="mr-2 h-4 w-4" /> Discard

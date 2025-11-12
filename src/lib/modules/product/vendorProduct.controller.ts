@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 import { sendResponse } from '@/lib/utils/sendResponse';
 import {
@@ -9,10 +9,10 @@ import { VendorProductServices } from './vendorProduct.service';
 import dbConnect from '@/lib/db';
 import { Types } from 'mongoose';
 import { IVendorProduct } from './vendorProduct.interface';
-import { ca } from 'zod/v4/locales';
+import { ZodError } from 'zod';
 
 // Create a new vendor product
-const createVendorProduct = async (req: NextRequest) => {
+const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
   try {
     await dbConnect();
     const body = await req.json();
@@ -48,10 +48,26 @@ const createVendorProduct = async (req: NextRequest) => {
     });
   } catch (err) {
     console.error("Error creating vendor product:", err);
+    
+    // Handle Zod validation errors
+    if (err instanceof ZodError) {
+      const errorMessages = err.issues.map((issue) => {
+        const field = issue.path.join('.');
+        return `${field}: ${issue.message}`;
+      });
+      
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.BAD_REQUEST,
+        message: errorMessages.join('; '),
+        data: err.issues,
+      });
+    }
+    
     return sendResponse({
       success: false,
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-      message: "Something went wrong while saving the product.",
+      message: err instanceof Error ? err.message : "Something went wrong while saving the product.",
       data: null,
     });
   }
@@ -170,54 +186,80 @@ const getVendorProductById = async (
 const updateVendorProduct = async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) => {
-  await dbConnect();
-  const { id } = await params;
-  
-  // Validate ID: must be a valid MongoDB ObjectId and not "undefined"
-  if (!id || id === 'undefined' || id.trim() === '' || !Types.ObjectId.isValid(id)) {
+): Promise<NextResponse> => {
+  try {
+    await dbConnect();
+    const { id } = await params;
+    
+    // Validate ID: must be a valid MongoDB ObjectId and not "undefined"
+    if (!id || id === 'undefined' || id.trim() === '' || !Types.ObjectId.isValid(id)) {
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.BAD_REQUEST,
+        message: 'Invalid product ID provided',
+        data: null,
+      });
+    }
+
+    const body = await req.json();
+    const validatedData = updateVendorProductValidationSchema.parse(body);
+
+    // ⚙️ এখানে আমরা টাইপ কাস্ট করছি ObjectId এর সাথে compatible করতে
+    const payload = {
+      ...validatedData,
+      vendorStoreId: validatedData.vendorStoreId
+          ? new Types.ObjectId(validatedData.vendorStoreId)
+          : undefined,
+      category: validatedData.category
+        ? new Types.ObjectId(validatedData.category)
+        : undefined,
+      subCategory: validatedData.subCategory
+        ? new Types.ObjectId(validatedData.subCategory)
+        : undefined,
+      childCategory: validatedData.childCategory
+        ? new Types.ObjectId(validatedData.childCategory)
+        : undefined,
+      brand: validatedData.brand
+        ? new Types.ObjectId(validatedData.brand)
+        : undefined,
+      productModel: validatedData.productModel
+        ? new Types.ObjectId(validatedData.productModel)
+        : undefined,
+    } as Partial<IVendorProduct>; // ✅ এখানে cast করে দিলাম
+
+    const result = await VendorProductServices.updateVendorProductInDB(id, payload);
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: "Vendor product updated successfully!",
+      data: result,
+    });
+  } catch (err) {
+    console.error("Error updating vendor product:", err);
+    
+    // Handle Zod validation errors
+    if (err instanceof ZodError) {
+      const errorMessages = err.issues.map((issue) => {
+        const field = issue.path.join('.');
+        return `${field}: ${issue.message}`;
+      });
+      
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.BAD_REQUEST,
+        message: errorMessages.join('; '),
+        data: err.issues,
+      });
+    }
+    
     return sendResponse({
       success: false,
-      statusCode: StatusCodes.BAD_REQUEST,
-      message: 'Invalid product ID provided',
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: err instanceof Error ? err.message : "Something went wrong while updating the product.",
       data: null,
     });
   }
-
-  const body = await req.json();
-  const validatedData = updateVendorProductValidationSchema.parse(body);
-
-  // ⚙️ এখানে আমরা টাইপ কাস্ট করছি ObjectId এর সাথে compatible করতে
-  const payload = {
-    ...validatedData,
-    vendorStoreId: validatedData.vendorStoreId
-        ? new Types.ObjectId(validatedData.vendorStoreId)
-        : undefined,
-    category: validatedData.category
-      ? new Types.ObjectId(validatedData.category)
-      : undefined,
-    subCategory: validatedData.subCategory
-      ? new Types.ObjectId(validatedData.subCategory)
-      : undefined,
-    childCategory: validatedData.childCategory
-      ? new Types.ObjectId(validatedData.childCategory)
-      : undefined,
-    brand: validatedData.brand
-      ? new Types.ObjectId(validatedData.brand)
-      : undefined,
-    productModel: validatedData.productModel
-      ? new Types.ObjectId(validatedData.productModel)
-      : undefined,
-  } as Partial<IVendorProduct>; // ✅ এখানে cast করে দিলাম
-
-  const result = await VendorProductServices.updateVendorProductInDB(id, payload);
-
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: "Vendor product updated successfully!",
-    data: result,
-  });
 };
 
 
