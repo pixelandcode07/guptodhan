@@ -375,6 +375,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 toast.success("Product created successfully!");
+                router.push('/general/view/all/product');
             }
         } catch (error: any) {
             console.error("Submission Error:", error.response?.data || error.message);
