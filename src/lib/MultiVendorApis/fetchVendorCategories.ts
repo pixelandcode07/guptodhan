@@ -19,7 +19,9 @@ export async function fetchVendorCategories(token?: string): Promise<VendorCateg
 
     const response = await axios.get<ApiResponse<VendorCategory[]>>(
       `${baseUrl}/api/v1/vendor-category`,
-      { headers }
+      { 
+        headers
+       }
     );
 
     if (response.data.success && Array.isArray(response.data.data)) {
