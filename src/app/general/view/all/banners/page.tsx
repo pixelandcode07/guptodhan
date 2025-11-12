@@ -12,7 +12,7 @@ import { useSession } from "next-auth/react";
 import DeleteConfirmationModal from "./components/DeleteConfirmationModal";
 import SuccessModal from "./components/SuccessModal";
 import EditBannerModal from "./components/EditBannerModal";
-import FancyLoadingPage from "@/app/general/loading";
+import BannersSkeleton from "./components/BannersSkeleton";
 
 
 export default function BannersPage() {
@@ -127,7 +127,7 @@ export default function BannersPage() {
   const columns = getBannerColumns(handleEdit, handleDelete);
   
   if (loading) {
-    return <FancyLoadingPage />;
+    return <BannersSkeleton />;
   }
   
   return (
