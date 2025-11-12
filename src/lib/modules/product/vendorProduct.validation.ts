@@ -26,8 +26,8 @@ export const createVendorProductValidationSchema = z.object({
     .min(1, { message: 'Short description is required.' })
     .max(255, { message: 'Short description cannot exceed 255 characters.' }),
   fullDescription: z.string().min(1, { message: 'Full description is required.' }),
-  specification: z.string().min(1, { message: 'Specification is required.' }),
-  warrantyPolicy: z.string().min(1, { message: 'Warranty policy is required.' }),
+  specification: z.string().optional(),
+  warrantyPolicy: z.string().optional(),
   productTag: z.array(z.string()).optional(),
   videoUrl: z.string().optional(),
   photoGallery: z.array(z.string()).min(1, { message: 'At least one photo is required.' }),
