@@ -5,7 +5,6 @@ import { Types } from 'mongoose';
 
 import '@/lib/modules/product/vendorProduct.model';
 import '@/lib/modules/vendor-store/vendorStore.model';
-import '@/lib/modules/vendor/vendor.model';
 import '@/lib/modules/promo-code/promoCode.model'; // Import PromoCodeModel for couponId populate
 import '../orderDetails/orderDetails.model';
 
@@ -13,7 +12,7 @@ import '../orderDetails/orderDetails.model';
 
 import { StoreModel } from '@/lib/modules/vendor-store/vendorStore.model';
 import { VendorProductModel } from '@/lib/modules/product/vendorProduct.model';
-import { Vendor } from '@/lib/modules/vendor/vendor.model';
+import { Vendor } from '../../vendors/vendor.model';
 
 
 const _ = { StoreModel, VendorProductModel, Vendor };
