@@ -2,10 +2,10 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { Eye, Truck, CheckCircle2, Trash2, Package, ExternalLink } from "lucide-react"
-import OrderDetailsModal from "@/components/OrderManagement/OrderDetailsModal"
 import { useState } from "react"
 import { toast } from "sonner"
 import axios from "axios"
+import Link from "next/link"
 
 export type OrderRow = {
   id: string
@@ -98,7 +98,13 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
 
   return (
     <div className="flex items-center gap-1">
-      <OrderDetailsModal order={order} />
+      <Link
+        href={`/general/view/orders/${order.id}`}
+        className="p-1.5 rounded bg-blue-500/10 text-blue-600 hover:bg-blue-500/20"
+        title="Order details"
+      >
+        <Eye size={14} />
+      </Link>
       
       {isSteadfastOrder && (
         <>

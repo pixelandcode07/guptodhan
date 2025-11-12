@@ -10,6 +10,7 @@ import dbConnect from '@/lib/db';
 import { Types } from 'mongoose';
 import { IVendorProduct } from './vendorProduct.interface';
 import { ZodError } from 'zod';
+import { deleteFromCloudinary } from '@/lib/utils/cloudinary';
 
 // Create a new vendor product
 const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
@@ -202,32 +203,49 @@ const updateVendorProduct = async (
     }
 
     const body = await req.json();
-    const validatedData = updateVendorProductValidationSchema.parse(body);
+    const validatedData = updateVendorProductValidationSchema.parse(body) as {
+      removedPhotoGallery?: string[];
+      removeThumbnail?: string;
+    } & Partial<IVendorProduct>;
 
-    // ⚙️ এখানে আমরা টাইপ কাস্ট করছি ObjectId এর সাথে compatible করতে
-    const payload = {
-      ...validatedData,
-      vendorStoreId: validatedData.vendorStoreId
-          ? new Types.ObjectId(validatedData.vendorStoreId)
-          : undefined,
-      category: validatedData.category
-        ? new Types.ObjectId(validatedData.category)
-        : undefined,
-      subCategory: validatedData.subCategory
-        ? new Types.ObjectId(validatedData.subCategory)
-        : undefined,
-      childCategory: validatedData.childCategory
-        ? new Types.ObjectId(validatedData.childCategory)
-        : undefined,
-      brand: validatedData.brand
-        ? new Types.ObjectId(validatedData.brand)
-        : undefined,
-      productModel: validatedData.productModel
-        ? new Types.ObjectId(validatedData.productModel)
-        : undefined,
-    } as Partial<IVendorProduct>; // ✅ এখানে cast করে দিলাম
+    const { removedPhotoGallery, removeThumbnail, ...productData } = validatedData;
+
+    const payload: Partial<IVendorProduct> = {
+      ...productData,
+    };
+
+    if (typeof productData.vendorStoreId === 'string') {
+      payload.vendorStoreId = new Types.ObjectId(productData.vendorStoreId);
+    }
+    if (typeof productData.category === 'string') {
+      payload.category = new Types.ObjectId(productData.category);
+    }
+    if (typeof productData.subCategory === 'string') {
+      payload.subCategory = new Types.ObjectId(productData.subCategory);
+    }
+    if (typeof productData.childCategory === 'string') {
+      payload.childCategory = new Types.ObjectId(productData.childCategory);
+    }
+    if (typeof productData.brand === 'string') {
+      payload.brand = new Types.ObjectId(productData.brand);
+    }
+    if (typeof productData.productModel === 'string') {
+      payload.productModel = new Types.ObjectId(productData.productModel);
+    }
 
     const result = await VendorProductServices.updateVendorProductInDB(id, payload);
+
+    if (removeThumbnail) {
+      await deleteFromCloudinary(removeThumbnail);
+    }
+
+    if (removedPhotoGallery && removedPhotoGallery.length > 0) {
+      await Promise.all(
+        removedPhotoGallery.map(async (url) => {
+          await deleteFromCloudinary(url);
+        })
+      );
+    }
 
     return sendResponse({
       success: true,

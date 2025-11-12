@@ -40,7 +40,10 @@ export default function ProductForm({ initialData, productId: propProductId }: a
     const [thumbnail, setThumbnail] = useState<File | null>(null);
     const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
     const [galleryImages, setGalleryImages] = useState<File[]>([]);
-    const [galleryImagePreviews, setGalleryImagePreviews] = useState<string[]>([]);
+    const [existingGalleryUrls, setExistingGalleryUrls] = useState<string[]>([]);
+    const [removedGalleryUrls, setRemovedGalleryUrls] = useState<string[]>([]);
+    const [initialThumbnailUrl, setInitialThumbnailUrl] = useState<string | null>(null);
+    const [removedThumbnailUrl, setRemovedThumbnailUrl] = useState<string | null>(null);
 
     const [rewardPoints, setRewardPoints] = useState<number | undefined>(undefined);
     const [productCode, setProductCode] = useState('');
@@ -183,8 +186,12 @@ export default function ProductForm({ initialData, productId: propProductId }: a
 
                 setThumbnail(null);
                 setThumbnailPreview(p.thumbnailImage || null);
+                setInitialThumbnailUrl(p.thumbnailImage || null);
+                setRemovedThumbnailUrl(null);
                 setGalleryImages([]);
-                setGalleryImagePreviews(Array.isArray(p.photoGallery) ? p.photoGallery : []);
+                const existingUrls = Array.isArray(p.photoGallery) ? p.photoGallery : [];
+                setExistingGalleryUrls(existingUrls);
+                setRemovedGalleryUrls([]);
 
                 setPrice(typeof p.productPrice === 'number' ? p.productPrice : undefined);
                 setDiscountPrice(typeof p.discountPrice === 'number' ? p.discountPrice : undefined);
@@ -324,18 +331,35 @@ export default function ProductForm({ initialData, productId: propProductId }: a
         setIsSubmitting(true);
 
         try {
+            if (!thumbnail && !thumbnailPreview) {
+                setIsSubmitting(false);
+                return toast.error("Thumbnail image is required.");
+            }
+
             let thumbnailUrl = thumbnailPreview;
             if (thumbnail) {
                 thumbnailUrl = await uploadFile(thumbnail);
             }
+            if (!thumbnailUrl) {
+                setIsSubmitting(false);
+                return toast.error("Thumbnail image is required.");
+            }
 
-            let validGalleryUrls = galleryImagePreviews || [];
+            const filteredExistingUrls = existingGalleryUrls.filter(
+                (url) => !removedGalleryUrls.includes(url)
+            );
+
+            let newGalleryUrls: string[] = [];
             if (galleryImages.length > 0) {
                 const galleryUrls = await Promise.all(
                     galleryImages.map(file => uploadFile(file))
                 );
-                validGalleryUrls = galleryUrls.filter(url => !!url);
+                newGalleryUrls = galleryUrls.filter(url => !!url);
             }
+
+            const combinedGalleryUrls = [...filteredExistingUrls, ...newGalleryUrls];
+            const finalGalleryUrls =
+                combinedGalleryUrls.length > 0 ? combinedGalleryUrls : [thumbnailUrl];
 
             const productData = {
                 productId: productCode || `PROD-${Date.now()}`,
@@ -348,8 +372,10 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 productTag: productTags,
                 videoUrl: videoUrl || undefined,
                 
-                photoGallery: validGalleryUrls.length > 0 ? validGalleryUrls : [thumbnailUrl],
+                photoGallery: finalGalleryUrls,
                 thumbnailImage: thumbnailUrl,
+                removedPhotoGallery: removedGalleryUrls.length > 0 ? removedGalleryUrls : undefined,
+                removeThumbnail: removedThumbnailUrl || undefined,
                 
                 productPrice: price || 0,
                 discountPrice: discountPrice || undefined,
@@ -399,6 +425,10 @@ export default function ProductForm({ initialData, productId: propProductId }: a
     const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            if (initialThumbnailUrl) {
+                setRemovedThumbnailUrl(initialThumbnailUrl);
+                setInitialThumbnailUrl(null);
+            }
             setThumbnail(file);
             setThumbnailPreview(URL.createObjectURL(file));
         } else {
@@ -510,6 +540,10 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
+                                                    if (!thumbnail && thumbnailPreview) {
+                                                        setRemovedThumbnailUrl((prev) => prev ?? thumbnailPreview);
+                                                    }
+                                                    setInitialThumbnailUrl(null);
                                                     setThumbnail(null);
                                                     setThumbnailPreview(null);
                                                 }}
@@ -606,7 +640,15 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                     {/* Product Image Gallery - Only show when no variants */}
                     {!hasVariant && (
-                        <ProductImageGallery galleryImages={galleryImages} setGalleryImages={setGalleryImages} />
+                        <ProductImageGallery
+                            galleryImages={galleryImages}
+                            setGalleryImages={setGalleryImages}
+                            existingGalleryUrls={existingGalleryUrls}
+                            onRemoveExisting={(url) => {
+                                setExistingGalleryUrls(prev => prev.filter(item => item !== url));
+                                setRemovedGalleryUrls(prev => prev.includes(url) ? prev : [...prev, url]);
+                            }}
+                        />
                     )}
 
                     {/* Product Details Card */}
