@@ -8,10 +8,11 @@ export interface Brand {
 export interface ProductCardType {
   _id: string;
   productTitle: string;
-  thumbnailImage: string;     // guaranteed URL
+  thumbnailImage: string;
   productPrice: number;
   discountPrice: number;
-  stock: number;
-  offerDeadline?: string;     // ISO string
-  brand?: Brand;
+  stock?: number;
+  brand?: { name: string };
+  flag?: { name: string; color?: string }; // 🟢 add this line
+  offerDeadline?: string;
 }
