@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 import { sendResponse } from '@/lib/utils/sendResponse';
 import {
@@ -12,7 +12,7 @@ import { IVendorProduct } from './vendorProduct.interface';
 import { ZodError } from 'zod';
 
 // Create a new vendor product
-const createVendorProduct = async (req: NextRequest) => {
+const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
   try {
     await dbConnect();
     const body = await req.json();
@@ -186,7 +186,7 @@ const getVendorProductById = async (
 const updateVendorProduct = async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) => {
+): Promise<NextResponse> => {
   try {
     await dbConnect();
     const { id } = await params;
