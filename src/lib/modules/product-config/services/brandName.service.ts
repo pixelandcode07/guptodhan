@@ -75,7 +75,7 @@ export const reorderBrandNamesService = async (orderedIds: string[]) => {
 export const BrandServices = {
   createBrandInDB,
   getAllBrandsFromDB,
-  getAllActiveBrandsName
+  getAllActiveBrandsName,
   getBrandsByCategoryFromDB,
   updateBrandInDB,
   deleteBrandFromDB,

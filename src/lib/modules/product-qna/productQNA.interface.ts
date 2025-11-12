@@ -9,7 +9,7 @@ export interface IProductQA extends Document {
   userImage?: string;
   question: string;
   createdAt: Date;
-  status: 'pending' | 'answered' | 'hidden';
+  status: 'active' | 'inactive';
   answer?: {
     answeredByName: string;
     answeredByEmail: string;

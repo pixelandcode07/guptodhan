@@ -5,6 +5,7 @@ export interface IClassifiedCategory extends Document {
   slug: string;
   icon?: string;
   status: 'active' | 'inactive';
+  orderCount: number;
 }
 
 

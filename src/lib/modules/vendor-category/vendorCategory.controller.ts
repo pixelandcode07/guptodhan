@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 import { sendResponse } from '@/lib/utils/sendResponse';
 import { createVendorCategoryValidationSchema, updateVendorCategoryValidationSchema } from './vendorCategory.validation';
-import { VendorCategoryServices } from './vendorCategory.service';
+import { VendorCategoryServices, reorderVendorCategoryService } from './vendorCategory.service';
 import dbConnect from '@/lib/db';
 
 // Create a new vendor category
@@ -88,10 +88,40 @@ const deleteVendorCategory = async (_req: NextRequest, { params }: { params: { i
   });
 };
 
+
+// Reorder vendor category (drag-and-drop)
+const reorderVendorCategory = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  const { orderedIds } = body;
+
+  // Validate input
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.BAD_REQUEST,
+      message: 'Invalid request: "orderedIds" must be a non-empty array.',
+      data: null,
+    });
+  }
+
+  // Call the reorder service
+  const result = await reorderVendorCategoryService(orderedIds);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: result.message || 'vendor category reordered successfully!',
+    data: null,
+  });
+};
+
 export const VendorCategoryController = {
   createVendorCategory,
   getAllVendorCategories,
   getSingleVendorCategory,
   updateVendorCategory,
   deleteVendorCategory,
+
+  reorderVendorCategory
 };

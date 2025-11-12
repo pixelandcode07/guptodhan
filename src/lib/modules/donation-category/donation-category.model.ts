@@ -1,10 +1,16 @@
-import { Schema, model, models } from 'mongoose';
-import { IDonationCategory } from './donation-category.interface';
+import { Schema, model, models } from "mongoose";
+import { IDonationCategory } from "./donation-category.interface";
 
-const donationCategorySchema = new Schema<IDonationCategory>({
-  name: { type: String, required: true, unique: true },
-  icon: { type: String },
-  status: { type: String, enum: ['active', 'inactive'], default: 'active' },
-}, { timestamps: true });
+const donationCategorySchema = new Schema<IDonationCategory>(
+  {
+    name: { type: String, required: true, unique: true },
+    icon: { type: String },
+    status: { type: String, enum: ["active", "inactive"], default: "active" },
+    orderCount: { type: Number, required: false, default: 0 },
+  },
+  { timestamps: true }
+);
 
-export const DonationCategory = models.DonationCategory || model<IDonationCategory>('DonationCategory', donationCategorySchema);
+export const DonationCategory =
+  models.DonationCategory ||
+  model<IDonationCategory>("DonationCategory", donationCategorySchema);
