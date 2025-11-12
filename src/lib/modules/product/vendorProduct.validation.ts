@@ -32,12 +32,12 @@ export const createVendorProductValidationSchema = z.object({
   videoUrl: z.string().optional(),
   photoGallery: z.array(z.string()).min(1, { message: 'At least one photo is required.' }),
   thumbnailImage: z.string().min(1, { message: 'Thumbnail image is required.' }),
-  productPrice: z.number({ invalid_type_error: 'Product price must be a number.' }),
+  productPrice: z.number(),
   discountPrice: z.number().optional(),
   stock: z.number().optional(),
   sku: z.string().optional(),
   rewardPoints: z.number().optional(),
-  category: z.string({ required_error: 'Category ID is required.' }),
+  category: z.string().min(1, { message: 'Category ID is required.' }),
   subCategory: z.string().optional(),
   childCategory: z.string().optional(),
   brand: z.string().optional(),
@@ -51,6 +51,8 @@ export const createVendorProductValidationSchema = z.object({
   metaDescription: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),
   productOptions: z.array(productOptionValidationSchema).optional(),
+  removeThumbnail: z.string().optional(),
+  removedPhotoGallery: z.array(z.string()).optional(),
 });
 
 // Update vendor product validation
