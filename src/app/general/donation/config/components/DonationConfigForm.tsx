@@ -140,21 +140,25 @@ import UploadImageBtn from '@/components/ReusableComponents/UploadImageBtn'
 import axios from 'axios'
 import { useSession } from 'next-auth/react'
 import { toast } from 'sonner'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 export type DonationFormInputs = {
     title: string
-    image?: File | null
+    image?: File | null;
     shortDescription: string
     buttonText: string
     buttonUrl: string
 }
 
-export default function DonationConfigForm() {
-    const { data: session } = useSession()
+export default async function DonationConfigForm() {
+    const session = await getServerSession(authOptions);
+    const token = session?.accessToken as string | undefined;
+    // const { data: session } = useSession()
     // const token = (session as unknown as { accessToken?: string })?.accessToken
     // console.log("token2==>", token)
-    const token = (session?.user as { accessToken?: string; role?: string })?.accessToken
-    console.log("token==>", token)
+    // const token = (session?.user as { accessToken?: string; role?: string })?.accessToken
+    // console.log("token==>", token)
     const adminRole = (session?.user as { role?: string })?.role === 'admin'
 
     const {
@@ -200,7 +204,7 @@ export default function DonationConfigForm() {
 
             toast.success('Donation config saved successfully!')
             reset()
-            setPreviewImage(null)
+            // setPreviewImage(null)
         } catch (error: any) {
             console.error('Error saving config:', error)
             toast.error(error.response?.data?.message || 'Something went wrong!')
@@ -232,16 +236,22 @@ export default function DonationConfigForm() {
                         name="image"
                         control={control}
                         render={({ field }) => (
+                            // <UploadImageBtn
+                            //     value={previewImage}
+                            //     onChange={(file) => {
+                            //         field.onChange(file)
+                            //         setPreviewImage(file)
+                            //     }}
+                            //     onRemove={() => {
+                            //         field.onChange(null)
+                            //         setPreviewImage(null)
+                            //     }}
+                            // />
                             <UploadImageBtn
-                                value={previewImage}
-                                onChange={(file) => {
-                                    field.onChange(file)
-                                    setPreviewImage(file)
-                                }}
-                                onRemove={() => {
-                                    field.onChange(null)
-                                    setPreviewImage(null)
-                                }}
+                                value={field.value}
+                                onChange={field.onChange}
+                                onRemove={() => field.onChange(null)}
+                                fieldName="image"
                             />
                         )}
                     />

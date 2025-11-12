@@ -195,7 +195,7 @@ export default function StoreInformation({
             setLoading(true);
             const vendors = await fetchVendors(token);
             const options = vendors
-                .filter((v) => v.status === 'approved') // শুধু approved ভেন্ডর
+                .filter((v) => v.status === 'approved')
                 .map((v) => ({
                     label: v.businessName,
                     value: v._id,
@@ -225,7 +225,7 @@ export default function StoreInformation({
                                 value={field.value}
                                 onChange={field.onChange}
                                 onRemove={() => field.onChange(null)}
-                                fieldName="logo" // এখানে
+                                fieldName="logo"
                             />
                         )}
                     />

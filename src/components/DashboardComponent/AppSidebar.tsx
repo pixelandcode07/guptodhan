@@ -26,6 +26,7 @@ import {
   Search,
   Settings,
   Share2,
+  Shield,
   ShieldCheck,
   Store,
   UserCheck,
@@ -99,6 +100,11 @@ const data = {
       title: 'Listing Management',
       url: '/general/buy/sell/listing',
       icon: LayoutDashboard,
+    },
+    {
+      title: 'Approved Products',
+      url: '/general/buy/sell/approved/products',
+      icon: Shield,
     },
     {
       title: 'Report Listing',
