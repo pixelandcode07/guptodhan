@@ -4,24 +4,6 @@ import { sendResponse } from '@/lib/utils/sendResponse';
 import { createStoreValidationSchema, updateStoreValidationSchema } from './vendorStore.validation';
 import { StoreServices } from './vendorStore.service';
 import dbConnect from '@/lib/db';
-
-// Create a new store
-// const createStore = async (req: NextRequest) => {
-//   await dbConnect();
-//   const body = await req.json();
-//   const validatedData = createStoreValidationSchema.parse(body);
-
-//   const result = await StoreServices.createStoreInDB(validatedData);
-
-//   return sendResponse({
-//     success: true,
-//     statusCode: StatusCodes.CREATED,
-//     message: 'Store created successfully!',
-//     data: result,
-//   });
-// };
-
-// NEW: vendorStore.controller.ts
 import { uploadToCloudinary } from '@/lib/utils/cloudinary'; // <-- তুমি যেটা দিয়েছো, সেটাই
 
 const createStore = async (req: NextRequest) => {
