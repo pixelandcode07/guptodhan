@@ -1,4 +1,3 @@
-import React from 'react'
 import CreateNewStoreFrom from './components/CreateNewStoreFrom'
 
 export default function CreateNewStore() {

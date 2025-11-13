@@ -27,13 +27,13 @@ interface Ad {
 }
 
 export async function generateMetadata() {
-    return generateGuptodhanMetadata({
-        title: "Product Details | Guptodhan Marketplace",
-        description:
-            "Buy and sell new or used items in your city. Explore verified ads across electronics, vehicles, real estate, fashion, and more — only on Guptodhan.",
-        urlPath: `/home/buyandsell/category-items`,
-        imageUrl: "/og-images/guptodhan-marketplace-banner.jpg",
-    })
+  return generateGuptodhanMetadata({
+    title: "Product Details | Guptodhan Marketplace",
+    description:
+      "Buy and sell new or used items in your city. Explore verified ads across electronics, vehicles, real estate, fashion, and more — only on Guptodhan.",
+    urlPath: `/home/buyandsell/category-items`,
+    imageUrl: "/og-images/guptodhan-marketplace-banner.jpg",
+  })
 }
 
 

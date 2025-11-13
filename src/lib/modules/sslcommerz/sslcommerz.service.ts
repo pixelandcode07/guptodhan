@@ -18,7 +18,13 @@ if (!store_id || !store_passwd) {
 }
 
 export const initPaymentSession = async (payload: ISSLCommerzPayload) => {
-  const baseUrl = process.env.FRONTEND_URL || process.env.NEXTAUTH_URL;
+  const baseUrl =
+    process.env.SSLCZ_CALLBACK_BASE_URL ||
+    process.env.FRONTEND_URL ||
+    process.env.NEXTAUTH_URL ||
+    (process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3000'
+      : 'https://guptodhan.vercel.app');
   if (!baseUrl) {
     throw new Error("NEXTAUTH_URL or FRONTEND_URL not configured");
   }

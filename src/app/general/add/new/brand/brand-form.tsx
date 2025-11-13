@@ -217,7 +217,7 @@ export default function BrandForm() {
             />
 
             {/* Selected Categories Display */}
-            {(formData.category || formData.subcategory || formData.childCategory) && (
+            {/* {(formData.category || formData.subcategory || formData.childCategory) && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                 <Label className="text-right">Selected Categories</Label>
                 <div className="md:col-span-2">
@@ -230,7 +230,7 @@ export default function BrandForm() {
                   </div>
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Submit Button */}
             <div className="flex justify-start pt-4">

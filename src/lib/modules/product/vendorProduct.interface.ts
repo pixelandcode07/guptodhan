@@ -13,74 +13,38 @@ export interface IProductOption {
   size?: string;
 }
 
-export interface IVendorProduct extends Document {
+export interface IVendorProduct {
   productId: string;
   productTitle: string;
   vendorStoreId: Types.ObjectId;
   shortDescription: string;
   fullDescription: string;
-  specification: string;
-  warrantyPolicy: string;
+  specification?: string;
+  warrantyPolicy?: string;
   productTag?: string[];
   videoUrl?: string;
-  photoGallery: string[];
-  thumbnailImage: string;
-  productPrice: number;
+  photoGallery?: string[];
+  thumbnailImage?: string;
+  productPrice?: number;
   discountPrice?: number;
   stock?: number;
   sku?: string;
   rewardPoints?: number;
-  category: Types.ObjectId;
+  category: Types.ObjectId | { _id: Types.ObjectId; categoryName: string };
   subCategory?: Types.ObjectId;
   childCategory?: Types.ObjectId;
-  brandName?: Types.ObjectId;
-  productModel?: Types.ObjectId;
-  flag?: Types.ObjectId;
-  warranty: string;
-  weightUnit?: string;
+  brand?: Types.ObjectId | { _id: Types.ObjectId; brandName: string };
+  productModel?: Types.ObjectId | { _id: Types.ObjectId; modelName: string };
+  flag?: Types.ObjectId | { _id: Types.ObjectId; flagName: string };
+  warranty?: Types.ObjectId | { _id: Types.ObjectId; warrantyName: string };
+  weightUnit?: Types.ObjectId | { _id: Types.ObjectId; unitName: string };
   offerDeadline?: Date;
   metaTitle?: string;
   metaKeyword?: string;
   metaDescription?: string;
   status: 'active' | 'inactive';
-  createdAt: Date;
-  updatedAt: Date;
-  // new add
-  sellCount: number;
-
-  
-  // New field
+  sellCount?: number;
   productOptions?: IProductOption[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
-
-
-
-
-//  Vendor Product add
-//  productID
-//  Product Title
-//  Short Description - 255 ch
-//  full Description 
-// Speicfication
-//  Warranty policy
-//  Product Tag - optional
-//  Video Url - optional
-//  photo gallery
-//  thumbnail image
-//  Product price - regular
-//  Discount Price - optional 
-// stock - optional 
-// sku - product code - optional 
-// reword points - optional  
-// category
-//  sub category - optional 
-// child category - optional 
-// Brand - optional 
-// model - optional 
-// flag - optional 
-// warranty
-//  weight/unit - optional 
-// offer deadline - optional 
-// meta title - optional 
-// meta keyword - optional 
-// meta description - optional 

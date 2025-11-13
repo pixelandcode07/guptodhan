@@ -1,77 +1,121 @@
-'use client';
+// import PageHeader from '@/components/ReusableComponents/PageHeader';
+// import ProductGrid from '@/components/ReusableComponents/ProductGrid';
+// import { Product } from '@/types/ProductType';
+// // import ProductCard from '../ProductCard';
+// // import { AnimatePresence } from 'framer-motion';
 
+// interface Props {
+//   products: Product[];
+// }
+
+// // JustForYou.tsx
+// export function JustForYou({ products }: Props) {
+//   return (
+//     <section className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 bg-gradient-to-b from-purple-50 to-white py-10">
+//       <PageHeader
+//         title="Just For You"
+//         buttonLabel="Explore"
+//         buttonHref="/home/view/all/random/products"
+//       />
+//       <ProductGrid products={products} />
+//     </section>
+//   );
+// }
+
+// src/components/sections/JustForYou/JustForYou.tsx
+"use client";
+
+import { useState, useEffect, useRef } from 'react';
+import ProductGrid from '@/components/ReusableComponents/ProductGrid';
 import PageHeader from '@/components/ReusableComponents/PageHeader';
-import Image from 'next/image';
-import Link from 'next/link';
-import React, { useState } from 'react';
-import { ProductCardType } from '@/types/ProductCardType';
+import { Product } from '@/types/ProductType';
+import axios from 'axios';
 
-interface JustForYouProps {
-  justForYouData: ProductCardType[];
+interface Props {
+  initialProducts: Product[];
 }
 
-export default function JustForYou({ justForYouData }: JustForYouProps) {
-  const [visibleCount, setVisibleCount] = useState(20); // show first 20
+export function JustForYou({ initialProducts }: Props) {
+  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
-  const handleLoadMore = () => {
-    setVisibleCount((prev) => prev + 20); // load 20 more each time
-  };
+  const observer = useRef<IntersectionObserver | null>(null);
+  const lastProductRef = useRef<HTMLDivElement>(null);
+
+  // Infinite Scroll Logic
+  useEffect(() => {
+    if (loading || !hasMore) return;
+
+    const loadMore = async () => {
+      setLoading(true);
+      try {
+        const baseUrl = process.env.NEXTAUTH_URL;
+        const res = await axios.get<{ success: boolean; data: Product[] }>(
+          `${baseUrl}/api/v1/product/random?page=${page + 1}&limit=20`
+        );
+
+        if (res.data.success && res.data.data.length > 0) {
+          setProducts((prev) => [...prev, ...res.data.data]);
+          setPage((prev) => prev + 1);
+          setHasMore(res.data.data.length === 20);
+        } else {
+          setHasMore(false);
+        }
+      } catch (error) {
+        console.error('Failed to load more products:', error);
+        setHasMore(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const currentElement = lastProductRef.current;
+    const currentObserver = observer.current;
+
+    if (currentElement) {
+      observer.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !loading) {
+            loadMore();
+          }
+        },
+        { threshold: 0.1 }
+      );
+
+      observer.current.observe(currentElement);
+    }
+
+    return () => {
+      if (currentElement && currentObserver) {
+        currentObserver.unobserve(currentElement);
+      }
+    };
+  }, [page, loading, hasMore]);
 
   return (
-    <div className="bg-gray-100 mb-0 my-3 md:p-6 mt-2 md:max-w-[90vw] mx-auto">
-      <PageHeader
-        title="Just For You"
-      />
+    <section className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 bg-gradient-to-b from-purple-50 to-white py-10">
+      {/* PageHeader — বাটন ছাড়া */}
+      <PageHeader title="Just For You" />
 
-      <div className="grid justify-center items-center grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 px-4">
-        {justForYouData?.slice(0, visibleCount).map((item) => (
-          <Link href={`/products/${item._id}`} key={item._id}>
-            <div className="bg-white rounded-md border-2 border-gray-200 hover:border-blue-300 overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer">
-              {/* Product Image */}
-              <div className="w-full h-36 flex items-center justify-center overflow-hidden">
-                <Image
-                  src={item.thumbnailImage}
-                  alt={item.productTitle}
-                  width={150}
-                  height={150}
-                  className="p-1 rounded-md w-full h-[20vh] border-b-2 border-gray-200"
-                />
-              </div>
+      {/* Product Grid */}
+      <ProductGrid products={products} />
 
-              {/* Product Details */}
-              <div className="p-2">
-                <h3 className="text-sm font-medium truncate">{item.productTitle}</h3>
-                <p className="text-[#0084CB] font-semibold text-base">
-                  ₹{item.discountPrice}
-                </p>
-                <div className="flex items-center gap-2">
-                  <p className="text-xs text-gray-500 line-through">
-                    ₹{item.productPrice}
-                  </p>
-                  <p className="text-xs text-red-500">
-                    -
-                    {Math.round(
-                      ((item.productPrice - item.discountPrice) / item.productPrice) * 100
-                    )}
-                    %
-                  </p>
-                </div>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {/* Show Load More only if there are more products */}
-      {visibleCount < justForYouData.length && (
-        <div className="flex justify-center my-8">
-          <button
-            onClick={handleLoadMore}
-            className="px-6 py-2 bg-[#0084CB] text-white font-medium rounded-md hover:bg-[#006da3] transition">
-            Load More
-          </button>
+      {/* Loading Spinner */}
+      {loading && (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-purple-600"></div>
         </div>
       )}
-    </div>
+
+      {/* No More Data */}
+      {!hasMore && products.length > 0 && (
+        <p className="text-center text-gray-500 py-6">No more products to show.</p>
+      )}
+
+      {/* Invisible trigger for IntersectionObserver */}
+      {hasMore && <div ref={lastProductRef} className="h-1" />}
+    </section>
   );
 }

@@ -1,5 +1,3 @@
-// src/app/general/edit/vendor/category/[id]/page.tsx
-
 import { getServerSession } from 'next-auth';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -10,12 +8,11 @@ import EditVendorCategoryForm from '../components/EditVendorCategoryPage';
 export default async function EditVendorCategoryPage({
   params,
 }: {
-  params: Promise<{ id: string }>; // Promise!
+  params: Promise<{ id: string }>;
 }) {
-  // AWAIT করো
   const { id } = await params;
 
-  console.log("Params ID (after await):", id); // এখন ঠিক আসবে
+  // console.log("Params ID (after await):", id);
 
   const session = await getServerSession(authOptions);
   const token = session?.accessToken as string | undefined;

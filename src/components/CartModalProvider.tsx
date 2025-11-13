@@ -6,11 +6,11 @@ import AddToCartModal from '@/components/AddToCartModal';
 import { useRouter } from 'next/navigation';
 
 export default function CartModalProvider() {
-  const { 
-    showAddToCartModal, 
-    lastAddedProduct, 
-    closeAddToCartModal, 
-    cartItemCount 
+  const {
+    showAddToCartModal,
+    lastAddedProduct,
+    closeAddToCartModal,
+    cartItemCount,
   } = useCart();
   const router = useRouter();
 
@@ -24,7 +24,7 @@ export default function CartModalProvider() {
     router.push('/home/product/shoppinginfo');
   };
 
-  if (!lastAddedProduct) return null;
+  if (!lastAddedProduct || !showAddToCartModal) return null;
 
   return (
     <AddToCartModal

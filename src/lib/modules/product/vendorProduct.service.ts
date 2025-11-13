@@ -1,187 +1,209 @@
-import { get } from "http";
-import { ProductFlag } from "../product-config/models/productFlag.model";
 import { IVendorProduct } from "./vendorProduct.interface";
 import { VendorProductModel } from "./vendorProduct.model";
-import { Types } from "mongoose";
-import "../product-config/models/brandName.model";
 
-// Create vendor product
 const createVendorProductInDB = async (payload: Partial<IVendorProduct>) => {
   const result = await VendorProductModel.create(payload);
   return result;
 };
 
-// Get all products (both active and inactive) - used for sidebar count
 const getAllVendorProductsFromDB = async () => {
-  const result = await VendorProductModel.find({}).sort({ productTitle: 1 });
+  const result = await VendorProductModel.find()
+    .populate('brand', 'name')
+    .populate('flag', 'name')
+    .populate('warranty', 'warrantyName')
+    .populate('productModel', 'name')
+    .populate('category', 'name')
+    .populate('weightUnit', 'name')
+    .populate('vendorStoreId', 'storeName')
+    .sort({ createdAt: -1 });
   return result;
 };
 
-// Get only active products - used for product listing pages
 const getActiveVendorProductsFromDB = async () => {
-  const result = await VendorProductModel.find({ status: "active" }).sort({
-    productTitle: 1,
-  });
+  const result = await VendorProductModel.find({ status: 'active' })
+    .populate('brand', 'name')
+    .populate('flag', 'name')
+    .populate('warranty', 'warrantyName')
+    .populate('productModel', 'name')
+    .populate('category', 'name')
+    .populate('weightUnit', 'name')
+    .populate('vendorStoreId', 'storeName')
+    .sort({ createdAt: -1 });
   return result;
 };
 
-// Get products by category
+const getVendorProductByIdFromDB = async (id: string) => {
+  const result = await VendorProductModel.findById(id)
+    .populate('brand', 'name') // 'brandName' -> 'name'
+    .populate('flag', 'name') // 'flagName' -> 'name'
+    .populate('warranty', 'warrantyName')
+    .populate('productModel', 'name') // 'modelName' -> 'name'
+    .populate('category', 'name') // 'categoryName' -> 'name'
+    .populate('subCategory', 'name') // 'subCategoryName' -> 'name'
+    .populate('childCategory', 'name') // 'childCategoryName' -> 'name'
+    .populate('weightUnit', 'name') // 'unitName' -> 'name'
+    .populate('vendorStoreId', 'storeName');
+  return result;
+};
+
 const getVendorProductsByCategoryFromDB = async (categoryId: string) => {
   const result = await VendorProductModel.find({
-    category: new Types.ObjectId(categoryId),
-    status: "active",
-  }).sort({ productTitle: 1 });
+    category: categoryId,
+    status: 'active'
+  })
+    .populate('brand', 'name') // 'brandName' -> 'name'
+    .populate('flag', 'name') // 'flagName' -> 'name'
+    .populate('warranty', 'warrantyName')
+    .populate('productModel', 'name') // 'modelName' -> 'name'
+    .populate('category', 'name') // 'categoryName' -> 'name'
+    .populate('weightUnit', 'name') // 'unitName' -> 'name'
+    .populate('vendorStoreId', 'storeName')
+    .sort({ createdAt: -1 });
   return result;
 };
 
-// Get products by sub-category
 const getVendorProductsBySubCategoryFromDB = async (subCategoryId: string) => {
   const result = await VendorProductModel.find({
-    subCategory: new Types.ObjectId(subCategoryId),
-    status: "active",
-  }).sort({ productTitle: 1 });
+    subCategory: subCategoryId,
+    status: 'active'
+  })
+    .populate('brand', 'name') // 'brandName' -> 'name'
+    .populate('flag', 'name') // 'flagName' -> 'name'
+    .populate('warranty', 'warrantyName')
+    .populate('productModel', 'name') // 'modelName' -> 'name'
+    .populate('category', 'name') // 'categoryName' -> 'name'
+    .populate('subCategory', 'name') // 'subCategoryName' -> 'name'
+    .populate('weightUnit', 'name') // 'unitName' -> 'name'
+    .populate('vendorStoreId', 'storeName')
+    .sort({ createdAt: -1 });
   return result;
 };
 
-// Get products by child-category
-const getVendorProductsByChildCategoryFromDB = async (
-  childCategoryId: string
-) => {
+const getVendorProductsByChildCategoryFromDB = async (childCategoryId: string) => {
   const result = await VendorProductModel.find({
-    childCategory: new Types.ObjectId(childCategoryId),
-    status: "active",
-  }).sort({ productTitle: 1 });
+    childCategory: childCategoryId,
+    status: 'active'
+  })
+    .populate('brand', 'name') // 'brandName' -> 'name'
+    .populate('flag', 'name') // 'flagName' -> 'name'
+    .populate('warranty', 'warrantyName')
+    .populate('productModel', 'name') // 'modelName' -> 'name'
+    .populate('category', 'name') // 'categoryName' -> 'name'
+    .populate('subCategory', 'name') // 'subCategoryName' -> 'name'
+    .populate('childCategory', 'name') // 'childCategoryName' -> 'name'
+    .populate('weightUnit', 'name') // 'unitName' -> 'name'
+    .populate('vendorStoreId', 'storeName')
+    .sort({ createdAt: -1 });
   return result;
 };
 
-// Get products by brand
 const getVendorProductsByBrandFromDB = async (brandId: string) => {
   const result = await VendorProductModel.find({
-    brand: new Types.ObjectId(brandId),
-    status: "active",
-  }).sort({ productTitle: 1 });
+    brand: brandId,
+    status: 'active'
+  })
+    .populate('brand', 'name') // 'brandName' -> 'name'
+    .populate('flag', 'name') // 'flagName' -> 'name'
+    .populate('warranty', 'warrantyName')
+    .populate('productModel', 'name') // 'modelName' -> 'name'
+    .populate('category', 'name') // 'categoryName' -> 'name'
+    .populate('weightUnit', 'name') // 'unitName' -> 'name'
+    .populate('vendorStoreId', 'storeName')
+    .sort({ createdAt: -1 });
   return result;
 };
 
-// Get vendor product by ID
-const getVendorProductByIdFromDB = async (id: string) => {
-  const result = await VendorProductModel.findById(id);
-  if (!result) {
-    throw new Error("Vendor product not found");
-  }
+const updateVendorProductInDB = async (id: string, payload: Partial<IVendorProduct>) => {
+  const result = await VendorProductModel.findByIdAndUpdate(
+    id,
+    payload,
+    { new: true, runValidators: true }
+  )
+    .populate('brand', 'name') // 'brandName' -> 'name'
+    .populate('flag', 'name') // 'flagName' -> 'name'
+    .populate('warranty', 'warrantyName')
+    .populate('productModel', 'name') // 'modelName' -> 'name'
+    .populate('category', 'name') // 'categoryName' -> 'name'
+    .populate('weightUnit', 'name') // 'unitName' -> 'name'
+    .populate('vendorStoreId', 'storeName');
   return result;
 };
 
-// Update vendor product (including productOptions if provided)
-const updateVendorProductInDB = async (
-  id: string,
-  payload: Partial<IVendorProduct>
-) => {
-  const result = await VendorProductModel.findByIdAndUpdate(id, payload, {
-    new: true,
-  });
-  if (!result) {
-    throw new Error("Vendor product not found to update.");
-  }
-  return result;
-};
-
-// Delete vendor product
 const deleteVendorProductFromDB = async (id: string) => {
   const result = await VendorProductModel.findByIdAndDelete(id);
-  if (!result) {
-    throw new Error("Vendor product not found to delete.");
-  }
-  return null;
+  return result;
 };
 
-// Add a new product option to an existing product
 const addProductOptionInDB = async (id: string, option: any) => {
   const result = await VendorProductModel.findByIdAndUpdate(
     id,
     { $push: { productOptions: option } },
-    { new: true }
-  );
-  if (!result) {
-    throw new Error("Vendor product not found to add option.");
-  }
+    { new: true, runValidators: true }
+  )
+    .populate('brand', 'name') // 'brandName' -> 'name'
+    .populate('flag', 'name') // 'flagName' -> 'name'
+    .populate('warranty', 'warrantyName')
+    .populate('productModel', 'name') // 'modelName' -> 'name'
+    .populate('category', 'name') // 'categoryName' -> 'name'
+    .populate('weightUnit', 'name') 
+    .populate('vendorStoreId', 'storeName');
   return result;
 };
 
-// Remove a product option by index
-const removeProductOptionFromDB = async (id: string, index: number) => {
+
+const removeProductOptionFromDB = async (id: string, optionIndex: number) => {
   const product = await VendorProductModel.findById(id);
   if (!product) {
-    throw new Error("Vendor product not found to remove option.");
+    throw new Error('Product not found');
   }
-  if (
-    !product.productOptions ||
-    index < 0 ||
-    index >= product.productOptions.length
-  ) {
-    throw new Error("Invalid product option index.");
-  }
-  product.productOptions.splice(index, 1);
+
+  product.productOptions?.splice(optionIndex, 1);
   await product.save();
-  return product;
+
+  const result = await VendorProductModel.findById(id)
+    .populate('brand', 'name') 
+    .populate('flag', 'name') 
+    .populate('warranty', 'warrantyName')
+    .populate('productModel', 'name')  
+    .populate('category', 'name') 
+    .populate('weightUnit', 'name')  
+    .populate('vendorStoreId', 'storeName');
+  return result;
 };
 
-// // landing page products: running offers, best-selling, and random products
-// const getLandingPageProductsFromDB = async () => {
-//   const totalCount = await VendorProductModel.countDocuments({
-//     status: "active",
-//   });
-//   const randomSkip = Math.floor(Math.random() * Math.max(totalCount - 12, 0));
-
-//   const [runningOffers, bestSelling, randomProducts] = await Promise.all([
-//     VendorProductModel.find({
-//       status: "active",
-//       offerDeadline: { $gt: new Date() },
-//     })
-//       .sort({ createdAt: -1 })
-//       .limit(6),
-
-//     VendorProductModel.find({ status: "active" })
-//       .sort({ sellCount: -1 })
-//       .limit(6),
-
-//     VendorProductModel.find({ status: "active" }).skip(randomSkip).limit(12),
-//   ]);
-
-//   return {
-//     runningOffers,
-//     bestSelling,
-//     randomProducts,
-//   };
-// };
-
-
-
-// landing page products: running offers, best-selling, and random products
+//landing page all products
 const getLandingPageProductsFromDB = async () => {
-  const totalCount = await VendorProductModel.countDocuments({
-    status: "active",
-  });
-  const randomSkip = Math.floor(Math.random() * Math.max(totalCount - 12, 0));
-
   const [runningOffers, bestSelling, randomProducts] = await Promise.all([
     VendorProductModel.find({
       status: "active",
       offerDeadline: { $gt: new Date() },
     })
-      .populate("flag", "productFlagId name icon status featured orderCount")
+      .populate('brand', 'name') 
+      .populate('flag', 'name') 
+      .populate('warranty', 'warrantyName')
+      .populate('productModel', 'name')  
+      .populate('category', 'name')  
+      .populate('weightUnit', 'name') 
       .sort({ createdAt: -1 })
       .limit(6),
 
     VendorProductModel.find({ status: "active" })
-      .populate("flag", "productFlagId name icon status featured orderCount")
+      .populate('brand', 'name') 
+      .populate('flag', 'name') 
+      .populate('warranty', 'warrantyName')
+      .populate('productModel', 'name') 
+      .populate('category', 'name') 
+      .populate('weightUnit', 'name')
       .sort({ sellCount: -1 })
       .limit(6),
 
-    VendorProductModel.find({ status: "active" })
-      .populate("flag", "productFlagId name icon status featured orderCount")
-      .skip(randomSkip)
-      .limit(12),
+    VendorProductModel.find({ status: 'active' })
+      .populate('brand', 'name') 
+      .populate('flag', 'name') 
+      .populate('warranty', 'warrantyName')
+      .populate('productModel', 'name') 
+      .populate('category', 'name')
+      .populate('weightUnit', 'name') 
   ]);
 
   return {
@@ -191,45 +213,24 @@ const getLandingPageProductsFromDB = async () => {
   };
 };
 
-
-
-
-// const getLandingPageProductsFromDB = async () => {
-//   const totalCount = await VendorProductModel.countDocuments({ status: "active" });
-//   const randomSkip = Math.floor(Math.random() * Math.max(totalCount - 12, 0));
-
-//   const [runningOffers, bestSelling, randomProducts] = await Promise.all([
-//     VendorProductModel.find({
-//       status: "active",
-//       offerDeadline: { $gt: new Date() },
-//     })
-//       .sort({ createdAt: -1 })
-//       .limit(6).populate("BrandModel", "name"),
-
-//     VendorProductModel.find({ status: "active" })
-//       .sort({ sellCount: -1 })
-//       .limit(6), // ✅ Correct path
-
-//     VendorProductModel.find({ status: "active" })
-//       .skip(randomSkip)
-//       .limit(12),
-//   ]);
-
-//   return { runningOffers, bestSelling, randomProducts };
-// };
-
-
-
-
-// Search vendor products by name (for autocomplete)
-const searchVendorProductsFromDB = async (query: string) => {
+// search vendor prudct
+const searchVendorProductsFromDB = async (searchTerm: string) => {
   const result = await VendorProductModel.find({
-    name: { $regex: query, $options: "i" },
-    status: "active",
+    status: 'active',
+    $or: [
+      { productTitle: { $regex: searchTerm, $options: 'i' } },
+      { shortDescription: { $regex: searchTerm, $options: 'i' } },
+      { productTag: { $in: [new RegExp(searchTerm, 'i')] } },
+    ],
   })
-    .select("name image price _id")
-    .limit(10);
-
+    .populate('brand', 'name') 
+    .populate('flag', 'name') 
+    .populate('warranty', 'warrantyName')
+    .populate('productModel', 'name') 
+    .populate('category', 'name') 
+    .populate('weightUnit', 'name')
+    .populate('vendorStoreId', 'storeName')
+    .sort({ createdAt: -1 });
   return result;
 };
 
@@ -246,7 +247,6 @@ export const VendorProductServices = {
   deleteVendorProductFromDB,
   addProductOptionInDB,
   removeProductOptionFromDB,
-
   getLandingPageProductsFromDB,
   searchVendorProductsFromDB,
 };

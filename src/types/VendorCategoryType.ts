@@ -3,7 +3,7 @@ export interface VendorCategory {
   _id: string;
   name: string;
   slug: string;
-  status: 'active' | 'inactive';
+  status:  'active' | 'inactive';
   createdAt: string;
   updatedAt: string;
 }

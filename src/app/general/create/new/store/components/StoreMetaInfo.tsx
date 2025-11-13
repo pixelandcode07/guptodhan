@@ -1,8 +1,9 @@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Inputs } from '@/types/Inputs'
 import React from 'react'
-import { Inputs } from './CreateNewStoreFrom'
+// import { Inputs } from './CreateNewStoreFrom'
 import { UseFormRegister } from 'react-hook-form'
 
 export default function StoreMetaInfo({ register }: { register: UseFormRegister<Inputs> }) {
@@ -48,3 +49,4 @@ export default function StoreMetaInfo({ register }: { register: UseFormRegister<
         </div>
     )
 }
+

@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { firebaseAdmin } from '@/lib/firebaseAdmin';
-import {  TChangePassword, TLoginUser } from './auth.interface';
+import { TChangePassword, TLoginUser } from './auth.interface';
 import { generateToken, verifyToken } from '@/lib/utils/jwt';
 import { connectRedis, redisClient } from '@/lib/redis';
 import { sendEmail } from '@/lib/utils/email';
 import mongoose from 'mongoose';
-import { Vendor } from '../vendor/vendor.model';
 import { ServiceProvider } from '../service-provider/serviceProvider.model';
 import { User } from '../user/user.model';
 import { verifyGoogleToken } from '@/lib/utils/verifyGoogleToken';
+import { Vendor } from '../vendors/vendor.model';
 
 
 
@@ -20,7 +20,7 @@ const loginUser = async (payload: TLoginUser) => {
   const { identifier, password: plainPassword } = payload; // সমাধান ১: password-কে plainPassword নামকরণ করা হয়েছে
 
   const isEmail = identifier.includes('@');
-  
+
   const user = isEmail
     ? await User.isUserExistsByEmail(identifier)
     : await User.isUserExistsByPhone(identifier);
@@ -67,6 +67,37 @@ const loginUser = async (payload: TLoginUser) => {
   return { accessToken, refreshToken, user: userWithoutPassword };
 };
 
+
+// vendorLogin service
+const vendorLogin = async (payload: TLoginUser) => {
+  const { identifier, password: plainPassword } = payload;
+
+  const isEmail = identifier.includes('@');
+  const user = isEmail
+    ? await User.isUserExistsByEmail(identifier)
+    : await User.isUserExistsByPhone(identifier);
+
+  if (!user) throw new Error('Invalid credentials.');
+  if (user.role !== 'vendor') throw new Error('Access denied. Vendor account required.');
+
+  if (!user.password) throw new Error('Password not set. Use social login.');
+
+  const isPasswordMatched = await user.isPasswordMatched(plainPassword, user.password);
+  if (!isPasswordMatched) throw new Error('Invalid credentials.');
+
+  const jwtPayload = {
+    userId: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  };
+
+  const accessToken = generateToken(jwtPayload, process.env.JWT_ACCESS_SECRET!, process.env.JWT_ACCESS_EXPIRES_IN!);
+  const refreshToken = generateToken(jwtPayload, process.env.JWT_REFRESH_SECRET!, process.env.JWT_REFRESH_EXPIRES_IN!);
+
+  const { password, ...userWithoutPassword } = user.toObject();
+  return { accessToken, refreshToken, user: userWithoutPassword };
+};
+
 const refreshToken = async (token: string) => {
   const refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
   if (!refreshTokenSecret) throw new Error('JWT refresh secret not configured');
@@ -100,34 +131,34 @@ const changePassword = async (userId: string, payload: TChangePassword) => {
 };
 
 const setPasswordForSocialLogin = async (userId: string, newPassword: string) => {
-    
-    const user = await User.findById(userId);
 
-    if (!user) {
-        throw new Error('User not found!');
-    }
+  const user = await User.findById(userId);
 
-
-    if (user.password) {
-        throw new Error('This account already has a password. Please use the "Change Password" feature instead.');
-    }
+  if (!user) {
+    throw new Error('User not found!');
+  }
 
 
-    user.password = newPassword;
-    
+  if (user.password) {
+    throw new Error('This account already has a password. Please use the "Change Password" feature instead.');
+  }
 
-    await user.save();
 
-    return null;
+  user.password = newPassword;
+
+
+  await user.save();
+
+  return null;
 };
 
 // --- শুধুমাত্র ইমেইলের জন্য: Forgot Password এর জন্য OTP পাঠানোর সার্ভিস ---
 const sendForgotPasswordOtpToEmail = async (email: string) => {
   await connectRedis();
-  
+
   const user = await User.findOne({ email });
-  if (!user) { 
-    throw new Error('No user found with this email address.'); 
+  if (!user) {
+    throw new Error('No user found with this email address.');
   }
 
   // সমাধান: sendEmail কল করার আগে নিশ্চিত করা হচ্ছে যে user.email আছে
@@ -145,63 +176,63 @@ const sendForgotPasswordOtpToEmail = async (email: string) => {
     template: 'otp.ejs',
     data: { name: user.name, otp: otp },
   });
-  
+
   return null;
 };
 
 
 const verifyForgotPasswordOtpFromEmail = async (email: string, otp: string) => {
-    await connectRedis();
-    const redisKey = `reset-otp:email:${email}`;
-    const storedOtp = await redisClient.get(redisKey);
+  await connectRedis();
+  const redisKey = `reset-otp:email:${email}`;
+  const storedOtp = await redisClient.get(redisKey);
 
-    if (!storedOtp || storedOtp !== otp) {
-        throw new Error('OTP is invalid or has expired.');
-    }
+  if (!storedOtp || storedOtp !== otp) {
+    throw new Error('OTP is invalid or has expired.');
+  }
 
-    const user = await User.findOne({ email });
-    if (!user) { throw new Error('User not found.'); }
-    
-    const resetTokenPayload = { userId: user._id.toString(), purpose: 'password-reset' };
-    const resetToken = generateToken(resetTokenPayload, process.env.JWT_ACCESS_SECRET!, '10m'); // 10 minutes validity
+  const user = await User.findOne({ email });
+  if (!user) { throw new Error('User not found.'); }
 
-    await redisClient.del(redisKey);
-    return { resetToken };
+  const resetTokenPayload = { userId: user._id.toString(), purpose: 'password-reset' };
+  const resetToken = generateToken(resetTokenPayload, process.env.JWT_ACCESS_SECRET!, '10m'); // 10 minutes validity
+
+  await redisClient.del(redisKey);
+  return { resetToken };
 };
 
 
 const getResetTokenWithFirebase = async (idToken: string) => {
-    const decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
-    const phoneNumberFromFirebase = decodedToken.phone_number;
-    if (!phoneNumberFromFirebase) { throw new Error('No phone number found in Firebase token.'); }
-  
-    const localPhoneNumber = phoneNumberFromFirebase.substring(3);
+  const decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
+  const phoneNumberFromFirebase = decodedToken.phone_number;
+  if (!phoneNumberFromFirebase) { throw new Error('No phone number found in Firebase token.'); }
 
-    const user = await User.findOne({ phoneNumber: localPhoneNumber });
-    if (!user) { throw new Error('User with this phone number not found in our database.'); }
+  const localPhoneNumber = phoneNumberFromFirebase.substring(3);
 
-    const resetTokenPayload = { userId: user._id.toString(), purpose: 'password-reset' };
-    const resetToken = generateToken(resetTokenPayload, process.env.JWT_ACCESS_SECRET!, '10m');
+  const user = await User.findOne({ phoneNumber: localPhoneNumber });
+  if (!user) { throw new Error('User with this phone number not found in our database.'); }
 
-    return { resetToken };
+  const resetTokenPayload = { userId: user._id.toString(), purpose: 'password-reset' };
+  const resetToken = generateToken(resetTokenPayload, process.env.JWT_ACCESS_SECRET!, '10m');
+
+  return { resetToken };
 };
 
 
 
 const resetPasswordWithToken = async (token: string, newPassword: string) => {
-    const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
-    if (!decoded.userId || decoded.purpose !== 'password-reset') {
-        throw new Error('Invalid or unauthorized token for password reset.');
-    }
+  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
+  if (!decoded.userId || decoded.purpose !== 'password-reset') {
+    throw new Error('Invalid or unauthorized token for password reset.');
+  }
 
-    const user = await User.findById(decoded.userId);
-    if (!user) { throw new Error('User not found.'); }
+  const user = await User.findById(decoded.userId);
+  if (!user) { throw new Error('User not found.'); }
 
-    user.password = newPassword;
-    user.passwordChangedAt = new Date();
-    await user.save();
+  user.password = newPassword;
+  user.passwordChangedAt = new Date();
+  await user.save();
 
-    return null;
+  return null;
 };
 
 
@@ -233,23 +264,23 @@ const registerVendor = async (payload: any) => {
 };
 
 const registerServiceProvider = async (payload: any) => {
-  const { 
-    name, 
-    email, 
-    password, 
-    phoneNumber, 
-    address, 
+  const {
+    name,
+    email,
+    password,
+    phoneNumber,
+    address,
     // The rest of the payload contains the service provider info
-    ...providerData 
+    ...providerData
   } = payload;
 
   // ✅ FIX: Add the providerData directly to the user object
-  const userData = { 
-    name, 
-    email, 
-    password, 
-    phoneNumber, 
-    address, 
+  const userData = {
+    name,
+    email,
+    password,
+    phoneNumber,
+    address,
     role: 'service-provider',
     serviceProviderInfo: providerData // Embed the service data directly as defined in your schema
   };
@@ -327,4 +358,5 @@ export const AuthServices = {
   registerVendor,
   registerServiceProvider,
   loginWithGoogle,
+  vendorLogin,
 };

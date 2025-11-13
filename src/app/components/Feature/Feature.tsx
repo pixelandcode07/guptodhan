@@ -9,7 +9,8 @@ import { FeatureProps } from '@/types/FeaturedCategoryType';
 
 export default function Feature({ featuredData }: FeatureProps) {
   return (
-    <div className="bg-gray-100 mb-0 my-3 md:p-6 mt-2 md:max-w-[90vw] mx-auto">
+    // <div className="bg-gray-100 mb-0 my-3 md:p-6 mt-2 md:max-w-[90vw] mx-auto">
+    <div className="bg-gray-100 mb-0 my-3 max-w-[95vw] xl:max-w-[90vw] mx-auto px-4">
       <div className="hidden lg:flex justify-center">
         <PageHeader
           title="Featured Category"
@@ -25,7 +26,7 @@ export default function Feature({ featuredData }: FeatureProps) {
           buttonHref="/home/view/all/flash-sell/products"
         />
       </div>
-      <main className=" flex flex-col items-center justify-between">
+      <main className=" flex flex-col items-center justify-around">
         <ShopByCategory featuredData={featuredData} />
       </main>
     </div>

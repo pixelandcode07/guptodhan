@@ -2,7 +2,6 @@
 
 import { DataTable } from "@/components/TableHelper/data-table";
 import { Review, createReviewColumns } from "@/components/TableHelper/review_columns";
-import { Input } from "@/components/ui/input";
 import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import axios from "axios";
@@ -10,7 +9,6 @@ import { toast } from "sonner";
 
 export default function ViewAllReviewsPage() {
   const [data, setData] = useState<Review[]>([]);
-  const [searchText, setSearchText] = useState("");
   const { data: session } = useSession();
 
   type Session = {
@@ -94,38 +92,28 @@ export default function ViewAllReviewsPage() {
     fetchReviews();
   }, [fetchReviews]);
 
-  const filteredData = data.filter((item) => {
-    if (!searchText.trim()) return true;
-    const search = searchText.toLowerCase();
-    return (
-      item.product.toLowerCase().includes(search) ||
-      item.name.toLowerCase().includes(search) ||
-      item.customer.toLowerCase().includes(search) ||
-      item.review.toLowerCase().includes(search) ||
-      item.reply_from_admin.toLowerCase().includes(search)
-    );
-  });
-
   return (
-    <div className="m-5 p-5 border ">
-      <div>
-        <h1 className="text-lg font-semibold border-l-2 border-blue-500">
-          <span className="pl-5">Ratings & Review</span>
-        </h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="container mx-auto px-2 py-3 sm:px-3 sm:py-4 md:px-4 md:py-6 lg:px-8">
+        {/* Header Section */}
+        <div className="mb-4 sm:mb-6 md:mb-8">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900">Ratings & Reviews</h1>
+        </div>
+
+        {/* Table Section */}
+        <div className="mb-4 sm:mb-6">
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <div className="min-w-[900px]">
+                <DataTable 
+                  columns={createReviewColumns(handleDeleteReview)} 
+                  data={data} 
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="flex items-center justify-end gap-4 mb-4">
-        <span className="flex items-center gap-2">
-          <span>Search:</span>
-          <Input 
-            type="text" 
-            className="border border-gray-500" 
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            placeholder="Search reviews..."
-          />
-        </span>
-      </div>
-      <DataTable columns={createReviewColumns(handleDeleteReview)} data={filteredData} />
     </div>
   );
 }

@@ -6,7 +6,8 @@ import { slider_columns } from '@/components/TableHelper/slider_columns'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Plus, ArrowUpDown } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import RearrangeButton from '@/components/ReusableComponents/RearrangeButton'
 
 export default function SlidersClient({ initialRows }: { initialRows: any[] }) {
   
@@ -85,10 +86,7 @@ export default function SlidersClient({ initialRows }: { initialRows: any[] }) {
               Add New Slider
             </Button>
           </Link>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 h-9">
-            <ArrowUpDown className="w-4 h-4" />
-            Rearrange Slider
-          </Button>
+          <RearrangeButton href="/general/rearrange/sliders" label="Rearrange Slider" />
         </div>
       </div>
       <DataTable columns={slider_columns} data={searchedRows} />
