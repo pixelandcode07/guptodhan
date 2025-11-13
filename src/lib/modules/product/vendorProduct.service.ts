@@ -126,24 +126,17 @@ const removeProductOptionFromDB = async (id: string, index: number) => {
 // landing page products: running offers, best-selling, and random products
 const getLandingPageProductsFromDB = async () => {
 
-  const totalCount = await VendorProductModel.countDocuments({ status: 'active' });
-  const randomSkip = Math.floor(Math.random() * Math.max(totalCount - 12, 0));
-
-  
   const [runningOffers, bestSelling, randomProducts] = await Promise.all([
     VendorProductModel.find({
       status: "active",
       offerDeadline: { $gt: new Date() },
     }).sort({ createdAt: -1 }).limit(6),
 
-
     VendorProductModel.find({ status: "active" })
       .sort({ sellCount: -1 })
       .limit(6),
 
-    VendorProductModel.find({ status: 'active' })
-      .skip(randomSkip)
-      .limit(12),
+    VendorProductModel.find({ status: 'active' }), // fetch all active products
   ]);
 
   return {
@@ -152,6 +145,7 @@ const getLandingPageProductsFromDB = async () => {
     randomProducts,
   };
 };
+
 
 // Search vendor products by name (for autocomplete)
 const searchVendorProductsFromDB = async (query: string) => {
