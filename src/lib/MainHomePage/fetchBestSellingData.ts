@@ -5,7 +5,7 @@ export async function fetchBestSellingData(): Promise<ProductCardType[]> {
     const baseUrl = process.env.NEXTAUTH_URL;
 
     try {
-        const res = await axios.get(`${baseUrl}/api/v1/product/bestSelling`, {
+        const res = await axios.get(`${baseUrl}/api/v1/product/landingPage`, {
             headers: { 'Cache-Control': 'no-store' },
         });
 

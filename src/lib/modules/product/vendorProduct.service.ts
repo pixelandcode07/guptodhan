@@ -1,4 +1,5 @@
 import { get } from "http";
+import { ProductFlag } from "../product-config/models/productFlag.model";
 import { IVendorProduct } from "./vendorProduct.interface";
 import { VendorProductModel } from "./vendorProduct.model";
 import { Types } from "mongoose";
@@ -43,7 +44,9 @@ const getVendorProductsBySubCategoryFromDB = async (subCategoryId: string) => {
 };
 
 // Get products by child-category
-const getVendorProductsByChildCategoryFromDB = async (childCategoryId: string) => {
+const getVendorProductsByChildCategoryFromDB = async (
+  childCategoryId: string
+) => {
   const result = await VendorProductModel.find({
     childCategory: new Types.ObjectId(childCategoryId),
     status: "active",
@@ -123,25 +126,60 @@ const removeProductOptionFromDB = async (id: string, index: number) => {
   return product;
 };
 
+// // landing page products: running offers, best-selling, and random products
+// const getLandingPageProductsFromDB = async () => {
+//   const totalCount = await VendorProductModel.countDocuments({
+//     status: "active",
+//   });
+//   const randomSkip = Math.floor(Math.random() * Math.max(totalCount - 12, 0));
+
+//   const [runningOffers, bestSelling, randomProducts] = await Promise.all([
+//     VendorProductModel.find({
+//       status: "active",
+//       offerDeadline: { $gt: new Date() },
+//     })
+//       .sort({ createdAt: -1 })
+//       .limit(6),
+
+//     VendorProductModel.find({ status: "active" })
+//       .sort({ sellCount: -1 })
+//       .limit(6),
+
+//     VendorProductModel.find({ status: "active" }).skip(randomSkip).limit(12),
+//   ]);
+
+//   return {
+//     runningOffers,
+//     bestSelling,
+//     randomProducts,
+//   };
+// };
+
+
+
 // landing page products: running offers, best-selling, and random products
 const getLandingPageProductsFromDB = async () => {
-
-  const totalCount = await VendorProductModel.countDocuments({ status: 'active' });
+  const totalCount = await VendorProductModel.countDocuments({
+    status: "active",
+  });
   const randomSkip = Math.floor(Math.random() * Math.max(totalCount - 12, 0));
 
-  
   const [runningOffers, bestSelling, randomProducts] = await Promise.all([
     VendorProductModel.find({
       status: "active",
       offerDeadline: { $gt: new Date() },
-    }).sort({ createdAt: -1 }).limit(6),
-
+    })
+      .populate("flag", "productFlagId name icon status featured orderCount")
+      .sort({ createdAt: -1 })
+      .limit(6),
 
     VendorProductModel.find({ status: "active" })
+      .populate("flag", "productFlagId name icon status featured orderCount")
       .sort({ sellCount: -1 })
       .limit(6),
 
-    VendorProductModel.find({ status: 'active' })
+    VendorProductModel.find({ status: "active" })
+      .populate("flag", "productFlagId name icon status featured orderCount")
       .skip(randomSkip)
       .limit(12),
   ]);
@@ -153,14 +191,43 @@ const getLandingPageProductsFromDB = async () => {
   };
 };
 
+
+
+
+// const getLandingPageProductsFromDB = async () => {
+//   const totalCount = await VendorProductModel.countDocuments({ status: "active" });
+//   const randomSkip = Math.floor(Math.random() * Math.max(totalCount - 12, 0));
+
+//   const [runningOffers, bestSelling, randomProducts] = await Promise.all([
+//     VendorProductModel.find({
+//       status: "active",
+//       offerDeadline: { $gt: new Date() },
+//     })
+//       .sort({ createdAt: -1 })
+//       .limit(6).populate("BrandModel", "name"),
+
+//     VendorProductModel.find({ status: "active" })
+//       .sort({ sellCount: -1 })
+//       .limit(6), // ✅ Correct path
+
+//     VendorProductModel.find({ status: "active" })
+//       .skip(randomSkip)
+//       .limit(12),
+//   ]);
+
+//   return { runningOffers, bestSelling, randomProducts };
+// };
+
+
+
+
 // Search vendor products by name (for autocomplete)
 const searchVendorProductsFromDB = async (query: string) => {
-
   const result = await VendorProductModel.find({
     name: { $regex: query, $options: "i" },
     status: "active",
   })
-    .select("name image price _id") 
+    .select("name image price _id")
     .limit(10);
 
   return result;
@@ -181,5 +248,5 @@ export const VendorProductServices = {
   removeProductOptionFromDB,
 
   getLandingPageProductsFromDB,
-  searchVendorProductsFromDB
+  searchVendorProductsFromDB,
 };

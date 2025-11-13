@@ -4,6 +4,7 @@ import { sendResponse } from '@/lib/utils/sendResponse';
 import { createStoreValidationSchema, updateStoreValidationSchema } from './vendorStore.validation';
 import { StoreServices } from './vendorStore.service';
 import dbConnect from '@/lib/db';
+import {Types} from 'mongoose';
 
 // Create a new store
 const createStore = async (req: NextRequest) => {
@@ -11,7 +12,12 @@ const createStore = async (req: NextRequest) => {
   const body = await req.json();
   const validatedData = createStoreValidationSchema.parse(body);
 
-  const result = await StoreServices.createStoreInDB(validatedData);
+  const payload = {
+    ...validatedData,
+    vendorId: new Types.ObjectId(validatedData.vendorId),
+  };
+
+  const result = await StoreServices.createStoreInDB(payload);
 
   return sendResponse({
     success: true,
@@ -55,7 +61,12 @@ const updateStore = async (req: NextRequest, { params }: { params: { id: string 
   const body = await req.json();
   const validatedData = updateStoreValidationSchema.parse(body);
 
-  const result = await StoreServices.updateStoreInDB(id, validatedData);
+    const payload = {
+    ...validatedData,
+    vendorId: new Types.ObjectId(validatedData.vendorId)
+  };
+
+  const result = await StoreServices.updateStoreInDB(id, payload);
 
   return sendResponse({
     success: true,
