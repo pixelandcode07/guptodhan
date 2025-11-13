@@ -1,18 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { StatusCodes } from 'http-status-codes';
-import { sendResponse } from '@/lib/utils/sendResponse';
-import {
-  createVendorProductValidationSchema,
-  updateVendorProductValidationSchema,
-} from './vendorProduct.validation';
-import { VendorProductServices } from './vendorProduct.service';
-import dbConnect from '@/lib/db';
-import { Types } from 'mongoose';
-import { IVendorProduct } from './vendorProduct.interface';
-import { ZodError } from 'zod';
-import { deleteFromCloudinary } from '@/lib/utils/cloudinary';
+import { NextRequest, NextResponse } from "next/server";
+import { Types } from "mongoose";
+import { ZodError } from "zod";
+import { StatusCodes } from "http-status-codes";
+import { VendorProductServices } from "./vendorProduct.service";
+import { sendResponse } from "@/lib/utils/sendResponse";
+import { createVendorProductValidationSchema } from "./vendorProduct.validation";
+import { IVendorProduct } from "./vendorProduct.interface";
+import dbConnect from "@/lib/db";
 
-// Create a new vendor product
 const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
   try {
     await dbConnect();
@@ -21,7 +16,6 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
 
     const payload: Partial<IVendorProduct> = {
       ...validatedData,
-      // ✅ **পরিবর্তন:** vendorStoreId-কে ObjectId-তে রূপান্তর করা হয়েছে
       vendorStoreId: new Types.ObjectId(validatedData.vendorStoreId),
       category: new Types.ObjectId(validatedData.category),
       subCategory: validatedData.subCategory
@@ -35,6 +29,15 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
         : undefined,
       productModel: validatedData.productModel
         ? new Types.ObjectId(validatedData.productModel)
+        : undefined,
+      flag: validatedData.flag
+        ? new Types.ObjectId(validatedData.flag)
+        : undefined,
+      warranty: validatedData.warranty
+        ? new Types.ObjectId(validatedData.warranty)
+        : undefined,
+      weightUnit: validatedData.weightUnit
+        ? new Types.ObjectId(validatedData.weightUnit)
         : undefined,
       productOptions: validatedData.productOptions ?? [],
     };
@@ -50,7 +53,6 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
   } catch (err) {
     console.error("Error creating vendor product:", err);
     
-    // Handle Zod validation errors
     if (err instanceof ZodError) {
       const errorMessages = err.issues.map((issue) => {
         const field = issue.path.join('.');
@@ -74,8 +76,6 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
   }
 };
 
-
-// Get all vendor products
 const getAllVendorProducts = async () => {
   await dbConnect();
   const result = await VendorProductServices.getAllVendorProductsFromDB();
@@ -83,15 +83,14 @@ const getAllVendorProducts = async () => {
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Vendor products retrieved successfully!',
+    message: 'All vendor products retrieved successfully!',
     data: result,
   });
 };
 
-// get all active vendor products
 const getActiveVendorProducts = async () => {
   await dbConnect();
-  const result = await VendorProductServices.getActiveVendorProductsFromDB(); 
+  const result = await VendorProductServices.getActiveVendorProductsFromDB();
 
   return sendResponse({
     success: true,
@@ -101,79 +100,18 @@ const getActiveVendorProducts = async () => {
   });
 };
 
-// Get vendor products by category Id
-const getVendorProductsByCategory = async (
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) => {
+const getVendorProductById = async (req: NextRequest, { params }: { params: { id: string } }) => {
   await dbConnect();
-  const resolvedParams = await params;
-  const categoryId = resolvedParams.id;
-  const result = await VendorProductServices.getVendorProductsByCategoryFromDB(categoryId);
+  const result = await VendorProductServices.getVendorProductByIdFromDB(params.id);
 
-  return sendResponse({ 
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: `Vendor products for category ${categoryId} retrieved successfully!`,
-    data: result,
-  });
-}
-
-// Get vendor products by sub-category Id
-const getVendorProductsBySubCategory = async (
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) => {
-  await dbConnect();
-  const resolvedParams = await params;
-  const subCategoryId = resolvedParams.id;
-  const result = await VendorProductServices.getVendorProductsBySubCategoryFromDB(subCategoryId);
-
-  return sendResponse({ 
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: `Vendor products for sub-category ${subCategoryId} retrieved successfully!`,
-    data: result,
-  });
-};
-
-// Get vendor products by child-category Id
-const getVendorProductsByChildCategory = async (
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) => {
-  await dbConnect();
-  const resolvedParams = await params;
-  const childCategoryId = resolvedParams.id;
-  const result = await VendorProductServices.getVendorProductsByChildCategoryFromDB(childCategoryId);
-
-  return sendResponse({ 
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: `Vendor products for child-category ${childCategoryId} retrieved successfully!`,
-    data: result,
-  });
-};
-
-// Get vendor product by ID
-const getVendorProductById = async (
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) => {
-  await dbConnect();
-  const { id } = await params;
-  
-  // Validate ID: must be a valid MongoDB ObjectId and not "undefined"
-  if (!id || id === 'undefined' || id.trim() === '' || !Types.ObjectId.isValid(id)) {
+  if (!result) {
     return sendResponse({
       success: false,
-      statusCode: StatusCodes.BAD_REQUEST,
-      message: 'Invalid product ID provided',
+      statusCode: StatusCodes.NOT_FOUND,
+      message: 'Product not found!',
       data: null,
     });
   }
-
-  const result = await VendorProductServices.getVendorProductByIdFromDB(id);
 
   return sendResponse({
     success: true,
@@ -183,93 +121,89 @@ const getVendorProductById = async (
   });
 };
 
+const getVendorProductsByCategory = async (req: NextRequest, { params }: { params: { categoryId: string } }) => {
+  await dbConnect();
+  const result = await VendorProductServices.getVendorProductsByCategoryFromDB(params.categoryId);
 
-const updateVendorProduct = async (
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-): Promise<NextResponse> => {
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Category products retrieved successfully!',
+    data: result,
+  });
+};
+
+const getVendorProductsBySubCategory = async (req: NextRequest, { params }: { params: { subCategoryId: string } }) => {
+  await dbConnect();
+  const result = await VendorProductServices.getVendorProductsBySubCategoryFromDB(params.subCategoryId);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Sub-category products retrieved successfully!',
+    data: result,
+  });
+};
+
+const getVendorProductsByChildCategory = async (req: NextRequest, { params }: { params: { childCategoryId: string } }) => {
+  await dbConnect();
+  const result = await VendorProductServices.getVendorProductsByChildCategoryFromDB(params.childCategoryId);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Child-category products retrieved successfully!',
+    data: result,
+  });
+};
+
+const getVendorProductsByBrand = async (req: NextRequest, { params }: { params: { brandId: string } }) => {
+  await dbConnect();
+  const result = await VendorProductServices.getVendorProductsByBrandFromDB(params.brandId);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Brand products retrieved successfully!',
+    data: result,
+  });
+};
+
+const updateVendorProduct = async (req: NextRequest, { params }: { params: { id: string } }) => {
   try {
     await dbConnect();
-    const { id } = await params;
-    
-    // Validate ID: must be a valid MongoDB ObjectId and not "undefined"
-    if (!id || id === 'undefined' || id.trim() === '' || !Types.ObjectId.isValid(id)) {
+    const body = await req.json();
+
+    const payload: Partial<IVendorProduct> = { ...body };
+
+    if (body.category) payload.category = new Types.ObjectId(body.category);
+    if (body.subCategory) payload.subCategory = new Types.ObjectId(body.subCategory);
+    if (body.childCategory) payload.childCategory = new Types.ObjectId(body.childCategory);
+    if (body.brand) payload.brand = new Types.ObjectId(body.brand);
+    if (body.productModel) payload.productModel = new Types.ObjectId(body.productModel);
+    if (body.flag) payload.flag = new Types.ObjectId(body.flag);
+    if (body.warranty) payload.warranty = new Types.ObjectId(body.warranty);
+    if (body.weightUnit) payload.weightUnit = new Types.ObjectId(body.weightUnit);
+
+    const result = await VendorProductServices.updateVendorProductInDB(params.id, payload);
+
+    if (!result) {
       return sendResponse({
         success: false,
-        statusCode: StatusCodes.BAD_REQUEST,
-        message: 'Invalid product ID provided',
+        statusCode: StatusCodes.NOT_FOUND,
+        message: 'Product not found!',
         data: null,
       });
-    }
-
-    const body = await req.json();
-    const validatedData = updateVendorProductValidationSchema.parse(body) as {
-      removedPhotoGallery?: string[];
-      removeThumbnail?: string;
-    } & Partial<IVendorProduct>;
-
-    const { removedPhotoGallery, removeThumbnail, ...productData } = validatedData;
-
-    const payload: Partial<IVendorProduct> = {
-      ...productData,
-    };
-
-    if (typeof productData.vendorStoreId === 'string') {
-      payload.vendorStoreId = new Types.ObjectId(productData.vendorStoreId);
-    }
-    if (typeof productData.category === 'string') {
-      payload.category = new Types.ObjectId(productData.category);
-    }
-    if (typeof productData.subCategory === 'string') {
-      payload.subCategory = new Types.ObjectId(productData.subCategory);
-    }
-    if (typeof productData.childCategory === 'string') {
-      payload.childCategory = new Types.ObjectId(productData.childCategory);
-    }
-    if (typeof productData.brand === 'string') {
-      payload.brand = new Types.ObjectId(productData.brand);
-    }
-    if (typeof productData.productModel === 'string') {
-      payload.productModel = new Types.ObjectId(productData.productModel);
-    }
-
-    const result = await VendorProductServices.updateVendorProductInDB(id, payload);
-
-    if (removeThumbnail) {
-      await deleteFromCloudinary(removeThumbnail);
-    }
-
-    if (removedPhotoGallery && removedPhotoGallery.length > 0) {
-      await Promise.all(
-        removedPhotoGallery.map(async (url) => {
-          await deleteFromCloudinary(url);
-        })
-      );
     }
 
     return sendResponse({
       success: true,
       statusCode: StatusCodes.OK,
-      message: "Vendor product updated successfully!",
+      message: 'Vendor product updated successfully!',
       data: result,
     });
   } catch (err) {
     console.error("Error updating vendor product:", err);
-    
-    // Handle Zod validation errors
-    if (err instanceof ZodError) {
-      const errorMessages = err.issues.map((issue) => {
-        const field = issue.path.join('.');
-        return `${field}: ${issue.message}`;
-      });
-      
-      return sendResponse({
-        success: false,
-        statusCode: StatusCodes.BAD_REQUEST,
-        message: errorMessages.join('; '),
-        data: err.issues,
-      });
-    }
     
     return sendResponse({
       success: false,
@@ -280,40 +214,97 @@ const updateVendorProduct = async (
   }
 };
 
-
-// Delete vendor product
-const deleteVendorProduct = async (
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) => {
+const deleteVendorProduct = async (req: NextRequest, { params }: { params: { id: string } }) => {
   await dbConnect();
-  const { id } = await params;
-  
-  // Validate ID: must be a valid MongoDB ObjectId and not "undefined"
-  if (!id || id === 'undefined' || id.trim() === '' || !Types.ObjectId.isValid(id)) {
+  const result = await VendorProductServices.deleteVendorProductFromDB(params.id);
+
+  if (!result) {
     return sendResponse({
       success: false,
-      statusCode: StatusCodes.BAD_REQUEST,
-      message: 'Invalid product ID provided',
+      statusCode: StatusCodes.NOT_FOUND,
+      message: 'Product not found!',
       data: null,
     });
   }
-
-  await VendorProductServices.deleteVendorProductFromDB(id);
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
     message: 'Vendor product deleted successfully!',
-    data: null,
+    data: result,
   });
 };
 
+const addProductOption = async (req: NextRequest, { params }: { params: { id: string } }) => {
+  try {
+    await dbConnect();
+    const body = await req.json();
 
-// GET landing page products
+    const result = await VendorProductServices.addProductOptionInDB(params.id, body);
+
+    if (!result) {
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.NOT_FOUND,
+        message: 'Product not found!',
+        data: null,
+      });
+    }
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: 'Product option added successfully!',
+      data: result,
+    });
+  } catch (err) {
+    console.error("Error adding product option:", err);
+    
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: err instanceof Error ? err.message : "Something went wrong while adding the option.",
+      data: null,
+    });
+  }
+};
+
+const removeProductOption = async (req: NextRequest, { params }: { params: { id: string; optionIndex: string } }) => {
+  try {
+    await dbConnect();
+    const optionIndex = parseInt(params.optionIndex);
+
+    const result = await VendorProductServices.removeProductOptionFromDB(params.id, optionIndex);
+
+    if (!result) {
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.NOT_FOUND,
+        message: 'Product not found!',
+        data: null,
+      });
+    }
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: 'Product option removed successfully!',
+      data: result,
+    });
+  } catch (err) {
+    console.error("Error removing product option:", err);
+    
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: err instanceof Error ? err.message : "Something went wrong while removing the option.",
+      data: null,
+    });
+  }
+};
+
 const getLandingPageProducts = async () => {
   await dbConnect();
-
   const result = await VendorProductServices.getLandingPageProductsFromDB();
 
   return sendResponse({
@@ -324,45 +315,43 @@ const getLandingPageProducts = async () => {
   });
 };
 
-// GET search vendor products
 const searchVendorProducts = async (req: NextRequest) => {
   await dbConnect();
   const { searchParams } = new URL(req.url);
-  const query = searchParams.get("query") || "";
+  const searchTerm = searchParams.get('q') || '';
 
-  // If no query provided, return empty array (optional)
-  if (!query) {
+  if (!searchTerm) {
     return sendResponse({
-      success: true,
-      statusCode: StatusCodes.OK,
-      message: "No search query provided.",
-      data: [],
+      success: false,
+      statusCode: StatusCodes.BAD_REQUEST,
+      message: 'Search term is required!',
+      data: null,
     });
   }
 
-  const result = await VendorProductServices.searchVendorProductsFromDB(query);
+  const result = await VendorProductServices.searchVendorProductsFromDB(searchTerm);
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: "Search results retrieved successfully!",
+    message: 'Search results retrieved successfully!',
     data: result,
   });
 };
-
-
 
 export const VendorProductController = {
   createVendorProduct,
   getAllVendorProducts,
   getActiveVendorProducts,
+  getVendorProductById,
   getVendorProductsByCategory,
   getVendorProductsBySubCategory,
   getVendorProductsByChildCategory,
-  getVendorProductById,
+  getVendorProductsByBrand,
   updateVendorProduct,
   deleteVendorProduct,
-
+  addProductOption,
+  removeProductOption,
   getLandingPageProducts,
-  searchVendorProducts
+  searchVendorProducts,
 };
