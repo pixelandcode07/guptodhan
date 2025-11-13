@@ -1,4 +1,3 @@
-// src/app/general/edit/vendor/category/components/EditVendorCategoryPage.tsx
 "use client";
 
 import { useState } from "react";

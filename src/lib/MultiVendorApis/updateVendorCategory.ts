@@ -7,8 +7,6 @@ export async function updateVendorCategory(
   data: Partial<Pick<VendorCategory, 'name' | 'slug' | 'status'>>,
   token: string
 ) {
-  // const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXTAUTH_URL;
-  // if (!baseUrl) throw new Error("API URL not configured");
 
   const res = await axios.patch(
     `/api/v1/vendor-category/${id}`,
