@@ -28,7 +28,9 @@ const adminRoutes = [
   "/api/v1/vendor-category",
   "/api/v1/vendor-category/[id]",
   "/api/v1/vendors",
-  "/api/v1/crm-modules/support-ticket"
+  "/api/v1/crm-modules/support-ticket",
+  "/api/v1/slider-form",
+  "/api/v1/slider-form/[id]"
 ];
 
 const protectedApiRoutes = [
