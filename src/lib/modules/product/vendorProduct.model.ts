@@ -22,7 +22,6 @@ const vendorProductSchema = new Schema<IVendorProduct>(
   {
     productId: { type: String, required: true, unique: true },
     productTitle: { type: String, required: true, trim: true },
-    // ✅ পরিবর্তন করা হয়েছে: 'VendorStore' -> 'StoreModel'
     vendorStoreId: { type: Schema.Types.ObjectId, ref: 'StoreModel', required: true }, 
     shortDescription: { type: String, required: true, maxlength: 255 },
     fullDescription: { type: String, required: true },
@@ -37,21 +36,13 @@ const vendorProductSchema = new Schema<IVendorProduct>(
     stock: { type: Number },
     sku: { type: String },
     rewardPoints: { type: Number },
-    // ✅ পরিবর্তন করা হয়েছে: 'Category' -> 'CategoryModel'
     category: { type: Schema.Types.ObjectId, ref: 'CategoryModel', required: true }, 
-    // ✅ পরিবর্তন করা হয়েছে: 'SubCategory' -> 'SubCategoryModel'
     subCategory: { type: Schema.Types.ObjectId, ref: 'SubCategoryModel' }, 
-    // ✅ পরিবর্তন করা হয়েছে: 'ChildCategory' -> 'ChildCategoryModel'
     childCategory: { type: Schema.Types.ObjectId, ref: 'ChildCategoryModel' }, 
-    // ✅ এটা ঠিক ছিল
     brand: { type: Schema.Types.ObjectId, ref: 'Brand' }, 
-    // ✅ এটা ঠিক ছিল
     productModel: { type: Schema.Types.ObjectId, ref: 'ProductModel' }, 
-    // ✅ পরিবর্তন করা হয়েছে: 'Flag' -> 'ProductFlag'
     flag: { type: Schema.Types.ObjectId, ref: 'ProductFlag' }, 
-    // ✅ পরিবর্তন করা হয়েছে: 'Warranty' -> 'ProductWarrantyModel'
     warranty: { type: Schema.Types.ObjectId, ref: 'ProductWarrantyModel' }, 
-    // ✅ পরিবর্তন করা হয়েছে: 'WeightUnit' -> 'ProductUnit'
     weightUnit: { type: Schema.Types.ObjectId, ref: 'ProductUnit' }, 
     offerDeadline: { type: Date },
     metaTitle: { type: String },
