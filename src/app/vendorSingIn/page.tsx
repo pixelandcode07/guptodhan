@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff } from 'lucide-react';
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 type SignInInputs = {
   email: string;
@@ -18,6 +20,7 @@ type SignInInputs = {
 
 export default function VendorLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter()
   const {
     register,
     handleSubmit,
@@ -26,9 +29,26 @@ export default function VendorLoginPage() {
 
   const onSignIn = async (values: SignInInputs) => {
     try {
-      await axios.post('/api/v1/auth/vendor-login', values);
+      // এখানে identifier হিসেবে email ব্যবহার করুন
+      const payload = {
+        identifier: values.email, // email কে identifier হিসেবে পাঠান
+        password: values.password,
+      };
+
+      const res = await axios.post('/api/v1/auth/vendor-login', payload);
+
+
+      // NextAuth session update
+      await signIn('credentials', {
+        redirect: false,
+        userId: res.data.user._id,
+        role: res.data.user.role,
+        accessToken: res.data.accessToken,
+      });
+      router.push('/dashboard');
       toast.success('Signed in successfully');
-      // redirect or update UI here
+
+      // window.location.href = '/dashboard';
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to sign in');
     }

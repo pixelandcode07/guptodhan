@@ -48,6 +48,35 @@ const loginUser = async (req: NextRequest) => {
   return response;
 };
 
+
+// Only check vendor role
+
+const vendorLogin = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  const validatedData = loginValidationSchema.parse(body);
+  
+  // শুধু vendor রোল চেক
+  const result = await AuthServices.vendorLogin(validatedData);
+
+  const { refreshToken, ...dataForResponseBody } = result;
+
+  const response = sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Vendor logged in successfully!',
+    data: dataForResponseBody,
+  });
+
+  response.cookies.set('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 30 * 24 * 60 * 60,
+  });
+
+  return response;
+};
+
 const refreshToken = async (req: NextRequest) => {
   await dbConnect();
   const token = req.cookies.get('refreshToken')?.value;
@@ -218,4 +247,5 @@ export const AuthController = {
   registerVendor,
   registerServiceProvider,
   googleLoginHandler,
+  vendorLogin,
 };

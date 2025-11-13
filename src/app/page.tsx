@@ -7,6 +7,8 @@ import { JustForYou } from './components/JustForYou/JustForYou';
 import { fetchLandingPageProducts } from '@/lib/MainHomePage/fetchLandingPageProducts';
 import { fetchEcommerceBanners } from '@/lib/MainHomePage';
 import { fetchFeaturedCategories } from '@/lib/MainHomePage/fetchFeaturedCategoryData';
+import { Suspense } from 'react';
+import SectionSkeleton from '@/components/ReusableComponents/SectionSkeleton';
 
 
 export const dynamic = 'force-dynamic';
@@ -46,20 +48,33 @@ export default async function MainHomePage() {
       <Feature featuredData={featuredData} />
 
       {/* Flash Sale Section */}
-      <FlashSell
+      {/* <FlashSell
         products={runningOffers}
         middleHomepage={middleHomepage}
-      />
+      /> */}
 
       {/* Best Selling Section */}
-      <BestSell
+      {/* <BestSell
         products={bestSelling}
         topShoppage={topShoppage}
-      />
+      /> */}
 
       {/* Just For You Section */}
-      {/* <JustForYou products={randomProducts} /> */}
-      <JustForYou initialProducts={randomProducts} />
+      {/* <JustForYou initialProducts={randomProducts} /> */}
+      {/* FlashSell - Loading + Skeleton */}
+      <Suspense fallback={<SectionSkeleton title="Flash Sale" count={6} />}>
+        <FlashSell products={runningOffers} middleHomepage={middleHomepage} />
+      </Suspense>
+
+      {/* BestSell - Loading + Skeleton */}
+      <Suspense fallback={<SectionSkeleton title="Best Selling" count={6} />}>
+        <BestSell products={bestSelling} topShoppage={topShoppage} />
+      </Suspense>
+
+      {/* JustForYou - Loading + Skeleton */}
+      <Suspense fallback={<SectionSkeleton title="Just For You" count={6} />}>
+        <JustForYou initialProducts={randomProducts} />
+      </Suspense>
     </div>
   );
 }

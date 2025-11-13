@@ -4,6 +4,7 @@ import GoogleProvider from 'next-auth/providers/google';
 import dbConnect from '@/lib/db';
 import { User } from '@/lib/modules/user/user.model';
 import { generateToken } from '@/lib/utils/jwt'; 
+import CredentialsProvider from 'next-auth/providers/credentials';
 
 export const authOptions = {
   providers: [
@@ -11,7 +12,26 @@ export const authOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
+    CredentialsProvider({
+      name: 'Credentials',
+      credentials: {
+        userId: { label: 'User ID', type: 'text' },
+        role: { label: 'Role', type: 'text' },
+        accessToken: { label: 'Access Token', type: 'text' },
+      },
+      async authorize(credentials) {
+        if (credentials?.userId && credentials?.role) {
+          return {
+            id: credentials.userId,
+            role: credentials.role,
+            accessToken: credentials.accessToken,
+          };
+        }
+        return null;
+      },
+    }),
   ],
+  
   callbacks: {
     async signIn({ user, account }: { user: any; account: any }) {
       if (account.provider === 'google') {
