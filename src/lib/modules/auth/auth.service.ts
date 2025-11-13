@@ -6,10 +6,10 @@ import { generateToken, verifyToken } from '@/lib/utils/jwt';
 import { connectRedis, redisClient } from '@/lib/redis';
 import { sendEmail } from '@/lib/utils/email';
 import mongoose from 'mongoose';
-import { Vendor } from '../vendor/vendor.model';
 import { ServiceProvider } from '../service-provider/serviceProvider.model';
 import { User } from '../user/user.model';
 import { verifyGoogleToken } from '@/lib/utils/verifyGoogleToken';
+import { Vendor } from '../vendors/vendor.model';
 
 
 

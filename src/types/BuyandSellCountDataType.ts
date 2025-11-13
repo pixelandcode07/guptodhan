@@ -9,9 +9,9 @@ export interface CategoryDataType {
 }
 
 export interface BuyandSellApiResponse {
-    success: boolean;
-    message: string;
-    data: CategoryDataType[];
+  success: boolean;
+  message: string;
+  data: CategoryDataType[];
 }
 
 

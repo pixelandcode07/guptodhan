@@ -52,6 +52,19 @@ const getAllProductWarranties = async () => {
   });
 };
 
+// Get all active product warranties
+const getAllActiveProductWarranties = async () => {
+  await dbConnect();
+  const result = await ProductWarrantyServices.getActiveProductWarrantiesFromDB();
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Active product warranties retrieved successfully!',
+    data: result,
+  });
+};
+
 // Update product warranty
 const updateProductWarranty = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
@@ -91,6 +104,7 @@ const deleteProductWarranty = async (req: NextRequest, { params }: { params: Pro
 export const ProductWarrantyController = {
   createProductWarranty,
   getAllProductWarranties,
+  getAllActiveProductWarranties,
   updateProductWarranty,
   deleteProductWarranty,
 };

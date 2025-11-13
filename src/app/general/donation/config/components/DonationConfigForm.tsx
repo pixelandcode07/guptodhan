@@ -142,160 +142,148 @@ import { useSession } from 'next-auth/react'
 import { toast } from 'sonner'
 
 export type DonationFormInputs = {
-    title: string
-    image?: File | null
-    shortDescription: string
-    buttonText: string
-    buttonUrl: string
+  title: string
+  image?: File | null
+  shortDescription: string
+  buttonText: string
+  buttonUrl: string
 }
 
 export default function DonationConfigForm() {
-    const { data: session } = useSession()
-    // const token = (session as unknown as { accessToken?: string })?.accessToken
-    // console.log("token2==>", token)
-    const token = (session?.user as { accessToken?: string; role?: string })?.accessToken
-    console.log("token==>", token)
-    const adminRole = (session?.user as { role?: string })?.role === 'admin'
+  const { data: session } = useSession()
+  const adminRole = (session?.user as { role?: string })?.role === 'admin'
 
-    const {
-        register,
-        handleSubmit,
-        control,
-        reset,
-        formState: { errors, isSubmitting },
-    } = useForm<DonationFormInputs>({
-        defaultValues: {
-            title: '',
-            image: null,
-            shortDescription: '',
-            buttonText: '',
-            buttonUrl: '',
-        },
-    })
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<DonationFormInputs>({
+    defaultValues: {
+      title: '',
+      image: null,
+      shortDescription: '',
+      buttonText: '',
+      buttonUrl: '',
+    },
+  })
 
-    const [previewImage, setPreviewImage] = useState<File | string | null>(null)
+  const [previewImage, setPreviewImage] = useState<File | string | null>(null)
 
-    const onSubmit: SubmitHandler<DonationFormInputs> = async (data) => {
-        if (!adminRole) {
-            toast.error('Only admins can submit this form.')
-            return
-        }
-
-        try {
-            const formData = new FormData()
-            formData.append('title', data.title)
-            formData.append('shortDescription', data.shortDescription)
-            formData.append('buttonText', data.buttonText)
-            formData.append('buttonUrl', data.buttonUrl)
-            if (data.image) {
-                formData.append('image', data.image)
-            }
-
-            const response = await axios.post('/api/v1/donation-configs', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    Authorization: `Bearer ${token}`,
-                },
-            })
-
-            toast.success('Donation config saved successfully!')
-            reset()
-            setPreviewImage(null)
-        } catch (error: any) {
-            console.error('Error saving config:', error)
-            toast.error(error.response?.data?.message || 'Something went wrong!')
-        }
+  const onSubmit: SubmitHandler<DonationFormInputs> = async (data) => {
+    if (!adminRole) {
+      toast.error('Only admins can submit this form.')
+      return
     }
 
-    return (
-        <div className="m-5 md:m-10 p-5 border border-gray-200 rounded-md bg-[#f8f9fb]">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                <h1 className="text-lg font-semibold border-l-2 border-blue-500 pl-5">
-                    Donation Config Form
-                </h1>
+    try {
+      const formData = new FormData()
+      formData.append('title', data.title)
+      formData.append('shortDescription', data.shortDescription)
+      formData.append('buttonText', data.buttonText)
+      formData.append('buttonUrl', data.buttonUrl)
+      if (data.image) formData.append('image', data.image)
 
-                {/* Title */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                    <Label className="col-span-12 md:col-span-2">Title</Label>
-                    <Input
-                        className="col-span-12 md:col-span-10"
-                        placeholder="Donate Anything"
-                        {...register('title', { required: 'Title is required' })}
-                    />
-                </div>
-                {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
+      const response = await axios.post('/api/v1/donation-configs', formData)
+      toast.success('Donation config saved successfully!')
+      reset()
+      setPreviewImage(null)
+    } catch (error: any) {
+      console.error('Error saving config:', error)
+      toast.error(error.response?.data?.message || 'Something went wrong!')
+    }
+  }
 
-                {/* Image Upload */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                    <Label className="col-span-12 md:col-span-2">Image</Label>
-                    <Controller
-                        name="image"
-                        control={control}
-                        render={({ field }) => (
-                            <UploadImageBtn
-                                value={previewImage}
-                                onChange={(file) => {
-                                    field.onChange(file)
-                                    setPreviewImage(file)
-                                }}
-                                onRemove={() => {
-                                    field.onChange(null)
-                                    setPreviewImage(null)
-                                }}
-                            />
-                        )}
-                    />
-                </div>
+  return (
+    <div className="m-5 md:m-10 p-5 border border-gray-200 rounded-md bg-[#f8f9fb]">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <h1 className="text-lg font-semibold border-l-2 border-blue-500 pl-5">
+          Donation Config Form
+        </h1>
 
-                {/* Short Description */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                    <Label className="col-span-12 md:col-span-2">Short Description</Label>
-                    <Textarea
-                        className="col-span-12 md:col-span-10"
-                        placeholder="Describe what items can be donated..."
-                        {...register('shortDescription', { required: 'Short description is required' })}
-                    />
-                </div>
-                {errors.shortDescription && (
-                    <p className="text-red-500 text-sm">{errors.shortDescription.message}</p>
-                )}
-
-                {/* Button Text */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                    <Label className="col-span-12 md:col-span-2">Button Text</Label>
-                    <Input
-                        className="col-span-12 md:col-span-10"
-                        placeholder="Donate goods"
-                        {...register('buttonText', { required: 'Button text is required' })}
-                    />
-                </div>
-                {errors.buttonText && (
-                    <p className="text-red-500 text-sm">{errors.buttonText.message}</p>
-                )}
-
-                {/* Button URL */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                    <Label className="col-span-12 md:col-span-2">Button URL</Label>
-                    <Input
-                        className="col-span-12 md:col-span-10"
-                        placeholder="#"
-                        {...register('buttonUrl', { required: 'Button URL is required' })}
-                    />
-                </div>
-                {errors.buttonUrl && <p className="text-red-500 text-sm">{errors.buttonUrl.message}</p>}
-
-                {/* Submit */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                    <div className="col-span-12 md:col-span-2" />
-                    <Button
-                        className="col-span-12 md:col-span-10 flex items-center gap-2"
-                        type="submit"
-                        disabled={isSubmitting || !adminRole}
-                    >
-                        <Save /> Save Info
-                    </Button>
-                </div>
-            </form>
+        {/* Title */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          <Label className="col-span-12 md:col-span-2">Title</Label>
+          <Input
+            className="col-span-12 md:col-span-10"
+            placeholder="Donate Anything"
+            {...register('title', { required: 'Title is required' })}
+          />
         </div>
-    )
+        {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
+
+        {/* Image Upload */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+          <Label className="col-span-12 md:col-span-2">Image</Label>
+          <Controller
+            name="image"
+            control={control}
+            render={({ field }) => (
+              <UploadImageBtn
+                value={field.value ?? null}
+                onChange={(file) => {
+                  field.onChange(file)
+                  setPreviewImage(file)
+                }}
+                onRemove={() => {
+                  field.onChange(null)
+                  setPreviewImage(null)
+                }}
+                fieldName="image"
+              />
+            )}
+          />
+        </div>
+
+        {/* Short Description */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          <Label className="col-span-12 md:col-span-2">Short Description</Label>
+          <Textarea
+            className="col-span-12 md:col-span-10"
+            placeholder="Describe what items can be donated..."
+            {...register('shortDescription', { required: 'Short description is required' })}
+          />
+        </div>
+        {errors.shortDescription && (
+          <p className="text-red-500 text-sm">{errors.shortDescription.message}</p>
+        )}
+
+        {/* Button Text */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          <Label className="col-span-12 md:col-span-2">Button Text</Label>
+          <Input
+            className="col-span-12 md:col-span-10"
+            placeholder="Donate goods"
+            {...register('buttonText', { required: 'Button text is required' })}
+          />
+        </div>
+        {errors.buttonText && <p className="text-red-500 text-sm">{errors.buttonText.message}</p>}
+
+        {/* Button URL */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          <Label className="col-span-12 md:col-span-2">Button URL</Label>
+          <Input
+            className="col-span-12 md:col-span-10"
+            placeholder="#"
+            {...register('buttonUrl', { required: 'Button URL is required' })}
+          />
+        </div>
+        {errors.buttonUrl && <p className="text-red-500 text-sm">{errors.buttonUrl.message}</p>}
+
+        {/* Submit */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className="col-span-12 md:col-span-2" />
+          <Button
+            className="col-span-12 md:col-span-10 flex items-center gap-2"
+            type="submit"
+            disabled={isSubmitting || !adminRole}
+          >
+            <Save /> Save Info
+          </Button>
+        </div>
+      </form>
+    </div>
+  )
 }
+

@@ -20,16 +20,7 @@ export const support_tickets_columns: ColumnDef<SupportTicketRow>[] = [
   { accessorKey: "subject", header: () => <span>Subject</span> },
   { accessorKey: "attachment", header: () => <span>Attachment</span> },
   { accessorKey: "status", header: () => <span>Status</span> },
-  {
-    id: "actions",
-    header: () => <span>Action</span>,
-    cell: () => (
-      <button className="p-1.5 rounded bg-blue-500/10 text-blue-600 hover:bg-blue-500/20" title="View">
-        <Eye size={14} />
-      </button>
-    ),
-    enableSorting: false,
-  },
+  
 ]
 
 

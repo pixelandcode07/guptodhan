@@ -7,6 +7,7 @@ export const createProductFlagValidationSchema = z.object({
   icon: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),
   featured: z.boolean().optional(),
+  orderCount: z.number().optional(),
 });
 
 // Update ProductFlag validation
@@ -16,4 +17,5 @@ export const updateProductFlagValidationSchema = z.object({
   icon: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),
   featured: z.boolean().optional(),
+  orderCount: z.number().optional(),
 });

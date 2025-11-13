@@ -2,7 +2,6 @@ import { Schema, model, models } from 'mongoose';
 import { IOrderDetails } from './orderDetails.interface';
 // Import models to ensure they're registered
 import { VendorProductModel } from '@/lib/modules/product/vendorProduct.model';
-import { Vendor } from '@/lib/modules/vendor/vendor.model';
 
 const orderDetailsSchema = new Schema<IOrderDetails>(
   {

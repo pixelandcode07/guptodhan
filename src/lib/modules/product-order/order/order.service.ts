@@ -5,7 +5,6 @@ import { Types } from 'mongoose';
 
 import '@/lib/modules/product/vendorProduct.model';
 import '@/lib/modules/vendor-store/vendorStore.model';
-import '@/lib/modules/vendor/vendor.model';
 import '@/lib/modules/promo-code/promoCode.model'; // Import PromoCodeModel for couponId populate
 import '../orderDetails/orderDetails.model';
 
@@ -13,7 +12,7 @@ import '../orderDetails/orderDetails.model';
 
 import { StoreModel } from '@/lib/modules/vendor-store/vendorStore.model';
 import { VendorProductModel } from '@/lib/modules/product/vendorProduct.model';
-import { Vendor } from '@/lib/modules/vendor/vendor.model';
+import { Vendor } from '../../vendors/vendor.model';
 
 
 const _ = { StoreModel, VendorProductModel, Vendor };
@@ -119,6 +118,78 @@ const getOrderByIdFromDB = async (id: string) => {
   return result;
 };
 
+
+const getSalesReportFromDB = async (filters: {
+    startDate?: string;
+    endDate?: string;
+    orderStatus?: string;
+    paymentStatus?: string;
+    paymentMethod?: string;
+}) => {
+    try {
+        const query: Record<string, any> = {};
+
+        // Date filter
+        if (filters.startDate || filters.endDate) {
+            query.orderDate = {};
+            if (filters.startDate) {
+                query.orderDate.$gte = new Date(filters.startDate);
+            }
+            if (filters.endDate) {
+                // Add 23:59:59 to include the entire end date
+                const endDate = new Date(filters.endDate);
+                endDate.setHours(23, 59, 59, 999);
+                query.orderDate.$lte = endDate;
+            }
+        }
+
+        // Order Status filter - শুধুমাত্র value থাকলে filter apply হবে
+        if (filters.orderStatus && filters.orderStatus.trim()) {
+            query.orderStatus = filters.orderStatus.trim();
+        }
+
+        // Payment Status filter - শুধুমাত্র value থাকলে filter apply হবে
+        if (filters.paymentStatus && filters.paymentStatus.trim()) {
+            query.paymentStatus = filters.paymentStatus.trim();
+        }
+
+        // Payment Method filter - শুধুমাত্র value থাকলে filter apply হবে
+        if (filters.paymentMethod && filters.paymentMethod.trim()) {
+            query.paymentMethod = { $regex: filters.paymentMethod.trim(), $options: 'i' };
+        }
+
+        console.log('SalesReport query:', JSON.stringify(query, null, 2));
+
+        const result = await OrderModel.find(query)
+            .populate('userId', 'name email phoneNumber')
+            .populate('storeId', 'storeName')
+            .populate({
+                path: 'orderDetails',
+                populate: {
+                    path: 'productId',
+                    select: 'productTitle thumbnailImage productPrice discountPrice',
+                    model: 'VendorProductModel'
+                }
+            })
+            .populate({
+                path: 'couponId',
+                select: 'code value type title minimumOrderAmount',
+                model: 'PromoCodeModel'
+            })
+            .sort({ orderDate: -1 })
+            .lean();
+
+        console.log(`SalesReport: ${result.length} orders found`);
+
+        return result;
+
+    } catch (error) {
+        console.error('Error in getSalesReportFromDB:', error);
+        throw error;
+    }
+};
+
+
 export const OrderServices = {
   createOrderInDB,
   getAllOrdersFromDB,
@@ -126,4 +197,5 @@ export const OrderServices = {
   getOrderByIdFromDB,
   updateOrderInDB,
   deleteOrderFromDB,
+  getSalesReportFromDB,
 };

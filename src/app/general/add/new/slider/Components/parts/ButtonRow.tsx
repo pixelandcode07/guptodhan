@@ -19,7 +19,7 @@ export default function ButtonRow({ buttonText, setButtonText, buttonLink, setBu
       </div>
       <div className="space-y-2">
         <Label>Button link</Label>
-        <Input value={buttonLink} onChange={(e) => setButtonLink(e.target.value)} placeholder="https://" />
+        <Input type="url" value={buttonLink} onChange={(e) => setButtonLink(e.target.value)} placeholder="https://" />
       </div>
     </div>
   );

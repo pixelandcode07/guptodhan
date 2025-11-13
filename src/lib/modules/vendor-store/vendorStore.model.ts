@@ -3,7 +3,7 @@ import { IStore } from './vendorStore.interface';
 
 const storeSchema = new Schema<IStore>(
   {
-    storeId: { type: String, required: true, unique: true },  
+    storeId: { type: String, required: true },  
     storeLogo: { type: String, required: true },              
     storeBanner: { type: String, required: true },           
     storeName: { type: String, required: true, trim: true },  
@@ -11,7 +11,8 @@ const storeSchema = new Schema<IStore>(
     storePhone: { type: String, required: true },            
     storeEmail: { type: String, required: true, unique: true }, 
     vendorShortDescription: { type: String, required: true }, 
-    fullDescription: { type: String, required: true },        
+    fullDescription: { type: String, required: true },
+    commission: { type: Number, default: 0 },
     storeSocialLinks: {
       facebook: { type: String },
       whatsapp: { type: String },

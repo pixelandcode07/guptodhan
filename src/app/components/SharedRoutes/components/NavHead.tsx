@@ -1,4 +1,5 @@
 import { Phone } from 'lucide-react'
+import Link from 'next/link'
 // import Link from 'next/link'
 import React from 'react'
 
@@ -10,9 +11,9 @@ export default function NavHead() {
             </h1>
             <div>
                 <ul className='flex gap-4 '>
-                    <li className='text-sm hover:text-black hover:font-semibold cursor-pointer'>Vendor Login</li>
+                    <Link href={'/vendorSingIn'} className='text-sm hover:text-black hover:font-semibold cursor-pointer'>Vendor Login</Link>
                     <li className='text-sm'>|</li>
-                    <li className='text-sm hover:text-black hover:font-semibold cursor-pointer'>Vendor Registration</li>
+                    <Link href={'/vendorSingUp'} className='text-sm hover:text-black hover:font-semibold cursor-pointer'>Vendor Registration</Link>
                     <li className='text-sm'>|</li>
                     <li className='text-sm hover:text-black hover:font-semibold cursor-pointer'>Track Order</li>
                     <li className='text-sm'>|</li>

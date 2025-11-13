@@ -26,6 +26,7 @@ import {
   Search,
   Settings,
   Share2,
+  Shield,
   ShieldCheck,
   Store,
   UserCheck,
@@ -39,12 +40,12 @@ import WebsiteConfig from './MotherRoutes/WebsiteConfig';
 import { EcommerceModules } from './MotherRoutes/EcommerceModules';
 import { ContentManagement } from './MotherRoutes/ContentManagement';
 import UserRolePermition from './MotherRoutes/UserRolePermition';
-import { CRMModules } from './MotherRoutes/CRMModules';
 import { BuySell } from './MotherRoutes/BuySell';
 import { Donation } from './MotherRoutes/Donation';
 import { DemoProducts } from './MotherRoutes/DemoProducts';
 import Logout from './MotherRoutes/Logout';
 import LogoutBtn from './Components/LogoutBtn';
+import CRMModules from './MotherRoutes/CRMModules';
 
 const data = {
   user: {
@@ -99,6 +100,11 @@ const data = {
       title: 'Listing Management',
       url: '/general/buy/sell/listing',
       icon: LayoutDashboard,
+    },
+    {
+      title: 'Approved Products',
+      url: '/general/buy/sell/approved/products',
+      icon: Shield,
     },
     {
       title: 'Report Listing',
@@ -215,11 +221,11 @@ const data = {
     },
   ],
   crmModules: [
-    { title: 'Support Ticket' },
-    { title: 'Contact Request' },
-    { title: 'Subscribed Users' },
-    { title: 'Blog Comments' },
-  ],
+    { title: 'Support Ticket' },
+    { title: 'Contact Request' },
+    { title: 'Subscribed Users' },
+    { title: 'Blog Comments' },
+  ],
 };
 
 export default function AppSidebar() {
@@ -252,7 +258,7 @@ export default function AppSidebar() {
         <Donation items={data.donations} />
         <Multivendor items={data.documents} />
         <EcommerceModules items={data.ecommerceModules} />
-        <CRMModules items={data.crmModules} />
+        <CRMModules />
         <ContentManagement />
         <UserRolePermition items={data.userRole} />
         <DemoProducts items={data.demoProducts} />

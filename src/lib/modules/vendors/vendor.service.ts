@@ -12,6 +12,29 @@ const getAllVendorsFromDB = async () => {
     .sort({ createdAt: -1 });
 };
 
+// NEW: Get single vendor by ID
+const getVendorByIdFromDB = async (vendorId: string) => {
+  const vendor = await Vendor.findById(vendorId)
+    .populate('user', 'name email phoneNumber isActive');
+
+  if (!vendor) {
+    throw new Error('Vendor not found');
+  }
+
+  return vendor;
+};
+
+// NEW: Update a vendor's details
+const updateVendorInDB = async (vendorId: string, data: Partial<IVendor>) => {
+  const vendor = await Vendor.findByIdAndUpdate(vendorId, data, { new: true })
+    .populate('user', 'name email phoneNumber isActive');
+
+  if (!vendor) throw new Error('Vendor not found');
+  return vendor;
+};
+
+
+
 // --- Update a vendor's status (Approved/Rejected) ---
 const updateVendorStatusInDB = async (
   vendorId: string, 
@@ -88,6 +111,8 @@ const deleteVendorFromDB = async (vendorId: string) => {
 
 export const VendorServices = {
   getAllVendorsFromDB,
+  getVendorByIdFromDB,
+  updateVendorInDB,
   updateVendorStatusInDB,
   deleteVendorFromDB,
 };

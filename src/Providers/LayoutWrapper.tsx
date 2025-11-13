@@ -11,7 +11,11 @@ import { ReactNode } from 'react';
 
 export default function LayoutWrapper({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const hideNavAndFoot = pathname ? pathname.startsWith('/general') : false;
+  const hideNavAndFoot =
+    pathname ?
+      pathname.startsWith('/general') ||
+      pathname.startsWith('/vendorSingIn') ||
+      pathname.startsWith('/vendorSingUp') : false;
   return (
     <CartProvider>
       <WishlistProvider>

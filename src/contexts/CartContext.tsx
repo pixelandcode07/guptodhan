@@ -28,14 +28,28 @@ export type CartItem = {
   };
 };
 
+type AddToCartOptions = {
+  skipModal?: boolean;
+  silent?: boolean;
+};
+
+type FetchCartOptions = {
+  silent?: boolean;
+};
+
 type CartContextType = {
   cartItems: CartItem[];
   cartItemCount: number;
-  addToCart: (productId: string, quantity?: number, skipModal?: boolean) => Promise<void>;
+  addToCart: (
+    productId: string,
+    quantity?: number,
+    options?: boolean | AddToCartOptions
+  ) => Promise<void>;
   updateQuantity: (itemId: string, newQuantity: number) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
   clearCart: () => Promise<void>;
   isLoading: boolean;
+  isAddingToCart: boolean;
   // Modal state
   showAddToCartModal: boolean;
   lastAddedProduct: CartItem | null;
@@ -60,6 +74,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const { data: session } = useSession();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [showAddToCartModal, setShowAddToCartModal] = useState(false);
   const [lastAddedProduct, setLastAddedProduct] = useState<CartItem | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -83,7 +98,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   };
 
   // Fetch cart items from API
-  const fetchCartItems = useCallback(async () => {
+  const fetchCartItems = useCallback(async (options: FetchCartOptions = {}) => {
+    const { silent = false } = options;
     const userId = getUserId();
     if (!userId) {
       console.log('No user ID found, skipping cart fetch');
@@ -92,7 +108,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     }
 
     try {
-      setIsLoading(true);
+      if (!silent) {
+        setIsLoading(true);
+      }
       const response = await api.get(`/add-to-cart/get-cart/${userId}`);
       
       if (response.data?.success && response.data?.data) {
@@ -150,7 +168,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         }
       }
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
       setIsInitialLoad(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -168,14 +188,34 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     }
   }, [cartItems, isInitialLoad]);
 
-  const addToCart = async (productId: string, quantity: number = 1, skipModal: boolean = false) => {
+  const normalizeAddToCartOptions = (
+    options?: boolean | AddToCartOptions
+  ): Required<AddToCartOptions> => {
+    if (typeof options === 'boolean') {
+      return { skipModal: options, silent: false };
+    }
+    return {
+      skipModal: options?.skipModal ?? false,
+      silent: options?.silent ?? false,
+    };
+  };
+
+  const addToCart = async (
+    productId: string,
+    quantity: number = 1,
+    options?: boolean | AddToCartOptions
+  ) => {
+    const { skipModal, silent } = normalizeAddToCartOptions(options);
     const userId = getUserId();
     if (!userId) {
       toast.error('Please login to add items to cart');
       return;
     }
 
-    setIsLoading(true);
+    if (!silent) {
+      setIsAddingToCart(true);
+      setIsLoading(true);
+    }
     try {
       // Fetch product details
       const response = await axios.get(`/api/v1/product/${productId}`);
@@ -201,7 +241,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       
       if (apiResponse.data?.success) {
         // Refetch cart items from API
-        await fetchCartItems();
+        await fetchCartItems({ silent });
         
         // Create cart item for modal display
         const newCartItem: CartItem = {
@@ -227,9 +267,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         };
         
         // Set last added product and show modal only if not skipping
-        setLastAddedProduct(newCartItem);
         if (!skipModal) {
+          setLastAddedProduct(newCartItem);
           setShowAddToCartModal(true);
+        } else {
+          setLastAddedProduct(null);
+          setShowAddToCartModal(false);
         }
       }
     } catch (error: unknown) {
@@ -244,7 +287,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         duration: 3000,
       });
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsAddingToCart(false);
+        setIsLoading(false);
+      }
     }
   };
 
@@ -403,6 +449,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     removeFromCart,
     clearCart,
     isLoading,
+    isAddingToCart,
     showAddToCartModal,
     lastAddedProduct,
     closeAddToCartModal,

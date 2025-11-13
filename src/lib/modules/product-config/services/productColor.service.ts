@@ -12,6 +12,11 @@ const getAllProductColorsFromDB = async () => {
   return result;
 };
 
+const getAllActiveProductColorsFromDB = async () => {
+  const result = await ProductColor.find({ status: 'active' }).sort({ colorName: 1 });
+  return result;
+}
+
 const getProductColorByIdFromDB = async (id: string) => {
   const result = await ProductColor.findById(id);
   if (!result) {
@@ -44,6 +49,7 @@ const deleteProductColorFromDB = async (id: string) => {
 export const ProductColorServices = {
   createProductColorInDB,
   getAllProductColorsFromDB,
+  getAllActiveProductColorsFromDB,
   getProductColorByIdFromDB,
   updateProductColorInDB,
   deleteProductColorFromDB,

@@ -1,19 +1,26 @@
-import { Document, Types } from 'mongoose';
+import { Types } from 'mongoose';
 
-export interface IVendor extends Document {
-  user: Types.ObjectId; 
-  storeName: string;
-  storeLogo?: string;
-  storeBanner?: string;
-  
-  // Documents
+export interface IVendor {
+  _id?: Types.ObjectId;
+
+  user: Types.ObjectId; // reference to User
+
+  businessName: string;
+  businessAddress: string;
+  businessCategory: string[]; // array of category IDs
+  tradeLicenseNumber: string;
+
+  ownerName: string;
+
   ownerNidUrl: string;
   tradeLicenseUrl: string;
-  
-  // Status
-  status: 'pending' | 'approved' | 'rejected';
-  
-  // Other details
-  storeAddress?: string;
+
+  storeLogo?: string;
+  storeBanner?: string;
   storePhoneNumber?: string;
+
+  status: 'pending' | 'approved' | 'rejected';
+
+  createdAt?: Date;
+  updatedAt?: Date;
 }

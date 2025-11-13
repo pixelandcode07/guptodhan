@@ -12,6 +12,7 @@ const categorySchema = new Schema<ICategory>(
     isNavbar: { type: Boolean, default: false },
     slug: { type: String, required: true, unique: true },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+    orderCount: { type: Number, required: false, default: 0 },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );

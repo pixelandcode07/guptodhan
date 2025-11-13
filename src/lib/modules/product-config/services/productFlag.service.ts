@@ -4,13 +4,25 @@ import { ClassifiedAd } from '../../classifieds/ad.model'; // dependency check
 
 // Create new product flag
 const createProductFlagInDB = async (payload: Partial<IProductFlag>) => {
-  const result = await ProductFlag.create(payload);
+  const maxOrderFlag = await ProductFlag.findOne().sort({ orderCount: -1 }).select('orderCount -_id').lean<{ orderCount: number }>();
+  console.log("max order flag is :",maxOrderFlag);
+
+  const nextOrder = maxOrderFlag && typeof maxOrderFlag.orderCount === 'number'? maxOrderFlag.orderCount + 1 : 0;
+  console.log("next order is :",nextOrder);
+
+  const result = await ProductFlag.create({...payload,orderCount: nextOrder});
   return result;
 };
 
 // Get all product flags
 const getAllProductFlagsFromDB = async () => {
-  const result = await ProductFlag.find({}).sort({ name: 1 });
+  const result = await ProductFlag.find({}).sort({ orderCount: 1 });
+  return result;
+};
+
+// Get all active product flags
+const getAllActiveProductFlagsFromDB = async () => {
+  const result = await ProductFlag.find({ status: 'active' }).sort({ orderCount: 1 });
   return result;
 };
 
@@ -46,10 +58,29 @@ const deleteProductFlagFromDB = async (id: string) => {
   return null;
 };
 
+// rearrange product flags  
+export const reorderProductFlagsService = async (orderedIds: string[]) => {
+  if (!orderedIds || orderedIds.length === 0) {
+    throw new Error('orderedIds array is empty');
+  }
+
+  // Loop and update orderCount = index
+  const updatePromises = orderedIds.map((id, index) =>
+    ProductFlag.findByIdAndUpdate(id, { orderCount: index }, { new: true })
+  );
+
+  await Promise.all(updatePromises);
+
+  return { message: 'Product flags reordered successfully!' };
+};
+
 export const ProductFlagServices = {
   createProductFlagInDB,
   getAllProductFlagsFromDB,
+  getAllActiveProductFlagsFromDB,
   getProductFlagByIdFromDB,
   updateProductFlagInDB,
   deleteProductFlagFromDB,
+
+  reorderProductFlagsService
 };

@@ -10,6 +10,7 @@ export const createCategoryValidationSchema = z.object({
   isNavbar: z.boolean().optional(),
   slug: z.string().min(1, { message: 'Slug is required.' }),
   status: z.enum(['active', 'inactive']).optional(),
+  orderCount: z.number().optional(),
 });
 
 // Update category validation
@@ -22,4 +23,5 @@ export const updateCategoryValidationSchema = z.object({
   isNavbar: z.boolean().optional(),
   slug: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),
+  orderCount: z.number().optional(),
 });

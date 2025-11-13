@@ -23,11 +23,7 @@ export default function PricingInventory({
   handleNumberChange 
 }: PricingInventoryProps) {
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
-      <h2 className="text-lg font-semibold text-gray-900 border-b pb-2 mb-6">
-        Pricing & Inventory
-      </h2>
-      
+    <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label className="text-sm font-medium mb-2 block">

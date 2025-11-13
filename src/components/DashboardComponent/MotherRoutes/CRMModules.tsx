@@ -1,180 +1,115 @@
 'use client';
 
-import {
-  ChevronDown,
-  Headphones,
-  Phone,
-  Users,
-  MessageCircle,
-} from 'lucide-react';
-import { ElementType } from 'react';
-import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '../../ui/sidebar';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '../../ui/collapsible';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Headset, Phone, ClipboardList } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useSession } from 'next-auth/react';
+import axios from 'axios';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface CRMModuleTitleOnly {
-  title: string;
-}
+export default function CRMModules() {
+    const pathname = usePathname();
+    const { data: session } = useSession();
+    const token = (session as any)?.accessToken;
+    
+    // পেন্ডিং টিকেট গণনার জন্য state
+    const [pendingCount, setPendingCount] = useState<number | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-type ChildItem = { title: string; url: string; count?: string; color?: string };
+    // অ্যাডমিন প্যানেলে দেখানোর জন্য CRM লিঙ্কগুলো
+    const crmLinks = [
+        {
+            href: '/general/support/tickets',
+            label: 'Support Ticket',
+            icon: Headset,
+            count: pendingCount, // এটি API থেকে লোড হবে
+        },
+        {
+            href: '/general/view/all/contact/requests', // আপনার ফাইল স্ট্রাকচার অনুযায়ী
+            label: 'Contact Request',
+            icon: Phone,
+            count: null, // এখানে কোনো কাউন্ট নেই
+        },
+        {
+            href: '#', // সার্ভিস কোয়েরির জন্য কোনো পেজ এখনো নেই
+            label: 'Service Query Form',
+            icon: ClipboardList,
+            count: null,
+            disabled: true, // লিঙ্কটি নিষ্ক্রিয় রাখা হলো
+        }
+    ];
 
-const CRM_MENU_CONFIG: Record<
-  string,
-  { icon: ElementType; items: ChildItem[]; url?: string; badge?: string }
-> = {
-  'Support Ticket': {
-    icon: Headphones,
-    badge: '0',
-    items: [
-      {
-        title: 'Pending Supports',
-        url: '/general/pending/support/tickets',
-        count: '0',
-        color: 'text-blue-500',
-      },
-      {
-        title: 'Solved Supports',
-        url: '/general/solved/support/tickets',
-        count: '1',
-        color: 'text-green-500',
-      },
-      {
-        title: 'On Hold Supports',
-        url: '/general/on/hold/support/tickets',
-        count: '0',
-        color: 'text-yellow-500',
-      },
-      {
-        title: 'Rejected Supports',
-        url: '/general/rejected/support/tickets',
-        count: '1',
-        color: 'text-red-500',
-      },
-    ],
-  },
-  'Contact Request': {
-    icon: Phone,
-    items: [],
-    url: '/general/view/all/contact/requests',
-  },
-  'Subscribed Users': {
-    icon: Users,
-    items: [],
-    url: '/general/view/all/subscribed/users',
-  },
-  'Blog Comments': {
-    icon: MessageCircle,
-    items: [],
-    url: '/general//blog/comments',
-  },
-};
-
-export function CRMModules({ items }: { items: CRMModuleTitleOnly[] }) {
-  const pathname = usePathname();
-  const isActive = (href: string) => pathname === href;
-
-  return (
-    <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel className="text-[#f1bf43] text-[14px]">
-        CRM MODULES
-      </SidebarGroupLabel>
-
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {items.map(item => {
-            const cfg = CRM_MENU_CONFIG[item.title];
-            if (!cfg) return null;
-
-            if (cfg.items.length === 0) {
-              // Direct link for items without sub-routes
-              const active = isActive(cfg.url || '#');
-              return (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild
-                    className={`flex items-center gap-2 ${active
-                      ? "bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5"
-                      : "text-white bg-[#132843] pl-5"
-                    }`}>
-                    <Link href={cfg.url || '#'}>
-                      <cfg.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              );
+    // API থেকে পেন্ডিং টিকেটের সংখ্যা fetch করা
+    useEffect(() => {
+        const fetchTicketStats = async () => {
+            if (token) {
+                try {
+                    setIsLoading(true);
+                    // আপনার তৈরি করা stats API-কে কল করা হচ্ছে
+                    const res = await axios.get('/api/v1/crm-modules/support-ticket/stats', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (res.data.success) {
+                        setPendingCount(res.data.data.Pending || 0);
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch ticket stats:", error);
+                    setPendingCount(0); // Error হলেও 0 দেখাবে
+                } finally {
+                    setIsLoading(false);
+                }
             }
+        };
+        fetchTicketStats();
+    }, [token]);
 
-            // Collapsible for items with sub-routes
-            return (
-              <Collapsible key={item.title} className="group/collapsible">
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton className="text-white bg-[#132843] pl-5">
-                      <cfg.icon />
-                      <span>{item.title}</span>
-                      {cfg.badge && (
-                        <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                          {cfg.badge}
-                        </span>
-                      )}
-                      <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </CollapsibleTrigger>
-
-                <CollapsibleContent>
-                  <div className="pl-6">
-                    {cfg.items.map(subItem => {
-                      const active = isActive(subItem.url);
-                      return (
-                        <SidebarMenuItem key={subItem.url}>
-                          <SidebarMenuButton 
-                            asChild
-                            className={`flex items-center gap-2 ${active
-                              ? "bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5"
-                              : "text-white bg-[#132843] pl-5"
-                            }`}>
-                            <Link href={subItem.url}>
-                              <span className={subItem.color || 'text-white'}>
-                                {subItem.title}
-                              </span>
-                              {subItem.count && (
-                                <span
-                                  className={`ml-auto text-xs px-2 py-1 rounded ${
-                                    subItem.count === '0'
-                                      ? 'bg-orange-500 text-white'
-                                      : subItem.count === '1'
-                                      ? 'bg-green-500 text-white'
-                                      : 'text-blue-400'
-                                  }`}>
-                                  ({subItem.count})
-                                </span>
-                              )}
+    return (
+        <div className="px-4 py-3">
+            {/* CRM টাইটেল (image_bea01e.png অনুযায়ী) */}
+            <span className="text-xs font-semibold text-gray-500 uppercase px-3">
+                CRM
+            </span>
+            <ul className="mt-2 space-y-1">
+                {crmLinks.map((link) => {
+                    // বর্তমান URL-এর সাথে লিঙ্কটি মিলিয়ে দেখা হচ্ছে
+                    const isActive = pathname.startsWith(link.href);
+                    
+                    return (
+                        <li key={link.label}>
+                            <Link
+                                href={link.disabled ? '#' : link.href}
+                                className={cn(
+                                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                                    isActive
+                                        ? "bg-blue-700 text-white" // Active লিঙ্ক (ডিজাইন অনুযায়ী)
+                                        : "text-gray-700 hover:bg-gray-100",
+                                    link.disabled ? "opacity-50 cursor-not-allowed" : ""
+                                )}
+                            >
+                                <link.icon className="h-5 w-5" />
+                                <span>{link.label}</span>
+                                
+                                {/* কাউন্ট দেখানোর লজিক */}
+                                {isLoading && link.label === 'Support Ticket' && (
+                                    <Skeleton className="h-4 w-6 ml-auto rounded-full" />
+                                )}
+                                {!isLoading && link.count !== null && (
+                                    <span className={cn(
+                                        "ml-auto text-xs font-semibold px-2 py-0.5 rounded-full",
+                                        isActive
+                                            ? "bg-white text-blue-700"
+                                            : "bg-gray-200 text-gray-700"
+                                    )}>
+                                        {link.count}
+                                    </span>
+                                )}
                             </Link>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      );
-                    })}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            );
-          })}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
-  );
+                        </li>
+                    );
+                })}
+            </ul>
+        </div>
+    );
 }

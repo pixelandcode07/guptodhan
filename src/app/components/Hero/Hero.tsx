@@ -1,10 +1,8 @@
 
 import HeroImage from './HeroImage';
 import HeroFooter from './HeroFooter';
-// import HeroNav from './HeroNav';
 import { fetchEcommerceBanners, fetchNavigationCategoryData } from '@/lib/MainHomePage';
 import { HeroNav } from './HeroNav';
-// import HeroNavOld from './HeroNavOld';
 
 export default async function Hero() {
   const [categories, ecommerceBanners] = await Promise.all([

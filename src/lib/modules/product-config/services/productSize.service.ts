@@ -10,9 +10,15 @@ const createProductSizeInDB = async (payload: Partial<IProductSize>) => {
 
 // Get all product sizes (filtering handled client-side)
 const getAllProductSizesFromDB = async () => {
-  const result = await ProductSize.find({}).sort({ name: 1 });
+  const result = await ProductSize.find({}).sort({ orderCount: 1 });
   return result;
 };
+
+// Get all active product sizes
+const getAllActiveProductSizesFromDB = async () => {
+  const result = await ProductSize.find({ status: 'active' }).sort({ orderCount: 1 });
+  return result;
+}
 
 // Get single product size by ID
 const getProductSizeByIdFromDB = async (id: string) => {
@@ -46,10 +52,29 @@ const deleteProductSizeFromDB = async (id: string) => {
   return null;
 };
 
+// rearrange product sizes 
+export const reorderProductSizesService = async (orderedIds: string[]) => {
+  if (!orderedIds || orderedIds.length === 0) {
+    throw new Error('orderedIds array is empty');
+  }
+
+  // Loop and update orderCount = index
+  const updatePromises = orderedIds.map((id, index) =>
+    ProductSize.findByIdAndUpdate(id, { orderCount: index }, { new: true })
+  );
+
+  await Promise.all(updatePromises);
+
+  return { message: 'Product sizes reordered successfully!' };
+};
+
 export const ProductSizeServices = {
   createProductSizeInDB,
   getAllProductSizesFromDB,
+  getAllActiveProductSizesFromDB,
   getProductSizeByIdFromDB,
   updateProductSizeInDB,
   deleteProductSizeFromDB,
+
+  reorderProductSizesService
 };

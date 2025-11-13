@@ -4,3 +4,4 @@ import { checkRole } from "@/lib/middlewares/checkRole";
 
 export const GET = catchAsync(ProductFlagController.getAllProductFlags);
 export const POST = catchAsync(checkRole(["admin"])(ProductFlagController.createProductFlag));
+export const PATCH = catchAsync(checkRole(["admin"])(ProductFlagController.reorderProductFlags));

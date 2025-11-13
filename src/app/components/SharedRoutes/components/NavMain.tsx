@@ -1,13 +1,13 @@
 'use client';
 
-import {  Heart, LogOut, Menu, User, X, ShoppingBag, Gift, UserPlus, Truck, Phone, LogIn } from 'lucide-react';
+import { Heart, LogOut, Menu, User, X, ShoppingBag, Gift, UserPlus, Truck, Phone, LogIn } from 'lucide-react';
 import Image from 'next/image';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import LogInRegister from '../../LogInAndRegister/LogIn_Register';
 import SearchBar from './SearchBar';
 import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
-import {  useState } from 'react';
+import { useState } from 'react';
 import CartIcon from '@/components/CartIcon';
 import WishlistIcon from '@/components/WishlistIcon';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function NavMain() {
   const { data: session } = useSession();
   const user = session?.user;
+  
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (

@@ -43,8 +43,8 @@ export default function SliderForm() {
       if (!textPosition) throw new Error('Please select text position.');
       if (!sliderLink) throw new Error('Please provide slider link.');
       if (!subTitle) throw new Error('Please provide sub title.');
-      if (!title) throw new Error('Please provide banner title.');
-      if (!description) throw new Error('Please provide banner description.');
+      if (!title) throw new Error('Please provide slider title.');
+      if (!description) throw new Error('Please provide slider description.');
       if (!buttonText) throw new Error('Please provide button text.');
       if (!buttonLink) throw new Error('Please provide button link.');
 

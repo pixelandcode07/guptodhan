@@ -5,7 +5,7 @@ import {
   createCategoryValidationSchema, 
   updateCategoryValidationSchema 
 } from '../validations/ecomCategory.validation';
-import { CategoryServices, getAllSubCategoriesWithChildren } from '../services/ecomCategory.service';
+import { CategoryServices, getAllSubCategoriesWithChildren, reorderMainCategoriesService } from '../services/ecomCategory.service';
 import dbConnect from '@/lib/db';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 
@@ -81,6 +81,27 @@ const getAllCategories = async () => {
     data: result,
   });
 };
+
+// GET product IDs by category
+export const getProductIdsByCategory = async (req: NextRequest, {  params }: { params: Promise<{ id: string }> }) => {
+  const resolvedParams = await params;
+  const categoryId = resolvedParams.id;
+  console.log('Params received in controller:', categoryId);
+  
+  await dbConnect();
+  
+  // Use the extracted categoryId
+  const productIds = await CategoryServices.getProductIdsByCategoryFromDB(categoryId);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: `Product IDs for category ${categoryId} retrieved successfully!`,
+    data: productIds, 
+  });
+
+};
+
 
 // Get only featured categories (optimized for landing page)
 const getFeaturedCategories = async () => {
@@ -180,6 +201,36 @@ export const getAllSubCategories = async (req: NextRequest) => {
   });
 };
 
+// ---------------------
+
+// Reorder e-commerce main categories (drag-and-drop)
+const reorderMainCategories = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  const { orderedIds } = body;
+
+  // Validate input
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.BAD_REQUEST,
+      message: 'Invalid request: "orderedIds" must be a non-empty array.',
+      data: null,
+    });
+  }
+
+  // Call the reorder service
+  const result = await reorderMainCategoriesService(orderedIds);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: result.message || 'Main categories reordered successfully!',
+    data: null,
+  });
+};
+
+
 export const CategoryController = {
   createCategory,
   getAllCategories,
@@ -187,5 +238,7 @@ export const CategoryController = {
   updateCategory,
   deleteCategory,
 
-  getAllSubCategories
+  getAllSubCategories,
+  reorderMainCategories,
+  getProductIdsByCategory
 };

@@ -82,7 +82,7 @@ interface ProductDetailsClientProps {
 export default function ProductDetailsClient({ productData }: ProductDetailsClientProps) {
   const router = useRouter();
   const { product, relatedData } = productData;
-  const { addToCart, isLoading: cartLoading } = useCart();
+  const { addToCart, isLoading: cartLoading, isAddingToCart } = useCart();
   const [selectedImage, setSelectedImage] = useState(product.thumbnailImage);
  
   const [quantity, setQuantity] = useState(1);
@@ -162,7 +162,7 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
     setIsBuyingNow(true);
     try {
       // Add product to cart first (skip modal for Buy Now)
-      await addToCart(product._id, quantity, true);
+      await addToCart(product._id, quantity, { skipModal: true, silent: true });
       // Redirect to checkout page
       router.push('/home/product/shoppinginfo');
     } catch (error) {
@@ -369,11 +369,11 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   onClick={handleAddToCart}
-                  disabled={cartLoading || !product.stock || product.status !== 'active'}
+                  disabled={cartLoading || isAddingToCart || !product.stock || product.status !== 'active'}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 h-12"
                 >
                   <ShoppingCart className="w-4 h-4 mr-2" />
-                  {cartLoading ? 'Adding...' : 'Add to Cart'}
+                  {cartLoading || isAddingToCart ? 'Adding...' : 'Add to Cart'}
                 </Button>
                 <Button
                   onClick={handleBuyNow}

@@ -14,7 +14,6 @@ import { v4 as uuidv4 } from 'uuid';
 // These MUST be imported before OrderServices is used
 import '@/lib/modules/product/vendorProduct.model';
 import '@/lib/modules/vendor-store/vendorStore.model';
-import '@/lib/modules/vendor/vendor.model';
 
 // // Create a new order
 // const createOrder = async (req: NextRequest) => {
@@ -439,8 +438,11 @@ const getOrderById = async (req: NextRequest, { params }: { params: Promise<{ id
   
   // Get user ID from headers
   const userId = req.headers.get('x-user-id');
+  const userRole = req.headers.get('x-user-role')?.toLowerCase();
   
-  if (!userId) {
+  const isPrivileged = userRole === 'admin' || userRole === 'super_admin' || userRole === 'superadmin';
+
+  if (!userId && !isPrivileged) {
     return sendResponse({
       success: false,
       statusCode: StatusCodes.UNAUTHORIZED,
@@ -468,7 +470,7 @@ const getOrderById = async (req: NextRequest, { params }: { params: Promise<{ id
         ? (orderResult.userId as { _id: Types.ObjectId })._id.toString()
         : orderResult.userId?.toString() || '')
     : '';
-  if (orderUserId && orderUserId !== userId) {
+  if (!isPrivileged && orderUserId && orderUserId !== userId) {
     return sendResponse({
       success: false,
       statusCode: StatusCodes.FORBIDDEN,
@@ -485,6 +487,28 @@ const getOrderById = async (req: NextRequest, { params }: { params: Promise<{ id
   });
 };
 
+const getSalesReport = async (req: NextRequest) => {
+    await dbConnect();
+    const { searchParams } = new URL(req.url);
+
+    const filters = {
+        startDate: searchParams.get('startDate') || undefined,
+        endDate: searchParams.get('endDate') || undefined,
+        orderStatus: searchParams.get('orderStatus') || undefined,
+        paymentStatus: searchParams.get('paymentStatus') || undefined,
+        paymentMethod: searchParams.get('paymentMethod') || undefined,
+    };
+
+    const result = await OrderServices.getSalesReportFromDB(filters);
+
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Sales report retrieved successfully!',
+        data: result,
+    });
+};
+
 export const OrderController = {
   createOrderWithDetails,
   getAllOrders,
@@ -493,4 +517,5 @@ export const OrderController = {
   getOrderById,
   updateOrder,
   deleteOrder,
+  getSalesReport,
 };
