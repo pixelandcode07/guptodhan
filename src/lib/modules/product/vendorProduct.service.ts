@@ -8,12 +8,12 @@ const createVendorProductInDB = async (payload: Partial<IVendorProduct>) => {
 
 const getAllVendorProductsFromDB = async () => {
   const result = await VendorProductModel.find()
-    .populate('brand', 'brandName')
-    .populate('flag', 'flagName')
+    .populate('brand', 'name')
+    .populate('flag', 'name')
     .populate('warranty', 'warrantyName')
-    .populate('productModel', 'modelName')
-    .populate('category', 'categoryName')
-    .populate('weightUnit', 'unitName')
+    .populate('productModel', 'name')
+    .populate('category', 'name')
+    .populate('weightUnit', 'name')
     .populate('vendorStoreId', 'storeName')
     .sort({ createdAt: -1 });
   return result;
@@ -21,12 +21,12 @@ const getAllVendorProductsFromDB = async () => {
 
 const getActiveVendorProductsFromDB = async () => {
   const result = await VendorProductModel.find({ status: 'active' })
-    .populate('brand', 'brandName')
-    .populate('flag', 'flagName')
+    .populate('brand', 'name')
+    .populate('flag', 'name')
     .populate('warranty', 'warrantyName')
-    .populate('productModel', 'modelName')
-    .populate('category', 'categoryName')
-    .populate('weightUnit', 'unitName')
+    .populate('productModel', 'name')
+    .populate('category', 'name')
+    .populate('weightUnit', 'name')
     .populate('vendorStoreId', 'storeName')
     .sort({ createdAt: -1 });
   return result;
@@ -34,80 +34,80 @@ const getActiveVendorProductsFromDB = async () => {
 
 const getVendorProductByIdFromDB = async (id: string) => {
   const result = await VendorProductModel.findById(id)
-    .populate('brand', 'brandName')
-    .populate('flag', 'flagName')
+    .populate('brand', 'name') // 'brandName' -> 'name'
+    .populate('flag', 'name') // 'flagName' -> 'name'
     .populate('warranty', 'warrantyName')
-    .populate('productModel', 'modelName')
-    .populate('category', 'categoryName')
-    .populate('subCategory', 'subCategoryName')
-    .populate('childCategory', 'childCategoryName')
-    .populate('weightUnit', 'unitName')
+    .populate('productModel', 'name') // 'modelName' -> 'name'
+    .populate('category', 'name') // 'categoryName' -> 'name'
+    .populate('subCategory', 'name') // 'subCategoryName' -> 'name'
+    .populate('childCategory', 'name') // 'childCategoryName' -> 'name'
+    .populate('weightUnit', 'name') // 'unitName' -> 'name'
     .populate('vendorStoreId', 'storeName');
   return result;
 };
 
 const getVendorProductsByCategoryFromDB = async (categoryId: string) => {
-  const result = await VendorProductModel.find({ 
+  const result = await VendorProductModel.find({
     category: categoryId,
     status: 'active'
   })
-    .populate('brand', 'brandName')
-    .populate('flag', 'flagName')
+    .populate('brand', 'name') // 'brandName' -> 'name'
+    .populate('flag', 'name') // 'flagName' -> 'name'
     .populate('warranty', 'warrantyName')
-    .populate('productModel', 'modelName')
-    .populate('category', 'categoryName')
-    .populate('weightUnit', 'unitName')
+    .populate('productModel', 'name') // 'modelName' -> 'name'
+    .populate('category', 'name') // 'categoryName' -> 'name'
+    .populate('weightUnit', 'name') // 'unitName' -> 'name'
     .populate('vendorStoreId', 'storeName')
     .sort({ createdAt: -1 });
   return result;
 };
 
 const getVendorProductsBySubCategoryFromDB = async (subCategoryId: string) => {
-  const result = await VendorProductModel.find({ 
+  const result = await VendorProductModel.find({
     subCategory: subCategoryId,
     status: 'active'
   })
-    .populate('brand', 'brandName')
-    .populate('flag', 'flagName')
+    .populate('brand', 'name') // 'brandName' -> 'name'
+    .populate('flag', 'name') // 'flagName' -> 'name'
     .populate('warranty', 'warrantyName')
-    .populate('productModel', 'modelName')
-    .populate('category', 'categoryName')
-    .populate('subCategory', 'subCategoryName')
-    .populate('weightUnit', 'unitName')
+    .populate('productModel', 'name') // 'modelName' -> 'name'
+    .populate('category', 'name') // 'categoryName' -> 'name'
+    .populate('subCategory', 'name') // 'subCategoryName' -> 'name'
+    .populate('weightUnit', 'name') // 'unitName' -> 'name'
     .populate('vendorStoreId', 'storeName')
     .sort({ createdAt: -1 });
   return result;
 };
 
 const getVendorProductsByChildCategoryFromDB = async (childCategoryId: string) => {
-  const result = await VendorProductModel.find({ 
+  const result = await VendorProductModel.find({
     childCategory: childCategoryId,
     status: 'active'
   })
-    .populate('brand', 'brandName')
-    .populate('flag', 'flagName')
+    .populate('brand', 'name') // 'brandName' -> 'name'
+    .populate('flag', 'name') // 'flagName' -> 'name'
     .populate('warranty', 'warrantyName')
-    .populate('productModel', 'modelName')
-    .populate('category', 'categoryName')
-    .populate('subCategory', 'subCategoryName')
-    .populate('childCategory', 'childCategoryName')
-    .populate('weightUnit', 'unitName')
+    .populate('productModel', 'name') // 'modelName' -> 'name'
+    .populate('category', 'name') // 'categoryName' -> 'name'
+    .populate('subCategory', 'name') // 'subCategoryName' -> 'name'
+    .populate('childCategory', 'name') // 'childCategoryName' -> 'name'
+    .populate('weightUnit', 'name') // 'unitName' -> 'name'
     .populate('vendorStoreId', 'storeName')
     .sort({ createdAt: -1 });
   return result;
 };
 
 const getVendorProductsByBrandFromDB = async (brandId: string) => {
-  const result = await VendorProductModel.find({ 
+  const result = await VendorProductModel.find({
     brand: brandId,
     status: 'active'
   })
-    .populate('brand', 'brandName')
-    .populate('flag', 'flagName')
+    .populate('brand', 'name') // 'brandName' -> 'name'
+    .populate('flag', 'name') // 'flagName' -> 'name'
     .populate('warranty', 'warrantyName')
-    .populate('productModel', 'modelName')
-    .populate('category', 'categoryName')
-    .populate('weightUnit', 'unitName')
+    .populate('productModel', 'name') // 'modelName' -> 'name'
+    .populate('category', 'name') // 'categoryName' -> 'name'
+    .populate('weightUnit', 'name') // 'unitName' -> 'name'
     .populate('vendorStoreId', 'storeName')
     .sort({ createdAt: -1 });
   return result;
@@ -119,12 +119,12 @@ const updateVendorProductInDB = async (id: string, payload: Partial<IVendorProdu
     payload,
     { new: true, runValidators: true }
   )
-    .populate('brand', 'brandName')
-    .populate('flag', 'flagName')
+    .populate('brand', 'name') // 'brandName' -> 'name'
+    .populate('flag', 'name') // 'flagName' -> 'name'
     .populate('warranty', 'warrantyName')
-    .populate('productModel', 'modelName')
-    .populate('category', 'categoryName')
-    .populate('weightUnit', 'unitName')
+    .populate('productModel', 'name') // 'modelName' -> 'name'
+    .populate('category', 'name') // 'categoryName' -> 'name'
+    .populate('weightUnit', 'name') // 'unitName' -> 'name'
     .populate('vendorStoreId', 'storeName');
   return result;
 };
@@ -140,70 +140,72 @@ const addProductOptionInDB = async (id: string, option: any) => {
     { $push: { productOptions: option } },
     { new: true, runValidators: true }
   )
-    .populate('brand', 'brandName')
-    .populate('flag', 'flagName')
+    .populate('brand', 'name') // 'brandName' -> 'name'
+    .populate('flag', 'name') // 'flagName' -> 'name'
     .populate('warranty', 'warrantyName')
-    .populate('productModel', 'modelName')
-    .populate('category', 'categoryName')
-    .populate('weightUnit', 'unitName')
+    .populate('productModel', 'name') // 'modelName' -> 'name'
+    .populate('category', 'name') // 'categoryName' -> 'name'
+    .populate('weightUnit', 'name') 
     .populate('vendorStoreId', 'storeName');
   return result;
 };
+
 
 const removeProductOptionFromDB = async (id: string, optionIndex: number) => {
   const product = await VendorProductModel.findById(id);
   if (!product) {
     throw new Error('Product not found');
   }
-  
+
   product.productOptions?.splice(optionIndex, 1);
   await product.save();
-  
+
   const result = await VendorProductModel.findById(id)
-    .populate('brand', 'brandName')
-    .populate('flag', 'flagName')
+    .populate('brand', 'name') 
+    .populate('flag', 'name') 
     .populate('warranty', 'warrantyName')
-    .populate('productModel', 'modelName')
-    .populate('category', 'categoryName')
-    .populate('weightUnit', 'unitName')
+    .populate('productModel', 'name')  
+    .populate('category', 'name') 
+    .populate('weightUnit', 'name')  
     .populate('vendorStoreId', 'storeName');
   return result;
 };
 
+//landing page all products
 const getLandingPageProductsFromDB = async () => {
   const [runningOffers, bestSelling, randomProducts] = await Promise.all([
     VendorProductModel.find({
       status: "active",
       offerDeadline: { $gt: new Date() },
     })
-      .populate('brand', 'brandName')
-      .populate('flag', 'flagName')
+      .populate('brand', 'name') 
+      .populate('flag', 'name') 
       .populate('warranty', 'warrantyName')
-      .populate('productModel', 'modelName')
-      .populate('category', 'categoryName')
-      .populate('weightUnit', 'unitName')
+      .populate('productModel', 'name')  
+      .populate('category', 'name')  
+      .populate('weightUnit', 'name') 
       .sort({ createdAt: -1 })
       .limit(6),
-      
+
     VendorProductModel.find({ status: "active" })
-      .populate('brand', 'brandName')
-      .populate('flag', 'flagName')
+      .populate('brand', 'name') 
+      .populate('flag', 'name') 
       .populate('warranty', 'warrantyName')
-      .populate('productModel', 'modelName')
-      .populate('category', 'categoryName')
-      .populate('weightUnit', 'unitName')
+      .populate('productModel', 'name') 
+      .populate('category', 'name') 
+      .populate('weightUnit', 'name')
       .sort({ sellCount: -1 })
       .limit(6),
-      
+
     VendorProductModel.find({ status: 'active' })
-      .populate('brand', 'brandName')
-      .populate('flag', 'flagName')
+      .populate('brand', 'name') 
+      .populate('flag', 'name') 
       .populate('warranty', 'warrantyName')
-      .populate('productModel', 'modelName')
-      .populate('category', 'categoryName')
-      .populate('weightUnit', 'unitName')
+      .populate('productModel', 'name') 
+      .populate('category', 'name')
+      .populate('weightUnit', 'name') 
   ]);
-  
+
   return {
     runningOffers,
     bestSelling,
@@ -211,6 +213,7 @@ const getLandingPageProductsFromDB = async () => {
   };
 };
 
+// search vendor prudct
 const searchVendorProductsFromDB = async (searchTerm: string) => {
   const result = await VendorProductModel.find({
     status: 'active',
@@ -220,12 +223,12 @@ const searchVendorProductsFromDB = async (searchTerm: string) => {
       { productTag: { $in: [new RegExp(searchTerm, 'i')] } },
     ],
   })
-    .populate('brand', 'brandName')
-    .populate('flag', 'flagName')
+    .populate('brand', 'name') 
+    .populate('flag', 'name') 
     .populate('warranty', 'warrantyName')
-    .populate('productModel', 'modelName')
-    .populate('category', 'categoryName')
-    .populate('weightUnit', 'unitName')
+    .populate('productModel', 'name') 
+    .populate('category', 'name') 
+    .populate('weightUnit', 'name')
     .populate('vendorStoreId', 'storeName')
     .sort({ createdAt: -1 });
   return result;
