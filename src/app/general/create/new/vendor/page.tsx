@@ -21,7 +21,8 @@ export default async function CreateNewVendor() {
     }
 
     const vendorCategories: VendorCategory[] = await fetchVendorCategories(token);
-    // console.log("vendorCategories", vendorCategories);
+
+    
 
 
     return (

@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function NavMain() {
   const { data: session } = useSession();
   const user = session?.user;
+  
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (

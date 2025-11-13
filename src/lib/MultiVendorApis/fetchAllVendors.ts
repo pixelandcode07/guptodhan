@@ -1,5 +1,4 @@
 import { ApiResponse, Vendor } from '@/types/VendorType';
-import axios, { AxiosError } from 'axios';
 
 export async function fetchAllVendors(token?: string): Promise<Vendor[]> {
   const baseUrl = process.env.NEXTAUTH_URL;
@@ -12,44 +11,43 @@ export async function fetchAllVendors(token?: string): Promise<Vendor[]> {
   try {
     const headers: Record<string, string> = {
       'Cache-Control': 'no-store',
+      'Content-Type': 'application/json',
     };
 
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await axios.get<ApiResponse<Vendor[]>>(
-      `${baseUrl}/api/v1/vendors`,
-      { headers }
-    );
+    const response = await fetch(`${baseUrl}/api/v1/vendors`, {
+      method: 'GET',
+      headers,
+      cache: 'no-store',
+      next: { revalidate: 0 },
+    });
 
-    if (response.data.success && Array.isArray(response.data.data)) {
-      return response.data.data;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to fetch vendors'}`);
     }
 
-    console.warn('All vendors API returned no data or invalid format', {
-      success: response.data.success,
-      data: response.data.data,
+    const result: ApiResponse<Vendor[]> = await response.json();
+
+    if (result.success && Array.isArray(result.data)) {
+      return result.data;
+    }
+
+    console.warn('All vendors API returned invalid data', {
+      success: result.success,
+      data: result.data,
     });
 
     return [];
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const status = error.response?.status;
-      const message = error.response?.data?.message || error.message;
-      console.error('Failed to fetch all vendors:', {
-        status,
-        message,
-        url: `${baseUrl}/api/v1/vendors`,
-      });
-    } else if (error instanceof Error) {
-      console.error('Unexpected error while fetching all vendors:', {
-        message: error.message,
-        stack: error.stack,
-      });
-    } else {
-      console.error('Unknown error occurred while fetching all vendors');
-    }
+    console.error('Failed to fetch all vendors:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      url: `${baseUrl}/api/v1/vendors`,
+    });
 
     return [];
   }

@@ -72,6 +72,8 @@ export default function CreateVendorForm({ vendorCategories }: CreateVendorFormP
     // === FILES ===
     formData.append('ownerNid', ownerNidFile);
     formData.append('tradeLicense', tradeLicenseFile);
+
+    formData.append('status', 'pending');
     // console.log("Response", formData)
     // console.log("Response", data)
     try {
