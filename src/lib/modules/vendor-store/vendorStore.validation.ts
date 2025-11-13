@@ -13,11 +13,13 @@ const socialLinksSchema = z.object({
 // Create store validation
 export const createStoreValidationSchema = z.object({
   storeId: z.string().min(1, { message: 'Store ID is required.' }),
+  vendorId: z.string().min(1, { message: 'Vendor ID is required.' }),
   storeLogo: z.string().min(1, { message: 'Store logo is required.' }),
   storeBanner: z.string().min(1, { message: 'Store banner is required.' }),
   storeName: z.string().min(1, { message: 'Store name is required.' }),
   storeAddress: z.string().min(1, { message: 'Store address is required.' }),
   storePhone: z.string().min(1, { message: 'Store phone is required.' }),
+  commission: z.number().optional(),
   storeEmail: z
     .string()
     .email({ message: 'Invalid email address.' })
@@ -28,16 +30,17 @@ export const createStoreValidationSchema = z.object({
   fullDescription: z
     .string()
     .min(1, { message: 'Full description is required.' }),
-  commission: z.number().min(0).max(100).optional(),
   storeSocialLinks: socialLinksSchema.optional(),
   storeMetaTitle: z.string().optional(),
   storeMetaKeywords: z.array(z.string()).optional(),
+  storeMetaDescription: z.string().optional(), 
   status: z.enum(['active', 'inactive']).optional(),
 });
 
 // Update store validation
 export const updateStoreValidationSchema = z.object({
   storeId: z.string().optional(),
+   vendorId: z.string().optional(),
   storeLogo: z.string().optional(),
   storeBanner: z.string().optional(),
   storeName: z.string().optional(),
@@ -49,5 +52,6 @@ export const updateStoreValidationSchema = z.object({
   storeSocialLinks: socialLinksSchema.optional(),
   storeMetaTitle: z.string().optional(),
   storeMetaKeywords: z.array(z.string()).optional(),
+  storeMetaDescription: z.string().optional(), 
   status: z.enum(['active', 'inactive']).optional(),
 });

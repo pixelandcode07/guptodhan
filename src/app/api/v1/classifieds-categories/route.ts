@@ -10,3 +10,6 @@ export const POST = catchAsync(checkRole(['admin'])(ClassifiedCategoryController
 
 // New: GET for all categories (admin can see all, no role check if public, but since admin, optional)
 export const GET = catchAsync(ClassifiedCategoryController.getAllCategories); // Use getAllCategories for admin view
+
+
+export const PATCH = catchAsync(checkRole(['admin'])(ClassifiedCategoryController.reorderClassifiedCategory));

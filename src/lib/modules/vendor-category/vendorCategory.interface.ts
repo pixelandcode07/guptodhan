@@ -5,4 +5,5 @@ export interface IVendorCategory extends Document {
   slug: string;
   status: 'active' | 'inactive';
   createdAt: Date;
+  orderCount: number;
 }

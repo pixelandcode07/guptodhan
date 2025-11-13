@@ -1,7 +1,8 @@
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 
 export interface IStore extends Document {
   storeId: string;
+  vendorId: Types.ObjectId;
   storeLogo: string;
   storeBanner: string;
   storeName: string;
@@ -21,6 +22,7 @@ export interface IStore extends Document {
   };
   storeMetaTitle: string;
   storeMetaKeywords: string[];
+  storeMetaDescription: string;
   status: "active" | "inactive";
   createdAt: Date;
 }

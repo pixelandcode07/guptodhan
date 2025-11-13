@@ -7,4 +7,5 @@ import { checkRole } from '@/lib/middlewares/checkRole';
  * @method POST
  */
 export const POST = catchAsync(checkRole(['admin'])(DonationCategoryController.createCategory));
+export const PATCH = catchAsync(checkRole(['admin'])(DonationCategoryController.reorderDonationCategory)); // added by naeem
 

@@ -6,3 +6,6 @@ export const GET = catchAsync(VendorCategoryController.getAllVendorCategories);
 export const POST = catchAsync(
   checkRole(["admin"])(VendorCategoryController.createVendorCategory)
 );
+export const PATCH = catchAsync(
+  checkRole(["admin"])(VendorCategoryController.reorderVendorCategory)
+);

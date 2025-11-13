@@ -70,14 +70,16 @@ const createStore = async (req: NextRequest) => {
   };
 
   const validatedData = createStoreValidationSchema.parse(payload);
-  const result = await StoreServices.createStoreInDB(validatedData);
+  // const result = await StoreServices.createStoreInDB(validatedData);
 
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.CREATED,
-    message: 'Store created successfully!',
-    data: result,
-  });
+  console.log(validatedData);
+
+  // return sendResponse({
+  //   success: true,
+  //   statusCode: StatusCodes.CREATED,
+  //   message: 'Store created successfully!',
+  //   data: result,
+  // });
 };
 
 // Get all stores
@@ -114,7 +116,12 @@ const updateStore = async (req: NextRequest, { params }: { params: { id: string 
   const body = await req.json();
   const validatedData = updateStoreValidationSchema.parse(body);
 
-  const result = await StoreServices.updateStoreInDB(id, validatedData);
+    const payload = {
+    ...validatedData,
+    vendorId: new Types.ObjectId(validatedData.vendorId)
+  };
+
+  const result = await StoreServices.updateStoreInDB(id, payload);
 
   return sendResponse({
     success: true,

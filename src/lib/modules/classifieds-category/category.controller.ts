@@ -8,7 +8,7 @@ import {
     createCategoryValidationSchema,
     updateCategoryValidationSchema,
 } from './category.validation';
-import { ClassifiedCategoryServices } from './category.service';
+import { ClassifiedCategoryServices, reorderClassifiedCategoryService } from './category.service';
 import dbConnect from '@/lib/db';
 import { IClassifiedCategory } from './category.interface';
 import { ClassifiedAdServices } from '../classifieds/ad.service';
@@ -193,6 +193,35 @@ const searchAds = async (req: NextRequest) => {
   });
 };
 
+
+// Reorder buy and sell (drag-and-drop)
+const reorderClassifiedCategory = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  const { orderedIds } = body;
+
+  // Validate input
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.BAD_REQUEST,
+      message: 'Invalid request: "orderedIds" must be a non-empty array.',
+      data: null,
+    });
+  }
+
+  // Call the reorder service
+  const result = await reorderClassifiedCategoryService(orderedIds);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: result.message || "Buy and sell / classified reordered successfully!",
+    data: null,
+  });
+};
+
+
 // Export all controller functions
 export const ClassifiedCategoryController = {
     createCategory,
@@ -204,4 +233,6 @@ export const ClassifiedCategoryController = {
     getCategoryById,
     getPublicCategoriesWithCounts,
     searchAds,
+
+    reorderClassifiedCategory
 };
