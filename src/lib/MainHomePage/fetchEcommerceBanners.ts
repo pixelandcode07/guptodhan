@@ -87,7 +87,7 @@ export async function fetchEcommerceBanners(): Promise<EcommerceBannersResponse>
       middleRes,
       topShopRes,
     ] = await Promise.all([
-      axios.get<ApiResponse<EcommerceSliderBannerType[]>>(`${baseUrl}/api/v1/slider-form`, { headers }).catch(() => ({ data: { data: [] } })),
+      axios.get<ApiResponse<EcommerceSliderBannerType[]>>(`${baseUrl}/api/v1/public/slider-form`, { headers }).catch(() => ({ data: { data: [] } })),
       axios.get<ApiResponse<EcommerceBannerType[]>>(`${baseUrl}/api/v1/public/ecommerce-banners?position=right-homepage`, { headers }).catch(() => ({ data: { data: [] } })),
       axios.get<ApiResponse<EcommerceBannerType[]>>(`${baseUrl}/api/v1/public/ecommerce-banners?position=bottom-homepage`, { headers }).catch(() => ({ data: { data: [] } })),
       axios.get<ApiResponse<EcommerceBannerType[]>>(`${baseUrl}/api/v1/public/ecommerce-banners?position=middle-homepage`, { headers }).catch(() => ({ data: { data: [] } })),
