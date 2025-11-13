@@ -14,7 +14,7 @@ interface HeroSliderProps {
 
 export default function HeroSlider({ sliders }: HeroSliderProps) {
   const [index, setIndex] = useState(0);
-  const [direction, setDirection] = useState(0); // 1 = next, -1 = prev
+  const [direction, setDirection] = useState(0);
 
   const slideVariants = {
     enter: (dir: number) => ({
