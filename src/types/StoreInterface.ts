@@ -17,10 +17,10 @@ export interface StoreInterface {
   storePhone: string;
   storeEmail: string;
   vendorShortDescription: string;
-  fullDescription: string; // HTML string
+  fullDescription: string;
   storeMetaTitle: string;
   storeMetaKeywords: string[];
-  status: "active" | "inactive" | "pending"; // you can narrow this to "active" | "inactive" if needed
-  createdAt: string; // or Date if you parse it
-  updatedAt: string; // or Date if you parse it
+  status: "active" | "inactive" | "pending"; 
+  createdAt: string; 
+  updatedAt: string; 
 }

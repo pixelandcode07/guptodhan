@@ -1,5 +1,3 @@
-import { all_store_columns, StoresDataType } from '@/components/TableHelper/all_store_columns';
-import { DataTable } from '@/components/TableHelper/data-table';
 import { fetchAllStores } from '@/lib/MultiVendorApis/fetchAllStore';
 import ClientDataTableStore from './components/ClientDataTableStore';
 import { StoreInterface } from '@/types/StoreInterface';

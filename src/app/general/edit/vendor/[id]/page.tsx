@@ -2,8 +2,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { fetchVendorById } from '@/lib/MultiVendorApis/vendorActions';
 import EditVendorForm from '../components/EditVendorForm';
-// import { fetchVendorById } from '@/lib/MultiVendorApi/fetchVendorById';
-// import EditVendorForm from '@/components/EditVendorForm';
 
 export default async function EditVendorPage({ params }: { params: { id: string } }) {
     const {id} = await params;
@@ -24,7 +22,6 @@ export default async function EditVendorPage({ params }: { params: { id: string 
       <h1 className="text-2xl font-bold mb-6 border-l-4 border-blue-600 pl-3">
         Edit Vendor: {vendor.businessName}
       </h1>
-      {/* টোকেন + ভেন্ডর পাস করো */}
       <EditVendorForm vendor={vendor} token={session.accessToken as string} />
     </div>
   );

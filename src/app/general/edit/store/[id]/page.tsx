@@ -1,16 +1,3 @@
-// import React from 'react'
-
-// export default function EditStore() {
-//   return (
-//     <div>
-//       This is the edit store page.
-//     </div>
-//   )
-// }
-// app/general/edit/store/[id]/page.tsx
-
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { fetchStoreById } from "@/lib/MultiVendorApis/storeActions";
 import EditStoreForm from "../components/EditStoreForm";
 import { StoreInterface } from "@/types/StoreInterface";
@@ -22,7 +9,6 @@ export default async function EditStorePage({
 }) {
   const { id } = await params;
   const stores = await fetchStoreById(id);
-  // fetchStoreById returns an array; pick the first element as the single store
   const store: StoreInterface | null = Array.isArray(stores) ? stores[0] ?? null : (stores as unknown as StoreInterface);
 
   console.log("Store data==>", store)
