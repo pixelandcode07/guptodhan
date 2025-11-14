@@ -112,7 +112,7 @@ const getStoreById = async (_req: NextRequest, { params }: { params: { id: strin
 // Update store
 const updateStore = async (req: NextRequest, { params }: { params: { id: string } }) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   const body = await req.json();
   const validatedData = updateStoreValidationSchema.parse(body);
 
@@ -134,7 +134,7 @@ const updateStore = async (req: NextRequest, { params }: { params: { id: string 
 // Delete store
 const deleteStore = async (_req: NextRequest, { params }: { params: { id: string } }) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   await StoreServices.deleteStoreFromDB(id);
 
   return sendResponse({
