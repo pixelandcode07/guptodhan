@@ -1,32 +1,22 @@
-// lib/fetchAllStore.ts
+import { StoreInterface } from '@/types/StoreInterface';
 import axios from 'axios';
-
-export interface StoreResponse {
-  _id: string;
-  storeId: string;
-  storeLogo: string;
-  storeName: string;
-  storeAddress: string;
-  storeEmail: string;
-  status: string;
-  createdAt: string;
-  commission: number;
-}
 
 export interface ApiResponse {
   success: boolean;
   message: string;
-  data: StoreResponse[];
+  data: StoreInterface[];
 }
 
-const api = axios.create({
-  baseURL: process.env.NEXTAUTH_URL,
-  timeout: 10000,
-});
 
-export const fetchAllStores = async (): Promise<StoreResponse[]> => {
+export const fetchAllStores = async (): Promise<StoreInterface[]> => {
+  const baseUrl = process.env.NEXTAUTH_URL;
+
+  if (!baseUrl) {
+    console.error('API base URL is not configured');
+    return [];
+  }
   try {
-    const response = await api.get<ApiResponse>('/api/v1/vendor-store');
+    const response = await axios.get<ApiResponse>(`${baseUrl}/api/v1/vendor-store`);
     return response.data.data;
   } catch (error: any) {
     console.error('Axios Error: Failed to fetch stores', error.message || error);

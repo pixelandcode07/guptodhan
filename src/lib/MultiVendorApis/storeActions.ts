@@ -1,15 +1,9 @@
-// src/lib/MultiVendorApis/storeActions.ts
-
 import axios, { AxiosError } from "axios";
 
-export async function fetchStoreById(id: string, token: string) {
+export async function fetchStoreById(id: string) {
   try {
     const baseUrl = process.env.NEXTAUTH_URL!;
-    const response = await axios.get(`${baseUrl}/api/v1/vendor-store/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await axios.get(`${baseUrl}/api/v1/vendor-store/${id}`);
 
     if (response.data?.success && response.data?.data) {
       return response.data.data;

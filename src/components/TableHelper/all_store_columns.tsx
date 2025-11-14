@@ -103,20 +103,24 @@ import { Edit, X } from "lucide-react";
 import { Button } from "../ui/button";
 import Image from "next/image";
 import Link from "next/link";
+import { StoreInterface } from "@/types/StoreInterface";
+import { confirmDelete } from "../ReusableComponents/ConfirmToast";
+import { toast } from "sonner";
+import axios from "axios";
 
-export type StoresDataType = {
-  id: string;
-  storeId: string;
-  store_logo: string;
-  store_name: string;
-  store_address: string;
-  store_email: string;
-  status: "active" | "pending" | "inactive";
-  created_at: string;
-  commission: number;
-};
+// export type StoresDataType = {
+//   id: string;
+//   storeId: string;
+//   store_logo: string;
+//   store_name: string;
+//   store_address: string;
+//   store_email: string;
+//   status: "active" | "pending" | "inactive";
+//   created_at: string;
+//   commission: number;
+// };
 
-export const all_store_columns: ColumnDef<StoresDataType>[] = [
+export const all_store_columns: ColumnDef<StoreInterface>[] = [
   {
     accessorKey: "serial",
     header: "Serial",
@@ -126,10 +130,10 @@ export const all_store_columns: ColumnDef<StoresDataType>[] = [
     },
   },
   {
-    accessorKey: "store_logo",
+    accessorKey: "storeLogo",
     header: "Store Logo",
     cell: ({ row }) => {
-      const logoUrl = row.getValue("store_logo") as string;
+      const logoUrl = row.getValue("storeLogo") as string;
       return logoUrl ? (
         <Image
           src={logoUrl}
@@ -146,15 +150,15 @@ export const all_store_columns: ColumnDef<StoresDataType>[] = [
     },
   },
   {
-    accessorKey: "store_name",
+    accessorKey: "storeName",
     header: "Store Name",
   },
   {
-    accessorKey: "store_address",
+    accessorKey: "storeAddress",
     header: "Address",
   },
   {
-    accessorKey: "store_email",
+    accessorKey: "storeEmail",
     header: "Email",
   },
   {
@@ -185,10 +189,10 @@ export const all_store_columns: ColumnDef<StoresDataType>[] = [
     },
   },
   {
-    accessorKey: "created_at",
+    accessorKey: "createdAt",
     header: "Created At",
     cell: ({ row }) => {
-      const date = new Date(row.getValue("created_at") as string);
+      const date = new Date(row.getValue("createdAt") as string);
       return (
         <span className="text-sm text-gray-600">
           {date.toLocaleDateString("en-GB")}
@@ -198,21 +202,50 @@ export const all_store_columns: ColumnDef<StoresDataType>[] = [
   },
   {
     id: "actions",
-    header: "Actions",
-    cell: ({ row }) => {
-      const id = row.original.id;
+    header: "Action",
+    cell: ({ row, table }) => {
+      const store = row.original;
+      console.log('Store ID:', store._id);
+
+      const handleDelete = async (store: StoreInterface) => {
+        const confirmed = await confirmDelete(`Delete "${store.storeName}"?`);
+        if (!confirmed) return;
+
+        try {
+          await toast.promise(
+            axios.delete(`/api/v1/vendor-store/${store._id}`),
+            {
+              loading: "Deleting...",
+              success: "Store deleted successfully!",
+              error: (err) => err.response?.data?.message || "Failed to delete store",
+            }
+          );
+          const setData = table.options.meta?.setData as
+            | React.Dispatch<React.SetStateAction<StoreInterface[]>>
+            | undefined;
+
+          if (setData) {
+            setData((prev) => prev.filter((item) => item._id !== store._id));
+          }
+        } catch (error) {
+          console.error("Delete error:", error);
+        }
+      };
+
+
+
       return (
         <div className="flex items-center gap-1">
-          <Link href={`/general/edit/store/${id}`}>
-            <Button size="sm" variant="outline" className="h-8 w-8 p-0">
+          <Link href={`/general/edit/store/${store._id}`}>
+            <Button size="sm" variant="EditBtn" className="h-8 w-8 p-0">
               <Edit className="h-4 w-4" />
             </Button>
           </Link>
-          <Button size="sm" variant="destructive" className="h-8 w-8 p-0">
+          <Button onClick={() => handleDelete(store)} size="sm" variant="DeleteBtn" className="h-8 w-8 p-0">
             <X className="h-4 w-4" />
           </Button>
         </div>
       );
     }
-  },
+  }
 ];
