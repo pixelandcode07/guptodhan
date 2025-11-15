@@ -12,6 +12,13 @@ const reviewSchema = new Schema<IReview>(
     rating: { type: Number, required: true, min: 1, max: 5 },
     comment: { type: String, trim: true },
     userImage: { type: String, required: true },
+
+    // image upload
+    reviewImages: {
+      type: [String],   
+      default: [],     
+      required: false,  
+    },
   },
   { timestamps: true }
 );

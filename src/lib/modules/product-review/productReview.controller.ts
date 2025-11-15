@@ -15,6 +15,7 @@ const createReview = async (req: NextRequest) => {
     const payload = {
         ...validatedData,
         userId: new Types.ObjectId(validatedData.userId),
+        productId: new Types.ObjectId(validatedData.productId),
     };
 
     const result = await ReviewServices.createReviewInDB(payload);

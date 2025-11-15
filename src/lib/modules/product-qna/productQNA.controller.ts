@@ -72,7 +72,8 @@ const getProductQAByUser = async (req: NextRequest, { params }: { params: { user
 //Admin updates question with answer
 const updateProductQA = async (req: NextRequest, { params }: { params: { id: string } }) => {
   await dbConnect();
-  const { id } = params;
+  const { id } =await params;
+  console.log(id);
   const body = await req.json();
   const validatedData = updateProductQAValidationSchema.parse(body);
 
