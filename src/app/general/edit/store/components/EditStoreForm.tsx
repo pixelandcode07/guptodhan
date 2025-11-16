@@ -32,28 +32,82 @@ type EditStoreFormProps = {
 };
 
 export default function StoreForm({ store }: EditStoreFormProps) {
+  const cleanedStore = {
+    ...store,
+    storePhone: store.storePhone ?? "",
+    storeEmail: store.storeEmail ?? "",
+    storeAddress: store.storeAddress ?? "",
+    storeMetaTitle: store.storeMetaTitle ?? "",
+    storeMetaKeywords: store.storeMetaKeywords ?? [],
+    storeSocialLinks: Object.fromEntries(
+      Object.entries(store.storeSocialLinks).map(([key, val]) => [
+        key,
+        val ?? "",
+      ])
+    ),
+  };
+
   const form = useForm<StoreInterface>({
-    defaultValues: store,
+    defaultValues: cleanedStore,
   });
 
   const router = useRouter();
 
+  // const onSubmit = async (values: StoreInterface) => {
+  //   try {
+  //     await toast.promise(
+  //       updateStore(store._id, values),
+  //       {
+  //         loading: "Updating store...",
+  //         success: "Store updated successfully!",
+  //         error: (err) => err.message || "Failed to update store",
+  //       }
+  //     );
+  //     router.push("/general/view/all/stores");
+  //     router.refresh();
+  //   } catch (error) {
+  //     console.error("Update failed:", error);
+  //   }
+  // };
+
   const onSubmit = async (values: StoreInterface) => {
     try {
-      await toast.promise(
-        updateStore(store._id, values),
-        {
-          loading: "Updating store...",
-          success: "Store updated successfully!",
-          error: (err) => err.message || "Failed to update store",
-        }
+      values._id = store._id;
+      // FIX: convert commission → number
+      values.commission = values.commission
+        ? Number(values.commission)
+        : 0;
+
+      // FIX: clean social links
+      values.storeSocialLinks = Object.fromEntries(
+        Object.entries(values.storeSocialLinks).map(([key, val]) => [
+          key,
+          val?.trim() ? (val.startsWith("http") ? val : `https://${val}`) : null,
+        ])
       );
+
+      await toast.promise(updateStore(store._id, values), {
+        loading: "Updating store...",
+        success: "Store updated successfully!",
+        error: (err) => err.message || "Failed to update store",
+      });
+
       router.push("/general/view/all/stores");
       router.refresh();
     } catch (error) {
       console.error("Update failed:", error);
     }
   };
+
+
+
+
+
+
+
+
+
+
 
   return (
     <Form {...form}>
@@ -149,11 +203,11 @@ export default function StoreForm({ store }: EditStoreFormProps) {
             </FormItem>
           )}
         />
-
+        {/* Commision */}
         <FormField
           control={form.control}
           name="commission"
-          render={(field) => (
+          render={({ field }) => (
             <FormItem>
               <FormLabel>Commission (%)</FormLabel>
               <FormControl>
