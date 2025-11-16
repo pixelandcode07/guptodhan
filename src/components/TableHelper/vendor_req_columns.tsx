@@ -92,6 +92,7 @@ export const vendor_req_columns: ColumnDef<Vendor>[] = [
   },
   {
     id: 'action',
+    header: 'Action',
     cell: ({ row }) => {
       const vendor = row.original;
 

@@ -14,6 +14,10 @@ export const GET = catchAsync(checkRole(['admin'])(VendorController.getVendorByI
 
 export const PATCH = catchAsync(checkRole(['admin'])(VendorController.updateVendorStatus));
 
+
+// Add by Moin
+export const DELETE = catchAsync(checkRole(['admin'])(VendorController.deleteVendor));
+
 // export const PATCH = checkRole(['admin'])(
 //   catchAsync(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
 //     const body = await req.json();
