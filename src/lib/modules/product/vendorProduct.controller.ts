@@ -121,14 +121,25 @@ const getVendorProductById = async (req: NextRequest, { params }: { params: { id
   });
 };
 
-const getVendorProductsByCategory = async (req: NextRequest, { params }: { params: { categoryId: string } }) => {
+const getVendorProductsByCategory = async (
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> } // Next.js App Router e params Promise
+) => {
   await dbConnect();
-  const result = await VendorProductServices.getVendorProductsByCategoryFromDB(params.categoryId);
+
+  // Unwrap the params promise
+  const resolvedParams = await context.params;
+  const categoryId = resolvedParams.id;
+
+  console.log("Category ID:", categoryId);
+
+  // Call service
+  const result = await VendorProductServices.getVendorProductsByCategoryFromDB(categoryId);
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Category products retrieved successfully!',
+    message: "Category products retrieved successfully!",
     data: result,
   });
 };

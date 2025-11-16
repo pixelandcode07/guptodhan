@@ -1,134 +1,139 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import Image from 'next/image';
-import axios from 'axios';
+import { useEffect, useState } from 'react';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import axios from 'axios';
+import BusinessInfo from '../general/create/new/vendor/components/BusinessInfo';
+import OwnerInfo from '../general/create/new/vendor/components/OwnerInfo';
+import Attachment from '../general/create/new/vendor/components/Attachment';
 import { Button } from '@/components/ui/button';
-import { Eye, EyeOff } from 'lucide-react';
+import { Save } from 'lucide-react';
+import { VendorCategory } from '@/types/VendorCategoryType';
 
-type SignUpInputs = {
-  name: string;
-  email: string;
-  password: string;
-  businessName?: string;
+export type Inputs = {
+  business_name: string;
+  trade_license_number: string;
+  business_address: string;
+  owner_name: string;
+  owner_number: string;
+  owner_email: string;
+  owner_email_password: string;
+  business_category: { value: string; label: string }[];
 };
 
-export default function VendorSignupPage() {
-  const [showPassword, setShowPassword] = useState(false);
+export default function VendorSignUp() {
+  const [vendorCategories, setVendorCategories] = useState<VendorCategory[]>([]);
+  const [ownerNidFile, setOwnerNidFile] = useState<File | null>(null);
+  const [tradeLicenseFile, setTradeLicenseFile] = useState<File | null>(null);
+
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
-  } = useForm<SignUpInputs>();
+  } = useForm<Inputs>({
+    defaultValues: {
+      business_category: [],
+    },
+  });
 
-  const onSignUp = async (values: SignUpInputs) => {
+  // ===========================
+  // FETCH VENDOR CATEGORIES
+  // ===========================
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await axios.get('/api/v1/vendor-category');
+        if (res.data.success && Array.isArray(res.data.data)) {
+          const formatted = res.data.data.map((cat: VendorCategory) => ({
+            value: cat._id,
+            label: cat.name,
+          }));
+          setVendorCategories(formatted);
+        }
+      } catch (err) {
+        toast.error('Failed to load vendor categories');
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  const handleFileChange = (name: string, file: File | null) => {
+    if (name === 'ownerNid') setOwnerNidFile(file);
+    if (name === 'tradeLicense') setTradeLicenseFile(file);
+  };
+
+  const onSubmit: SubmitHandler<Inputs> = async (data) => {
+    if (!ownerNidFile) return toast.error('Owner NID is required');
+    if (!tradeLicenseFile) return toast.error('Trade License is required');
+
+    const formData = new FormData();
+    // === USER FIELDS ===
+    formData.append('name', data.owner_name);
+    formData.append('email', data.owner_email);
+    formData.append('password', data.owner_email_password);
+    formData.append('phoneNumber', data.owner_number);
+    formData.append('address', data.business_address);
+
+    // === VENDOR FIELDS ===
+    formData.append('businessName', data.business_name);
+    formData.append('businessAddress', data.business_address);
+    formData.append('tradeLicenseNumber', data.trade_license_number);
+    formData.append('ownerName', data.owner_name);
+
+    const categoryIds = data.business_category.map((c) => c.value);
+    formData.append('businessCategory', JSON.stringify(categoryIds));
+
+    // === FILES ===
+    formData.append('ownerNid', ownerNidFile);
+    formData.append('tradeLicense', tradeLicenseFile);
+    formData.append('status', 'pending');
+
     try {
-      await axios.post('/api/v1/auth/register-vendor', values);
-      toast.success('Account created successfully!');
-      // redirect to login page if needed
+      await axios.post('/api/v1/auth/register-vendor', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      toast.success('Vendor registration successful!');
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to sign up');
+      toast.error(err.response?.data?.message || 'Failed to register vendor');
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-lg overflow-hidden grid grid-cols-1 md:grid-cols-2">
-        {/* Left - Image section */}
-        <div className="relative hidden md:block">
-          <div className="absolute inset-0">
-            <Image
-              src="/img/singup.png"
-              alt="Vendor signup"
-              fill
-              style={{ objectFit: 'cover' }}
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-          </div>
-          <div className="relative z-10 h-full flex flex-col justify-end p-8 text-white">
-            <h2 className="text-3xl font-semibold">Join our vendor network</h2>
-            <p className="mt-2 text-sm opacity-90">Create your vendor account to start managing your store.</p>
-          </div>
+    <div className="max-w-4xl mx-auto py-10">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="bg-[#f8f9fb] m-5 md:m-10 p-5 border border-[#e4e7eb] rounded-xs space-y-5"
+      >
+        {/* ===== BUSINESS INFO ===== */}
+        <BusinessInfo
+          register={register}
+          errors={errors}
+          setValue={setValue}
+          vendorCategories={vendorCategories || []} // always array
+        />
+
+        {/* ===== OWNER INFO ===== */}
+        <OwnerInfo register={register} errors={errors} />
+
+        {/* ===== ATTACHMENTS ===== */}
+        <Attachment onFileChange={handleFileChange} />
+
+        {/* ===== SUBMIT BUTTON ===== */}
+        <div className="text-center">
+          <Button
+            variant="BlueBtn"
+            type="submit"
+            disabled={isSubmitting}
+            className="flex items-center gap-2"
+          >
+            <Save />
+            {isSubmitting ? 'Registering...' : 'Register Vendor'}
+          </Button>
         </div>
-
-        {/* Right - Card with SignUp */}
-        <div className="p-8 flex items-center justify-center">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="text-2xl">Vendor Sign Up</CardTitle>
-              <CardDescription>Create your vendor account to get started.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit(onSignUp)} className="space-y-4">
-                <div>
-                  <Label htmlFor="signUpName">Full name</Label>
-                  <Input
-                    id="signUpName"
-                    placeholder="Your name"
-                    {...register('name', { required: 'Name is required' })}
-                  />
-                  {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name.message}</p>}
-                </div>
-
-                <div>
-                  <Label htmlFor="signUpEmail">Email</Label>
-                  <Input
-                    id="signUpEmail"
-                    placeholder="you@company.com"
-                    {...register('email', { required: 'Email is required' })}
-                  />
-                  {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email.message}</p>}
-                </div>
-
-                <div>
-                  <Label htmlFor="signUpPassword">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="signUpPassword"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Choose a password"
-                      {...register('password', {
-                        required: 'Password is required',
-                        minLength: { value: 6, message: 'Password must be at least 6 characters' },
-                      })}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((s) => !s)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded"
-                      aria-label="Toggle password"
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                  {errors.password && <p className="text-xs text-red-600 mt-1">{errors.password.message}</p>}
-                </div>
-
-                <div>
-                  <Label htmlFor="businessName">Business name (optional)</Label>
-                  <Input
-                    id="businessName"
-                    placeholder="Your shop or company"
-                    {...register('businessName')}
-                  />
-                </div>
-
-                <div className="pt-2">
-                  <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? 'Creating account...' : 'Create Account'}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      </form>
     </div>
   );
 }
