@@ -11,16 +11,13 @@ export default function NavHead() {
             </h1>
             <div>
                 <ul className='flex gap-4 '>
-                    <Link href={'/vendorSingIn'} className='text-sm hover:text-black hover:font-semibold cursor-pointer'>Vendor Login</Link>
+                    <Link href={'/join-as-vendor'} className='text-sm hover:text-black hover:font-semibold cursor-pointer'>Join As Vendor</Link>
                     <li className='text-sm'>|</li>
-                    <Link href={'/vendorSingUp'} className='text-sm hover:text-black hover:font-semibold cursor-pointer'>Vendor Registration</Link>
-                    <li className='text-sm'>|</li>
+                    {/* <Link href={'/vendor-singup'} className='text-sm hover:text-black hover:font-semibold cursor-pointer'>Vendor Registration</Link>
+                    <li className='text-sm'>|</li> */}
                     <li className='text-sm hover:text-black hover:font-semibold cursor-pointer'>Track Order</li>
                     <li className='text-sm'>|</li>
                     <li className='text-sm hover:text-black hover:font-semibold cursor-pointer'>Contact Us</li>
-                    {/* <li>
-                        <Link href={'/general/home'}>Dashboard</Link>
-                    </li> */}
                 </ul>
             </div>
         </div>

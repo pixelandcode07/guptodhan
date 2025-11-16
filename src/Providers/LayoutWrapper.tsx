@@ -19,8 +19,9 @@ function LayoutContent({ children }: { children: ReactNode }) {
     isNotFound ||
     isVendorRoute ||
     pathname.startsWith('/general') ||
-    pathname.startsWith('/vendorSingIn') ||
-    pathname.startsWith('/vendorSingUp');
+    pathname.startsWith('/join-as-vendor') ||
+    pathname.startsWith('/vendor-singin') ||
+    pathname.startsWith('/vendor-singup');
 
   return (
     <>

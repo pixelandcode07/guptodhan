@@ -25,7 +25,7 @@ const adminRoutes = [
   "/api/v1/profile/me",
   "/api/v1/ecommerce-banners",
   "/api/v1/ecommerce-banners/[id]",
-  "/api/v1/vendor-category",
+
   "/api/v1/vendor-category/[id]",
   "/api/v1/vendors",
   "/api/v1/crm-modules/support-ticket",
@@ -65,7 +65,8 @@ const protectedApiRoutes = [
   '/api/v1/add-to-cart',
   '/api/v1/payment/init',
   "/api/v1/crm-modules/support-ticket",
-  "/home/UserProfile/support-tickets"
+  "/home/UserProfile/support-tickets",
+  "/api/v1/vendor-category",
 ];
 
 export async function middleware(req: NextRequest) {
