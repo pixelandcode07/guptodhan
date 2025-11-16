@@ -1,4 +1,3 @@
-// // app/admin/vendors/VendorRequest.tsx
 import { DataTable } from '@/components/TableHelper/data-table';
 import { vendor_req_columns } from '@/components/TableHelper/vendor_req_columns';
 import { fetchAllVendors } from '@/lib/MultiVendorApis/fetchAllVendors';
