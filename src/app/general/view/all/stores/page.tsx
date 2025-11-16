@@ -4,7 +4,7 @@ import { StoreInterface } from '@/types/StoreInterface';
 
 export default async function ViewAllStores() {
   const stores: StoreInterface[] = await fetchAllStores();
-  console.log("stores", stores);
+  // console.log("stores", stores);
 
   return (
     <div className="m-5 p-5 border rounded-lg bg-white shadow-sm">
