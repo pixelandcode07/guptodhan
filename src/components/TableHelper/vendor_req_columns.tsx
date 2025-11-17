@@ -55,6 +55,23 @@ export const vendor_req_columns: ColumnDef<Vendor>[] = [
     accessorKey: 'tradeLicenseNumber',
     header: 'Trade License Number',
   },
+  // {
+  //   id: 'verified',
+  //   header: 'Verified',
+  //   cell: ({ row }) => {
+  //     const isActive = row.original.user.isActive;
+  //     return (
+  //       <div
+  //         className={cn(
+  //           `p-1 rounded-md w-max text-xs`,
+  //           isActive ? 'text-green-500' : 'text-red-500'
+  //         )}
+  //       >
+  //         {isActive ? 'Yes' : 'No'}
+  //       </div>
+  //     );
+  //   },
+  // },
   {
     id: 'verified',
     header: 'Verified',
@@ -62,15 +79,15 @@ export const vendor_req_columns: ColumnDef<Vendor>[] = [
       // ✅ সমাধান ৪: মূল ক্র্যাশের সমাধান - Optional Chaining (?.) যোগ করা
       const isActive = row.original.user?.isActive; // user.isActive এর বদলে user?.isActive
       return (
-        <div
+        <span
           className={cn(
             `p-1 rounded-md w-max text-xs`,
             // isActive null হলে ডিফল্টভাবে 'text-red-500' দেখাবে
             isActive ? 'text-green-500' : 'text-red-500'
           )}
         >
-          {isActive ? 'Yes' : 'No'}
-        </div>
+          {isActive === undefined ? "N/A" : isActive ? "Yes" : "No"}
+        </span>
       );
     },
   },

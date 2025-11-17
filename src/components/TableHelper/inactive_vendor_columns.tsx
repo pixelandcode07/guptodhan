@@ -208,13 +208,13 @@ export const inactive_vendor_columns: ColumnDef<Vendor>[] = [
     cell: ({ row }) => {
       const vendor = row.original;
 
-      // const handleApprove = async () => {
-      //   toast.promise(approveVendor(vendor._id), {
-      //     loading: 'Approving vendor...',
-      //     success: (data) => data.message,
-      //     error: (data) => data.message,
-      //   });
-      // };
+      const handleApprove = async () => {
+        toast.promise(approveVendor(vendor._id), {
+          loading: 'Approving vendor...',
+          success: (data) => data.message,
+          error: (data) => data.message,
+        });
+      };
 
       // const handleReject = async () => {
       //   toast.promise(rejectVendor(vendor._id), {
@@ -253,6 +253,10 @@ export const inactive_vendor_columns: ColumnDef<Vendor>[] = [
               </Button>
             </>
           )} */}
+
+          <Button size="icon" className="h-8 w-8 bg-green-600" onClick={handleApprove}>
+            <Check className="h-4 w-4" />
+          </Button>
           <Button
             size="icon"
             className="h-8 w-8 bg-blue-600 hover:bg-blue-700"

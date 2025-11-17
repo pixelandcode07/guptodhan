@@ -18,7 +18,7 @@ export async function fetchVendorCategories(token?: string): Promise<VendorCateg
     }
 
     const response = await axios.get<ApiResponse<VendorCategory[]>>(
-      `${baseUrl}/api/v1/public/vendor-category`,
+      `${baseUrl}/api/v1/vendor-category`,
       {
         headers
       }
@@ -55,3 +55,23 @@ export async function fetchVendorCategories(token?: string): Promise<VendorCateg
     return [];
   }
 }
+
+
+
+
+
+export const fetchPublicVendorCategories = async (): Promise<VendorCategory[]> => {
+  const baseUrl = process.env.NEXTAUTH_URL;
+
+  if (!baseUrl) {
+    console.error('API base URL is not configured');
+    return [];
+  }
+  try {
+    const response = await axios.get<ApiResponse<VendorCategory[]>>(`${baseUrl}/api/v1/public/vendor-category`);
+    return response.data.data || [];
+  } catch (error: any) {
+    console.error('Axios Error: Failed to fetch stores', error.message || error);
+    throw new Error(error.response?.data?.message || 'Failed to fetch stores');
+  }
+};

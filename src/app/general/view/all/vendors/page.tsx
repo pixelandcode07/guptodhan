@@ -21,7 +21,7 @@ export default async function ApprovedVendors() {
   const rawVendors = await fetchVendors(token);
 
   const activeVendors = rawVendors.filter(
-    (v: Vendor) => v.status === "approved" && v.user.isActive
+    (v: Vendor) => v.status === "approved" && v.user?.isActive === true
   );
 
   return (
