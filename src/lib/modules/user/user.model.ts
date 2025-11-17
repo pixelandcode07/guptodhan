@@ -29,15 +29,52 @@ const userSchema = new Schema<TUserDoc, UserModel>(
   { timestamps: true }
 );
 
+// ===========================
+// 🔐 PASSWORD HASH MIDDLEWARE
+// ===========================
+
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) {
+    return next();
+  }
+
+  if (!this.password) {
+    return next(new Error('Password is required'));
+  }
+
+  const saltRounds = 10;
+  const hashedPassword = await bcrypt.hash(this.password, saltRounds);
+
+  this.password = hashedPassword;
+  next();
+});
+
+// ===========================
+// 🔎 USER EXIST CHECKERS
+// ===========================
+
 userSchema.statics.isUserExistsByEmail = async function (email: string) {
   return this.findOne({ email }).select('+password');
 };
+
 userSchema.statics.isUserExistsByPhone = async function (phone: string) {
   return this.findOne({ phoneNumber: phone }).select('+password');
 };
-userSchema.methods.isPasswordMatched = async function (plainPassword: string, hashedPassword: string) {
+
+// ===========================
+// 🔑 PASSWORD MATCH METHOD
+// ===========================
+
+userSchema.methods.isPasswordMatched = async function (
+  plainPassword: string,
+  hashedPassword: string
+) {
   if (!hashedPassword) return false;
   return bcrypt.compare(plainPassword, hashedPassword);
 };
+
+// ===========================
+// EXPORT USER MODEL
+// ===========================
 
 export const User: UserModel = (models.User || model<TUserDoc, UserModel>('User', userSchema)) as UserModel;
