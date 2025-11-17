@@ -36,38 +36,58 @@ const updateVendorInDB = async (vendorId: string, data: Partial<IVendor>) => {
 
 
 // --- Update a vendor's status (Approved/Rejected) ---
+// D:\...\guptodhan\src\lib\modules\vendors\vendor.service.ts
+
 const updateVendorStatusInDB = async (
-  vendorId: string, 
-  status: 'approved' | 'rejected' | 'pending'
+  vendorId: string, 
+  status: 'approved' | 'rejected' | 'pending'
 ) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  try {
-    // Find the vendor document and update its status
-    const vendor = await Vendor.findByIdAndUpdate(
-      vendorId, 
-      { status }, 
-      { new: true, session }
-    );
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const vendor = await Vendor.findByIdAndUpdate(
+      vendorId, 
+      { status }, 
+      { new: true, session }
+    );
+    
+    if (!vendor) {
+      throw new Error('Vendor not found');
+    }
+
+    // 👇 --- এখানে নতুন লজিক --- 👇
     
-    if (!vendor) {
-      throw new Error('Vendor not found');
+    // ইউজারকে কী কী আপডেট করতে হবে তা এখানে ঠিক করুন
+    let userUpdates: { isActive: boolean; role: string } = {
+      isActive: false, // ডিফল্ট
+      role: 'user'     // ডিফল্ট
+    };
+
+    if (status === 'approved') {
+      userUpdates.isActive = true;
+      userUpdates.role = 'vendor'; // ইউজারকে 'vendor' রোলে প্রমোট করা হলো
+    } 
+    else if (status === 'rejected') {
+      userUpdates.isActive = false; // অ্যাকাউন্ট ইন-অ্যাক্টিভ থাকবে
+      userUpdates.role = 'user';    // ইউজার হিসেবেই থাকবে (ডিলিটও করা যেতে পারে)
+    }
+    else if (status === 'pending') {
+      userUpdates.isActive = false; // অ্যাকাউন্ট ইন-অ্যাক্টিভ থাকবে
+      userUpdates.role = 'user';
     }
 
-    // IMPORTANT: If the vendor is 'approved', also activate their User account.
-    // If 'rejected' or 'pending', keep/make their User account 'inactive'.
-    await User.findByIdAndUpdate(vendor.user, { 
-      isActive: status === 'approved' 
-    }, { session });
+    // User মডেলে role এবং isActive স্ট্যাটাস আপডেট করুন
+    await User.findByIdAndUpdate(vendor.user, userUpdates, { session });
+    // 👆 --- নতুন লজিক শেষ --- 👆
 
-    await session.commitTransaction();
-    return vendor;
-  } catch (error) {
-    await session.abortTransaction();
-    throw error;
-  } finally {
-    session.endSession();
-  }
+    await session.commitTransaction();
+    return vendor;
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
 };
 
 
