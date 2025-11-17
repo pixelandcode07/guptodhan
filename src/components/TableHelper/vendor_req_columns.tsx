@@ -20,16 +20,32 @@ export const vendor_req_columns: ColumnDef<Vendor>[] = [
     },
   },
   {
+    // ✅ সমাধান ১: 'user.name'-এর জন্য cell ফাংশন ব্যবহার
     accessorKey: 'user.name',
     header: 'Name',
+    cell: ({ row }) => {
+      // user অবজেক্ট আছে কিনা এবং name আছে কিনা চেক করুন
+      const name = row.original.user?.name;
+      return <div>{name || <span className="text-gray-400">N/A</span>}</div>;
+    },
   },
   {
+    // ✅ সমাধান ২: 'user.email'-এর জন্য cell ফাংশন ব্যবহার
     accessorKey: 'user.email',
     header: 'Email',
+    cell: ({ row }) => {
+      const email = row.original.user?.email;
+      return <div>{email || <span className="text-gray-400">N/A</span>}</div>;
+    },
   },
   {
+    // ✅ সমাধান ৩: 'user.phoneNumber'-এর জন্য cell ফাংশন ব্যবহার
     accessorKey: 'user.phoneNumber',
     header: 'Phone',
+    cell: ({ row }) => {
+      const phone = row.original.user?.phoneNumber;
+      return <div>{phone || <span className="text-gray-400">N/A</span>}</div>;
+    },
   },
   {
     accessorKey: 'businessName',
@@ -43,11 +59,13 @@ export const vendor_req_columns: ColumnDef<Vendor>[] = [
     id: 'verified',
     header: 'Verified',
     cell: ({ row }) => {
-      const isActive = row.original.user.isActive;
+      // ✅ সমাধান ৪: মূল ক্র্যাশের সমাধান - Optional Chaining (?.) যোগ করা
+      const isActive = row.original.user?.isActive; // user.isActive এর বদলে user?.isActive
       return (
         <div
           className={cn(
             `p-1 rounded-md w-max text-xs`,
+            // isActive null হলে ডিফল্টভাবে 'text-red-500' দেখাবে
             isActive ? 'text-green-500' : 'text-red-500'
           )}
         >
@@ -60,13 +78,12 @@ export const vendor_req_columns: ColumnDef<Vendor>[] = [
     accessorKey: 'status',
     header: 'Status',
     cell: ({ row }) => {
+      // ... (এই কোডে কোনো সমস্যা নেই)
       const rawStatus = row.getValue('status');
       const status = typeof rawStatus === 'string' ? rawStatus.toLowerCase() : null;
-
       const displayStatus = status
         ? status.charAt(0).toUpperCase() + status.slice(1)
         : 'Unknown';
-
       return (
         <div
           className={cn(
@@ -94,6 +111,7 @@ export const vendor_req_columns: ColumnDef<Vendor>[] = [
     id: 'action',
     header: 'Action',
     cell: ({ row }) => {
+      // ... (এই কোডে কোনো সমস্যা নেই)
       const vendor = row.original;
 
       const handleApprove = async () => {
