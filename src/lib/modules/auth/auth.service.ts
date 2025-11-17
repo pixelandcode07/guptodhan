@@ -17,84 +17,181 @@ import { Vendor } from '../vendors/vendor.model';
 
 
 const loginUser = async (payload: TLoginUser) => {
-  const { identifier, password: plainPassword } = payload; // সমাধান ১: password-কে plainPassword নামকরণ করা হয়েছে
+  const { identifier, password: plainPassword } = payload; 
 
-  const isEmail = identifier.includes('@');
+  const isEmail = identifier.includes('@');
 
-  const user = isEmail
-    ? await User.isUserExistsByEmail(identifier)
-    : await User.isUserExistsByPhone(identifier);
+  const user = isEmail
+    ? await User.isUserExistsByEmail(identifier)
+    : await User.isUserExistsByPhone(identifier);
 
-  if (!user) {
-    throw new Error('User not found!');
-  }
+  if (!user) {
+    throw new Error('User not found!');
+  }
 
-  if (!user.password) {
-    throw new Error('Password not set for this user. Please try social login.');
-  }
+  // ✅ সমাধান: অ্যাকাউন্ট অ্যাক্টিভ কিনা তা চেক করা
+  if (!user.isActive) {
+    throw new Error('Your account is inactive or pending approval.');
+  }
 
-  const isPasswordMatched = await user.isPasswordMatched(
-    plainPassword,
-    user.password,
-  );
+  if (!user.password) {
+    throw new Error('Password not set for this user. Please try social login.');
+  }
 
-  if (!isPasswordMatched) {
-    throw new Error('Incorrect password!');
-  }
+  const isPasswordMatched = await user.isPasswordMatched(
+    plainPassword,
+    user.password,
+  );
 
-  const jwtPayload = {
-    userId: user._id.toString(),
-    email: user.email,
-    role: user.role,
-  };
+  if (!isPasswordMatched) {
+    throw new Error('Incorrect password!');
+  }
 
-  const accessTokenSecret = process.env.JWT_ACCESS_SECRET;
-  const accessTokenExpiresIn = process.env.JWT_ACCESS_EXPIRES_IN;
-  const refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
-  const refreshTokenExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN;
+  const jwtPayload = {
+    userId: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  };
 
-  if (!accessTokenSecret || !accessTokenExpiresIn || !refreshTokenSecret || !refreshTokenExpiresIn) {
-    throw new Error('JWT secret or expiration not configured in .env.local file');
-  }
+  const accessTokenSecret = process.env.JWT_ACCESS_SECRET;
+  const accessTokenExpiresIn = process.env.JWT_ACCESS_EXPIRES_IN;
+  const refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
+  const refreshTokenExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN;
 
-  const accessToken = generateToken(jwtPayload, accessTokenSecret, accessTokenExpiresIn);
-  const refreshToken = generateToken(jwtPayload, refreshTokenSecret, refreshTokenExpiresIn);
+  if (!accessTokenSecret || !accessTokenExpiresIn || !refreshTokenSecret || !refreshTokenExpiresIn) {
+    throw new Error('JWT secret or expiration not configured in .env.local file');
+  }
 
-  // সমাধান ২: এখানে password ডিস্ট্রাকচার করার আর কোনো দ্বন্দ্ব নেই
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { password, ...userWithoutPassword } = user.toObject();
+  const accessToken = generateToken(jwtPayload, accessTokenSecret, accessTokenExpiresIn);
+  const refreshToken = generateToken(jwtPayload, refreshTokenSecret, refreshTokenExpiresIn);
 
-  return { accessToken, refreshToken, user: userWithoutPassword };
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { password, ...userWithoutPassword } = user.toObject();
+
+  return { accessToken, refreshToken, user: userWithoutPassword };
 };
 
 
 // vendorLogin service
 const vendorLogin = async (payload: TLoginUser) => {
-  const { identifier, password: plainPassword } = payload;
+  const { identifier, password: plainPassword } = payload;
 
-  const isEmail = identifier.includes('@');
-  const user = isEmail
-    ? await User.isUserExistsByEmail(identifier)
-    : await User.isUserExistsByPhone(identifier);
+  const isEmail = identifier.includes('@');
+  const user = isEmail
+    ? await User.isUserExistsByEmail(identifier)
+    : await User.isUserExistsByPhone(identifier);
 
-  if (!user) throw new Error('Invalid credentials.');
-  if (user.role !== 'vendor') throw new Error('Access denied. Vendor account required.');
-  if (!user.password) throw new Error('Password not set. Use social login.');
+  if (!user) throw new Error('Invalid credentials.');
+  if (user.role !== 'vendor') throw new Error('Access denied. Vendor account required.');
 
-  const isPasswordMatched = await user.isPasswordMatched(plainPassword, user.password);
-  if (!isPasswordMatched) throw new Error('Invalid credentials.');
+  // ✅ সমাধান: অ্যাকাউন্ট অ্যাক্টিভ কিনা তা চেক করা
+  if (!user.isActive) throw new Error('Your account is not active. Please contact support.');
 
-  const jwtPayload = {
-    userId: user._id.toString(),
-    email: user.email,
-    role: user.role,
-  };
+  if (!user.password) throw new Error('Password not set. Use social login.');
 
-  const accessToken = generateToken(jwtPayload, process.env.JWT_ACCESS_SECRET!, process.env.JWT_ACCESS_EXPIRES_IN!);
-  const refreshToken = generateToken(jwtPayload, process.env.JWT_REFRESH_SECRET!, process.env.JWT_REFRESH_EXPIRES_IN!);
+  const isPasswordMatched = await user.isPasswordMatched(plainPassword, user.password);
+  if (!isPasswordMatched) throw new Error('Invalid credentials.');
 
-  const { password, ...userWithoutPassword } = user.toObject();
-  return { accessToken, refreshToken, user: userWithoutPassword };
+  const jwtPayload = {
+    userId: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  };
+
+  const accessToken = generateToken(jwtPayload, process.env.JWT_ACCESS_SECRET!, process.env.JWT_ACCESS_EXPIRES_IN!);
+  const refreshToken = generateToken(jwtPayload, process.env.JWT_REFRESH_SECRET!, process.env.JWT_REFRESH_EXPIRES_IN!);
+
+  const { password, ...userWithoutPassword } = user.toObject();
+  return { accessToken, refreshToken, user: userWithoutPassword };
+};
+
+
+// ------------------------------------
+// --- NEW: VENDOR CHANGE PASSWORD ---
+// ------------------------------------
+const vendorChangePassword = async (userId: string, payload: TChangePassword) => {
+  const user = await User.findById(userId).select('+password');
+  
+  if (!user) throw new Error('User not found!');
+
+  // --- VENDOR CHECK ---
+  if (user.role !== 'vendor') {
+    throw new Error('Access denied. This function is for vendors only.');
+  }
+  // --- END VENDOR CHECK ---
+
+  if (!user.password) throw new Error('Password not set for this user.');
+
+  const isPasswordMatched = await user.isPasswordMatched(payload.currentPassword, user.password);
+  if (!isPasswordMatched) throw new Error('Current password does not match!');
+
+  user.password = payload.newPassword;
+  await user.save();
+  return null;
+};
+
+
+// ------------------------------------
+// --- NEW: VENDOR FORGOT PASSWORD (STEP 1) ---
+// ------------------------------------
+const vendorSendForgotPasswordOtpToEmail = async (email: string) => {
+  await connectRedis();
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new Error('No user found with this email address.');
+  }
+
+  // --- VENDOR CHECK ---
+  if (user.role !== 'vendor') {
+    throw new Error('This email is not associated with a vendor account.');
+  }
+  // --- END VENDOR CHECK ---
+
+  if (!user.email) {
+    throw new Error('This user does not have a registered email address.');
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const redisKey = `reset-otp:email:${email}`;
+  await redisClient.set(redisKey, otp, { EX: 300 }); // 5 min expiry
+
+  await sendEmail({
+    to: user.email,
+    subject: 'Vendor Password Reset Code',
+    template: 'otp.ejs', // একই টেমপ্লেট ব্যবহার করা যাবে
+    data: { name: user.name, otp: otp },
+  });
+
+  return null;
+};
+
+// ------------------------------------
+// --- NEW: VENDOR FORGOT PASSWORD (STEP 2) ---
+// ------------------------------------
+const vendorVerifyForgotPasswordOtpFromEmail = async (email: string, otp: string) => {
+  await connectRedis();
+  const redisKey = `reset-otp:email:${email}`;
+  const storedOtp = await redisClient.get(redisKey);
+
+  if (!storedOtp || storedOtp !== otp) {
+    throw new Error('OTP is invalid or has expired.');
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) { throw new Error('User not found.'); }
+
+  // --- VENDOR CHECK ---
+  if (user.role !== 'vendor') {
+    throw new Error('This email is not associated with a vendor account.');
+  }
+  // --- END VENDOR CHECK ---
+
+  const resetTokenPayload = { userId: user._id.toString(), purpose: 'password-reset' };
+  const resetToken = generateToken(resetTokenPayload, process.env.JWT_ACCESS_SECRET!, '10m'); // 10 minutes validity
+
+  await redisClient.del(redisKey);
+  return { resetToken };
 };
 
 
@@ -235,32 +332,46 @@ const resetPasswordWithToken = async (token: string, newPassword: string) => {
   return null;
 };
 
+// D:\...\src\lib\modules\auth\auth.service.ts
 
 const registerVendor = async (payload: any) => {
-  const { name, email, password, phoneNumber, address, ...vendorData } = payload;
-  const userData = { name, email, password, phoneNumber, address, role: 'vendor' };
+  const { name, email, password, phoneNumber, address, ...vendorData } = payload;
 
-  const session = await mongoose.startSession();
-  try {
-    session.startTransaction();
-    const newUser = (await User.create([userData], { session }))[0];
-    if (!newUser) { throw new Error('Failed to create user'); }
+  // 👇 --- এখানে পরিবর্তন --- 👇
+  const userData = { 
+    name, 
+    email, 
+    password, 
+    phoneNumber, 
+    address, 
+    role: 'user',     // <-- 'vendor' থেকে 'user' করা হয়েছে
+    isActive: false   // <-- এটি যোগ করা হয়েছে
+  };
+  // 👆 --- পরিবর্তন শেষ --- 👆
 
-    vendorData.user = newUser._id;
-    const newVendor = (await Vendor.create([vendorData], { session }))[0];
-    if (!newVendor) { throw new Error('Failed to create vendor profile'); }
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
 
-    newUser.vendorInfo = newVendor._id;
-    await newUser.save({ session });
+    // User.create ব্যবহার করলে pre-save হুক (পাসওয়ার্ড হ্যশিং) কাজ করবে
+    const newUser = (await User.create([userData], { session }))[0];
+    if (!newUser) { throw new Error('Failed to create user'); }
 
-    await session.commitTransaction();
-    return newUser;
-  } catch (error) {
-    await session.abortTransaction();
-    throw error;
-  } finally {
-    session.endSession();
-  }
+    vendorData.user = newUser._id;
+    const newVendor = (await Vendor.create([vendorData], { session }))[0];
+    if (!newVendor) { throw new Error('Failed to create vendor profile'); }
+
+    newUser.vendorInfo = newVendor._id;
+    await newUser.save({ session });
+
+    await session.commitTransaction();
+    return newUser;
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
 };
 
 const registerServiceProvider = async (payload: any) => {
@@ -359,4 +470,7 @@ export const AuthServices = {
   registerServiceProvider,
   loginWithGoogle,
   vendorLogin,
+  vendorChangePassword,
+  vendorSendForgotPasswordOtpToEmail,
+  vendorVerifyForgotPasswordOtpFromEmail,
 };
