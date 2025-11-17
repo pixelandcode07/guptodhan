@@ -11,35 +11,26 @@ import { confirmDelete } from "../ReusableComponents/ConfirmToast";
 import Link from "next/link";
 
 export const approved_vendor_columns: ColumnDef<Vendor>[] = [
-  // Serial – you can compute it client-side or pass it from the server
   {
     id: "serial",
     header: "Serial",
     cell: ({ row }) => row.index + 1,
   },
-
-  // Owner Name (from user)
   {
     accessorFn: (row) => row.user.name,
     id: "owner_name",
     header: "Name",
   },
-
-  // Owner Email (from user)
   {
     accessorFn: (row) => row.user.email,
     id: "owner_email",
     header: "Email",
   },
-
-  // Owner Phone (from user)
   {
     accessorFn: (row) => row.user.phoneNumber,
     id: "owner_phone",
     header: "Phone",
   },
-
-  // Business Name
   {
     accessorKey: "businessName",
     header: "Business Name",
@@ -51,33 +42,50 @@ export const approved_vendor_columns: ColumnDef<Vendor>[] = [
     header: "Trade License",
   },
 
-  // Verified badge – you can decide the logic (here we treat `isActive` as verified)
+  // {
+  //   id: "verified",
+  //   header: "Verified",
+  //   cell: ({ row }) => {
+  //     const verified = row.original.user.isActive ? "Yes" : "No";
+  //     return (
+  //       <div
+  //         className={cn(
+  //           "px-2 py-1 rounded-md text-xs font-medium w-max",
+  //           verified === "Yes" && "bg-green-100 text-green-700",
+  //           verified === "No" && "bg-red-100 text-red-700"
+  //         )}
+  //       >
+  //         {verified}
+  //       </div>
+  //     );
+  //   },
+  // },
   {
-    id: "verified",
-    header: "Verified",
+    id: 'verified',
+    header: 'Verified',
     cell: ({ row }) => {
-      const verified = row.original.user.isActive ? "Yes" : "No";
+      const isActive = row.original.user?.isActive;
+
       return (
-        <div
+        <span
           className={cn(
-            "px-2 py-1 rounded-md text-xs font-medium w-max",
-            verified === "Yes" && "bg-green-100 text-green-700",
-            verified === "No" && "bg-red-100 text-red-700"
+            "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold",
+            isActive === true && "bg-green-100 text-green-700",
+            isActive === false && "bg-red-100 text-red-700",
+            isActive === undefined && "bg-gray-100 text-gray-500"
           )}
         >
-          {verified}
-        </div>
+          {isActive === undefined ? "N/A" : isActive ? "Yes" : "No"}
+        </span>
       );
     },
   },
 
-  // Status badge – only "active" will be shown because we filter the data
   {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
       const status = row.getValue("status") as Vendor["status"];
-      // Capitalize first letter for nicer display
       const display = status.charAt(0).toUpperCase() + status.slice(1);
       return (
         <div
@@ -93,8 +101,6 @@ export const approved_vendor_columns: ColumnDef<Vendor>[] = [
       );
     },
   },
-
-  // Created At (format if you want)
   {
     accessorKey: "createdAt",
     header: "Created At",
@@ -117,13 +123,13 @@ export const approved_vendor_columns: ColumnDef<Vendor>[] = [
       //   });
       // };
 
-      // const handleReject = async () => {
-      //   toast.promise(rejectVendor(vendor._id), {
-      //     loading: 'Rejecting vendor...',
-      //     success: (data) => data.message,
-      //     error: (data) => data.message,
-      //   });
-      // };
+      const handleReject = async () => {
+        toast.promise(rejectVendor(vendor._id), {
+          loading: 'Rejecting vendor...',
+          success: (data) => data.message,
+          error: (data) => data.message,
+        });
+      };
 
       const handleDelete = async () => {
         const confirmed = await confirmDelete(
@@ -154,6 +160,9 @@ export const approved_vendor_columns: ColumnDef<Vendor>[] = [
               </Button>
             </>
           )} */}
+          <Button size="icon" className="h-8 w-8 bg-red-600" onClick={handleReject}>
+            <X className="h-4 w-4" />
+          </Button>
           <Button
             size="icon"
             className="h-8 w-8 bg-blue-600 hover:bg-blue-700"

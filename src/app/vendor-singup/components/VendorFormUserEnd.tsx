@@ -15,7 +15,7 @@ import StepBadge from "@/components/ReusableComponents/StepBadge";
 
 
 
-type CategoryOption = { value: string; Label: string };
+type CategoryOption = { value: string; label: string };
 
 export type Inputs = {
   business_name: string;
@@ -33,6 +33,7 @@ interface Props {
 }
 
 export default function VendorSignupWizard({ vendorCategories }: Props) {
+  // console.log("vendorCategories", vendorCategories)
   const [step, setStep] = useState(1);
   const [ownerNidFile, setOwnerNidFile] = useState<File | null>(null);
   const [tradeLicenseFile, setTradeLicenseFile] = useState<File | null>(null);
@@ -48,7 +49,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
     defaultValues: { business_category: [] },
   });
 
-  const categoryOptions: CategoryOption[] = vendorCategories.map((c) => ({ value: c._id, Label: c.name }));
+  const categoryOptions: CategoryOption[] = vendorCategories.map((c) => ({ value: c._id, label: c.name }));
 
   const next = () => setStep((s) => Math.min(3, s + 1));
   const back = () => setStep((s) => Math.max(1, s - 1));

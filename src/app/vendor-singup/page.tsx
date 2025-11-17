@@ -1,10 +1,11 @@
-import { fetchVendorCategories } from '@/lib/MultiVendorApis/fetchVendorCategories';
 import { VendorCategory } from '@/types/VendorCategoryType';
 import VendorFormUserEnd from './components/VendorFormUserEnd';
+import { fetchPublicVendorCategories } from '@/lib/MultiVendorApis/fetchVendorCategories';
 
 export default async function CreateNewVendor() {
-  // vendor categories do NOT require login
-  const vendorCategories: VendorCategory[] = await fetchVendorCategories();
+
+  const vendorCategories: VendorCategory[] = await fetchPublicVendorCategories();
+  // console.log('Fetched Vendor Categories:', vendorCategories);
 
   return (
     <div>
