@@ -106,6 +106,95 @@ const vendorLogin = async (payload: TLoginUser) => {
 };
 
 
+// ------------------------------------
+// --- NEW: VENDOR CHANGE PASSWORD ---
+// ------------------------------------
+const vendorChangePassword = async (userId: string, payload: TChangePassword) => {
+  const user = await User.findById(userId).select('+password');
+  
+  if (!user) throw new Error('User not found!');
+
+  // --- VENDOR CHECK ---
+  if (user.role !== 'vendor') {
+    throw new Error('Access denied. This function is for vendors only.');
+  }
+  // --- END VENDOR CHECK ---
+
+  if (!user.password) throw new Error('Password not set for this user.');
+
+  const isPasswordMatched = await user.isPasswordMatched(payload.currentPassword, user.password);
+  if (!isPasswordMatched) throw new Error('Current password does not match!');
+
+  user.password = payload.newPassword;
+  await user.save();
+  return null;
+};
+
+
+// ------------------------------------
+// --- NEW: VENDOR FORGOT PASSWORD (STEP 1) ---
+// ------------------------------------
+const vendorSendForgotPasswordOtpToEmail = async (email: string) => {
+  await connectRedis();
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new Error('No user found with this email address.');
+  }
+
+  // --- VENDOR CHECK ---
+  if (user.role !== 'vendor') {
+    throw new Error('This email is not associated with a vendor account.');
+  }
+  // --- END VENDOR CHECK ---
+
+  if (!user.email) {
+    throw new Error('This user does not have a registered email address.');
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const redisKey = `reset-otp:email:${email}`;
+  await redisClient.set(redisKey, otp, { EX: 300 }); // 5 min expiry
+
+  await sendEmail({
+    to: user.email,
+    subject: 'Vendor Password Reset Code',
+    template: 'otp.ejs', // একই টেমপ্লেট ব্যবহার করা যাবে
+    data: { name: user.name, otp: otp },
+  });
+
+  return null;
+};
+
+// ------------------------------------
+// --- NEW: VENDOR FORGOT PASSWORD (STEP 2) ---
+// ------------------------------------
+const vendorVerifyForgotPasswordOtpFromEmail = async (email: string, otp: string) => {
+  await connectRedis();
+  const redisKey = `reset-otp:email:${email}`;
+  const storedOtp = await redisClient.get(redisKey);
+
+  if (!storedOtp || storedOtp !== otp) {
+    throw new Error('OTP is invalid or has expired.');
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) { throw new Error('User not found.'); }
+
+  // --- VENDOR CHECK ---
+  if (user.role !== 'vendor') {
+    throw new Error('This email is not associated with a vendor account.');
+  }
+  // --- END VENDOR CHECK ---
+
+  const resetTokenPayload = { userId: user._id.toString(), purpose: 'password-reset' };
+  const resetToken = generateToken(resetTokenPayload, process.env.JWT_ACCESS_SECRET!, '10m'); // 10 minutes validity
+
+  await redisClient.del(redisKey);
+  return { resetToken };
+};
+
+
 const refreshToken = async (token: string) => {
   const refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
   if (!refreshTokenSecret) throw new Error('JWT refresh secret not configured');
@@ -381,4 +470,7 @@ export const AuthServices = {
   registerServiceProvider,
   loginWithGoogle,
   vendorLogin,
+  vendorChangePassword,
+  vendorSendForgotPasswordOtpToEmail,
+  vendorVerifyForgotPasswordOtpFromEmail,
 };

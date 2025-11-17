@@ -78,6 +78,78 @@ const vendorLogin = async (req: NextRequest) => {
 };
 
 
+// ------------------------------------
+// --- NEW: VENDOR CHANGE PASSWORD CONTROLLER ---
+// ------------------------------------
+const vendorChangePassword = async (req: NextRequest) => {
+  await dbConnect();
+  const userId = req.headers.get('x-user-id');
+  if (!userId) { throw new Error("Authentication failure: User ID not found in token"); }
+
+  const body = await req.json();
+  const validatedData = changePasswordValidationSchema.parse(body); // একই ভ্যালিডেশন ব্যবহার করা যাবে
+
+  await AuthServices.vendorChangePassword(userId, validatedData);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Vendor password changed successfully",
+    data: null
+  });
+};
+
+// ------------------------------------
+// --- NEW: VENDOR FORGOT PASSWORD CONTROLLERS ---
+// ------------------------------------
+
+// STEP 1: Send OTP
+const vendorSendForgotPasswordOtp = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  const validatedData = sendForgotPasswordOtpToEmailSchema.parse(body); // একই ভ্যালিডেশন
+  await AuthServices.vendorSendForgotPasswordOtpToEmail(validatedData.email);
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'A password reset OTP has been sent to your vendor email.', 
+    data: null 
+  });
+};
+
+// STEP 2: Verify OTP
+const vendorVerifyForgotPasswordOtp = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  const validatedData = verifyForgotPasswordOtpFromEmailSchema.parse(body); // একই ভ্যালিডেশন
+  const result = await AuthServices.vendorVerifyForgotPasswordOtpFromEmail(validatedData.email, validatedData.otp);
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'OTP verified successfully. Use the token to reset your password.', 
+    data: result 
+  });
+};
+
+// STEP 3: Reset Password
+// দ্রষ্টব্য: resetPasswordWithToken সার্ভিসটি আমরা আবার ব্যবহার করতে পারি, 
+// কারণ এটি userId দিয়ে কাজ করে, যা টোকেন থেকে আসে।
+// আমাদের শুধু একটি আলাদা কন্ট্রোলার দরকার।
+
+const vendorResetPassword = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  const validatedData = resetPasswordWithTokenSchema.parse(body); // একই ভ্যালিডেশন
+  await AuthServices.resetPasswordWithToken(validatedData.token, validatedData.newPassword);
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'Vendor password has been reset successfully!', 
+    data: null 
+  });
+};
+
+
 const refreshToken = async (req: NextRequest) => {
   await dbConnect();
   const token = req.cookies.get('refreshToken')?.value;
@@ -256,4 +328,8 @@ export const AuthController = {
   registerServiceProvider,
   googleLoginHandler,
   vendorLogin,
+  vendorChangePassword,
+  vendorSendForgotPasswordOtp,
+  vendorVerifyForgotPasswordOtp,
+  vendorResetPassword,
 };
