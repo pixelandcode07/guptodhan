@@ -18,7 +18,7 @@ export async function fetchVendorCategories(token?: string): Promise<VendorCateg
     }
 
     const response = await axios.get<ApiResponse<VendorCategory[]>>(
-      `${baseUrl}/api/v1/vendor-category`,
+      `${baseUrl}/api/v1/public/vendor-category`,
       {
         headers
       }

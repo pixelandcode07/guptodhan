@@ -55,15 +55,15 @@ const vendorLogin = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
   const validatedData = loginValidationSchema.parse(body);
-  
-  // শুধু vendor রোল চেক
+
+  // vendor login
   const result = await AuthServices.vendorLogin(validatedData);
 
   const { refreshToken, ...dataForResponseBody } = result;
 
   const response = sendResponse({
     success: true,
-    statusCode: StatusCodes.OK,
+    statusCode: 200,
     message: 'Vendor logged in successfully!',
     data: dataForResponseBody,
   });
@@ -71,11 +71,12 @@ const vendorLogin = async (req: NextRequest) => {
   response.cookies.set('refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   });
 
   return response;
 };
+
 
 const refreshToken = async (req: NextRequest) => {
   await dbConnect();
@@ -160,39 +161,46 @@ const resetPasswordWithToken = async (req: NextRequest) => {
 
 
 const registerVendor = async (req: NextRequest) => {
-  await dbConnect();
-  const formData = await req.formData();
-  const ownerNidFile = formData.get('ownerNid') as File | null;
-  const tradeLicenseFile = formData.get('tradeLicense') as File | null;
+    await dbConnect();
 
-  if (!ownerNidFile) { throw new Error('Owner NID image is required.'); }
-  if (!tradeLicenseFile) { throw new Error('Trade License image is required.'); }
+    const formData = await req.formData();
 
-  const [ownerNidUploadResult, tradeLicenseUploadResult] = await Promise.all([
-    uploadToCloudinary(Buffer.from(await ownerNidFile.arrayBuffer()), 'vendor-documents'),
-    uploadToCloudinary(Buffer.from(await tradeLicenseFile.arrayBuffer()), 'vendor-documents')
-  ]);
+    const ownerNidFile = formData.get('ownerNid') as File | null;
+    const tradeLicenseFile = formData.get('tradeLicense') as File | null;
 
-  const payload: Record<string, any> = {};
-  for (const [key, value] of formData.entries()) {
-    if (typeof value === 'string') {
-      payload[key] = value;
+    if (!ownerNidFile) throw new Error('Owner NID image is required.');
+    if (!tradeLicenseFile) throw new Error('Trade License image is required.');
+
+    // Upload files
+    const [ownerNidUploadResult, tradeLicenseUploadResult] = await Promise.all([
+      uploadToCloudinary(Buffer.from(await ownerNidFile.arrayBuffer()), 'vendor-documents'),
+      uploadToCloudinary(Buffer.from(await tradeLicenseFile.arrayBuffer()), 'vendor-documents'),
+    ]);
+
+    const payload: Record<string, any> = {};
+
+    // Collect fields from form
+    for (const [key, value] of formData.entries()) {
+      if (typeof value === 'string') {
+        payload[key] = value;
+      }
     }
-  }
 
-  payload.ownerNidUrl = ownerNidUploadResult.secure_url;
-  payload.tradeLicenseUrl = tradeLicenseUploadResult.secure_url;
+    payload.ownerNidUrl = ownerNidUploadResult.secure_url;
+    payload.tradeLicenseUrl = tradeLicenseUploadResult.secure_url;
 
-  const validatedData = registerVendorValidationSchema.parse(payload);
-  const result = await AuthServices.registerVendor(validatedData);
+    const validatedData = registerVendorValidationSchema.parse(payload);
 
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.CREATED,
-    message: 'Vendor registered successfully! Please wait for admin approval.',
-    data: result,
-  });
-};
+    const result = await AuthServices.registerVendor(validatedData);
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.CREATED,
+      message: 'Vendor registered successfully! Please wait for admin approval.',
+      data: result,
+    });
+  };
+
 
 const registerServiceProvider = async (req: NextRequest) => {
   await dbConnect();

@@ -79,7 +79,6 @@ const vendorLogin = async (payload: TLoginUser) => {
 
   if (!user) throw new Error('Invalid credentials.');
   if (user.role !== 'vendor') throw new Error('Access denied. Vendor account required.');
-
   if (!user.password) throw new Error('Password not set. Use social login.');
 
   const isPasswordMatched = await user.isPasswordMatched(plainPassword, user.password);
@@ -97,6 +96,7 @@ const vendorLogin = async (payload: TLoginUser) => {
   const { password, ...userWithoutPassword } = user.toObject();
   return { accessToken, refreshToken, user: userWithoutPassword };
 };
+
 
 const refreshToken = async (token: string) => {
   const refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
