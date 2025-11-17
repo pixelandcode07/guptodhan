@@ -39,20 +39,40 @@ export const vendor_req_columns: ColumnDef<Vendor>[] = [
     accessorKey: 'tradeLicenseNumber',
     header: 'Trade License Number',
   },
+  // {
+  //   id: 'verified',
+  //   header: 'Verified',
+  //   cell: ({ row }) => {
+  //     const isActive = row.original.user.isActive;
+  //     return (
+  //       <div
+  //         className={cn(
+  //           `p-1 rounded-md w-max text-xs`,
+  //           isActive ? 'text-green-500' : 'text-red-500'
+  //         )}
+  //       >
+  //         {isActive ? 'Yes' : 'No'}
+  //       </div>
+  //     );
+  //   },
+  // },
   {
     id: 'verified',
     header: 'Verified',
     cell: ({ row }) => {
-      const isActive = row.original.user.isActive;
+      const isActive = row.original.user?.isActive;
+
       return (
-        <div
+        <span
           className={cn(
-            `p-1 rounded-md w-max text-xs`,
-            isActive ? 'text-green-500' : 'text-red-500'
+            "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold",
+            isActive === true && "bg-green-100 text-green-700",
+            isActive === false && "bg-red-100 text-red-700",
+            isActive === undefined && "bg-gray-100 text-gray-500"
           )}
         >
-          {isActive ? 'Yes' : 'No'}
-        </div>
+          {isActive === undefined ? "N/A" : isActive ? "Yes" : "No"}
+        </span>
       );
     },
   },
