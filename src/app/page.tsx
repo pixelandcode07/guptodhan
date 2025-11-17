@@ -7,6 +7,10 @@ import { JustForYou } from './components/JustForYou/JustForYou';
 import { fetchLandingPageProducts } from '@/lib/MainHomePage/fetchLandingPageProducts';
 import { fetchEcommerceBanners } from '@/lib/MainHomePage';
 import { fetchFeaturedCategories } from '@/lib/MainHomePage/fetchFeaturedCategoryData';
+import { Suspense } from 'react';
+import SectionSkeleton from '@/components/ReusableComponents/SectionSkeleton';
+import { fetchStory } from '@/lib/MainHomePage/fetchStory';
+import StoryFeed from './components/StoryFeed/StoryFeed';
 
 
 export const dynamic = 'force-dynamic';
@@ -25,16 +29,20 @@ export default async function MainHomePage() {
   const [
     landingPageData,
     ecommerceBanners,
-    featuredData
+    featuredData,
+    storyData
   ] = await Promise.all([
     fetchLandingPageProducts(),
     fetchEcommerceBanners(),
-    fetchFeaturedCategories()
+    fetchFeaturedCategories(),
+    fetchStory()
   ]);
 
   // Destructure landing page data
   const { runningOffers, bestSelling, randomProducts } = landingPageData;
   const { middleHomepage, topShoppage } = ecommerceBanners;
+  // const { stories } = storyData;
+  console.log("storyData===>", storyData)
 
 
   return (
@@ -45,21 +53,25 @@ export default async function MainHomePage() {
       {/* Featured Categories */}
       <Feature featuredData={featuredData} />
 
-      {/* Flash Sale Section */}
-      <FlashSell
-        products={runningOffers}
-        middleHomepage={middleHomepage}
-      />
+      {/* Story */}
+      <Suspense fallback={<SectionSkeleton title="Best Selling" count={6} />}>
+        <StoryFeed stories={storyData} />
+      </Suspense>
 
-      {/* Best Selling Section */}
-      <BestSell
-        products={bestSelling}
-        topShoppage={topShoppage}
-      />
+      {/* Flash Sell */}
+      <Suspense fallback={<SectionSkeleton title="Flash Sale" count={6} />}>
+        <FlashSell products={runningOffers} middleHomepage={middleHomepage} />
+      </Suspense>
 
-      {/* Just For You Section */}
-      {/* <JustForYou products={randomProducts} /> */}
-      <JustForYou initialProducts={randomProducts} />
+      {/* BestSell - Loading + Skeleton */}
+      <Suspense fallback={<SectionSkeleton title="Best Selling" count={6} />}>
+        <BestSell products={bestSelling} topShoppage={topShoppage} />
+      </Suspense>
+
+      {/* JustForYou - Loading + Skeleton */}
+      <Suspense fallback={<SectionSkeleton title="Just For You" count={6} />}>
+        <JustForYou initialProducts={randomProducts} />
+      </Suspense>
     </div>
   );
 }

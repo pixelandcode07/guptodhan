@@ -35,7 +35,7 @@ interface CategoryOption {
 
 interface EditVendorFormProps {
     vendor: Vendor;
-    token: string; // নতুন প্রপ
+    token: string;
 }
 
 export default function EditVendorForm({ vendor, token }: EditVendorFormProps) {

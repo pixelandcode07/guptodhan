@@ -14,6 +14,8 @@ import LogoutBtn from './LogoutBtn';
 
 export default function UserDropdown() {
   const { data: session, status } = useSession();
+  const token = session?.accessToken;
+  console.log("TOKEN:", token)
   const user = session?.user;
   return (
     <DropdownMenu>

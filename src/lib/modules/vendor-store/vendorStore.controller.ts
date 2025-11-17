@@ -4,7 +4,8 @@ import { sendResponse } from '@/lib/utils/sendResponse';
 import { createStoreValidationSchema, updateStoreValidationSchema } from './vendorStore.validation';
 import { StoreServices } from './vendorStore.service';
 import dbConnect from '@/lib/db';
-import { uploadToCloudinary } from '@/lib/utils/cloudinary'; // <-- তুমি যেটা দিয়েছো, সেটাই
+import { Types } from 'mongoose';
+import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 
 const createStore = async (req: NextRequest) => {
   await dbConnect();
@@ -70,14 +71,16 @@ const createStore = async (req: NextRequest) => {
   };
 
   const validatedData = createStoreValidationSchema.parse(payload);
-  const result = await StoreServices.createStoreInDB(validatedData);
+  // const result = await StoreServices.createStoreInDB(validatedData);
 
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.CREATED,
-    message: 'Store created successfully!',
-    data: result,
-  });
+  console.log(validatedData);
+
+  // return sendResponse({
+  //   success: true,
+  //   statusCode: StatusCodes.CREATED,
+  //   message: 'Store created successfully!',
+  //   data: result,
+  // });
 };
 
 // Get all stores
@@ -110,11 +113,16 @@ const getStoreById = async (_req: NextRequest, { params }: { params: { id: strin
 // Update store
 const updateStore = async (req: NextRequest, { params }: { params: { id: string } }) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   const body = await req.json();
   const validatedData = updateStoreValidationSchema.parse(body);
 
-  const result = await StoreServices.updateStoreInDB(id, validatedData);
+  const payload = {
+    ...validatedData,
+    vendorId: new Types.ObjectId(validatedData.vendorId)
+  };
+
+  const result = await StoreServices.updateStoreInDB(id, payload);
 
   return sendResponse({
     success: true,
@@ -127,7 +135,7 @@ const updateStore = async (req: NextRequest, { params }: { params: { id: string 
 // Delete store
 const deleteStore = async (_req: NextRequest, { params }: { params: { id: string } }) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   await StoreServices.deleteStoreFromDB(id);
 
   return sendResponse({

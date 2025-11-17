@@ -12,13 +12,13 @@ const createCategoryInDB = async (payload: Partial<IClassifiedCategory>) => {
 };
 
 const getAllCategoriesFromDB = async () => {
-  const result = await ClassifiedCategory.find(); // { status: 'active' }
+  const result = await ClassifiedCategory.find().sort({orderCount:1}); // { status: 'active' }
   return result;
 };
 
 const getPublicCategoriesFromDB = async () => {
   const result = await ClassifiedCategory.find({ status: 'active' }).sort({
-    name: 1,
+    orderCount: 1,
   });
   return result;
 };
@@ -179,6 +179,22 @@ const searchAdsInDB = async (filters: Record<string, any>) => {
     .sort({ createdAt: -1 });
 };
 
+// rearrange buy and sell category
+export const reorderClassifiedCategoryService = async (orderedIds: string[]) => {
+  if (!orderedIds || orderedIds.length === 0) {
+    throw new Error('orderedIds array is empty');
+  }
+
+  // Loop and update orderCount = index
+  const updatePromises = orderedIds.map((id, index) =>
+    ClassifiedCategory.findByIdAndUpdate(id, { orderCount: index }, { new: true })
+  );
+
+  await Promise.all(updatePromises);
+
+  return { message: 'buy and sell / classified reordered successfully!' };
+};
+
 export const ClassifiedCategoryServices = {
   createCategoryInDB,
   getAllCategoriesFromDB,
@@ -189,4 +205,6 @@ export const ClassifiedCategoryServices = {
   getCategoryByIdFromDB,
   getPublicCategoriesWithCountsFromDB,
   searchAdsInDB,
+
+  reorderClassifiedCategoryService
 };

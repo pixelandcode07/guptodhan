@@ -8,7 +8,7 @@ import ClientDataTable from "./components/ClientDataTable";
 export default async function BusinessCategories() {
   const session = await getServerSession(authOptions);
   const token = session?.accessToken as string | undefined;
-  console.log("token",token)
+  console.log("token", token)
 
   if (!token) {
     return (

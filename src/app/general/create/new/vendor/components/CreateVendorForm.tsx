@@ -77,7 +77,7 @@ export default function CreateVendorForm({ vendorCategories }: CreateVendorFormP
     // console.log("Response", formData)
     // console.log("Response", data)
     try {
-    await axios.post('/api/v1/auth/register-vendor', formData, {
+      await axios.post('/api/v1/auth/register-vendor', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       toast.success('Vendor created successfully!');

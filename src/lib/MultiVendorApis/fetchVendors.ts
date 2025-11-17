@@ -1,14 +1,13 @@
-// src/lib/MultiVendorApis/fetchVendors.ts
+
 import { ApiResponse, Vendor } from '@/types/VendorType';
 import axios, { AxiosError } from 'axios';
 
-// ক্লায়েন্টে window.location, সার্ভারে process.env
 const getBaseUrl = () => {
   if (typeof window !== 'undefined') {
-    // ক্লায়েন্ট সাইড
+    // client side
     return `${window.location.protocol}//${window.location.host}`;
   }
-  // সার্ভার সাইড
+  // server side
   const url = process.env.NEXTAUTH_URL;
   if (!url) {
     console.error('NEXTAUTH_URL is not set in .env.local');

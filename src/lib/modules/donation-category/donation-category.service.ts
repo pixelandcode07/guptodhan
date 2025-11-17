@@ -7,12 +7,12 @@ const createCategoryInDB = async (payload: Partial<IDonationCategory>) => {
 };
 
 const getActiveCategoriesFromDB = async () => {
-  return await DonationCategory.find().sort({ name: 1 });
+  return await DonationCategory.find().sort({ orderCount: 1 });
   // { status: 'active' }
 };
 
 const getAllCategoriesForAdminFromDB = async () => {
-  return await DonationCategory.find({}).sort({ createdAt: -1 });
+  return await DonationCategory.find({}).sort({ orderCount: 1 });
 };
 
 const updateCategoryInDB = async (id: string, payload: Partial<IDonationCategory>) => {
@@ -56,6 +56,22 @@ const getCategoryByIdForAdminFromDB = async (id: string) => {
   return category;
 };
 
+// rearrange donation category
+export const reorderDonationCategoryService = async (orderedIds: string[]) => {
+  if (!orderedIds || orderedIds.length === 0) {
+    throw new Error('orderedIds array is empty');
+  }
+
+  // Loop and update orderCount = index
+  const updatePromises = orderedIds.map((id, index) =>
+    DonationCategory.findByIdAndUpdate(id, { orderCount: index }, { new: true })
+  );
+
+  await Promise.all(updatePromises);
+
+  return { message: 'donation category reordered successfully!' };
+};
+
 export const DonationCategoryServices = {
   createCategoryInDB,
   getActiveCategoriesFromDB,
@@ -64,4 +80,6 @@ export const DonationCategoryServices = {
   deleteCategoryFromDB,
   getCategoryByIdFromDB,
   getCategoryByIdForAdminFromDB,
+
+  reorderDonationCategoryService
 };

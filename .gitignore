@@ -42,3 +42,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 guptodhan-df835-firebase-adminsdk-fbsvc-e40c788905.json
+
+
+.github
+.vscode
+
+
+

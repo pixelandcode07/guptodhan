@@ -1,15 +1,17 @@
-import { Schema, model, models } from 'mongoose';
-import { IStory } from './story.interface';
+import { Schema, model, models } from "mongoose";
+import { IStory } from "./story.interface";
 
 const storySchema = new Schema<IStory>(
   {
+    title: { type: String, trim: true, maxlength: 100 },
+    description: { type: String, trim: true, maxlength: 200 },
     imageUrl: { type: String, required: true, trim: true },
-    duration: { type: Number, default: 10 }, // seconds for progress bar, optional
-    status: { type: String, enum: ['active', 'inactive'], default: 'active' },
-    expiryDate: { type: Date, required: true }, // when the story should expire
+    duration: { type: Number, default: 10 },
+    status: { type: String, enum: ["active", "inactive"], default: "active" },
+    expiryDate: { type: Date, required: true },
   },
   { timestamps: true }
 );
 
 export const StoryModel =
-  models.StoryModel || model<IStory>('StoryModel', storySchema);
+  models.StoryModel || model<IStory>("StoryModel", storySchema);
