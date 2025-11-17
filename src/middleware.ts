@@ -37,6 +37,7 @@ const adminRoutes = [
 
 const protectedApiRoutes = [
   '/api/v1/auth/change-password',
+  '/api/v1/auth/vendor-change-password',
   '/api/otp/send-email',
   '/api/otp/verify-email',
   '/api/otp/verify-phone',
