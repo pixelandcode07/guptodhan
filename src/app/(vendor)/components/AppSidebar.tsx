@@ -51,7 +51,7 @@ const menuItems = [
         icon: Package,
         subItems: [
             { title: "Add New Product", url: "/products/add", icon: Plus },
-            { title: "All Products", url: "/products", icon: List },
+            { title: "All Products", url: "/products/all", icon: List },
         ],
     },
     {
