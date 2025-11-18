@@ -28,6 +28,9 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import { signOut } from "next-auth/react";
 
 const menuItems = [
     {
@@ -67,6 +70,7 @@ const menuItems = [
 
 export function AppSidebar() {
     const pathname = usePathname();
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     return (
         <Sidebar>
@@ -127,11 +131,17 @@ export function AppSidebar() {
                                 </SidebarMenuItem>
                             ))}
                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild className="text-red-600">
-                                    <Link href="/api/auth/signout">
-                                        <LogOut className="w-5 h-5" />
-                                        <span>Logout</span>
-                                    </Link>
+                                <SidebarMenuButton
+                                    disabled={isLoggingOut}
+                                    className="text-red-500 hover:bg-red-500/10"
+                                    onClick={async () => {
+                                        setIsLoggingOut(true);
+                                        toast.loading("Logging out...");
+                                        await signOut({ callbackUrl: "/" });
+                                    }}
+                                >
+                                    <LogOut className="w-5 h-5" />
+                                    <span>{isLoggingOut ? "Logging out..." : "Logout"}</span>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         </SidebarMenu>

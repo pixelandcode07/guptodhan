@@ -121,7 +121,7 @@ const vendorSendForgotPasswordOtp = async (req: NextRequest) => {
 const vendorVerifyForgotPasswordOtp = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
-  const validatedData = verifyForgotPasswordOtpFromEmailSchema.parse(body); // একই ভ্যালিডেশন
+  const validatedData = verifyForgotPasswordOtpFromEmailSchema.parse(body);
   const result = await AuthServices.vendorVerifyForgotPasswordOtpFromEmail(validatedData.email, validatedData.otp);
   return sendResponse({ 
     success: true, 
