@@ -16,7 +16,8 @@ export default function PathnameDetector({ children }: { children: ReactNode }) 
         '/products/add',
         '/orders',
         '/reviews',
-        '/withdrawal',
+        '/withdrawal/request',
+        '/withdrawal/history',
         '/store',
     ];
 
