@@ -2,15 +2,20 @@ import { Document, Types } from 'mongoose';
 
 export interface IProductOption {
   productImage?: string;
-  unit?: string;
-  simType?: string;
-  warranty?: string;
-  condition?: string;
+
+  // changed to array
+  unit?: string[];
+  simType?: string[];
+  condition?: string[];
+  warranty: string,
+
   stock?: number;
   price?: number;
   discountPrice?: number;
-  color?: string;
-  size?: string;
+
+  // changed to array
+  color?: string[];
+  size?: string[];
 }
 
 export interface IVendorProduct {
