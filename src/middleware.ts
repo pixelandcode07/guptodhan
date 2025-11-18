@@ -33,10 +33,12 @@ const adminRoutes = [
   '/api/v1/crm-modules/support-ticket',
   '/api/v1/slider-form',
   '/api/v1/slider-form/[id]',
+  "/api/v1/donation-configs",
 ];
 
 const protectedApiRoutes = [
   '/api/v1/auth/change-password',
+  '/api/v1/auth/vendor-change-password',
   '/api/otp/send-email',
   '/api/otp/verify-email',
   '/api/otp/verify-phone',
