@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import StepBadge from "@/components/ReusableComponents/StepBadge";
+import Link from "next/link";
 
 
 
@@ -258,6 +259,8 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
             </div>
 
             {/* Footer */}
+            <div className="mt-6 text-sm text-slate-700 text-center">
+              Already Have an Account? <Link className="text-emerald-600 font-semibold" href={"/vendor-singin"}>Sing In</Link></div>
             <div className="mt-6 text-sm text-slate-700 text-center">Need help? <a className="text-emerald-600 font-semibold" href="#">Contact Guptodhan support</a></div>
 
           </div>

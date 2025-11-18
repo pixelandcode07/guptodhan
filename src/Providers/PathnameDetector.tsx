@@ -12,11 +12,12 @@ export default function PathnameDetector({ children }: { children: ReactNode }) 
     // List of vendor routes (without /vendor prefix due to route group)
     const vendorRoutes = [
         '/dashboard',
-        '/products',
+        '/products/all',
         '/products/add',
         '/orders',
         '/reviews',
-        '/withdrawal',
+        '/withdrawal/request',
+        '/withdrawal/history',
         '/store',
     ];
 
