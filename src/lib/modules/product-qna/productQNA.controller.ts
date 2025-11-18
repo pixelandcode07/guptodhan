@@ -57,8 +57,10 @@ const getProductQAByProduct = async (req: NextRequest, { params }: { params: { p
 
 //Get questions by user
 const getProductQAByUser = async (req: NextRequest, { params }: { params: { userId: string } }) => {
+  console.log("hello")
   await dbConnect();
-  const { userId } = params;
+  const { userId } =await params;
+  console.log(userId);
   const result = await ProductQAService.getProductQAByUserFromDB(userId);
 
   return sendResponse({
