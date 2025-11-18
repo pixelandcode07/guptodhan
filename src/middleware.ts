@@ -1,36 +1,38 @@
+// File: middleware.ts (Full Solved Code)
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { StatusCodes } from 'http-status-codes';
 import { jwtVerify } from 'jose';
+
+// ❗️ আপনার adminRoutes এবং protectedApiRoutes লিস্টগুলো এখানে পেস্ট করুন
 const adminRoutes = [
-  "/general",
-  "/api/v1/users",
-  "/api/v1/classifieds-banners",
-  "/api/v1/reports",
-  "/api/v1/classifieds-subcategories",
-  "/api/v1/brands",
-  "/api/v1/classifieds-categories",
-  "/api/v1/about",
-  "/api/v1/service-categories",
-  "/api/v1/service-subcategories",
-  "/api/v1/settings",
-  "/api/v1/footer-widgets",
-  "/api/v1/social-links",
-  "/api/v1/theme-settings",
-  "/api/v1/seo-settings",
-  "/api/v1/custom-code",
-  "/api/v1/integrations",
-  "/api/v1/donation-categories",
-  "/api/v1/theme-settings",
-  "/api/v1/profile/me",
-  "/api/v1/ecommerce-banners",
-  "/api/v1/ecommerce-banners/[id]",
-  "/api/v1/vendor-category",
-  "/api/v1/vendor-category/[id]",
-  "/api/v1/vendors",
-  "/api/v1/crm-modules/support-ticket",
-  "/api/v1/slider-form",
-  "/api/v1/slider-form/[id]"
+  '/general',
+  '/api/v1/users',
+  '/api/v1/classifieds-banners',
+  '/api/v1/reports',
+  '/api/v1/classifieds-subcategories',
+  '/api/v1/brands',
+  '/api/v1/classifieds-categories',
+  '/api/v1/about',
+  '/api/v1/service-categories',
+  '/api/v1/service-subcategories',
+  '/api/v1/settings',
+  '/api/v1/footer-widgets',
+  '/api/v1/social-links',
+  '/api/v1/theme-settings',
+  '/api/v1/seo-settings',
+  '/api/v1/custom-code',
+  '/api/v1/integrations',
+  '/api/v1/donation-categories',
+  '/api/v1/theme-settings',
+  '/api/v1/ecommerce-banners',
+  '/api/v1/ecommerce-banners/[id]',
+  '/api/v1/vendor-category/[id]',
+  '/api/v1/vendors',
+  '/api/v1/crm-modules/support-ticket',
+  '/api/v1/slider-form',
+  '/api/v1/slider-form/[id]',
 ];
 
 const protectedApiRoutes = [
@@ -64,15 +66,18 @@ const protectedApiRoutes = [
   '/api/v1/wishlist',
   '/api/v1/add-to-cart',
   '/api/v1/payment/init',
-  "/api/v1/crm-modules/support-ticket",
-  "/home/UserProfile/support-tickets"
+  '/api/v1/crm-modules/support-ticket',
+  '/home/UserProfile/support-tickets',
+  '/api/v1/vendor-category',
 ];
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
-  const isAdminRoute = adminRoutes.some(route => path.startsWith(route));
-  const isProtectedApi = protectedApiRoutes.some(route => path.startsWith(route));
+  const isAdminRoute = adminRoutes.some((route) => path.startsWith(route));
+  const isProtectedApi = protectedApiRoutes.some((route) =>
+    path.startsWith(route),
+  );
 
   // পাবলিক route → allow
   if (!isAdminRoute && !isProtectedApi) return NextResponse.next();
@@ -88,19 +93,23 @@ export async function middleware(req: NextRequest) {
       const { payload } = await jwtVerify(rawToken, secret);
       tokenPayload = payload;
       console.log('✅ Verified via Bearer token:', tokenPayload);
-    } catch (err) {
-      console.error('❌ Invalid JWT from header:', err);
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized: Invalid or expired token' },
-        { status: StatusCodes.UNAUTHORIZED }
-      );
+    } catch (err: any) {
+      // ✅✅ সমাধান: টোকেন এক্সপায়ারড হলে শুধু লগ করুন, রিকোয়েস্ট ফেইল করবেন না।
+      // আমরা NextAuth সেশন চেক করার সুযোগ দেবো।
+      console.warn(`[Middleware] Bearer token invalid or expired: ${err.code || err.message}`);
+      // এখানে কোনো `return` থাকবে না
     }
   }
 
-  // 🔹 Try NextAuth Session Token if no Bearer
+  // 🔹 Try NextAuth Session Token if no (or expired) Bearer
   if (!tokenPayload) {
-    const sessionToken = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const sessionToken = await getToken({
+      req,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
+
     if (sessionToken) {
+      // ✅ NextAuth সেশনটি রিফ্রেশড এবং ভ্যালিড
       tokenPayload = {
         userId: sessionToken.id,
         role: sessionToken.role,
@@ -109,14 +118,14 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // ❌ No Token Found
+  // ❌ No Token Found (না Bearer, না NextAuth সেশন)
   if (!tokenPayload) {
     if (path.startsWith('/general')) {
       return NextResponse.redirect(new URL('/', req.url));
     }
     return NextResponse.json(
-      { success: false, message: 'Unauthorized: No token provided' },
-      { status: StatusCodes.UNAUTHORIZED }
+      { success: false, message: 'Unauthorized: No valid token provided' },
+      { status: StatusCodes.UNAUTHORIZED },
     );
   }
 
@@ -124,7 +133,7 @@ export async function middleware(req: NextRequest) {
   if (isAdminRoute && tokenPayload.role !== 'admin') {
     return NextResponse.json(
       { success: false, message: 'Forbidden: You do not have permission.' },
-      { status: StatusCodes.FORBIDDEN }
+      { status: StatusCodes.FORBIDDEN },
     );
   }
 

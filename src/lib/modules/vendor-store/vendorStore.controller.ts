@@ -4,7 +4,8 @@ import { sendResponse } from '@/lib/utils/sendResponse';
 import { createStoreValidationSchema, updateStoreValidationSchema } from './vendorStore.validation';
 import { StoreServices } from './vendorStore.service';
 import dbConnect from '@/lib/db';
-import { uploadToCloudinary } from '@/lib/utils/cloudinary'; // <-- তুমি যেটা দিয়েছো, সেটাই
+import { Types } from 'mongoose';
+import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 
 const createStore = async (req: NextRequest) => {
   await dbConnect();
@@ -112,11 +113,11 @@ const getStoreById = async (_req: NextRequest, { params }: { params: { id: strin
 // Update store
 const updateStore = async (req: NextRequest, { params }: { params: { id: string } }) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   const body = await req.json();
   const validatedData = updateStoreValidationSchema.parse(body);
 
-    const payload = {
+  const payload = {
     ...validatedData,
     vendorId: new Types.ObjectId(validatedData.vendorId)
   };
@@ -134,7 +135,7 @@ const updateStore = async (req: NextRequest, { params }: { params: { id: string 
 // Delete store
 const deleteStore = async (_req: NextRequest, { params }: { params: { id: string } }) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   await StoreServices.deleteStoreFromDB(id);
 
   return sendResponse({

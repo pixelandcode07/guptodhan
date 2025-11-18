@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { IVendorProduct } from "./vendorProduct.interface";
 import { VendorProductModel } from "./vendorProduct.model";
 import { ReviewModel } from "../product-review/productReview.model";
@@ -58,18 +59,24 @@ const getVendorProductByIdFromDB = async (id: string) => {
 };
 
 const getVendorProductsByCategoryFromDB = async (categoryId: string) => {
+  // Convert to ObjectId
+  const categoryObjectId = new mongoose.Types.ObjectId(categoryId);
+
+  // Query DB
   const result = await VendorProductModel.find({
-    category: categoryId,
-    status: 'active'
+    category: categoryObjectId,
+    status: "active", // production-ready: only active products
   })
-    .populate('brand', 'name') // 'brandName' -> 'name'
-    .populate('flag', 'name') // 'flagName' -> 'name'
-    .populate('warranty', 'warrantyName')
-    .populate('productModel', 'name') // 'modelName' -> 'name'
-    .populate('category', 'name') // 'categoryName' -> 'name'
-    .populate('weightUnit', 'name') // 'unitName' -> 'name'
-    .populate('vendorStoreId', 'storeName')
+    .populate("brand", "name")
+    .populate("flag", "name")
+    .populate("warranty", "warrantyName")
+    .populate("productModel", "name")
+    .populate("category", "name")
+    .populate("weightUnit", "name")
+    .populate("vendorStoreId", "storeName")
     .sort({ createdAt: -1 });
+
+
   return result;
 };
 

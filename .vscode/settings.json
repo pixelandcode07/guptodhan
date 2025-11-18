@@ -1,7 +1,0 @@
-{
-    "javascript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBrackets": false,
-    "github.copilot.chat.editor.temporalContext.enabled": true,
-    "github.copilot.chat.edits.temporalContext.enabled": true,
-    "github.copilot.chat.languageContext.typescript.includeDocumentation": true,
-    "github.copilot.chat.reviewSelection.instructions": []
-}

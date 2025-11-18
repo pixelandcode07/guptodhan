@@ -31,6 +31,7 @@ const buttonVariants = cva(
         HomeDoante: 'bg-[#21BF73] text-white text-base font-medium hover:bg-[#21BF73] cursor-pointer',
         HomeServices: 'bg-[#1414FF] text-white text-base font-medium hover:bg-[#1414FF] cursor-pointer',
         VisitWeb: 'bg-[#132843] text-white text-base font-medium hover:bg-[#132843] cursor-pointer',
+        GreenBtn: 'inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-600 text-white font-semibold shadow cursor-pointer',
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',

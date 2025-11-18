@@ -60,7 +60,7 @@ export const reorderVendorCategoryService = async (orderedIds: string[]) => {
   const updatePromises = orderedIds.map((id, index) =>
     VendorCategoryModel.findByIdAndUpdate(id, { orderCount: index }, { new: true })
   );
-  
+
 
   await Promise.all(updatePromises);
 

@@ -158,12 +158,27 @@ const getVendorProductById = async (
 
 const getVendorProductsByCategory = async (
   req: NextRequest,
+<<<<<<< HEAD
   { params }: { params: { categoryId: string } }
 ) => {
   await dbConnect();
   const result = await VendorProductServices.getVendorProductsByCategoryFromDB(
     params.categoryId
   );
+=======
+  context: { params: Promise<{ id: string }> } // Next.js App Router e params Promise
+) => {
+  await dbConnect();
+
+  // Unwrap the params promise
+  const resolvedParams = await context.params;
+  const categoryId = resolvedParams.id;
+
+  console.log("Category ID:", categoryId);
+
+  // Call service
+  const result = await VendorProductServices.getVendorProductsByCategoryFromDB(categoryId);
+>>>>>>> de22851d1eba8bd65456e99a63faf844636fca89
 
   return sendResponse({
     success: true,

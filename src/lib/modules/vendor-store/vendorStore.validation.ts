@@ -49,6 +49,7 @@ export const updateStoreValidationSchema = z.object({
   storeEmail: z.string().email().optional(),
   vendorShortDescription: z.string().optional(),
   fullDescription: z.string().optional(),
+  commission: z.number().min(0).max(100).optional(),
   storeSocialLinks: socialLinksSchema.optional(),
   storeMetaTitle: z.string().optional(),
   storeMetaKeywords: z.array(z.string()).optional(),

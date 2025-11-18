@@ -112,7 +112,7 @@ export const buySellListing_columns: ColumnDef<BuySellListingType>[] = [
     id: "actions",
     header: "Actions",
     cell: ({ row }) => {
-      const id = row.original.id; // ✅ get ID from row
+      const id = row.original.id;
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
