@@ -61,6 +61,7 @@ export const ProductQASection = ({
   const [question, setQuestion] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [editingQaId, setEditingQaId] = useState<string | null>(null);
 
   const questionCount = useMemo(() => items.length, [items.length]);
 
@@ -212,30 +213,48 @@ export const ProductQASection = ({
                     </div>
                   )}
                   {isAdmin && qa._id && (
-                    <div className="mt-4">
-                      <ProductQAAdminReply
-                        qaId={qa._id}
-                        initialAnswer={qa.answer?.answerText}
-                        token={token}
-                        adminName={user?.name}
-                        adminEmail={user?.email}
-                        onSuccess={(answerText) => {
-                          setItems((prev) =>
-                            prev.map((item) =>
-                              item._id === qa._id
-                                ? {
-                                    ...item,
-                                    answer: {
-                                      ...(item.answer || {}),
-                                      answerText,
-                                      answeredByName: user?.name || 'Admin',
-                                    },
-                                  }
-                                : item
-                            )
-                          );
-                        }}
-                      />
+                    <div className="mt-4 space-y-2">
+                      {editingQaId === qa._id || !qa.answer?.answerText ? (
+                        <ProductQAAdminReply
+                          qaId={qa._id}
+                          initialAnswer={qa.answer?.answerText}
+                          token={token}
+                          adminName={user?.name}
+                          adminEmail={user?.email}
+                          onSuccess={(answerText) => {
+                            setItems((prev) =>
+                              prev.map((item) =>
+                                item._id === qa._id
+                                  ? {
+                                      ...item,
+                                      answer: {
+                                        ...(item.answer || {}),
+                                        answerText,
+                                        answeredByName: user?.name || 'Admin',
+                                      },
+                                    }
+                                  : item
+                              )
+                            );
+                            setEditingQaId(null);
+                          }}
+                          onCancel={() => setEditingQaId(null)}
+                        />
+                      ) : (
+                        <div className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                          <p className="text-sm text-gray-600">
+                            You have replied to this question. Need to update your answer?
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-fit"
+                            onClick={() => setEditingQaId(qa._id!)}
+                          >
+                            Edit Reply
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

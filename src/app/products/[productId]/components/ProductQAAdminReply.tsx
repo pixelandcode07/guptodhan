@@ -19,6 +19,7 @@ interface ProductQAAdminReplyProps {
   adminName?: string | null;
   adminEmail?: string | null;
   onSuccess?: (answerText: string) => void;
+  onCancel?: () => void;
 }
 
 export const ProductQAAdminReply = ({
@@ -28,6 +29,7 @@ export const ProductQAAdminReply = ({
   adminName,
   adminEmail,
   onSuccess,
+  onCancel,
 }: ProductQAAdminReplyProps) => {
   const [answer, setAnswer] = useState(initialAnswer);
   const [isLoading, setIsLoading] = useState(false);
@@ -74,9 +76,28 @@ export const ProductQAAdminReply = ({
         placeholder="Write your answer..."
         rows={3}
       />
-      <Button onClick={handleSubmit} disabled={isLoading || !answer.trim()}>
-        {isLoading ? "Saving..." : "Reply"}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          onClick={handleSubmit}
+          disabled={isLoading || !answer.trim()}
+        >
+          {isLoading
+            ? "Saving..."
+            : initialAnswer
+            ? "Update Reply"
+            : "Post Reply"}
+        </Button>
+        {initialAnswer && onCancel && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+        )}
+      </div>
     </div>
   );
 };
