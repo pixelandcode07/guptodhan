@@ -121,6 +121,7 @@ export default function QuestionAnswersClient() {
       const mapped: QuestionAnswer[] = items.map((qa, index) => ({
         id: index + 1,
         qaRecordId: qa._id || qa.qaId || "",
+        productId: qa.productId,
         image: qa.userImage || "",
         product: String(
           (qa.productId && productNameMap[qa.productId]) ??
@@ -150,7 +151,12 @@ export default function QuestionAnswersClient() {
     fetchProductQA();
   }, [fetchProductQA]);
 
-  const handleEditRequest = useCallback((qa: QuestionAnswer) => {
+  const handleEditRequest = useCallback((qa: QuestionAnswer, action?: { type: "reply" | "viewProduct" }) => {
+    if (action?.type === "viewProduct") {
+      if (!qa.productId) return;
+      window.open(`/products/${qa.productId}`, "_blank");
+      return;
+    }
     if (!qa.qaRecordId) {
       toast.error("Invalid question record.");
       return;

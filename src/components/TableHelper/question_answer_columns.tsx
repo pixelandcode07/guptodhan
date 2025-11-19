@@ -7,6 +7,7 @@ import { Edit, Trash2 } from "lucide-react";
 export type QuestionAnswer = {
   id: number;
   qaRecordId: string;
+  productId?: string;
   image: string;
   product: string;
   customers_name: string;
@@ -17,7 +18,7 @@ export type QuestionAnswer = {
 };
 
 type ActionHandlers = {
-  onEdit: (qa: QuestionAnswer) => void;
+  onEdit: (qa: QuestionAnswer, action?: { type: "reply" | "viewProduct" }) => void;
   onDelete: (qa: QuestionAnswer) => void;
 };
 
@@ -51,10 +52,23 @@ export const getQuestionAnswerColumns = (
     header: "Product",
     cell: ({ row }) => {
       const product = row.getValue("product") as string;
+      const qaRecord = row.original;
+      if (!qaRecord.productId) {
+        return (
+          <div className="max-w-xs truncate" title={product}>
+            {product}
+          </div>
+        );
+      }
       return (
-        <div className="max-w-xs truncate" title={product}>
+        <button
+          type="button"
+          className="max-w-xs truncate text-left text-blue-600 underline-offset-2 hover:underline"
+          title={product}
+          onClick={() => handlers.onEdit(qaRecord, { type: "viewProduct" })}
+        >
           {product}
-        </div>
+        </button>
       );
     },
   },
