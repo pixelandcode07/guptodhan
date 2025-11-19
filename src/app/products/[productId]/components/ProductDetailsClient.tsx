@@ -135,19 +135,32 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
   }, [relatedData.variantOptions?.sizes]);
 
   const colorOptions = useMemo(() => {
-    const seen = new Set<string>();
-    const list: Array<{ id: string; label: string }> = [];
+    const map = new Map<string, { id: string; label: string; image?: string }>();
+
     (product.productOptions ?? []).forEach((option) => {
-      (option.color ?? []).forEach((color) => {
-        if (typeof color !== 'string') return;
-        const id = color.trim();
-        if (!id || seen.has(id)) return;
-        seen.add(id);
+      const optionImage =
+        typeof option.productImage === 'string' && option.productImage.trim().length > 0
+          ? option.productImage
+          : undefined;
+
+      (option.color ?? []).forEach((colorValue) => {
+        if (typeof colorValue !== 'string') return;
+        const id = colorValue.trim();
+        if (!id) return;
         const label = colorLabelLookup.get(id) || id;
-        list.push({ id, label });
+
+        if (map.has(id)) {
+          const existing = map.get(id)!;
+          if (!existing.image && optionImage) {
+            existing.image = optionImage;
+          }
+        } else {
+          map.set(id, { id, label, image: optionImage });
+        }
       });
     });
-    return list;
+
+    return Array.from(map.values());
   }, [product.productOptions, colorLabelLookup]);
 
   const sizeOptions = useMemo(() => {
@@ -185,6 +198,10 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
         : colorOptions[0].id
     );
   }, [colorOptions]);
+
+  const handleColorSelection = (colorId: string) => {
+    setSelectedColorId(colorId);
+  };
 
   useEffect(() => {
     if (sizeOptions.length === 0) {
@@ -473,19 +490,36 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
                     {selectedColorLabel || 'Select a color'}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {colorOptions.map((color) => (
                     <button
                       key={color.id}
                       type="button"
-                      onClick={() => setSelectedColorId(color.id)}
-                      className={`px-3 py-1.5 rounded-full border text-sm ${
+                      onClick={() => handleColorSelection(color.id)}
+                      className={`flex w-20 flex-col items-center gap-1 rounded-xl border p-1 transition ${
                         selectedColorId === color.id
-                          ? 'border-blue-600 text-blue-600 bg-blue-50'
-                          : 'border-gray-300 text-gray-700 hover:border-blue-300'
+                          ? 'border-blue-600 bg-blue-50'
+                          : 'border-gray-300 bg-white hover:border-blue-200'
                       }`}
                     >
-                      {color.label}
+                      <div className="h-12 w-full overflow-hidden rounded-lg border border-gray-200">
+                        {color.image ? (
+                          <Image
+                            src={color.image}
+                            alt={color.label}
+                            width={80}
+                            height={80}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-xs font-medium text-gray-600">
+                            {color.label}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-xs font-medium text-gray-700">
+                        {color.label}
+                      </span>
                     </button>
                   ))}
                 </div>
