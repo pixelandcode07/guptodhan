@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { MessageCircleQuestion, MessageCircle } from 'lucide-react';
+import { ProductQAAdminReply } from './ProductQAAdminReply';
 
 interface QAItem {
   _id?: string;
@@ -53,6 +54,8 @@ export const ProductQASection = ({
   const sessionData = session as SessionWithToken | null;
   const token = sessionData?.accessToken;
   const user = sessionData?.user;
+  const userRole = (sessionData?.user as (SessionUser & { role?: string }))?.role;
+  const isAdmin = userRole === 'admin';
 
   const [items, setItems] = useState<QAItem[]>(initialQA);
   const [question, setQuestion] = useState('');
@@ -206,6 +209,33 @@ export const ProductQASection = ({
                           Answered by {qa.answer.answeredByName || 'Support Team'}
                         </p>
                       </div>
+                    </div>
+                  )}
+                  {isAdmin && qa._id && (
+                    <div className="mt-4">
+                      <ProductQAAdminReply
+                        qaId={qa._id}
+                        initialAnswer={qa.answer?.answerText}
+                        token={token}
+                        adminName={user?.name}
+                        adminEmail={user?.email}
+                        onSuccess={(answerText) => {
+                          setItems((prev) =>
+                            prev.map((item) =>
+                              item._id === qa._id
+                                ? {
+                                    ...item,
+                                    answer: {
+                                      ...(item.answer || {}),
+                                      answerText,
+                                      answeredByName: user?.name || 'Admin',
+                                    },
+                                  }
+                                : item
+                            )
+                          );
+                        }}
+                      />
                     </div>
                   )}
                 </div>
