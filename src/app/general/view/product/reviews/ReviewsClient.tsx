@@ -136,7 +136,11 @@ export default function ReviewsClient() {
             "N/A"
         ),
         rating: review.rating || 0,
-        review: String(review.reviewText ?? ""),
+        review: String(
+          (review as ApiReview & { comment?: string }).comment ??
+            review.reviewText ??
+            ""
+        ),
         reply_from_admin: review.replyFromAdmin || "",
         customer: String(review.userEmail ?? ""),
         name: String(review.userName ?? ""),
