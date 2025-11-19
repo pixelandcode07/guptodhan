@@ -36,7 +36,7 @@ const getActiveVendorProductsFromDB = async () => {
 };
 
 const getVendorProductByIdFromDB = async (id: string) => {
-  const product = await VendorProductModel.findById(id)
+  const productDoc = await VendorProductModel.findById(id)
     .populate('brand', 'name') // 'brandName' -> 'name'
     .populate('flag', 'name') // 'flagName' -> 'name'
     .populate('warranty', 'warrantyName')
@@ -47,14 +47,18 @@ const getVendorProductByIdFromDB = async (id: string) => {
     .populate('weightUnit', 'name') // 'unitName' -> 'name'
     .populate('vendorStoreId', 'storeName');
 
-    if (!product) return null;
+  if (!productDoc) return null;
+
+  const product =
+    typeof productDoc.toObject === 'function' ? productDoc.toObject() : productDoc;
 
   const reviews = await ReviewModel.find({ productId: id });
-  const qna = await ProductQAModel.find({productId:id});
+  const qna = await ProductQAModel.find({ productId: id });
+
   return {
-    product,
+    ...product,
     reviews,
-    qna
+    qna,
   };
 };
 

@@ -132,7 +132,7 @@ const getActiveVendorProducts = async () => {
 
 const getVendorProductById = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
   await dbConnect();
   const { id } = await params;
@@ -181,12 +181,13 @@ const getVendorProductsByCategory = async (
 
 const getVendorProductsBySubCategory = async (
   req: NextRequest,
-  { params }: { params: { subCategoryId: string } }
+  { params }: { params: Promise<{ subCategoryId: string }> }
 ) => {
   await dbConnect();
+  const { subCategoryId } = await params;
   const result =
     await VendorProductServices.getVendorProductsBySubCategoryFromDB(
-      params.subCategoryId
+      subCategoryId
     );
 
   return sendResponse({
@@ -199,12 +200,13 @@ const getVendorProductsBySubCategory = async (
 
 const getVendorProductsByChildCategory = async (
   req: NextRequest,
-  { params }: { params: { childCategoryId: string } }
+  { params }: { params: Promise<{ childCategoryId: string }> }
 ) => {
   await dbConnect();
+  const { childCategoryId } = await params;
   const result =
     await VendorProductServices.getVendorProductsByChildCategoryFromDB(
-      params.childCategoryId
+      childCategoryId
     );
 
   return sendResponse({
@@ -217,11 +219,12 @@ const getVendorProductsByChildCategory = async (
 
 const getVendorProductsByBrand = async (
   req: NextRequest,
-  { params }: { params: { brandId: string } }
+  { params }: { params: Promise<{ brandId: string }> }
 ) => {
   await dbConnect();
+  const { brandId } = await params;
   const result = await VendorProductServices.getVendorProductsByBrandFromDB(
-    params.brandId
+    brandId
   );
 
   return sendResponse({
@@ -234,10 +237,11 @@ const getVendorProductsByBrand = async (
 
 const updateVendorProduct = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
   try {
     await dbConnect();
+    const { id } = await params;
     const body = await req.json();
 
     const payload: Partial<IVendorProduct> = { ...body };
@@ -256,7 +260,7 @@ const updateVendorProduct = async (
       payload.weightUnit = new Types.ObjectId(body.weightUnit);
 
     const result = await VendorProductServices.updateVendorProductInDB(
-      params.id,
+      id,
       payload
     );
 
@@ -292,11 +296,12 @@ const updateVendorProduct = async (
 
 const deleteVendorProduct = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
   await dbConnect();
+  const { id } = await params;
   const result = await VendorProductServices.deleteVendorProductFromDB(
-    params.id
+    id
   );
 
   if (!result) {
@@ -318,14 +323,15 @@ const deleteVendorProduct = async (
 
 const addProductOption = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
   try {
     await dbConnect();
+    const { id } = await params;
     const body = await req.json();
 
     const result = await VendorProductServices.addProductOptionInDB(
-      params.id,
+      id,
       body
     );
 
@@ -361,14 +367,15 @@ const addProductOption = async (
 
 const removeProductOption = async (
   req: NextRequest,
-  { params }: { params: { id: string; optionIndex: string } }
+  { params }: { params: Promise<{ id: string; optionIndex: string }> }
 ) => {
   try {
     await dbConnect();
-    const optionIndex = parseInt(params.optionIndex);
+    const { id, optionIndex: optionIndexStr } = await params;
+    const optionIndex = parseInt(optionIndexStr);
 
     const result = await VendorProductServices.removeProductOptionFromDB(
-      params.id,
+      id,
       optionIndex
     );
 

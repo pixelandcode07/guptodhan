@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,12 @@ interface Review {
   userImage: string;
 }
 
+type EntityRef<T extends object = Record<string, unknown>> =
+  | string
+  | (T & { _id?: string; id?: string })
+  | null
+  | undefined;
+
 interface ProductData {
   product: {
     _id: string;
@@ -44,12 +50,15 @@ interface ProductData {
     sku?: string;
     rewardPoints?: number;
     status: 'active' | 'inactive';
-    vendorStoreId?: string;
-    category?: string;
-    subCategory?: string;
-    childCategory?: string;
-    brand?: string;
-    productModel?: string;
+    vendorStoreId?: EntityRef<{ storeName?: string }>;
+    category?: EntityRef<{ name?: string }>;
+    subCategory?: EntityRef<{ name?: string }>;
+    childCategory?: EntityRef<{ name?: string }>;
+    brand?: EntityRef<{ name?: string; brandName?: string }>;
+    productModel?: EntityRef<{ name?: string }>;
+    flag?: EntityRef<{ name?: string }>;
+    warranty?: EntityRef<{ warrantyName?: string }>;
+    weightUnit?: EntityRef<{ name?: string }>;
     createdAt: string;
     updatedAt: string;
     productOptions?: Array<{
@@ -67,11 +76,24 @@ interface ProductData {
   };
   relatedData: {
     categories: Array<{ _id: string; name: string }>;
-    stores: Array<{ _id: string; storeName: string; storeAddress?: string }>;
-    brands: Array<{ _id: string; brandName: string }>;
+    stores: Array<{
+      _id: string;
+      storeName: string;
+      storeAddress?: string;
+      storePhone?: string;
+      storeEmail?: string;
+      vendorShortDescription?: string;
+      storeLogo?: string;
+      fullDescription?: string;
+    }>;
+    brands: Array<{ _id: string; name?: string; brandName?: string }>;
     subCategories: Array<{ _id: string; subCategoryName: string }>;
     childCategories: Array<{ _id: string; childCategoryName: string }>;
-    models: Array<{ _id: string; modelName: string }>;
+    models: Array<{ _id: string; modelName: string; name?: string }>;
+    variantOptions?: {
+      colors?: Array<{ _id: string; name?: string; colorName?: string }>;
+      sizes?: Array<{ _id: string; name?: string; sizeName?: string }>;
+    };
   };
 }
 
@@ -87,19 +109,119 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
  
   const [quantity, setQuantity] = useState(1);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
+
+  const colorLabelLookup = useMemo(() => {
+    const map = new Map<string, string>();
+    (relatedData.variantOptions?.colors ?? []).forEach((color) => {
+      if (!color?._id) return;
+      const label = color.name || color.colorName;
+      if (label) {
+        map.set(color._id, label);
+      }
+    });
+    return map;
+  }, [relatedData.variantOptions?.colors]);
+
+  const sizeLabelLookup = useMemo(() => {
+    const map = new Map<string, string>();
+    (relatedData.variantOptions?.sizes ?? []).forEach((size) => {
+      if (!size?._id) return;
+      const label = size.name || size.sizeName;
+      if (label) {
+        map.set(size._id, label);
+      }
+    });
+    return map;
+  }, [relatedData.variantOptions?.sizes]);
+
+  const colorOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const list: Array<{ id: string; label: string }> = [];
+    (product.productOptions ?? []).forEach((option) => {
+      (option.color ?? []).forEach((color) => {
+        if (typeof color !== 'string') return;
+        const id = color.trim();
+        if (!id || seen.has(id)) return;
+        seen.add(id);
+        const label = colorLabelLookup.get(id) || id;
+        list.push({ id, label });
+      });
+    });
+    return list;
+  }, [product.productOptions, colorLabelLookup]);
+
+  const sizeOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const list: Array<{ id: string; label: string }> = [];
+    (product.productOptions ?? []).forEach((option) => {
+      (option.size ?? []).forEach((size) => {
+        if (typeof size !== 'string') return;
+        const id = size.trim();
+        if (!id || seen.has(id)) return;
+        seen.add(id);
+        const label = sizeLabelLookup.get(id) || id;
+        list.push({ id, label });
+      });
+    });
+    return list;
+  }, [product.productOptions, sizeLabelLookup]);
+
+  const [selectedColorId, setSelectedColorId] = useState<string | null>(null);
+  const [selectedSizeId, setSelectedSizeId] = useState<string | null>(null);
+
+  const selectedColorLabel =
+    colorOptions.find((option) => option.id === selectedColorId)?.label || null;
+  const selectedSizeLabel =
+    sizeOptions.find((option) => option.id === selectedSizeId)?.label || null;
+
+  useEffect(() => {
+    if (colorOptions.length === 0) {
+      setSelectedColorId(null);
+      return;
+    }
+    setSelectedColorId((prev) =>
+      prev && colorOptions.some((option) => option.id === prev)
+        ? prev
+        : colorOptions[0].id
+    );
+  }, [colorOptions]);
+
+  useEffect(() => {
+    if (sizeOptions.length === 0) {
+      setSelectedSizeId(null);
+      return;
+    }
+    setSelectedSizeId((prev) =>
+      prev && sizeOptions.some((option) => option.id === prev)
+        ? prev
+        : sizeOptions[0].id
+    );
+  }, [sizeOptions]);
   
   // Review state management
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsError, setReviewsError] = useState<string | null>(null);
 
+  const getEntityId = (value: EntityRef): string => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object') {
+      if (typeof value._id === 'string') return value._id;
+      if (typeof value.id === 'string') return value.id;
+    }
+    return '';
+  };
+
   // Helper functions to get names by ID using server data
-  const getCategoryName = (categoryId: string) => {
+  const getCategoryName = (categoryRef: EntityRef) => {
+    const categoryId = getEntityId(categoryRef);
     const category = relatedData.categories.find(cat => cat._id === categoryId);
     return category?.name || 'N/A';
   };
 
-  const getStoreName = (storeId: string) => {
+  const getStoreName = (storeRef: EntityRef) => {
+    const storeId = getEntityId(storeRef);
     const store = relatedData.stores.find(store => store._id === storeId);
     return store?.storeName || 'N/A';
   };
@@ -174,6 +296,14 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
   };
 
   const { addToWishlist, isLoading: isWishlistLoading } = useWishlist();
+
+  const getStoreDetails = () => {
+    const storeId = getEntityId(product.vendorStoreId);
+    if (!storeId) return undefined;
+    return relatedData.stores.find((store) => store._id === storeId);
+  };
+
+  const storeDetails = getStoreDetails();
 
   const handleWishlist = async () => {
     await addToWishlist(product._id);
@@ -328,11 +458,66 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
                   {product.category ? getCategoryName(product.category) : 'N/A'}
                 </span>
               </div>
+
               
              
              
             
             </div>
+
+            {colorOptions.length > 0 && (
+              <div className="space-y-2 pt-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Available Colors:</span>
+                  <span className="font-medium text-gray-900">
+                    {selectedColorLabel || 'Select a color'}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {colorOptions.map((color) => (
+                    <button
+                      key={color.id}
+                      type="button"
+                      onClick={() => setSelectedColorId(color.id)}
+                      className={`px-3 py-1.5 rounded-full border text-sm ${
+                        selectedColorId === color.id
+                          ? 'border-blue-600 text-blue-600 bg-blue-50'
+                          : 'border-gray-300 text-gray-700 hover:border-blue-300'
+                      }`}
+                    >
+                      {color.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {sizeOptions.length > 0 && (
+              <div className="space-y-2 pt-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Select Size:</span>
+                  <span className="font-medium text-gray-900">
+                    {selectedSizeLabel || 'Select a size'}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {sizeOptions.map((size) => (
+                    <button
+                      key={size.id}
+                      type="button"
+                      onClick={() => setSelectedSizeId(size.id)}
+                      className={`px-3 py-1.5 rounded-lg border text-sm uppercase ${
+                        selectedSizeId === size.id
+                          ? 'border-blue-600 text-blue-600 bg-blue-50'
+                          : 'border-gray-300 text-gray-700 hover:border-blue-300'
+                      }`}
+                    >
+                      {size.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
 
             {/* Quantity Selector */}
@@ -473,20 +658,79 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
               </div>
             </TabsContent>
             
-                  <TabsContent value="vendorInformation" className="mt-6">
+            <TabsContent value="vendorInformation" className="mt-6">
+              {storeDetails ? (
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Vendor Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <Card>
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-center gap-3">
+                          {storeDetails.storeLogo ? (
+                            <Image
+                              src={storeDetails.storeLogo}
+                              alt={storeDetails.storeName}
+                              width={48}
+                              height={48}
+                              className="rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold">
+                              {storeDetails.storeName?.charAt(0)?.toUpperCase() || 'S'}
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase tracking-wide">Store Name</p>
+                            <p className="text-base font-semibold text-gray-900">{storeDetails.storeName}</p>
+                          </div>
+                        </div>
+                        {storeDetails.vendorShortDescription && (
+                          <p className="text-sm text-gray-600">{storeDetails.vendorShortDescription}</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 space-y-3">
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Contact</p>
+                          <p className="text-sm text-gray-700">
+                            {storeDetails.storePhone || 'Phone unavailable'}
+                          </p>
+                          <p className="text-sm text-blue-600 break-words">
+                            {storeDetails.storeEmail || 'Email unavailable'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Address</p>
+                          <p className="text-sm text-gray-700">
+                            {storeDetails.storeAddress || 'Address not provided'}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="lg:col-span-1">
                       <CardContent className="p-4">
                         <div className="space-y-2">
-                          <h4 className="text-lg font-semibold">Vendor Name</h4>
-                          <p className="text-gray-600">John Doe</p>
+                          <h4 className="text-sm font-semibold text-gray-900">Store Description</h4>
+                          {storeDetails.fullDescription ? (
+                            <div className="text-sm text-gray-600 prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ __html: storeDetails.fullDescription }}
+                            />
+                          ) : (
+                            <p className="text-sm text-gray-500">
+                              Detailed vendor description is not available.
+                            </p>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
                   </div>
                 </div>
+              ) : (
+                <div className="border border-dashed border-gray-300 rounded-lg p-6 text-center text-gray-500">
+                  Vendor details are not available for this product.
+                </div>
+              )}
             </TabsContent>
             <TabsContent value="customersReviews" className="mt-4 sm:mt-6">
               <div className="space-y-4">
