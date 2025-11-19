@@ -100,9 +100,12 @@ const updateProductQA = async (req: NextRequest, { params }: { params: { id: str
 };
 
 //Delete a question (and answer if exists)
-const deleteProductQA = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const deleteProductQA = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   await ProductQAService.deleteProductQAFromDB(id);
 
   return sendResponse({
