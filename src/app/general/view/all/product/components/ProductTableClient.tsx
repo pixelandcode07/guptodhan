@@ -16,12 +16,12 @@ type ApiProduct = {
   _id: string;
   productId: string;
   productTitle: string;
-  category?: { name?: string } | string;
+  category?: { _id?: string; name?: string } | string;
   vendorStoreId?: { storeName?: string } | string;
   productPrice?: number;
   discountPrice?: number;
   stock?: number;
-  flag?: string;
+  flag?: { _id?: string; name?: string } | string;
   status: 'active' | 'inactive';
   createdAt: string;
   thumbnailImage?: string;
@@ -124,7 +124,17 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       }
       storeName = storeName || 'N/A';
       
-      const flagName = p.flag ? (flagMap[p.flag] || p.flag) : "";
+      let flagName = "";
+      if (typeof p.flag === "string") {
+        flagName = flagMap[p.flag] || p.flag;
+      } else if (p.flag && typeof p.flag === "object") {
+        const flagId = "_id" in p.flag ? p.flag._id : undefined;
+        const flagLabel = "name" in p.flag ? p.flag.name : undefined;
+        flagName =
+          flagLabel ||
+          (flagId ? flagMap[flagId] : "") ||
+          "";
+      }
       return {
         id: idx + 1,
         _id: p._id,

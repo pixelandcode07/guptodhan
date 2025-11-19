@@ -86,6 +86,31 @@ interface ProductItem {
   color?: string;
 }
 
+const toObjectId = (
+  value: unknown,
+  label: string,
+  options: { optional?: boolean } = {}
+): Types.ObjectId | undefined => {
+  const { optional = false } = options;
+
+  if (value === undefined || value === null || value === '') {
+    if (optional) return undefined;
+    throw new Error(`${label} is required.`);
+  }
+
+  if (value instanceof Types.ObjectId) {
+    return value;
+  }
+
+  if (typeof value === 'string' && Types.ObjectId.isValid(value)) {
+    return new Types.ObjectId(value);
+  }
+
+  if (optional) return undefined;
+
+  throw new Error(`${label} is invalid.`);
+};
+
 // Main controller
 export const createOrderWithDetails = async (req: NextRequest) => {
   await dbConnect();
@@ -107,8 +132,8 @@ export const createOrderWithDetails = async (req: NextRequest) => {
     const orderDetailsDocs: Partial<IOrderDetails>[] = body.products.map((p: ProductItem) => ({
       orderDetailsId: uuidv4().split('-')[0],
       orderId: new Types.ObjectId(), // temporary, will replace after Order doc is created
-      productId: new Types.ObjectId(p.productId),
-      vendorId: new Types.ObjectId(p.vendorId),
+      productId: toObjectId(p.productId, 'Product ID'),
+      vendorId: toObjectId(p.vendorId, 'Vendor ID'),
       quantity: p.quantity,
       unitPrice: p.unitPrice,
       discountPrice: p.discountPrice,
@@ -127,7 +152,7 @@ export const createOrderWithDetails = async (req: NextRequest) => {
     // Get vendorStoreId from the first product's vendorStoreId
     let storeId: Types.ObjectId | undefined = undefined;
     if (body.storeId) {
-      storeId = new Types.ObjectId(body.storeId);
+      storeId = toObjectId(body.storeId, 'Store ID', { optional: true });
     } else if (body.products && body.products.length > 0) {
       // Fetch the first product to get its vendorStoreId
       try {
@@ -145,7 +170,7 @@ export const createOrderWithDetails = async (req: NextRequest) => {
     // Step 4: Get or find default payment method if not provided
     let paymentMethodId: Types.ObjectId | undefined = undefined;
     if (body.paymentMethodId) {
-      paymentMethodId = new Types.ObjectId(body.paymentMethodId);
+      paymentMethodId = toObjectId(body.paymentMethodId, 'Payment Method ID');
     } else {
       // Try to find COD payment method dynamically
       try {
@@ -214,7 +239,7 @@ export const createOrderWithDetails = async (req: NextRequest) => {
     // Step 5: Create the main Order document
     const orderPayload: Partial<IOrder> = {
       orderId,
-      userId: new Types.ObjectId(body.userId),
+      userId: toObjectId(body.userId, 'User ID'),
       storeId: storeId,
       deliveryMethodId: body.deliveryMethodId,
       paymentMethod: body.paymentMethod,
