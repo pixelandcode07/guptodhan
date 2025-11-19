@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { QuestionAnswersSkeleton } from "./QuestionAnswersSkeleton";
 
 export default function QuestionAnswersClient() {
   const [data, setData] = useState<QuestionAnswer[]>([]);
@@ -37,6 +38,7 @@ export default function QuestionAnswersClient() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { data: session } = useSession();
 
   type Session = {
@@ -48,6 +50,7 @@ export default function QuestionAnswersClient() {
   const userRole = sessionData?.user?.role;
 
   const fetchProductQA = useCallback(async () => {
+    setIsLoading(true);
     try {
       const response = await axios.get("/api/v1/product-qna", {
         headers: {
@@ -60,6 +63,7 @@ export default function QuestionAnswersClient() {
         _id?: string;
         qaId?: string;
         productId?: string;
+        productName?: string;
         userId?: string;
         userName?: string;
         userEmail?: string;
@@ -79,11 +83,51 @@ export default function QuestionAnswersClient() {
         ? response.data.data
         : [];
 
+      const productIds = Array.from(
+        new Set(
+          items
+            .map((qa) => qa.productId)
+            .filter((id): id is string => Boolean(id))
+        )
+      );
+
+      let productNameMap: Record<string, string> = {};
+      if (productIds.length) {
+        const entries = await Promise.all(
+          productIds.map(async (id) => {
+            try {
+              const res = await axios.get(`/api/v1/product/${id}`, {
+                headers: {
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                  ...(userRole ? { "x-user-role": userRole } : {}),
+                },
+              });
+              const payload =
+                res.data?.data?.product ?? res.data?.data ?? res.data?.data?.data;
+              const title =
+                payload?.productTitle ||
+                payload?.title ||
+                payload?.name ||
+                id;
+              return [id, title] as const;
+            } catch {
+              return [id, id] as const;
+            }
+          })
+        );
+        productNameMap = Object.fromEntries(entries);
+      }
+
       const mapped: QuestionAnswer[] = items.map((qa, index) => ({
         id: index + 1,
         qaRecordId: qa._id || qa.qaId || "",
         image: qa.userImage || "",
-        product: String(qa.productId ?? ""),
+        product: String(
+          (qa.productId && productNameMap[qa.productId]) ??
+            qa.productName ??
+            qa.productId ??
+            "N/A"
+        ),
         customers_name: String(qa.userName ?? ""),
         email: String(qa.userEmail ?? ""),
         question: String(qa.question ?? ""),
@@ -97,6 +141,8 @@ export default function QuestionAnswersClient() {
     } catch (error) {
       console.error("Failed to fetch product Q&A", error);
       toast.error("Failed to load questions.");
+    } finally {
+      setIsLoading(false);
     }
   }, [token, userRole]);
 
@@ -210,11 +256,15 @@ export default function QuestionAnswersClient() {
 
         <div className="mb-4 sm:mb-6">
           <div className="bg-white rounded-lg sm:rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <div className="min-w-[900px]">
-                <DataTable columns={columns} data={data} />
+            {isLoading ? (
+              <QuestionAnswersSkeleton />
+            ) : (
+              <div className="overflow-x-auto">
+                <div className="min-w-[900px]">
+                  <DataTable columns={columns} data={data} />
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
