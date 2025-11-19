@@ -3,17 +3,18 @@ import { z } from 'zod';
 // Reusable schema for productOptions
 const productOptionValidationSchema = z.object({
   productImage: z.string().optional(),
-  unit: z.string().optional(),
-  simType: z.string().optional(),
-  warranty: z.string().optional(),
-  condition: z.string().optional(),
+
+  unit: z.array(z.string()).optional(),
+  simType: z.array(z.string()).optional(),
+  condition: z.array(z.string()).optional(),
+  color: z.array(z.string()).optional(),
+  size: z.array(z.string()).optional(),
+
   stock: z.number().optional(),
   price: z.number().optional(),
   discountPrice: z.number().optional(),
-  color: z.string().optional(),
-  size: z.string().optional(),
+  warranty: z.string().optional(),
 });
-
 // Create vendor product validation
 export const createVendorProductValidationSchema = z.object({
   // ✅ **পরিবর্তন:** vendorStoreId যোগ করা হয়েছে

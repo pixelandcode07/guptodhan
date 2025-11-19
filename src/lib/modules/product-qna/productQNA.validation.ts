@@ -10,7 +10,7 @@ export const createProductQAValidationSchema = z.object({
   userImage: z.string().optional(),
   question: z.string().min(1, { message: 'Question is required.' }),
   createdAt: z.string().optional(),
-  status: z.enum(['pending', 'answered', 'hidden']).default('pending'),
+  status: z.enum(['active', 'inactive']).default('inactive'),
   answer: z
     .object({
       answeredByName: z.string().min(1, { message: 'Answered by name is required.' }),
@@ -31,7 +31,7 @@ export const updateProductQAValidationSchema = z.object({
   userImage: z.string().optional(),
   question: z.string().optional(),
   createdAt: z.string().optional(),
-  status: z.enum(['pending', 'answered', 'hidden']).optional(),
+  status: z.enum(['active','inactive']).optional(),
   answer: z
     .object({
       answeredByName: z.string().optional(),

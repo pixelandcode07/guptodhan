@@ -5,19 +5,21 @@ import { IVendorProduct } from './vendorProduct.interface';
 const productOptionSchema = new Schema(
   {
     productImage: { type: String },
-    unit: { type: String },
-    simType: { type: String },
-    warranty: { type: String },
-    condition: { type: String },
+
+    unit: [{ type: String }],
+    simType: [{ type: String }],
+    condition: [{ type: String }],
+    warranty: {type: String},
+
     stock: { type: Number },
     price: { type: Number },
     discountPrice: { type: Number },
-    color: { type: String },
-    size: { type: String },
+
+    color: [{ type: String }],
+    size: [{ type: String }],
   },
   { _id: false }
 );
-
 const vendorProductSchema = new Schema<IVendorProduct>(
   {
     productId: { type: String, required: true, unique: true },

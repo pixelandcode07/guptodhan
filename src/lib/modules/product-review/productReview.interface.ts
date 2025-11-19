@@ -8,6 +8,9 @@ export interface IReview extends Document {
   userEmail: string;
   uploadedTime: Date;
   rating: number;
-  comment: string; 
+  comment: string;
   userImage: string;
+
+  //multiple images
+  reviewImages?: string[];   
 }
