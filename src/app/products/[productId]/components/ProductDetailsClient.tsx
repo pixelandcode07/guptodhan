@@ -11,6 +11,7 @@ import Image from 'next/image';
 import { toast } from 'sonner';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
+import { ProductQASection } from './ProductQASection';
 
 interface Review {
   _id: string;
@@ -72,6 +73,21 @@ interface ProductData {
       discountPrice?: number;
       color?: string;
       size?: string;
+    }>;
+    qna?: Array<{
+      _id?: string;
+      qaId?: string;
+      userName?: string;
+      userEmail?: string;
+      userImage?: string;
+      question?: string;
+      createdAt?: string;
+      answer?: {
+        answeredByName?: string;
+        answeredByEmail?: string;
+        answerText?: string;
+        createdAt?: string;
+      };
     }>;
   };
   relatedData: {
@@ -143,7 +159,13 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
           ? option.productImage
           : undefined;
 
-      (option.color ?? []).forEach((colorValue) => {
+      const colors = Array.isArray(option.color)
+        ? option.color
+        : option.color
+        ? [option.color]
+        : [];
+
+      colors.forEach((colorValue) => {
         if (typeof colorValue !== 'string') return;
         const id = colorValue.trim();
         if (!id) return;
@@ -167,9 +189,15 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
     const seen = new Set<string>();
     const list: Array<{ id: string; label: string }> = [];
     (product.productOptions ?? []).forEach((option) => {
-      (option.size ?? []).forEach((size) => {
-        if (typeof size !== 'string') return;
-        const id = size.trim();
+      const sizes = Array.isArray(option.size)
+        ? option.size
+        : option.size
+        ? [option.size]
+        : [];
+
+      sizes.forEach((sizeValue) => {
+        if (typeof sizeValue !== 'string') return;
+        const id = sizeValue.trim();
         if (!id || seen.has(id)) return;
         seen.add(id);
         const label = sizeLabelLookup.get(id) || id;
@@ -666,12 +694,13 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
       <Card>
         <CardContent className="p-4 sm:p-6">
           <Tabs defaultValue="description" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 h-auto">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 h-auto">
               <TabsTrigger value="description" className="text-xs sm:text-sm py-2">Description</TabsTrigger>
               <TabsTrigger value="specifications" className="text-xs sm:text-sm py-2">Specifications</TabsTrigger>
               <TabsTrigger value="warranty" className="text-xs sm:text-sm py-2">Warranty</TabsTrigger>
               <TabsTrigger value="vendorInformation" className="text-xs sm:text-sm py-2">Vendor Info</TabsTrigger>
               <TabsTrigger value="customersReviews" className="text-xs sm:text-sm py-2">Reviews</TabsTrigger>
+              <TabsTrigger value="questions" className="text-xs sm:text-sm py-2">Q&amp;A</TabsTrigger>
             </TabsList>
             
             <TabsContent value="description" className="mt-6">
@@ -845,6 +874,10 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
                   </div>
                 )}
               </div>
+            </TabsContent>
+
+            <TabsContent value="questions" className="mt-6">
+              <ProductQASection productId={product._id} initialQA={product.qna ?? []} />
             </TabsContent>
               </Tabs>
         </CardContent>

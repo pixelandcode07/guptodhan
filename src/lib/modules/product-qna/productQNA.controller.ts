@@ -42,9 +42,12 @@ const getAllProductQA = async () => {
 };
 
 //Get Q&A by product
-const getProductQAByProduct = async (req: NextRequest, { params }: { params: { productId: string } }) => {
+const getProductQAByProduct = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ productId: string }> }
+) => {
   await dbConnect();
-  const { productId } = params;
+  const { productId } = await params;
   const result = await ProductQAService.getProductQAByProductFromDB(productId);
 
   return sendResponse({
@@ -56,9 +59,12 @@ const getProductQAByProduct = async (req: NextRequest, { params }: { params: { p
 };
 
 //Get questions by user
-const getProductQAByUser = async (req: NextRequest, { params }: { params: { userId: string } }) => {
+const getProductQAByUser = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
+) => {
   await dbConnect();
-  const { userId } = params;
+  const { userId } = await params;
   const result = await ProductQAService.getProductQAByUserFromDB(userId);
 
   return sendResponse({
@@ -94,9 +100,12 @@ const updateProductQA = async (req: NextRequest, { params }: { params: { id: str
 };
 
 //Delete a question (and answer if exists)
-const deleteProductQA = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const deleteProductQA = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   await ProductQAService.deleteProductQAFromDB(id);
 
   return sendResponse({
