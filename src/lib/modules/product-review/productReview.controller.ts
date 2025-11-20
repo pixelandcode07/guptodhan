@@ -5,15 +5,14 @@ import { createReviewValidationSchema, updateReviewValidationSchema } from './pr
 import { ReviewServices } from './productReview.service';
 import dbConnect from '@/lib/db';
 import { Types } from 'mongoose';
-import { uploadToCloudinary } from '@/lib/utils/cloudinary'; // ✅ আপনার ইউটিলিটি ইমপোর্ট
+import { uploadToCloudinary } from '@/lib/utils/cloudinary';
+import { IReview } from './productReview.interface';
 
 // Create a new review
 const createReview = async (req: NextRequest) => {
     await dbConnect();
 
     try {
-        // ❌ req.json() ব্যবহার করবেন না (এটিই এরর দিচ্ছিল)
-        // ✅ req.formData() ব্যবহার করুন
         const formData = await req.formData();
 
         // ১. ইমেজ ফাইলগুলো প্রসেস করা
@@ -21,14 +20,12 @@ const createReview = async (req: NextRequest) => {
         let uploadedImageUrls: string[] = [];
 
         if (reviewImageFiles && reviewImageFiles.length > 0) {
-            // লুপ চালিয়ে সব ইমেজ আপলোড করা
             for (const file of reviewImageFiles) {
                 if (file instanceof File) {
-                    // File কে Buffer এ কনভার্ট করা (আপনার ইউটিলিটির জন্য প্রয়োজন)
                     const arrayBuffer = await file.arrayBuffer();
                     const buffer = Buffer.from(arrayBuffer);
 
-                    // Cloudinary তে আপলোড (ফোল্ডার নাম: 'product-reviews')
+                    // Cloudinary তে আপলোড
                     const uploadResult = await uploadToCloudinary(buffer, 'product-reviews');
                     
                     if (uploadResult && uploadResult.secure_url) {
@@ -45,21 +42,24 @@ const createReview = async (req: NextRequest) => {
             userId: formData.get('userId'),
             userName: formData.get('userName'),
             userEmail: formData.get('userEmail'),
-            rating: Number(formData.get('rating')), // স্ট্রিং থেকে নাম্বারে কনভার্ট
+            rating: Number(formData.get('rating')),
             comment: formData.get('comment'),
             userImage: formData.get('userImage'),
-            reviewImages: uploadedImageUrls, // আপলোড করা ইমেজের লিংক
+            reviewImages: uploadedImageUrls,
         };
 
-        // ৩. ভ্যালিডেশন (Zod)
+        // ৩. ভ্যালিডেশন
         const validatedData = createReviewValidationSchema.parse(rawData);
 
-        // ৪. ডাটাবেস পেইলড তৈরি
+        // ৪. ডাটাবেস পেইলড তৈরি (টাইপ এরর ফিক্স করা হয়েছে)
+        // as unknown as Partial<IReview> ব্যবহার করা হয়েছে যাতে টাইপ মিসম্যাচ না হয়
         const payload = {
             ...validatedData,
             userId: new Types.ObjectId(validatedData.userId),
             productId: new Types.ObjectId(validatedData.productId),
-        };
+            uploadedTime: validatedData.uploadedTime ? new Date(validatedData.uploadedTime) : undefined,
+            reviewImages: uploadedImageUrls
+        } as unknown as Partial<IReview>;
 
         // ৫. ডাটাবেসে সেভ করা
         const result = await ReviewServices.createReviewInDB(payload);
@@ -114,15 +114,16 @@ const updateReview = async (req: NextRequest, { params }: { params: Promise<{ id
     await dbConnect();
     const { id } = await params;
     
-    // নোট: আপডেটের সময় ইমেজ পাঠাতে চাইলে এখানেও formData() লজিক লাগবে।
-    // আপাতত সাধারণ আপডেটের জন্য JSON রাখা হলো।
     const body = await req.json();
     const validatedData = updateReviewValidationSchema.parse(body);
 
+    // আপডেট পে-লোড ফিক্স (টাইপ কাস্টিং)
     const payload = {
         ...validatedData,
         ...(validatedData.userId && { userId: new Types.ObjectId(validatedData.userId) }),
-    };
+        ...(validatedData.productId && { productId: new Types.ObjectId(validatedData.productId) }),
+        ...(validatedData.uploadedTime && { uploadedTime: new Date(validatedData.uploadedTime) }),
+    } as unknown as Partial<IReview>;
 
     const result = await ReviewServices.updateReviewInDB(id, payload);
 
