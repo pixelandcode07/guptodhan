@@ -11,7 +11,6 @@ import { Suspense } from 'react';
 import SectionSkeleton from '@/components/ReusableComponents/SectionSkeleton';
 import { fetchStory } from '@/lib/MainHomePage/fetchStory';
 import StoryFeed from './components/StoryFeed/StoryFeed';
-import ProductDetails from '@/types/hometestpage';
 
 
 export const dynamic = 'force-dynamic';
