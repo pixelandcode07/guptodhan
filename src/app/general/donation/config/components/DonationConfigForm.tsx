@@ -151,7 +151,10 @@ export type DonationFormInputs = {
 
 export default function DonationConfigForm() {
   const { data: session } = useSession()
-  const adminRole = (session?.user as { role?: string })?.role === 'admin'
+  const token = (session?.user as { accessToken?: string; role?: string })?.accessToken
+  const adminRole = (session?.user as { role?: string })?.role === "admin"
+  console.log("token from donation page==>",token)
+  console.log("adminRole from donation page==>",adminRole)
 
   const {
     register,
@@ -185,7 +188,13 @@ export default function DonationConfigForm() {
       formData.append('buttonUrl', data.buttonUrl)
       if (data.image) formData.append('image', data.image)
 
-      const response = await axios.post('/api/v1/donation-configs', formData)
+      const response = await axios.post('/api/v1/donation-configs', formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+          "x-user-role": adminRole,
+        },
+      })
       toast.success('Donation config saved successfully!')
       reset()
       setPreviewImage(null)
@@ -196,7 +205,7 @@ export default function DonationConfigForm() {
   }
 
   return (
-    <div className="m-5 md:m-10 p-5 border border-gray-200 rounded-md bg-[#f8f9fb]">
+    <div className="m-1 md:m-10 p-4 md:p-5 border border-gray-200 rounded-md bg-[#f8f9fb]">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <h1 className="text-lg font-semibold border-l-2 border-blue-500 pl-5">
           Donation Config Form
@@ -214,9 +223,13 @@ export default function DonationConfigForm() {
         {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
 
         {/* Image Upload */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+        {/* <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center"> */}
+        <div className='grid grid-cols-1 md:grid-cols-12 gap-4 items-center'>
           <Label className="col-span-12 md:col-span-2">Image</Label>
+          {/* col-span-12 md:col-span-2 */}
+          <div className='col-span-10'>
           <Controller
+          
             name="image"
             control={control}
             render={({ field }) => (
@@ -234,6 +247,7 @@ export default function DonationConfigForm() {
               />
             )}
           />
+          </div>
         </div>
 
         {/* Short Description */}

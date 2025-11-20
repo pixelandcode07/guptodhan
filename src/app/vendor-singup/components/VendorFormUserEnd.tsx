@@ -12,10 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import StepBadge from "@/components/ReusableComponents/StepBadge";
+import Link from "next/link";
 
 
 
-type CategoryOption = { value: string; Label: string };
+type CategoryOption = { value: string; label: string };
 
 export type Inputs = {
   business_name: string;
@@ -33,6 +34,7 @@ interface Props {
 }
 
 export default function VendorSignupWizard({ vendorCategories }: Props) {
+  // console.log("vendorCategories", vendorCategories)
   const [step, setStep] = useState(1);
   const [ownerNidFile, setOwnerNidFile] = useState<File | null>(null);
   const [tradeLicenseFile, setTradeLicenseFile] = useState<File | null>(null);
@@ -48,7 +50,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
     defaultValues: { business_category: [] },
   });
 
-  const categoryOptions: CategoryOption[] = vendorCategories.map((c) => ({ value: c._id, Label: c.name }));
+  const categoryOptions: CategoryOption[] = vendorCategories.map((c) => ({ value: c._id, label: c.name }));
 
   const next = () => setStep((s) => Math.min(3, s + 1));
   const back = () => setStep((s) => Math.max(1, s - 1));
@@ -257,6 +259,8 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
             </div>
 
             {/* Footer */}
+            <div className="mt-6 text-sm text-slate-700 text-center">
+              Already Have an Account? <Link className="text-emerald-600 font-semibold" href={"/vendor-singin"}>Sing In</Link></div>
             <div className="mt-6 text-sm text-slate-700 text-center">Need help? <a className="text-emerald-600 font-semibold" href="#">Contact Guptodhan support</a></div>
 
           </div>

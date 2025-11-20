@@ -22,6 +22,30 @@ import PricingInventory from './PricingInventory';
 import TagInput from './TagInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+const getIdFromRef = (value: unknown): string => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object' && value !== null) {
+        const record = value as { _id?: unknown; id?: unknown };
+        if (typeof record._id === 'string') return record._id;
+        if (typeof record.id === 'string') return record.id;
+    }
+    return '';
+};
+
+const normalizeToStringArray = (value: unknown): string[] => {
+    if (!value) return [];
+    if (Array.isArray(value)) {
+        return value
+            .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+            .map((item) => item.trim());
+    }
+    if (typeof value === 'string' && value.trim().length > 0) {
+        return [value.trim()];
+    }
+    return [];
+};
+
 export default function ProductForm({ initialData, productId: propProductId }: any) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -199,15 +223,15 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 setProductCode(p.sku || '');
                 setRewardPoints(typeof p.rewardPoints === 'number' ? p.rewardPoints : undefined);
 
-                setStore(p.vendorStoreId || '');
-                setCategory(p.category || '');
-                setInitialSubcategoryId(p.subCategory || '');
-                setInitialChildCategoryId(p.childCategory || '');
-                setBrand(p.brand || '');
-                setInitialModelId(p.productModel || '');
-                setFlag(p.flag || '');
-                setWarranty(p.warranty || '');
-                setUnit(p.weightUnit || '');
+                setStore(getIdFromRef(p.vendorStoreId));
+                setCategory(getIdFromRef(p.category));
+                setInitialSubcategoryId(getIdFromRef(p.subCategory));
+                setInitialChildCategoryId(getIdFromRef(p.childCategory));
+                setBrand(getIdFromRef(p.brand));
+                setInitialModelId(getIdFromRef(p.productModel));
+                setFlag(getIdFromRef(p.flag));
+                setWarranty(getIdFromRef(p.warranty));
+                setUnit(getIdFromRef(p.weightUnit));
 
                 if (p.offerDeadline) {
                     setSpecialOffer(true);
@@ -395,10 +419,31 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 metaKeyword: metaKeywordTags.length > 0 ? metaKeywordTags.join(', ') : undefined,
                 metaDescription: metaDescription || undefined,
                 status: 'active',
-                productOptions: hasVariant ? await Promise.all(variants.map(async variant => ({
-                    ...variant,
-                    image: variant.image ? await uploadFile(variant.image as File) : (variant.imageUrl || ''),
-                }))) : [],
+                productOptions: hasVariant
+                    ? await Promise.all(
+                        variants.map(async (variant) => {
+                            const uploadedImage = variant.image
+                                ? await uploadFile(variant.image as File)
+                                : (variant.imageUrl || '');
+
+                            const {
+                                image,
+                                imageUrl,
+                                ...rest
+                            } = variant;
+
+                            return {
+                                ...rest,
+                                productImage: uploadedImage,
+                                unit: normalizeToStringArray(variant.unit),
+                                simType: normalizeToStringArray(variant.simType),
+                                condition: normalizeToStringArray(variant.condition),
+                                color: normalizeToStringArray(variant.color),
+                                size: normalizeToStringArray(variant.size),
+                            };
+                        })
+                    )
+                    : [],
             };
 
             if (isEditMode && productId) {
@@ -638,18 +683,16 @@ export default function ProductForm({ initialData, productId: propProductId }: a
 
                 {/* Row 3: Product Image Gallery and Product Details */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                    {/* Product Image Gallery - Only show when no variants */}
-                    {!hasVariant && (
-                        <ProductImageGallery
-                            galleryImages={galleryImages}
-                            setGalleryImages={setGalleryImages}
-                            existingGalleryUrls={existingGalleryUrls}
-                            onRemoveExisting={(url) => {
-                                setExistingGalleryUrls(prev => prev.filter(item => item !== url));
-                                setRemovedGalleryUrls(prev => prev.includes(url) ? prev : [...prev, url]);
-                            }}
-                        />
-                    )}
+                    {/* Product Image Gallery */}
+                    <ProductImageGallery
+                        galleryImages={galleryImages}
+                        setGalleryImages={setGalleryImages}
+                        existingGalleryUrls={existingGalleryUrls}
+                        onRemoveExisting={(url) => {
+                            setExistingGalleryUrls(prev => prev.filter(item => item !== url));
+                            setRemovedGalleryUrls(prev => prev.includes(url) ? prev : [...prev, url]);
+                        }}
+                    />
 
                     {/* Product Details Card */}
                     <Card className={`shadow-sm border-gray-200 flex flex-col h-full ${!hasVariant ? '' : 'lg:col-span-2'}`}>

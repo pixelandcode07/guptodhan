@@ -14,8 +14,6 @@ import { IClassifiedAd } from './ad.interface';
 const createAd = async (req: NextRequest) => {
   await dbConnect();
 
-
-
   // 1️⃣ Token verification
   const authHeader = req.headers.get('authorization');
   console.log("=== CREATE AD START ===");
@@ -62,7 +60,8 @@ const createAd = async (req: NextRequest) => {
   // Convert types
   if (payload.price) payload.price = Number(payload.price);
   if (payload.isNegotiable) payload.isNegotiable = payload.isNegotiable === 'true';
-console.log("Payload before validation:", payload);
+  console.log("Payload before validation:", payload);
+  
   // Validation
   const validatedData = createAdValidationSchema.parse(payload);
   console.log("Validated data:", validatedData);
@@ -90,6 +89,7 @@ console.log("Payload before validation:", payload);
     brand: validatedData.brand,
     productModel: validatedData.productModel,
     edition: validatedData.edition,
+    // status এখানে উল্লেখ করার দরকার নেই, Model এর default 'pending' কাজ করবে।
   };
 
   // 6️⃣ Save to DB

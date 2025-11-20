@@ -21,6 +21,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
     pathname.startsWith('/general') ||
     pathname.startsWith('/join-as-vendor') ||
     pathname.startsWith('/vendor-singin') ||
+    pathname.startsWith('/vendor/forgot-password') ||
     pathname.startsWith('/vendor-singup');
 
   return (
