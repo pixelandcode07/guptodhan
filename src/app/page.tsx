@@ -11,6 +11,7 @@ import { Suspense } from 'react';
 import SectionSkeleton from '@/components/ReusableComponents/SectionSkeleton';
 import { fetchStory } from '@/lib/MainHomePage/fetchStory';
 import StoryFeed from './components/StoryFeed/StoryFeed';
+import ProductDetails from '@/types/hometestpage';
 
 
 export const dynamic = 'force-dynamic';
@@ -59,13 +60,17 @@ export default async function MainHomePage() {
       </Suspense>
 
       {/* Flash Sell */}
-      <Suspense fallback={<SectionSkeleton title="Flash Sale" count={6} />}>
-        <FlashSell products={runningOffers} middleHomepage={middleHomepage} />
-      </Suspense>
+     {/* Flash Sell Section - Only show if products exist */}
+      {runningOffers && runningOffers.length > 0 && (
+        <Suspense fallback={<SectionSkeleton title="Flash Sale" count={6} />}>
+          <FlashSell products={runningOffers} middleHomepage={middleHomepage} />
+        </Suspense>
+      )}
 
       {/* BestSell - Loading + Skeleton */}
       <Suspense fallback={<SectionSkeleton title="Best Selling" count={6} />}>
         <BestSell products={bestSelling} topShoppage={topShoppage} />
+      <ProductDetails/>
       </Suspense>
 
       {/* JustForYou - Loading + Skeleton */}
