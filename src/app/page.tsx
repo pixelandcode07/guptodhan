@@ -70,7 +70,7 @@ export default async function MainHomePage() {
       {/* BestSell - Loading + Skeleton */}
       <Suspense fallback={<SectionSkeleton title="Best Selling" count={6} />}>
         <BestSell products={bestSelling} topShoppage={topShoppage} />
-      <ProductDetails/>
+     
       </Suspense>
 
       {/* JustForYou - Loading + Skeleton */}
