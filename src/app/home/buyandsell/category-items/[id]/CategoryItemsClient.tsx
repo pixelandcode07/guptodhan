@@ -29,6 +29,7 @@ interface Ad {
   brand?: string;
   division?: string;
   upazila?: string;
+  condition?: string;
 }
 
 interface Props {
@@ -281,7 +282,7 @@ export default function CategoryItemsClient({
                       </p>
                       {ad.brand && (
                         <Badge variant="secondary" className="text-xs mb-2 w-fit">
-                          {ad.brand.name}
+                          {ad.brand}
                         </Badge>
                       )}
                       <p className="text-lg font-bold text-[#0097E9] mt-auto">

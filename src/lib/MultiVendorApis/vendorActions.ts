@@ -76,11 +76,6 @@ export async function deleteVendor(vendorId: string) {
     }
 }
 
-// src/lib/MultiVendorApi/fetchVendorById.ts
-// import axios from 'axios';
-// import { Vendor } from '@/types/VendorType';
-
-// const API_BASE = process.env.NEXTAUTH_URL;
 
 export async function fetchVendorById(vendorId: string, token: string): Promise<Vendor | null> {
     try {

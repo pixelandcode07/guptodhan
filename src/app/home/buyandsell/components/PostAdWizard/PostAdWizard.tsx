@@ -143,7 +143,11 @@ export default function PostAdWizard() {
         },
       });
 
-      toast.success('Ad submitted successfully!');
+      // toast.success('Ad submitted successfully!');
+      toast('Ad Submitted', {
+        description: 'Your advertisement has been successfully submitted and is now pending admin approval. We will review it shortly.',
+        duration: 12000,
+      });
       form.reset();
       setActiveTab('step1');
     } catch (err) {
