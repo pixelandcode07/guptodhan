@@ -6,21 +6,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ChevronRight, 
   Star, 
-  CheckCircle, 
   Heart, 
   Share2,
-  Minus,
-  Plus,
+  MapPin,
+  Info,
+  Store,
   ShieldCheck,
-  User
+  User,
+  Home,
+  CheckCircle2,
+  Banknote,
+  MessageCircle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react'; 
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { ProductQASection } from './ProductQASection';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Types & Interfaces ---
 interface Review {
@@ -38,7 +44,7 @@ interface Review {
 
 type EntityRef<T extends object = Record<string, unknown>> =
   | string
-  | (T & { _id?: string; id?: string })
+  | (T & { _id?: string; id?: string; name?: string; brandName?: string })
   | null
   | undefined;
 
@@ -64,7 +70,7 @@ interface ProductData {
       productImage?: string;
       color?: string;
       size?: string;
-    }>;
+     }>;
     qna?: any[];
   };
   relatedData: {
@@ -90,6 +96,52 @@ interface ProductDetailsClientProps {
   productData: ProductData;
 }
 
+// --- Animation Variants ---
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { 
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.5, ease: "easeOut" }
+  }
+};
+
+const tabContentVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { 
+        opacity: 1, 
+        y: 0,
+        transition: { duration: 0.3, ease: "easeOut" }
+    }
+};
+
+const imageFadeVariants = {
+  initial: { opacity: 0, scale: 0.95 },
+  animate: { opacity: 1, scale: 1 },
+  exit: { opacity: 0, transition: { duration: 0.2 } }
+};
+
+const breadcrumbContainerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+        opacity: 1, 
+        transition: { staggerChildren: 0.1, delayChildren: 0.2 } 
+    }
+};
+
+const breadcrumbItemVariants = {
+    hidden: { opacity: 0, x: -10 },
+    visible: { opacity: 1, x: 0 }
+};
+
 export default function ProductDetailsClient({ productData }: ProductDetailsClientProps) {
   const router = useRouter();
   const { data: session } = useSession(); 
@@ -103,6 +155,9 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
   const [isBuyingNow, setIsBuyingNow] = useState(false);
   const [selectedColorId, setSelectedColorId] = useState<string | null>(null);
   const [selectedSizeId, setSelectedSizeId] = useState<string | null>(null);
+  
+  // Delivery Location State
+  const [locationType, setLocationType] = useState<'dhaka' | 'outside'>('dhaka');
   
   // Reviews State
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -126,7 +181,19 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
 
   const getCategoryName = () => {
     const catId = getEntityId(product.category);
-    return relatedData.categories.find(c => c._id === catId)?.name || 'Category';
+    const foundCat = relatedData.categories.find(c => c._id === catId);
+    if (foundCat) return foundCat.name;
+    if (typeof product.category === 'object' && product.category !== null) {
+        return product.category.name || 'Category';
+    }
+    return 'Category';
+  };
+
+  const getBrandName = () => {
+    if (typeof product.brand === 'object' && product.brand !== null) {
+        return product.brand.name || product.brand.brandName || 'No Brand';
+    }
+    return 'No Brand';
   };
 
   const getStoreDetails = () => {
@@ -135,6 +202,18 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
   };
 
   const storeDetails = getStoreDetails();
+
+  // --- Delivery Logic ---
+  const deliveryCharge = locationType === 'dhaka' ? 70 : 130;
+  const deliveryTime = locationType === 'dhaka' ? '1 - 4 day(s)' : '4 - 7 day(s)';
+  const locationText = locationType === 'dhaka' 
+        ? 'Dhaka, Dhaka North, Banani Road No. 12 - 19' 
+        : 'Outside Dhaka, Sadar, Chattogram';
+
+  const toggleLocation = () => {
+      setLocationType(prev => prev === 'dhaka' ? 'outside' : 'dhaka');
+      toast.success(`Location changed to ${locationType === 'dhaka' ? 'Outside Dhaka' : 'Inside Dhaka'}`);
+  };
 
   // --- Options Logic ---
   const colorLabelLookup = useMemo(() => {
@@ -324,393 +403,544 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
     ? Math.round(((product.productPrice - product.discountPrice) / product.productPrice) * 100) 
     : 0;
 
+  const selectedColorName = colorOptions.find(c => c.id === selectedColorId)?.label;
+  const selectedSizeName = sizeOptions.find(s => s.id === selectedSizeId)?.label;
+
 
   // ================= RENDER START =================
   return (
-    <div className="min-h-screen bg-[#f2f4f8] font-sans text-gray-800 pb-12">
+    <motion.div 
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="min-h-screen bg-[#f2f4f8] font-sans text-gray-800 pb-12"
+    >
       
-      {/* --- Breadcrumb --- */}
-      <div className="bg-white border-b shadow-sm sticky top-0 z-20">
-        <div className="container mx-auto px-4 py-3 text-xs sm:text-sm text-gray-500 flex items-center gap-2">
-          <span className="cursor-pointer hover:text-[#00005e]" onClick={() => router.push('/')}>Home</span> 
-          <ChevronRight size={14} />
-          <span className="cursor-pointer hover:text-[#00005e]">{getCategoryName()}</span> 
-          <ChevronRight size={14} />
-          <span className="text-[#00005e] font-semibold truncate max-w-[250px]">{product.productTitle}</span>
+      {/* --- DYNAMIC BREADCRUMB SECTION --- */}
+      <div className="bg-white shadow-sm sticky top-0 z-20">
+        <div className="container mx-auto px-4 py-3">
+            <motion.div 
+                className="flex items-center flex-wrap gap-1.5 text-xs sm:text-sm text-gray-500"
+                variants={breadcrumbContainerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                <Link href="/">
+                    <motion.div 
+                        variants={breadcrumbItemVariants}
+                        whileHover={{ scale: 1.05, color: "#0099cc", x: 2 }}
+                        className="flex items-center gap-1 cursor-pointer transition-colors duration-200"
+                    >
+                        <Home size={14} />
+                        <span>Home</span>
+                    </motion.div>
+                </Link>
+
+                <motion.div variants={breadcrumbItemVariants} className="text-gray-400">
+                    <ChevronRight size={14} />
+                </motion.div>
+
+                <Link href={`/category/${getEntityId(product.category)}`}>
+                    <motion.div 
+                        variants={breadcrumbItemVariants}
+                        whileHover={{ scale: 1.05, color: "#0099cc", x: 2 }}
+                        className="cursor-pointer transition-colors duration-200 font-medium"
+                    >
+                        {getCategoryName()}
+                    </motion.div>
+                </Link>
+
+                <motion.div variants={breadcrumbItemVariants} className="text-gray-400">
+                    <ChevronRight size={14} />
+                </motion.div>
+
+                <motion.div 
+                    variants={breadcrumbItemVariants}
+                    whileHover={{ scale: 1.05, color: "#0099cc", x: 2 }}
+                    className="cursor-pointer transition-colors duration-200 font-medium"
+                >
+                    {getBrandName()}
+                </motion.div>
+
+                <motion.div variants={breadcrumbItemVariants} className="text-gray-400">
+                    <ChevronRight size={14} />
+                </motion.div>
+
+                <motion.div 
+                    variants={breadcrumbItemVariants}
+                    className="text-[#D83088] font-medium truncate max-w-[150px] sm:max-w-[300px]"
+                >
+                    {product.productTitle}
+                </motion.div>
+            </motion.div>
         </div>
       </div>
 
+
       {/* --- Main Product Section --- */}
-      <div className="container mx-auto px-4 mt-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white p-6 rounded shadow-sm border border-gray-200">
+      <div className="container mx-auto px-4 mt-4">
+        <motion.div 
+          variants={itemVariants}
+          className="grid grid-cols-1 lg:grid-cols-12 gap-4 bg-white p-4 rounded shadow-sm border border-gray-200"
+        >
           
           {/* Left: Image Gallery */}
           <div className="lg:col-span-4">
-            <div className="border border-gray-200 rounded mb-4 bg-white flex items-center justify-center h-[400px] relative p-4">
-              <Image 
-                src={selectedImage} 
-                alt={product.productTitle} 
-                fill
-                className="object-contain"
-                priority
-              />
-              {discountPercent > 0 && (
-                <span className="absolute top-3 right-3 bg-[#00005e] text-white text-xs font-bold px-2 py-1 rounded">
-                  {discountPercent}% OFF
-                </span>
-              )}
+            <div className="border-0 rounded mb-2 bg-white flex items-center justify-center h-[350px] sm:h-[400px] relative overflow-hidden">
+              <AnimatePresence mode='wait'>
+                <motion.div
+                   key={selectedImage}
+                   variants={imageFadeVariants}
+                   initial="initial"
+                   animate="animate"
+                   exit="exit"
+                   className="relative w-full h-full"
+                >
+                   <Image 
+                     src={selectedImage} 
+                     alt={product.productTitle} 
+                     fill
+                     className="object-contain"
+                     priority
+                   />
+                </motion.div>
+              </AnimatePresence>
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-2">
+            
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 {(product.photoGallery || [product.thumbnailImage]).map((img, idx) => (
-                   <div 
+                   <motion.div 
                      key={idx} 
+                     whileHover={{ scale: 1.05 }}
+                     whileTap={{ scale: 0.95 }}
                      onClick={() => setSelectedImage(img)}
-                     className={`w-16 h-16 border rounded cursor-pointer flex-shrink-0 relative bg-white transition-all ${selectedImage === img ? 'border-[#00005e] ring-1 ring-[#00005e]' : 'hover:border-gray-400'}`}
+                     className={`w-16 h-16 border rounded cursor-pointer flex-shrink-0 relative bg-white transition-all overflow-hidden ${selectedImage === img ? 'border-[#0099cc] ring-1 ring-[#0099cc]' : 'border-gray-200 hover:border-gray-400'}`}
                    >
-                      <Image src={img} alt={`thumb-${idx}`} fill className="object-contain p-1"/>
-                   </div>
+                      <Image src={img} alt={`thumb-${idx}`} fill className="object-cover"/>
+                   </motion.div>
                 ))}
             </div>
           </div>
 
           {/* Middle: Product Info */}
-          <div className="lg:col-span-5 space-y-5">
+          <div className="lg:col-span-5 space-y-4 px-2">
             <div>
-              <h1 className="text-2xl font-bold text-[#00005e] mb-2 leading-tight">
+              <h1 className="text-xl sm:text-2xl font-normal text-gray-900 mb-2 leading-tight">
                 {product.productTitle}
               </h1>
               
-              {/* Specs Pills */}
-              <div className="flex flex-wrap gap-2 mb-3 text-xs">
-                 <span className="bg-[#f2f4f8] px-3 py-1 rounded-full text-gray-600 border">
-                   Price: <span className="font-bold text-[#00005e]">{formatPrice(product.discountPrice || product.productPrice)}</span>
-                 </span>
-                 <span className="bg-[#f2f4f8] px-3 py-1 rounded-full text-gray-600 border">
-                   Code: <span className="font-bold text-gray-800">{product._id.slice(-6)}</span>
-                 </span>
-                 <span className="bg-[#f2f4f8] px-3 py-1 rounded-full text-gray-600 border">
-                   Status: <span className={`font-bold ${product.stock ? 'text-green-600' : 'text-red-600'}`}>{product.stock ? 'In Stock' : 'Out of Stock'}</span>
-                 </span>
+              <div className="flex items-center gap-4 text-sm mb-3">
+                <div className="flex items-center gap-1">
+                    <div className="flex text-orange-400">
+                         {[1,2,3,4,5].map((s) => (
+                            <Star key={s} size={14} fill={s <= Math.round(Number(averageRating)) ? "currentColor" : "none"} />
+                         ))}
+                    </div>
+                    <span className="text-[#0099cc] hover:underline cursor-pointer">Rating {reviews.length || 58}</span>
+                </div>
+                <span className="text-gray-300">|</span>
+                <span className="text-[#0099cc] hover:underline cursor-pointer">2 Answered Questions</span>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs sm:text-sm mb-3">
+                 <span className="text-gray-500">Brand:</span>
+                 <span className="text-[#0099cc] cursor-pointer font-medium">{getBrandName()}</span>
+                 <span className="text-gray-300">|</span>
+                 <span className="text-[#0099cc] cursor-pointer hover:underline">More {getCategoryName()} from {getBrandName()}</span>
+              </div>
+
+              <div className="border-t border-b py-3 border-gray-100">
+                 <div className="flex items-center gap-2">
+                    <span className="text-3xl font-medium text-[#0099cc]">
+                       {formatPrice(product.discountPrice || product.productPrice)}
+                    </span>
+                 </div>
+                 {product.discountPrice && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-gray-400 line-through text-sm">
+                        {formatPrice(product.productPrice)}
+                      </span>
+                      <span className="text-gray-900 text-sm">
+                         -{discountPercent}%
+                      </span>
+                    </div>
+                 )}
               </div>
             </div>
 
-            {/* Price Area */}
-            <div className="flex items-end gap-3 pb-4 border-b border-dashed border-gray-300">
-                <span className="text-3xl font-bold text-[#00005e]">
-                   {formatPrice(product.discountPrice || product.productPrice)}
-                </span>
-                {product.discountPrice && (
-                  <span className="text-gray-400 line-through text-lg mb-1">
-                    {formatPrice(product.productPrice)}
-                  </span>
+            {/* Options Section */}
+            <div className="space-y-4">
+                {/* Color */}
+                {colorOptions.length > 0 && (
+                    <div>
+                        <div className="flex items-center gap-1 mb-2">
+                            <span className="text-gray-500 text-sm">Available Color:</span>
+                            <span className="font-bold text-gray-800 text-sm">{selectedColorName}</span>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                            {colorOptions.map((c) => (
+                              <motion.button 
+                                key={c.id}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setSelectedColorId(c.id)}
+                                className={`relative h-10 min-w-[40px] border rounded flex items-center justify-center overflow-hidden transition-all ${selectedColorId === c.id ? 'border-[#0099cc] ring-1 ring-[#0099cc]' : 'border-gray-200 hover:border-gray-400'}`}
+                              >
+                                 {c.image ? (
+                                     <Image src={c.image} alt={c.label} width={38} height={38} className="object-cover w-full h-full"/>
+                                 ) : (
+                                     <span className="px-2 text-xs font-medium">{c.label}</span>
+                                 )}
+                              </motion.button>
+                            ))}
+                        </div>
+                    </div>
                 )}
+
+                {/* Size */}
+                {sizeOptions.length > 0 && (
+                    <div>
+                        <div className="flex items-center gap-1 mb-2">
+                            <span className="text-gray-500 text-sm">Select Size:</span>
+                            <span className="font-bold text-gray-800 text-sm">{selectedSizeName}</span>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                            {sizeOptions.map((s) => (
+                                <motion.button 
+                                    key={s.id} 
+                                    whileHover={{ scale: 1.05, backgroundColor: "#f0f9ff" }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => setSelectedSizeId(s.id)}
+                                    className={`h-9 px-4 border rounded text-sm font-medium transition-all ${selectedSizeId === s.id ? 'border-[#0099cc] text-[#0099cc] bg-[#f0f9ff]' : 'border-gray-200 hover:border-[#0099cc] text-gray-700'}`}
+                                >
+                                    {s.label}
+                                </motion.button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Buttons */}
+                <div className="flex gap-3 mt-2">
+                   <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                       <Button 
+                         onClick={handleBuyNow}
+                         disabled={isBuyingNow || !product.stock}
+                         className="w-full h-11 bg-[#0099cc] hover:bg-[#0088bb] text-white font-medium text-base rounded-sm shadow-none"
+                       >
+                         {isBuyingNow ? 'Processing...' : 'Buy Now'}
+                       </Button>
+                   </motion.div>
+                   
+                   <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                       <Button 
+                         onClick={handleAddToCart}
+                         disabled={cartLoading || isAddingToCart || !product.stock}
+                         className="w-full h-11 bg-[#0e1133] hover:bg-[#1a1e4d] text-white font-medium text-base rounded-sm shadow-none"
+                       >
+                         {cartLoading || isAddingToCart ? 'Adding...' : 'Add to Cart'}
+                       </Button>
+                   </motion.div>
+                </div>
             </div>
 
-            {/* Selection: Color */}
-            {colorOptions.length > 0 && (
-                <div>
-                    <span className="text-sm font-semibold text-gray-700 mb-2 block">Color Family</span>
-                    <div className="flex gap-2 flex-wrap">
-                        {colorOptions.map((c) => (
-                          <button 
-                            key={c.id}
-                            onClick={() => setSelectedColorId(c.id)}
-                            className={`px-4 py-1.5 border rounded text-sm font-medium transition-colors ${selectedColorId === c.id ? 'bg-[#00005e] text-white border-[#00005e]' : 'bg-white hover:border-[#00005e] text-gray-700'}`}
-                          >
-                             {c.label}
-                          </button>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Selection: Size */}
-            {sizeOptions.length > 0 && (
-                <div>
-                    <span className="text-sm font-semibold text-gray-700 mb-2 block">Size</span>
-                    <div className="flex gap-2 flex-wrap">
-                        {sizeOptions.map((s) => (
-                            <button 
-                                key={s.id} 
-                                onClick={() => setSelectedSizeId(s.id)}
-                                className={`px-4 py-1.5 border rounded text-sm font-medium transition-colors ${selectedSizeId === s.id ? 'bg-[#00005e] text-white border-[#00005e]' : 'bg-white hover:border-[#00005e] text-gray-700'}`}
-                            >
-                                {s.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex flex-wrap gap-4 pt-2">
-               <div className="flex items-center border border-gray-300 rounded h-12 w-32 bg-white">
-                 <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-full flex items-center justify-center hover:bg-gray-100"><Minus size={16}/></button>
-                 <span className="flex-1 text-center font-bold text-lg">{quantity}</span>
-                 <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-full flex items-center justify-center hover:bg-gray-100"><Plus size={16}/></button>
-               </div>
-
-               <Button 
-                 onClick={handleBuyNow}
-                 disabled={isBuyingNow || !product.stock}
-                 className="flex-1 h-12 bg-[#00005e] hover:bg-[#000040] text-white font-bold text-base uppercase tracking-wide shadow-sm"
-               >
-                  {isBuyingNow ? 'Processing...' : 'Buy Now'}
-               </Button>
-               
-               <Button 
-                 onClick={handleAddToCart}
-                 disabled={cartLoading || isAddingToCart || !product.stock}
-                 variant="outline"
-                 className="flex-1 h-12 border-2 border-[#00005e] text-[#00005e] hover:bg-[#f0f4ff] font-bold text-base uppercase tracking-wide"
-               >
-                  {cartLoading || isAddingToCart ? 'Adding...' : 'Add to Cart'}
-               </Button>
-            </div>
-            
-            <div className="flex gap-6 text-sm text-gray-500 pt-2">
-                 <button onClick={() => addToWishlist(product._id)} disabled={isWishlistLoading} className="flex items-center gap-2 hover:text-[#00005e] transition">
-                    <Heart size={18}/> Add to Wishlist
+            <div className="flex gap-6 text-sm text-gray-500 pt-2 border-t mt-4 border-gray-100">
+                 <button onClick={() => addToWishlist(product._id)} disabled={isWishlistLoading} className="flex items-center gap-2 hover:text-[#0099cc] transition group">
+                    <motion.div whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.8 }}>
+                        <Heart size={16} className="group-hover:text-[#0099cc]"/>
+                    </motion.div>
+                    <span className="text-xs">Add to Wishlist</span>
                  </button>
-                 <button onClick={handleShare} className="flex items-center gap-2 hover:text-[#00005e] transition">
-                    <Share2 size={18}/> Share
+                 <button onClick={handleShare} className="flex items-center gap-2 hover:text-[#0099cc] transition group">
+                    <motion.div whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.8 }}>
+                        <Share2 size={16} className="group-hover:text-[#0099cc]"/>
+                    </motion.div>
+                    <span className="text-xs">Share</span>
                  </button>
             </div>
           </div>
 
-          {/* Right: Sidebar Info */}
-          <div className="lg:col-span-3 space-y-4">
-             {/* Service Info */}
-             <div className="bg-white p-4 rounded border border-gray-200">
-                <div className="flex items-center gap-2 mb-3 border-b pb-2">
-                    <ShieldCheck className="text-[#00005e]" size={20}/>
-                    <span className="font-bold text-gray-700 text-sm">Service & Warranty</span>
-                </div>
-                <ul className="text-sm space-y-3 text-gray-600">
-                    <li className="flex gap-2 items-start">
-                        <CheckCircle size={16} className="text-green-500 mt-0.5 shrink-0"/> 
-                        <span>100% Authentic Product</span>
-                    </li>
-                    <li className="flex gap-2 items-start">
-                        <CheckCircle size={16} className="text-green-500 mt-0.5 shrink-0"/> 
-                        <span>{product.warrantyPolicy ? 'Warranty Available' : 'No Warranty'}</span>
-                    </li>
-                    <li className="flex gap-2 items-start">
-                        <CheckCircle size={16} className="text-green-500 mt-0.5 shrink-0"/> 
-                        <span>7 Days Happy Return</span>
-                    </li>
-                </ul>
-             </div>
-
-             {/* Seller Info */}
-             <div className="bg-[#f8f9fc] p-4 rounded border border-gray-200">
-                 <div className="flex items-center gap-3 mb-3">
-                    {storeDetails?.storeLogo ? (
-                        <Image src={storeDetails.storeLogo} width={40} height={40} alt="Store" className="rounded-full border"/>
-                    ) : (
-                        <div className="w-10 h-10 rounded-full bg-white border flex items-center justify-center text-[#00005e] font-bold">
-                           {storeDetails?.storeName?.charAt(0) || 'S'}
+          {/* ================= RIGHT SIDEBAR (DYNAMIC) ================= */}
+          <div className="lg:col-span-3 space-y-0 bg-[#fafafa] h-fit">
+             
+             {/* Delivery Option Section */}
+             <div className="bg-[#fafafa] p-4">
+                 <h3 className="text-xs font-medium text-gray-500 uppercase mb-4 tracking-wide">Delivery option</h3>
+                 
+                 {/* Dynamic Location Address */}
+                 <div className="flex items-start gap-3 mb-5">
+                    <MapPin className="text-gray-500 mt-1 shrink-0" size={20} />
+                    <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                             <span className="text-sm text-gray-800 font-normal leading-snug">
+                                {locationText}
+                             </span>
+                             <button 
+                                onClick={toggleLocation}
+                                className="text-[#0099cc] text-xs font-bold uppercase hover:underline ml-2 shrink-0"
+                             >
+                                CHANGE
+                             </button>
                         </div>
-                    )}
-                    <div className="overflow-hidden">
-                        <span className="text-xs text-gray-500 block">Sold By</span>
-                        <span className="font-bold text-[#00005e] truncate block">{storeDetails?.storeName || 'Guptodhan'}</span>
                     </div>
                  </div>
-                 <Button variant="outline" className="w-full border-[#00005e] text-[#00005e] hover:bg-[#00005e] hover:text-white text-xs font-bold h-9 uppercase">
-                     Visit Store
-                 </Button>
+                 
+                 {/* Dynamic Standard Delivery */}
+                 <div className="flex items-start gap-3 mb-4">
+                    <div className="w-[20px] flex justify-center mt-0.5">
+                        <Store className="text-gray-500" size={20} />
+                    </div>
+                    <div className="flex-1">
+                        <div className="flex justify-between items-center">
+                             <span className="text-sm font-normal text-gray-800">Standard Delivery</span>
+                             <motion.span 
+                                key={deliveryCharge}
+                                initial={{ opacity: 0, y: -5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="text-sm font-bold text-gray-800"
+                             >
+                                Tk {deliveryCharge}
+                             </motion.span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">{deliveryTime}</p>
+                    </div>
+                 </div>
+
+                 {/* Cash on Delivery */}
+                 <div className="flex items-center gap-3 mb-4">
+                    <div className="w-[20px] flex justify-center">
+                        <div className="border border-gray-400 rounded-full p-[3px]">
+                            <Banknote size={12} className="text-gray-600"/>
+                        </div>
+                    </div>
+                    <span className="text-sm text-gray-800">Cash on Delivery Available</span>
+                 </div>
+                 
+                 <div className="border-t border-gray-200 my-4"></div>
+
+                 {/* Service Section */}
+                 <div className="flex items-start gap-3">
+                    <div className="w-[20px] flex justify-center mt-0.5">
+                        <Info className="text-gray-500" size={20} />
+                    </div>
+                    <div className="flex-1">
+                        <span className="text-sm font-medium text-gray-800 block mb-1">Service</span>
+                        
+                        <span className="text-xs text-gray-500 block mb-0.5">7 Days Returns</span>
+                        <span className="text-xs text-gray-400 block mb-1">Change of mind is not applicable</span>
+                        
+                        <span className="text-xs text-gray-500 block font-medium">
+                            {product.warrantyPolicy ? product.warrantyPolicy : 'Warranty not available'}
+                        </span>
+                    </div>
+                 </div>
+             </div>
+
+             {/* Sold By Section */}
+             <div className="bg-white border p-4 mt-3 rounded-sm">
+                 <p className="text-xs text-gray-500 mb-3">Sold by</p>
+                 
+                 <div className="flex justify-between items-start mb-5">
+                    <div className="flex gap-3 overflow-hidden">
+                       {/* Dynamic Store Logo */}
+                       {storeDetails?.storeLogo ? (
+                          <Image src={storeDetails.storeLogo} width={30} height={30} alt="Store" className="rounded-sm border object-cover w-[30px] h-[30px]"/>
+                       ) : (
+                          <div className="w-[30px] h-[30px] rounded-sm bg-gray-100 border flex items-center justify-center text-[#0099cc] font-bold shrink-0">
+                             {storeDetails?.storeName?.charAt(0) || 'S'}
+                          </div>
+                       )}
+                       
+                       <div className="flex flex-col">
+                           <div className="flex items-center gap-1">
+                                <span className="font-medium text-gray-800 text-sm truncate max-w-[120px]" title={storeDetails?.storeName}>
+                                    {storeDetails?.storeName || 'BD FASHION HOUSE'}
+                                </span>
+                                <CheckCircle2 size={14} className="text-[#0099cc] fill-white" /> 
+                           </div>
+                       </div>
+                    </div>
+                    
+                    <button className="text-[#0099cc] px-2 py-1 text-xs uppercase font-medium flex items-center gap-1 hover:bg-blue-50 rounded transition-colors">
+                        CHAT
+                    </button>
+                 </div>
+
+                 {/* Ratings Box */}
+                 <div className="grid grid-cols-3 divide-x border border-gray-100 bg-white py-2 mb-2">
+                    <div className="text-center px-1">
+                        <span className="block text-gray-400 text-[10px] mb-1">Ship on Time</span>
+                        <span className="block text-gray-700 font-bold text-lg leading-none">98%</span>
+                    </div>
+                    <div className="text-center px-1">
+                        <span className="block text-gray-400 text-[10px] mb-1">Chat Response</span>
+                        <span className="block text-gray-700 font-bold text-lg leading-none">90%</span>
+                    </div>
+                    <div className="text-center px-1">
+                        <span className="block text-gray-400 text-[10px] mb-1">Rating</span>
+                        <span className="block text-gray-700 font-bold text-lg leading-none">89%</span>
+                    </div>
+                 </div>
+
+                 <div className="text-center mt-4 border-t pt-2 border-gray-50">
+                    <Link href={`/store/${storeDetails?._id}`}>
+                        <span className="text-[#0099cc] text-xs font-bold uppercase cursor-pointer hover:underline">
+                            Visit Store
+                        </span>
+                    </Link>
+                 </div>
              </div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
-      {/* ================= TABS SECTION (Specification as Professional Table) ================= */}
+      {/* ================= TABS SECTION (WITH ANIMATION) ================= */}
       <div className="container mx-auto px-4 mt-8">
-        <div className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden">
+        <motion.div 
+          variants={itemVariants}
+          className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden"
+        >
            <Tabs defaultValue="specification" className="w-full">
                 {/* Tab Header */}
                 <div className="bg-[#f2f4f8] border-b px-4">
                     <TabsList className="flex justify-start h-auto bg-transparent p-0 w-full overflow-x-auto">
-                        <TabsTrigger 
-                            value="specification" 
-                            className="px-6 py-3 rounded-none font-bold text-gray-600 border-b-2 border-transparent data-[state=active]:bg-[#00005e] data-[state=active]:text-white data-[state=active]:border-[#00005e] transition-all"
-                        >
-                            Specification
-                        </TabsTrigger>
-                        <TabsTrigger 
-                            value="description" 
-                            className="px-6 py-3 rounded-none font-bold text-gray-600 border-b-2 border-transparent data-[state=active]:bg-[#00005e] data-[state=active]:text-white data-[state=active]:border-[#00005e] transition-all"
-                        >
-                            Description
-                        </TabsTrigger>
-                        <TabsTrigger 
-                            value="reviews" 
-                            className="px-6 py-3 rounded-none font-bold text-gray-600 border-b-2 border-transparent data-[state=active]:bg-[#00005e] data-[state=active]:text-white data-[state=active]:border-[#00005e] transition-all"
-                        >
-                            Reviews ({reviews.length})
-                        </TabsTrigger>
-                        <TabsTrigger 
-                            value="qna" 
-                            className="px-6 py-3 rounded-none font-bold text-gray-600 border-b-2 border-transparent data-[state=active]:bg-[#00005e] data-[state=active]:text-white data-[state=active]:border-[#00005e] transition-all"
-                        >
-                            Q&A
-                        </TabsTrigger>
+                        {['specification', 'description', 'reviews', 'qna'].map((tab) => (
+                             <TabsTrigger 
+                                key={tab}
+                                value={tab} 
+                                className="px-6 py-3 rounded-none font-bold text-gray-600 border-b-2 border-transparent data-[state=active]:bg-[#00005e] data-[state=active]:text-white data-[state=active]:border-[#00005e] transition-all capitalize"
+                            >
+                                {tab === 'reviews' ? `Reviews (${reviews.length})` : tab === 'qna' ? 'Q&A' : tab}
+                            </TabsTrigger>
+                        ))}
                     </TabsList>
                 </div>
 
                 <div className="p-6 min-h-[300px]">
                     
-                    {/* Specification Tab (Professional Table Design) */}
+                    {/* Specification Tab */}
                     <TabsContent value="specification">
-                        <h3 className="text-xl font-bold text-[#00005e] mb-6">Technical Specifications</h3>
-                        <div 
-                          className="
-                            w-full overflow-x-auto
-                            
-                            /* --- Table General Style --- */
-                            [&_table]:w-full 
-                            [&_table]:border-collapse 
-                            [&_table]:text-sm 
-                            [&_table]:border 
-                            [&_table]:border-gray-200
-                            
-                            /* --- Table Rows --- */
-                            [&_tr]:border-b 
-                            [&_tr]:border-gray-200 
-                            [&_tr:last-child]:border-0
-                            
-                            /* --- Table Cells (TD) --- */
-                            [&_td]:p-4 
-                            [&_td]:align-middle 
-                            [&_td]:border-r 
-                            [&_td]:border-gray-200 
-                            [&_td:last-child]:border-r-0
-                            
-                            /* --- Key Column (First TD) Style --- */
-                            [&_td:first-child]:bg-[#f9fafb] 
-                            [&_td:first-child]:font-semibold 
-                            [&_td:first-child]:text-[#00005e] 
-                            [&_td:first-child]:w-[30%] 
-                            [&_td:first-child]:min-w-[180px]
-                            
-                            /* --- Value Column (Last TD) Style --- */
-                            [&_td:last-child]:bg-white 
-                            [&_td:last-child]:text-gray-700
-                            
-                            /* --- Fallback for Paragraphs (If content is not a table) --- */
-                            [&_p]:flex [&_p]:items-start [&_p]:gap-2 [&_p]:py-2 [&_p]:border-b [&_p]:border-gray-100
-                            [&_strong]:min-w-[150px] [&_strong]:text-[#00005e] [&_strong]:font-bold
-                          "
-                          dangerouslySetInnerHTML={{ __html: product.specification || '<p class="text-gray-500">No specifications provided.</p>' }} 
-                        />
+                        <motion.div variants={tabContentVariants} initial="hidden" animate="visible">
+                            <h3 className="text-xl font-bold text-[#00005e] mb-6">Technical Specifications</h3>
+                            <div 
+                              className="w-full overflow-x-auto [&_table]:w-full [&_table]:border-collapse [&_table]:text-sm [&_table]:border [&_table]:border-gray-200 [&_tr]:border-b [&_tr]:border-gray-200 [&_tr:last-child]:border-0 [&_td]:p-4 [&_td]:align-middle [&_td]:border-r [&_td]:border-gray-200 [&_td:last-child]:border-r-0 [&_td:first-child]:bg-[#f9fafb] [&_td:first-child]:font-semibold [&_td:first-child]:text-[#00005e] [&_td:first-child]:w-[30%] [&_td:first-child]:min-w-[180px] [&_td:last-child]:bg-white [&_td:last-child]:text-gray-700 [&_p]:flex [&_p]:items-start [&_p]:gap-2 [&_p]:py-2 [&_p]:border-b [&_p]:border-gray-100 [&_strong]:min-w-[150px] [&_strong]:text-[#00005e] [&_strong]:font-bold"
+                              dangerouslySetInnerHTML={{ __html: product.specification || '<p class="text-gray-500">No specifications provided.</p>' }} 
+                            />
+                        </motion.div>
                     </TabsContent>
 
                     {/* Description Tab */}
                     <TabsContent value="description">
-                        <h3 className="text-xl font-bold text-[#00005e] mb-4">Description</h3>
-                        <div 
-                          className="prose max-w-none text-gray-700 text-sm leading-relaxed [&_h1]:text-[#00005e] [&_h2]:text-[#00005e] [&_ul]:list-disc [&_ul]:ml-5"
-                          dangerouslySetInnerHTML={{ __html: product.fullDescription }} 
-                        />
+                        <motion.div variants={tabContentVariants} initial="hidden" animate="visible">
+                            <h3 className="text-xl font-bold text-[#00005e] mb-4">Description</h3>
+                            <div 
+                              className="prose max-w-none text-gray-700 text-sm leading-relaxed [&_h1]:text-[#00005e] [&_h2]:text-[#00005e] [&_ul]:list-disc [&_ul]:ml-5"
+                              dangerouslySetInnerHTML={{ __html: product.fullDescription }} 
+                            />
+                        </motion.div>
                     </TabsContent>
 
                     {/* Reviews Tab */}
                     <TabsContent value="reviews">
-                        <h3 className="text-xl font-bold text-[#00005e] mb-6">Customer Reviews</h3>
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                            {/* Left: Summary & Form */}
-                            <div className="lg:col-span-4 space-y-6">
-                                <div className="bg-[#f8f9fc] p-6 rounded border text-center">
-                                    <div className="text-5xl font-bold text-[#00005e] mb-2">{averageRating}</div>
-                                    <div className="flex justify-center text-orange-400 mb-2 text-lg">
-                                        {[1,2,3,4,5].map((s) => (
-                                            <Star key={s} fill={s <= Math.round(Number(averageRating)) ? "currentColor" : "none"} className={s > Math.round(Number(averageRating)) ? "text-gray-300" : ""} />
-                                        ))}
+                        <motion.div variants={tabContentVariants} initial="hidden" animate="visible">
+                            <h3 className="text-xl font-bold text-[#00005e] mb-6">Customer Reviews</h3>
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                {/* Left: Summary & Form */}
+                                <div className="lg:col-span-4 space-y-6">
+                                    <div className="bg-[#f8f9fc] p-6 rounded border text-center">
+                                        <div className="text-5xl font-bold text-[#00005e] mb-2">{averageRating}</div>
+                                        <div className="flex justify-center text-orange-400 mb-2 text-lg">
+                                            {[1,2,3,4,5].map((s) => (
+                                                <Star key={s} fill={s <= Math.round(Number(averageRating)) ? "currentColor" : "none"} className={s > Math.round(Number(averageRating)) ? "text-gray-300" : ""} />
+                                            ))}
+                                        </div>
+                                        <p className="text-gray-500 text-sm">{reviews.length} Verified Reviews</p>
                                     </div>
-                                    <p className="text-gray-500 text-sm">{reviews.length} Verified Reviews</p>
+
+                                    {/* Review Form */}
+                                    <div className="bg-white border p-5 rounded">
+                                        <h4 className="font-bold text-gray-800 mb-3 text-sm">Write a Review</h4>
+                                        {!session?.user ? (
+                                            <div className="text-center py-4">
+                                                <User className="mx-auto mb-2 text-gray-400"/>
+                                                <p className="text-xs text-gray-500 mb-3">Please login to write a review</p>
+                                                <Button size="sm" variant="outline" onClick={() => router.push('/auth/login')}>Login</Button>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                <div className="flex gap-1">
+                                                    {[1, 2, 3, 4, 5].map((star) => (
+                                                        <motion.div key={star} whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.9 }}>
+                                                            <Star 
+                                                                size={24} 
+                                                                onClick={() => setNewReviewRating(star)}
+                                                                className={`cursor-pointer transition ${star <= newReviewRating ? 'text-orange-400 fill-orange-400' : 'text-gray-300'}`} 
+                                                            />
+                                                        </motion.div>
+                                                    ))}
+                                                </div>
+                                                <textarea 
+                                                    className="w-full p-3 border rounded text-sm focus:outline-none focus:border-[#00005e] bg-gray-50"
+                                                    rows={3}
+                                                    placeholder="What did you like or dislike?"
+                                                    value={newReviewComment}
+                                                    onChange={(e) => setNewReviewComment(e.target.value)}
+                                                />
+                                                <Button 
+                                                    onClick={handleSubmitReview} 
+                                                    disabled={isSubmittingReview}
+                                                    className="w-full bg-[#00005e] hover:bg-[#000040] text-white"
+                                                >
+                                                    {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
-                                {/* Review Form */}
-                                <div className="bg-white border p-5 rounded">
-                                    <h4 className="font-bold text-gray-800 mb-3 text-sm">Write a Review</h4>
-                                    {!session?.user ? (
-                                        <div className="text-center py-4">
-                                            <User className="mx-auto mb-2 text-gray-400"/>
-                                            <p className="text-xs text-gray-500 mb-3">Please login to write a review</p>
-                                            <Button size="sm" variant="outline" onClick={() => router.push('/auth/login')}>Login</Button>
-                                        </div>
+                                {/* Right: Review List */}
+                                <div className="lg:col-span-8 space-y-4">
+                                    {reviewsLoading ? <p>Loading...</p> : reviews.length === 0 ? (
+                                        <p className="text-gray-500 italic">No reviews yet.</p>
                                     ) : (
-                                        <div className="space-y-3">
-                                            <div className="flex gap-1">
-                                                {[1, 2, 3, 4, 5].map((star) => (
-                                                    <Star 
-                                                        key={star} 
-                                                        size={24} 
-                                                        onClick={() => setNewReviewRating(star)}
-                                                        className={`cursor-pointer transition ${star <= newReviewRating ? 'text-orange-400 fill-orange-400' : 'text-gray-300'}`} 
-                                                    />
-                                                ))}
+                                        reviews.map((review) => (
+                                            <div key={review._id} className="border-b pb-4 last:border-0">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-[#00005e] font-bold">
+                                                            {review.userName.charAt(0)}
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-bold text-gray-800">{review.userName}</p>
+                                                            <div className="flex text-orange-400 text-xs mt-0.5">
+                                                                {[...Array(5)].map((_, i) => (
+                                                                    <Star key={i} size={12} fill={i < review.rating ? "currentColor" : "none"} className={i >= review.rating ? "text-gray-300" : ""}/>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-xs text-gray-400">{new Date(review.uploadedTime).toLocaleDateString()}</span>
+                                                </div>
+                                                <p className="text-gray-600 text-sm ml-12 mt-2">{review.comment}</p>
                                             </div>
-                                            <textarea 
-                                                className="w-full p-3 border rounded text-sm focus:outline-none focus:border-[#00005e] bg-gray-50"
-                                                rows={3}
-                                                placeholder="What did you like or dislike?"
-                                                value={newReviewComment}
-                                                onChange={(e) => setNewReviewComment(e.target.value)}
-                                            />
-                                            <Button 
-                                                onClick={handleSubmitReview} 
-                                                disabled={isSubmittingReview}
-                                                className="w-full bg-[#00005e] hover:bg-[#000040] text-white"
-                                            >
-                                                {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
-                                            </Button>
-                                        </div>
+                                        ))
                                     )}
                                 </div>
                             </div>
-
-                            {/* Right: Review List */}
-                            <div className="lg:col-span-8 space-y-4">
-                                {reviewsLoading ? <p>Loading...</p> : reviews.length === 0 ? (
-                                    <p className="text-gray-500 italic">No reviews yet.</p>
-                                ) : (
-                                    reviews.map((review) => (
-                                        <div key={review._id} className="border-b pb-4 last:border-0">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-[#00005e] font-bold">
-                                                        {review.userName.charAt(0)}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-gray-800">{review.userName}</p>
-                                                        <div className="flex text-orange-400 text-xs mt-0.5">
-                                                            {[...Array(5)].map((_, i) => (
-                                                                <Star key={i} size={12} fill={i < review.rating ? "currentColor" : "none"} className={i >= review.rating ? "text-gray-300" : ""}/>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <span className="text-xs text-gray-400">{new Date(review.uploadedTime).toLocaleDateString()}</span>
-                                            </div>
-                                            <p className="text-gray-600 text-sm ml-12 mt-2">{review.comment}</p>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
+                        </motion.div>
                     </TabsContent>
 
                     {/* Q&A Tab */}
                     <TabsContent value="qna">
-                          <ProductQASection productId={product._id} initialQA={product.qna || []} />
+                          <motion.div variants={tabContentVariants} initial="hidden" animate="visible">
+                             <ProductQASection productId={product._id} initialQA={product.qna || []} />
+                          </motion.div>
                     </TabsContent>
                 </div>
            </Tabs>
-        </div>
+        </motion.div>
       </div>
 
-    </div>
+    </motion.div>
   );
 }
