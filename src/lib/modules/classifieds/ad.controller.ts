@@ -179,6 +179,8 @@ const deleteAd = async (req: NextRequest, { params }: { params: { id: string } }
   return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad deleted', data: null });
 };
 
+
+
 const getPublicAdsByCategoryId = async (_req: NextRequest, { params }: { params: Promise<{ categoryId: string }> }) => {
   await dbConnect();
   const { categoryId } = await params;

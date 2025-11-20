@@ -35,7 +35,7 @@ export async function generateMetadata() {
 
 export default async function CategoryItemsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const baseUrl = process.env.NEXTAUTH_URL;
 
   let ads: Ad[] = [];
   let category: any = { name: 'Loading...', adCount: 0 };
