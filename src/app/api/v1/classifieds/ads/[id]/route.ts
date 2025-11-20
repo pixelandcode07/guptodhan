@@ -10,3 +10,4 @@ export const GET = catchAsync(ClassifiedAdController.getSingleAd);
 export const PATCH = catchAsync(ClassifiedAdController.updateAd);
 // একটি নির্দিষ্ট বিজ্ঞাপন ডিলিট করার জন্য
 export const DELETE = catchAsync(ClassifiedAdController.deleteAd);
+

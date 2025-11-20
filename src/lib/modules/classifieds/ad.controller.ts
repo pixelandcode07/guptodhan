@@ -39,7 +39,7 @@ const createAd = async (req: NextRequest) => {
     images.map(async file => uploadToCloudinary(Buffer.from(await file.arrayBuffer()), 'classified-ads'))
   );
   console.log("Upload results:", uploadResults);
-  
+
   const imageUrls = uploadResults.map(r => r.secure_url);
   console.log("Image URLs:", imageUrls);
 
@@ -61,7 +61,7 @@ const createAd = async (req: NextRequest) => {
   if (payload.price) payload.price = Number(payload.price);
   if (payload.isNegotiable) payload.isNegotiable = payload.isNegotiable === 'true';
   console.log("Payload before validation:", payload);
-  
+
   // Validation
   const validatedData = createAdValidationSchema.parse(payload);
   console.log("Validated data:", validatedData);
@@ -226,7 +226,7 @@ const updateAdStatus = async (req: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   const { status } = await req.json();
 
-  if (!['active', 'inactive', 'sold'].includes(status)) {
+  if (!['pending', 'active', 'inactive', 'sold'].includes(status)) {
     throw new Error('Invalid status value.');
   }
 

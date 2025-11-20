@@ -11,7 +11,7 @@ export const createAdValidationSchema = z.object({
   condition: z.enum(['new', 'used']),
   authenticity: z.string(),
   description: z.string().min(20),
-  price: z.coerce.number().positive(), 
+  price: z.coerce.number().positive(),
   isNegotiable: z.coerce.boolean().optional(),
   images: z.array(z.string().url()).min(1),
   contactDetails: z.object({

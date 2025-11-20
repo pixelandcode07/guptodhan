@@ -34,7 +34,7 @@ const createAdInDB = async (payload: Partial<IClassifiedAd>) => {
 // src/lib/modules/classifieds/ad.service.ts
 
 const searchAdsInDB = async (filters: Record<string, any>) => {
-  const query: Record<string, any> = { status: 'active' };
+  const query: Record<string, any> = {};
 
   // ক্যাটাগরি → ObjectId
   if (filters.category) {
@@ -133,7 +133,7 @@ const deleteAdFromDB = async (adId: string, userId: string) => {
   try {
     session.startTransaction();
     if (ad.images?.length) {
-    await Promise.all(ad.images.map((url: string) => deleteFromCloudinary(url)));
+      await Promise.all(ad.images.map((url: string) => deleteFromCloudinary(url)));
     }
     await ClassifiedAd.findByIdAndDelete(adId, { session });
     await session.commitTransaction();
@@ -148,9 +148,9 @@ const deleteAdFromDB = async (adId: string, userId: string) => {
 
 // ✅ NEW: একটি নির্দিষ্ট ক্যাটাগরির সব বিজ্ঞাপন খোঁজার ফাংশন
 const getPublicAdsByCategoryIdFromDB = async (categoryId: string) => {
-  return await ClassifiedAd.find({ 
+  return await ClassifiedAd.find({
     category: new Types.ObjectId(categoryId), // ক্যাটাগরি ID দিয়ে খোঁজা হচ্ছে
-    status: 'active'  
+    status: 'active'
   })
     .populate('user', 'name profilePicture')
     .populate('category', 'name')
@@ -164,7 +164,7 @@ const getFiltersForCategoryFromDB = async (categoryId: string) => {
     const categoryObjectId = new Types.ObjectId(categoryId);
 
     const result = await ClassifiedAd.aggregate([
-// macting cateogires
+      // macting cateogires
       {
         $match: {
           category: categoryObjectId,
@@ -184,14 +184,14 @@ const getFiltersForCategoryFromDB = async (categoryId: string) => {
           brands: [
             { $match: { brand: { $exists: true, $ne: null } } }, // শুধু ব্র্যান্ড আছে এমন বিজ্ঞাপন
             {
-              $lookup: { 
-                from: 'brands', 
+              $lookup: {
+                from: 'brands',
                 localField: 'brand',
                 foreignField: '_id',
                 as: 'brandDetails'
               }
             },
-            { $unwind: '$brandDetails' }, 
+            { $unwind: '$brandDetails' },
             { $group: { _id: "$brandDetails.name", count: { $sum: 1 } } },
             { $project: { _id: 0, name: "$_id", count: 1 } },
             { $sort: { name: 1 } }
@@ -201,7 +201,7 @@ const getFiltersForCategoryFromDB = async (categoryId: string) => {
             { $match: { subCategory: { $exists: true, $ne: null } } },
             {
               $lookup: {
-                from: 'classifiedsubcategories', 
+                from: 'classifiedsubcategories',
                 localField: 'subCategory',
                 foreignField: '_id',
                 as: 'subCategoryDetails'
@@ -232,7 +232,7 @@ const getAllAdsForAdminFromDB = async () => {
     .sort({ createdAt: -1 });
 }
 
-const updateAdStatusInDB = async (adId: string, status: 'active' | 'inactive' | 'sold') => {
+const updateAdStatusInDB = async (adId: string, status: 'pending' | 'active' | 'inactive' | 'sold') => {
   const ad = await ClassifiedAd.findById(adId);
   if (!ad) {
     throw new Error('Ad not found!');

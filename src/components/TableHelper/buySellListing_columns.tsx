@@ -1,158 +1,218 @@
+// components/TableHelper/buySellListing_columns.tsx
 "use client";
 
-import { cn } from "@/lib/utils";
 import { ColumnDef } from "@tanstack/react-table";
-import { Check, Edit, Eye, X, MoreHorizontal } from "lucide-react";
+import { Check, X, Edit, Eye, MoreHorizontal, Trash2, PackageCheck } from "lucide-react";
 import Image from "next/image";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { approveAd, rejectAd, deleteAd, markAdAsSold } from "@/lib/BuyandSellApis/fetchBuyAndSellAction";
+import { confirmDelete } from "../ReusableComponents/ConfirmToast";
+import { cn } from "@/lib/utils";
+import { ClassifiedAdListing } from "@/types/ClassifiedAdsType";
 
-
-export type BuySellListingType = {
-  id: string;
-  serial: string;
-  product_name: string;
-  product_image: string;
-  category: string;
-  actual_price: number;
-  discount_price: number;
-  status: "pending" | "approved" | "rejected";
-  postedBy: string;
-};
-
-// Placeholder action handlers
-const handleApprove = (id: string) => {
-  console.log("Approve clicked for ID:", id);
-};
-const handleView = (id: string) => {
-  console.log("View clicked for ID:", id);
-};
-const handleEdit = (id: string) => {
-  console.log("Edit clicked for ID:", id);
-};
-const handleReject = (id: string) => {
-  console.log("Reject clicked for ID:", id);
+// Server Actions
+const handleApprove = async (id: string) => {
+  const res = await approveAd(id);
+  toast[res.success ? "success" : "error"]("Status Updated", {
+    description: res.success ? "Ad approved successfully!" : res.message,
+  });
 };
 
-export const buySellListing_columns: ColumnDef<BuySellListingType>[] = [
+const handleReject = async (id: string) => {
+  const res = await rejectAd(id);
+  toast[res.success ? "success" : "error"]("Status Updated", {
+    description: res.success ? "Ad rejected successfully!" : res.message,
+  });
+};
+
+const handleMarkAsSold = async (id: string) => {
+  const res = await markAdAsSold(id);
+  toast[res.success ? "success" : "error"]("Marked as Sold", {
+    description: res.success ? "Ad status changed to sold!" : res.message,
+  });
+};
+
+const handleDelete = async (id: string) => {
+  const confirmed = await confirmDelete("Are you sure you want to permanently delete this ad?");
+  if (!confirmed) return;
+
+  const res = await deleteAd(id);
+  toast[res.success ? "success" : "error"]("Ad Deleted", {
+    description: res.success ? "Ad removed permanently!" : res.message,
+  });
+};
+
+export const buySellListing_columns: ColumnDef<ClassifiedAdListing>[] = [
+  // Serial
   {
-    accessorKey: "serial",
+    id: "serial",
     header: "Serial",
+    cell: ({ row }) => <span className="font-medium">{row.index + 1}</span>,
   },
+
+  // Product Name
   {
-    accessorKey: "product_name",
+    accessorKey: "title",
     header: "Product Name",
+    cell: ({ row }) => <span className="font-medium">{row.getValue("title")}</span>,
   },
+
+  // Image
   {
-    accessorKey: "product_image",
+    id: "image",
     header: "Image",
     cell: ({ row }) => {
-      const imageUrl = row.getValue("product_image") as string;
-      return (
-        <div className="h-12 w-12 relative">
-          <Image
-            src={imageUrl}
-            alt="Product Image"
-            fill
-            className="object-cover rounded-md"
-          />
+      const firstImage = row.original.images[0] || null;
+      return firstImage ? (
+        <div className="relative h-12 w-12 rounded-md overflow-hidden border">
+          <Image src={firstImage} alt="Ad" fill className="object-cover" />
+        </div>
+      ) : (
+        <div className="h-12 w-12 bg-gray-200 border rounded-md flex items-center justify-center text-xs text-gray-500">
+          No Image
         </div>
       );
     },
   },
+
+  // Category + Subcategory
   {
-    accessorKey: "category",
+    id: "category",
     header: "Category",
-  },
-  {
-    accessorKey: "actual_price",
-    header: "Actual Price",
     cell: ({ row }) => {
-      const price = row.getValue("actual_price") as number;
-      return <span>${price.toLocaleString()}</span>;
+      const category = row.original.category?.name || "N/A";
+      const subCategory = row.original.subCategory?.name;
+      return (
+        <div className="text-sm">
+          <div className="font-medium">{category}</div>
+          {subCategory && <div className="text-xs text-gray-500">{subCategory}</div>}
+        </div>
+      );
     },
   },
+
+  // Price
   {
-    accessorKey: "discount_price",
-    header: "Discount Price",
+    accessorKey: "price",
+    header: "Price",
     cell: ({ row }) => {
-      const price = row.getValue("discount_price") as number;
-      return <span className="text-green-600">${price.toLocaleString()}</span>;
+      const price = row.getValue("price") as number;
+      const isNegotiable = row.original.isNegotiable;
+      return (
+        <div className="font-medium">
+          ৳{price.toLocaleString()}
+          {isNegotiable && <span className="text-xs text-green-600 ml-1">(Negotiable)</span>}
+        </div>
+      );
     },
   },
+
+  // Status Badge
   {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string;
+      const status = row.getValue("status") as ClassifiedAdListing["status"];
       return (
-        <div
+        <span
           className={cn(
-            "px-2 py-1 rounded-md w-max text-xs capitalize",
-            status === "pending" && "text-yellow-500 bg-yellow-100",
-            status === "approved" && "text-green-600 bg-green-100",
-            status === "rejected" && "text-white bg-red-500"
+            "px-3 py-1 rounded-full text-xs font-medium capitalize",
+            status === "pending" && "bg-yellow-100 text-yellow-800",
+            status === "active" && "bg-green-100 text-green-800",
+            status === "inactive" && "bg-red-100 text-red-800",
+            status === "sold" && "bg-gray-100 text-gray-800"
           )}
         >
           {status}
+        </span>
+      );
+    },
+  },
+
+  // Posted By
+  {
+    id: "postedBy",
+    header: "Posted By",
+    cell: ({ row }) => {
+      const user = row.original.user;
+      return (
+        <div className="flex items-center gap-2">
+          {user.profilePicture ? (
+            <Image src={user.profilePicture} alt={user.name} width={28} height={28} className="rounded-full" />
+          ) : (
+            <div className="w-7 h-7 bg-gray-300 rounded-full" />
+          )}
+          <span className="text-sm font-medium">{user.name || "Unknown"}</span>
         </div>
       );
     },
   },
-  {
-    accessorKey: "postedBy",
-    header: "Posted By",
-  },
+
+  // Actions — তোমার চাহিদা অনুযায়ী
   {
     id: "actions",
     header: "Actions",
     cell: ({ row }) => {
-      const id = row.original.id;
+      const ad = row.original;
+      const { status, _id: id } = ad;
+
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1"
-            >
+            <Button variant="ghost" size="sm">
               <MoreHorizontal className="h-4 w-4" />
-              {/* Actions */}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              className="flex items-center gap-2 cursor-pointer"
-              onClick={() => handleApprove(id)}
-            >
-              <Check className="h-4 w-4 text-green-600" />
-              Approve
+          <DropdownMenuContent align="end" className="w-52">
+
+            {/* Approve — শুধু pending হলে */}
+            {status === "pending" && (
+              <DropdownMenuItem
+                className="flex items-center gap-2 text-green-600 cursor-pointer"
+                onClick={() => handleApprove(id)}
+              >
+                <Check className="h-4 w-4" /> Approve
+              </DropdownMenuItem>
+            )}
+
+            {/* Reject — pending বা active হলে */}
+            {(status === "pending" || status === "active") && (
+              <DropdownMenuItem
+                className="flex items-center gap-2 text-red-600 cursor-pointer"
+                onClick={() => handleReject(id)}
+              >
+                <X className="h-4 w-4" /> Reject
+              </DropdownMenuItem>
+            )}
+
+            {/* Mark as Sold — শুধু active হলে */}
+            {status === "active" && (
+              <DropdownMenuItem
+                className="flex items-center gap-2 text-purple-600 cursor-pointer"
+                onClick={() => handleMarkAsSold(id)}
+              >
+                <PackageCheck className="h-4 w-4" /> Mark as Sold
+              </DropdownMenuItem>
+            )}
+
+            {/* Edit — সবসময় দেখাবে */}
+            <DropdownMenuItem className="flex items-center gap-2 text-yellow-600">
+              <Edit className="h-4 w-4" /> Edit Ad
             </DropdownMenuItem>
+
+            {/* Delete — সবসময় দেখাবে */}
             <DropdownMenuItem
-              className="flex items-center gap-2 cursor-pointer"
-              onClick={() => handleView(id)}
+              className="flex items-center gap-2 text-red-600 cursor-pointer"
+              onClick={() => handleDelete(id)}
             >
-              <Eye className="h-4 w-4 text-blue-600" />
-              View
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="flex items-center gap-2 cursor-pointer"
-              onClick={() => handleEdit(id)}
-            >
-              <Edit className="h-4 w-4 text-yellow-500" />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="flex items-center gap-2 cursor-pointer text-red-600"
-              onClick={() => handleReject(id)}
-            >
-              <X className="h-4 w-4" />
-              Reject
+              <Trash2 className="h-4 w-4" /> Delete Permanently
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

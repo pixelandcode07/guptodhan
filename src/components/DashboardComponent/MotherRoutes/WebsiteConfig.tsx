@@ -1,34 +1,49 @@
-import {
-  SidebarGroupLabel,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar';
-import Link from 'next/link';
+import { SidebarGroupMenu } from "@/components/ReusableComponents/SidebarGroupMenu"
+import { Code, LayoutDashboard, MessageCircle, Palette, Search, Settings, Share2 } from "lucide-react"
+const webConfig = [
+  {
+    title: 'General Info',
+    url: '/general/info',
+    icon: LayoutDashboard,
+  },
+  {
+    title: 'Footer Settings',
+    url: '/general/view/footer/widget/1',
+    icon: Settings,
+  },
+  {
+    title: 'Website Theme Color',
+    url: '/general/website/theme/page',
+    icon: Palette,
+  },
+  {
+    title: 'Social Media Links',
+    url: '/general/social/media/page',
+    icon: Share2,
+  },
+  {
+    title: 'Home Page SEO',
+    url: '/general/seo/homepage',
+    icon: Search,
+  },
+  {
+    title: 'Custom CSS & JS',
+    url: ' /general/custom/css/js',
+    icon: Code,
+  },
+  {
+    title: 'Social & Chat Scripts',
+    url: '/general/social/chat/script/page',
+    icon: MessageCircle,
+  },
+]
 
-import { ElementType } from 'react';
-
-export default function WebsiteConfig({
-  items,
-}: {
-  items: { title: string; url: string; icon: ElementType }[];
-}) {
+export default function WebsiteConfig() {
   return (
-    <div className="">
-      <SidebarGroupLabel>
-        <p className="text-[#f1bf43] text-[12px] uppercase">Website Config</p>
-      </SidebarGroupLabel>
-      <div className="list-none">
-        {items.map(item => (
-          <SidebarMenuItem key={item.title}>
-            <SidebarMenuButton asChild>
-              <Link href={item.url || '#'} className="flex items-center gap-2">
-                <item.icon />
-                <span>{item.title}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        ))}
-      </div>
-    </div>
-  );
+    <SidebarGroupMenu
+      label="Website Config"
+      items={webConfig}
+    />
+  )
 }
+
