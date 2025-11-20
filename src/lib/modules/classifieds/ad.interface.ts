@@ -24,5 +24,6 @@ export interface IClassifiedAd extends Document {
     phone: string;
     isPhoneHidden: boolean;
   };
-  status: 'active' | 'sold' | 'inactive';
+  // 👇 এখানে 'pending' যোগ করা হয়েছে
+  status: 'pending' | 'active' | 'sold' | 'inactive';
 }

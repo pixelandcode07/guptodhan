@@ -459,4 +459,4 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
 
     </div>
   );
-}
+} 

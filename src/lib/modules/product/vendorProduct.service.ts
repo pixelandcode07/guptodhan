@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import { IVendorProduct } from "./vendorProduct.interface";
 import { VendorProductModel } from "./vendorProduct.model";
+import { ReviewModel } from "../product-review/productReview.model";
+import { ProductQAModel } from "../product-qna/productQNA.model";
 
 const createVendorProductInDB = async (payload: Partial<IVendorProduct>) => {
   const result = await VendorProductModel.create(payload);
@@ -34,7 +36,7 @@ const getActiveVendorProductsFromDB = async () => {
 };
 
 const getVendorProductByIdFromDB = async (id: string) => {
-  const result = await VendorProductModel.findById(id)
+  const productDoc = await VendorProductModel.findById(id)
     .populate('brand', 'name') // 'brandName' -> 'name'
     .populate('flag', 'name') // 'flagName' -> 'name'
     .populate('warranty', 'warrantyName')
@@ -44,7 +46,20 @@ const getVendorProductByIdFromDB = async (id: string) => {
     .populate('childCategory', 'name') // 'childCategoryName' -> 'name'
     .populate('weightUnit', 'name') // 'unitName' -> 'name'
     .populate('vendorStoreId', 'storeName');
-  return result;
+
+  if (!productDoc) return null;
+
+  const product =
+    typeof productDoc.toObject === 'function' ? productDoc.toObject() : productDoc;
+
+  const reviews = await ReviewModel.find({ productId: id });
+  const qna = await ProductQAModel.find({ productId: id });
+
+  return {
+    ...product,
+    reviews,
+    qna,
+  };
 };
 
 const getVendorProductsByCategoryFromDB = async (categoryId: string) => {
@@ -220,7 +235,7 @@ const getLandingPageProductsFromDB = async () => {
   };
 };
 
-// search vendor prudct
+// search vendor product
 const searchVendorProductsFromDB = async (searchTerm: string) => {
   const result = await VendorProductModel.find({
     status: 'active',

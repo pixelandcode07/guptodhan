@@ -5,6 +5,9 @@ import { StoreServices } from '@/lib/modules/vendor-store/vendorStore.service';
 import { BrandServices } from '@/lib/modules/brand/brand.service';
 import { SubCategoryServices } from '@/lib/modules/ecommerce-category/services/ecomSubCategory.service';
 import { ChildCategoryServices } from '@/lib/modules/ecommerce-category/services/ecomChildCategory.service';
+import { ModelFormServices } from '@/lib/modules/product-config/services/modelCreate.service';
+import { ProductColorServices } from '@/lib/modules/product-config/services/productColor.service';
+import { ProductSizeServices } from '@/lib/modules/product-config/services/productSize.service';
 import { notFound } from 'next/navigation';
 import ProductDetailsClient from './components/ProductDetailsClient';
 import { HeroNav } from '@/app/components/Hero/HeroNav';
@@ -23,13 +26,26 @@ export default async function ProductPage({ params }: ProductPageProps) {
   
   try {
     // Fetch the specific product by ID and all related data
-    const [product, categoriesData, storesData, brandsData, subCategoriesData, childCategoriesData] = await Promise.all([
+    const [
+      product,
+      categoriesData,
+      storesData,
+      brandsData,
+      subCategoriesData,
+      childCategoriesData,
+      modelsData,
+      colorsData,
+      sizesData,
+    ] = await Promise.all([
       VendorProductServices.getVendorProductByIdFromDB(productId),
       CategoryServices.getAllCategoriesFromDB(),
       StoreServices.getAllStoresFromDB(),
       BrandServices.getAllBrandsFromDB(),
       SubCategoryServices.getAllSubCategoriesFromDB(),
       ChildCategoryServices.getAllChildCategoriesFromDB(),
+      ModelFormServices.getAllModelFormsFromDB(),
+      ProductColorServices.getAllProductColorsFromDB(),
+      ProductSizeServices.getAllProductSizesFromDB(),
     ]);
     
     if (!product) {
@@ -45,7 +61,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
         brands: JSON.parse(JSON.stringify(brandsData || [])),
         subCategories: JSON.parse(JSON.stringify(subCategoriesData || [])),
         childCategories: JSON.parse(JSON.stringify(childCategoriesData || [])),
-        models: [], // Empty for now since we don't have getAllProductModelsFromDB
+        models: JSON.parse(JSON.stringify(modelsData || [])),
+        variantOptions: {
+          colors: JSON.parse(JSON.stringify(colorsData || [])),
+          sizes: JSON.parse(JSON.stringify(sizesData || [])),
+        },
       }
     };
   const categoriesInfo: MainCategory[] = [];

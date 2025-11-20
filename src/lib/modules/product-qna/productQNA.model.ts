@@ -13,8 +13,8 @@ const productQASchema = new Schema<IProductQA>(
     createdAt: { type: Date, default: Date.now },
     status: { 
       type: String, 
-      enum: ['pending', 'answered', 'hidden'], 
-      default: 'pending' 
+      enum: ['active' , 'inactive'], 
+      default: 'active' 
     },
     answer: {
       answeredByName: { type: String, trim: true },
