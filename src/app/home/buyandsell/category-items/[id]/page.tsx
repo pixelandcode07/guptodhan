@@ -19,22 +19,23 @@ interface Ad {
   brand?: string;
   division?: string;
   upazila?: string;
+  condition?: string;
 }
 
 export async function generateMetadata() {
-    return generateGuptodhanMetadata({
-        title: "View Buy & Sell Ads | Guptodhan Marketplace",
-        description:
-            "Buy and sell new or used items in your city. Explore verified ads across electronics, vehicles, real estate, fashion, and more — only on Guptodhan.",
-        urlPath: `/home/buyandsell/category-items`,
-        imageUrl: "/og-images/guptodhan-marketplace-banner.jpg",
-    })
+  return generateGuptodhanMetadata({
+    title: "View Buy & Sell Ads | Guptodhan Marketplace",
+    description:
+      "Buy and sell new or used items in your city. Explore verified ads across electronics, vehicles, real estate, fashion, and more — only on Guptodhan.",
+    urlPath: `/home/buyandsell/category-items`,
+    imageUrl: "/og-images/guptodhan-marketplace-banner.jpg",
+  })
 }
 
 
 export default async function CategoryItemsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const baseUrl = process.env.NEXTAUTH_URL;
 
   let ads: Ad[] = [];
   let category: any = { name: 'Loading...', adCount: 0 };
@@ -49,6 +50,7 @@ export default async function CategoryItemsPage({ params }: { params: Promise<{ 
 
     // 2. get ads from category
     const adsRes = await axios.get(`${baseUrl}/api/v1/public/classifieds/ads/by-category/${id}`);
+    // const filtered = adsRes.data.data.filter((ad: any) => ad.status === 'active');
     ads = adsRes.data.data || [];
 
     // 3. get filters by category

@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import {
   Sidebar,
   SidebarContent,
@@ -11,41 +10,20 @@ import {
   SidebarMenuItem,
 } from '../ui/sidebar';
 import {
-  Box,
-  Bug,
-  ChartNoAxesCombined,
-  ClipboardList,
-  Code,
-  DollarSign,
-  HeartHandshake,
   House,
-  LayoutDashboard,
-  Logs,
-  MessageCircle,
-  Palette,
-  Search,
-  Settings,
-  Share2,
-  Shield,
-  ShieldCheck,
-  Store,
-  UserCheck,
-  UserCog,
-  Users,
 } from 'lucide-react';
-import { Multivendor } from './MotherRoutes/Multivendor';
 import Link from 'next/link';
 import Image from 'next/image';
 import WebsiteConfig from './MotherRoutes/WebsiteConfig';
 import { EcommerceModules } from './MotherRoutes/EcommerceModules';
 import { ContentManagement } from './MotherRoutes/ContentManagement';
-import UserRolePermition from './MotherRoutes/UserRolePermition';
-import { BuySell } from './MotherRoutes/BuySell';
-import { Donation } from './MotherRoutes/Donation';
-import { DemoProducts } from './MotherRoutes/DemoProducts';
-import Logout from './MotherRoutes/Logout';
-import LogoutBtn from './Components/LogoutBtn';
+import UserRolePermition from './MotherRoutes/UserRolePermision';
 import CRMModules from './MotherRoutes/CRMModules';
+import BuySell from './MotherRoutes/BuySell';
+import Donation from './MotherRoutes/Donation';
+import Multivendor from './MotherRoutes/Multivendor';
+import DemoProducts from './MotherRoutes/DemoProducts';
+import Logout from './MotherRoutes/Logout';
 
 const data = {
   user: {
@@ -53,132 +31,6 @@ const data = {
     email: 'm@example.com',
     avatar: '/avatars/shadcn.jpg',
   },
-  navMain: [
-    {
-      title: 'General Info',
-      url: '/general/info',
-      icon: LayoutDashboard,
-    },
-    {
-      title: 'Footer Settings',
-      url: '/general/view/footer/widget/1',
-      icon: Settings,
-    },
-    {
-      title: 'Website Theme Color',
-      url: '/general/website/theme/page',
-      icon: Palette,
-    },
-    {
-      title: 'Social Media Links',
-      url: '/general/social/media/page',
-      icon: Share2,
-    },
-    {
-      title: 'Home Page SEO',
-      url: '/general/seo/homepage',
-      icon: Search,
-    },
-    {
-      title: 'Custom CSS & JS',
-      url: ' /general/custom/css/js',
-      icon: Code,
-    },
-    {
-      title: 'Social & Chat Scripts',
-      url: '/general/social/chat/script/page',
-      icon: MessageCircle,
-    },
-  ],
-  buysell: [
-    {
-      title: 'Dashboard',
-      url: '/general/buy/sell/dashboard',
-      icon: ChartNoAxesCombined,
-    },
-    {
-      title: 'Listing Management',
-      url: '/general/buy/sell/listing',
-      icon: LayoutDashboard,
-    },
-    {
-      title: 'Approved Products',
-      url: '/general/buy/sell/approved/products',
-      icon: Shield,
-    },
-    {
-      title: 'Report Listing',
-      url: '/general/buy/sell/report',
-      icon: Bug,
-    },
-    {
-      title: 'Categories',
-      url: '/general/create/buy/sell/category',
-      icon: Logs,
-    },
-    {
-      title: 'Setting',
-      url: '/general/buy/sell/config',
-      icon: Settings,
-    },
-  ],
-  donations: [
-    {
-      title: 'Dashboard',
-      url: '/general/donation/dashboard',
-      icon: ChartNoAxesCombined,
-    },
-    {
-      title: 'User Management',
-      url: '/general/donation/user-management',
-      icon: UserCog,
-    },
-    {
-      title: 'Donations',
-      url: '/general/donation/donate-list',
-      icon: HeartHandshake,
-    },
-    {
-      title: 'Claims',
-      url: '/general/donation/donate-item-claim-list',
-      icon: ClipboardList,
-    },
-    {
-      title: 'Categories',
-      url: '/general/donation/categories',
-      icon: Logs,
-    },
-    {
-      title: 'Setting',
-      url: '/general/donation/config',
-      icon: Settings,
-    },
-  ],
-
-  documents: [
-    {
-      title: 'Vendors',
-      url: '#',
-      icon: UserCheck,
-    },
-    {
-      title: 'Stores',
-      url: '#',
-      icon: Store,
-    },
-    {
-      title: 'Withdrawal',
-      url: '#',
-      icon: DollarSign,
-    },
-  ],
-  demoProducts: [
-    {
-      title: 'Demo Products',
-      url: '#',
-      icon: Box,
-    },
-  ],
   ecommerceModules: [
     { title: 'Config' },
     { title: 'Category' },
@@ -198,34 +50,12 @@ const data = {
     { title: 'Generate Reports' },
     { title: 'Download Backup' },
   ],
-  userRole: [
-    {
-      title: 'System Users',
-      url: '/general/view/system/users',
-      icon: Users,
-    },
-    {
-      title: 'Permission Routes',
-      url: '/general/view/permission/routes',
-      icon: ShieldCheck,
-    },
-    {
-      title: 'User Roles',
-      url: '/general/view/user/roles',
-      icon: UserCog,
-    },
-    {
-      title: 'Addign Role Permission',
-      url: '/general/view/user/role/permission',
-      icon: UserCheck,
-    },
-  ],
   crmModules: [
-    { title: 'Support Ticket' },
-    { title: 'Contact Request' },
-    { title: 'Subscribed Users' },
-    { title: 'Blog Comments' },
-  ],
+    { title: 'Support Ticket' },
+    { title: 'Contact Request' },
+    { title: 'Subscribed Users' },
+    { title: 'Blog Comments' },
+  ],
 };
 
 export default function AppSidebar() {
@@ -253,17 +83,16 @@ export default function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <WebsiteConfig items={data.navMain} />
-        <BuySell items={data.buysell} />
-        <Donation items={data.donations} />
-        <Multivendor items={data.documents} />
+        <WebsiteConfig />
+        <BuySell />
+        <Donation />
+        <Multivendor />
         <EcommerceModules items={data.ecommerceModules} />
         <CRMModules />
         <ContentManagement />
-        <UserRolePermition items={data.userRole} />
-        <DemoProducts items={data.demoProducts} />
-        {/* <Logout items={data.logoutAction} /> */}
-        <LogoutBtn />
+        <UserRolePermition />
+        <DemoProducts />
+        <Logout />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
     </Sidebar>

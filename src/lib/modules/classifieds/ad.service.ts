@@ -9,7 +9,7 @@ const createAdInDB = async (payload: Partial<IClassifiedAd>) => {
 };
 
 const searchAdsInDB = async (filters: Record<string, any>) => {
-  const query: Record<string, any> = { status: 'active' };
+  const query: Record<string, any> = {};
 
   if (filters.category) query.category = new Types.ObjectId(filters.category);
   
@@ -32,7 +32,7 @@ const searchAdsInDB = async (filters: Record<string, any>) => {
     if (filters.minPrice) query.price.$gte = Number(filters.minPrice);
     if (filters.maxPrice) query.price.$lte = Number(filters.maxPrice);
   }
-
+ 
   if (filters.title) {
     query.title = { $regex: filters.title, $options: 'i' };
   }
@@ -148,14 +148,14 @@ const getFiltersForCategoryFromDB = async (categoryId: string) => {
           brands: [
             { $match: { brand: { $exists: true, $ne: null } } },
             {
-              $lookup: { 
-                from: 'brands', 
+              $lookup: {
+                from: 'brands',
                 localField: 'brand',
                 foreignField: '_id',
                 as: 'brandDetails'
               }
             },
-            { $unwind: '$brandDetails' }, 
+            { $unwind: '$brandDetails' },
             { $group: { _id: "$brandDetails.name", count: { $sum: 1 } } },
             { $project: { _id: 0, name: "$_id", count: 1 } },
             { $sort: { name: 1 } }
@@ -164,7 +164,7 @@ const getFiltersForCategoryFromDB = async (categoryId: string) => {
             { $match: { subCategory: { $exists: true, $ne: null } } },
             {
               $lookup: {
-                from: 'classifiedsubcategories', 
+                from: 'classifiedsubcategories',
                 localField: 'subCategory',
                 foreignField: '_id',
                 as: 'subCategoryDetails'
