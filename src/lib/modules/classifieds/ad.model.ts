@@ -2,14 +2,22 @@
 import { Schema, model, models } from 'mongoose';
 import { IClassifiedAd } from './ad.interface';
 
-// ✅ **পরিবর্তন:** User মডেল ইম্পোর্ট করা হয়েছে
-import '@/lib/modules/user/user.model'; // Ensure User model is registered before referencing
+// ✅ CRITICAL IMPORTS: মডেল রেজিস্টার করার জন্য সঠিক পাথ
+import '@/lib/modules/user/user.model'; 
+
+// 👇 আপনার দেওয়া পাথ অনুযায়ী ঠিক করা হয়েছে
+import '@/lib/modules/classifieds-category/category.model';       
+import '@/lib/modules/classifieds-subcategory/subcategory.model'; 
 
 const classifiedAdSchema = new Schema<IClassifiedAd>(
   {
     title: { type: String, required: true },
-    // এখন 'User' রেফারেন্সটি সঠিকভাবে কাজ করবে
+    
+    // User Reference
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    
+    // Category References
+    // ref নামগুলো আপনার category.model.ts এর export নামের সাথে মিল থাকতে হবে ('ClassifiedCategory')
     category: { type: Schema.Types.ObjectId, ref: 'ClassifiedCategory', required: true },
     subCategory: { type: Schema.Types.ObjectId, ref: 'ClassifiedSubCategory', default: undefined },
 
@@ -37,7 +45,7 @@ const classifiedAdSchema = new Schema<IClassifiedAd>(
       isPhoneHidden: { type: Boolean, default: false },
     },
 
-    // 👇 স্ট্যাটাস পরিবর্তন করা হয়েছে: ডিফল্ট এখন 'pending'
+    // Status: Default 'pending'
     status: { 
       type: String, 
       enum: ['pending', 'active', 'sold', 'inactive'], 
