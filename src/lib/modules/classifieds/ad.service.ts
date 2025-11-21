@@ -8,66 +8,31 @@ const createAdInDB = async (payload: Partial<IClassifiedAd>) => {
   return await ClassifiedAd.create(payload);
 };
 
-// const searchAdsInDB = async (filters: Record<string, any>) => {
-//   const query: Record<string, any> = { status: 'active' };
-//   if (filters.division) query.division = new RegExp(`^${filters.division}$`, 'i');
-//   if (filters.district) query.district = new RegExp(`^${filters.district}$`, 'i');
-//   if (filters.upazila) query.upazila = new RegExp(`^${filters.upazila}$`, 'i');
-//   if (filters.category) query.category = new Types.ObjectId(filters.category);
-//   if (filters.subCategory) query.subCategory = new Types.ObjectId(filters.subCategory);
-//   if (filters.brand) query.brand = new Types.ObjectId(filters.brand);
-
-//   if (filters.minPrice || filters.maxPrice) {
-//     query.price = {};
-//     if (filters.minPrice) query.price.$gte = Number(filters.minPrice);
-//     if (filters.maxPrice) query.price.$lte = Number(filters.maxPrice);
-//   }
-
-//   return await ClassifiedAd.find(query)
-//     .populate('user', 'name profilePicture')
-//     .populate('category', 'name')
-//     .populate('subCategory', 'name')
-//     .populate('brand', 'name logo')
-//     .sort({ createdAt: -1 });
-// };
-
-// src/lib/modules/classifieds/ad.service.ts
-
 const searchAdsInDB = async (filters: Record<string, any>) => {
   const query: Record<string, any> = { status: 'active' };
 
-  // ক্যাটাগরি → ObjectId
-  if (filters.category) {
-    query.category = new Types.ObjectId(filters.category);
-  }
-
-  // সাব-ক্যাটাগরি → নাম দিয়ে সার্চ (একাধিক হতে পারে)
+  if (filters.category) query.category = new Types.ObjectId(filters.category);
+  
   if (filters.subCategory) {
-    const subCats = Array.isArray(filters.subCategory)
-      ? filters.subCategory
-      : [filters.subCategory];
+    const subCats = Array.isArray(filters.subCategory) ? filters.subCategory : [filters.subCategory];
     query['subCategory.name'] = { $in: subCats.map(s => new RegExp(`^${s}$`, 'i')) };
   }
 
-  // ব্র্যান্ড → নাম দিয়ে সার্চ (একাধিক হতে পারে)
   if (filters.brand) {
     const brands = Array.isArray(filters.brand) ? filters.brand : [filters.brand];
     query['brand.name'] = { $in: brands.map(b => new RegExp(`^${b}$`, 'i')) };
   }
 
-  // লোকেশন
   if (filters.division) query.division = new RegExp(`^${filters.division}$`, 'i');
   if (filters.district) query.district = new RegExp(`^${filters.district}$`, 'i');
   if (filters.upazila) query.upazila = new RegExp(`^${filters.upazila}$`, 'i');
 
-  // প্রাইস
   if (filters.minPrice || filters.maxPrice) {
     query.price = {};
     if (filters.minPrice) query.price.$gte = Number(filters.minPrice);
     if (filters.maxPrice) query.price.$lte = Number(filters.maxPrice);
   }
 
-  // টাইটেল সার্চ
   if (filters.title) {
     query.title = { $regex: filters.title, $options: 'i' };
   }
@@ -80,8 +45,6 @@ const searchAdsInDB = async (filters: Record<string, any>) => {
     .sort({ createdAt: -1 });
 };
 
-
-
 const getSingleAdFromDB = async (adId: string) => {
   return await ClassifiedAd.findById(adId)
     .populate('user', 'name email phoneNumber profilePicture')
@@ -91,17 +54,14 @@ const getSingleAdFromDB = async (adId: string) => {
     .populate('productModel', 'name');
 };
 
-
-// ✅ NEW: সকল فعال বিজ্ঞাপন দেখানোর জন্য
 const getAllPublicAdsFromDB = async () => {
   return await ClassifiedAd.find({ status: 'active' })
-    .populate('user', 'name profilePicture') // বিক্রেতার নাম ও ছবি দেখানোর জন্য
+    .populate('user', 'name profilePicture')
     .populate('category', 'name')
     .populate('subCategory', 'name')
     .sort({ createdAt: -1 });
 };
 
-// ✅ NEW: একটি নির্দিষ্ট বিজ্ঞাপন তার ID দিয়ে দেখানোর জন্য
 const getPublicAdByIdFromDB = async (id: string) => {
   const ad = await ClassifiedAd.findById(id)
     .populate('user', 'name profilePicture')
@@ -116,24 +76,40 @@ const getPublicAdByIdFromDB = async (id: string) => {
   return ad;
 };
 
-
-const updateAdInDB = async (adId: string, userId: string, payload: Partial<IClassifiedAd>) => {
+// ✅ UPDATE: ৪টি প্যারামিটার, কিন্তু শুধুমাত্র OWNER এডিট করতে পারবে
+const updateAdInDB = async (adId: string, userId: string, userRole: string, payload: Partial<IClassifiedAd>) => {
   const ad = await ClassifiedAd.findById(adId);
   if (!ad) throw new Error('Ad not found!');
-  if (ad.user.toString() !== userId) throw new Error('Forbidden');
+
+  // লজিক: শুধুমাত্র অ্যাড-এর মালিক (Owner) কন্টেন্ট এডিট করতে পারবে
+  // Admin স্ট্যাটাস চেঞ্জ করতে পারবে (সেটা অন্য API), কিন্তু কন্টেন্ট এডিট করতে পারবে না।
+  const isOwner = ad.user.toString() === userId;
+
+  if (!isOwner) {
+    throw new Error('Forbidden: Only the owner can edit the ad details.');
+  }
+
   return await ClassifiedAd.findByIdAndUpdate(adId, payload, { new: true });
 };
 
-const deleteAdFromDB = async (adId: string, userId: string) => {
+// ✅ DELETE: Owner এবং Admin উভয়েই ডিলিট করতে পারবে
+const deleteAdFromDB = async (adId: string, userId: string, userRole: string) => {
   const ad = await ClassifiedAd.findById(adId);
   if (!ad) throw new Error('Ad not found!');
-  if (ad.user.toString() !== userId) throw new Error('Forbidden');
+
+  // লজিক: মালিক অথবা এডমিন - যেই হোক ডিলিট করতে পারবে
+  const isOwner = ad.user.toString() === userId;
+  const isAdmin = userRole === 'admin';
+
+  if (!isOwner && !isAdmin) {
+    throw new Error('Forbidden: You are not allowed to delete this ad.');
+  }
 
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
     if (ad.images?.length) {
-    await Promise.all(ad.images.map((url: string) => deleteFromCloudinary(url)));
+      await Promise.all(ad.images.map((url: string) => deleteFromCloudinary(url)));
     }
     await ClassifiedAd.findByIdAndDelete(adId, { session });
     await session.commitTransaction();
@@ -146,10 +122,9 @@ const deleteAdFromDB = async (adId: string, userId: string) => {
   }
 };
 
-// ✅ NEW: একটি নির্দিষ্ট ক্যাটাগরির সব বিজ্ঞাপন খোঁজার ফাংশন
 const getPublicAdsByCategoryIdFromDB = async (categoryId: string) => {
   return await ClassifiedAd.find({ 
-    category: new Types.ObjectId(categoryId), // ক্যাটাগরি ID দিয়ে খোঁজা হচ্ছে
+    category: new Types.ObjectId(categoryId),
     status: 'active'  
   })
     .populate('user', 'name profilePicture')
@@ -158,31 +133,20 @@ const getPublicAdsByCategoryIdFromDB = async (categoryId: string) => {
     .sort({ createdAt: -1 });
 };
 
-
 const getFiltersForCategoryFromDB = async (categoryId: string) => {
   try {
     const categoryObjectId = new Types.ObjectId(categoryId);
-
     const result = await ClassifiedAd.aggregate([
-// macting cateogires
-      {
-        $match: {
-          category: categoryObjectId,
-          status: 'active'
-        }
-      },
-      // count location and brand
+      { $match: { category: categoryObjectId, status: 'active' } },
       {
         $facet: {
-          // location count
           locations: [
             { $group: { _id: "$district", count: { $sum: 1 } } },
             { $project: { _id: 0, name: "$_id", count: 1 } },
             { $sort: { count: -1 } }
           ],
-          //brand count
           brands: [
-            { $match: { brand: { $exists: true, $ne: null } } }, // শুধু ব্র্যান্ড আছে এমন বিজ্ঞাপন
+            { $match: { brand: { $exists: true, $ne: null } } },
             {
               $lookup: { 
                 from: 'brands', 
@@ -196,7 +160,6 @@ const getFiltersForCategoryFromDB = async (categoryId: string) => {
             { $project: { _id: 0, name: "$_id", count: 1 } },
             { $sort: { name: 1 } }
           ],
-          // if need sub categories count
           subCategories: [
             { $match: { subCategory: { $exists: true, $ne: null } } },
             {
@@ -215,10 +178,7 @@ const getFiltersForCategoryFromDB = async (categoryId: string) => {
         }
       }
     ]);
-
-    // $facet 
     return result[0];
-
   } catch (error) {
     console.error("Error aggregating filters:", error);
     throw new Error("Failed to aggregate filter data.");
@@ -227,17 +187,19 @@ const getFiltersForCategoryFromDB = async (categoryId: string) => {
 
 const getAllAdsForAdminFromDB = async () => {
   return await ClassifiedAd.find({})
-    .populate('user', 'name') // Posted By (Name only)
+    .populate('user', 'name')
     .populate('category', 'name')
     .sort({ createdAt: -1 });
 }
 
-const updateAdStatusInDB = async (adId: string, status: 'active' | 'inactive' | 'sold') => {
+// ✅ UPDATE STATUS: Admin Only (Controller checks permission)
+const updateAdStatusInDB = async (adId: string, status: string) => {
   const ad = await ClassifiedAd.findById(adId);
   if (!ad) {
     throw new Error('Ad not found!');
   }
-  ad.status = status;
+  // Type assertion to match model definition
+  ad.status = status as 'pending' | 'active' | 'sold' | 'inactive';
   await ad.save();
   return ad;
 };
