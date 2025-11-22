@@ -79,7 +79,7 @@ const deleteCategoryFromDB = async (id: string) => {
 
 export const getAllSubCategoriesWithChildren = async () => {
   // Get all main categories
-  const mainCategories = await CategoryModel.find({isNavbar: true}).sort({ name: 1 });
+  const mainCategories = await CategoryModel.find({ isNavbar: true }).sort({ orderCount: 1 });
 
   // Map each main category
   const result = await Promise.all(
@@ -99,9 +99,11 @@ export const getAllSubCategoriesWithChildren = async () => {
           return {
             subCategoryId: sub.subCategoryId,
             name: sub.name,
+            slug: sub.slug, // ✅ Added slug
             children: childCategories.map((child) => ({
               childCategoryId: child.childCategoryId,
               name: child.name,
+              slug: child.slug, // ✅ Added slug
             })),
           };
         })
@@ -110,6 +112,7 @@ export const getAllSubCategoriesWithChildren = async () => {
       return {
         mainCategoryId: main._id,
         name: main.name,
+        slug: main.slug, // ✅ Added slug
         subCategories: subWithChildren,
       };
     })
@@ -134,6 +137,16 @@ export const reorderMainCategoriesService = async (orderedIds: string[]) => {
   return { message: 'Main categories reordered successfully!' };
 };
 
+
+// Get category by slug
+const getCategoryBySlugFromDB = async (slug: string) => {
+  const result = await CategoryModel.findOne({
+    slug,
+    status: 'active',
+  });
+  return result;
+};
+
 export const CategoryServices = {
   createCategoryInDB,
   getAllCategoriesFromDB,
@@ -141,6 +154,7 @@ export const CategoryServices = {
   getCategoryByIdFromDB,
   updateCategoryInDB,
   deleteCategoryFromDB,
+  getCategoryBySlugFromDB,
 
   getAllSubCategoriesWithChildren,
   reorderMainCategoriesService,
