@@ -156,20 +156,57 @@ const getVendorProductById = async (
   });
 };
 
+// const getVendorProductsByCategory = async (
+//   req: NextRequest,
+//   context: { params: Promise<{ id: string }> } // Next.js App Router e params Promise
+// ) => {
+//   await dbConnect();
+
+//   // Unwrap the params promise
+//   const resolvedParams = await context.params;
+//   const categoryId = resolvedParams.id;
+
+//   console.log("Category ID:", categoryId);
+
+//   // Call service
+//   const result = await VendorProductServices.getVendorProductsByCategoryFromDB(categoryId);
+
+//   return sendResponse({
+//     success: true,
+//     statusCode: StatusCodes.OK,
+//     message: "Category products retrieved successfully!",
+//     data: result,
+//   });
+// };
+
+
+// filter for main category product
 const getVendorProductsByCategory = async (
   req: NextRequest,
-  context: { params: Promise<{ id: string }> } // Next.js App Router e params Promise
+  context: { params: Promise<{ id: string }> }
 ) => {
   await dbConnect();
 
-  // Unwrap the params promise
+  const { searchParams } = new URL(req.url);
+
+  const filters = {
+    priceMin: searchParams.get("priceMin") || undefined,
+    priceMax: searchParams.get("priceMax") || undefined,
+    subCategory: searchParams.get("subCategory") || undefined,
+    childCategory: searchParams.get("childCategory") || undefined,
+    brand: searchParams.get("brand") || undefined,
+    search: searchParams.get("search") || undefined,
+    sort: searchParams.get("sort") || undefined,
+  };
+
   const resolvedParams = await context.params;
   const categoryId = resolvedParams.id;
 
-  console.log("Category ID:", categoryId);
-
-  // Call service
-  const result = await VendorProductServices.getVendorProductsByCategoryFromDB(categoryId);
+  const result =
+    await VendorProductServices.getVendorProductsByCategoryFromDB(
+      categoryId,
+      filters
+    );
 
   return sendResponse({
     success: true,
@@ -179,14 +216,48 @@ const getVendorProductsByCategory = async (
   });
 };
 
+
+
+// const getVendorProductsBySubCategory = async (
+//   req: NextRequest,
+//   { params }: { params: { subCategoryId: string } }
+// ) => {
+//   await dbConnect();
+//   const result =
+//     await VendorProductServices.getVendorProductsBySubCategoryFromDB(
+//       params.subCategoryId
+//     );
+
+//   return sendResponse({
+//     success: true,
+//     statusCode: StatusCodes.OK,
+//     message: "Sub-category products retrieved successfully!",
+//     data: result,
+//   });
+// };
+
+// filter for sub category product
 const getVendorProductsBySubCategory = async (
   req: NextRequest,
   { params }: { params: { subCategoryId: string } }
 ) => {
   await dbConnect();
+
+  const searchParams = req.nextUrl.searchParams;
+
+  const filters = {
+    priceMin: searchParams.get("priceMin") || undefined,
+    priceMax: searchParams.get("priceMax") || undefined,
+    brand: searchParams.get("brand") || undefined,
+    childCategory: searchParams.get("childCategory") || undefined,
+    search: searchParams.get("search") || undefined,
+    sort: searchParams.get("sort") || undefined,
+  };
+
   const result =
     await VendorProductServices.getVendorProductsBySubCategoryFromDB(
-      params.subCategoryId
+      params.subCategoryId,
+      filters
     );
 
   return sendResponse({
@@ -197,14 +268,48 @@ const getVendorProductsBySubCategory = async (
   });
 };
 
+
+// const getVendorProductsByChildCategory = async (
+//   req: NextRequest,
+//   { params }: { params: { childCategoryId: string } }
+// ) => {
+//   await dbConnect();
+//   const result =
+//     await VendorProductServices.getVendorProductsByChildCategoryFromDB(
+//       params.childCategoryId
+//     );
+
+//   return sendResponse({
+//     success: true,
+//     statusCode: StatusCodes.OK,
+//     message: "Child-category products retrieved successfully!",
+//     data: result,
+//   });
+// };
+
+
+// filter for child category product
 const getVendorProductsByChildCategory = async (
   req: NextRequest,
   { params }: { params: { childCategoryId: string } }
 ) => {
   await dbConnect();
+
+  const searchParams = req.nextUrl.searchParams;
+
+  const filters = {
+    priceMin: searchParams.get("priceMin") || undefined,
+    priceMax: searchParams.get("priceMax") || undefined,
+    brand: searchParams.get("brand") || undefined,
+    subCategory: searchParams.get("subCategory") || undefined,
+    search: searchParams.get("search") || undefined,
+    sort: searchParams.get("sort") || undefined, // priceLowHigh | new | old
+  };
+
   const result =
     await VendorProductServices.getVendorProductsByChildCategoryFromDB(
-      params.childCategoryId
+      params.childCategoryId,
+      filters
     );
 
   return sendResponse({
@@ -214,6 +319,7 @@ const getVendorProductsByChildCategory = async (
     data: result,
   });
 };
+
 
 const getVendorProductsByBrand = async (
   req: NextRequest,
