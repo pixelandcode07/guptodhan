@@ -50,10 +50,23 @@ const deleteChildCategoryFromDB = async (id: string) => {
   return null;
 };
 
+// Get child category by slug
+const getChildCategoryBySlugFromDB = async (slug: string) => {
+  const result = await ChildCategoryModel.findOne({
+    slug,
+    status: 'active',
+  })
+    .populate('category', 'name slug')
+    .populate('subCategory', 'name slug');
+  return result;
+};
+
+
 export const ChildCategoryServices = {
   createChildCategoryInDB,
   getAllChildCategoriesFromDB,
   getChildCategoriesBySubCategoryFromDB,
   updateChildCategoryInDB,
   deleteChildCategoryFromDB,
+  getChildCategoryBySlugFromDB,
 };
