@@ -10,7 +10,9 @@ import { IChildCategory } from '../interfaces/ecomChildCategory.interface';
 import dbConnect from '@/lib/db';
 import { Types } from 'mongoose';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
+import { VendorProductModel } from '../../product/vendorProduct.model';
 
+// Create a new child category
 // Create a new child category
 const createChildCategory = async (req: NextRequest) => {
   try {
@@ -22,10 +24,21 @@ const createChildCategory = async (req: NextRequest) => {
     const name = (form.get('name') as string) || '';
     const category = (form.get('category') as string) || '';
     const subCategory = (form.get('subCategory') as string) || '';
-    const slug = (form.get('slug') as string) || '';
+    let slug = (form.get('slug') as string) || ''; // User can provide slug
     const status = (form.get('status') as string) || 'active';
     const iconFile = form.get('childCategoryIcon') as File | null;
 
+    // ✅ Auto-generate slug if not provided
+    if (!slug) {
+      slug = name
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\-]+/g, '')
+        .replace(/\-\-+/g, '-')
+        .replace(/^-+/, '')
+        .replace(/-+$/, '');
+    }
     
     // Validate category and subcategory ID formats
     if (!category || !Types.ObjectId.isValid(category)) {
@@ -47,7 +60,7 @@ const createChildCategory = async (req: NextRequest) => {
       category, 
       subCategory,
       icon: iconUrl, 
-      slug, 
+      slug, // ✅ Auto-generated slug
       status 
     };
     
@@ -212,10 +225,53 @@ const deleteChildCategory = async (req: NextRequest, { params }: { params: Promi
   });
 };
 
+
+// Get products by child category slug
+const getProductsByChildCategorySlug = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) => {
+  await dbConnect();
+  const { slug } = await params;
+
+  // First find child category by slug
+  const childCategory = await ChildCategoryServices.getChildCategoryBySlugFromDB(slug);
+
+  if (!childCategory) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.NOT_FOUND,
+      message: 'Child category not found',
+      data: null,
+    });
+  }
+
+  // Get products using child category _id
+  const products = await VendorProductModel.find({
+    childCategory: childCategory._id,
+    status: 'active',
+  }).select('_id').lean();
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: `Products for child category "${childCategory.name}" retrieved successfully!`,
+    data: {
+      childCategory: {
+        name: childCategory.name,
+        slug: childCategory.slug,
+        childCategoryId: childCategory.childCategoryId,
+      },
+      productIds: products.map(p => String(p._id)), // ✅ Fixed
+    },
+  });
+};
+
 export const ChildCategoryController = {
   createChildCategory,
   getAllChildCategories,
   getChildCategoriesBySubCategory,
   updateChildCategory,
   deleteChildCategory,
+  getProductsByChildCategorySlug,
 };
