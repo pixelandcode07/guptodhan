@@ -11,7 +11,9 @@ import { CategoryModel } from '../models/ecomCategory.model'; // Import to ensur
 import dbConnect from '@/lib/db';
 import { Types } from 'mongoose';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
+import { VendorProductModel } from '../../product/vendorProduct.model';
 
+// Create a new subcategory
 // Create a new subcategory
 const createSubCategory = async (req: NextRequest) => {
   try {
@@ -23,11 +25,22 @@ const createSubCategory = async (req: NextRequest) => {
     const name = (form.get('name') as string) || '';
     const isFeatured = (form.get('isFeatured') as string) === 'true';
     const category = (form.get('category') as string) || '';
-    const slug = (form.get('slug') as string) || '';
+    let slug = (form.get('slug') as string) || ''; // User can provide slug
     const status = (form.get('status') as string) || 'active';
     const iconFile = form.get('subCategoryIcon') as File | null;
     const bannerFile = form.get('subCategoryBanner') as File | null;
 
+    // ✅ Auto-generate slug if not provided
+    if (!slug) {
+      slug = name
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\-]+/g, '')
+        .replace(/\-\-+/g, '-')
+        .replace(/^-+/, '')
+        .replace(/-+$/, '');
+    }
     
     // Validate category ID format
     if (!category || !Types.ObjectId.isValid(category)) {
@@ -52,7 +65,7 @@ const createSubCategory = async (req: NextRequest) => {
       subCategoryIcon: iconUrl, 
       subCategoryBanner: bannerUrl, 
       isFeatured, 
-      slug, 
+      slug, // ✅ Auto-generated slug
       status 
     };
     
@@ -202,10 +215,53 @@ const deleteSubCategory = async (req: NextRequest, { params }: { params: Promise
   });
 };
 
+
+// Get products by subcategory slug
+const getProductsBySubCategorySlug = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) => {
+  await dbConnect();
+  const { slug } = await params;
+
+  // First find subcategory by slug
+  const subCategory = await SubCategoryServices.getSubCategoryBySlugFromDB(slug);
+
+  if (!subCategory) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.NOT_FOUND,
+      message: 'SubCategory not found',
+      data: null,
+    });
+  }
+
+  // Get products using subcategory _id
+  const products = await VendorProductModel.find({
+    subCategory: subCategory._id,
+    status: 'active',
+  }).select('_id').lean();
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: `Products for subcategory "${subCategory.name}" retrieved successfully!`,
+    data: {
+      subCategory: {
+        name: subCategory.name,
+        slug: subCategory.slug,
+        subCategoryId: subCategory.subCategoryId,
+      },
+      productIds: products.map(p => String(p._id)), // ✅ Fixed
+    },
+  });
+};
+
 export const SubCategoryController = {
   createSubCategory,
   getAllSubCategories,
   getSubCategoriesByCategory,
   updateSubCategory,
   deleteSubCategory,
+  getProductsBySubCategorySlug,
 };
