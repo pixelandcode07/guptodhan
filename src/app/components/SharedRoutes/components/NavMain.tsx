@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function NavMain() {
   const { data: session } = useSession();
   const user = session?.user;
-  
+
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -87,7 +87,14 @@ export default function NavMain() {
                 </>
               ) : (
                 <DialogTrigger>
-                  <li className="flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer">
+                  <li
+                    // onClick={() => {
+                    //   localStorage.setItem("redirectAfterLogin", "/");
+                    // }}
+                    onClick={() => {
+                      localStorage.setItem("redirectAfterLogin", window.location.pathname + window.location.search);
+                    }}
+                    className="flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer">
                     <User />
                     <span className="text-[#00005E] text-[12px]">Login / Register</span>
                   </li>
