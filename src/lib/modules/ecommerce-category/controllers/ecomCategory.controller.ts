@@ -10,20 +10,32 @@ import dbConnect from '@/lib/db';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 
 // Create a new category (multipart FormData like Brand)
+// Create a new category (multipart FormData like Brand)
 const createCategory = async (req: NextRequest) => {
   try {
     await dbConnect();
 
     const formData = await req.formData();
 
-    // const categoryId = (formData.get('categoryId') as string) || '';
     const name = (formData.get('name') as string) || '';
     const isFeaturedStr = (formData.get('isFeatured') as string) || 'false';
     const isNavbarStr = (formData.get('isNavbar') as string) || 'false';
-    const slug = (formData.get('slug') as string) || '';
+    let slug = (formData.get('slug') as string) || ''; // User can provide slug
     const status = (formData.get('status') as string) || 'active';
     const categoryIconFile = formData.get('categoryIcon') as File | null;
     const categoryBannerFile = formData.get('categoryBanner') as File | null;
+
+    // ✅ Auto-generate slug if not provided
+    if (!slug) {
+      slug = name
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\-]+/g, '')
+        .replace(/\-\-+/g, '-')
+        .replace(/^-+/, '')
+        .replace(/-+$/, '');
+    }
 
     let iconUrl = '';
     let bannerUrl = '';
@@ -46,7 +58,7 @@ const createCategory = async (req: NextRequest) => {
       categoryBanner: bannerUrl,
       isFeatured: isFeaturedStr === 'true',
       isNavbar: isNavbarStr === 'true',
-      slug,
+      slug, // ✅ Auto-generated slug
       status,
     };
 
@@ -230,6 +242,45 @@ const reorderMainCategories = async (req: NextRequest) => {
   });
 };
 
+// Get products by category slug
+const getProductsByCategorySlug = async (
+  req: NextRequest, 
+  { params }: { params: Promise<{ slug: string }> }
+) => {
+  await dbConnect();
+  const { slug } = await params;
+  
+  // First find category by slug
+  const category = await CategoryServices.getCategoryBySlugFromDB(slug);
+  
+  if (!category) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.NOT_FOUND,
+      message: 'Category not found',
+      data: null,
+    });
+  }
+  
+  // Get products using category _id
+  const productIds = await CategoryServices.getProductIdsByCategoryFromDB(
+    category._id.toString()
+  );
+  
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: `Products for category "${category.name}" retrieved successfully!`,
+    data: {
+      category: {
+        name: category.name,
+        slug: category.slug,
+        categoryId: category.categoryId,
+      },
+      productIds,
+    },
+  });
+};
 
 export const CategoryController = {
   createCategory,
@@ -237,7 +288,7 @@ export const CategoryController = {
   getFeaturedCategories,
   updateCategory,
   deleteCategory,
-
+  getProductsByCategorySlug,
   getAllSubCategories,
   reorderMainCategories,
   getProductIdsByCategory
