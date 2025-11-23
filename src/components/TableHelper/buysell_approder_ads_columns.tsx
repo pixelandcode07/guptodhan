@@ -50,7 +50,7 @@ const handleDelete = async (id: string) => {
   });
 };
 
-export const buySellListing_columns: ColumnDef<ClassifiedAdListing>[] = [
+export const buysell_approder_ads_columns: ColumnDef<ClassifiedAdListing>[] = [
   // Serial
   {
     id: "serial",
@@ -204,11 +204,11 @@ export const buySellListing_columns: ColumnDef<ClassifiedAdListing>[] = [
             )}
 
             {/* Edit */}
-            <DropdownMenuItem className="flex items-center gap-2 text-yellow-600">
+            {/* <DropdownMenuItem className="flex items-center gap-2 text-yellow-600">
               <Link href={`/general/buy/sell/edit/${id}`} className="w-full flex gap-2 items-center">
                 <Edit className="h-4 w-4" /> Edit Ad
               </Link>
-            </DropdownMenuItem>
+            </DropdownMenuItem> */}
 
             {/* Delete */}
             <DropdownMenuItem

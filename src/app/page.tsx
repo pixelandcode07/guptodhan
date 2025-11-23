@@ -41,8 +41,6 @@ export default async function MainHomePage() {
   // Destructure landing page data
   const { runningOffers, bestSelling, randomProducts } = landingPageData;
   const { middleHomepage, topShoppage } = ecommerceBanners;
-  // const { stories } = storyData;
-  console.log("storyData===>", storyData)
 
 
   return (
