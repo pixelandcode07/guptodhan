@@ -20,39 +20,58 @@
 
 // export const OtpController = { verifyPhoneOtp };
 
-
-
 import { Request, Response } from "express";
-import { sendOtpService, verifyOtpService } from "./otp.service";
+import { OtpServices } from "./otp.service";
+import { NextRequest, NextResponse } from "next/server";
+import dbConnect from "@/lib/db";
 
-export const sendOtp = async (req: Request, res: Response) => {
+const sendOtp = async (req: NextRequest) => {
   try {
-    const { phone } = req.body;
+    await dbConnect();
+     const body = await req.json();
+    const { phone } = body;
 
-    if (!phone) return res.status(400).json({ error: "Phone is required" });
+    console.log(phone);
+    // const phone = "8801688399676"; // For testing purpose only. Remove this line in production.
 
-    const data = await sendOtpService(phone);
+    if (!phone) {
+      return NextResponse.json(
+        { success: false, message: "Phone number is required" },
+        { status: 400 }
+      );
+    }
 
-    res.json({ success: true, data });
+    const data = await OtpServices.sendOtpService(phone);
+
+    return NextResponse.json(
+      { success: true, message: "OTP sent successfully", data },
+      { status: 200 }
+    );
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Server error" });
+    console.error("OTP Error:", error);
+
+    return NextResponse.json(
+      { success: false, message: "Server error", error: error?.message },
+      { status: 500 }
+    );
   }
 };
 
-export const verifyOtp = async (req: Request, res: Response) => {
+const verifyOtp = async (req: Request, res: Response) => {
   try {
     const { phone, otp } = req.body;
 
-    if (!phone || !otp) return res.status(400).json({ error: "Missing fields" });
+    if (!phone || !otp)
+      return res.status(400).json({ error: "Missing fields" });
 
-    const result = await verifyOtpService(phone, otp);
+    const result = await OtpServices.verifyOtpService(phone, otp);
 
     result.status
       ? res.json({ success: true, message: "OTP verified" })
       : res.status(400).json(result);
-
   } catch (error) {
     res.status(500).json({ error: "Server error" });
   }
 };
+
+export const OtpController = { sendOtp, verifyOtp };

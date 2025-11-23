@@ -9,4 +9,6 @@ const otpSchema = new Schema<IOtp>({
   expiresAt: { type: Date, required: true },
 });
 
-export const OtpModel = mongoose.model<IOtp>("Otp", otpSchema);
+export const OtpModel =
+  mongoose.models.Otp || mongoose.model<IOtp>("Otp", otpSchema);
+
