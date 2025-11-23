@@ -14,6 +14,7 @@ interface ProductCardProps {
     index: number;
 }
 
+
 export default function ProductCard({ product, index }: ProductCardProps) {
     const discountPct = product.productPrice > product.discountPrice
         ? Math.round(((product.productPrice - product.discountPrice) / product.productPrice) * 100)

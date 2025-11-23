@@ -67,7 +67,6 @@ export async function deleteAd(adId: string) {
 }
 
 
-// lib/BuyandSellApis/fetchBuyAndSellAction.ts এ যোগ করো
 export async function markAdAsSold(adId: string) {
     const token = await ensureAdmin();
     try {
