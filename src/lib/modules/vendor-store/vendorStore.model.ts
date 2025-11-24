@@ -3,7 +3,7 @@ import { IStore } from './vendorStore.interface';
 
 const storeSchema = new Schema<IStore>(
   {
-    storeId: { type: String, required: true, unique: true }, 
+    // storeId: { type: String, required: true, unique: true }, 
     vendorId: { type: Schema.Types.ObjectId, ref: 'VendorModel', required: true }, 
     storeLogo: { type: String, required: true },              
     storeBanner: { type: String, required: true },           
