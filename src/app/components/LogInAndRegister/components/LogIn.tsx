@@ -119,7 +119,7 @@ export default function LogIn({ step, setStep, registerLogin,
                         Create Account
                     </Button>
                     <div className="text-center text-sm text-gray-600">OR LOGIN WITH</div>
-                    <div className="flex space-x-2">
+                    <div className="flex justify-center space-x-2">
                         <SocialLoginPart />
                     </div>
                 </form>
