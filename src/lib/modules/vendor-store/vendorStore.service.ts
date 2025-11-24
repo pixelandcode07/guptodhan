@@ -24,6 +24,20 @@ const getStoreByIdFromDB = async (id: string) => {
   return result;
 };
 
+// Get store by vendorId
+const getStoreByVendorIdFromDB = async (vendorId: string) => {
+  const result = await StoreModel.findOne({
+    vendorId: new Types.ObjectId(vendorId),
+  });
+
+  if (!result) {
+    throw new Error('Store not found for this vendor.');
+  }
+
+  return result;
+};
+
+
 // Update store
 const updateStoreInDB = async (id: string, payload: Partial<IStore>) => {
   const result = await StoreModel.findByIdAndUpdate(id, payload, { new: true });
@@ -51,6 +65,7 @@ export const StoreServices = {
   createStoreInDB,
   getAllStoresFromDB,
   getStoreByIdFromDB,
+  getStoreByVendorIdFromDB,
   updateStoreInDB,
   deleteStoreFromDB,
 };

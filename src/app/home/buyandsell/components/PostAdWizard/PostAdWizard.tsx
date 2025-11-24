@@ -157,11 +157,11 @@ export default function PostAdWizard() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-10 min-h-6/12">
+    <div className="max-w-6xl mx-auto py-10 min-h-screen">
       <h1 className="text-3xl font-bold text-center mb-10 md:hidden">Post Your Ad</h1>
       <div className='flex justify-between items-center mb-10 px-10'>
         <h1 className="text-3xl font-bold hidden md:block"> Post Your Ad</h1>
-        <Button className='hidden md:block'>
+        <Button variant={'BlueBtn'} className='hidden md:block'>
           <Link href="/home/buyandsell" className='flex justify-center items-center gap-2'><MoveLeft className='w-4 h-4 text-gray-100' /> <span>Back to Buy & Sell</span></Link>
         </Button>
       </div>

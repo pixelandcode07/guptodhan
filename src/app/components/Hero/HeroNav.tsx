@@ -105,7 +105,12 @@ export function HeroNav({ categories }: HeroNavProps) {
                       whileTap={{ scale: 0.95 }}
                     >
                       <span className="flex items-center">
-                        {main.name}
+                        <Link
+                          href={`/category/${main.slug}`}
+                          className=""
+                        >
+                          {main.name}
+                        </Link>
                         <motion.div
                           animate={{
                             rotate:
@@ -189,13 +194,13 @@ export function HeroNav({ categories }: HeroNavProps) {
                             {/* Empty state */}
                             {(!main.subCategories ||
                               main.subCategories.length === 0) && (
-                              <Link
-                                href={`/category/${main.slug}`}
-                                className="block px-4 py-2 text-sm text-gray-500 italic"
-                              >
-                                No subcategories
-                              </Link>
-                            )}
+                                <Link
+                                  href={`/category/${main.slug}`}
+                                  className="block px-4 py-2 text-sm text-gray-500 italic"
+                                >
+                                  No subcategories
+                                </Link>
+                              )}
                           </div>
                         </motion.div>
                       )}

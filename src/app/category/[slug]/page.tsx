@@ -16,7 +16,7 @@ interface CategoryData {
 async function getCategoryProducts(slug: string): Promise<CategoryData | null> {
   try {
     const res = await fetch(
-      `${process.env.NEXTAUTH_URL}/api/v1/ecommerce-category/ecomCategory/slug/${slug}`,
+      `${process.env.NEXTAUTH_URL}  ${slug}`,
       { 
         cache: 'no-store',
         headers: {

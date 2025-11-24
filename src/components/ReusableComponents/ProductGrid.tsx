@@ -1,4 +1,3 @@
-// src/components/ProductGrid.tsx
 import ProductCard from './ProductCard';
 import { Product } from '@/types/ProductType';
 import { AnimatePresence } from 'framer-motion';
@@ -6,6 +5,7 @@ import { AnimatePresence } from 'framer-motion';
 interface Props {
   products: Product[];
 }
+
 
 export default function ProductGrid({ products }: Props) {
   return (

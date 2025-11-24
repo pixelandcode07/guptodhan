@@ -23,6 +23,7 @@ export default function PrivacyForm({ initialData }: PrivacyFormProps) {
 
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
+  console.log('Initial Privacy Policy Data Token:', token);
 
   useEffect(() => {
     if (initialData) {
