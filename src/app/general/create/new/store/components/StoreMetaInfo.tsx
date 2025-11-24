@@ -42,7 +42,7 @@ export default function StoreMetaInfo({ register }: { register: UseFormRegister<
                     Store Meta Description
                 </Label>
                 <Textarea
-                    {...register("store_meta_descrip")}
+                    {...register("store_meta_description")}
                     placeholder="Store Meta Description"
                 />
             </section>
