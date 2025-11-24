@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { Types } from "mongoose";
 import { ZodError } from "zod";
 import { StatusCodes } from "http-status-codes";
-import { VendorProductServices } from "./vendorProduct.service";
 import { sendResponse } from "@/lib/utils/sendResponse";
 import { createVendorProductValidationSchema } from "./vendorProduct.validation";
 import { IVendorProduct } from "./vendorProduct.interface";
 import dbConnect from "@/lib/db";
+import { VendorProductServices } from "./vendorProduct.service";
 
 const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
   try {
