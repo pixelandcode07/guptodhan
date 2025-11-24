@@ -113,6 +113,7 @@ export const getAllSubCategoriesWithChildren = async () => {
         mainCategoryId: main._id,
         name: main.name,
         categoryIcon: main.categoryIcon,
+        slug: main.slug, // ✅ Added slug
         subCategories: subWithChildren,
       };
     })
