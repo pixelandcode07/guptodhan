@@ -1,7 +1,6 @@
 
 import { ApiResponse } from '@/types/VendorType';
 import axios, { AxiosError } from 'axios';
-// import { IClassifiedAd } from '../modules/classifieds/ad.interface';
 import { ClassifiedAdListing } from '@/types/ClassifiedAdsType';
 
 const getBaseUrl = () => {
