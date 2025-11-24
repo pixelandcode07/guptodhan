@@ -110,6 +110,27 @@ const getStoreById = async (_req: NextRequest, { params }: { params: { id: strin
   });
 };
 
+
+// Get store by Vendor ID
+const getStoreByVendorId = async (
+  _req: NextRequest,
+  { params }: { params: { vendorId: string } }
+) => {
+  await dbConnect();
+
+  const { vendorId } = await params;
+
+  const result = await StoreServices.getStoreByVendorIdFromDB(vendorId);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Store retrieved successfully by vendorId!',
+    data: result,
+  });
+};
+
+
 // Update store
 const updateStore = async (req: NextRequest, { params }: { params: { id: string } }) => {
   await dbConnect();
@@ -150,6 +171,7 @@ export const VendorStoreController = {
   createStore,
   getAllStores,
   getStoreById,
+  getStoreByVendorId,
   updateStore,
   deleteStore,
 };

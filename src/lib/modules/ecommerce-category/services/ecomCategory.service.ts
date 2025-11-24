@@ -112,6 +112,7 @@ export const getAllSubCategoriesWithChildren = async () => {
       return {
         mainCategoryId: main._id,
         name: main.name,
+        categoryIcon: main.categoryIcon,
         slug: main.slug, // ✅ Added slug
         subCategories: subWithChildren,
       };

@@ -21,7 +21,7 @@ export interface IOrder extends Document {
   totalAmount: number;
 
   paymentStatus: 'Pending' | 'Paid' | 'Failed' | 'Refunded';
-  orderStatus: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
+  orderStatus: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';
   orderForm: 'Website' | 'App';
   orderDate: Date;
   deliveryDate: Date;
