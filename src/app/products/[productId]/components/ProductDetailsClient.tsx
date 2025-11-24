@@ -589,7 +589,7 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
                              <TabsTrigger 
                                 key={tab}
                                 value={tab} 
-                                className="px-0 py-4 rounded-none font-medium text-gray-500 border-b-2 border-transparent data-[state=active]:text-[#0099cc] data-[state=active]:border-[#0099cc] data-[state=active]:bg-transparent transition-all capitalize text-base"
+                                className="px-0 py-4 rounded-none font-medium text-gray-500 border-b-2 border-transparent data-[state=active]:text-[#0099cc] data-[state=active]:border-[#0099cc] data-[state=active]:border-b-[3px] data-[state=active]:font-bold data-[state=active]:bg-blue-50/50 data-[state=active]:px-3 data-[state=active]:rounded-t-md transition-all capitalize text-base hover:text-[#0099cc] hover:border-b-2 hover:border-gray-300"
                             >
                                 {tab === 'reviews' ? `Reviews (${reviews.length})` : tab === 'qna' ? 'Questions' : tab}
                             </TabsTrigger>
