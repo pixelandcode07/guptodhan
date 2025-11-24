@@ -62,62 +62,307 @@ const getVendorProductByIdFromDB = async (id: string) => {
   };
 };
 
-const getVendorProductsByCategoryFromDB = async (categoryId: string) => {
-  // Convert to ObjectId
-  const categoryObjectId = new mongoose.Types.ObjectId(categoryId);
+// const getVendorProductsByCategoryFromDB = async (categoryId: string) => {
+//   // Convert to ObjectId
+//   const categoryObjectId = new mongoose.Types.ObjectId(categoryId);
 
-  // Query DB
-  const result = await VendorProductModel.find({
-    category: categoryObjectId,
-    status: "active", // production-ready: only active products
-  })
+//   // Query DB
+//   const result = await VendorProductModel.find({
+//     category: categoryObjectId,
+//     status: "active", // production-ready: only active products
+//   })
+//     .populate("brand", "name")
+//     .populate("flag", "name")
+//     .populate("warranty", "warrantyName")
+//     .populate("productModel", "name")
+//     .populate("category", "name")
+//     .populate("weightUnit", "name")
+//     .populate("vendorStoreId", "storeName")
+//     .sort({ createdAt: -1 });
+
+
+//   return result;
+// };
+
+
+// filter for main category product
+const getVendorProductsByCategoryFromDB = async (
+  categoryId: string,
+  filters: {
+    priceMin?: number;
+    priceMax?: number;
+    subCategory?: string;
+    childCategory?: string;
+    brand?: string;
+    search?: string;
+    sort?: string; // priceLowHigh, priceHighLow, new, old
+  }
+) => {
+
+  const query: any = {
+    status: "active",
+  };
+
+  // Category filter
+  if (categoryId) {
+    query.category = new mongoose.Types.ObjectId(categoryId);
+  }
+
+  // Sub Category
+  if (filters.subCategory) {
+    query.subCategory = new mongoose.Types.ObjectId(filters.subCategory);
+  }
+
+  // Child Category
+  if (filters.childCategory) {
+    query.childCategory = new mongoose.Types.ObjectId(filters.childCategory);
+  }
+
+  // Brand
+  if (filters.brand) {
+    query.brand = new mongoose.Types.ObjectId(filters.brand);
+  }
+
+  // Search (title, tags, description)
+  if (filters.search) {
+    query.$or = [
+      { productTitle: { $regex: filters.search, $options: "i" } },
+      { shortDescription: { $regex: filters.search, $options: "i" } },
+      { productTag: { $regex: filters.search, $options: "i" } },
+    ];
+  }
+
+  // Price Range
+  if (filters.priceMin || filters.priceMax) {
+    query["productOptions.price"] = {};
+
+    if (filters.priceMin) {
+      query["productOptions.price"].$gte = Number(filters.priceMin);
+    }
+    if (filters.priceMax) {
+      query["productOptions.price"].$lte = Number(filters.priceMax);
+    }
+  }
+
+  // Sorting
+  let sortQuery: any = { createdAt: -1 }; // default newest
+
+  if (filters.sort === "priceLowHigh") {
+    sortQuery = { "productOptions.price": 1 };
+  }
+  if (filters.sort === "priceHighLow") {
+    sortQuery = { "productOptions.price": -1 };
+  }
+  if (filters.sort === "new") {
+    sortQuery = { createdAt: -1 };
+  }
+  if (filters.sort === "old") {
+    sortQuery = { createdAt: 1 };
+  }
+
+  // Database query
+  const result = await VendorProductModel.find(query)
+    .populate("brand", "name")
+    .populate("flag", "name")
+    .populate("warranty", "warrantyName")
+    .populate("subCategory", "name")
+    .populate("childCategory", "name")
+    .populate("category", "name")
+    .populate("weightUnit", "name")
+    .populate("vendorStoreId", "storeName")
+    .sort(sortQuery);
+
+  return result;
+};
+
+
+// const getVendorProductsBySubCategoryFromDB = async (subCategoryId: string) => {
+//   const result = await VendorProductModel.find({
+//     subCategory: subCategoryId,
+//     status: 'active'
+//   })
+//     .populate('brand', 'name') // 'brandName' -> 'name'
+//     .populate('flag', 'name') // 'flagName' -> 'name'
+//     .populate('warranty', 'warrantyName')
+//     .populate('productModel', 'name') // 'modelName' -> 'name'
+//     .populate('category', 'name') // 'categoryName' -> 'name'
+//     .populate('subCategory', 'name') // 'subCategoryName' -> 'name'
+//     .populate('weightUnit', 'name') // 'unitName' -> 'name'
+//     .populate('vendorStoreId', 'storeName')
+//     .sort({ createdAt: -1 });
+//   return result;
+// };
+
+// filter for sub category product
+const getVendorProductsBySubCategoryFromDB = async (
+  subCategoryId: string,
+  filters: {
+    priceMin?: number;
+    priceMax?: number;
+    brand?: string;
+    childCategory?: string;
+    search?: string;
+    sort?: string; // priceLowHigh | priceHighLow | new | old
+  }
+) => {
+  const query: any = {
+    status: "active",
+    subCategory: new mongoose.Types.ObjectId(subCategoryId),
+  };
+
+  // Brand filter
+  if (filters.brand) {
+    query.brand = new mongoose.Types.ObjectId(filters.brand);
+  }
+
+  // Child category filter
+  if (filters.childCategory) {
+    query.childCategory = new mongoose.Types.ObjectId(filters.childCategory);
+  }
+
+  // Search filter
+  if (filters.search) {
+    query.productTitle = {
+      $regex: filters.search,
+      $options: "i",
+    };
+  }
+
+  // Price filter inside productOptions array
+  if (filters.priceMin || filters.priceMax) {
+    query["productOptions.price"] = {};
+
+    if (filters.priceMin) {
+      query["productOptions.price"].$gte = Number(filters.priceMin);
+    }
+
+    if (filters.priceMax) {
+      query["productOptions.price"].$lte = Number(filters.priceMax);
+    }
+  }
+
+  // Sorting logic
+  let sortQuery: any = { createdAt: -1 }; // default
+
+  if (filters.sort === "priceLowHigh") {
+    sortQuery = { "productOptions.price": 1 };
+  } else if (filters.sort === "priceHighLow") {
+    sortQuery = { "productOptions.price": -1 };
+  } else if (filters.sort === "new") {
+    sortQuery = { createdAt: -1 };
+  } else if (filters.sort === "old") {
+    sortQuery = { createdAt: 1 };
+  }
+
+  const result = await VendorProductModel.find(query)
     .populate("brand", "name")
     .populate("flag", "name")
     .populate("warranty", "warrantyName")
     .populate("productModel", "name")
     .populate("category", "name")
+    .populate("subCategory", "name")
+    .populate("childCategory", "name")
     .populate("weightUnit", "name")
     .populate("vendorStoreId", "storeName")
-    .sort({ createdAt: -1 });
-
+    .sort(sortQuery);
 
   return result;
 };
 
-const getVendorProductsBySubCategoryFromDB = async (subCategoryId: string) => {
-  const result = await VendorProductModel.find({
-    subCategory: subCategoryId,
-    status: 'active'
-  })
-    .populate('brand', 'name') // 'brandName' -> 'name'
-    .populate('flag', 'name') // 'flagName' -> 'name'
-    .populate('warranty', 'warrantyName')
-    .populate('productModel', 'name') // 'modelName' -> 'name'
-    .populate('category', 'name') // 'categoryName' -> 'name'
-    .populate('subCategory', 'name') // 'subCategoryName' -> 'name'
-    .populate('weightUnit', 'name') // 'unitName' -> 'name'
-    .populate('vendorStoreId', 'storeName')
-    .sort({ createdAt: -1 });
+
+// const getVendorProductsByChildCategoryFromDB = async (childCategoryId: string) => {
+//   const result = await VendorProductModel.find({
+//     childCategory: childCategoryId,
+//     status: 'active'
+//   })
+//     .populate('brand', 'name') // 'brandName' -> 'name'
+//     .populate('flag', 'name') // 'flagName' -> 'name'
+//     .populate('warranty', 'warrantyName')
+//     .populate('productModel', 'name') // 'modelName' -> 'name'
+//     .populate('category', 'name') // 'categoryName' -> 'name'
+//     .populate('subCategory', 'name') // 'subCategoryName' -> 'name'
+//     .populate('childCategory', 'name') // 'childCategoryName' -> 'name'
+//     .populate('weightUnit', 'name') // 'unitName' -> 'name'
+//     .populate('vendorStoreId', 'storeName')
+//     .sort({ createdAt: -1 });
+//   return result;
+// };
+
+// filter for child category product
+const getVendorProductsByChildCategoryFromDB = async (
+  childCategoryId: string,
+  filters: {
+    priceMin?: number;
+    priceMax?: number;
+    brand?: string;
+    subCategory?: string;
+    search?: string;
+    sort?: string; // priceLowHigh | priceHighLow | new | old
+  }
+) => {
+  const query: any = {
+    status: "active",
+    childCategory: new mongoose.Types.ObjectId(childCategoryId),
+  };
+
+  // Sub category filter
+  if (filters.subCategory) {
+    query.subCategory = new mongoose.Types.ObjectId(filters.subCategory);
+  }
+
+  // Brand filter
+  if (filters.brand) {
+    query.brand = new mongoose.Types.ObjectId(filters.brand);
+  }
+
+  // Search filter (productTitle)
+  if (filters.search) {
+    query.productTitle = {
+      $regex: filters.search,
+      $options: "i",
+    };
+  }
+
+  // Price filter in productOptions array
+  if (filters.priceMin || filters.priceMax) {
+    query["productOptions.price"] = {};
+
+    if (filters.priceMin) {
+      query["productOptions.price"].$gte = Number(filters.priceMin);
+    }
+    if (filters.priceMax) {
+      query["productOptions.price"].$lte = Number(filters.priceMax);
+    }
+  }
+
+  // Sorting
+  let sortQuery: any = { createdAt: -1 }; // default: newest first
+
+  if (filters.sort === "priceLowHigh") {
+    sortQuery = { "productOptions.price": 1 };
+  } else if (filters.sort === "priceHighLow") {
+    sortQuery = { "productOptions.price": -1 };
+  } else if (filters.sort === "new") {
+    sortQuery = { createdAt: -1 };
+  } else if (filters.sort === "old") {
+    sortQuery = { createdAt: 1 };
+  }
+
+  const result = await VendorProductModel.find(query)
+    .populate("brand", "name")
+    .populate("flag", "name")
+    .populate("warranty", "warrantyName")
+    .populate("productModel", "name")
+    .populate("category", "name")
+    .populate("subCategory", "name")
+    .populate("childCategory", "name")
+    .populate("weightUnit", "name")
+    .populate("vendorStoreId", "storeName")
+    .sort(sortQuery);
+
   return result;
 };
 
-const getVendorProductsByChildCategoryFromDB = async (childCategoryId: string) => {
-  const result = await VendorProductModel.find({
-    childCategory: childCategoryId,
-    status: 'active'
-  })
-    .populate('brand', 'name') // 'brandName' -> 'name'
-    .populate('flag', 'name') // 'flagName' -> 'name'
-    .populate('warranty', 'warrantyName')
-    .populate('productModel', 'name') // 'modelName' -> 'name'
-    .populate('category', 'name') // 'categoryName' -> 'name'
-    .populate('subCategory', 'name') // 'subCategoryName' -> 'name'
-    .populate('childCategory', 'name') // 'childCategoryName' -> 'name'
-    .populate('weightUnit', 'name') // 'unitName' -> 'name'
-    .populate('vendorStoreId', 'storeName')
-    .sort({ createdAt: -1 });
-  return result;
-};
 
 const getVendorProductsByBrandFromDB = async (brandId: string) => {
   const result = await VendorProductModel.find({

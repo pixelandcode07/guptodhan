@@ -22,7 +22,7 @@ export default function ViewAllCategory() {
                 ...cat,
                 subCategories: cat.subCategories?.map((sub: SubCategoryType) => ({
                     ...sub,
-                    category: cat._id // Explicitly set parent category ID in each subCategory
+                    category: cat._id
                 })) || []
             }));
             setCategories(enrichedData)

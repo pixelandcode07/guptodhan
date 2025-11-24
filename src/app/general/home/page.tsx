@@ -17,7 +17,7 @@ export default async function DashboardPage() {
     { title: 'Todays Orders', value: analyticsData.stats.todaysOrders, color: '#f97316', iconName: 'Package', iconColor: '#f97316', withButton: true },
     { title: 'Registered Users (Monthly)', value: analyticsData.stats.monthlyRegisteredUsers, color: '#ef4444', iconName: 'Users', iconColor: '#ef4444' },
   ];
-  
+
   // ✅ Customer data
   const customerData = analyticsData.recentCustomers.map((user: any) => ({
     avatar: user.profilePicture || null,
@@ -33,8 +33,8 @@ export default async function DashboardPage() {
     trxId: order.orderId,
     amount: `৳ ${order.totalAmount?.toLocaleString() || 0}`,
     cardType: 'N/A',
-    payment: typeof order.paymentMethodId === 'object' && order.paymentMethodId?.name 
-      ? order.paymentMethodId.name 
+    payment: typeof order.paymentMethodId === 'object' && order.paymentMethodId?.name
+      ? order.paymentMethodId.name
       : 'Cash', // ✅ Extract payment method name
     status: order.paymentStatus,
   }));
@@ -68,18 +68,18 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
           <h2 className="text-xl font-semibold mb-4">Recent Customers</h2>
-          <DataTable 
-            columns={customer_data_columns} 
+          <DataTable
+            columns={customer_data_columns}
             data={customerData}
-  
+
           />
         </div>
         <div>
           <h2 className="text-xl font-semibold mb-4">Payment History</h2>
-          <DataTable 
-            columns={transactions_columns} 
+          <DataTable
+            columns={transactions_columns}
             data={transactionsData}
-         
+
           />
         </div>
       </div>

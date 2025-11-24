@@ -13,6 +13,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { registerWithPhoneSchema } from '@/lib/modules/user/user.validation'
 import Forgetpin from './components/Forgetpin'
 import SetNewPin from './components/SetNewPin'
+import { useRedirectAfterLogin } from '@/hooks/useRedirectAfterLogin'
 // import { signInWithPhoneNumber } from "firebase/auth";
 
 // Extend the Window interface to include confirmationResult
@@ -44,6 +45,7 @@ export interface SetPinFormData {
 export type FormStep = 'login' | 'createAccount' | 'verifyOtp' | 'setPin' | 'forgetPin' | 'setNewPin'
 
 export default function LogInRegister() {
+    useRedirectAfterLogin();
     const [step, setStep] = useState<FormStep>('login')
     const [submittedPhone, setSubmittedPhone] = useState<string>('')
     const [userId, setUserId] = useState<string | null>(null)

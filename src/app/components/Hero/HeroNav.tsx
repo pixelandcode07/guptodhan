@@ -105,7 +105,12 @@ export function HeroNav({ categories }: HeroNavProps) {
                       whileTap={{ scale: 0.95 }}
                     >
                       <span className="flex items-center">
-                        {main.name}
+                        <Link
+                          href={`/category/${main.slug}`}
+                          className=""
+                        >
+                          {main.name}
+                        </Link>
                         <motion.div
                           animate={{
                             rotate:
@@ -146,7 +151,7 @@ export function HeroNav({ categories }: HeroNavProps) {
                                   onMouseLeave={handleSubLeave}
                                 >
                                   <Link
-                                    href={`/category/${main.mainCategoryId}/${sub.subCategoryId}`}
+                                    href={`/subcategory/${sub.slug}`}
                                     className="flex-1 block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 hover:text-black font-medium transition-colors"
                                   >
                                     {sub.name}
@@ -172,7 +177,7 @@ export function HeroNav({ categories }: HeroNavProps) {
                                             {sub.children!.map((child) => (
                                               <Link
                                                 key={child.childCategoryId}
-                                                href={`/category/${main.mainCategoryId}/${sub.subCategoryId}/${child.childCategoryId}`}
+                                                href={`/childcategory/${child.slug}`}
                                                 className="block px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-black transition-colors"
                                               >
                                                 {child.name}
@@ -189,13 +194,13 @@ export function HeroNav({ categories }: HeroNavProps) {
                             {/* Empty state */}
                             {(!main.subCategories ||
                               main.subCategories.length === 0) && (
-                              <Link
-                                href={`/category/${main.mainCategoryId}`}
-                                className="block px-4 py-2 text-sm text-gray-500 italic"
-                              >
-                                No subcategories
-                              </Link>
-                            )}
+                                <Link
+                                  href={`/category/${main.slug}`}
+                                  className="block px-4 py-2 text-sm text-gray-500 italic"
+                                >
+                                  No subcategories
+                                </Link>
+                              )}
                           </div>
                         </motion.div>
                       )}
@@ -241,7 +246,7 @@ export function HeroNav({ categories }: HeroNavProps) {
                           {moreCategories.map((main) => (
                             <Link
                               key={main.mainCategoryId}
-                              href={`/category/${main.mainCategoryId}`}
+                              href={`/category/${main.slug}`}
                               className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 hover:text-black font-medium transition-colors"
                             >
                               {main.name}

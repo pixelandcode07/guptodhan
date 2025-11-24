@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 import { Types } from 'mongoose';
@@ -11,41 +12,42 @@ import dbConnect from '@/lib/db';
 import { verifyToken } from '@/lib/utils/jwt';
 import { IClassifiedAd } from './ad.interface';
 
+// ==========================================
+// 🔐 HELPER: Secure User ID & Role Extraction
+// ==========================================
+const getUserDetailsFromToken = (req: NextRequest) => {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    throw new Error('Authorization token missing or invalid.');
+  }
+  const token = authHeader.split(' ')[1];
+  // Token verify করে userId এবং role বের করা হচ্ছে
+  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as { userId: string; role: string };
+  return { userId: decoded.userId, role: decoded.role };
+};
+
+// ==========================================
+// 🚀 CONTROLLERS
+// ==========================================
+
+// 1. Create Ad
 const createAd = async (req: NextRequest) => {
   await dbConnect();
 
-  // 1️⃣ Token verification
-  const authHeader = req.headers.get('authorization');
-  console.log("=== CREATE AD START ===");
-  console.log("Auth header:", authHeader);
-  if (!authHeader?.startsWith('Bearer ')) throw new Error('Authorization token missing.');
-  const token = authHeader.split(' ')[1];
-  console.log("Token:", token);
+  const { userId } = getUserDetailsFromToken(req);
 
-  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
-  console.log("Decoded:", decoded);
-  const userId = decoded.userId as string;
-
-  // 2️⃣ FormData & images
   const formData = await req.formData();
   const images = formData.getAll('images') as File[];
-  console.log("Images:", images);
-  console.log("Images length:", images.length);
-  console.log("First image:", images[0]);
-  console.log("First image type:", images[0]?.constructor?.name);
+
   if (!images.length) throw new Error('At least one image is required.');
 
   const uploadResults = await Promise.all(
     images.map(async file => uploadToCloudinary(Buffer.from(await file.arrayBuffer()), 'classified-ads'))
   );
-  console.log("Upload results:", uploadResults);
-  
   const imageUrls = uploadResults.map(r => r.secure_url);
-  console.log("Image URLs:", imageUrls);
 
-  // 3️⃣ Payload mapping
-  const payload: any = { images: imageUrls, user: userId, };
-  console.log("Payload before validation:", payload);
+  const payload: any = { images: imageUrls, user: userId };
+
   for (const [key, value] of formData.entries()) {
     if (key !== 'images' && typeof value === 'string') {
       if (key.startsWith('contactDetails.')) {
@@ -57,16 +59,12 @@ const createAd = async (req: NextRequest) => {
       }
     }
   }
-  // Convert types
+
   if (payload.price) payload.price = Number(payload.price);
   if (payload.isNegotiable) payload.isNegotiable = payload.isNegotiable === 'true';
-  console.log("Payload before validation:", payload);
-  
-  // Validation
-  const validatedData = createAdValidationSchema.parse(payload);
-  console.log("Validated data:", validatedData);
 
-  // Build type-safe payload for Mongo
+  const validatedData = createAdValidationSchema.parse(payload);
+
   const payloadForService: Partial<IClassifiedAd> = {
     user: new Types.ObjectId(userId),
     title: validatedData.title,
@@ -89,10 +87,9 @@ const createAd = async (req: NextRequest) => {
     brand: validatedData.brand,
     productModel: validatedData.productModel,
     edition: validatedData.edition,
-    // status এখানে উল্লেখ করার দরকার নেই, Model এর default 'pending' কাজ করবে।
+    // Default status is 'pending' from model
   };
 
-  // 6️⃣ Save to DB
   const result = await ClassifiedAdServices.createAdInDB(payloadForService);
 
   return sendResponse({
@@ -101,50 +98,30 @@ const createAd = async (req: NextRequest) => {
     message: 'Ad posted successfully!',
     data: result,
   });
-}
+};
 
-
-
+// 2. Get All Ads
 const getAllAds = async (_req: NextRequest) => {
   await dbConnect();
   const result = await ClassifiedAdServices.searchAdsInDB({});
   return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ads retrieved', data: result });
 };
 
-const getSingleAd = async (_req: NextRequest, { params }: { params: { id: string } }) => {
+// 3. Get Single Ad
+const getSingleAd = async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
-  const result = await ClassifiedAdServices.getSingleAdFromDB(params.id);
+  const { id } = await params;
+  const result = await ClassifiedAdServices.getSingleAdFromDB(id);
   return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad retrieved', data: result });
 };
 
-const getPublicAds = async (_req: NextRequest) => {
+// 4. Update Ad (Content Update -> Owner Only)
+const updateAd = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
-  const result = await ClassifiedAdServices.getAllPublicAdsFromDB();
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Public ads retrieved successfully!',
-    data: result,
-  });
-};
+  
+  const { userId, role } = getUserDetailsFromToken(req);
 
-const getPublicAdById = async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-  await dbConnect();
   const { id } = await params;
-  const result = await ClassifiedAdServices.getPublicAdByIdFromDB(id);
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Ad retrieved successfully!',
-    data: result,
-  });
-};
-
-const updateAd = async (req: NextRequest, { params }: { params: { id: string } }) => {
-  await dbConnect();
-  const userId = req.headers.get('x-user-id');
-  if (!userId) throw new Error('User ID missing');
-
   const body = await req.json();
   const validatedData = updateAdValidationSchema.parse(body);
 
@@ -157,28 +134,59 @@ const updateAd = async (req: NextRequest, { params }: { params: { id: string } }
     edition: validatedData.edition,
     contactDetails: validatedData.contactDetails
       ? {
-        name: validatedData.contactDetails.name ?? '',
-        phone: validatedData.contactDetails.phone ?? '',
-        email: validatedData.contactDetails.email,
-        isPhoneHidden: validatedData.contactDetails.isPhoneHidden ?? false,
-      }
+          name: validatedData.contactDetails.name ?? '',
+          phone: validatedData.contactDetails.phone ?? '',
+          email: validatedData.contactDetails.email,
+          isPhoneHidden: validatedData.contactDetails.isPhoneHidden ?? false,
+        }
       : undefined,
   };
 
-  const result = await ClassifiedAdServices.updateAdInDB(params.id, userId, payloadForService);
+  // Service-এ ৪টি আর্গুমেন্ট পাঠানো হচ্ছে
+  const result = await ClassifiedAdServices.updateAdInDB(id, userId, role, payloadForService);
 
-  return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad updated', data: result });
+  return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad updated successfully', data: result });
 };
 
-const deleteAd = async (req: NextRequest, { params }: { params: { id: string } }) => {
+// 5. Delete Ad (Owner OR Admin)
+const deleteAd = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
-  const userId = req.headers.get('x-user-id');
-  if (!userId) throw new Error('User ID missing');
 
-  await ClassifiedAdServices.deleteAdFromDB(params.id, userId);
-  return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad deleted', data: null });
+  const { userId, role } = getUserDetailsFromToken(req);
+  
+  const { id } = await params;
+
+  await ClassifiedAdServices.deleteAdFromDB(id, userId, role);
+  
+  return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad deleted successfully', data: null });
 };
 
+// 6. Get Public Ads
+const getPublicAds = async (_req: NextRequest) => {
+  await dbConnect();
+  const result = await ClassifiedAdServices.getAllPublicAdsFromDB();
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Public ads retrieved successfully!',
+    data: result,
+  });
+};
+
+// 7. Get Public Ad By ID
+const getPublicAdById = async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  await dbConnect();
+  const { id } = await params;
+  const result = await ClassifiedAdServices.getPublicAdByIdFromDB(id);
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Ad retrieved successfully!',
+    data: result,
+  });
+};
+
+// 8. Get Ads By Category
 const getPublicAdsByCategoryId = async (_req: NextRequest, { params }: { params: Promise<{ categoryId: string }> }) => {
   await dbConnect();
   const { categoryId } = await params;
@@ -191,6 +199,7 @@ const getPublicAdsByCategoryId = async (_req: NextRequest, { params }: { params:
   });
 };
 
+// 9. Get Filters
 const getFiltersForCategory = async (req: NextRequest) => {
   await dbConnect();
   const { searchParams } = new URL(req.url);
@@ -210,8 +219,37 @@ const getFiltersForCategory = async (req: NextRequest) => {
   });
 };
 
+// 10. Update Status (Admin Only)
+const updateAdStatus = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  await dbConnect();
+
+  // ✅ ADMIN SECURITY CHECK
+  const { role } = getUserDetailsFromToken(req);
+  if (role !== 'admin') {
+    throw new Error('Forbidden: Only admins can update ad status.');
+  }
+
+  const { id } = await params;
+  const { status } = await req.json();
+
+  if (!['pending', 'active', 'inactive', 'sold'].includes(status)) {
+    throw new Error('Invalid status value.');
+  }
+
+  const result = await ClassifiedAdServices.updateAdStatusInDB(id, status);
+  
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Ad status updated successfully!',
+    data: result,
+  });
+};
+
+// 11. Get All Ads For Admin
 const getAllAdsForAdmin = async (_req: NextRequest) => {
   await dbConnect();
+  // Optional: Admin check here too if needed
   const result = await ClassifiedAdServices.getAllAdsForAdminFromDB();
   return sendResponse({
     success: true,
@@ -221,68 +259,19 @@ const getAllAdsForAdmin = async (_req: NextRequest) => {
   });
 };
 
-const updateAdStatus = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-  await dbConnect();
-  const { id } = await params;
-  const { status } = await req.json();
-
-  if (!['active', 'inactive', 'sold'].includes(status)) {
-    throw new Error('Invalid status value.');
-  }
-
-  const result = await ClassifiedAdServices.updateAdStatusInDB(id, status);
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Ad status updated successfully!',
-    data: result,
-  });
-};
-
-
-// const searchAds = async (req: NextRequest) => {
-//   await dbConnect();
-//   const { searchParams } = new URL(req.url);
-
-//   const filters: Record<string, any> = {};
-
-//   // URL থেকে সব ফিল্টার সংগ্রহ করা হচ্ছে
-//   if (searchParams.get('category')) filters.category = searchParams.get('category');
-//   if (searchParams.get('subCategory')) filters.subCategory = searchParams.get('subCategory');
-//   if (searchParams.get('brand')) filters.brand = searchParams.get('brand');
-//   if (searchParams.get('division')) filters.division = searchParams.get('division');
-//   if (searchParams.get('district')) filters.district = searchParams.get('district');
-//   if (searchParams.get('upazila')) filters.upazila = searchParams.get('upazila');
-//   if (searchParams.get('minPrice')) filters.minPrice = searchParams.get('minPrice');
-//   if (searchParams.get('maxPrice')) filters.maxPrice = searchParams.get('maxPrice');
-
-//   // ✅ searchAdsInDB সার্ভিস ফাংশনটিকে ফিল্টারসহ কল করা হচ্ছে
-//   const result = await ClassifiedAdServices.searchAdsInDB(filters);
-
-//   return sendResponse({
-//     success: true,
-//     statusCode: StatusCodes.OK,
-//     message: 'Ads retrieved based on search criteria',
-//     data: result
-//   });
-// };
-
-// src/lib/modules/classifieds/ad.controller.ts
-
+// 12. Advanced Search
 const searchAds = async (req: NextRequest) => {
   await dbConnect();
   const { searchParams } = new URL(req.url);
 
   const filters: Record<string, any> = {};
-
-  // একাধিক মান সাপোর্ট (subCategory=Phone&subCategory=Accessories)
   const getAll = (key: string) => searchParams.getAll(key);
 
   if (searchParams.get('category')) filters.category = searchParams.get('category');
   if (getAll('subCategory').length > 0) filters.subCategory = getAll('subCategory');
   if (getAll('brand').length > 0) filters.brand = getAll('brand');
   if (searchParams.get('division')) filters.division = searchParams.get('division');
-  if (getAll('district').length > 0) filters.district = getAll('district')[0]; // প্রথমটা নাও
+  if (getAll('district').length > 0) filters.district = getAll('district')[0]; 
   if (searchParams.get('upazila')) filters.upazila = searchParams.get('upazila');
   if (searchParams.get('minPrice')) filters.minPrice = searchParams.get('minPrice');
   if (searchParams.get('maxPrice')) filters.maxPrice = searchParams.get('maxPrice');
@@ -297,8 +286,6 @@ const searchAds = async (req: NextRequest) => {
     data: result,
   });
 };
-
-
 
 export const ClassifiedAdController = {
   createAd,
