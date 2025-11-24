@@ -183,11 +183,7 @@ const getVendorProductById = async (
 // filter for main category product
 const getVendorProductsByCategory = async (
   req: NextRequest,
-<<<<<<< HEAD
-  context: { params: Promise<{ id: string }> }
-=======
   context: { params: Promise<{ id: string }> } // Next.js App Router e params Promise
->>>>>>> 101549d0d9d59316f0c64422c9554980ec1a183c
 ) => {
   await dbConnect();
 
@@ -206,18 +202,10 @@ const getVendorProductsByCategory = async (
   const resolvedParams = await context.params;
   const categoryId = resolvedParams.id;
 
-<<<<<<< HEAD
-  const result =
-    await VendorProductServices.getVendorProductsByCategoryFromDB(
-      categoryId,
-      filters
-    );
-=======
   console.log("Category ID:", categoryId);
 
   // Call service
   const result = await VendorProductServices.getVendorProductsByCategoryFromDB(categoryId);
->>>>>>> 101549d0d9d59316f0c64422c9554980ec1a183c
 
   return sendResponse({
     success: true,
@@ -253,29 +241,10 @@ const getVendorProductsBySubCategory = async (
   { params }: { params: Promise<{ subCategoryId: string }> }
 ) => {
   await dbConnect();
-<<<<<<< HEAD
-
-  const searchParams = req.nextUrl.searchParams;
-
-  const filters = {
-    priceMin: searchParams.get("priceMin") || undefined,
-    priceMax: searchParams.get("priceMax") || undefined,
-    brand: searchParams.get("brand") || undefined,
-    childCategory: searchParams.get("childCategory") || undefined,
-    search: searchParams.get("search") || undefined,
-    sort: searchParams.get("sort") || undefined,
-  };
-
-  const result =
-    await VendorProductServices.getVendorProductsBySubCategoryFromDB(
-      params.subCategoryId,
-      filters
-=======
   const { subCategoryId } = await params;
   const result =
     await VendorProductServices.getVendorProductsBySubCategoryFromDB(
       subCategoryId
->>>>>>> 101549d0d9d59316f0c64422c9554980ec1a183c
     );
 
   return sendResponse({
@@ -312,29 +281,10 @@ const getVendorProductsByChildCategory = async (
   { params }: { params: Promise<{ childCategoryId: string }> }
 ) => {
   await dbConnect();
-<<<<<<< HEAD
-
-  const searchParams = req.nextUrl.searchParams;
-
-  const filters = {
-    priceMin: searchParams.get("priceMin") || undefined,
-    priceMax: searchParams.get("priceMax") || undefined,
-    brand: searchParams.get("brand") || undefined,
-    subCategory: searchParams.get("subCategory") || undefined,
-    search: searchParams.get("search") || undefined,
-    sort: searchParams.get("sort") || undefined, // priceLowHigh | new | old
-  };
-
-  const result =
-    await VendorProductServices.getVendorProductsByChildCategoryFromDB(
-      params.childCategoryId,
-      filters
-=======
   const { childCategoryId } = await params;
   const result =
     await VendorProductServices.getVendorProductsByChildCategoryFromDB(
       childCategoryId
->>>>>>> 101549d0d9d59316f0c64422c9554980ec1a183c
     );
 
   return sendResponse({
