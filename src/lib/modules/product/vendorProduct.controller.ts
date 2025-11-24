@@ -132,7 +132,7 @@ const getActiveVendorProducts = async () => {
 
 const getVendorProductById = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
   await dbConnect();
   const { id } = await params;
@@ -183,7 +183,11 @@ const getVendorProductById = async (
 // filter for main category product
 const getVendorProductsByCategory = async (
   req: NextRequest,
+<<<<<<< HEAD
   context: { params: Promise<{ id: string }> }
+=======
+  context: { params: Promise<{ id: string }> } // Next.js App Router e params Promise
+>>>>>>> 101549d0d9d59316f0c64422c9554980ec1a183c
 ) => {
   await dbConnect();
 
@@ -202,11 +206,18 @@ const getVendorProductsByCategory = async (
   const resolvedParams = await context.params;
   const categoryId = resolvedParams.id;
 
+<<<<<<< HEAD
   const result =
     await VendorProductServices.getVendorProductsByCategoryFromDB(
       categoryId,
       filters
     );
+=======
+  console.log("Category ID:", categoryId);
+
+  // Call service
+  const result = await VendorProductServices.getVendorProductsByCategoryFromDB(categoryId);
+>>>>>>> 101549d0d9d59316f0c64422c9554980ec1a183c
 
   return sendResponse({
     success: true,
@@ -239,9 +250,10 @@ const getVendorProductsByCategory = async (
 // filter for sub category product
 const getVendorProductsBySubCategory = async (
   req: NextRequest,
-  { params }: { params: { subCategoryId: string } }
+  { params }: { params: Promise<{ subCategoryId: string }> }
 ) => {
   await dbConnect();
+<<<<<<< HEAD
 
   const searchParams = req.nextUrl.searchParams;
 
@@ -258,6 +270,12 @@ const getVendorProductsBySubCategory = async (
     await VendorProductServices.getVendorProductsBySubCategoryFromDB(
       params.subCategoryId,
       filters
+=======
+  const { subCategoryId } = await params;
+  const result =
+    await VendorProductServices.getVendorProductsBySubCategoryFromDB(
+      subCategoryId
+>>>>>>> 101549d0d9d59316f0c64422c9554980ec1a183c
     );
 
   return sendResponse({
@@ -291,9 +309,10 @@ const getVendorProductsBySubCategory = async (
 // filter for child category product
 const getVendorProductsByChildCategory = async (
   req: NextRequest,
-  { params }: { params: { childCategoryId: string } }
+  { params }: { params: Promise<{ childCategoryId: string }> }
 ) => {
   await dbConnect();
+<<<<<<< HEAD
 
   const searchParams = req.nextUrl.searchParams;
 
@@ -310,6 +329,12 @@ const getVendorProductsByChildCategory = async (
     await VendorProductServices.getVendorProductsByChildCategoryFromDB(
       params.childCategoryId,
       filters
+=======
+  const { childCategoryId } = await params;
+  const result =
+    await VendorProductServices.getVendorProductsByChildCategoryFromDB(
+      childCategoryId
+>>>>>>> 101549d0d9d59316f0c64422c9554980ec1a183c
     );
 
   return sendResponse({
@@ -323,11 +348,12 @@ const getVendorProductsByChildCategory = async (
 
 const getVendorProductsByBrand = async (
   req: NextRequest,
-  { params }: { params: { brandId: string } }
+  { params }: { params: Promise<{ brandId: string }> }
 ) => {
   await dbConnect();
+  const { brandId } = await params;
   const result = await VendorProductServices.getVendorProductsByBrandFromDB(
-    params.brandId
+    brandId
   );
 
   return sendResponse({
@@ -340,10 +366,11 @@ const getVendorProductsByBrand = async (
 
 const updateVendorProduct = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
   try {
     await dbConnect();
+    const { id } = await params;
     const body = await req.json();
 
     const payload: Partial<IVendorProduct> = { ...body };
@@ -362,7 +389,7 @@ const updateVendorProduct = async (
       payload.weightUnit = new Types.ObjectId(body.weightUnit);
 
     const result = await VendorProductServices.updateVendorProductInDB(
-      params.id,
+      id,
       payload
     );
 
@@ -398,11 +425,12 @@ const updateVendorProduct = async (
 
 const deleteVendorProduct = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
   await dbConnect();
+  const { id } = await params;
   const result = await VendorProductServices.deleteVendorProductFromDB(
-    params.id
+    id
   );
 
   if (!result) {
@@ -424,14 +452,15 @@ const deleteVendorProduct = async (
 
 const addProductOption = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
   try {
     await dbConnect();
+    const { id } = await params;
     const body = await req.json();
 
     const result = await VendorProductServices.addProductOptionInDB(
-      params.id,
+      id,
       body
     );
 
@@ -467,14 +496,15 @@ const addProductOption = async (
 
 const removeProductOption = async (
   req: NextRequest,
-  { params }: { params: { id: string; optionIndex: string } }
+  { params }: { params: Promise<{ id: string; optionIndex: string }> }
 ) => {
   try {
     await dbConnect();
-    const optionIndex = parseInt(params.optionIndex);
+    const { id, optionIndex: optionIndexStr } = await params;
+    const optionIndex = parseInt(optionIndexStr);
 
     const result = await VendorProductServices.removeProductOptionFromDB(
-      params.id,
+      id,
       optionIndex
     );
 

@@ -41,8 +41,6 @@ export default async function MainHomePage() {
   // Destructure landing page data
   const { runningOffers, bestSelling, randomProducts } = landingPageData;
   const { middleHomepage, topShoppage } = ecommerceBanners;
-  // const { stories } = storyData;
-  console.log("storyData===>", storyData)
 
 
   return (
@@ -59,13 +57,17 @@ export default async function MainHomePage() {
       </Suspense>
 
       {/* Flash Sell */}
-      <Suspense fallback={<SectionSkeleton title="Flash Sale" count={6} />}>
-        <FlashSell products={runningOffers} middleHomepage={middleHomepage} />
-      </Suspense>
+     {/* Flash Sell Section - Only show if products exist */}
+      {runningOffers && runningOffers.length > 0 && (
+        <Suspense fallback={<SectionSkeleton title="Flash Sale" count={6} />}>
+          <FlashSell products={runningOffers} middleHomepage={middleHomepage} />
+        </Suspense>
+      )}
 
       {/* BestSell - Loading + Skeleton */}
       <Suspense fallback={<SectionSkeleton title="Best Selling" count={6} />}>
         <BestSell products={bestSelling} topShoppage={topShoppage} />
+     
       </Suspense>
 
       {/* JustForYou - Loading + Skeleton */}

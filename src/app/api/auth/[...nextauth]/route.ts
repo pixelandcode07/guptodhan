@@ -83,6 +83,8 @@ export const authOptions = {
           process.env.JWT_ACCESS_SECRET!,
           expiresInString,
         );
+        
+  console.log("🔥 Access Token (On Login):", token.accessToken);  // ← এখানে দেখাবে
 
         token.refreshToken = generateToken( // 💡 4. রিফ্রেশ টোকেন তৈরি এবং সেভ করুন
           refreshTokenPayload,

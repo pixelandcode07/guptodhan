@@ -1,38 +1,31 @@
-import axios from 'axios';
+// ফাইল: src/lib/MainHomePage/fetchLandingPageProducts.ts
+
 import { unstable_cache } from 'next/cache';
-import { LandingPageResponse } from '@/types/ProductType';
+import { VendorProductServices } from '@/lib/modules/product/vendorProduct.service'; // পাথ ঠিক আছে কিনা চেক করবেন
+import dbConnect from '../db';
 
 const getCachedLandingPageProducts = unstable_cache(
   async () => {
-    const baseUrl = process.env.NEXTAUTH_URL;
-
-    if (!baseUrl) {
-      console.error('NEXTAUTH_URL is not configured');
-      return { runningOffers: [], bestSelling: [], randomProducts: [] };
-    }
-
     try {
-      const response = await axios.get<LandingPageResponse>(
-        `${baseUrl}/api/v1/product/landingPage`,
-        { timeout: 10000 }
-      );
+      // ১. ডাটাবেস কানেক্ট করুন (সার্ভার একশন বা লিবে এটি জরুরি)
+      await dbConnect();
 
-      if (response.data.success && response.data.data) {
-        return response.data.data;
-      }
+      // ২. সরাসরি সার্ভিস ফাংশন কল করুন (কোনো Axios বা URL লাগবে না)
+      const data = await VendorProductServices.getLandingPageProductsFromDB();
 
-      console.warn('Invalid response from landing page API', response.data);
-      return { runningOffers: [], bestSelling: [], randomProducts: [] };
+      // ৩. ডাটা রিটার্ন করুন (JSON সিরিয়ালাইজেশন এর জন্য stringify করা হলো)
+      // Next.js মাঝে মাঝে Mongoose Object সরাসরি পাস করলে ওয়ার্নিং দেয়
+      return JSON.parse(JSON.stringify(data));
+
     } catch (error: any) {
-      console.error('Failed to fetch landing page products:', {
-        message: error.response?.data?.message || error.message,
-      });
+      console.error('Failed to fetch landing page products directly from DB:', error.message);
+      // এরর হলে খালি অ্যারে রিটার্ন করুন যাতে সাইট ক্র্যাশ না করে
       return { runningOffers: [], bestSelling: [], randomProducts: [] };
     }
   },
-  ['landing-page-products'],
+  ['landing-page-products'], // Cache key
   {
-    revalidate: 1,
+    revalidate: 600, // টিপস: 1 সেকেন্ড খুবই কম, অন্তত ১০ মিনিট (600s) বা ১ ঘণ্টা দিন। সার্ভারের ওপর লোড কমবে।
   }
 );
 

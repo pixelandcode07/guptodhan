@@ -1,50 +1,17 @@
-import { buySellListing_columns, BuySellListingType } from '@/components/TableHelper/buySellListing_columns'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { buySellListing_columns } from '@/components/TableHelper/buySellListing_columns'
 import { DataTable } from '@/components/TableHelper/data-table'
-import { Input } from '@/components/ui/input'
+import { fetchClassifiedAds } from '@/lib/BuyandSellApis/fetchClassifiedAds'
+import { ClassifiedAdListing } from '@/types/ClassifiedAdsType'
+import { getServerSession } from 'next-auth'
 
-
-
-const getBuySellListing = async (): Promise<BuySellListingType[]> => {
-    return [
-        {
-            id: '1',
-            serial: 'Gadaget',
-            product_name: 'Smart watch',
-            product_image: 'https://www.publicdomainpictures.net/pictures/260000/nahled/photographer-sunset-evening-sky.jpg',
-            category: 'phone',
-            actual_price: 1020,
-            discount_price: 900,
-            status: "pending",
-            postedBy: 'Shakib',
-        },
-        {
-            id: '2',
-            serial: 'Gadaget',
-            product_name: 'Smart watch',
-            product_image: 'https://www.publicdomainpictures.net/pictures/260000/nahled/photographer-sunset-evening-sky.jpg',
-            category: 'watch',
-            actual_price: 1500,
-            discount_price: 500,
-            status: "approved",
-            postedBy: 'Tasif',
-        },
-        {
-            id: '3',
-            serial: 'Gadaget',
-            product_name: 'Smart watch',
-            product_image: 'https://www.publicdomainpictures.net/pictures/260000/nahled/photographer-sunset-evening-sky.jpg',
-            category: 'watch',
-            actual_price: 2000,
-            discount_price: 1200,
-            status: "rejected",
-            postedBy: 'Shawon',
-        }
-    ]
-
-}
 
 export default async function BuySellListing() {
-    const buySellListing = await getBuySellListing()
+    const session = await getServerSession(authOptions)
+    const token = session?.accessToken as string | undefined;
+    // console.log("Token in BuySellListing page:", token);
+    const buySellListing: ClassifiedAdListing[] = await fetchClassifiedAds(token)
+    // console.log("BuySellListing data:", buySellListing);
     return (
         <>
             <div className='py-5'>

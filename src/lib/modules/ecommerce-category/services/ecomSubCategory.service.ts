@@ -49,10 +49,20 @@ const deleteSubCategoryFromDB = async (id: string) => {
   return null;
 };
 
+// Get subcategory by slug
+const getSubCategoryBySlugFromDB = async (slug: string) => {
+  const result = await SubCategoryModel.findOne({
+    slug,
+    status: 'active',
+  }).populate('category', 'name slug');
+  return result;
+};
+
 export const SubCategoryServices = {
   createSubCategoryInDB,
   getAllSubCategoriesFromDB,
   getSubCategoriesByCategoryFromDB,
   updateSubCategoryInDB,
   deleteSubCategoryFromDB,
+  getSubCategoryBySlugFromDB,
 };
