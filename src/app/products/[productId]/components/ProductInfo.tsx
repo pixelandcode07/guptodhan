@@ -46,10 +46,13 @@ export default function ProductInfo({ product, reviews, averageRating }: Product
   const handleBuyNow = async () => {
     setIsBuyingNow(true);
     try {
+      // Store product ID in sessionStorage for "Buy Now" mode
+      sessionStorage.setItem('buyNowProductId', product._id);
       await addToCart(product._id, quantity, { skipModal: true, silent: true });
-      router.push('/home/product/shoppinginfo');
-    } catch (error) { 
+      router.push('/home/product/shoppinginfo?buyNow=true');
+    } catch { 
       toast.error('Failed to proceed'); 
+      sessionStorage.removeItem('buyNowProductId');
     } finally { 
       setIsBuyingNow(false); 
     }
