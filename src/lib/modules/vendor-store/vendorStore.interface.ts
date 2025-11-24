@@ -1,7 +1,7 @@
 import { Document, Types } from "mongoose";
 
 export interface IStore extends Document {
-  storeId: string;
+  // storeId: string;
   vendorId: Types.ObjectId;
   storeLogo: string;
   storeBanner: string;

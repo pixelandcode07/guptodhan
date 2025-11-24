@@ -34,9 +34,19 @@ export default function CreateNewStoreFrom() {
         const formData = new FormData();
 
         // Vendor ID
-        if (data.selectVendor?.value) {
-            formData.append('storeId', data.selectVendor.value);
+        // if (data.selectVendor?.value) {
+        //     formData.append('vendorId', data.selectVendor.value);
+        // }
+        if (!data.selectVendor || !data.selectVendor.value) {
+            toast.error("Please select a vendor");
+            return;
         }
+        formData.append('vendorId', data.selectVendor.value); // This MUST be a string like "670f1a2b3e4d5c6e7f8a9b0c"
+
+        // Debug: Let's see what's actually being sent
+        console.log("Selected Vendor ID:", data.selectVendor.value);
+        console.log("FormData has vendorId?", formData.has('vendorId'));
+        console.log("FormData vendorId value:", formData.get('vendorId'));
 
         // Files
         if (data.logo) formData.append('logo', data.logo);
@@ -52,10 +62,13 @@ export default function CreateNewStoreFrom() {
             fullDescription: data.description,
             commission: data.commission,
             storeMetaTitle: data.store_meta_title,
+            // storeMetaKeywords: data.store_meta_keywords
+            //     .split(',')
+            //     .map((k) => k.trim())
+            //     .filter(Boolean),
             storeMetaKeywords: data.store_meta_keywords
-                .split(',')
-                .map((k) => k.trim())
-                .filter(Boolean),
+                ? data.store_meta_keywords.split(',').map(k => k.trim()).filter(Boolean)
+                : [],
             storeMetaDescription: data.store_meta_description,
         };
 

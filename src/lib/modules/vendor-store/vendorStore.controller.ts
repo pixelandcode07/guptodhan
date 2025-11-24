@@ -37,29 +37,35 @@ const createStore = async (req: NextRequest) => {
     });
   }
 
-  const commissionValue = formData.get('commission');
-  console.log('commission from formData:', commissionValue); // ← এটা দেখো
-
   const payload: any = {
-    storeId: formData.get('storeId'),
+    vendorId: formData.get('vendorId') as string,
+
     storeLogo,
     storeBanner,
-    storeName: formData.get('storeName'),
-    storeAddress: formData.get('storeAddress'),
-    storePhone: formData.get('storePhone'),
-    storeEmail: formData.get('storeEmail'),
-    vendorShortDescription: formData.get('vendorShortDescription'),
-    fullDescription: formData.get('fullDescription'),
-    // commission: Number(formData.get('commission') || 0),
-    // commission: formData.get('commission')
-    //   ? Number(formData.get('commission'))
-    //   : 0,
-    commission: commissionValue ? Number(commissionValue) : 0,
-    storeMetaTitle: formData.get('storeMetaTitle'),
-    storeMetaKeywords: formData.get('storeMetaKeywords')
-      ? JSON.parse(formData.get('storeMetaKeywords') as string)
-      : [],
-    storeMetaDescription: formData.get('storeMetaDescription'),
+    storeName: formData.get('storeName') as string,
+    storeAddress: formData.get('storeAddress') as string,
+    storePhone: formData.get('storePhone') as string,
+    storeEmail: formData.get('storeEmail') as string,
+    vendorShortDescription: formData.get('vendorShortDescription') as string,
+    fullDescription: formData.get('fullDescription') as string,
+    commission: formData.get('commission') ? Number(formData.get('commission')) : 0,
+    storeMetaTitle: (formData.get('storeMetaTitle') as string) || undefined,
+
+    // SAFELY PARSE KEYWORDS
+    storeMetaKeywords: (() => {
+      const raw = formData.get('storeMetaKeywords');
+      if (!raw || raw === 'null' || raw === 'undefined') return [];
+      try {
+        const parsed = JSON.parse(raw as string);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        console.warn('Failed to parse storeMetaKeywords, using empty array');
+        return [];
+      }
+    })(),
+
+    storeMetaDescription: (formData.get('storeMetaDescription') as string) || undefined,
+
     storeSocialLinks: {
       facebook: formData.get('storeSocialLinks[facebook]') as string | null,
       whatsapp: formData.get('storeSocialLinks[whatsapp]') as string | null,
@@ -70,20 +76,51 @@ const createStore = async (req: NextRequest) => {
     },
   };
 
-  const validatedData = createStoreValidationSchema.parse(payload);
-  // const result = await StoreServices.createStoreInDB(validatedData);
+  // NOW SAFE VALIDATION
+  let validatedData;
+  try {
+    validatedData = createStoreValidationSchema.parse(payload);
+  } catch (error: any) {
+    console.error('Zod Validation Failed:', error.errors);
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.BAD_REQUEST,
+      message: 'Validation failed',
+      data: error.errors,
+    });
+  }
 
-  console.log(validatedData);
+  // Convert vendorId to ObjectId AFTER validation
+  const finalPayload = {
+    ...validatedData,
+    vendorId: new Types.ObjectId(validatedData.vendorId),
+  };
 
-  // return sendResponse({
-  //   success: true,
-  //   statusCode: StatusCodes.CREATED,
-  //   message: 'Store created successfully!',
-  //   data: result,
-  // });
+  try {
+    const result = await StoreServices.createStoreInDB(finalPayload);
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.CREATED,
+      message: 'Store created successfully!',
+      data: result,
+    });
+  } catch (error: any) {
+    console.error('DB Error:', error);
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: error.message || 'Failed to create store',
+    });
+  }
 };
 
-// Get all stores
+
+
+
+
+
+
+
 const getAllStores = async () => {
   await dbConnect();
   const result = await StoreServices.getAllStoresFromDB();
