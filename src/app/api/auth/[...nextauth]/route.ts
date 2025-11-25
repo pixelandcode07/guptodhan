@@ -4,7 +4,7 @@ import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import dbConnect from '@/lib/db';
 import { User } from '@/lib/modules/user/user.model';
-import { generateToken, verifyToken } from '@/lib/utils/jwt'; // 💡 1. verifyToken ইম্পোর্ট করুন
+import { generateToken, verifyToken } from '@/lib/utils/jwt';
 import { parseExpiresIn } from '@/lib/utils/time';
 
 export const authOptions = {
@@ -20,6 +20,11 @@ export const authOptions = {
         userId: { label: 'User ID', type: 'text' },
         role: { label: 'Role', type: 'text' },
         accessToken: { label: 'Access Token', type: 'text' },
+        name: { label: 'Name', type: 'text' },
+        email: { label: 'Email', type: 'text' },
+        phoneNumber: { label: 'Phone Number', type: 'text' },
+        profilePicture: { label: 'Profile Picture', type: 'text' },
+        address: { label: 'Address', type: 'text' },
       },
       async authorize(credentials) {
         if (credentials?.userId && credentials?.role) {
@@ -27,6 +32,11 @@ export const authOptions = {
             id: credentials.userId,
             role: credentials.role,
             accessToken: credentials.accessToken,
+            name: credentials.name,
+            email: credentials.email,
+            phoneNumber: credentials.phoneNumber,
+            profilePicture: credentials.profilePicture,
+            address: credentials.address,
           };
         }
         return null;
@@ -62,7 +72,7 @@ export const authOptions = {
       return true;
     },
 
-    // 🔥 JWT CALLBACK → ACCESS TOKEN + AUTO REFRESH (SOLVED)
+    // 🔥 JWT CALLBACK → ACCESS TOKEN + AUTO REFRESH + USER DATA
     async jwt({ token, user }: { token: any; user: any }) {
       const expiresInString = process.env.JWT_ACCESS_EXPIRES_IN || '1h';
       const expiresInMs = parseExpiresIn(expiresInString);
@@ -71,22 +81,28 @@ export const authOptions = {
       if (user) {
         const dbUser = user.dbUser || user;
 
-        token.role = dbUser.role;
+        // ✅ সব user data token এ রাখা হচ্ছে
+        token.role = dbUser.role || user.role;
         token.id = dbUser._id?.toString() || user.id;
+        token.name = dbUser.name || user.name;
+        token.email = dbUser.email || user.email;
+        token.phoneNumber = dbUser.phoneNumber || user.phoneNumber;
+        token.profilePicture = dbUser.profilePicture || user.profilePicture || user.image;
+        token.address = dbUser.address || user.address;
 
         const accessTokenPayload = { userId: token.id, role: token.role };
-        const refreshTokenPayload = { userId: token.id, role: token.role }; // 💡 2. রিফ্রেশ টোকেনের জন্য Payload
+        const refreshTokenPayload = { userId: token.id, role: token.role };
 
-        // 💡 3. অ্যাক্সেস এবং রিফ্রেশ টোকেন উভয়ই তৈরি করুন
+        // 💡 অ্যাক্সেস এবং রিফ্রেশ টোকেন উভয়ই তৈরি করুন
         token.accessToken = generateToken(
           accessTokenPayload,
           process.env.JWT_ACCESS_SECRET!,
           expiresInString,
         );
         
-  console.log("🔥 Access Token (On Login):", token.accessToken);  // ← এখানে দেখাবে
+        console.log("🔥 Access Token (On Login):", token.accessToken);
 
-        token.refreshToken = generateToken( // 💡 4. রিফ্রেশ টোকেন তৈরি এবং সেভ করুন
+        token.refreshToken = generateToken(
           refreshTokenPayload,
           process.env.JWT_REFRESH_SECRET!,
           process.env.JWT_REFRESH_EXPIRES_IN!,
@@ -104,7 +120,7 @@ export const authOptions = {
         return token; // টোকেন এখনো ভ্যালিড
       }
 
-      // 💡 5. টোকেন এক্সপায়ারড → fetch করার বদলে সরাসরি এখানেই রিফ্রেশ করুন
+      // 💡 টোকেন এক্সপায়ারড → fetch করার বদলে সরাসরি এখানেই রিফ্রেশ করুন
       console.log('Access token expired. Attempting refresh internally...');
       try {
         if (!token.refreshToken) {
@@ -125,12 +141,6 @@ export const authOptions = {
           throw new Error('Invalid refresh token');
         }
 
-        // (Optional: আপনি চাইলে এখানে ইউজারকে DB থেকে খুঁজে চেক করতে পারেন)
-        // const existingUser = await User.findById(decoded.userId);
-        // if (!existingUser || existingUser.isDeleted) {
-        //   throw new Error('User not found or deleted');
-        // }
-
         // 3. নতুন Access Token তৈরি করুন
         const accessTokenPayload = { userId: token.id, role: token.role };
         token.accessToken = generateToken(
@@ -144,12 +154,12 @@ export const authOptions = {
         return token;
       } catch (error) {
         console.error('Internal token refresh failed:', error);
-        // রিফ্রেশ ফেইল করলে ক্লায়েন্টকে লগআউট করার জন্য error সেট করুন
+        // রিফ্রেশ ফেইল করলে ক্লায়েন্টকে লগআউট করার জন্য error সেট করুন
         return { ...token, error: 'RefreshAccessTokenError' };
       }
     },
 
-    // 🔥 SESSION CALLBACK → FRONTEND এ TOKEN পাঠানো
+    // 🔥 SESSION CALLBACK → FRONTEND এ সব DATA পাঠানো
     async session({ session, token }: { session: any; token: any }) {
       if (token.error) {
         session.error = token.error;
@@ -158,6 +168,11 @@ export const authOptions = {
       if (session.user) {
         session.user.role = token.role;
         session.user.id = token.id;
+        session.user.name = token.name;
+        session.user.email = token.email;
+        session.user.phoneNumber = token.phoneNumber;
+        session.user.image = token.profilePicture;
+        session.user.address = token.address;
         session.user.accessToken = token.accessToken;
       }
 
