@@ -5,6 +5,7 @@ import mongoose, { Types } from 'mongoose';
 import { ClassifiedAd } from '../../classifieds/ad.model';
 import { VendorProductModel } from '../../product/vendorProduct.model';
 import { BrandModel } from '../../product-config/models/brandName.model';
+import { ProductSize } from '../../product-config/models/productSize.model';
 
 // Create subcategory
 const createSubCategoryInDB = async (payload: Partial<ISubCategory>) => {
@@ -82,9 +83,18 @@ const getProductsBySubCategorySlugWithFiltersFromDB = async (
     }
   }
 
-  // Filter: Size (By Name)
+  // 🔥 UPDATED SIZE FILTER LOGIC 🔥
   if (filters.size) {
-    query['productOptions.size'] = filters.size;
+    // সাইজের নাম (Case Insensitive) দিয়ে ID খোঁজা
+    const sizeDoc = await ProductSize.findOne({ 
+      name: { $regex: new RegExp(`^${filters.size.trim()}$`, 'i') } 
+    });
+
+    if (sizeDoc) {
+      query['productOptions.size'] = sizeDoc._id;
+    } else {
+      return { subCategory, products: [] };
+    }
   }
 
   // Filter: Search
@@ -103,6 +113,15 @@ const getProductsBySubCategorySlugWithFiltersFromDB = async (
     .populate('childCategory', 'name slug')
     .populate('brand', 'name brandLogo')
     .populate('vendorStoreId', 'storeName')
+
+    // ✅ নতুন যোগ:
+    .populate('productModel', 'name')
+    .populate({
+      path: 'productOptions.size',
+      model: 'ProductSize',
+      select: 'name'
+    })
+
     .sort(sortQuery);
 
   return { subCategory, products };
