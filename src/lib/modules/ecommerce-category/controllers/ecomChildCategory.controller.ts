@@ -226,7 +226,7 @@ const deleteChildCategory = async (req: NextRequest, { params }: { params: Promi
 };
 
 
-// Get products by child category slug
+// ✅ Get products by child-category slug with filters (Brand Name, Size Name)
 const getProductsByChildCategorySlug = async (
   req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -234,10 +234,26 @@ const getProductsByChildCategorySlug = async (
   await dbConnect();
   const { slug } = await params;
 
-  // First find child category by slug
-  const childCategory = await ChildCategoryServices.getChildCategoryBySlugFromDB(slug);
+  const { searchParams } = new URL(req.url);
+  
+  const filters = {
+    search: searchParams.get("search") || undefined,
+    // নাম যাচ্ছে (যেমন: "Samsung")
+    brand: searchParams.get("brand") || undefined,
+    // নাম যাচ্ছে (যেমন: "XL")
+    size: searchParams.get("size") || undefined,
+    
+    priceMin: searchParams.get("priceMin") ? Number(searchParams.get("priceMin")) : undefined,
+    priceMax: searchParams.get("priceMax") ? Number(searchParams.get("priceMax")) : undefined,
+    sort: searchParams.get("sort") || undefined,
+  };
 
-  if (!childCategory) {
+  const result = await ChildCategoryServices.getProductsByChildCategorySlugWithFiltersFromDB(
+    slug,
+    filters
+  );
+
+  if (!result) {
     return sendResponse({
       success: false,
       statusCode: StatusCodes.NOT_FOUND,
@@ -246,23 +262,19 @@ const getProductsByChildCategorySlug = async (
     });
   }
 
-  // Get products using child category _id
-  const products = await VendorProductModel.find({
-    childCategory: childCategory._id,
-    status: 'active',
-  }).select('_id').lean();
-
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: `Products for child category "${childCategory.name}" retrieved successfully!`,
+    message: `Products for child category "${result.childCategory.name}" retrieved successfully!`,
     data: {
       childCategory: {
-        name: childCategory.name,
-        slug: childCategory.slug,
-        childCategoryId: childCategory.childCategoryId,
+        name: result.childCategory.name,
+        slug: result.childCategory.slug,
+        childCategoryId: result.childCategory.childCategoryId,
+        icon: result.childCategory.icon
       },
-      productIds: products.map(p => String(p._id)), // ✅ Fixed
+      products: result.products,
+      totalProducts: result.products.length,
     },
   });
 };
