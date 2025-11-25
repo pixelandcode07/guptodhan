@@ -3,7 +3,7 @@
 import React from 'react'
 import ShoppingCartSection from './components/ShoppingCartSection'
 import OrderSummary from './components/OrderSummary'
-import { useCart } from '@/contexts/CartContext'
+import { useCart } from '@/hooks/useCart'
 import { useCartSelection } from './components/useCartSelection'
 
 export type CartItem = {

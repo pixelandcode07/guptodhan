@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Star, Heart, Share2, BadgeCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { useCart } from '@/contexts/CartContext';
+import { useCart } from '@/hooks/useCart';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { Product, Review } from './types';
 import { getBrandName, formatPrice, calculateDiscountPercent } from './utils';
