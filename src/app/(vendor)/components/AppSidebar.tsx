@@ -122,7 +122,7 @@ export function AppSidebar() {
                                 width={40}
                                 height={40}
                             />
-                            <span className="text-lg font-bold text-white">GetCommerce</span>
+                            <span className="text-lg font-bold text-white">Pixel & Code</span>
                         </Link>
                     </SidebarGroupLabel>
 
