@@ -59,13 +59,24 @@ const vendorLogin = async (req: NextRequest) => {
   // vendor login
   const result = await AuthServices.vendorLogin(validatedData);
 
-  const { refreshToken, ...dataForResponseBody } = result;
+  const { refreshToken, user, accessToken } = result;
 
   const response = sendResponse({
     success: true,
     statusCode: 200,
     message: 'Vendor logged in successfully!',
-    data: dataForResponseBody,
+    data: {
+      accessToken,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        profilePicture: user.profilePicture,
+        address: user.address,
+      }
+    },
   });
 
   response.cookies.set('refreshToken', refreshToken, {

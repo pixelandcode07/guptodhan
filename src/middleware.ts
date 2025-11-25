@@ -1,11 +1,9 @@
-// File: middleware.ts (Full Solved Code)
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { StatusCodes } from 'http-status-codes';
 import { jwtVerify } from 'jose';
 
-// ❗️ আপনার adminRoutes এবং protectedApiRoutes লিস্টগুলো এখানে পেস্ট করুন
+// ❗️ Admin Routes (আপনার আগের লিস্ট)
 const adminRoutes = [
   '/general',
   '/api/v1/users',
@@ -37,6 +35,17 @@ const adminRoutes = [
   '/api/v1/classifieds/ads/[id]',
 ];
 
+// 🔥 Vendor Routes (নতুন যোগ করা হয়েছে)
+// ভেন্ডর ড্যাশবোর্ড এবং ভেন্ডরের নিজস্ব API গুলো এখানে থাকবে
+const vendorRoutes = [
+  '/dashboard', // Vendor Dashboard Frontend
+  '/api/v1/vendor-store',
+  '/api/v1/vendor-product',
+  '/api/v1/vendor-orders',
+  '/api/v1/withdrawal',
+];
+
+// ❗️ Protected Routes (Logged in users - আপনার আগের লিস্ট)
 const protectedApiRoutes = [
   '/api/v1/auth/change-password',
   '/api/v1/auth/vendor-change-password',
@@ -78,13 +87,15 @@ const protectedApiRoutes = [
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
+  // ১. রুট চেক করা
   const isAdminRoute = adminRoutes.some((route) => path.startsWith(route));
-  const isProtectedApi = protectedApiRoutes.some((route) =>
-    path.startsWith(route),
-  );
+  const isVendorRoute = vendorRoutes.some((route) => path.startsWith(route)); // 🔥 Vendor Check
+  const isProtectedApi = protectedApiRoutes.some((route) => path.startsWith(route));
 
   // পাবলিক route → allow
-  if (!isAdminRoute && !isProtectedApi) return NextResponse.next();
+  if (!isAdminRoute && !isVendorRoute && !isProtectedApi) {
+    return NextResponse.next();
+  }
 
   let tokenPayload: any = null;
 
@@ -96,12 +107,9 @@ export async function middleware(req: NextRequest) {
       const secret = new TextEncoder().encode(process.env.JWT_ACCESS_SECRET!);
       const { payload } = await jwtVerify(rawToken, secret);
       tokenPayload = payload;
-      console.log('✅ Verified via Bearer token:', tokenPayload);
+      // console.log('✅ Verified via Bearer token:', tokenPayload);
     } catch (err: any) {
-      // ✅✅ সমাধান: টোকেন এক্সপায়ারড হলে শুধু লগ করুন, রিকোয়েস্ট ফেইল করবেন না।
-      // আমরা NextAuth সেশন চেক করার সুযোগ দেবো।
       console.warn(`[Middleware] Bearer token invalid or expired: ${err.code || err.message}`);
-      // এখানে কোনো `return` থাকবে না
     }
   }
 
@@ -113,7 +121,6 @@ export async function middleware(req: NextRequest) {
     });
 
     if (sessionToken) {
-      // ✅ NextAuth সেশনটি রিফ্রেশড এবং ভ্যালিড
       tokenPayload = {
         userId: sessionToken.id,
         role: sessionToken.role,
@@ -124,9 +131,12 @@ export async function middleware(req: NextRequest) {
 
   // ❌ No Token Found (না Bearer, না NextAuth সেশন)
   if (!tokenPayload) {
-    if (path.startsWith('/general')) {
+    // যদি অ্যাডমিন প্যানেল বা ভেন্ডর ড্যাশবোর্ডে ঢোকার চেষ্টা করে, লগইন পেজে পাঠাও
+    if (path.startsWith('/general') || path.startsWith('/dashboard')) {
       return NextResponse.redirect(new URL('/', req.url));
     }
+    
+    // API হলে JSON এরর দাও
     return NextResponse.json(
       { success: false, message: 'Unauthorized: No valid token provided' },
       { status: StatusCodes.UNAUTHORIZED },
@@ -136,7 +146,20 @@ export async function middleware(req: NextRequest) {
   // 🔹 Admin Check
   if (isAdminRoute && tokenPayload.role !== 'admin') {
     return NextResponse.json(
-      { success: false, message: 'Forbidden: You do not have permission.' },
+      { success: false, message: 'Forbidden: You do not have permission (Admin only).' },
+      { status: StatusCodes.FORBIDDEN },
+    );
+  }
+
+  // 🔥 Vendor Check (নতুন লজিক)
+  if (isVendorRoute && tokenPayload.role !== 'vendor') {
+    // যদি ড্যাশবোর্ডে এক্সেস করার চেষ্টা করে কিন্তু ভেন্ডর না হয়
+    if (path.startsWith('/dashboard')) {
+       return NextResponse.redirect(new URL('/', req.url));
+    }
+
+    return NextResponse.json(
+      { success: false, message: 'Forbidden: You do not have permission (Vendor only).' },
       { status: StatusCodes.FORBIDDEN },
     );
   }
@@ -150,5 +173,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/:path*', '/general/:path*'],
+  // 🔥 '/dashboard/:path*' এখানে যোগ করা হয়েছে
+  matcher: ['/api/:path*', '/general/:path*', '/dashboard/:path*'],
 };
