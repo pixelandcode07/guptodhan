@@ -84,7 +84,7 @@ const vendorLogin = async (payload: TLoginUser) => {
   if (!user) throw new Error('Invalid credentials.');
   if (user.role !== 'vendor') throw new Error('Access denied. Vendor account required.');
 
-  // ✅ সমাধান: অ্যাকাউন্ট অ্যাক্টিভ কিনা তা চেক করা
+  // ✅ অ্যাকাউন্ট অ্যাক্টিভ কিনা তা চেক করা
   if (!user.isActive) throw new Error('Your account is not active. Please contact support.');
 
   if (!user.password) throw new Error('Password not set. Use social login.');
@@ -102,7 +102,22 @@ const vendorLogin = async (payload: TLoginUser) => {
   const refreshToken = generateToken(jwtPayload, process.env.JWT_REFRESH_SECRET!, process.env.JWT_REFRESH_EXPIRES_IN!);
 
   const { password, ...userWithoutPassword } = user.toObject();
-  return { accessToken, refreshToken, user: userWithoutPassword };
+  
+  // ✅ সব user data return করছি
+  return { 
+    accessToken, 
+    refreshToken, 
+    user: {
+      _id: userWithoutPassword._id,
+      name: userWithoutPassword.name,
+      email: userWithoutPassword.email,
+      phoneNumber: userWithoutPassword.phoneNumber,
+      role: userWithoutPassword.role,
+      profilePicture: userWithoutPassword.profilePicture,
+      address: userWithoutPassword.address,
+      isActive: userWithoutPassword.isActive,
+    }
+  };
 };
 
 

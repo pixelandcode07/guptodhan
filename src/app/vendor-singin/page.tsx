@@ -33,11 +33,17 @@ export default function VendorSignInPage() {
       const res = await axios.post('/api/v1/auth/vendor-login', payload);
       const { accessToken, user } = res.data.data;
 
+      // ✅ সব user data NextAuth এ পাঠাচ্ছি
       const result = await signIn('credentials', {
         redirect: false,
-        userId: user._id,
+        userId: user.id,
         role: user.role,
         accessToken: accessToken,
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        profilePicture: user.profilePicture,
+        address: user.address,
       });
 
       if (result?.error) {
