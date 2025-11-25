@@ -2,6 +2,9 @@ import { IChildCategory } from '../interfaces/ecomChildCategory.interface';
 import { ChildCategoryModel } from '../models/ecomChildCategory.model';
 import { Types } from 'mongoose';
 import { ClassifiedAd } from '../../classifieds/ad.model';
+import { VendorProductModel } from '../../product/vendorProduct.model';
+import mongoose from 'mongoose';
+import { BrandModel } from '../../product-config/models/brandName.model';
 
 // Create child category
 const createChildCategoryInDB = async (payload: Partial<IChildCategory>) => {
@@ -51,14 +54,60 @@ const deleteChildCategoryFromDB = async (id: string) => {
 };
 
 // Get child category by slug
-const getChildCategoryBySlugFromDB = async (slug: string) => {
-  const result = await ChildCategoryModel.findOne({
-    slug,
+const getProductsByChildCategorySlugWithFiltersFromDB = async (
+  slug: string,
+  filters: {
+    search?: string;
+    brand?: string; // Name
+    size?: string;  // Name
+    sort?: string;
+  }
+) => {
+  // ১. স্লাগ দিয়ে চাইল্ড-ক্যাটাগরি খোঁজা
+  const childCategory = await ChildCategoryModel.findOne({ slug, status: 'active' });
+  if (!childCategory) return null;
+
+  const query: any = {
+    childCategory: childCategory._id,
     status: 'active',
-  })
+  };
+
+  // 🔥 Filter: Brand (By Name)
+  if (filters.brand) {
+    const brandDoc = await BrandModel.findOne({ 
+      name: { $regex: new RegExp(`^${filters.brand}$`, 'i') } 
+    });
+    if (brandDoc) {
+      query.brand = brandDoc._id;
+    } else {
+      return { childCategory, products: [] };
+    }
+  }
+
+  // Filter: Size (By Name)
+  if (filters.size) {
+    query['productOptions.size'] = filters.size;
+  }
+
+  // Filter: Search
+  if (filters.search) {
+    query.productTitle = { $regex: filters.search, $options: 'i' };
+  }
+
+  // Sorting
+  let sortQuery: any = { createdAt: -1 };
+  if (filters.sort === 'priceLowHigh') sortQuery = { 'productOptions.price': 1 };
+  if (filters.sort === 'priceHighLow') sortQuery = { 'productOptions.price': -1 };
+
+  const products = await VendorProductModel.find(query)
     .populate('category', 'name slug')
-    .populate('subCategory', 'name slug');
-  return result;
+    .populate('subCategory', 'name slug')
+    .populate('childCategory', 'name slug')
+    .populate('brand', 'name brandLogo')
+    .populate('vendorStoreId', 'storeName')
+    .sort(sortQuery);
+
+  return { childCategory, products };
 };
 
 
@@ -68,5 +117,5 @@ export const ChildCategoryServices = {
   getChildCategoriesBySubCategoryFromDB,
   updateChildCategoryInDB,
   deleteChildCategoryFromDB,
-  getChildCategoryBySlugFromDB,
+  getProductsByChildCategorySlugWithFiltersFromDB,
 };
