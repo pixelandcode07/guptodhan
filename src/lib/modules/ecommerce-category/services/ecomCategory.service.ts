@@ -9,6 +9,7 @@ import { SubCategoryModel } from '../models/ecomSubCategory.model';
 import { ChildCategoryModel } from '../models/ecomChildCategory.model';
 import { VendorProductModel } from '../../product/vendorProduct.model';
 import { BrandModel } from '../../product-config/models/brandName.model';
+import { ProductSize } from '../../product-config/models/productSize.model';
 
 // Create category
 const createCategoryInDB = async (payload: Partial<ICategory>) => {
@@ -140,101 +141,138 @@ export const reorderMainCategoriesService = async (orderedIds: string[]) => {
 };
 
 
-// 1. Slug দিয়ে ক্যাটাগরি ডাটা এবং নাম দিয়ে ফিল্টার করা প্রোডাক্ট আনা
+// ✅ Helper Function: স্মার্টলি নাম খোঁজার জন্য (Quote এবং Special Character হ্যান্ডেল করবে)
+const createFlexibleRegex = (text: string) => {
+  // ১. স্পেশাল ক্যারেক্টারগুলো (যেমন +, *, ?) যাতে এরর না দেয়, তাই Escape করা হচ্ছে
+  let escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  
+  // ২. সোজা Quote (') এবং বাঁকানো Quote (’) দুটোই যাতে ম্যাচ করে
+  escaped = escaped.replace(/['’]/g, "['’]");
+  
+  // ৩. Regex রিটার্ন করা (Case Insensitive)
+  return new RegExp(`^${escaped.trim()}$`, 'i');
+};
+
 const getProductsByCategorySlugWithFiltersFromDB = async (
   slug: string,
   filters: {
     search?: string;
-    subCategory?: string;   // Name (e.g. "Smart Phone")
-    childCategory?: string; // Name (e.g. "Android")
-    brand?: string;         // Name (e.g. "Samsung")
-    size?: string;          // Name (e.g. "XL")
+    subCategory?: string;
+    childCategory?: string;
+    brand?: string;
+    size?: string;
+    priceMin?: number;
+    priceMax?: number;
     sort?: string;
   }
 ) => {
-  // ১. স্লাগ দিয়ে মেইন ক্যাটাগরি খুঁজে বের করা
   const category = await CategoryModel.findOne({ slug, status: 'active' });
   if (!category) return null;
 
-  // ২. বেসিক কুয়েরি তৈরি
-  const query: any = {
-    category: category._id,
-    status: 'active',
-  };
+  // ✅ ১. সব শর্ত $and এর মধ্যে রাখবো যাতে একটার সাথে আরেকটা সংঘর্ষ না করে
+  const andConditions: any[] = [
+    { category: category._id },
+    { status: 'active' }
+  ];
 
-  // ---------------------------------------------------------
-  // 🔥 NAME TO ID CONVERSION LOGIC (নাম দিয়ে ID খোঁজা)
-  // ---------------------------------------------------------
-
-  // Filter: Sub-Category (By Name)
+  // --- Filter: Sub-Category ---
   if (filters.subCategory) {
-    const subCatDoc = await SubCategoryModel.findOne({ 
-      name: { $regex: new RegExp(`^${filters.subCategory}$`, 'i') } // Exact match, case insensitive
-    });
+    const regex = createFlexibleRegex(filters.subCategory);
+    const subCatDoc = await SubCategoryModel.findOne({ name: { $regex: regex } });
     if (subCatDoc) {
-      query.subCategory = subCatDoc._id;
+      andConditions.push({ subCategory: subCatDoc._id });
     } else {
-      // যদি নাম দিয়ে সাব-ক্যাটাগরি না পাওয়া যায়, তাহলে এমন আইডি দিবো যা ম্যাচ করবে না (Empty result)
-      return { category, products: [] };
+      return { category, products: [], totalProducts: 0 };
     }
   }
 
-  // Filter: Child-Category (By Name)
+  // --- Filter: Child-Category ---
   if (filters.childCategory) {
-    const childCatDoc = await ChildCategoryModel.findOne({ 
-      name: { $regex: new RegExp(`^${filters.childCategory}$`, 'i') }
-    });
+    const regex = createFlexibleRegex(filters.childCategory);
+    const childCatDoc = await ChildCategoryModel.findOne({ name: { $regex: regex } });
     if (childCatDoc) {
-      query.childCategory = childCatDoc._id;
+      andConditions.push({ childCategory: childCatDoc._id });
     } else {
-      return { category, products: [] };
+      return { category, products: [], totalProducts: 0 };
     }
   }
 
-  // Filter: Brand (By Name)
+  // --- Filter: Brand ---
   if (filters.brand) {
-    const brandDoc = await BrandModel.findOne({ 
-      name: { $regex: new RegExp(`^${filters.brand}$`, 'i') } 
-    });
+    const regex = createFlexibleRegex(filters.brand);
+    const brandDoc = await BrandModel.findOne({ name: { $regex: regex } });
     if (brandDoc) {
-      query.brand = brandDoc._id;
+      andConditions.push({ brand: brandDoc._id });
     } else {
-      return { category, products: [] };
+      return { category, products: [], totalProducts: 0 };
     }
   }
 
-  // ---------------------------------------------------------
-  // DIRECT FILTERING
-  // ---------------------------------------------------------
-
-  // Filter: Size (Direct Name Match in Array)
-  // আপনার প্রোডাক্ট মডেলে size যদি string array হয় (['XL', 'L']), তাহলে সরাসরি নাম দিয়েই হবে।
+  // --- Filter: Size ---
   if (filters.size) {
-    query['productOptions.size'] = filters.size;
+    const regex = createFlexibleRegex(filters.size);
+    const sizeDoc = await ProductSize.findOne({ name: { $regex: regex } });
+    if (sizeDoc) {
+      andConditions.push({ 'productOptions.size': sizeDoc._id });
+    } else {
+      return { category, products: [], totalProducts: 0 };
+    }
   }
 
-  // Filter: Search (Product Name)
+  // --- Filter: Search ---
   if (filters.search) {
-    query.productTitle = { $regex: filters.search, $options: 'i' };
+    const searchRegex = { $regex: filters.search, $options: 'i' };
+    andConditions.push({
+      $or: [
+        { productTitle: searchRegex },
+        { productTag: { $in: [searchRegex] } }
+      ]
+    });
   }
 
-  // ৩. সর্টিং
-  let sortQuery: any = { createdAt: -1 };
-  if (filters.sort === 'priceLowHigh') sortQuery = { 'productOptions.price': 1 };
-  if (filters.sort === 'priceHighLow') sortQuery = { 'productOptions.price': -1 };
+  // 🔥 Filter: Price (Advanced Logic) 🔥
+  // এটি এখন productPrice, discountPrice এবং productOptions.price সব জায়গায় চেক করবে
+  if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
+    const priceCondition: any = {};
+    if (filters.priceMin !== undefined) priceCondition.$gte = filters.priceMin;
+    if (filters.priceMax !== undefined) priceCondition.$lte = filters.priceMax;
 
-  // ৪. প্রোডাক্ট আনা
+    andConditions.push({
+      $or: [
+        { productPrice: priceCondition },           // Simple Product Price
+        { discountPrice: priceCondition },          // Simple Product Discount Price
+        { "productOptions.price": priceCondition }, // Variable Product Price
+        { "productOptions.discountPrice": priceCondition } // Variable Discount
+      ]
+    });
+  }
+
+  // --- Final Query ---
+  const query = { $and: andConditions };
+
+  // --- Sorting ---
+  let sortQuery: any = { createdAt: -1 };
+  if (filters.sort === 'priceLowHigh') sortQuery = { productPrice: 1 }; // Note: Sorting complex price structures is tricky in Mongo, basic sort here
+  if (filters.sort === 'priceHighLow') sortQuery = { productPrice: -1 };
+
   const products = await VendorProductModel.find(query)
     .populate('category', 'name slug')
     .populate('subCategory', 'name slug')
     .populate('childCategory', 'name slug')
     .populate('brand', 'name brandLogo')
     .populate('vendorStoreId', 'storeName')
+    .populate('productModel', 'name')
+    .populate({
+      path: 'productOptions.size',
+      model: 'ProductSize',
+      select: 'name'
+    })
     .sort(sortQuery);
 
   return {
     category,
-    products
+    products,
+    totalProducts: products.length
   };
 };
 
