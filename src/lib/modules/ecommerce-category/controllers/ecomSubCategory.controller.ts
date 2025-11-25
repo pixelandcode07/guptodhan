@@ -216,7 +216,7 @@ const deleteSubCategory = async (req: NextRequest, { params }: { params: Promise
 };
 
 
-// Get products by subcategory slug
+// ✅ Get products by sub-category slug with filters (Brand Name, Size Name)
 const getProductsBySubCategorySlug = async (
   req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -224,10 +224,26 @@ const getProductsBySubCategorySlug = async (
   await dbConnect();
   const { slug } = await params;
 
-  // First find subcategory by slug
-  const subCategory = await SubCategoryServices.getSubCategoryBySlugFromDB(slug);
+  const { searchParams } = new URL(req.url);
+  
+  const filters = {
+    search: searchParams.get("search") || undefined,
+    // নাম যাচ্ছে (যেমন: "Samsung")
+    brand: searchParams.get("brand") || undefined,
+    // নাম যাচ্ছে (যেমন: "XL")
+    size: searchParams.get("size") || undefined,
+    
+    priceMin: searchParams.get("priceMin") ? Number(searchParams.get("priceMin")) : undefined,
+    priceMax: searchParams.get("priceMax") ? Number(searchParams.get("priceMax")) : undefined,
+    sort: searchParams.get("sort") || undefined,
+  };
 
-  if (!subCategory) {
+  const result = await SubCategoryServices.getProductsBySubCategorySlugWithFiltersFromDB(
+    slug,
+    filters
+  );
+
+  if (!result) {
     return sendResponse({
       success: false,
       statusCode: StatusCodes.NOT_FOUND,
@@ -236,23 +252,19 @@ const getProductsBySubCategorySlug = async (
     });
   }
 
-  // Get products using subcategory _id
-  const products = await VendorProductModel.find({
-    subCategory: subCategory._id,
-    status: 'active',
-  }).select('_id').lean();
-
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: `Products for subcategory "${subCategory.name}" retrieved successfully!`,
+    message: `Products for subcategory "${result.subCategory.name}" retrieved successfully!`,
     data: {
       subCategory: {
-        name: subCategory.name,
-        slug: subCategory.slug,
-        subCategoryId: subCategory.subCategoryId,
+        name: result.subCategory.name,
+        slug: result.subCategory.slug,
+        subCategoryId: result.subCategory.subCategoryId,
+        banner: result.subCategory.subCategoryBanner
       },
-      productIds: products.map(p => String(p._id)), // ✅ Fixed
+      products: result.products,
+      totalProducts: result.products.length,
     },
   });
 };
