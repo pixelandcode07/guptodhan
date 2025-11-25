@@ -1,6 +1,6 @@
 import { ICategory } from '../interfaces/ecomCategory.interface';
 import { CategoryModel } from '../models/ecomCategory.model';
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import { ClassifiedAd } from '../../classifieds/ad.model';
 import { ISubCategory } from '../interfaces/ecomSubCategory.interface';
 import { IChildCategory } from '../interfaces/ecomChildCategory.interface';
@@ -8,6 +8,7 @@ import {  } from '../models/ecomCategory.model';
 import { SubCategoryModel } from '../models/ecomSubCategory.model';
 import { ChildCategoryModel } from '../models/ecomChildCategory.model';
 import { VendorProductModel } from '../../product/vendorProduct.model';
+import { BrandModel } from '../../product-config/models/brandName.model';
 
 // Create category
 const createCategoryInDB = async (payload: Partial<ICategory>) => {
@@ -139,13 +140,102 @@ export const reorderMainCategoriesService = async (orderedIds: string[]) => {
 };
 
 
-// Get category by slug
-const getCategoryBySlugFromDB = async (slug: string) => {
-  const result = await CategoryModel.findOne({
-    slug,
+// 1. Slug দিয়ে ক্যাটাগরি ডাটা এবং নাম দিয়ে ফিল্টার করা প্রোডাক্ট আনা
+const getProductsByCategorySlugWithFiltersFromDB = async (
+  slug: string,
+  filters: {
+    search?: string;
+    subCategory?: string;   // Name (e.g. "Smart Phone")
+    childCategory?: string; // Name (e.g. "Android")
+    brand?: string;         // Name (e.g. "Samsung")
+    size?: string;          // Name (e.g. "XL")
+    sort?: string;
+  }
+) => {
+  // ১. স্লাগ দিয়ে মেইন ক্যাটাগরি খুঁজে বের করা
+  const category = await CategoryModel.findOne({ slug, status: 'active' });
+  if (!category) return null;
+
+  // ২. বেসিক কুয়েরি তৈরি
+  const query: any = {
+    category: category._id,
     status: 'active',
-  });
-  return result;
+  };
+
+  // ---------------------------------------------------------
+  // 🔥 NAME TO ID CONVERSION LOGIC (নাম দিয়ে ID খোঁজা)
+  // ---------------------------------------------------------
+
+  // Filter: Sub-Category (By Name)
+  if (filters.subCategory) {
+    const subCatDoc = await SubCategoryModel.findOne({ 
+      name: { $regex: new RegExp(`^${filters.subCategory}$`, 'i') } // Exact match, case insensitive
+    });
+    if (subCatDoc) {
+      query.subCategory = subCatDoc._id;
+    } else {
+      // যদি নাম দিয়ে সাব-ক্যাটাগরি না পাওয়া যায়, তাহলে এমন আইডি দিবো যা ম্যাচ করবে না (Empty result)
+      return { category, products: [] };
+    }
+  }
+
+  // Filter: Child-Category (By Name)
+  if (filters.childCategory) {
+    const childCatDoc = await ChildCategoryModel.findOne({ 
+      name: { $regex: new RegExp(`^${filters.childCategory}$`, 'i') }
+    });
+    if (childCatDoc) {
+      query.childCategory = childCatDoc._id;
+    } else {
+      return { category, products: [] };
+    }
+  }
+
+  // Filter: Brand (By Name)
+  if (filters.brand) {
+    const brandDoc = await BrandModel.findOne({ 
+      name: { $regex: new RegExp(`^${filters.brand}$`, 'i') } 
+    });
+    if (brandDoc) {
+      query.brand = brandDoc._id;
+    } else {
+      return { category, products: [] };
+    }
+  }
+
+  // ---------------------------------------------------------
+  // DIRECT FILTERING
+  // ---------------------------------------------------------
+
+  // Filter: Size (Direct Name Match in Array)
+  // আপনার প্রোডাক্ট মডেলে size যদি string array হয় (['XL', 'L']), তাহলে সরাসরি নাম দিয়েই হবে।
+  if (filters.size) {
+    query['productOptions.size'] = filters.size;
+  }
+
+  // Filter: Search (Product Name)
+  if (filters.search) {
+    query.productTitle = { $regex: filters.search, $options: 'i' };
+  }
+
+  // ৩. সর্টিং
+  let sortQuery: any = { createdAt: -1 };
+  if (filters.sort === 'priceLowHigh') sortQuery = { 'productOptions.price': 1 };
+  if (filters.sort === 'priceHighLow') sortQuery = { 'productOptions.price': -1 };
+
+  // ৪. প্রোডাক্ট আনা
+  const products = await VendorProductModel.find(query)
+    .populate('category', 'name slug')
+    .populate('subCategory', 'name slug')
+    .populate('childCategory', 'name slug')
+    .populate('brand', 'name brandLogo')
+    .populate('vendorStoreId', 'storeName')
+    .sort(sortQuery);
+
+  return {
+    category,
+    products
+  };
 };
 
 export const CategoryServices = {
@@ -155,7 +245,7 @@ export const CategoryServices = {
   getCategoryByIdFromDB,
   updateCategoryInDB,
   deleteCategoryFromDB,
-  getCategoryBySlugFromDB,
+  getProductsByCategorySlugWithFiltersFromDB,
 
   getAllSubCategoriesWithChildren,
   reorderMainCategoriesService,
