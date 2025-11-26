@@ -322,7 +322,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
               {/* Footer */}
               <div className="mt-8 text-center space-y-2">
                 <p className="text-sm text-slate-700">
-                  Already have an account? <Link className="text-emerald-600 font-semibold hover:underline" href="/vendor-signin">Sign In</Link>
+                  Already have an account? <Link className="text-emerald-600 font-semibold hover:underline" href="/vendor-singin">Sign In</Link>
                 </p>
                 <p className="text-sm text-slate-600">
                   Need help? <a className="text-emerald-600 font-semibold hover:underline" href="#">Contact Support</a>
