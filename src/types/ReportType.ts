@@ -23,4 +23,5 @@ export interface ReportListing {
     status: ReportStatus;
     createdAt: string;
     updatedAt: string;
+    reportedAd: string;
 }

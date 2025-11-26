@@ -5,7 +5,6 @@ import { fetchPublicVendorCategories } from '@/lib/MultiVendorApis/fetchVendorCa
 export default async function CreateNewVendor() {
 
   const vendorCategories: VendorCategory[] = await fetchPublicVendorCategories();
-  // console.log('Fetched Vendor Categories:', vendorCategories);
 
   return (
     <div>

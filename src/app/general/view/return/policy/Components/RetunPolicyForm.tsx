@@ -43,14 +43,26 @@ export default function ReturnPolicyForm({
       return;
     }
 
+    const adminRole = (session?.user as any)?.role;
+    if (!adminRole || adminRole !== 'admin') {
+      toast.error('Only admins can update Privacy Policy!');
+      return;
+    }
+
     setLoading(true);
 
     try {
       const url = initialData?._id
-        ? `/api/v1/return-policy/${initialData._id}`
+        ? '/api/v1/return-policy'
         : '/api/v1/return-policy';
 
       const method = initialData?._id ? 'PATCH' : 'POST';
+
+      // const url = initialData?._id
+      //   ? `/api/v1/return-policy/${initialData._id}`
+      //   : '/api/v1/return-policy';
+
+      // const method = initialData?._id ? 'PATCH' : 'POST';
 
       const payload = {
         status: initialData?.status || 'active',
@@ -64,6 +76,8 @@ export default function ReturnPolicyForm({
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
+          'X-User-Role': adminRole,
+          'X-User-Id': (session?.user as any)?.id || '',
         },
       });
 

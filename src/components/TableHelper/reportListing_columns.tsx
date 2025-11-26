@@ -1,15 +1,22 @@
-// src/components/reports/reportListing_columns.tsx
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { AlertCircle, CheckCircle, XCircle, Clock, Eye } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
+import { Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import type { ReportListing } from '@/types/ReportType';
+import { useState } from 'react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
 
 const getStatusBadge = (status: ReportListing['status']) => {
     switch (status) {
@@ -75,27 +82,167 @@ export const reportListing_columns: ColumnDef<ReportListing>[] = [
     {
         accessorKey: 'status',
         header: 'Status',
-        cell: ({ row }) => getStatusBadge(row.getValue('status')),
+        cell: ({ row }) => {
+            const status = row.getValue('status') as string;
+            const report = row.original;
+
+            const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+
+            return (
+                <div className="flex items-center gap-2">
+                    {getStatusBadge(status)}
+
+                    {/* Only show eye button when rejected */}
+                    {status === 'rejected' && (
+                        <>
+                            <button
+                                onClick={() => setIsViewDialogOpen(true)}
+                                className="p-1 rounded hover:bg-gray-100"
+                            >
+                                <Eye className="w-4 h-4 text-gray-700" />
+                            </button>
+
+                            {/* View Dialog */}
+                            <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Rejection Reason</DialogTitle>
+                                        <DialogDescription className="text-sm text-gray-700 mt-2">
+                                            {report?.adminNotes || 'No reason provided'}
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                </DialogContent>
+                            </Dialog>
+                        </>
+                    )}
+                </div>
+            );
+        },
     },
+
     {
         accessorKey: 'createdAt',
         header: 'Reported On',
         cell: ({ row }) => format(new Date(row.getValue('createdAt')), 'dd MMM yyyy, hh:mm a'),
     },
+
     {
         id: 'actions',
         header: 'Actions',
         cell: ({ row }) => {
             const report = row.original;
+            const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+            const [rejectReason, setRejectReason] = useState('');
+            const [isLoading, setIsLoading] = useState(false);
+
+            const updateStatus = async (newStatus: 'under_review' | 'resolved' | 'rejected') => {
+                setIsLoading(true);
+
+                try {
+                    const body: any = { status: newStatus };
+
+                    if (newStatus === 'rejected') {
+                        body.adminNotes = rejectReason;
+                    }
+
+                    const res = await fetch(`/api/v1/reports/${report._id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body),
+                    });
+
+                    if (!res.ok) {
+                        const data = await res.json();
+                        toast.error(data.message || 'Failed to update');
+                    } else {
+                        toast.success(`Status updated to: ${newStatus}`);
+                        window.location.reload();
+                    }
+                } catch (err) {
+                    toast.error('Something went wrong');
+                } finally {
+                    setIsLoading(false);
+                    setIsRejectDialogOpen(false);
+                }
+            };
+
             return (
-                <div className="flex gap-2">
-                    <Button size="sm" variant="outline" asChild>
-                        <Link href={`/home/buyandsell/ad-details/${report._id}`}>
-                            <Eye className="w-4 h-4" />
-                        </Link>
-                    </Button>
+                <div className="flex items-center gap-2">
+                    {/* PENDING → Review + Reject */}
+                    {report.status === 'pending' && (
+                        <>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateStatus('under_review')}
+                                disabled={isLoading}
+                            >
+                                Under Review
+                            </Button>
+
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 border-red-500"
+                                onClick={() => setIsRejectDialogOpen(true)}
+                            >
+                                Reject
+                            </Button>
+                        </>
+                    )}
+
+                    {/* UNDER REVIEW → Resolve + Reject */}
+                    {report.status === 'under_review' && (
+                        <>
+                            <Button
+                                size="sm"
+                                className="bg-green-600 text-white"
+                                disabled={isLoading}
+                                onClick={() => updateStatus('resolved')}
+                            >
+                                Resolve
+                            </Button>
+
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 border-red-500"
+                                disabled={isLoading}
+                                onClick={() => setIsRejectDialogOpen(true)}
+                            >
+                                Reject
+                            </Button>
+                        </>
+                    )}
+
+                    {/* Reject Dialog */}
+                    <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Reject Report</DialogTitle>
+                            </DialogHeader>
+
+                            <Textarea
+                                placeholder="Write rejection reason..."
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                            />
+
+                            <DialogFooter>
+                                <Button
+                                    className="bg-red-600 text-white"
+                                    disabled={!rejectReason.trim() || isLoading}
+                                    onClick={() => updateStatus('rejected')}
+                                >
+                                    Confirm Reject
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             );
         },
     },
+
+
 ];
