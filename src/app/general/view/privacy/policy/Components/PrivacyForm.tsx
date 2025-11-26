@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useEffect, useState } from 'react';
 import RichTextEditor from '@/components/ReusableComponents/RichTextEditor';
 import { Button } from '@/components/ui/button';
@@ -19,15 +18,15 @@ interface PrivacyFormProps {
 
 export default function PrivacyForm({ initialData }: PrivacyFormProps) {
   const [content, setContent] = useState(initialData?.content || '');
+  const [policyId, setPolicyId] = useState(initialData?._id); // নতুন লাইন
   const [loading, setLoading] = useState(false);
-
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
-  console.log('Initial Privacy Policy Data Token:', token);
 
   useEffect(() => {
     if (initialData) {
       setContent(initialData.content || '');
+      setPolicyId(initialData._id);
     }
   }, [initialData]);
 
@@ -36,22 +35,27 @@ export default function PrivacyForm({ initialData }: PrivacyFormProps) {
       toast.error('You are not authorized. Please log in.');
       return;
     }
-
     if (!content.trim()) {
       toast.error('Privacy Policy cannot be empty!');
       return;
     }
+    const adminRole = (session?.user as any)?.role;
+    if (!adminRole || adminRole !== 'admin') {
+      toast.error('Only admins can update Privacy Policy!');
+      return;
+    }
 
     setLoading(true);
-
     try {
+
       const url = initialData?._id
-        ? `/api/v1/privacy-policy/${initialData._id}`
+        ? '/api/v1/privacy-policy'
         : '/api/v1/privacy-policy';
+
       const method = initialData?._id ? 'PATCH' : 'POST';
 
       const payload = {
-        status: initialData?.status || 'active',
+        status: 'active',
         content,
       };
 
@@ -62,16 +66,19 @@ export default function PrivacyForm({ initialData }: PrivacyFormProps) {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
+          'X-User-Role': adminRole,
+          'X-User-Id': (session?.user as any)?.id || '',
         },
       });
 
       if (res.data.success) {
-        toast.success('Privacy Policy updated successfully!');
+        toast.success('Privacy Policy saved successfully!');
+        const savedData = res.data.data;
+        setContent(savedData.content);
+        setPolicyId(savedData._id);
       }
     } catch (error: any) {
-      toast.error(
-        error.response?.data?.message || 'Failed to update Privacy Policy.'
-      );
+      toast.error(error.response?.data?.message || 'Failed to save.');
       console.error(error);
     } finally {
       setLoading(false);
@@ -83,7 +90,7 @@ export default function PrivacyForm({ initialData }: PrivacyFormProps) {
       <RichTextEditor value={content} onChange={setContent} />
       <div className="flex justify-center items-center py-7">
         <Button onClick={handleUpdate} disabled={loading}>
-          {loading ? 'Updating...' : 'Update Privacy Policy'}
+          {loading ? 'Saving...' : policyId ? 'Update Privacy Policy' : 'Create Privacy Policy'}
         </Button>
       </div>
     </div>

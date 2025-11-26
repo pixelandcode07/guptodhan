@@ -10,7 +10,7 @@ const createOrUpdatePolicy = async (req: NextRequest) => {
     const body = await req.json();
     const validatedData = updatePrivacyPolicySchema.parse(body);
     const result = await PrivacyPolicyServices.createOrUpdatePolicyInDB(validatedData);
-    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Privacy Policy updated!', data: result });
+    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Privacy Policy saved successfully!', data: result });
 };
 
 const getPublicPolicy = async (_req: NextRequest) => {
