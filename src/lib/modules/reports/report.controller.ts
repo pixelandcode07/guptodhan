@@ -45,7 +45,7 @@ const getAllReports = async (_req: NextRequest) => {
 
 const updateReportStatus = async (req: NextRequest, { params }: { params: { id: string } }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const validatedData = updateReportStatusValidationSchema.parse(body);
     
