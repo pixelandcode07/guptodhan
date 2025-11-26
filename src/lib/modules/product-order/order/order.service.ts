@@ -189,6 +189,32 @@ const getSalesReportFromDB = async (filters: {
     }
 };
 
+const getReturnedOrdersByUserFromDB = async (userId: string) => {
+  try {
+    const result = await OrderModel.find({
+      userId: new Types.ObjectId(userId),
+      orderStatus: "Returned", // filter only returned orders
+    })
+      .populate({
+        path: "orderDetails",
+        populate: {
+          path: "productId",
+          select: "productTitle thumbnailImage productPrice discountPrice",
+          model: "VendorProductModel",
+        },
+      })
+      .populate("storeId", "storeName")
+      .sort({ orderDate: -1 })
+      .lean();
+
+    return result;
+  } catch (error) {
+    console.error("Error in getReturnedOrdersByUserFromDB:", error);
+    throw error;
+  }
+};
+
+
 
 export const OrderServices = {
   createOrderInDB,
@@ -198,4 +224,5 @@ export const OrderServices = {
   updateOrderInDB,
   deleteOrderFromDB,
   getSalesReportFromDB,
+  getReturnedOrdersByUserFromDB
 };
