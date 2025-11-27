@@ -5,3 +5,4 @@ import { checkRole } from '@/lib/middlewares/checkRole';
 
 // অ্যাডমিন রুট: SEO সেটিংস তৈরি বা আপডেট করার জন্য
 export const POST = catchAsync(checkRole(['admin'])(SeoSettingsController.createOrUpdateSeoSettings));
+
