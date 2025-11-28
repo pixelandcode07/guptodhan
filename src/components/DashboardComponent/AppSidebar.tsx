@@ -17,13 +17,13 @@ import Image from 'next/image';
 import WebsiteConfig from './MotherRoutes/WebsiteConfig';
 import { EcommerceModules } from './MotherRoutes/EcommerceModules';
 import { ContentManagement } from './MotherRoutes/ContentManagement';
-import UserRolePermition from './MotherRoutes/UserRolePermision';
 import CRMModules from './MotherRoutes/CRMModules';
 import BuySell from './MotherRoutes/BuySell';
 import Donation from './MotherRoutes/Donation';
 import Multivendor from './MotherRoutes/Multivendor';
 import DemoProducts from './MotherRoutes/DemoProducts';
 import Logout from './MotherRoutes/Logout';
+import UserRolePermision from './MotherRoutes/UserRolePermision';
 
 const data = {
   user: {
@@ -90,7 +90,7 @@ export default function AppSidebar() {
         <EcommerceModules items={data.ecommerceModules} />
         <CRMModules />
         <ContentManagement />
-        <UserRolePermition />
+        <UserRolePermision />
         <DemoProducts />
         <Logout />
       </SidebarContent>
