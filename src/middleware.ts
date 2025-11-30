@@ -33,6 +33,7 @@ const adminRoutes = [
   '/api/v1/slider-form/[id]',
   "/api/v1/donation-configs",
   '/api/v1/classifieds/ads/[id]',
+  '/api/v1/social_links',
 ];
 
 // 🔥 Vendor Routes (নতুন যোগ করা হয়েছে)

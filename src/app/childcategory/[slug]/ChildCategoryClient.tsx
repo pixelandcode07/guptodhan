@@ -80,7 +80,7 @@ function ProductCard({ product }: { product: Product }) {
         : 0;
 
     return (
-        <Link href={`/product/${product.productId}`} className="group block">
+        <Link href={`/products/${product._id}`} className="group block">
             <div className="bg-white rounded-xl shadow-sm hover:shadow-2xl transition-all duration-300 border overflow-hidden">
                 <div className="relative aspect-square bg-gray-50">
                     <Image
@@ -102,11 +102,11 @@ function ProductCard({ product }: { product: Product }) {
                             </span>
                         )}
                     </div>
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                    {/* <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
                         <button className="p-3 bg-white rounded-full"><Heart className="w-5 h-5" /></button>
                         <button className="p-3 bg-white rounded-full"><Eye className="w-5 h-5" /></button>
                         <button className="p-3 bg-blue-600 text-white rounded-full"><ShoppingCart className="w-5 h-5" /></button>
-                    </div>
+                    </div> */}
                 </div>
                 <div className="p-3">
                     <h3 className="font-medium text-sm line-clamp-2 group-hover:text-blue-600">{product.productTitle}</h3>
