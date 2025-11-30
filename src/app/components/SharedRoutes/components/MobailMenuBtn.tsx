@@ -62,7 +62,7 @@ export default function MobailMenuBtn() {
               🏠 Buy & Sale
             </Link>
             <Link
-              href="/home/donate"
+              href="/home/donation"
               className="bg-green-500 text-white text-center py-2 rounded-md hover:bg-green-600 transition">
               💰 Donation
             </Link>

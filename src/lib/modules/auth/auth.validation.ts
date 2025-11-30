@@ -42,6 +42,28 @@ export const resetPasswordWithTokenSchema = z.object({
   newPassword: z.string().min(8, { message: 'Password must be at least 8 characters long.' }),
 });
 
+// export const registerVendorValidationSchema = z.object({
+//   name: z.string().min(1, { message: 'Name is required.' }),
+//   email: z.email({ message: 'A valid email is required.' }),
+//   password: z.string().min(8, { message: 'Password must be at least 8 characters long.' }),
+//   phoneNumber: z.string().min(1, { message: 'Phone number is required.' }),
+//   address: z.string().min(1, { message: 'Address is required.' }),
+
+//   businessName: z.string().min(1, { message: 'Business name is required.' }),
+//   businessCategory: z.string().min(1, { message: 'Business category is required.' }),
+//   tradeLicenseNumber: z.string().min(1, { message: 'Trade license number is required.' }),
+//   businessAddress: z.string().min(1, { message: 'Business address is required.' }),
+//   ownerName: z.string().min(1, { message: 'Owner name is required.' }),
+//   status: z.enum(['pending', 'approved', 'rejected']).optional(),
+//   ownerNidUrl: z.string().url({ message: 'A valid NID card image URL is required.' }),
+//   tradeLicenseUrl: z.string().url({ message: 'A valid trade license image URL is required.' }),
+// }).transform((data) => ({
+//   ...data,
+//   status: data.status || 'pending',
+// }));;
+
+// auth.validation.ts
+
 export const registerVendorValidationSchema = z.object({
   name: z.string().min(1, { message: 'Name is required.' }),
   email: z.email({ message: 'A valid email is required.' }),
@@ -50,8 +72,8 @@ export const registerVendorValidationSchema = z.object({
   address: z.string().min(1, { message: 'Address is required.' }),
 
   businessName: z.string().min(1, { message: 'Business name is required.' }),
-  businessCategory: z.string().min(1, { message: 'Business category is required.' }),
-  tradeLicenseNumber: z.string().min(1, { message: 'Trade license number is required.' }),
+  businessCategory: z.array(z.string()).min(1, { message: 'At least one business category is required.' }), // ← এখানে পরিবর্তন
+  tradeLicenseNumber: z.string().optional(), // optional করলাম
   businessAddress: z.string().min(1, { message: 'Business address is required.' }),
   ownerName: z.string().min(1, { message: 'Owner name is required.' }),
   status: z.enum(['pending', 'approved', 'rejected']).optional(),
@@ -60,7 +82,11 @@ export const registerVendorValidationSchema = z.object({
 }).transform((data) => ({
   ...data,
   status: data.status || 'pending',
-}));;
+  tradeLicenseNumber: data.tradeLicenseNumber || '',
+}));
+
+
+
 
 export const registerServiceProviderValidationSchema = z.object({
   name: z.string().min(1),

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import ShoppingCartContent from '../ShoppingCartContent';
 import { toast } from 'sonner';
-import { useCart } from '@/contexts/CartContext';
+import { useCart } from '@/hooks/useCart';
 import ShoppingCartSkeleton from './ShoppingCartSkeleton';
 
 // Cart item type definition

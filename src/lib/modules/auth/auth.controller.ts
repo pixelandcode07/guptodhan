@@ -243,47 +243,98 @@ const resetPasswordWithToken = async (req: NextRequest) => {
 };
 
 
+// const registerVendor = async (req: NextRequest) => {
+//     await dbConnect();
+
+//     const formData = await req.formData();
+
+//     const ownerNidFile = formData.get('ownerNid') as File | null;
+//     const tradeLicenseFile = formData.get('tradeLicense') as File | null;
+
+//     if (!ownerNidFile) throw new Error('Owner NID image is required.');
+//     if (!tradeLicenseFile) throw new Error('Trade License image is required.');
+
+//     // Upload files
+//     const [ownerNidUploadResult, tradeLicenseUploadResult] = await Promise.all([
+//       uploadToCloudinary(Buffer.from(await ownerNidFile.arrayBuffer()), 'vendor-documents'),
+//       uploadToCloudinary(Buffer.from(await tradeLicenseFile.arrayBuffer()), 'vendor-documents'),
+//     ]);
+
+//     const payload: Record<string, any> = {};
+
+//     // Collect fields from form
+//     for (const [key, value] of formData.entries()) {
+//       if (typeof value === 'string') {
+//         payload[key] = value;
+//       }
+//     }
+
+//     payload.ownerNidUrl = ownerNidUploadResult.secure_url;
+//     payload.tradeLicenseUrl = tradeLicenseUploadResult.secure_url;
+
+//     const validatedData = registerVendorValidationSchema.parse(payload);
+
+//     const result = await AuthServices.registerVendor(validatedData);
+
+//     return sendResponse({
+//       success: true,
+//       statusCode: StatusCodes.CREATED,
+//       message: 'Vendor registered successfully! Please wait for admin approval.',
+//       data: result,
+//     });
+//   };
+
 const registerVendor = async (req: NextRequest) => {
-    await dbConnect();
+  await dbConnect();
 
-    const formData = await req.formData();
+  const formData = await req.formData();
 
-    const ownerNidFile = formData.get('ownerNid') as File | null;
-    const tradeLicenseFile = formData.get('tradeLicense') as File | null;
+  const ownerNidFile = formData.get('ownerNid') as File | null;
+  const tradeLicenseFile = formData.get('tradeLicense') as File | null;
 
-    if (!ownerNidFile) throw new Error('Owner NID image is required.');
-    if (!tradeLicenseFile) throw new Error('Trade License image is required.');
+  if (!ownerNidFile) throw new Error('Owner NID image is required.');
+  if (!tradeLicenseFile) throw new Error('Trade License image is required.');
 
-    // Upload files
-    const [ownerNidUploadResult, tradeLicenseUploadResult] = await Promise.all([
-      uploadToCloudinary(Buffer.from(await ownerNidFile.arrayBuffer()), 'vendor-documents'),
-      uploadToCloudinary(Buffer.from(await tradeLicenseFile.arrayBuffer()), 'vendor-documents'),
-    ]);
+  // Upload to Cloudinary
+  const [ownerNidUploadResult, tradeLicenseUploadResult] = await Promise.all([
+    uploadToCloudinary(Buffer.from(await ownerNidFile.arrayBuffer()), 'vendor-documents'),
+    uploadToCloudinary(Buffer.from(await tradeLicenseFile.arrayBuffer()), 'vendor-documents'),
+  ]);
 
-    const payload: Record<string, any> = {};
+  // Manually map frontend field names → schema expected names
+  const payload: any = {
+    name: formData.get('owner_name') as string,
+    email: formData.get('owner_email') as string,
+    password: formData.get('owner_email_password') as string,
+    phoneNumber: formData.get('owner_number') as string,
+    address: formData.get('business_address') as string || formData.get('address') as string || '',
 
-    // Collect fields from form
-    for (const [key, value] of formData.entries()) {
-      if (typeof value === 'string') {
-        payload[key] = value;
-      }
-    }
+    businessName: formData.get('business_name') as string,
+    businessAddress: formData.get('business_address') as string || '',
+    tradeLicenseNumber: formData.get('trade_license_number') as string || '',
+    ownerName: formData.get('owner_name') as string,
 
-    payload.ownerNidUrl = ownerNidUploadResult.secure_url;
-    payload.tradeLicenseUrl = tradeLicenseUploadResult.secure_url;
+    // এটা JSON string আকারে আসবে
+    businessCategory: JSON.parse((formData.get('businessCategory') as string) || '[]'),
 
-    const validatedData = registerVendorValidationSchema.parse(payload);
+    ownerNidUrl: ownerNidUploadResult.secure_url,
+    tradeLicenseUrl: tradeLicenseUploadResult.secure_url,
 
-    const result = await AuthServices.registerVendor(validatedData);
-
-    return sendResponse({
-      success: true,
-      statusCode: StatusCodes.CREATED,
-      message: 'Vendor registered successfully! Please wait for admin approval.',
-      data: result,
-    });
+    status: 'pending',
   };
 
+  // Zod validation
+  const validatedData = registerVendorValidationSchema.parse(payload);
+
+  const result = await AuthServices.registerVendor(validatedData);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.CREATED,
+    message: 'Vendor registered successfully! Please wait for admin approval.',
+    data: result,
+  });
+};
 
 const registerServiceProvider = async (req: NextRequest) => {
   await dbConnect();

@@ -7,3 +7,5 @@ import { checkRole } from '@/lib/middlewares/checkRole';
  * @method POST
  */
 export const POST = catchAsync(checkRole(['admin'])(PrivacyPolicyController.createOrUpdatePolicy));
+
+export const PATCH = catchAsync(checkRole(['admin'])(PrivacyPolicyController.createOrUpdatePolicy));
