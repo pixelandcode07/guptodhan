@@ -243,47 +243,6 @@ const resetPasswordWithToken = async (req: NextRequest) => {
 };
 
 
-// const registerVendor = async (req: NextRequest) => {
-//     await dbConnect();
-
-//     const formData = await req.formData();
-
-//     const ownerNidFile = formData.get('ownerNid') as File | null;
-//     const tradeLicenseFile = formData.get('tradeLicense') as File | null;
-
-//     if (!ownerNidFile) throw new Error('Owner NID image is required.');
-//     if (!tradeLicenseFile) throw new Error('Trade License image is required.');
-
-//     // Upload files
-//     const [ownerNidUploadResult, tradeLicenseUploadResult] = await Promise.all([
-//       uploadToCloudinary(Buffer.from(await ownerNidFile.arrayBuffer()), 'vendor-documents'),
-//       uploadToCloudinary(Buffer.from(await tradeLicenseFile.arrayBuffer()), 'vendor-documents'),
-//     ]);
-
-//     const payload: Record<string, any> = {};
-
-//     // Collect fields from form
-//     for (const [key, value] of formData.entries()) {
-//       if (typeof value === 'string') {
-//         payload[key] = value;
-//       }
-//     }
-
-//     payload.ownerNidUrl = ownerNidUploadResult.secure_url;
-//     payload.tradeLicenseUrl = tradeLicenseUploadResult.secure_url;
-
-//     const validatedData = registerVendorValidationSchema.parse(payload);
-
-//     const result = await AuthServices.registerVendor(validatedData);
-
-//     return sendResponse({
-//       success: true,
-//       statusCode: StatusCodes.CREATED,
-//       message: 'Vendor registered successfully! Please wait for admin approval.',
-//       data: result,
-//     });
-//   };
-
 const registerVendor = async (req: NextRequest) => {
   await dbConnect();
 
@@ -301,20 +260,22 @@ const registerVendor = async (req: NextRequest) => {
     uploadToCloudinary(Buffer.from(await tradeLicenseFile.arrayBuffer()), 'vendor-documents'),
   ]);
 
-  // Manually map frontend field names → schema expected names
+  // ✅ FIX: Use the keys exactly as they are appended in Frontend (VendorFormUserEnd.tsx)
   const payload: any = {
-    name: formData.get('owner_name') as string,
-    email: formData.get('owner_email') as string,
-    password: formData.get('owner_email_password') as string,
-    phoneNumber: formData.get('owner_number') as string,
-    address: formData.get('business_address') as string || formData.get('address') as string || '',
+    // User Model Fields
+    name: formData.get('name') as string,                 // Was 'owner_name'
+    email: formData.get('email') as string,               // Was 'owner_email'
+    password: formData.get('password') as string,         // Was 'owner_email_password'
+    phoneNumber: formData.get('phoneNumber') as string,   // Was 'owner_number'
+    address: formData.get('address') as string || '',     // Matches frontend
 
-    businessName: formData.get('business_name') as string,
-    businessAddress: formData.get('business_address') as string || '',
-    tradeLicenseNumber: formData.get('trade_license_number') as string || '',
-    ownerName: formData.get('owner_name') as string,
+    // Vendor Model Fields
+    businessName: formData.get('businessName') as string, // Was 'business_name'
+    businessAddress: formData.get('businessAddress') as string || '', 
+    tradeLicenseNumber: formData.get('tradeLicenseNumber') as string || '', // Was 'trade_license_number'
+    ownerName: formData.get('ownerName') as string,       // Was 'owner_name' (Frontend sends both 'name' and 'ownerName')
 
-    // এটা JSON string আকারে আসবে
+    // Parse JSON string for categories
     businessCategory: JSON.parse((formData.get('businessCategory') as string) || '[]'),
 
     ownerNidUrl: ownerNidUploadResult.secure_url,
