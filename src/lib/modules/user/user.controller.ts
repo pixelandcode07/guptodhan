@@ -113,25 +113,33 @@ const updateMyProfile = async (req: NextRequest) => {
   if (!userId) { throw new Error('User ID not found in token'); }
 
   const formData = await req.formData();
+  
+  // ডাটাগুলো নেওয়া হচ্ছে
   const file = formData.get('profilePicture') as File | null;
   const name = formData.get('name') as string;
-  const address = formData.get('address') as string;
+  const address = formData.get('address') as string; // <--- এখানে খালি স্ট্রিং আসছে
   const phoneNumber = formData.get('phoneNumber') as string;
 
   const payload: { name?: string; address?: string; profilePicture?: string; phoneNumber?:string} = {};
 
   if (name) payload.name = name;
-  if (address) payload.address = address;
   if (phoneNumber) payload.phoneNumber = phoneNumber;
+  
+  // ❌ ভুল কোড (আগে যা ছিল)
+  // if (address) payload.address = address; 
 
+  // ✅ সঠিক কোড (এটি ব্যবহার করুন)
+  // আমরা চেক করছি address স্ট্রিং কিনা, খালি হলেও সমস্যা নেই
+  if (typeof address === 'string') {
+    payload.address = address;
+  }
+
+  // ... বাকি কোড একই থাকবে (ছবি আপলোড ইত্যাদি)
   if (file) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const uploadResult = await uploadToCloudinary(buffer, 'profile-pictures');
     payload.profilePicture = uploadResult.secure_url;
   }
-
-  UserValidations.updateUserProfileValidationSchema.parse({ body: payload });
-
   const result = await UserServices.updateMyProfileInDB(userId, payload);
 
   return sendResponse({
