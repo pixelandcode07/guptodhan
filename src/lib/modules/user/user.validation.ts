@@ -99,16 +99,15 @@
       }),
     });
 
-    export const updateUserProfileValidationSchema = z.object({
-      body: z.object({
-        name: z.string().min(1, { message: 'Name cannot be empty.' }).optional(),
-        phoneNumber: z.string().regex(bdPhoneNumberRegex, {
-          message: 'Must be a valid Bangladeshi phone number.'
-        }).optional(),
-        address: z.string().min(1, { message: 'Address cannot be empty.' }).optional(),
-        profilePicture: z.string().url({ message: 'Profile picture must be a valid URL.' }).optional(),
-      }),
-    });
+export const updateUserProfileValidationSchema = z.object({
+  body: z.object({
+    name: z.string().min(1).optional(),
+    phoneNumber: z.string().regex(bdPhoneNumberRegex).optional(),
+    // address এর ক্ষেত্রে min(1) সরিয়ে দিন বা allow empty string দিন
+    address: z.string().optional(), 
+    profilePicture: z.string().url().optional(),
+  }),
+});
 
 
     export const UserValidations = {
