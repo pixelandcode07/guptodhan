@@ -99,7 +99,7 @@ export const authOptions = {
           process.env.JWT_ACCESS_SECRET!,
           expiresInString,
         );
-        
+
         console.log("🔥 Access Token (On Login):", token.accessToken);
 
         token.refreshToken = generateToken(

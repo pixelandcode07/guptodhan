@@ -11,12 +11,12 @@ const createOrUpdateSeoSettingsInDB = async (pageIdentifier: string, payload: Pa
 
   // যদি নতুন OG image আপলোড করা হয়, তাহলে পুরনোটি ডিলিট করা
   if (existingSettings && payload.ogImage && existingSettings.ogImage) {
-      await deleteFromCloudinary(existingSettings.ogImage);
+    await deleteFromCloudinary(existingSettings.ogImage);
   }
 
   return await SeoSettings.findOneAndUpdate(
-    { pageIdentifier }, 
-    payload, 
+    { pageIdentifier },
+    payload,
     { new: true, upsert: true }
   );
 };
@@ -38,9 +38,11 @@ const updateSeoSettingsInDB = async (id: string, payload: Partial<ISeoSettings>)
   return await SeoSettings.findByIdAndUpdate(id, payload, { new: true });
 };
 
+
+
 export const SeoSettingsServices = {
   createOrUpdateSeoSettingsInDB,
   getPublicSeoSettingsFromDB,
   updateSeoSettingsInDB,
-  getSeoSettingsByIdFromDB,
+  getSeoSettingsByIdFromDB
 };

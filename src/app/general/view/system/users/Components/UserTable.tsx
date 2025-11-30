@@ -11,7 +11,7 @@ interface UserTableProps {
     data: User[];
 }
 
-export default function UserTabile({ data }: UserTableProps) {
+export default function UserTable({ data }: UserTableProps) {
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
   const [users, setUsers] = useState(data);
@@ -56,7 +56,7 @@ export default function UserTabile({ data }: UserTableProps) {
         },
         cancel: { 
             label: "Cancel",
-            onClick: () => {}, // Required for sonner
+            onClick: () => {},
         }
     });
   };
