@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Create Cart validation
 export const createCartValidationSchema = z.object({
-  cartID: z.string().min(1, { message: 'Cart ID is required.' }),
+  cartID: z.string().optional(),
   userID: z.string({ required_error: 'User ID is required.' }),
   userName: z.string().min(1, { message: 'User name is required.' }),
   userEmail: z.string().email({ message: 'Valid email is required.' }),

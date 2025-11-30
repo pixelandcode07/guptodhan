@@ -3,35 +3,41 @@ import { CartModel } from './addToCart.model';
 import { Types } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
-// Add item to cart
 const addToCartInDB = async (payload: Partial<ICart>) => {
-  // Check if this product already exists in the user's cart
+
+  // Check if product already exists
   const existingItem = await CartModel.findOne({
     userID: new Types.ObjectId(payload.userID),
     productID: new Types.ObjectId(payload.productID),
   });
 
   if (existingItem) {
-    // Update quantity and totalPrice if exists
     existingItem.quantity += payload.quantity || 1;
     existingItem.totalPrice = existingItem.quantity * existingItem.unitPrice;
-    const updated = await existingItem.save();
-    return updated;
+    return await existingItem.save();
   }
 
-  // If not exists, create new cart item
-  const newItem = await CartModel.create({
-    cartID: `CID-${Math.random().toString(36).substring(2, 10)}`,
-    userID: payload.userID,
-    userName: payload.userName,
-    userEmail: payload.userEmail,
-    productID: payload.productID,
-    productName: payload.productName,
-    productImage: payload.productImage,
-    quantity: payload.quantity || 1,
-    unitPrice: payload.unitPrice,
-    totalPrice: (payload.quantity || 1) * payload.unitPrice,
-  });
+  // Create new cart item — backend auto generates cartID
+const newItem = await CartModel.create({
+  cartID: "CID-" +
+    Array.from(
+      { length: 10 },
+      () =>
+        "abcdefghijklmnopqrstuvwxyz0123456789"[
+          Math.floor(Math.random() * 36)
+        ]
+    ).join(""),
+  userID: payload.userID,
+  userName: payload.userName,
+  userEmail: payload.userEmail,
+  productID: payload.productID,
+  productName: payload.productName,
+  productImage: payload.productImage,
+  quantity: payload.quantity || 1,
+  unitPrice: payload.unitPrice,
+  totalPrice: (payload.quantity || 1) * payload.unitPrice,
+});
+
 
   return newItem;
 };
