@@ -33,7 +33,7 @@ export default function HeroFooter() {
           </Button>
           <Button variant={'HomeDoante'} size={'lg'} className="rounded-none">
             <HandCoins size={32} className='hidden md:block' />
-            <Link href={'/home/donate'}>Donation</Link>
+            <Link href={'/home/donation'}>Donation</Link>
           </Button>
           <Button variant={'HomeServices'} size={'lg'} className="rounded-none">
             <HeartHandshake size={32} className='hidden md:block' />

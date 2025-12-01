@@ -273,7 +273,7 @@ export function HeroNav({ categories }: HeroNavProps) {
               </motion.div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Link
-                  href="/home/donate"
+                  href="/home/donation"
                   className="flex items-center h-full px-6 py-3 bg-green-700 text-white font-medium hover:bg-green-800 transition-colors"
                 >
                   <HandCoins size={20} className="mr-2" />

@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Handbag } from 'lucide-react';
-import { useCart } from '@/contexts/CartContext';
+import { useCart } from '@/hooks/useCart';
 
 interface CartIconProps {
   className?: string;

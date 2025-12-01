@@ -6,7 +6,7 @@ import api from '@/lib/axios'
 import OrderList from '@/components/UserProfile/Order/OrderList'
 import OrderFilters from '@/components/UserProfile/Order/OrderFilters'
 import type { OrderStatus, OrderSummary } from '@/components/UserProfile/Order/types'
-import FancyLoadingPage from '@/app/general/loading'
+import OrdersSkeleton from '@/components/UserProfile/Order/OrdersSkeleton'
 
 function mapOrderStatusToUI(status: string): OrderStatus {
   const s = status.toLowerCase()
@@ -218,7 +218,7 @@ export default function UserOrdersPage() {
   }, [fetchUserOrders])
 
   if (loading) {
-    return <FancyLoadingPage />;
+    return <OrdersSkeleton />;
   }
 
   return (

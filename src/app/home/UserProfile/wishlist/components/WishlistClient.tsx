@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import FancyLoadingPage from '@/app/general/loading'
 import { useWishlist } from '@/contexts/WishlistContext'
-import { useCart } from '@/contexts/CartContext'
+import { useCart } from '@/hooks/useCart'
 import { useWishlistSelection } from './useWishlistSelection'
 import type { WishlistProduct } from '../types'
 

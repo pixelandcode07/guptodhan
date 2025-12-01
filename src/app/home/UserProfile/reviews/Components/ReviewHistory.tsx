@@ -45,7 +45,7 @@ const reviews = [
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis.',
   },
 ];
-export default function History() {
+export default function ReviewHistory() {
   return (
     <div>
       <h3 className="font-semibold py-2 ">Your product rating & review:</h3>

@@ -102,11 +102,11 @@ const vendorLogin = async (payload: TLoginUser) => {
   const refreshToken = generateToken(jwtPayload, process.env.JWT_REFRESH_SECRET!, process.env.JWT_REFRESH_EXPIRES_IN!);
 
   const { password, ...userWithoutPassword } = user.toObject();
-  
+
   // ✅ সব user data return করছি
-  return { 
-    accessToken, 
-    refreshToken, 
+  return {
+    accessToken,
+    refreshToken,
     user: {
       _id: userWithoutPassword._id,
       name: userWithoutPassword.name,
@@ -372,32 +372,76 @@ const resetPasswordWithToken = async (token: string, newPassword: string) => {
 
 
 
-const registerVendor = async (payload: any) => {
-  const { name, email, password, phoneNumber, address, ...vendorData } = payload;
+// const registerVendor = async (payload: any) => {
+//   const { name, email, password, phoneNumber, address, ...vendorData } = payload;
 
-  // 👇 --- এখানে পরিবর্তন --- 👇
+//   // 👇 --- এখানে পরিবর্তন --- 👇
+//   const userData = {
+//     name,
+//     email,
+//     password,
+//     phoneNumber,
+//     address,
+//     role: 'user',     // <-- 'vendor' থেকে 'user' করা হয়েছে
+//     isActive: false   // <-- এটি যোগ করা হয়েছে
+//   };
+//   // 👆 --- পরিবর্তন শেষ --- 👆
+
+//   const session = await mongoose.startSession();
+//   try {
+//     session.startTransaction();
+
+//     // User.create ব্যবহার করলে pre-save হুক (পাসওয়ার্ড হ্যশিং) কাজ করবে
+//     const newUser = (await User.create([userData], { session }))[0];
+//     if (!newUser) { throw new Error('Failed to create user'); }
+
+//     vendorData.user = newUser._id;
+//     const newVendor = (await Vendor.create([vendorData], { session }))[0];
+//     if (!newVendor) { throw new Error('Failed to create vendor profile'); }
+
+//     newUser.vendorInfo = newVendor._id;
+//     await newUser.save({ session });
+
+//     await session.commitTransaction();
+//     return newUser;
+//   } catch (error) {
+//     await session.abortTransaction();
+//     throw error;
+//   } finally {
+//     session.endSession();
+//   }
+// };
+
+// auth.service.ts → registerVendor
+
+const registerVendor = async (payload: any) => {
+  const { name, email, password, phoneNumber, address, businessCategory, ...vendorData } = payload;
+
   const userData = {
     name,
     email,
     password,
     phoneNumber,
     address,
-    role: 'user',     // <-- 'vendor' থেকে 'user' করা হয়েছে
-    isActive: false   // <-- এটি যোগ করা হয়েছে
+    role: 'user',
+    isActive: false,
   };
-  // 👆 --- পরিবর্তন শেষ --- 👆
 
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
 
-    // User.create ব্যবহার করলে pre-save হুক (পাসওয়ার্ড হ্যশিং) কাজ করবে
     const newUser = (await User.create([userData], { session }))[0];
-    if (!newUser) { throw new Error('Failed to create user'); }
+    if (!newUser) throw new Error('Failed to create user');
 
-    vendorData.user = newUser._id;
-    const newVendor = (await Vendor.create([vendorData], { session }))[0];
-    if (!newVendor) { throw new Error('Failed to create vendor profile'); }
+    // vendorData এ businessCategory array থাকবে
+    const newVendor = (await Vendor.create([{
+      ...vendorData,
+      user: newUser._id,
+      businessCategory, // ← array
+    }], { session }))[0];
+
+    if (!newVendor) throw new Error('Failed to create vendor profile');
 
     newUser.vendorInfo = newVendor._id;
     await newUser.save({ session });
@@ -411,6 +455,10 @@ const registerVendor = async (payload: any) => {
     session.endSession();
   }
 };
+
+
+
+
 
 const registerServiceProvider = async (payload: any) => {
   const {

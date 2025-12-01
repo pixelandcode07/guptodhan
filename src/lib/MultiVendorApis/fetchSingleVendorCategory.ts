@@ -1,4 +1,4 @@
-// src/lib/MultiVendorApis/fetchSingleVendorCategory.ts
+
 
 import axios from 'axios';
 

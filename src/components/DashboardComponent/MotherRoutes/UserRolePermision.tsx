@@ -26,7 +26,7 @@ const userRole = [
 export default function UserRolePermision() {
     return (
         <SidebarGroupMenu
-            label="Website Config"
+            label="User Role Permission"
             items={userRole}
         />
     )

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import api from '@/lib/axios';
@@ -56,15 +56,7 @@ type CartContextType = {
   closeAddToCartModal: () => void;
 };
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
-
-export const useCart = () => {
-  const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error('useCart must be used within a CartProvider');
-  }
-  return context;
-};
+export const CartContext = createContext<CartContextType | undefined>(undefined);
 
 type CartProviderProps = {
   children: ReactNode;

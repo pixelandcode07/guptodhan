@@ -2,17 +2,8 @@
 
 import { Button } from '@/components/ui/button'
 import { signIn } from 'next-auth/react'
-import { toast } from 'sonner'
 
 export default function SocialLoginPart() {
-  // const getCallbackUrl = () => {
-  //   const saved = localStorage.getItem('redirectAfterLogin')
-  //   if (saved && saved !== '/' && saved !== '/login') {
-  //     return saved
-  //   }
-  //   // if not saved then it will staty in current page
-  //   return window.location.pathname + window.location.search || '/'
-  // }
 
   const handleSocialLogin = async (provider: 'google' | 'facebook') => {
     const redirectTo = localStorage.getItem('redirectAfterLogin') || '/';

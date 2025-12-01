@@ -13,7 +13,8 @@ const page = async () => {
         ">
           Write Shipping Policies Here :
         </p>
-        <ShipingForm initialData={JSON.parse(JSON.stringify(initialData))} />
+        {/* <ShipingForm initialData={JSON.parse(JSON.stringify(initialData))} /> */}
+        <ShipingForm initialData={initialData || undefined} />
       </div>
     </div>
   );
