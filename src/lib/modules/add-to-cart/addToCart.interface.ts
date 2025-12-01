@@ -8,6 +8,9 @@ export interface ICart extends Document {
   productID: Types.ObjectId;
   productName: string;
   productImage: string;
+  storeName: string;
+  color?: string; 
+  size?: string;   
   quantity: number;
   unitPrice: number;
   totalPrice: number;

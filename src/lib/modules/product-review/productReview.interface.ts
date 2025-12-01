@@ -2,7 +2,7 @@ import { Document, Types } from 'mongoose';
 
 export interface IReview extends Document {
   reviewId: string;
-  productId: Types.ObjectId;
+  productId: Types.ObjectId | { _id: Types.ObjectId; productId: string };
   userId: Types.ObjectId;
   userName: string;
   userEmail: string;
