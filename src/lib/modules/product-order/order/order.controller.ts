@@ -534,6 +534,24 @@ const getSalesReport = async (req: NextRequest) => {
     });
 };
 
+const getReturnedOrdersByUser = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
+) => {
+  await dbConnect();
+  const { userId } = await params;
+
+  const result = await OrderServices.getReturnedOrdersByUserFromDB(userId);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Returned orders retrieved successfully for the user!',
+    data: result,
+  });
+};
+
+
 export const OrderController = {
   createOrderWithDetails,
   getAllOrders,
@@ -543,4 +561,6 @@ export const OrderController = {
   updateOrder,
   deleteOrder,
   getSalesReport,
+
+  getReturnedOrdersByUser
 };
