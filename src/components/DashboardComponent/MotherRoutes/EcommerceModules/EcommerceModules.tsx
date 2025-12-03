@@ -63,8 +63,11 @@ export function EcommerceModules({
               );
             }
 
+            // Check if any child item is active (to auto-open the collapsible)
+            const hasActiveChild = cfg.items.some((subItem: ChildItem) => isActive(subItem.url));
+
             return (
-              <Collapsible key={item.title} className="group/collapsible">
+              <Collapsible key={item.title} className="group/collapsible" defaultOpen={hasActiveChild}>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuItem>
                     <SidebarMenuButton className="text-white bg-[#132843] pl-5">
