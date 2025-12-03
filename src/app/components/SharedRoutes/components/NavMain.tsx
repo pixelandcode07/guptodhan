@@ -65,7 +65,7 @@ export default function NavMain() {
                     <Link href={'/home/UserProfile'} className="flex flex-col justify-center items-center">
                       {user?.image ? (
                         <Image
-                          src={user.image}
+                          src={user.image || "/public/default-avatar.png"}
                           width={24}
                           height={24}
                           alt={user?.name ?? 'Profile'}
