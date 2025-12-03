@@ -11,6 +11,9 @@ import { Suspense } from 'react';
 import SectionSkeleton from '@/components/ReusableComponents/SectionSkeleton';
 import { fetchStory } from '@/lib/MainHomePage/fetchStory';
 import StoryFeed from './components/StoryFeed/StoryFeed';
+import { fetchFlashSaleData } from '@/lib/MainHomePage/fetchFlashSaleData';
+import { fetchBestSellingData } from '@/lib/MainHomePage/fetchBestSellingData';
+import { fetchJustForYouData } from '@/lib/MainHomePage/fetchJustForYouData';
 
 
 export const dynamic = 'force-dynamic';
@@ -27,19 +30,25 @@ export async function generateMetadata() {
 
 export default async function MainHomePage() {
   const [
-    landingPageData,
+    // landingPageData,
+    runningOffers,
+    bestSelling,
+    randomProducts,
     ecommerceBanners,
     featuredData,
     storyData
   ] = await Promise.all([
-    fetchLandingPageProducts(),
+    fetchFlashSaleData(),
+    fetchBestSellingData(),
+    fetchJustForYouData(),
+    // fetchLandingPageProducts(),
     fetchEcommerceBanners(),
     fetchFeaturedCategories(),
     fetchStory()
   ]);
 
   // Destructure landing page data
-  const { runningOffers, bestSelling, randomProducts } = landingPageData;
+  // const { runningOffers, bestSelling, randomProducts } = landingPageData;
   const { middleHomepage, topShoppage } = ecommerceBanners;
 
 
@@ -57,7 +66,7 @@ export default async function MainHomePage() {
       </Suspense>
 
       {/* Flash Sell */}
-     {/* Flash Sell Section - Only show if products exist */}
+      {/* Flash Sell Section - Only show if products exist */}
       {runningOffers && runningOffers.length > 0 && (
         <Suspense fallback={<SectionSkeleton title="Flash Sale" count={6} />}>
           <FlashSell products={runningOffers} middleHomepage={middleHomepage} />
@@ -67,7 +76,6 @@ export default async function MainHomePage() {
       {/* BestSell - Loading + Skeleton */}
       <Suspense fallback={<SectionSkeleton title="Best Selling" count={6} />}>
         <BestSell products={bestSelling} topShoppage={topShoppage} />
-     
       </Suspense>
 
       {/* JustForYou - Loading + Skeleton */}
