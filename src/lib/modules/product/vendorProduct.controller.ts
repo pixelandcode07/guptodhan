@@ -500,10 +500,39 @@ const getLandingPageProducts = async () => {
   });
 };
 
+// const searchVendorProducts = async (req: NextRequest) => {
+//   await dbConnect();
+//   const { searchParams } = new URL(req.url);
+//   const searchTerm = searchParams.get("q") || "";
+
+//   if (!searchTerm) {
+//     return sendResponse({
+//       success: false,
+//       statusCode: StatusCodes.BAD_REQUEST,
+//       message: "Search term is required!",
+//       data: null,
+//     });
+//   }
+
+//   const result = await VendorProductServices.searchVendorProductsFromDB(
+//     searchTerm
+//   );
+
+//   return sendResponse({
+//     success: true,
+//     statusCode: StatusCodes.OK,
+//     message: "Search results retrieved successfully!",
+//     data: result,
+//   });
+// };
+
+
 const searchVendorProducts = async (req: NextRequest) => {
   await dbConnect();
+
   const { searchParams } = new URL(req.url);
-  const searchTerm = searchParams.get("q") || "";
+  const searchTerm = searchParams.get("q")?.trim() || "";
+  const type = searchParams.get("type") || "results"; // "suggestion" or "results"
 
   if (!searchTerm) {
     return sendResponse({
@@ -514,17 +543,25 @@ const searchVendorProducts = async (req: NextRequest) => {
     });
   }
 
-  const result = await VendorProductServices.searchVendorProductsFromDB(
-    searchTerm
-  );
+  let data;
+  if (type === "suggestion") {
+    data = await VendorProductServices.getLiveSuggestionsFromDB(searchTerm);
+  } else {
+    data = await VendorProductServices.getSearchResultsFromDB(searchTerm);
+  }
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: "Search results retrieved successfully!",
-    data: result,
+    message:
+      type === "suggestion"
+        ? "Suggestions retrieved successfully!"
+        : "Search results retrieved successfully!",
+    data,
   });
 };
+
+
 
 export const VendorProductController = {
   createVendorProduct,

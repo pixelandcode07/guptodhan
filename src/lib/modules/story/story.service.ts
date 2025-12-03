@@ -9,19 +9,19 @@ const createStoryInDB = async (payload: Partial<IStory>) => {
 
 // Get all stories (optional filter: status)
 const getAllStoriesFromDB = async (): Promise<IStory[]> => {
-  const result = await StoryModel.find().sort({ createdAt: -1 });
+  const result = await StoryModel.find().populate('productId').sort({ createdAt: -1 });
   return result;
 };
 
 // Get all active stories
 const getAllActiveStoriesFromDB = async (): Promise<IStory[]> => {
-  const result = await StoryModel.find({ status: 'active', expiryDate: { $gt: new Date() } }).sort({ createdAt: -1 });
+  const result = await StoryModel.find({ status: 'active', expiryDate: { $gt: new Date() } }).populate('productId').sort({ createdAt: -1 });
   return result;
 };
 
 // Get single story by ID
 const getSingleStoryFromDB = async (id: string) => {
-  const result = await StoryModel.findById(id);
+  const result = await StoryModel.findById(id).populate('productId');
   if (!result) {
     throw new Error('Story not found.');
   }

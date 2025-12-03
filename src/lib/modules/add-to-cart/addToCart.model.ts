@@ -3,7 +3,7 @@ import { ICart } from "./addToCart.interface";
 
 const cartSchema = new Schema<ICart>(
   {
-    cartID: { type: String, required: true },
+    cartID: { type: String },
     userID: { type: Schema.Types.ObjectId, ref: "UserModel", required: true },
     userName: { type: String, required: true },
     userEmail: { type: String, required: true },

@@ -25,6 +25,7 @@ const vendorProductSchema = new Schema<IVendorProduct>(
     productId: { type: String, required: true, unique: true },
     productTitle: { type: String, required: true, trim: true },
     vendorStoreId: { type: Schema.Types.ObjectId, ref: 'StoreModel', required: true }, 
+    vendorName: { type: String, required: true, trim: true },
     shortDescription: { type: String, required: true, maxlength: 255 },
     fullDescription: { type: String, required: true },
     specification: { type: String },

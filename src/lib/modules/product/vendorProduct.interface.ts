@@ -22,6 +22,7 @@ export interface IVendorProduct {
   productId: string;
   productTitle: string;
   vendorStoreId: Types.ObjectId;
+  vendorName: string;
   shortDescription: string;
   fullDescription: string;
   specification?: string;

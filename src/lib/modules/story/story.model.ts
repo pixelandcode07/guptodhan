@@ -9,6 +9,7 @@ const storySchema = new Schema<IStory>(
     duration: { type: Number, default: 10 },
     status: { type: String, enum: ["active", "inactive"], default: "active" },
     expiryDate: { type: Date, required: true },
+    productId: { type: Schema.Types.ObjectId, ref: "VendorProductModel" }
   },
   { timestamps: true }
 );
