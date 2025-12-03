@@ -19,6 +19,7 @@ const createSupportTicketInDB = async (payload: Partial<ISupportTicket>) => {
   return result;
 };
 
+// Get all tickets (admin view - includes active and inactive)
 const getAllTicketsFromDB = async (status?: string) => {
   const filter: any = {};
   if (status) {
@@ -30,8 +31,46 @@ const getAllTicketsFromDB = async (status?: string) => {
     .lean();
 };
 
+// Get only active tickets (public/user view)
+const getActiveTicketsFromDB = async (status?: string) => {
+  const filter: any = { isActive: true };
+  if (status) {
+    filter.status = status;
+  }
+  return await SupportTicket.find(filter)
+    .populate('reporter', 'name email profilePicture')
+    .sort({ createdAt: -1 })
+    .lean();
+};
+
+// Get stats for all tickets (admin view)
 const getTicketStatsFromDB = async () => {
   const stats = await SupportTicket.aggregate([
+    { $group: { _id: '$status', count: { $sum: 1 } } },
+  ]);
+  
+  const result = {
+    all: 0,
+    Pending: 0,
+    'In Progress': 0,
+    Solved: 0,
+    Rejected: 0,
+    'On Hold': 0,
+  };
+  
+  stats.forEach(stat => {
+    if (result.hasOwnProperty(stat._id)) {
+      result[stat._id as keyof typeof result] = stat.count;
+      result.all += stat.count;
+    }
+  });
+  return result;
+};
+
+// Get stats for active tickets only (public/user view)
+const getActiveTicketStatsFromDB = async () => {
+  const stats = await SupportTicket.aggregate([
+    { $match: { isActive: true } },
     { $group: { _id: '$status', count: { $sum: 1 } } },
   ]);
   
@@ -113,18 +152,23 @@ const deleteSupportTicketFromDB = async (id: string) => {
 };
 
 const getTicketsByReporterIdFromDB = async (userId: string) => {
-  return await SupportTicket.find({ reporter: new Types.ObjectId(userId) })
+  return await SupportTicket.find({ 
+    reporter: new Types.ObjectId(userId),
+    isActive: true 
+  })
     .sort({ createdAt: -1 })
     .lean();
 };
 
 export const SupportTicketServices = {
   createSupportTicketInDB,
-  getAllTicketsFromDB,
+  getAllTicketsFromDB, // Returns all tickets (admin)
+  getActiveTicketsFromDB, // Returns only active tickets (public)
   getSupportTicketByIdFromDB,
   updateTicketStatusInDB,
   addReplyToTicketInDB,
   deleteSupportTicketFromDB,
-  getTicketStatsFromDB,
-  getTicketsByReporterIdFromDB,
+  getTicketStatsFromDB, // Stats for all tickets (admin)
+  getActiveTicketStatsFromDB, // Stats for active tickets only (public)
+  getTicketsByReporterIdFromDB, // User's tickets (already filters by isActive)
 };

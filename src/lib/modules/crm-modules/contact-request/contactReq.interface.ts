@@ -6,5 +6,6 @@ export interface IContactRequest extends Document {
   userNumber?: string;
   message: string;
   status: 'pending' | 'resolved';
+  isActive: boolean;
   createdAt: Date;
 }

@@ -8,6 +8,7 @@ const contactRequestSchema = new Schema<IContactRequest>(
     userNumber: { type: String },
     message: { type: String, required: true },
     status: { type: String, enum: ['pending', 'resolved'], default: 'pending' },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );

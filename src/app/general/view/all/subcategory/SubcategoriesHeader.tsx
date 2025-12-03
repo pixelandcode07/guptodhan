@@ -18,7 +18,6 @@ export default function SubcategoriesHeader() {
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link href="/general/rearrange/subcategories" className="px-3 py-2 border rounded bg-white hover:bg-gray-50 text-sm sm:text-base">Rearrange</Link>
           <Button asChild className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 w-full sm:w-auto h-10 sm:h-auto text-sm sm:text-base">
             <Link href="/general/add/new/subcategory">
               <Plus className="w-4 h-4 mr-2" />
