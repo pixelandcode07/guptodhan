@@ -23,9 +23,9 @@ export default function HandleAddressesComponent() {
   const [editingAddress, setEditingAddress] = useState<AddressData | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // User er name/phone dhore rakhar jonno (jates save korle hariye na jay)
-  const [userProfile, setUserProfile] = useState<any>({}); 
+  const [userProfile, setUserProfile] = useState<any>({});
 
   // 1. Data Fetching (Load Logic)
   useEffect(() => {
@@ -46,8 +46,8 @@ export default function HandleAddressesComponent() {
               if (Array.isArray(parsedData)) {
                 setAddresses(parsedData);
               } else {
-                 // Jodi JSON na hoy (Old data), tahole array te convert kore nibo
-                 throw new Error("Not Array");
+                // Jodi JSON na hoy (Old data), tahole array te convert kore nibo
+                throw new Error("Not Array");
               }
             } catch (e) {
               // Backward compatibility for old plain text address
@@ -97,15 +97,15 @@ export default function HandleAddressesComponent() {
   const updateBackend = async (newAddressList: AddressData[]) => {
     try {
       const formData = new FormData();
-      
+
       // 1. Array ke String a convert kora hocche
       const jsonString = newAddressList.length > 0 ? JSON.stringify(newAddressList) : '';
-      
+
       formData.append('address', jsonString);
-      
+
       // Name ar Phone jeno null na hoye jay, tai ager tai pathiye dicchi
-      if(userProfile.name) formData.append('name', userProfile.name);
-      if(userProfile.phoneNumber) formData.append('phoneNumber', userProfile.phoneNumber);
+      if (userProfile.name) formData.append('name', userProfile.name);
+      if (userProfile.phoneNumber) formData.append('phoneNumber', userProfile.phoneNumber);
 
       const response = await fetch('/api/v1/profile/me', {
         method: 'PATCH',
@@ -127,7 +127,7 @@ export default function HandleAddressesComponent() {
 
     if (editingAddress) {
       // Edit Mode
-      updatedList = updatedList.map(addr => 
+      updatedList = updatedList.map(addr =>
         addr.id === editingAddress.id ? { ...data, id: editingAddress.id } : addr
       );
     } else {
