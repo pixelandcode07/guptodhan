@@ -97,10 +97,11 @@ export default function CRMModules() {
                                 <SidebarMenuButton
                                     asChild
                                     disabled={link.disabled}
-                                    className={`flex items-center gap-2 ${
+                                    isActive={active}
+                                    className={`flex items-center gap-2 pl-5 ${
                                         active
-                                            ? 'bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5'
-                                            : 'text-white bg-[#132843] pl-5'
+                                            ? 'bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md font-medium'
+                                            : 'text-white bg-[#132843]'
                                     } ${link.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                     <Link href={link.disabled ? '#' : link.href}>
                                         <link.icon className="h-5 w-5" />

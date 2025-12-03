@@ -48,10 +48,11 @@ export function EcommerceModules({
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
-                    className={`flex items-center gap-2 ${
+                    isActive={active}
+                    className={`flex items-center gap-2 pl-5 ${
                       active
-                        ? 'bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5'
-                        : 'text-white bg-[#132843] pl-5'
+                        ? 'bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md font-medium'
+                        : 'text-white bg-[#132843]'
                     }`}>
                     <Link href={cfg.url || '#'}>
                       <cfg.icon />
@@ -82,10 +83,11 @@ export function EcommerceModules({
                         <SidebarMenuItem key={subItem.url}>
                           <SidebarMenuButton
                             asChild
-                            className={`flex items-center gap-2 ${
+                            isActive={active}
+                            className={`flex items-center gap-2 pl-5 ${
                               active
-                                ? 'bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5'
-                                : 'text-white bg-[#132843] pl-5'
+                                ? 'bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md font-medium'
+                                : 'text-white bg-[#132843]'
                             }`}>
                             <Link href={subItem.url}>
                               <span>{subItem.title}</span>
