@@ -3,7 +3,6 @@ import { IWishlist } from './wishlist.interface';
 
 const wishlistSchema = new Schema<IWishlist>(
   {
-    wishlistID: { type: String, required: true, unique: true },
     userName: { type: String, required: true, trim: true },
     userEmail: { type: String, required: true, trim: true },
     userID: { type: Schema.Types.ObjectId, ref: 'User', required: true },
