@@ -1,4 +1,4 @@
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 
 export interface IStory extends Document {
   title?: string;
@@ -9,4 +9,5 @@ export interface IStory extends Document {
   expiryDate: Date;
   createdAt: Date;
   updatedAt: Date;
+  productId: Types.ObjectId;
 }

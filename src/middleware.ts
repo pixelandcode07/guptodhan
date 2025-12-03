@@ -127,6 +127,7 @@ export async function middleware(req: NextRequest) {
         role: sessionToken.role,
       };
       console.log('✅ Using NextAuth session token:', tokenPayload);
+      console.log('✅ session token:', sessionToken);
     }
   }
 

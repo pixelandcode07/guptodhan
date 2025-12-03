@@ -480,26 +480,71 @@ const getLandingPageProductsFromDB = async () => {
   };
 };
 
-// search vendor product
-const searchVendorProductsFromDB = async (searchTerm: string) => {
-  const result = await VendorProductModel.find({
-    status: 'active',
+// // search vendor product
+// const searchVendorProductsFromDB = async (searchTerm: string) => {
+//   const result = await VendorProductModel.find({
+//     status: 'active',
+//     $or: [
+//       { productTitle: { $regex: searchTerm, $options: 'i' } },
+//       { shortDescription: { $regex: searchTerm, $options: 'i' } },
+//       { productTag: { $in: [new RegExp(searchTerm, 'i')] } },
+//     ],
+//   })
+//     .populate('brand', 'name') 
+//     .populate('flag', 'name') 
+//     .populate('warranty', 'warrantyName')
+//     .populate('productModel', 'name') 
+//     .populate('category', 'name') 
+//     .populate('weightUnit', 'name')
+//     .populate('vendorStoreId', 'storeName')
+//     .sort({ createdAt: -1 });
+//   return result;
+// };
+
+
+
+// live search suggestions + full search results
+const getLiveSuggestionsFromDB = async (searchTerm: string) => {
+  const regex = new RegExp(searchTerm.split(" ").join("|"), "i");
+
+  const suggestions = await VendorProductModel.find({
+    status: "active",
+    productTitle: { $regex: regex },
+  })
+    .select("productTitle productImage price") // Only necessary fields
+    .limit(5)
+    .sort({ createdAt: -1 });
+
+  return suggestions;
+};
+
+const getSearchResultsFromDB = async (searchTerm: string) => {
+  const words = searchTerm
+    .split(" ")
+    .map((w) => w.trim())
+    .filter(Boolean);
+  const regexArr = words.map((w) => new RegExp(w, "i"));
+
+  const results = await VendorProductModel.find({
+    status: "active",
     $or: [
-      { productTitle: { $regex: searchTerm, $options: 'i' } },
-      { shortDescription: { $regex: searchTerm, $options: 'i' } },
-      { productTag: { $in: [new RegExp(searchTerm, 'i')] } },
+      { productTitle: { $in: regexArr } },
+      { shortDescription: { $in: regexArr } },
+      { productTag: { $in: regexArr } },
     ],
   })
-    .populate('brand', 'name') 
-    .populate('flag', 'name') 
-    .populate('warranty', 'warrantyName')
-    .populate('productModel', 'name') 
-    .populate('category', 'name') 
-    .populate('weightUnit', 'name')
-    .populate('vendorStoreId', 'storeName')
+    .populate("brand", "name")
+    .populate("flag", "name")
+    .populate("warranty", "warrantyName")
+    .populate("productModel", "name")
+    .populate("category", "name")
+    .populate("weightUnit", "name")
+    .populate("vendorStoreId", "storeName")
     .sort({ createdAt: -1 });
-  return result;
+
+  return results;
 };
+
 
 export const VendorProductServices = {
   createVendorProductInDB,
@@ -515,5 +560,6 @@ export const VendorProductServices = {
   addProductOptionInDB,
   removeProductOptionFromDB,
   getLandingPageProductsFromDB,
-  searchVendorProductsFromDB,
+  getLiveSuggestionsFromDB,
+  getSearchResultsFromDB,
 };
