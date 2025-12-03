@@ -105,4 +105,6 @@ export const EcommerceBannerController = {
   getPublicBannersByPosition,
   updateBanner,
   deleteBanner,
+
+  reorderBanner
 };
