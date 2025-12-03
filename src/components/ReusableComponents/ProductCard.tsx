@@ -81,9 +81,9 @@ export default function ProductCard({ product, index }: ProductCardProps) {
 
                     {/* Brand & Flag */}
                     <div className="flex gap-1.5 flex-wrap">
-                        {product.brand?.name && (
+                        {product?.brand && (
                             <Badge variant="secondary" className="text-xs py-0">
-                                {product.brand.name}
+                                {product.brand}
                             </Badge>
                         )}
                         {product.flag?.name && (

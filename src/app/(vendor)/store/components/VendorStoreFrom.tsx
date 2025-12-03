@@ -25,7 +25,7 @@ export default function VendorStoreFrom() {
         register,
         handleSubmit,
         control,
-        reset, 
+        reset,
         formState: { errors, isSubmitting },
     } = useForm<Inputs>();
 
@@ -42,7 +42,7 @@ export default function VendorStoreFrom() {
                     headers: { Authorization: `Bearer ${token}` },
                 });
 
-                const store = data.data; 
+                const store = data.data;
                 setLoadedStore(store);
                 reset({
                     store_name: store.storeName || '',
