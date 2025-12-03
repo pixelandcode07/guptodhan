@@ -1,9 +1,9 @@
-import React from 'react'
+import VendorStoreFrom from './components/VendorStoreFrom'
 
-export default function StorePage() {
+export default function page() {
   return (
     <div>
-      This is Vendor store page
+      <VendorStoreFrom />
     </div>
   )
 }

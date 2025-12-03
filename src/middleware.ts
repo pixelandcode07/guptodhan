@@ -43,6 +43,7 @@ const vendorRoutes = [
   '/api/v1/vendor-product',
   '/api/v1/vendor-orders',
   '/api/v1/withdrawal',
+  '/api/v1/vendors',
 ];
 
 // ❗️ Protected Routes (Logged in users - আপনার আগের লিস্ট)
