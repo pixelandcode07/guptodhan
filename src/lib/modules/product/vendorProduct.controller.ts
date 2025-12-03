@@ -598,6 +598,25 @@ const getForYouProducts = async () => {
   });
 };
 
+const getVendorProductsByVendorId = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ vendorId: string }> }
+) => {
+  await dbConnect();
+  const { vendorId } = await params;
+
+  const products = await VendorProductServices.getVendorProductsByVendorIdFromDB(
+    vendorId
+  );
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Vendor products retrieved successfully!",
+    data: products,
+  });
+};
+
 
 export const VendorProductController = {
   createVendorProduct,
@@ -614,6 +633,7 @@ export const VendorProductController = {
   removeProductOption,
   getLandingPageProducts,
   searchVendorProducts,
+  getVendorProductsByVendorId,
 
   getOfferProducts,
   getBestSellingProducts,
