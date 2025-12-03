@@ -72,26 +72,28 @@ const loginUser = async (payload: TLoginUser) => {
 };
 
 
-// vendorLogin service
+// vendorLogin service এর ভিতরে এই পরিবর্তনটুকু করুন
 const vendorLogin = async (payload: TLoginUser) => {
   const { identifier, password: plainPassword } = payload;
 
   const isEmail = identifier.includes('@');
+  
+  // 🔥 ১. এখানে populate('vendorInfo') যোগ করতে হবে যাতে ভেন্ডর আইডি পাওয়া যায়
   const user = isEmail
-    ? await User.isUserExistsByEmail(identifier)
-    : await User.isUserExistsByPhone(identifier);
+    ? await User.findOne({ email: identifier }).select('+password').populate('vendorInfo')
+    : await User.findOne({ phoneNumber: identifier }).select('+password').populate('vendorInfo');
 
   if (!user) throw new Error('Invalid credentials.');
   if (user.role !== 'vendor') throw new Error('Access denied. Vendor account required.');
 
-  // ✅ অ্যাকাউন্ট অ্যাক্টিভ কিনা তা চেক করা
+  // ... (বাকি ভ্যালিডেশন কোড আগের মতোই থাকবে: isActive, password check etc.)
   if (!user.isActive) throw new Error('Your account is not active. Please contact support.');
-
   if (!user.password) throw new Error('Password not set. Use social login.');
 
   const isPasswordMatched = await user.isPasswordMatched(plainPassword, user.password);
   if (!isPasswordMatched) throw new Error('Invalid credentials.');
 
+  // ... (Token generation code same as before)
   const jwtPayload = {
     userId: user._id.toString(),
     email: user.email,
@@ -103,7 +105,7 @@ const vendorLogin = async (payload: TLoginUser) => {
 
   const { password, ...userWithoutPassword } = user.toObject();
 
-  // ✅ সব user data return করছি
+  // 🔥 ২. ইউজারের সাথে vendorId রিটার্ন করুন
   return {
     accessToken,
     refreshToken,
@@ -116,6 +118,7 @@ const vendorLogin = async (payload: TLoginUser) => {
       profilePicture: userWithoutPassword.profilePicture,
       address: userWithoutPassword.address,
       isActive: userWithoutPassword.isActive,
+      vendorId: (userWithoutPassword.vendorInfo as any)?._id || null, 
     }
   };
 };
