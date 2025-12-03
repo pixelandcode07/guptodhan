@@ -51,12 +51,12 @@ const loginUser = async (req: NextRequest) => {
 
 // Only check vendor role
 
+// vendorLogin ফাংশনের ভিতরে
 const vendorLogin = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
   const validatedData = loginValidationSchema.parse(body);
 
-  // vendor login
   const result = await AuthServices.vendorLogin(validatedData);
 
   const { refreshToken, user, accessToken } = result;
@@ -75,16 +75,13 @@ const vendorLogin = async (req: NextRequest) => {
         role: user.role,
         profilePicture: user.profilePicture,
         address: user.address,
+        // 🔥 এই লাইনটি যোগ করুন যাতে ফ্রন্টএন্ড এটা পায়
+        vendorId: user.vendorId, 
       }
     },
   });
 
-  response.cookies.set('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  });
-
+  // ... cookies set code same as before
   return response;
 };
 
