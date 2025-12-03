@@ -546,6 +546,42 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
 };
 
 
+const basePopulate = [
+  { path: "brand", select: "name" },
+  { path: "flag", select: "name" },
+  { path: "warranty", select: "warrantyName" },
+  { path: "productModel", select: "name" },
+  { path: "category", select: "name" },
+  { path: "weightUnit", select: "name" },
+];
+
+// OFFER PRODUCTS (running offers)
+const getOfferProductsFromDB = async () => {
+  return await VendorProductModel.find({
+    status: "active",
+    offerDeadline: { $gt: new Date() },
+  })
+    .populate(basePopulate)
+    .sort({ createdAt: -1 })
+    .limit(6);
+};
+
+// BEST SELLING
+const getBestSellingProductsFromDB = async () => {
+  return await VendorProductModel.find({ status: "active" })
+    .populate(basePopulate)
+    .sort({ sellCount: -1 })
+    .limit(6);
+};
+
+// FOR YOU (random / all active)
+const getForYouProductsFromDB = async () => {
+  return await VendorProductModel.find({ status: "active" })
+    .populate(basePopulate)
+    .sort({ createdAt: -1 });
+};
+
+
 export const VendorProductServices = {
   createVendorProductInDB,
   getAllVendorProductsFromDB,
@@ -562,4 +598,8 @@ export const VendorProductServices = {
   getLandingPageProductsFromDB,
   getLiveSuggestionsFromDB,
   getSearchResultsFromDB,
+
+  getOfferProductsFromDB,
+  getBestSellingProductsFromDB,
+  getForYouProductsFromDB,
 };

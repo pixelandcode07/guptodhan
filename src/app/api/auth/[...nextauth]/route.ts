@@ -20,6 +20,7 @@ export const authOptions = {
         userId: { label: 'User ID', type: 'text' },
         role: { label: 'Role', type: 'text' },
         accessToken: { label: 'Access Token', type: 'text' },
+        vendorId: { label: 'Vendor ID', type: 'text' }, // 🔥 Vendor ID added
         name: { label: 'Name', type: 'text' },
         email: { label: 'Email', type: 'text' },
         phoneNumber: { label: 'Phone Number', type: 'text' },
@@ -37,6 +38,7 @@ export const authOptions = {
             phoneNumber: credentials.phoneNumber,
             profilePicture: credentials.profilePicture,
             address: credentials.address,
+            vendorId: credentials.vendorId, // 🔥 Passing Vendor ID
           };
         }
         return null;
@@ -89,6 +91,9 @@ export const authOptions = {
         token.phoneNumber = dbUser.phoneNumber || user.phoneNumber;
         token.profilePicture = dbUser.profilePicture || user.profilePicture || user.image;
         token.address = dbUser.address || user.address;
+        
+        // 🔥 Saving Vendor ID to Token
+        token.vendorId = user.vendorId || dbUser.vendorInfo?._id;
 
         const accessTokenPayload = { userId: token.id, role: token.role };
         const refreshTokenPayload = { userId: token.id, role: token.role };
@@ -174,6 +179,9 @@ export const authOptions = {
         session.user.image = token.profilePicture;
         session.user.address = token.address;
         session.user.accessToken = token.accessToken;
+        
+        // 🔥 VENDOR ID ADDED HERE (Most Important Part)
+        session.user.vendorId = token.vendorId;
       }
 
       session.accessToken = token.accessToken;

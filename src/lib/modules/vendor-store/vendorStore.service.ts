@@ -11,7 +11,7 @@ const createStoreInDB = async (payload: Partial<IStore>) => {
 
 // Get all active stores (sorted by storeName)
 const getAllStoresFromDB = async () => {
-  const result = await StoreModel.find();
+  const result = await StoreModel.find().populate('vendorId').sort({ storeName: 1 });
   return result;
 };
 

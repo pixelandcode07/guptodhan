@@ -2,8 +2,6 @@
 import { z } from 'zod';
 
 
-
-
 export const loginValidationSchema = z.object({
   identifier: z.string().min(1, { message: 'Email or Phone Number is required.' }),
   password: z.string().min(1, { message: 'Password cannot be empty.' }),
@@ -42,27 +40,6 @@ export const resetPasswordWithTokenSchema = z.object({
   newPassword: z.string().min(8, { message: 'Password must be at least 8 characters long.' }),
 });
 
-// export const registerVendorValidationSchema = z.object({
-//   name: z.string().min(1, { message: 'Name is required.' }),
-//   email: z.email({ message: 'A valid email is required.' }),
-//   password: z.string().min(8, { message: 'Password must be at least 8 characters long.' }),
-//   phoneNumber: z.string().min(1, { message: 'Phone number is required.' }),
-//   address: z.string().min(1, { message: 'Address is required.' }),
-
-//   businessName: z.string().min(1, { message: 'Business name is required.' }),
-//   businessCategory: z.string().min(1, { message: 'Business category is required.' }),
-//   tradeLicenseNumber: z.string().min(1, { message: 'Trade license number is required.' }),
-//   businessAddress: z.string().min(1, { message: 'Business address is required.' }),
-//   ownerName: z.string().min(1, { message: 'Owner name is required.' }),
-//   status: z.enum(['pending', 'approved', 'rejected']).optional(),
-//   ownerNidUrl: z.string().url({ message: 'A valid NID card image URL is required.' }),
-//   tradeLicenseUrl: z.string().url({ message: 'A valid trade license image URL is required.' }),
-// }).transform((data) => ({
-//   ...data,
-//   status: data.status || 'pending',
-// }));;
-
-// auth.validation.ts
 
 export const registerVendorValidationSchema = z.object({
   name: z.string().min(1, { message: 'Name is required.' }),
