@@ -33,8 +33,8 @@ const orderSchema = new Schema<IOrder>(
       default: 'Pending',
     },
     orderForm: { type: String, enum: ['Website', 'App'], required: true },
-    orderDate: { type: Date, required: true },
-    deliveryDate: { type: Date, required: true },
+    orderDate: { type: Date },
+    deliveryDate: { type: Date},
 
     parcelId: { type: String },
     trackingId: { type: String },
