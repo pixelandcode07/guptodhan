@@ -562,6 +562,42 @@ const searchVendorProducts = async (req: NextRequest) => {
 };
 
 
+const getOfferProducts = async () => {
+  await dbConnect();
+  const result = await VendorProductServices.getOfferProductsFromDB();
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Offer products retrieved successfully!",
+    data: result,
+  });
+};
+
+const getBestSellingProducts = async () => {
+  await dbConnect();
+  const result = await VendorProductServices.getBestSellingProductsFromDB();
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Best selling products retrieved successfully!",
+    data: result,
+  });
+};
+
+const getForYouProducts = async () => {
+  await dbConnect();
+  const result = await VendorProductServices.getForYouProductsFromDB();
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "For You products retrieved successfully!",
+    data: result,
+  });
+};
+
 
 export const VendorProductController = {
   createVendorProduct,
@@ -578,4 +614,8 @@ export const VendorProductController = {
   removeProductOption,
   getLandingPageProducts,
   searchVendorProducts,
+
+  getOfferProducts,
+  getBestSellingProducts,
+  getForYouProducts,
 };
