@@ -16,5 +16,6 @@ export interface ISupportTicket extends Document {
   status: 'Pending' | 'In Progress' | 'Solved' | 'Rejected' | 'On Hold';
   openDuration?: string; // For display
   conversation: ISupportTicketConversation[]; 
+  isActive: boolean;
   createdAt: Date;
 }

@@ -6,8 +6,15 @@ const createSubscriberInDB = async (payload: Partial<ISubscriber>) => {
   return result;
 };
 
+// Get all subscribers (admin view - includes active and inactive)
 const getAllSubscribersFromDB = async () => {
   const result = await Subscriber.find().sort({ subscribedOn: -1 });
+  return result;
+};
+
+// Get only active subscribers (public/user view)
+const getActiveSubscribersFromDB = async () => {
+  const result = await Subscriber.find({ isActive: true }).sort({ subscribedOn: -1 });
   return result;
 };
 
@@ -40,6 +47,7 @@ const deleteSubscriberFromDB = async (id: string) => {
 export const SubscriberServices = {
   createSubscriberInDB,
   getAllSubscribersFromDB,
+  getActiveSubscribersFromDB,
   getSubscriberByIdFromDB,
   updateSubscriberInDB,
   deleteSubscriberFromDB,

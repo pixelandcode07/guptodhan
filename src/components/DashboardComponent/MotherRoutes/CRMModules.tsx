@@ -3,11 +3,17 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Headset, Phone, ClipboardList } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Headset, Phone, ClipboardList, Users } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
-import { Skeleton } from '@/components/ui/skeleton';
+import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '../../ui/sidebar';
 
 export default function CRMModules() {
     const pathname = usePathname();
@@ -24,20 +30,26 @@ export default function CRMModules() {
             href: '/general/support/tickets',
             label: 'Support Ticket',
             icon: Headset,
-            count: pendingCount, // এটি API থেকে লোড হবে
+            count: pendingCount,
         },
         {
-            href: '/general/view/all/contact/requests', // আপনার ফাইল স্ট্রাকচার অনুযায়ী
+            href: '/general/view/all/contact/requests',
             label: 'Contact Request',
             icon: Phone,
-            count: null, // এখানে কোনো কাউন্ট নেই
+            count: null,
         },
         {
-            href: '#', // সার্ভিস কোয়েরির জন্য কোনো পেজ এখনো নেই
+            href: '/general/view/all/subscribed/users',
+            label: 'Subscribed Users',
+            icon: Users,
+            count: null,
+        },
+        {
+            href: '#',
             label: 'Service Query Form',
             icon: ClipboardList,
             count: null,
-            disabled: true, // লিঙ্কটি নিষ্ক্রিয় রাখা হলো
+            disabled: true,
         }
     ];
 
@@ -47,7 +59,6 @@ export default function CRMModules() {
             if (token) {
                 try {
                     setIsLoading(true);
-                    // আপনার তৈরি করা stats API-কে কল করা হচ্ছে
                     const res = await axios.get('/api/v1/crm-modules/support-ticket/stats', {
                         headers: { Authorization: `Bearer ${token}` }
                     });
@@ -56,7 +67,7 @@ export default function CRMModules() {
                     }
                 } catch (error) {
                     console.error("Failed to fetch ticket stats:", error);
-                    setPendingCount(0); // Error হলেও 0 দেখাবে
+                    setPendingCount(0);
                 } finally {
                     setIsLoading(false);
                 }
@@ -65,51 +76,58 @@ export default function CRMModules() {
         fetchTicketStats();
     }, [token]);
 
+    const isActive = (href: string) => {
+        if (href === '#' || !pathname) return false;
+        return pathname.startsWith(href);
+    };
+
     return (
-        <div className="px-4 py-3">
-            {/* CRM টাইটেল (image_bea01e.png অনুযায়ী) */}
-            <span className="text-xs font-semibold text-gray-500 uppercase px-3">
-                CRM
-            </span>
-            <ul className="mt-2 space-y-1">
-                {crmLinks.map((link) => {
-                    // বর্তমান URL-এর সাথে লিঙ্কটি মিলিয়ে দেখা হচ্ছে
-                    const isActive = pathname.startsWith(link.href);
-                    
-                    return (
-                        <li key={link.label}>
-                            <Link
-                                href={link.disabled ? '#' : link.href}
-                                className={cn(
-                                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                                    isActive
-                                        ? "bg-blue-700 text-white" // Active লিঙ্ক (ডিজাইন অনুযায়ী)
-                                        : "text-gray-700 hover:bg-gray-100",
-                                    link.disabled ? "opacity-50 cursor-not-allowed" : ""
-                                )}
-                            >
-                                <link.icon className="h-5 w-5" />
-                                <span>{link.label}</span>
-                                
-                                {/* কাউন্ট দেখানোর লজিক */}
-                                {isLoading && link.label === 'Support Ticket' && (
-                                    <Skeleton className="h-4 w-6 ml-auto rounded-full" />
-                                )}
-                                {!isLoading && link.count !== null && (
-                                    <span className={cn(
-                                        "ml-auto text-xs font-semibold px-2 py-0.5 rounded-full",
-                                        isActive
-                                            ? "bg-white text-blue-700"
-                                            : "bg-gray-200 text-gray-700"
-                                    )}>
-                                        {link.count}
-                                    </span>
-                                )}
-                            </Link>
-                        </li>
-                    );
-                })}
-            </ul>
-        </div>
+        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+            <SidebarGroupLabel className="text-[#f1bf43] text-[14px]">
+                CRM MODULES
+            </SidebarGroupLabel>
+
+            <SidebarGroupContent>
+                <SidebarMenu>
+                    {crmLinks.map((link) => {
+                        const active = isActive(link.href);
+                        
+                        return (
+                            <SidebarMenuItem key={link.label}>
+                                <SidebarMenuButton
+                                    asChild
+                                    disabled={link.disabled}
+                                    className={`flex items-center gap-2 ${
+                                        active
+                                            ? 'bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5'
+                                            : 'text-white bg-[#132843] pl-5'
+                                    } ${link.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                    <Link href={link.disabled ? '#' : link.href}>
+                                        <link.icon className="h-5 w-5" />
+                                        <span>{link.label}</span>
+                                        
+                                        {/* কাউন্ট দেখানোর লজিক */}
+                                        {isLoading && link.label === 'Support Ticket' && (
+                                            <span className="ml-auto text-xs px-2 py-1 rounded bg-gray-600 text-white animate-pulse">
+                                                ...
+                                            </span>
+                                        )}
+                                        {!isLoading && link.count !== null && link.count !== undefined && (
+                                            <span className={`ml-auto text-xs px-2 py-1 rounded ${
+                                                link.count === 0
+                                                    ? 'bg-orange-500 text-white'
+                                                    : 'bg-blue-400 text-white'
+                                            }`}>
+                                                {link.count}
+                                            </span>
+                                        )}
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        );
+                    })}
+                </SidebarMenu>
+            </SidebarGroupContent>
+        </SidebarGroup>
     );
 }
