@@ -599,14 +599,14 @@ const getVendorProductsByVendorIdFromDB = async (vendorId: string) => {
 
 // SERVICE for the vendor store page with products and filters
 const getVendorStoreAndProductsFromDB = async (
-  id: string,
+  vendorId: string,
   query: any
 ) => {
   // -----------------------------
   // 1. Fetch Vendor Store
   // -----------------------------
   const store = await StoreModel.findOne({
-    _id: id,
+    vendorId: new mongoose.Types.ObjectId(vendorId),
   });
 
   if (!store) {
