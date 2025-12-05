@@ -6,8 +6,15 @@ const createContactRequestInDB = async (payload: Partial<IContactRequest>) => {
   return result;
 };
 
+// Get all contact requests (admin view - includes active and inactive)
 const getAllContactRequestsFromDB = async () => {
   const result = await ContactRequest.find().sort({ createdAt: -1 });
+  return result;
+};
+
+// Get only active contact requests (public/user view)
+const getActiveContactRequestsFromDB = async () => {
+  const result = await ContactRequest.find({ isActive: true }).sort({ createdAt: -1 });
   return result;
 };
 
@@ -37,21 +44,22 @@ const deleteContactRequestFromDB = async (id: string) => {
   return null;
 };
 
-// Get only pending contact requests
+// Get only pending contact requests (active only)
 const getPendingContactRequestsFromDB = async () => {
-  const result = await ContactRequest.find({ status: 'pending' }).sort({ createdAt: -1 });
+  const result = await ContactRequest.find({ status: 'pending', isActive: true }).sort({ createdAt: -1 });
   return result;
 };
 
-// Get only resolved contact requests
+// Get only resolved contact requests (active only)
 const getResolvedContactRequestsFromDB = async () => {
-  const result = await ContactRequest.find({ status: 'resolved' }).sort({ createdAt: -1 });
+  const result = await ContactRequest.find({ status: 'resolved', isActive: true }).sort({ createdAt: -1 });
   return result;
 };
 
 export const ContactRequestServices = {
   createContactRequestInDB,
   getAllContactRequestsFromDB,
+  getActiveContactRequestsFromDB,
   getContactRequestByIdFromDB,
   updateContactRequestInDB,
   deleteContactRequestFromDB,

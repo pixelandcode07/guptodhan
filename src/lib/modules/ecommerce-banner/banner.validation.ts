@@ -14,6 +14,7 @@ export const createBannerSchema = z.object({
   buttonText: z.string().optional(),
   buttonLink: z.string().url().optional(),
   status: z.enum(['active', 'inactive']).optional(),
+  orderCount: z.number().optional()
 });
 
 export const updateBannerSchema = createBannerSchema.partial(); 

@@ -582,6 +582,24 @@ const getForYouProductsFromDB = async () => {
 };
 
 
+const getVendorProductsByVendorIdFromDB = async (vendorId: string) => {
+  const products = await VendorProductModel.find({
+    vendorStoreId: vendorId,
+    status: "active",
+  })
+    .populate("brand", "name")
+    .populate("flag", "name")
+    .populate("warranty", "warrantyName")
+    .populate("productModel", "name")
+    .populate("category", "name")
+    .populate("subCategory", "name")
+    .populate("childCategory", "name")
+    .populate("weightUnit", "name")
+    .populate("vendorStoreId", "storeName");
+
+  return products || [];
+};
+
 export const VendorProductServices = {
   createVendorProductInDB,
   getAllVendorProductsFromDB,
@@ -598,6 +616,7 @@ export const VendorProductServices = {
   getLandingPageProductsFromDB,
   getLiveSuggestionsFromDB,
   getSearchResultsFromDB,
+  getVendorProductsByVendorIdFromDB,
 
   getOfferProductsFromDB,
   getBestSellingProductsFromDB,

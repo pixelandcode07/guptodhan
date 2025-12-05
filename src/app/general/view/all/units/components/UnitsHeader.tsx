@@ -1,8 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Package, Move } from "lucide-react";
-import Link from "next/link";
+import { Package } from "lucide-react";
 
 interface UnitsHeaderProps {
   onAddClick: () => void;
@@ -30,17 +29,6 @@ export default function UnitsHeader({ onAddClick }: UnitsHeaderProps) {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <Button
-              variant="outline"
-              asChild
-              className="w-full sm:w-auto h-10 sm:h-auto text-xs sm:text-sm px-4 py-2"
-            >
-              <Link href="/general/view/all/units/rearrange">
-                <Move className="w-4 h-4 mr-2" />
-                <span className="sm:hidden">Rearrange</span>
-                <span className="hidden sm:inline">Rearrange Units</span>
-              </Link>
-            </Button>
             <Button
               onClick={onAddClick}
               className="w-full sm:w-auto h-10 sm:h-auto bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm px-4 py-2"
