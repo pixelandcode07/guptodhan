@@ -44,6 +44,7 @@ export default function VendorSignInPage() {
         phoneNumber: user.phoneNumber,
         profilePicture: user.profilePicture,
         address: user.address,
+        vendorId: user.vendorId,
       });
 
       if (result?.error) {
