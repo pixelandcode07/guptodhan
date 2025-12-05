@@ -137,7 +137,7 @@ const getAllStores = async () => {
 // Get store by ID
 const getStoreById = async (_req: NextRequest, { params }: { params: { id: string } }) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await params;
   const result = await StoreServices.getStoreByIdFromDB(id);
 
   return sendResponse({

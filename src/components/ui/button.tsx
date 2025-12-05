@@ -32,6 +32,7 @@ const buttonVariants = cva(
         HomeServices: 'bg-[#1414FF] text-white text-base font-medium hover:bg-[#1414FF] cursor-pointer',
         VisitWeb: 'bg-[#132843] text-white text-base font-medium hover:bg-[#132843] cursor-pointer',
         GreenBtn: 'inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-600 text-white font-semibold shadow cursor-pointer',
+        VendorStoreBtn: 'w-full bg-gradient-to-r from-[#0097E9] to-[#00008B] hover:from-[#00008B] hover:to-[#0097E9] text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer'
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',

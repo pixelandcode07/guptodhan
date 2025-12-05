@@ -1,105 +1,152 @@
 'use client';
 
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Home, LayoutPanelTopIcon, MessageSquareText, ShoppingCart, User } from "lucide-react";
+import {
+    Dialog,
+    DialogContent,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+    Home,
+    LayoutPanelTopIcon,
+    MessageSquareText,
+    ShoppingCart,
+    User,
+    Settings,
+    LogOut,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import Image from "next/image";
 import LogInRegister from "../../LogInAndRegister/LogIn_Register";
 
 export default function MobileFooter() {
-    const pathname = usePathname();
+    const pathname = usePathname() || "";
     const { data: session } = useSession();
     const user = session?.user;
 
-    // check if route is active
-    const isActive = (href: string) => pathname === href;
+    const isActive = (path: string) => pathname.startsWith(path);
+
+    const getInitials = (name: string | null | undefined) => {
+        if (!name) return "U";
+        return name
+            .trim()
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2);
+    };
 
     return (
-        <Dialog>
-            <ul className="fixed bottom-0 left-0 w-full bg-white flex justify-around items-center p-3 border-t border-gray-300 gap-4 z-50">
-                <li>
-                    <Link
-                        href="/"
-                        className={`text-sm flex flex-col items-center ${isActive("/") ? "text-[#0097E9]" : "text-gray-800"
-                            }`}
-                    >
-                        <Home size={20} />
-                        Home
-                    </Link>
-                </li>
-                <li>
-                    <Link
-                        href="/home/buyandsell/categories"
-                        className={`text-sm flex flex-col items-center ${isActive("/home/buyandsell/categories") ? "text-[#0097E9]" : "text-gray-800"
-                            }`}
-                    >
-                        <LayoutPanelTopIcon size={20} />
-                        Category
-                    </Link>
-                </li>
-                <li>
-                    <Link
-                        href="/messages"
-                        className={`text-sm flex flex-col items-center ${isActive("/messages") ? "text-[#0097E9]" : "text-gray-800"
-                            }`}
-                    >
-                        <MessageSquareText size={20} />
-                        Message
-                    </Link>
-                </li>
-                <li>
-                    <Link
-                        href="/cart"
-                        className={`text-sm flex flex-col items-center ${isActive("/cart") ? "text-[#0097E9]" : "text-gray-800"
-                            }`}
-                    >
-                        <ShoppingCart size={20} />
-                        Cart
-                    </Link>
-                </li>
+        <>
+            <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+                <ul className="flex justify-around items-center py-2">
+                    <li>
+                        <Link
+                            href="/"
+                            className={`flex flex-col items-center gap-1 px-3 py-2 text-xs font-medium ${isActive("/") ? "text-[#0097E9]" : "text-gray-600"
+                                }`}
+                        >
+                            <Home size={22} />
+                            <span>Home</span>
+                        </Link>
+                    </li>
 
-                {/* Sign In / Profile */}
-                <li>
-                    {!user ? (
-                        // Show Sign In button if no user
-                        <DialogTrigger>
-                            <h2 className="text-sm flex flex-col items-center cursor-pointer text-gray-800">
-                                <User size={20} />
-                                Sign In
-                            </h2>
-                        </DialogTrigger>
-                    ) : (
-                        // Show dropdown with profile pic if logged in
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <button className="flex flex-col items-center focus:outline-none">
-                                    <Image
-                                        src={user.image || "/default-avatar.png"}
-                                        alt="Profile"
-                                        width={28}
-                                        height={28}
-                                        className="rounded-full"
-                                    />
-                                    <span className="text-xs text-gray-800">Profile</span>
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent side="top" align="end" className="w-40">
-                                <DropdownMenuItem asChild>
-                                    <Link href="/home/UserProfile" className='cursor-pointer'>Profile Settings</Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => signOut()}>
-                                    Logout
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
-                </li>
-            </ul>
-            {/* Login page */}
-            <LogInRegister />
-        </Dialog>
+                    <li>
+                        <Link
+                            href="/home/buyandsell/categories"
+                            className={`flex flex-col items-center gap-1 px-3 py-2 text-xs font-medium ${isActive("/home/buyandsell") ? "text-[#0097E9]" : "text-gray-600"
+                                }`}
+                        >
+                            <LayoutPanelTopIcon size={22} />
+                            <span>Category</span>
+                        </Link>
+                    </li>
+
+                    <li>
+                        <Link
+                            href="/messages"
+                            className={`flex flex-col items-center gap-1 px-3 py-2 text-xs font-medium ${isActive("/messages") ? "text-[#0097E9]" : "text-gray-600"
+                                }`}
+                        >
+                            <MessageSquareText size={22} />
+                            <span>Message</span>
+                        </Link>
+                    </li>
+
+                    <li>
+                        <Link
+                            href="/cart"
+                            className={`flex flex-col items-center gap-1 px-3 py-2 text-xs font-medium ${isActive("/cart") ? "text-[#0097E9]" : "text-gray-600"
+                                }`}
+                        >
+                            <ShoppingCart size={22} />
+                            <span>Cart</span>
+                        </Link>
+                    </li>
+
+                    {/* PROFILE / SIGN IN – THIS IS THE FIX */}
+                    <li>
+                        {user ? (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button className="flex flex-col items-center gap-1 px-3 py-2">
+                                        <Avatar className="h-8 w-8">
+                                            <AvatarImage
+                                                src={
+                                                    user.image && user.image !== "undefined" && user.image !== "null"
+                                                        ? user.image
+                                                        : undefined
+                                                }
+                                            />
+                                            <AvatarFallback className="bg-[#0097E9] text-white text-sm font-bold">
+                                                {getInitials(user.name)}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <span className="text-xs text-gray-700">Profile</span>
+                                    </button>
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent side="top" align="center" className="w-48">
+                                    <DropdownMenuItem asChild>
+                                        <Link href="/home/UserProfile" className="flex items-center gap-3">
+                                            <Settings size={16} />
+                                            Profile Settings
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => signOut()}
+                                        className="flex items-center gap-3 text-red-600"
+                                    >
+                                        <LogOut size={16} />
+                                        Logout
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        ) : (
+                            // THIS IS THE CORRECT WAY
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <button className="flex flex-col items-center gap-1 px-3 py-2 text-xs font-medium text-gray-600">
+                                        <User size={22} />
+                                        <span>Sign In</span>
+                                    </button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-md p-0">
+                                    <LogInRegister />
+                                </DialogContent>
+                            </Dialog>
+                        )}
+                    </li>
+                </ul>
+            </nav>
+        </>
     );
 }
