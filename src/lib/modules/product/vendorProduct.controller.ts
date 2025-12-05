@@ -620,15 +620,15 @@ const getVendorProductsByVendorId = async (
 // CONTROLLER
 const getVendorStoreAndProducts = async (
   req: NextRequest,
-  { params }: { params: { vendorId: string } }
+  { params }: { params: { id: string } }
 ) => {
   await dbConnect();
-  const { vendorId } = await params;
+  const { id } = await params;
 
   const query = Object.fromEntries(req.nextUrl.searchParams.entries());
 
   const result = await VendorProductServices.getVendorStoreAndProductsFromDB(
-    vendorId,
+    id,
     query
   );
 
