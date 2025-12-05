@@ -44,7 +44,7 @@ export interface Product {
   stock?: number;
   status: 'active' | 'inactive';
   vendorStoreId?: EntityRef<{ storeName?: string; storeLogo?: string }>;
-  category?: EntityRef<{ name?: string }>;
+  category?: EntityRef<{ name?: string; slug?: string }>;
   brand?: EntityRef<{ name?: string }>;
   createdAt: string;
   productOptions?: Array<{
@@ -59,7 +59,7 @@ export interface Product {
 export interface ProductData {
   product: Product;
   relatedData: {
-    categories: Array<{ _id: string; name: string }>;
+    categories: Array<{ _id: string; name: string; slug?: string }>;
     stores: Array<{
       _id: string;
       storeName: string;

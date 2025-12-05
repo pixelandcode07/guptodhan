@@ -43,7 +43,7 @@ const getVendorProductByIdFromDB = async (id: string) => {
     .populate('flag', 'name')
     .populate('warranty', 'warrantyName')
     .populate('productModel', 'name')
-    .populate('category', 'name')
+    .populate('category', 'name slug') // Include slug for breadcrumb navigation
     .populate('subCategory', 'name')
     .populate('childCategory', 'name')
     .populate('weightUnit', 'name')

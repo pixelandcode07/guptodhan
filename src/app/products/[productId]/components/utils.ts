@@ -14,6 +14,34 @@ export const getCategoryName = (product: Product): string => {
   return 'Category';
 };
 
+export const getCategorySlug = (product: Product, categories?: Array<{ _id: string; name: string; slug?: string }>): string | null => {
+  // If category is an object with slug property
+  if (typeof product.category === 'object' && product.category !== null && product.category.slug) {
+    return product.category.slug;
+  }
+  
+  // If category is a string ID, try to find it in categories array
+  if (typeof product.category === 'string' && categories) {
+    const category = categories.find(c => c._id === product.category || String(c._id) === String(product.category));
+    if (category?.slug) {
+      return category.slug;
+    }
+  }
+  
+  // If category is an object but slug is missing, try to get it from categories array
+  if (typeof product.category === 'object' && product.category !== null && categories) {
+    const categoryId = product.category._id || product.category.id;
+    if (categoryId) {
+      const category = categories.find(c => c._id === categoryId || String(c._id) === String(categoryId));
+      if (category?.slug) {
+        return category.slug;
+      }
+    }
+  }
+  
+  return null;
+};
+
 export const getBrandName = (product: Product, brands?: Array<{ _id: string; name: string }>): string => {
   // If brand is an object with name property
   if (typeof product.brand === 'object' && product.brand !== null && product.brand.name) {

@@ -32,7 +32,7 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
       variants={containerVariants}
       className="min-h-screen bg-[#f2f4f8] font-sans text-gray-800 pb-12"
     >
-      <ProductBreadcrumb product={product} />
+      <ProductBreadcrumb product={product} relatedData={productData.relatedData} />
 
       <div className="container mx-auto px-4 mt-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
