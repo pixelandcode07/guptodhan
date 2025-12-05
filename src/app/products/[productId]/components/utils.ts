@@ -14,10 +14,31 @@ export const getCategoryName = (product: Product): string => {
   return 'Category';
 };
 
-export const getBrandName = (product: Product): string => {
-  if (typeof product.brand === 'object' && product.brand !== null) {
-    return product.brand.name || 'No Brand';
+export const getBrandName = (product: Product, brands?: Array<{ _id: string; name: string }>): string => {
+  // If brand is an object with name property
+  if (typeof product.brand === 'object' && product.brand !== null && product.brand.name) {
+    return product.brand.name;
   }
+  
+  // If brand is a string ID, try to find it in brands array
+  if (typeof product.brand === 'string' && brands) {
+    const brand = brands.find(b => b._id === product.brand || String(b._id) === String(product.brand));
+    if (brand?.name) {
+      return brand.name;
+    }
+  }
+  
+  // If brand is an object but name is missing, try to get it from brands array
+  if (typeof product.brand === 'object' && product.brand !== null && brands) {
+    const brandId = product.brand._id || product.brand.id;
+    if (brandId) {
+      const brand = brands.find(b => b._id === brandId || String(b._id) === String(brandId));
+      if (brand?.name) {
+        return brand.name;
+      }
+    }
+  }
+  
   return 'No Brand';
 };
 

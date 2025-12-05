@@ -43,6 +43,7 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
                 product={product} 
                 reviews={reviews} 
                 averageRating={averageRating}
+                relatedData={productData.relatedData}
               />
             </div>
           </div>

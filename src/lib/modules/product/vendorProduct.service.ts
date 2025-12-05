@@ -3,6 +3,8 @@ import { IVendorProduct } from "./vendorProduct.interface";
 import { VendorProductModel } from "./vendorProduct.model";
 import { ReviewModel } from "../product-review/productReview.model";
 import { ProductQAModel } from "../product-qna/productQNA.model";
+// Import BrandModel to ensure it's registered for populate
+import "@/lib/modules/product-config/models/brandName.model";
 
 const createVendorProductInDB = async (payload: Partial<IVendorProduct>) => {
   const result = await VendorProductModel.create(payload);
@@ -37,26 +39,24 @@ const getActiveVendorProductsFromDB = async () => {
 
 const getVendorProductByIdFromDB = async (id: string) => {
   const productDoc = await VendorProductModel.findById(id)
-    .populate('brand', 'name') // 'brandName' -> 'name'
-    .populate('flag', 'name') // 'flagName' -> 'name'
+    .populate('brand', 'name') // Populate brand with name field
+    .populate('flag', 'name')
     .populate('warranty', 'warrantyName')
-    .populate('productModel', 'name') // 'modelName' -> 'name'
-    .populate('category', 'name') // 'categoryName' -> 'name'
-    .populate('subCategory', 'name') // 'subCategoryName' -> 'name'
-    .populate('childCategory', 'name') // 'childCategoryName' -> 'name'
-    .populate('weightUnit', 'name') // 'unitName' -> 'name'
-    .populate('vendorStoreId', 'storeName');
+    .populate('productModel', 'name')
+    .populate('category', 'name')
+    .populate('subCategory', 'name')
+    .populate('childCategory', 'name')
+    .populate('weightUnit', 'name')
+    .populate('vendorStoreId', 'storeName')
+    .lean(); // Use lean() to get plain JavaScript object with populated fields
 
   if (!productDoc) return null;
 
-  const product =
-    typeof productDoc.toObject === 'function' ? productDoc.toObject() : productDoc;
-
-  const reviews = await ReviewModel.find({ productId: id });
-  const qna = await ProductQAModel.find({ productId: id });
+  const reviews = await ReviewModel.find({ productId: id }).lean();
+  const qna = await ProductQAModel.find({ productId: id }).lean();
 
   return {
-    ...product,
+    ...productDoc,
     reviews,
     qna,
   };

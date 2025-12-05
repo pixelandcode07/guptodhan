@@ -65,6 +65,7 @@ export interface ProductData {
       storeName: string;
       storeLogo?: string;
     }>;
+    brands?: Array<{ _id: string; name: string }>;
     variantOptions?: {
       colors?: Array<{ _id: string; name?: string; colorName?: string }>;
       sizes?: Array<{ _id: string; name?: string; sizeName?: string }>;

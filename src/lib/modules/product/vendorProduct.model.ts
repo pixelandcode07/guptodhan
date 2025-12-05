@@ -42,7 +42,7 @@ const vendorProductSchema = new Schema<IVendorProduct>(
     category: { type: Schema.Types.ObjectId, ref: 'CategoryModel', required: true }, 
     subCategory: { type: Schema.Types.ObjectId, ref: 'SubCategoryModel' }, 
     childCategory: { type: Schema.Types.ObjectId, ref: 'ChildCategoryModel' }, 
-    brand: { type: Schema.Types.ObjectId, ref: 'Brand' }, 
+    brand: { type: Schema.Types.ObjectId, ref: 'BrandModel' }, 
     productModel: { type: Schema.Types.ObjectId, ref: 'ProductModel' }, 
     flag: { type: Schema.Types.ObjectId, ref: 'ProductFlag' }, 
     warranty: { type: Schema.Types.ObjectId, ref: 'ProductWarrantyModel' }, 

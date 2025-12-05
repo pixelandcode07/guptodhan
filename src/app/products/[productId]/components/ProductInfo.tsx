@@ -8,16 +8,17 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useCart } from '@/hooks/useCart';
 import { useWishlist } from '@/contexts/WishlistContext';
-import { Product, Review } from './types';
+import { Product, Review, ProductData } from './types';
 import { getBrandName, formatPrice, calculateDiscountPercent } from './utils';
 
 interface ProductInfoProps {
   product: Product;
   reviews: Review[];
   averageRating: string;
+  relatedData?: ProductData['relatedData'];
 }
 
-export default function ProductInfo({ product, reviews, averageRating }: ProductInfoProps) {
+export default function ProductInfo({ product, reviews, averageRating, relatedData }: ProductInfoProps) {
   const router = useRouter();
   const { addToCart, isLoading: cartLoading, isAddingToCart } = useCart();
   const { addToWishlist } = useWishlist();
@@ -84,7 +85,7 @@ export default function ProductInfo({ product, reviews, averageRating }: Product
       </div>
 
       <div className="text-sm text-gray-500 mb-4">
-        Brand: <span className="text-[#0099cc] font-medium cursor-pointer">{getBrandName(product)}</span>
+        Brand: <span className="text-[#0099cc] font-medium cursor-pointer">{getBrandName(product, relatedData?.brands)}</span>
       </div>
 
       <div className="bg-gray-50 p-4 rounded-lg mb-6">
