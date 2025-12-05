@@ -71,6 +71,16 @@ export interface ProductData {
       sizes?: Array<{ _id: string; name?: string; sizeName?: string }>;
     };
   };
+  relatedProducts?: Array<{
+    _id: string;
+    productTitle: string;
+    thumbnailImage: string;
+    productPrice: number;
+    discountPrice?: number;
+    stock?: number;
+    brand?: { _id: string; name: string } | string;
+    category?: { _id: string; name: string } | string;
+  }>;
 }
 
 export interface ProductDetailsClientProps {

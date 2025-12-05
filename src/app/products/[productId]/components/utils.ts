@@ -53,11 +53,28 @@ export const getStoreDetails = (product: Product) => {
   return null;
 };
 
-export const formatPrice = (price: number) => 
-  new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT', minimumFractionDigits: 0 }).format(price);
+export const formatPrice = (price: number | null | undefined): string => {
+  if (!price || isNaN(price) || price <= 0) {
+    return 'BDT 0';
+  }
+  try {
+    return new Intl.NumberFormat('en-BD', { 
+      style: 'currency', 
+      currency: 'BDT', 
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(price);
+  } catch (error) {
+    return `BDT ${price.toLocaleString()}`;
+  }
+};
 
-export const calculateDiscountPercent = (productPrice: number, discountPrice?: number): number => {
-  if (!discountPrice) return 0;
-  return Math.round(((productPrice - discountPrice) / productPrice) * 100);
+export const calculateDiscountPercent = (productPrice: number | null | undefined, discountPrice?: number | null): number => {
+  if (!discountPrice || !productPrice || isNaN(productPrice) || isNaN(discountPrice) || productPrice <= 0 || discountPrice <= 0) {
+    return 0;
+  }
+  if (discountPrice >= productPrice) return 0;
+  const percent = ((productPrice - discountPrice) / productPrice) * 100;
+  return Math.round(percent);
 };
 

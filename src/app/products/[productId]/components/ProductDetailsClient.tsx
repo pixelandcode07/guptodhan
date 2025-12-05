@@ -9,6 +9,7 @@ import ProductImageGallery from './ProductImageGallery';
 import ProductInfo from './ProductInfo';
 import ProductSidebar from './ProductSidebar';
 import ProductTabs from './ProductTabs';
+import RelatedProducts from './RelatedProducts';
 
 export default function ProductDetailsClient({ productData }: ProductDetailsClientProps) {
   const { product } = productData;
@@ -59,6 +60,20 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
         reviews={reviews} 
         onReviewsUpdate={handleReviewsUpdate}
       />
+
+      {/* ================= RELATED PRODUCTS SECTION ================= */}
+      {productData.relatedProducts && productData.relatedProducts.length > 0 && (
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 mt-4 sm:mt-6 md:mt-8">
+          <RelatedProducts 
+            products={productData.relatedProducts}
+            categoryName={
+              typeof product.category === 'object' && product.category !== null
+                ? product.category.name
+                : undefined
+            }
+          />
+        </div>
+      )}
     </motion.div>
   );
 }
