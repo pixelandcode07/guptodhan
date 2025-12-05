@@ -84,21 +84,41 @@ export default function ProductSidebar({ product }: ProductSidebarProps) {
         <h3 className="text-xs font-bold text-gray-400 uppercase mb-4 tracking-wider">Sold By</h3>
         
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 bg-gray-50 border border-gray-200 rounded-md flex items-center justify-center overflow-hidden relative">
-            {storeDetails?.storeLogo ? (
-              <Image src={storeDetails.storeLogo} alt="Store" fill className="object-cover"/>
-            ) : (
+          {storeDetails?._id ? (
+            <Link href={`/store/${storeDetails._id}`} className="w-12 h-12 bg-gray-50 border border-gray-200 rounded-md flex items-center justify-center overflow-hidden relative hover:border-[#0099cc] transition-colors cursor-pointer">
+              {storeDetails?.storeLogo ? (
+                <Image src={storeDetails.storeLogo} alt="Store" fill className="object-cover"/>
+              ) : (
+                <Store className="text-gray-300" />
+              )}
+            </Link>
+          ) : (
+            <div className="w-12 h-12 bg-gray-50 border border-gray-200 rounded-md flex items-center justify-center overflow-hidden relative">
               <Store className="text-gray-300" />
-            )}
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <div className="flex items-center gap-1">
-              <h4 className="font-bold text-gray-800 truncate" title={storeDetails?.storeName}>
-                {storeDetails?.storeName || 'Unknown Store'}
-              </h4>
-              <BadgeCheck size={16} className="text-[#0099cc] fill-blue-50" />
             </div>
-            <p className="text-xs text-gray-500">Verified Seller</p>
+          )}
+          <div className="flex-1 overflow-hidden">
+            {storeDetails?._id ? (
+              <Link href={`/store/${storeDetails._id}`} className="block hover:text-[#0099cc] transition-colors">
+                <div className="flex items-center gap-1">
+                  <h4 className="font-bold text-gray-800 truncate hover:text-[#0099cc] transition-colors" title={storeDetails?.storeName}>
+                    {storeDetails?.storeName || 'Unknown Store'}
+                  </h4>
+                  <BadgeCheck size={16} className="text-[#0099cc] fill-blue-50" />
+                </div>
+                <p className="text-xs text-gray-500">Verified Seller</p>
+              </Link>
+            ) : (
+              <>
+                <div className="flex items-center gap-1">
+                  <h4 className="font-bold text-gray-800 truncate" title={storeDetails?.storeName}>
+                    {storeDetails?.storeName || 'Unknown Store'}
+                  </h4>
+                  <BadgeCheck size={16} className="text-[#0099cc] fill-blue-50" />
+                </div>
+                <p className="text-xs text-gray-500">Verified Seller</p>
+              </>
+            )}
           </div>
         </div>
 
