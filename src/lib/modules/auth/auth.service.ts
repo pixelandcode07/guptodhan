@@ -105,6 +105,7 @@ const vendorLogin = async (payload: TLoginUser) => {
 
   const { password, ...userWithoutPassword } = user.toObject();
 
+
   // 🔥 ২. ইউজারের সাথে vendorId রিটার্ন করুন
   return {
     accessToken,
@@ -118,7 +119,8 @@ const vendorLogin = async (payload: TLoginUser) => {
       profilePicture: userWithoutPassword.profilePicture,
       address: userWithoutPassword.address,
       isActive: userWithoutPassword.isActive,
-      vendorId: (userWithoutPassword.vendorInfo as any)?._id || null, 
+      // vendorId: (userWithoutPassword.vendorInfo as any)?._id || null, 
+      vendorId:userWithoutPassword.vendorInfo?._id || null, 
     }
   };
 };
