@@ -19,7 +19,6 @@ export default function VendorForgotPassword() {
   const [newPassword, setNewPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // এইটাই ম্যাজিক! OTP verify করার পর JWT token সেভ করবো
   const [resetToken, setResetToken] = useState<string>("");
 
   // Step 1: Send OTP

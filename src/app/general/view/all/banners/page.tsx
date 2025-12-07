@@ -2,8 +2,6 @@
 
 import { DataTable } from "@/components/TableHelper/data-table";
 import { Banner, getBannerColumns } from "@/components/TableHelper/banner_columns";
-import { Button } from "@/components/ui/button";
-import { ArrowUpDown } from "lucide-react";
 import AddBannerButton from "./components/AddBannerButton";
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
@@ -13,6 +11,7 @@ import DeleteConfirmationModal from "./components/DeleteConfirmationModal";
 import SuccessModal from "./components/SuccessModal";
 import EditBannerModal from "./components/EditBannerModal";
 import BannersSkeleton from "./components/BannersSkeleton";
+import RearrangeButton from "@/components/ReusableComponents/RearrangeButton";
 
 
 export default function BannersPage() {
@@ -137,10 +136,7 @@ export default function BannersPage() {
         <h1 className="text-xl font-semibold tracking-tight">Banners</h1>
         <div className="flex items-center gap-2">
           <AddBannerButton />
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
-            <ArrowUpDown className="w-4 h-4" />
-            Rearrange
-          </Button>
+          <RearrangeButton href="/general/rearrange/banners" label="Rearrange Banners" />
         </div>
       </div>
 

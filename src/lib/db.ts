@@ -16,6 +16,8 @@ import '@/lib/modules/product-config/models/productUnit.model';
 import '@/lib/modules/vendor-store/vendorStore.model';
 import '@/lib/modules/product/vendorProduct.model'; 
 import '@/lib/modules/product-review/productReview.model'; 
+import '@/lib/modules/vendors/vendor.model';
+
 
 const MONGODB_URI = process.env.MONGODB_URI;
 

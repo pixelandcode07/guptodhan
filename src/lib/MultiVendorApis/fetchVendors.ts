@@ -56,13 +56,6 @@ export async function fetchPublicVendors(): Promise<Vendor[]> {
   const baseUrl = getBaseUrl();
 
   try {
-    // const headers: Record<string, string> = {
-    //   'Cache-Control': 'no-store',
-    // };
-
-    // if (token) {
-    //   headers['Authorization'] = `Bearer ${token}`;
-    // }
 
     const response = await axios.get<ApiResponse<Vendor[]>>(
       `${baseUrl}/api/v1/public/vendors`,

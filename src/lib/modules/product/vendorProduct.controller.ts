@@ -617,6 +617,30 @@ const getVendorProductsByVendorId = async (
   });
 };
 
+// CONTROLLER
+const getVendorStoreAndProducts = async (
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) => {
+  await dbConnect();
+  const { id } = await params;
+
+  const query = Object.fromEntries(req.nextUrl.searchParams.entries());
+
+  const result = await VendorProductServices.getVendorStoreAndProductsFromDB(
+    id,
+    query
+  );
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Vendor store & products retrieved successfully!",
+    data: result,
+  });
+};
+
+
 
 export const VendorProductController = {
   createVendorProduct,
@@ -638,4 +662,6 @@ export const VendorProductController = {
   getOfferProducts,
   getBestSellingProducts,
   getForYouProducts,
+
+  getVendorStoreAndProducts
 };
