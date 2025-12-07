@@ -1,5 +1,5 @@
 import VendorStoreCard from "@/components/ReusableComponents/VendorStoreCard";
-import StickyNavTrigger from "./components/StickyNavTrigger";
+import StickyNavTrigger from "../components/StickyNavTrigger";
 import { fetchNavigationCategoryData } from "@/lib/MainHomePage";
 import { fetchAllPublicStores } from "@/lib/MultiVendorApis/fetchAllStore";
 
