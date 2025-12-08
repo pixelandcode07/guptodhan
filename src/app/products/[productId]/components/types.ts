@@ -44,7 +44,7 @@ export interface Product {
   stock?: number;
   status: 'active' | 'inactive';
   vendorStoreId?: EntityRef<{ storeName?: string; storeLogo?: string }>;
-  category?: EntityRef<{ name?: string }>;
+  category?: EntityRef<{ name?: string; slug?: string }>;
   brand?: EntityRef<{ name?: string }>;
   createdAt: string;
   productOptions?: Array<{
@@ -59,17 +59,28 @@ export interface Product {
 export interface ProductData {
   product: Product;
   relatedData: {
-    categories: Array<{ _id: string; name: string }>;
+    categories: Array<{ _id: string; name: string; slug?: string }>;
     stores: Array<{
       _id: string;
       storeName: string;
       storeLogo?: string;
     }>;
+    brands?: Array<{ _id: string; name: string }>;
     variantOptions?: {
       colors?: Array<{ _id: string; name?: string; colorName?: string }>;
       sizes?: Array<{ _id: string; name?: string; sizeName?: string }>;
     };
   };
+  relatedProducts?: Array<{
+    _id: string;
+    productTitle: string;
+    thumbnailImage: string;
+    productPrice: number;
+    discountPrice?: number;
+    stock?: number;
+    brand?: { _id: string; name: string } | string;
+    category?: { _id: string; name: string } | string;
+  }>;
 }
 
 export interface ProductDetailsClientProps {

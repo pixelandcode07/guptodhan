@@ -9,6 +9,7 @@ import ProductImageGallery from './ProductImageGallery';
 import ProductInfo from './ProductInfo';
 import ProductSidebar from './ProductSidebar';
 import ProductTabs from './ProductTabs';
+import RelatedProducts from './RelatedProducts';
 
 export default function ProductDetailsClient({ productData }: ProductDetailsClientProps) {
   const { product } = productData;
@@ -31,7 +32,7 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
       variants={containerVariants}
       className="min-h-screen bg-[#f2f4f8] font-sans text-gray-800 pb-12"
     >
-      <ProductBreadcrumb product={product} />
+      <ProductBreadcrumb product={product} relatedData={productData.relatedData} />
 
       <div className="container mx-auto px-4 mt-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -43,6 +44,7 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
                 product={product} 
                 reviews={reviews} 
                 averageRating={averageRating}
+                relatedData={productData.relatedData}
               />
             </div>
           </div>
@@ -58,6 +60,20 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
         reviews={reviews} 
         onReviewsUpdate={handleReviewsUpdate}
       />
+
+      {/* ================= RELATED PRODUCTS SECTION ================= */}
+      {productData.relatedProducts && productData.relatedProducts.length > 0 && (
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 mt-4 sm:mt-6 md:mt-8">
+          <RelatedProducts 
+            products={productData.relatedProducts}
+            categoryName={
+              typeof product.category === 'object' && product.category !== null
+                ? product.category.name
+                : undefined
+            }
+          />
+        </div>
+      )}
     </motion.div>
   );
 }

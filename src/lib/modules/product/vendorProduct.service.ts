@@ -59,7 +59,7 @@ const getVendorProductByIdFromDB = async (id: string) => {
   const qna = await ProductQAModel.find({ productId: id });
 
   return {
-    ...product,
+    ...productDoc,
     reviews,
     qna,
   };
