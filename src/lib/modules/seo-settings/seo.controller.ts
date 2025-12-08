@@ -79,11 +79,23 @@ const getSeoSettingsById = async (_req: NextRequest, { params }: { params: Promi
 };
 
 
-
+// ✅ নতুন কন্ট্রোলার: টেবিলের জন্য সব ডাটা রিটার্ন করবে
+const getAllSeoSettings = async (req: NextRequest) => {
+    await dbConnect();
+    const result = await SeoSettingsServices.getAllSeoSettingsFromDB();
+    
+    return sendResponse({ 
+        success: true, 
+        statusCode: StatusCodes.OK, 
+        message: 'All SEO settings retrieved successfully!', 
+        data: result 
+    });
+};
 
 export const SeoSettingsController = {
     createOrUpdateSeoSettings,
     getPublicSeoSettings,
     updateSeoSettings,
     getSeoSettingsById,
+    getAllSeoSettings,
 };
