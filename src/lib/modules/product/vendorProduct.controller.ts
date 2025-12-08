@@ -44,28 +44,28 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
         unit: Array.isArray(option.unit)
           ? option.unit
           : option.unit
-          ? [option.unit]
-          : [],
+            ? [option.unit]
+            : [],
         simType: Array.isArray(option.simType)
           ? option.simType
           : option.simType
-          ? [option.simType]
-          : [],
+            ? [option.simType]
+            : [],
         condition: Array.isArray(option.condition)
           ? option.condition
           : option.condition
-          ? [option.condition]
-          : [],
+            ? [option.condition]
+            : [],
         color: Array.isArray(option.color)
           ? option.color
           : option.color
-          ? [option.color]
-          : [],
+            ? [option.color]
+            : [],
         size: Array.isArray(option.size)
           ? option.size
           : option.size
-          ? [option.size]
-          : [],
+            ? [option.size]
+            : [],
       })),
     };
 

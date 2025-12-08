@@ -508,6 +508,9 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
     productTitle: { $regex: regex },
   })
     .select("productTitle productImage price") // Only necessary fields
+    .populate("category", "slug")         // ← add by Moinuddin
+    .populate("subCategory", "slug")      // ← add by Moinuddin
+    .populate("childCategory", "slug")    // ← add by Moinuddin
     .limit(5)
     .sort({ createdAt: -1 });
 

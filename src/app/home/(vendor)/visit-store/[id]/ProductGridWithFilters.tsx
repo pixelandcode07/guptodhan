@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious, PaginationLink } from '@/components/ui/pagination';
-import { Store, RotateCcw, Loader2, Filter as FilterIcon, X } from 'lucide-react';
+import { RotateCcw, Loader2, Filter as FilterIcon, X } from 'lucide-react';
 import ProductCardMotion from '@/components/ReusableComponents/ProductCardMotion';
 
 type Product = {
@@ -88,7 +88,7 @@ export default function ProductGridWithFilters({
         const url = query ? `?${query}` : '';
 
         try {
-            const res = await axios.get(`/api/v1/public/vendor-store/storeWithProduct/${storeId}${url}`);
+            const res = await axios.get(`/api/v1/public/vendor-store/store-with-product/${storeId}${url}`);
             if (res.data.success) {
                 setProducts(res.data.data.products || []);
                 router.replace(`${pathname}${url}`, { scroll: false });
@@ -97,7 +97,7 @@ export default function ProductGridWithFilters({
             console.error(err);
         } finally {
             setIsLoading(false);
-            setIsFilterOpen(false); // close drawer on mobile after apply
+            setIsFilterOpen(false);
         }
     };
 
