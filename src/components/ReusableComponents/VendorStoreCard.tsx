@@ -126,7 +126,7 @@ export default function VendorStoreCard({ store }: { store: VendorStore }) {
                     </div>
 
                     <div className="mt-8">
-                        <Link href={`/store/${store._id}`}>
+                        <Link href={`/home/visit-store/${store._id}`}>
                             <Button
                                 size="lg"
                                 variant={"VendorStoreBtn"}

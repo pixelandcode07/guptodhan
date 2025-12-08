@@ -249,7 +249,7 @@
 import { Heart, LogOut, Menu, User, X, ShoppingBag, Gift, UserPlus, Truck, Phone, LogIn } from 'lucide-react';
 import Image from 'next/image';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Import shadcn Avatar
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import LogInRegister from '../../LogInAndRegister/LogIn_Register';
 import SearchBar from './SearchBar';
 import { signOut, useSession } from 'next-auth/react';

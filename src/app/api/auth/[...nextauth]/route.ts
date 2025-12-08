@@ -7,6 +7,9 @@ import { User } from '@/lib/modules/user/user.model';
 import { generateToken, verifyToken } from '@/lib/utils/jwt';
 import { parseExpiresIn } from '@/lib/utils/time';
 
+
+
+
 export const authOptions = {
   providers: [
     GoogleProvider({
@@ -27,6 +30,7 @@ export const authOptions = {
         profilePicture: { label: 'Profile Picture', type: 'text' },
         address: { label: 'Address', type: 'text' },
       },
+
       async authorize(credentials) {
         if (credentials?.userId && credentials?.role) {
           return {
@@ -53,7 +57,6 @@ export const authOptions = {
         try {
           await dbConnect();
           let existingUser = await User.findOne({ email: user.email });
-
           if (!existingUser) {
             existingUser = await User.create({
               name: user.name,
@@ -82,6 +85,7 @@ export const authOptions = {
       // যখন user প্রথমবার sign-in করে
       if (user) {
         const dbUser = user.dbUser || user;
+
 
         // ✅ সব user data token এ রাখা হচ্ছে
         token.role = dbUser.role || user.role;
@@ -179,7 +183,7 @@ export const authOptions = {
         session.user.image = token.profilePicture;
         session.user.address = token.address;
         session.user.accessToken = token.accessToken;
-        
+
         // 🔥 VENDOR ID ADDED HERE (Most Important Part)
         session.user.vendorId = token.vendorId;
       }

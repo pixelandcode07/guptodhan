@@ -129,7 +129,7 @@ function ProductCard({ product }: { product: Product }) {
 
 function FilterSidebar({ filters }: { filters: any }) {
     const router = useRouter();
-    const searchParams = useSearchParams();
+    const searchParams = useSearchParams() as URLSearchParams;
     const pathname = usePathname();
     const [isPending, startTransition] = useTransition();
 
