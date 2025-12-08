@@ -86,7 +86,7 @@ export default function ProductSidebar({ product }: ProductSidebarProps) {
         
         <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
           {storeDetails?._id ? (
-            <Link href={`/store/${storeDetails._id}`} className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 border border-gray-200 rounded-md flex items-center justify-center overflow-hidden relative hover:border-[#0099cc] transition-colors cursor-pointer shrink-0">
+            <Link href={`/home/visit-store/${storeDetails._id}`} className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 border border-gray-200 rounded-md flex items-center justify-center overflow-hidden relative hover:border-[#0099cc] transition-colors cursor-pointer shrink-0">
               {storeDetails?.storeLogo ? (
                 <Image src={storeDetails.storeLogo} alt="Store" fill className="object-cover" sizes="(max-width: 640px) 40px, 48px"/>
               ) : (
@@ -100,7 +100,7 @@ export default function ProductSidebar({ product }: ProductSidebarProps) {
           )}
           <div className="flex-1 overflow-hidden min-w-0">
             {storeDetails?._id ? (
-              <Link href={`/store/${storeDetails._id}`} className="block hover:text-[#0099cc] transition-colors">
+              <Link href={`/home/visit-store/${storeDetails._id}`} className="block hover:text-[#0099cc] transition-colors">
                 <div className="flex items-center gap-1">
                   <h4 className="font-bold text-xs sm:text-sm text-gray-800 truncate hover:text-[#0099cc] transition-colors" title={storeDetails?.storeName}>
                     {storeDetails?.storeName || 'Unknown Store'}
@@ -140,7 +140,7 @@ export default function ProductSidebar({ product }: ProductSidebarProps) {
 
         <div className="mt-3 sm:mt-4">
           {storeDetails?._id ? (
-            <Link href={`/store/${storeDetails._id}`} className="block w-full">
+            <Link href={`/home/visit-store/${storeDetails._id}`} className="block w-full">
               <Button variant="outline" className="w-full h-9 sm:h-10 border-[#0099cc] text-[#0099cc] hover:bg-blue-50 text-[10px] sm:text-xs uppercase font-bold">
                 Visit Store
               </Button>

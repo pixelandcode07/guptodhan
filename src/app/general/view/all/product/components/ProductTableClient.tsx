@@ -16,12 +16,16 @@ type ApiProduct = {
   _id: string;
   productId: string;
   productTitle: string;
-  category?: { _id?: string; name?: string } | string;
-  vendorStoreId?: { storeName?: string } | string;
+  category?: { _id?: string; name?: string } | string | null;
+  vendorStoreId?: { _id?: string; storeName?: string } | string | null;
+  vendorName?: string | null;
+  brand?: { _id?: string; name?: string } | string | null;
+  flag?: { _id?: string; name?: string } | string | null;
+  warranty?: { _id?: string; warrantyName?: string } | string | null;
+  weightUnit?: { _id?: string; name?: string } | string | null;
   productPrice?: number;
   discountPrice?: number;
   stock?: number;
-  flag?: { _id?: string; name?: string } | string;
   status: 'active' | 'inactive';
   createdAt: string;
   thumbnailImage?: string;
@@ -100,7 +104,61 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         },
       });
       const items: ApiProduct[] = Array.isArray(res.data?.data) ? res.data.data : [];
-      setProducts(items);
+      
+      // Transform API response: extract names from populated objects
+      const transformedItems = items.map((item: any) => {
+        return {
+          ...item,
+          // Handle category - can be object with name or string ID
+          category: typeof item.category === 'object' && item.category?.name 
+            ? item.category.name 
+            : typeof item.category === 'string' 
+            ? item.category 
+            : null,
+          
+          // Handle brand - can be object with name or string ID
+          brand: typeof item.brand === 'object' && item.brand?.name 
+            ? item.brand.name 
+            : typeof item.brand === 'string' 
+            ? item.brand 
+            : null,
+          
+          // Handle flag - can be object with name or string ID
+          flag: typeof item.flag === 'object' && item.flag?.name 
+            ? item.flag.name 
+            : typeof item.flag === 'string' 
+            ? item.flag 
+            : null,
+          
+          // Handle warranty - can be object with warrantyName or string ID
+          warranty: typeof item.warranty === 'object' && item.warranty?.warrantyName 
+            ? item.warranty.warrantyName 
+            : typeof item.warranty === 'string' 
+            ? item.warranty 
+            : null,
+          
+          // Handle weightUnit - can be object with name or string ID
+          weightUnit: typeof item.weightUnit === 'object' && item.weightUnit?.name 
+            ? item.weightUnit.name 
+            : typeof item.weightUnit === 'string' 
+            ? item.weightUnit 
+            : null,
+          
+          // Handle vendorStoreId - keep ID but extract vendorName
+          vendorStoreId: typeof item.vendorStoreId === 'object' && item.vendorStoreId?._id 
+            ? item.vendorStoreId._id 
+            : typeof item.vendorStoreId === 'string' 
+            ? item.vendorStoreId 
+            : null,
+          
+          // Extract vendorName from vendorStoreId object
+          vendorName: typeof item.vendorStoreId === 'object' && item.vendorStoreId?.storeName 
+            ? item.vendorStoreId.storeName 
+            : item.vendorName || null,
+        };
+      });
+      
+      setProducts(transformedItems);
     } catch {
       toast.error('Failed to load products');
     }
@@ -108,33 +166,38 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
 
   useEffect(() => {
     const mapped: Product[] = products.map((p, idx) => {
+      // Category - already transformed to string name or ID
       let categoryName = '';
       if (typeof p.category === 'string') {
+        // If it's still an ID, try to map it, otherwise use as-is (already a name)
         categoryName = categoryMap[p.category] || p.category;
       } else if (p.category && typeof p.category === 'object' && 'name' in p.category) {
         categoryName = p.category.name || '';
       }
       categoryName = categoryName || 'N/A';
       
+      // Store - use vendorName if available, otherwise map from vendorStoreId
       let storeName = '';
-      if (typeof p.vendorStoreId === 'string') {
+      if (p.vendorName) {
+        storeName = p.vendorName;
+      } else if (typeof p.vendorStoreId === 'string') {
         storeName = storeMap[p.vendorStoreId] || p.vendorStoreId;
       } else if (p.vendorStoreId && typeof p.vendorStoreId === 'object' && 'storeName' in p.vendorStoreId) {
         storeName = p.vendorStoreId.storeName || '';
       }
       storeName = storeName || 'N/A';
       
+      // Flag - already transformed to string name or ID
       let flagName = "";
       if (typeof p.flag === "string") {
+        // If it's still an ID, try to map it, otherwise use as-is (already a name)
         flagName = flagMap[p.flag] || p.flag;
       } else if (p.flag && typeof p.flag === "object") {
         const flagId = "_id" in p.flag ? p.flag._id : undefined;
         const flagLabel = "name" in p.flag ? p.flag.name : undefined;
-        flagName =
-          flagLabel ||
-          (flagId ? flagMap[flagId] : "") ||
-          "";
+        flagName = flagLabel || (flagId ? flagMap[flagId] : "") || "";
       }
+      
       return {
         id: idx + 1,
         _id: p._id,
