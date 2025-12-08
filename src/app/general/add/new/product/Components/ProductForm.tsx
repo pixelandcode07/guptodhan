@@ -346,8 +346,9 @@ export default function ProductForm({ initialData, productId: propProductId }: a
             
             for (let i = 0; i < variants.length; i++) {
                 const variant = variants[i];
-                if (!variant.stock || variant.stock <= 0) {
-                    return toast.error(`Variant ${i + 1}: Stock must be greater than 0.`);
+                // Allow stock to be 0 (out of stock is valid)
+                if (variant.stock === undefined || variant.stock < 0) {
+                    return toast.error(`Variant ${i + 1}: Stock must be 0 or greater.`);
                 }
                 if (!variant.price || variant.price <= 0) {
                     return toast.error(`Variant ${i + 1}: Price must be greater than 0.`);
