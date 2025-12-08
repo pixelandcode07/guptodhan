@@ -89,7 +89,7 @@ export default function ProductInfo({ product, reviews, averageRating, relatedDa
         </span>
       </div>
 
-      <div className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
+      <div className="text-sm text-gray-500 mb-4">
         Brand: <span className="text-[#0099cc] font-medium cursor-pointer">{getBrandName(product, relatedData?.brands)}</span>
       </div>
 
