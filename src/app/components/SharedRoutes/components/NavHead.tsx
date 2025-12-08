@@ -15,8 +15,8 @@ export default function NavHead() {
             <div>
                 <ul className='flex gap-4 '>
                     {vendorRole !== 'vendor' && <>
-                    <Link href={'/join-as-vendor'} className='text-sm hover:text-black hover:font-semibold cursor-pointer'>Join As Vendor</Link>
-                    <li className='text-sm'>|</li>
+                        <Link href={'/join-as-vendor'} className='text-sm hover:text-black hover:font-semibold cursor-pointer'>Join As Vendor</Link>
+                        <li className='text-sm'>|</li>
                     </>}
                     <li className='text-sm hover:text-black hover:font-semibold cursor-pointer'>Track Order</li>
                     <li className='text-sm'>|</li>

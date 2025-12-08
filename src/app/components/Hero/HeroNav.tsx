@@ -80,7 +80,7 @@ export function HeroNav({ categories }: HeroNavProps) {
 
       <motion.nav
         className={`
-          w-full bg-[#00045e] text-white shadow-lg
+          w-full bg-[#00045e] text-white shadow-lg z-40
           ${isFixed ? "fixed top-0 left-0 right-0" : "relative"}
         `}
         initial={{ y: -100 }}
