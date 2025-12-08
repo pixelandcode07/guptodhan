@@ -6,7 +6,7 @@ export default async function VisitStore({ params }: { params: { id: string } })
     const { id } = await params;
 
     const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/public/vendor-store/storeWithProduct/${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/public/vendor-store/store-with-product/${id}`,
         { cache: 'no-store' }
     );
 
