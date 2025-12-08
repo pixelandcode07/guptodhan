@@ -39,10 +39,15 @@ const updateSeoSettingsInDB = async (id: string, payload: Partial<ISeoSettings>)
 };
 
 
+const getAllSeoSettingsFromDB = async () => {
+  // সব ডাটা আনবে এবং নতুনগুলো উপরে দেখাবে
+  return await SeoSettings.find({}).sort({ createdAt: -1 });
+}
 
 export const SeoSettingsServices = {
   createOrUpdateSeoSettingsInDB,
   getPublicSeoSettingsFromDB,
   updateSeoSettingsInDB,
-  getSeoSettingsByIdFromDB
+  getSeoSettingsByIdFromDB,
+  getAllSeoSettingsFromDB,
 };

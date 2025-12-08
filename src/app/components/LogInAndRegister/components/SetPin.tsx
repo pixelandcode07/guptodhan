@@ -7,7 +7,7 @@ import { FieldErrors, SubmitHandler, UseFormHandleSubmit, UseFormRegister } from
 import SocialLoginPart from './SocialLoginPart';
 
 export default function SetPin({ step, setStep, handleSubmitPin, onSubmitPin,
-    registerPin, pinErrors,loading }: {
+    registerPin, pinErrors, loading }: {
         step: string;
         setStep: Dispatch<SetStateAction<FormStep>>;
         handleSubmitPin: UseFormHandleSubmit<SetPinFormData>;

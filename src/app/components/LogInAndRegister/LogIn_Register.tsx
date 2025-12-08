@@ -14,14 +14,6 @@ import { registerWithPhoneSchema } from '@/lib/modules/user/user.validation'
 import Forgetpin from './components/Forgetpin'
 import SetNewPin from './components/SetNewPin'
 import { useRedirectAfterLogin } from '@/hooks/useRedirectAfterLogin'
-// import { signInWithPhoneNumber } from "firebase/auth";
-
-// Extend the Window interface to include confirmationResult
-// declare global {
-//     interface Window {
-//         confirmationResult?: any;
-//     }
-// }
 
 // TypeScript interfaces for form data
 export interface LoginFormData {
@@ -52,7 +44,6 @@ export default function LogInRegister() {
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
 
-    // Recaptcha container added to body
     useEffect(() => {
         const container = document.createElement('div')
         container.id = 'recaptcha-container'
@@ -79,20 +70,9 @@ export default function LogInRegister() {
 
     const onSubmitLogin = (data: LoginFormData) => {
         console.log('Login Data:', data)
-        // alert(JSON.stringify(data, null, 2))
     }
 
     // Create Account Form
-    // const phoneSchema = z.object({
-    //     phone: z.string().regex(/^(?:\+8801[3-9]\d{8}|01[3-9]\d{8})$/, {
-    //         message: 'Must be a valid Bangladeshi phone number (e.g., +8801777777777 or 01777777777)',
-    //     }),
-    // });
-
-
-
-
-
     const {
         register: registerCreate,
         handleSubmit: handleSubmitCreate,
@@ -105,65 +85,6 @@ export default function LogInRegister() {
         resolver: zodResolver(registerWithPhoneSchema.shape.body),
     })
 
-
-
-
-    const onSubmitCreate = async (data: CreateAccountFormData) => {
-        console.log('Form Data:', data);
-        setLoading(true)
-        setError(null)
-        setStep("verifyOtp");
-        // try {
-        //     setLoading(true);
-        //     setError(null);
-
-        //     // ✅ Backend এ send (logging purpose, DB check ইত্যাদি)
-        //     await axios.post("/api/v1/user/register", data);
-
-        //     // ✅ Firebase Recaptcha setup
-        //     const recaptchaVerifier = setupRecaptcha("recaptcha-container");
-
-        //     // ✅ OTP পাঠানো
-        //     const confirmationResult = await signInWithPhoneNumber(
-        //         auth,
-        //         data.phoneNumber,
-        //         recaptchaVerifier
-        //     );
-
-        //     // globally store করে রাখলাম (later verify করার জন্য)
-        //     window.confirmationResult = confirmationResult;
-
-        //     setSubmittedPhone(data.phoneNumber);
-        //     setStep("verifyOtp");
-        // } catch (err: any) {
-        //     console.error("Register error:", err);
-        //     setError(err.response?.data?.message || "Failed to send OTP");
-        // } finally {
-        //     setLoading(false);
-        // }
-
-        // try {
-        //     const phoneNumber = data.phoneNumber.replace(/\s/g, ''); // Format phone number
-        //     console.log('Formatted Phone Number:', phoneNumber); // Debug the formatted phone number
-        //     const res = await axios.post('/api/v1/user/register', { body: { phoneNumber } });
-        //     if (res.data.success) {
-        //         setSubmittedPhone(phoneNumber);
-        //         const recaptchaVerifier = setupRecaptcha('recaptcha-container');
-        //         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
-        //         window.confirmationResult = confirmationResult;
-        //         setStep('verifyOtp');
-        //     }
-        // } catch (error: any) {
-        //     const errorMessage = error.response?.data?.errors
-        //         ? error.response.data.errors.map((err: any) => err.message).join(', ')
-        //         : error.response?.data?.message || 'Registration failed';
-        //     console.error('Registration error:', error.response?.data || error);
-        //     setError(errorMessage);
-        // } finally {
-        //     setLoading(false);
-        // }
-    }
-
     // Verify OTP Form
     const {
         register: registerOtp,
@@ -175,35 +96,6 @@ export default function LogInRegister() {
             otp: '',
         },
     })
-
-    const onSubmitOtp = async (data: VerifyOtpFormData) => {
-        setLoading(true)
-        setError(null)
-        setStep('setPin')
-        // try {
-        //     const result = await window.confirmationResult.confirm(data.otp)
-        //     const idToken = await result.user.getIdToken()
-        //     const decodedToken = JSON.parse(atob(idToken.split('.')[1]));
-        //     setUserId(decodedToken.uid);
-        //     const response = await axios.post(
-        //         '/api/otp/verify-phone',
-        //         { idToken },
-        //         {
-        //             headers: {
-        //                 'x-user-id': decodedToken.uid, // এটাকে backend middleware ব্যবহার করতে পারবে
-        //             },
-        //         }
-        //     );
-        //     if (response.data.success) {
-        //         setStep('setPin')
-        //     }
-        // } catch (err: any) {
-        //     setError(err.response?.data?.message || 'OTP verification failed')
-        //     console.error('OTP error:', err)
-        // } finally {
-        //     setLoading(false)
-        // }
-    }
 
     // Set PIN Form
     const {
@@ -218,44 +110,14 @@ export default function LogInRegister() {
     })
 
     const onSubmitPin = async (data: SetPinFormData) => {
-
-        // console.log('Set PIN Data:', { phone: submittedPhone, pin: data.pin })
-        // alert(`Account created with phone: ${submittedPhone}, PIN: ${data.pin}`)
         setLoading(true)
         setError(null)
         setStep('login')
-        // try {
-        //     // if (!userId) throw new Error('User ID not found');
-        //     const response = await axios.post('/app/api/auth/set-password', {
-        //         // phone: submittedPhone,
-        //         // pin: data.pin
-        //         newPassword: data.pin
-        //     }, {
-        //         headers: {
-        //             'x-user-id': userId,
-        //         }
-        //     })
-        //     if (response.data.success) {
-        //         alert(`Account created successfully with phone: ${submittedPhone}`)
-        //         setStep('login')
-        //         // ডায়ালগ ক্লোজ এবং ড্যাশবোর্ডে রিডিরেক্ট (যেমন: window.location.href = '/dashboard')
-        //     }
-        // } catch (err: any) {
-        //     setError(err.response?.data?.message || 'PIN setting failed')
-        //     console.error('Set PIN error:', err)
-        // } finally {
-        //     setLoading(false)
-        // }
     }
 
     return (
         <DialogContent>
-            <DialogTitle>
-                {/* {step === 'login' && 'User Login'}
-                {step === 'createAccount' && 'Create Account'}
-                {step === 'verifyOtp' && 'Verify OTP'}
-                {step === 'setPin' && 'Create Account'} */}
-            </DialogTitle>
+            <DialogTitle></DialogTitle>
             <Card className="border-none shadow-none">
                 <CardHeader>
                     <CardTitle className="text-center">
@@ -270,7 +132,8 @@ export default function LogInRegister() {
                 <CardContent>
 
                     {/* LogIn */}
-                    <LogIn step={step}
+                    <LogIn 
+                        step={step}
                         setStep={setStep}
                         registerLogin={registerLogin}
                         handleSubmitLogin={handleSubmitLogin}
@@ -284,21 +147,22 @@ export default function LogInRegister() {
                     <CreateAccount
                         step={step}
                         handleSubmitCreate={handleSubmitCreate}
-                        onSubmitCreate={onSubmitCreate}
                         registerCreate={registerCreate}
                         createErrors={createErrors}
-                        loading={loading}
+                        setStep={setStep}
+                        setSubmittedPhone={setSubmittedPhone}
                     />
 
                     {/* Verify OTP */}
                     <VerifyOTP
                         step={step}
+                        setStep={setStep}
+                        submittedPhone={submittedPhone}
                         handleSubmitOtp={handleSubmitOtp}
-                        onSubmitOtp={onSubmitOtp}
                         registerOtp={registerOtp}
                         otpErrors={otpErrors}
-                        loading={loading}
                     />
+
                     {/* Set pin */}
                     <SetPin
                         step={step}
@@ -318,7 +182,6 @@ export default function LogInRegister() {
                 </CardContent>
                 <DialogFooter>
                     <DialogClose asChild>
-                        {/* <Button variant="outline">Cancel</Button> */}
                     </DialogClose>
                 </DialogFooter>
             </Card>
