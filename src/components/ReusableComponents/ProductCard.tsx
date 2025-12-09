@@ -83,7 +83,9 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                     <div className="flex gap-1.5 flex-wrap">
                         {product?.brand && (
                             <Badge variant="secondary" className="text-xs py-0">
-                                {product.brand}
+                                {typeof product.brand === 'object' && product.brand !== null
+                                    ? product.brand.name
+                                    : product.brand}
                             </Badge>
                         )}
                         {product.flag?.name && (

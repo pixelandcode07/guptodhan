@@ -2,14 +2,21 @@
 
 import Link from 'next/link';
 import { ChevronRight, Home } from 'lucide-react';
-import { Product } from './types';
-import { getEntityId, getCategoryName } from './utils';
+import { Product, ProductData } from './types';
+import { getCategoryName, getCategorySlug } from './utils';
 
 interface ProductBreadcrumbProps {
   product: Product;
+  relatedData?: ProductData['relatedData'];
 }
 
-export default function ProductBreadcrumb({ product }: ProductBreadcrumbProps) {
+export default function ProductBreadcrumb({ product, relatedData }: ProductBreadcrumbProps) {
+  const categorySlug = getCategorySlug(product, relatedData?.categories);
+  const categoryName = getCategoryName(product);
+  
+  // Use slug if available, otherwise don't make it a link
+  const categoryHref = categorySlug ? `/category/${categorySlug}` : null;
+
   return (
     <div className="bg-white shadow-sm sticky top-0 z-20 border-b border-gray-100">
       <div className="container mx-auto px-4 py-3">
@@ -18,9 +25,13 @@ export default function ProductBreadcrumb({ product }: ProductBreadcrumbProps) {
             <Home size={14} /> Home
           </Link>
           <ChevronRight size={14} className="text-gray-300" />
-          <Link href={`/category/${getEntityId(product.category)}`} className="hover:text-[#0099cc] transition-colors">
-            {getCategoryName(product)}
-          </Link>
+          {categoryHref ? (
+            <Link href={categoryHref} className="hover:text-[#0099cc] transition-colors">
+              {categoryName}
+            </Link>
+          ) : (
+            <span>{categoryName}</span>
+          )}
           <ChevronRight size={14} className="text-gray-300" />
           <span className="text-[#0099cc] font-medium truncate max-w-[200px]">
             {product.productTitle}
