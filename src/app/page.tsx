@@ -4,7 +4,7 @@ import Feature from './components/Feature/Feature';
 import FlashSell from './components/FlashSell/FlashSell';
 import { BestSell } from './components/BestSell/BestSell';
 import { JustForYou } from './components/JustForYou/JustForYou';
-import { fetchLandingPageProducts } from '@/lib/MainHomePage/fetchLandingPageProducts';
+// import { fetchLandingPageProducts } from '@/lib/MainHomePage/fetchLandingPageProducts';
 import { fetchEcommerceBanners } from '@/lib/MainHomePage';
 import { fetchFeaturedCategories } from '@/lib/MainHomePage/fetchFeaturedCategoryData';
 import { Suspense } from 'react';
@@ -65,7 +65,6 @@ export default async function MainHomePage() {
         <StoryFeed stories={storyData} />
       </Suspense>
 
-      {/* Flash Sell */}
       {/* Flash Sell Section - Only show if products exist */}
       {runningOffers && runningOffers.length > 0 && (
         <Suspense fallback={<SectionSkeleton title="Flash Sale" count={6} />}>
