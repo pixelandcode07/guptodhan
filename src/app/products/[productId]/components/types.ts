@@ -49,8 +49,15 @@ export interface Product {
   createdAt: string;
   productOptions?: Array<{
     productImage?: string;
-    color?: string;
-    size?: string;
+    unit?: string[];
+    simType?: string[];
+    condition?: string[];
+    warranty?: string;
+    stock?: number;
+    price?: number;
+    discountPrice?: number;
+    color?: string[]; // Array of color IDs
+    size?: string[]; // Array of size IDs
   }>;
   reviews?: Review[];
   qna?: QA[];
