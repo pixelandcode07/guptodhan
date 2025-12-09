@@ -8,7 +8,7 @@ import { StoreModel } from "../vendor-store/vendorStore.model";
 
 const createVendorProductInDB = async (payload: Partial<IVendorProduct>) => {
   const result = await VendorProductModel.create(payload);
-  
+
   // Populate related fields to return names instead of IDs
   const populatedResult = await VendorProductModel.findById(result._id)
     .populate("brand", "name")
@@ -19,7 +19,7 @@ const createVendorProductInDB = async (payload: Partial<IVendorProduct>) => {
     .populate("weightUnit", "name")
     .populate("vendorStoreId", "storeName")
     .lean();
-  
+
   return populatedResult;
 };
 
@@ -609,14 +609,15 @@ const getVendorProductsByVendorIdFromDB = async (vendorId: string) => {
 
 // SERVICE for the vendor store page with products and filters
 const getVendorStoreAndProductsFromDB = async (
-  vendorId: string,
+  id: string, // Change by Moinuddin
   query: any
 ) => {
   // -----------------------------
   // 1. Fetch Vendor Store
   // -----------------------------
   const store = await StoreModel.findOne({
-    vendorId: new mongoose.Types.ObjectId(vendorId),
+    // vendorId: new mongoose.Types.ObjectId(vendorId),
+    _id: id, // Change by Moinuddin
   });
 
   if (!store) {

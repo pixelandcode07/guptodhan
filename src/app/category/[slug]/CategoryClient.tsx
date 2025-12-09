@@ -30,7 +30,7 @@ interface Product {
     stock: number;
     sellCount: number;
     rewardPoints: number;
-    brand?: string | null;
+    brand?: { name: string } | null;
     subCategory?: { name: string };
     childCategory?: { name: string };
     productOptions?: Array<{
@@ -56,7 +56,8 @@ function extractFilters(products: Product[]) {
     let maxPrice = 0;
 
     products.forEach((p) => {
-        if (p.brand) brands.add(p.brand);
+        // if (p.brand) brands.add(p.brand);
+        if (p.brand?.name) brands.add(p.brand.name);
         if (p.subCategory?.name) subCategories.add(p.subCategory.name);
         if (p.childCategory?.name) childCategories.add(p.childCategory.name);
 
@@ -255,10 +256,14 @@ function FilterSidebar({ filters }: { filters: any }) {
                 <div>
                     <h3 className="font-semibold text-lg mb-4">Brand</h3>
                     <div className="space-y-3">
-                        {filters.brands.map((b: string) => (
-                            <Label key={b} className="flex items-center gap-3 cursor-pointer">
-                                <Checkbox checked={current.brand === b} onCheckedChange={() => updateFilter('brand', b)} disabled={isPending} />
-                                <span>{b}</span>
+                        {filters.brands.map((brandName: string) => (
+                            <Label key={brandName} className="flex items-center gap-3 cursor-pointer">
+                                <Checkbox
+                                    checked={current.brand === brandName}
+                                    onCheckedChange={() => updateFilter('brand', brandName)}
+                                    disabled={isPending}
+                                />
+                                <span>{brandName}</span>
                             </Label>
                         ))}
                     </div>
@@ -281,7 +286,6 @@ function FilterSidebar({ filters }: { filters: any }) {
             )}
 
             {/* Child Category & Size – same pattern */}
-            {/* Child Category */}
             {filters.childCategories.length > 0 && (
                 <div>
                     <h3 className="font-semibold text-lg mb-4">Child Category</h3>

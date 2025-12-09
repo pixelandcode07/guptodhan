@@ -30,7 +30,7 @@ interface Product {
     stock: number;
     sellCount: number;
     rewardPoints: number;
-    brand?: string | null;
+    brand?: { name: string } | null;
     productOptions?: Array<{
         size?: Array<{ name: string }>;
         price: number;
@@ -51,7 +51,7 @@ function extractFilters(products: Product[]) {
     let maxPrice = 0;
 
     products.forEach((p) => {
-        if (p.brand) brands.add(p.brand);
+        if (p.brand?.name) brands.add(p.brand.name);
         p.productOptions?.forEach((opt) => {
             opt.size?.forEach((s) => s.name && sizes.add(s.name));
             const price = opt.discountPrice > 0 ? opt.discountPrice : opt.price;
@@ -132,7 +132,7 @@ function ProductCard({ product }: { product: Product }) {
 
 function FilterSidebar({ filters }: { filters: any }) {
     const router = useRouter();
-    const searchParams = useSearchParams();
+    const searchParams = useSearchParams() as URLSearchParams;
     const pathname = usePathname();
     const [isPending, startTransition] = useTransition();
 
@@ -175,10 +175,14 @@ function FilterSidebar({ filters }: { filters: any }) {
                 <div>
                     <h3 className="font-semibold text-lg mb-4">Brand</h3>
                     <div className="space-y-3">
-                        {filters.brands.map((b: string) => (
-                            <Label key={b} className="flex items-center gap-3 cursor-pointer">
-                                <Checkbox checked={current.brand === b} onCheckedChange={() => updateFilter('brand', b)} />
-                                <span>{b}</span>
+                        {filters.brands.map((brandName: string) => (
+                            <Label key={brandName} className="flex items-center gap-3 cursor-pointer">
+                                <Checkbox
+                                    checked={current.brand === brandName}
+                                    onCheckedChange={() => updateFilter('brand', brandName)}
+                                    disabled={isPending}
+                                />
+                                <span>{brandName}</span>
                             </Label>
                         ))}
                     </div>
