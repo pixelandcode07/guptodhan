@@ -314,6 +314,22 @@ const deleteStore = async (_req: NextRequest, { params }: { params: { id: string
   });
 };
 
+// vendor dashboard data
+const getVendorDashboard = async(_req: NextRequest, { params }: { params: { id: string } }) =>{
+  await dbConnect();
+
+  const {id} = await params;
+  const result = await StoreServices.vendorDashboard(id); 
+  
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Vendor dashboard data fetched successfully",
+    data: result,
+  });
+}
+
 export const VendorStoreController = {
   createStore,
   getAllStores,
@@ -321,4 +337,5 @@ export const VendorStoreController = {
   getStoreByVendorId,
   updateStore,
   deleteStore,
+  getVendorDashboard
 };
