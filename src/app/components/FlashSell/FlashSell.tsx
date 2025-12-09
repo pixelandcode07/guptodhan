@@ -2,14 +2,14 @@ import PageHeader from '@/components/ReusableComponents/PageHeader';
 import ProductGrid from '@/components/ReusableComponents/ProductGrid';
 import Link from 'next/link';
 import Image from 'next/image';
-import { EcommerceBannerType } from '@/types/ecommerce-banner-type';
+import { fetchFlashSaleData } from '@/lib/MainHomePage/fetchFlashSaleData';
+import { fetchEcommerceBanners } from '@/lib/MainHomePage';
 
-interface Props {
-  products: any[];
-  middleHomepage?: EcommerceBannerType[];
-}
 
-export default function FlashSell({ products, middleHomepage }: Props) {
+export default async function FlashSell() {
+  const products = await fetchFlashSaleData();
+  const ecommerceBanners = await fetchEcommerceBanners();
+  const { middleHomepage } = ecommerceBanners;
   return (
     <section className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 bg-gradient-to-b from-red-50 to-white py-10">
       <PageHeader

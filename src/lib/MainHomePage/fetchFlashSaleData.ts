@@ -20,3 +20,5 @@ export async function fetchFlashSaleData(): Promise<ProductCardType[]> {
         return [];
     }
 }
+
+
