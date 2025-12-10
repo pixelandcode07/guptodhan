@@ -24,14 +24,11 @@ export default function PathnameDetector({ children }: { children: ReactNode }) 
     // Check if it's a vendor route, but exclude public store detail pages (/store/[id])
     const isVendorRoute = vendorRoutes.some(route => {
         if (route === '/store') {
-            // Only treat /store (exact) or /store/ (with sub-routes that aren't IDs) as vendor routes
-            // Public store pages are /store/[id] where id is a MongoDB ObjectId (24 hex chars)
             if (pathname === '/store') return true;
             if (pathname.startsWith('/store/')) {
                 const afterStore = pathname.substring('/store/'.length);
-                // If it looks like an ObjectId (24 hex characters), it's a public store page
                 const isObjectId = /^[0-9a-fA-F]{24}$/.test(afterStore.split('/')[0]);
-                return !isObjectId; // If it's an ObjectId, it's NOT a vendor route
+                return !isObjectId;
             }
             return false;
         }

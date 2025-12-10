@@ -68,7 +68,10 @@ const deleteStoreFromDB = async (id: string) => {
 
 // vendor dashboard api
 const vendorDashboard = async (id: string) => {
-  const store = await StoreModel.findById(id);
+  const store = await StoreModel.findOne({ vendorId: new Types.ObjectId(id) }); // Change by Moinuddin
+  if (!store) { // Change by Moinuddin
+    return "Store not found for this vendor.";
+  }
 
   const today = new Date(new Date().setHours(0, 0, 0, 0));
   const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
