@@ -61,6 +61,7 @@ const getVendorProductByIdFromDB = async (id: string) => {
     .populate("weightUnit", "name")
     .populate("vendorStoreId", "storeName storeLogo")
     .lean(); // Convert to plain JavaScript object
+    
 
   if (!productDoc) return null;
 
