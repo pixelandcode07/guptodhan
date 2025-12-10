@@ -5,8 +5,16 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Home, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
+import { useNotFound } from "@/contexts/NotFoundContext";
+import { useEffect } from "react";
 
 export default function VendorNotFound() {
+  const { setIsNotFound } = useNotFound();
+
+  useEffect(() => {
+    setIsNotFound(true);
+    return () => setIsNotFound(false);
+  }, [setIsNotFound]);
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-6">
       <motion.div
@@ -37,7 +45,7 @@ export default function VendorNotFound() {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button asChild size="lg" className="bg-indigo-600 hover:bg-indigo-700">
-            <Link href="/vendor/dashboard" className="flex items-center gap-2">
+            <Link href="/dashboard" className="flex items-center gap-2">
               <ArrowLeft className="h-5 w-5" />
               Back to Dashboard
             </Link>
