@@ -25,8 +25,8 @@ export default function StoreHeader({ store }: { store: Store }) {
             {/* Hero Banner - Mobile & Desktop Responsive */}
             <div className="relative w-full h-[300px] sm:h-[400px] lg:h-96 overflow-hidden rounded-2xl mb-8">
                 <Image
-                    src={store.storeBanner}
-                    alt={store.storeName}
+                    src={store?.storeBanner}
+                    alt={store?.storeName}
                     fill
                     className="object-cover brightness-50"
                     priority
