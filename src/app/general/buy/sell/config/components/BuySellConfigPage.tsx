@@ -7,7 +7,7 @@ import { Controller, useForm } from 'react-hook-form';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { Save, X } from 'lucide-react';
+import { Save } from 'lucide-react'; // X icon removed if not used
 import UploadImageBtn from '@/components/ReusableComponents/UploadImageBtn';
 
 type FormValues = {
@@ -26,8 +26,11 @@ export default function BuySellConfigPage() {
 
     const [latestBannerId, setLatestBannerId] = useState<string | null>(null);
     const [existingImage, setExistingImage] = useState<string | null>(null);
+    
+    // 🔥 ১. নতুন স্টেট: ছবি রিমুভ করা হয়েছে কিনা ট্র্যাক করার জন্য
+    const [isImageRemoved, setIsImageRemoved] = useState(false);
 
-    // Fetch latest banner and prefill form
+    // Fetch latest banner
     useEffect(() => {
         async function fetchLatestBanner() {
             if (!token) return;
@@ -42,6 +45,8 @@ export default function BuySellConfigPage() {
                     setLatestBannerId(latest._id);
                     setExistingImage(latest.bannerImage);
                     setValue('description', latest.bannerDescription);
+                    // ডাটা লোড হলে রিমুভ ফ্ল্যাগ ফলস থাকবে
+                    setIsImageRemoved(false); 
                 }
             } catch (error) {
                 console.error('Error fetching banners:', error);
@@ -55,14 +60,26 @@ export default function BuySellConfigPage() {
     const handleRemoveImage = () => {
         setExistingImage(null);
         setValue('image', null);
+        // 🔥 ২. যখন রিমুভ করবে, তখন ফ্ল্যাগ true হবে
+        setIsImageRemoved(true); 
         toast.success('Image removed from form!');
     };
 
-    // Submit handler: Create or Update
+    // Submit handler
     const onSubmit = async (data: FormValues) => {
         try {
             const formData = new FormData();
-            if (data.image) formData.append('bannerImage', data.image);
+            
+            if (data.image) {
+                formData.append('bannerImage', data.image);
+                // যদি নতুন ছবি দেয়, তাহলে isImageRemoved পাঠানোর দরকার নেই (কারণ নতুনটাই রিপ্লেস করবে)
+            } 
+            
+            // 🔥 ৩. যদি ছবি না থাকে এবং রিমুভ করা হয়ে থাকে, তবে ফ্ল্যাগ পাঠাব
+            if (!data.image && isImageRemoved) {
+                formData.append('isImageRemoved', 'true');
+            }
+
             formData.append('bannerDescription', data.description);
 
             let res;
@@ -97,7 +114,9 @@ export default function BuySellConfigPage() {
             // Update form with latest saved data
             setExistingImage(res.data.data.bannerImage);
             setValue('description', res.data.data.bannerDescription);
-            setValue('image', null); // clear file input
+            setValue('image', null);
+            setIsImageRemoved(false); // ফ্ল্যাগ রিসেট
+
         } catch (error) {
             console.error('Error saving banner:', error);
             toast.error('Failed to save banner!');
@@ -106,7 +125,6 @@ export default function BuySellConfigPage() {
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Image Upload */}
             <h1 className="text-gray-900 font-semibold">Page Banner:</h1>
             <div className="w-full">
                 <Controller
@@ -115,14 +133,17 @@ export default function BuySellConfigPage() {
                     render={({ field }) => (
                         <UploadImageBtn
                             value={field.value || existingImage}
-                            onChange={field.onChange}
+                            onChange={(file) => {
+                                field.onChange(file);
+                                // নতুন ছবি আপলোড করলে রিমুভ ফ্ল্যাগ ফলস করে দিতে হবে
+                                setIsImageRemoved(false); 
+                            }}
                             onRemove={existingImage ? handleRemoveImage : undefined}
                         />
                     )}
                 />
             </div>
 
-            {/* Description */}
             <h1 className="text-gray-900 font-semibold">Page Description:</h1>
             <Controller
                 name="description"
