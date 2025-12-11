@@ -39,6 +39,7 @@ const supportTicketSchema = new Schema<ISupportTicket>(
       default: 'Pending',
     },
     conversation: [ConversationSchema], // ✅ Added conversation array
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: { createdAt: true, updatedAt: true } } // Use both timestamps
 );

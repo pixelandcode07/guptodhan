@@ -6,16 +6,16 @@ import { useSession } from 'next-auth/react'
 import api from '@/lib/axios'
 
 type DashboardOrder = {
-  id: string
-  seller: string
-  sellerVerified: boolean
-  status: 'pending' | 'processing' | 'delivered' | 'cancelled'
-  productName: string
-  productImage: string
-  size: string
-  color: string
-  price: string
-  quantity: number
+    id: string
+    seller: string
+    sellerVerified: boolean
+    status: 'pending' | 'processing' | 'delivered' | 'cancelled'
+    productName: string
+    productImage: string
+    size: string
+    color: string
+    price: string
+    quantity: number
 }
 
 export default function UserProfilePage() {
@@ -36,7 +36,7 @@ export default function UserProfilePage() {
                 return
             }
 
-            const res = await api.get(`/product-order?userId=${userId}` , {
+            const res = await api.get(`/product-order?userId=${userId}`, {
                 headers: {
                     ...(token ? { Authorization: `Bearer ${token}` } : {}),
                     ...(userRole ? { 'x-user-role': userRole } : {}),
@@ -100,7 +100,7 @@ export default function UserProfilePage() {
     return (
         <div className="">
             <h1 className="text-xl font-semibold px-4 mt-1">Dashboard</h1>
-            <OrderSummaryCards 
+            <OrderSummaryCards
                 pending={counts.pending}
                 processing={counts.processing}
                 delivered={counts.delivered}

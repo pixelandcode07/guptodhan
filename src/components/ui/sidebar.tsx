@@ -362,8 +362,40 @@ function SidebarSeparator({
 }
 
 function SidebarContent({ className, ...props }: React.ComponentProps<'div'>) {
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const SCROLL_KEY = 'sidebar-scroll-position';
+
+  // Restore scroll position on mount
+  React.useEffect(() => {
+    if (contentRef.current) {
+      const savedScroll = sessionStorage.getItem(SCROLL_KEY);
+      if (savedScroll) {
+        // Use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => {
+          if (contentRef.current) {
+            contentRef.current.scrollTop = parseInt(savedScroll, 10);
+          }
+        });
+      }
+    }
+  }, []);
+
+  // Save scroll position on scroll
+  React.useEffect(() => {
+    const content = contentRef.current;
+    if (!content) return;
+
+    const handleScroll = () => {
+      sessionStorage.setItem(SCROLL_KEY, content.scrollTop.toString());
+    };
+
+    content.addEventListener('scroll', handleScroll, { passive: true });
+    return () => content.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <div
+      ref={contentRef}
       data-slot="sidebar-content"
       data-sidebar="content"
       className={cn(

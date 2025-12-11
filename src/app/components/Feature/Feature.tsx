@@ -1,28 +1,23 @@
-'use client';
-
-import React from 'react';
+import { fetchFeaturedCategories } from '@/lib/MainHomePage/fetchFeaturedCategoryData';
 import PageHeader from '../../../components/ReusableComponents/PageHeader';
 import { ShopByCategory } from './ShopByCategory';
-import { FeatureProps } from '@/types/FeaturedCategoryType';
+// import { FeatureProps } from '@/types/FeaturedCategoryType';
 
 
-
-export default function Feature({ featuredData }: FeatureProps) {
+// { featuredData }: FeatureProps
+export default async function Feature() {
+  const featuredData = await fetchFeaturedCategories();
   return (
-    // <div className="bg-gray-100 mb-0 my-3 md:p-6 mt-2 md:max-w-[90vw] mx-auto">
     <div className="bg-gray-100 mb-0 my-3 max-w-[95vw] xl:max-w-[90vw] mx-auto px-4">
       <div className="hidden lg:flex justify-center">
         <PageHeader
           title="Featured Category"
-        // buttonLabel="Add Feature"
-        // onButtonClick={() => console.log("Add Feature clicked")}
         />
       </div>
       <div className=" lg:hidden">
         <PageHeader
           title="Featured Category"
           buttonLabel="View All"
-          // onButtonClick={() => router.push('/view/all/products')}
           buttonHref="/home/view/all/flash-sell/products"
         />
       </div>

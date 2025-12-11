@@ -6,18 +6,12 @@ export async function fetchFlashSaleData(): Promise<ProductCardType[]> {
     const baseUrl = process.env.NEXTAUTH_URL;
 
     try {
-        const res = await axios.get(`${baseUrl}/api/v1/product/landingPage`, {
+        const res = await axios.get(`${baseUrl}/api/v1/product/offerProduct`, {
             headers: { 'Cache-Control': 'no-store' },
         });
 
         if (res.data?.success && Array.isArray(res.data.data)) {
-            return res.data.data.map((item: ProductCardType) => ({
-                _id: item._id,
-                productTitle: item.productTitle,
-                thumbnailImage: item.thumbnailImage,
-                productPrice: item.productPrice,
-                discountPrice: item.discountPrice,
-            }));
+            return res.data.data;
         }
 
         return [];
@@ -26,3 +20,5 @@ export async function fetchFlashSaleData(): Promise<ProductCardType[]> {
         return [];
     }
 }
+
+

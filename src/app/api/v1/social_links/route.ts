@@ -7,3 +7,6 @@ import { checkRole } from '@/lib/middlewares/checkRole';
  * @method POST
  */
 export const POST = catchAsync(checkRole(['admin'])(SocialLinksController.createOrUpdateSocialLinks));
+
+
+export const GET = catchAsync(SocialLinksController.getPublicSocialLinks);

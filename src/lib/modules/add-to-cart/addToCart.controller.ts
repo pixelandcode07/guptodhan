@@ -11,9 +11,10 @@ import { ICart } from './addToCart.interface';
 const addToCart = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
+
   const validatedData = createCartValidationSchema.parse(body);
 
-  const payload: Partial<ICart> = {
+  const payload = {
     ...validatedData,
     userID: new Types.ObjectId(validatedData.userID),
     productID: new Types.ObjectId(validatedData.productID),

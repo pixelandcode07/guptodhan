@@ -1,23 +1,3 @@
-'use client';
-
-import { ChevronDown } from 'lucide-react';
-import { ElementType } from 'react';
-import Link from 'next/link';
-import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@radix-ui/react-collapsible';
-import { usePathname } from 'next/navigation';
-
 import {
   Image,
   MessageSquare,
@@ -27,6 +7,7 @@ import {
   Info,
   HelpCircle,
 } from 'lucide-react';
+import { CollapsibleMenuGroup } from '@/components/ReusableComponents/CollapsibleMenuGroup';
 
 // Sub-items
 const sliders = [
@@ -71,73 +52,48 @@ const faq = [
   { title: "FAQ's", url: '/general/view/all/faqs' },
 ];
 
-// Main menu items with icons and sub-items
-const contentItems: {
-  title: string;
-  icon: ElementType;
-  subItems: { title: string; url: string }[];
-}[] = [
-  { title: 'Slider & Banners', icon: Image, subItems: sliders },
-  { title: 'Testimonials', icon: MessageSquare, subItems: testimonials },
-  { title: 'Manage Blogs', icon: FileText, subItems: blog },
-  { title: 'Terms & Policies', icon: File, subItems: condition },
-  { title: 'Custom Pages', icon: FilePlus, subItems: customPage },
-  { title: 'About Us', icon: Info, subItems: aboutUs },
-  { title: "FAQ's", icon: HelpCircle, subItems: faq },
-];
-
 export function ContentManagement() {
-  const pathname = usePathname();
-  const isActive = (href: string) => pathname === href;
 
   return (
-    <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>
-        <p className="text-[#f1bf43] text-[12px] uppercase">
-          Content Management
-        </p>
-      </SidebarGroupLabel>
-
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {contentItems.map(item => (
-            <Collapsible key={item.title} className="group/collapsible">
-              <CollapsibleTrigger asChild>
-                <SidebarMenuItem>
-                  <SidebarMenuButton className="text-white bg-[#132843] pl-5">
-                    <item.icon className="w-5 h-5 mr-2" />
-                    <span>{item.title}</span>
-                    <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </CollapsibleTrigger>
-
-              <CollapsibleContent>
-                <div className="pl-6">
-                  {item.subItems.map(sub => {
-                    const active = isActive(sub.url);
-                    return (
-                      <SidebarMenuItem key={sub.url}>
-                        <SidebarMenuButton
-                          asChild
-                          className={`flex items-center gap-2 ${
-                            active
-                              ? 'bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md pl-5'
-                              : 'text-white bg-[#132843] pl-5'
-                          }`}>
-                          <Link href={sub.url}>
-                            <span>{sub.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+    <CollapsibleMenuGroup
+      label='Content Management'
+      sections={[
+        {
+          title: 'Slider & Banners',
+          icon: Image,
+          items: sliders,
+        },
+        {
+          title: 'Testimonials',
+          icon: MessageSquare,
+          items: testimonials,
+        },
+        {
+          title: 'Manage Blogs',
+          icon: FileText,
+          items: blog,
+        },
+        {
+          title: 'Terms & Policies',
+          icon: File,
+          items: condition,
+        },
+        {
+          title: 'Custom Pages',
+          icon: FilePlus,
+          items: customPage,
+        },
+        {
+          title: 'About Us',
+          icon: Info,
+          items: aboutUs,
+        },
+        {
+          title: "FAQ's",
+          icon: HelpCircle,
+          items: faq,
+        },
+      ]}
+    />
   );
 }

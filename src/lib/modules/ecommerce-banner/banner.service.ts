@@ -4,7 +4,7 @@ import { deleteFromCloudinary } from '@/lib/utils/cloudinary';
 
 const createBannerInDB = async (payload: Partial<IEcommerceBanner>) => EcommerceBanner.create(payload);
 
-const getAllBannersFromDB = async () => EcommerceBanner.find({}).sort({ createdAt: -1 });
+const getAllBannersFromDB = async () => EcommerceBanner.find({}).sort({ orderCount: 1 });
 
 const getPublicBannersByPositionFromDB = async (position: string) => EcommerceBanner.find({ bannerPosition: position, status: 'active' });
 
@@ -25,10 +25,29 @@ const deleteBannerInDB = async (id: string) => {
   return await EcommerceBanner.findByIdAndDelete(id);
 };
 
+
+// rearrange banner  
+export const reorderBannerService = async (orderedIds: string[]) => {
+  if (!orderedIds || orderedIds.length === 0) {
+    throw new Error('banner array is empty');
+  }
+
+  // Loop and update orderCount = index
+  const updatePromises = orderedIds.map((id, index) =>
+    EcommerceBanner.findByIdAndUpdate(id, { orderCount: index }, { new: true })
+  );
+
+  await Promise.all(updatePromises);
+
+  return { message: 'banner reordered successfully!' };
+};
+
 export const EcommerceBannerServices = {
   createBannerInDB,
   getAllBannersFromDB,
   getPublicBannersByPositionFromDB,
   updateBannerInDB,
   deleteBannerInDB,
+
+  reorderBannerService
 }; 

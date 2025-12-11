@@ -52,6 +52,26 @@ export default async function ProductPage({ params }: ProductPageProps) {
       notFound();
     }
 
+    // Fetch related products from the same category (excluding current product)
+    let relatedProducts: any[] = [];
+    if (product.category) {
+      const categoryId = typeof product.category === 'object' && product.category !== null
+        ? product.category._id?.toString() || product.category.id
+        : product.category.toString();
+      
+      if (categoryId) {
+        const allCategoryProducts = await VendorProductServices.getVendorProductsByCategoryFromDB(
+          categoryId,
+          {}
+        );
+        // Filter out current product and limit to 5
+        relatedProducts = allCategoryProducts
+          .filter((p: any) => p._id?.toString() !== productId)
+          .slice(0, 5)
+          .map((p: any) => JSON.parse(JSON.stringify(p)));
+      }
+    }
+
     // Transform data to plain objects
     const productData = {
       product: JSON.parse(JSON.stringify(product)),
@@ -66,7 +86,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
           colors: JSON.parse(JSON.stringify(colorsData || [])),
           sizes: JSON.parse(JSON.stringify(sizesData || [])),
         },
-      }
+      },
+      relatedProducts: relatedProducts
     };
   const categoriesInfo: MainCategory[] = [];
 

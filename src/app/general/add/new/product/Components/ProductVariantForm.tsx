@@ -165,7 +165,7 @@ export default function ProductVariantForm({ variants, setVariants, variantData 
                                     </Select>
                                 </td>
                                 
-                                <td className="p-2"><Input type="number" value={variant.stock} onChange={(e) => handleVariantChange(index, 'stock', Number(e.target.value))} required className="w-24 min-w-[100px]" /></td>
+                                <td className="p-2"><Input type="number" min="0" value={variant.stock} onChange={(e) => handleVariantChange(index, 'stock', Number(e.target.value))} required className="w-24 min-w-[100px]" /></td>
                                 <td className="p-2"><Input type="number" value={variant.price} onChange={(e) => handleVariantChange(index, 'price', Number(e.target.value))} required className="w-24 min-w-[100px]" /></td>
                                 <td className="p-2"><Input type="number" value={variant.discountPrice || 0} onChange={(e) => handleVariantChange(index, 'discountPrice', Number(e.target.value))} className="w-24 min-w-[100px]" /></td>
                                 <td className="p-2 text-center">

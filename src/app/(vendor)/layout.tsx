@@ -20,7 +20,7 @@ export default async function VendorLayout({
           {children}
         </div>
       </main>
-      <Toaster />
+      {/* <Toaster /> */}
     </SidebarProvider>
   );
 }

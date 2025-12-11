@@ -7,6 +7,7 @@ import {
   House,
   ChevronDown,
   ChevronRight,
+  Store,
 } from "lucide-react";
 import { MainCategory } from "@/types/navigation-menu";
 import { useState, useEffect, useRef } from "react";
@@ -46,8 +47,8 @@ export function HeroNav({ categories }: HeroNavProps) {
   const getVisibleCount = () => {
     if (screenWidth < 768) return 0;
     if (screenWidth < 1024) return 7;
-    if (screenWidth < 1440) return 4;
-    return 7;
+    if (screenWidth < 1440) return 3;
+    return 5;
   };
   const visibleCount = getVisibleCount();
   const visibleCategories = categories.slice(0, visibleCount);
@@ -79,7 +80,7 @@ export function HeroNav({ categories }: HeroNavProps) {
 
       <motion.nav
         className={`
-          w-full bg-[#00045e] text-white z-50 shadow-lg
+          w-full bg-[#00045e] text-white shadow-lg z-40
           ${isFixed ? "fixed top-0 left-0 right-0" : "relative"}
         `}
         initial={{ y: -100 }}
@@ -264,6 +265,15 @@ export function HeroNav({ categories }: HeroNavProps) {
             <div className="hidden lg:flex items-center space-x-2 h-full">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Link
+                  href="/home/vendor-shops"
+                  className="flex items-center h-full px-6 py-3 bg-[#2befe5b8]  text-white hover:bg-[#0097E9] cursor-pointer transition-colors"
+                >
+                  <Store size={20} className="mr-2" />
+                  Vendor Shops
+                </Link>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Link
                   href="/home/buyandsell"
                   className="flex items-center h-full px-6 py-3 bg-[#0097E9] text-white hover:bg-red-500 cursor-pointer transition-colors"
                 >
@@ -273,7 +283,7 @@ export function HeroNav({ categories }: HeroNavProps) {
               </motion.div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Link
-                  href="/home/donate"
+                  href="/home/donation"
                   className="flex items-center h-full px-6 py-3 bg-green-700 text-white font-medium hover:bg-green-800 transition-colors"
                 >
                   <HandCoins size={20} className="mr-2" />

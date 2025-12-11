@@ -12,6 +12,7 @@ const bannerSchema = new Schema<IEcommerceBanner>({
   buttonText: { type: String },
   buttonLink: { type: String },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+  orderCount: { type: Number, default: 0 }
 }, { timestamps: true });
 
 export const EcommerceBanner = models.EcommerceBanner || model<IEcommerceBanner>('EcommerceBanner', bannerSchema); 

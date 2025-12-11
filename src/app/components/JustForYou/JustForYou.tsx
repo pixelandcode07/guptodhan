@@ -26,9 +26,9 @@ export function JustForYou({ initialProducts }: Props) {
     const loadMore = async () => {
       setLoading(true);
       try {
-        const baseUrl = process.env.NEXTAUTH_URL;
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL;
         const res = await axios.get<{ success: boolean; data: Product[] }>(
-          `${baseUrl}/api/v1/product/random?page=${page + 1}&limit=20`
+          `${baseUrl}/api/v1/product/offerProduct?page=${page + 1}&limit=20`
         );
 
         if (res.data.success && res.data.data.length > 0) {

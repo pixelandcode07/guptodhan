@@ -3,7 +3,7 @@ import { sendResponse } from '@/lib/utils/sendResponse';
 import { StatusCodes } from 'http-status-codes';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 import { createBannerSchema, updateBannerSchema } from './banner.validation';
-import { EcommerceBannerServices } from './banner.service';
+import { EcommerceBannerServices, reorderBannerService } from './banner.service';
 import dbConnect from '@/lib/db';
  
 const createBanner = async (req: NextRequest) => {
@@ -72,10 +72,39 @@ const deleteBanner = async (_req: NextRequest, { params }: { params: Promise<{ i
     return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Banner deleted!', data: null });
 };
 
+// Reorder banner (drag-and-drop)
+const reorderBanner = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  const { orderedIds } = body;
+
+  // Validate input
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.BAD_REQUEST,
+      message: 'Invalid request: "orderedIds" must be a non-empty array.',
+      data: null,
+    });
+  }
+
+  // Call the reorder service
+  const result = await reorderBannerService(orderedIds);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: result.message || 'banner reordered successfully!',
+    data: null,
+  });
+};
+
 export const EcommerceBannerController = {
   createBanner,
   getAllBanners,
   getPublicBannersByPosition,
   updateBanner,
   deleteBanner,
+
+  reorderBanner
 };

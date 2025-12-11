@@ -13,7 +13,7 @@ const MAX_FILE_SIZE = 1 * 1024 * 1024;
 const createOrUpdateSeoSettings = async (req: NextRequest) => {
     await dbConnect();
     const formData = await req.formData();
-    
+
     const payload: Record<string, any> = {};
     const ogImageFile = formData.get('ogImage') as File | null;
 
@@ -35,17 +35,17 @@ const createOrUpdateSeoSettings = async (req: NextRequest) => {
         const uploadResult = await uploadToCloudinary(buffer, 'seo-og-images');
         payload.ogImage = uploadResult.secure_url;
     }
-    
+
     const validatedData = createOrUpdateSeoSchema.parse(payload);
     const { pageIdentifier, ...seoData } = validatedData;
-    
+
     const result = await SeoSettingsServices.createOrUpdateSeoSettingsInDB(pageIdentifier, seoData);
-    
-    return sendResponse({ 
-        success: true, 
-        statusCode: StatusCodes.OK, 
-        message: 'SEO settings updated successfully!', 
-        data: result 
+
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'SEO settings updated successfully!',
+        data: result
     });
 };
 
@@ -78,9 +78,24 @@ const getSeoSettingsById = async (_req: NextRequest, { params }: { params: Promi
     return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'SEO settings retrieved successfully!', data: result });
 };
 
+
+// ✅ নতুন কন্ট্রোলার: টেবিলের জন্য সব ডাটা রিটার্ন করবে
+const getAllSeoSettings = async (req: NextRequest) => {
+    await dbConnect();
+    const result = await SeoSettingsServices.getAllSeoSettingsFromDB();
+    
+    return sendResponse({ 
+        success: true, 
+        statusCode: StatusCodes.OK, 
+        message: 'All SEO settings retrieved successfully!', 
+        data: result 
+    });
+};
+
 export const SeoSettingsController = {
     createOrUpdateSeoSettings,
     getPublicSeoSettings,
     updateSeoSettings,
     getSeoSettingsById,
+    getAllSeoSettings,
 };

@@ -21,9 +21,19 @@ export default function PathnameDetector({ children }: { children: ReactNode }) 
         '/store',
     ];
 
-    const isVendorRoute = vendorRoutes.some(route =>
-        pathname === route || pathname.startsWith(route + '/')
-    );
+    // Check if it's a vendor route, but exclude public store detail pages (/store/[id])
+    const isVendorRoute = vendorRoutes.some(route => {
+        if (route === '/store') {
+            if (pathname === '/store') return true;
+            if (pathname.startsWith('/store/')) {
+                const afterStore = pathname.substring('/store/'.length);
+                const isObjectId = /^[0-9a-fA-F]{24}$/.test(afterStore.split('/')[0]);
+                return !isObjectId;
+            }
+            return false;
+        }
+        return pathname === route || pathname.startsWith(route + '/');
+    });
 
     return (
         <VendorProvider isVendorRoute={isVendorRoute}>

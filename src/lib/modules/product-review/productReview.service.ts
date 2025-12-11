@@ -18,7 +18,9 @@ const getAllReviewsFromDB = async () => {
 const getReviewsByUserFromDB = async (userId: string) => {
   const result = await ReviewModel.find({
     userId: new Types.ObjectId(userId),
-  }).sort({ uploadedTime: -1 });
+  })
+  .populate('productId')
+  .sort({ uploadedTime: -1 });
   return result;
 };
 

@@ -1,24 +1,3 @@
-// import { NextRequest } from "next/server";
-// import { StatusCodes } from "http-status-codes";
-// import { sendResponse } from "@/lib/utils/sendResponse";
-// import { OtpServices } from "./otp.service";
-// import { verifyPhoneOtpValidationSchema } from "./otp.validation";
-
-// const verifyPhoneOtp = async (req: NextRequest) => {
-//   const body = await req.json();
-//   const validatedData = verifyPhoneOtpValidationSchema.parse(body);
-
-//   await OtpServices.verifyPhoneNumberWithFirebase(validatedData.idToken);
-
-//   return sendResponse({
-//     success: true,
-//     statusCode: StatusCodes.OK,
-//     message: "Your phone number has been successfully verified!",
-//     data: null,
-//   });
-// };
-
-// export const OtpController = { verifyPhoneOtp };
 
 import { Request, Response } from "express";
 import { OtpServices } from "./otp.service";
@@ -29,7 +8,8 @@ const sendOtp = async (req: NextRequest) => {
   try {
     await dbConnect();
      const body = await req.json();
-    const { phone } = body;
+    const { phone } = body; 
+
 
     console.log(phone);
     // const phone = "8801688399676"; // For testing purpose only. Remove this line in production.
@@ -57,20 +37,40 @@ const sendOtp = async (req: NextRequest) => {
   }
 };
 
-const verifyOtp = async (req: Request, res: Response) => {
+// Verify OTP (এটা আপডেট করা হয়েছে Next.js এর জন্য)
+const verifyOtp = async (req: NextRequest) => {
   try {
-    const { phone, otp } = req.body;
+    await dbConnect();
+    const body = await req.json();
+    const { phone, otp } = body;
 
-    if (!phone || !otp)
-      return res.status(400).json({ error: "Missing fields" });
+    if (!phone || !otp) {
+      return NextResponse.json(
+        { success: false, message: "Phone and OTP are required" },
+        { status: 400 }
+      );
+    }
 
-    const result = await OtpServices.verifyOtpService(phone, otp);
+    // otp কে Number এ কনভার্ট করা হচ্ছে কারণ DB তে Number হিসেবে আছে
+    const otpNumber = Number(otp); 
+    const result = await OtpServices.verifyOtpService(phone, otpNumber);
 
-    result.status
-      ? res.json({ success: true, message: "OTP verified" })
-      : res.status(400).json(result);
-  } catch (error) {
-    res.status(500).json({ error: "Server error" });
+    if (result.status) {
+      return NextResponse.json(
+        { success: true, message: "OTP verified successfully" },
+        { status: 200 }
+      );
+    } else {
+      return NextResponse.json(
+        { success: false, message: result.message },
+        { status: 400 }
+      );
+    }
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, message: "Server error", error: error?.message },
+      { status: 500 }
+    );
   }
 };
 

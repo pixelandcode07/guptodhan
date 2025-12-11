@@ -44,28 +44,28 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
         unit: Array.isArray(option.unit)
           ? option.unit
           : option.unit
-          ? [option.unit]
-          : [],
+            ? [option.unit]
+            : [],
         simType: Array.isArray(option.simType)
           ? option.simType
           : option.simType
-          ? [option.simType]
-          : [],
+            ? [option.simType]
+            : [],
         condition: Array.isArray(option.condition)
           ? option.condition
           : option.condition
-          ? [option.condition]
-          : [],
+            ? [option.condition]
+            : [],
         color: Array.isArray(option.color)
           ? option.color
           : option.color
-          ? [option.color]
-          : [],
+            ? [option.color]
+            : [],
         size: Array.isArray(option.size)
           ? option.size
           : option.size
-          ? [option.size]
-          : [],
+            ? [option.size]
+            : [],
       })),
     };
 
@@ -500,10 +500,39 @@ const getLandingPageProducts = async () => {
   });
 };
 
+// const searchVendorProducts = async (req: NextRequest) => {
+//   await dbConnect();
+//   const { searchParams } = new URL(req.url);
+//   const searchTerm = searchParams.get("q") || "";
+
+//   if (!searchTerm) {
+//     return sendResponse({
+//       success: false,
+//       statusCode: StatusCodes.BAD_REQUEST,
+//       message: "Search term is required!",
+//       data: null,
+//     });
+//   }
+
+//   const result = await VendorProductServices.searchVendorProductsFromDB(
+//     searchTerm
+//   );
+
+//   return sendResponse({
+//     success: true,
+//     statusCode: StatusCodes.OK,
+//     message: "Search results retrieved successfully!",
+//     data: result,
+//   });
+// };
+
+
 const searchVendorProducts = async (req: NextRequest) => {
   await dbConnect();
+
   const { searchParams } = new URL(req.url);
-  const searchTerm = searchParams.get("q") || "";
+  const searchTerm = searchParams.get("q")?.trim() || "";
+  const type = searchParams.get("type") || "results"; // "suggestion" or "results"
 
   if (!searchTerm) {
     return sendResponse({
@@ -514,17 +543,104 @@ const searchVendorProducts = async (req: NextRequest) => {
     });
   }
 
-  const result = await VendorProductServices.searchVendorProductsFromDB(
-    searchTerm
+  let data;
+  if (type === "suggestion") {
+    data = await VendorProductServices.getLiveSuggestionsFromDB(searchTerm);
+  } else {
+    data = await VendorProductServices.getSearchResultsFromDB(searchTerm);
+  }
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message:
+      type === "suggestion"
+        ? "Suggestions retrieved successfully!"
+        : "Search results retrieved successfully!",
+    data,
+  });
+};
+
+
+const getOfferProducts = async () => {
+  await dbConnect();
+  const result = await VendorProductServices.getOfferProductsFromDB();
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Offer products retrieved successfully!",
+    data: result,
+  });
+};
+
+const getBestSellingProducts = async () => {
+  await dbConnect();
+  const result = await VendorProductServices.getBestSellingProductsFromDB();
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Best selling products retrieved successfully!",
+    data: result,
+  });
+};
+
+const getForYouProducts = async () => {
+  await dbConnect();
+  const result = await VendorProductServices.getForYouProductsFromDB();
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "For You products retrieved successfully!",
+    data: result,
+  });
+};
+
+const getVendorProductsByVendorId = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ vendorId: string }> }
+) => {
+  await dbConnect();
+  const { vendorId } = await params;
+
+  const products = await VendorProductServices.getVendorProductsByVendorIdFromDB(
+    vendorId
   );
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: "Search results retrieved successfully!",
+    message: "Vendor products retrieved successfully!",
+    data: products,
+  });
+};
+
+// CONTROLLER
+const getVendorStoreAndProducts = async (
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) => {
+  await dbConnect();
+  const { id } = await params;
+
+  const query = Object.fromEntries(req.nextUrl.searchParams.entries());
+
+  const result = await VendorProductServices.getVendorStoreAndProductsFromDB(
+    id,
+    query
+  );
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Vendor store & products retrieved successfully!",
     data: result,
   });
 };
+
+
 
 export const VendorProductController = {
   createVendorProduct,
@@ -541,4 +657,11 @@ export const VendorProductController = {
   removeProductOption,
   getLandingPageProducts,
   searchVendorProducts,
+  getVendorProductsByVendorId,
+
+  getOfferProducts,
+  getBestSellingProducts,
+  getForYouProducts,
+
+  getVendorStoreAndProducts
 };

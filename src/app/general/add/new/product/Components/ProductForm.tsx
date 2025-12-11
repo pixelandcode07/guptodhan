@@ -318,6 +318,12 @@ export default function ProductForm({ initialData, productId: propProductId }: a
             return toast.error("Please fill all required fields (*).");
         }
         
+        // Validate vendorName can be extracted from store
+        const selectedStore = initialData?.stores?.find((s: any) => s._id === store || s.id === store);
+        if (!selectedStore?.storeName) {
+            return toast.error("Unable to determine vendor name. Please select a valid store.");
+        }
+        
         if (!price || price <= 0) {
             return toast.error("Price is required and must be greater than 0.");
         }
@@ -340,8 +346,9 @@ export default function ProductForm({ initialData, productId: propProductId }: a
             
             for (let i = 0; i < variants.length; i++) {
                 const variant = variants[i];
-                if (!variant.stock || variant.stock <= 0) {
-                    return toast.error(`Variant ${i + 1}: Stock must be greater than 0.`);
+                // Allow stock to be 0 (out of stock is valid)
+                if (variant.stock === undefined || variant.stock < 0) {
+                    return toast.error(`Variant ${i + 1}: Stock must be 0 or greater.`);
                 }
                 if (!variant.price || variant.price <= 0) {
                     return toast.error(`Variant ${i + 1}: Price must be greater than 0.`);
@@ -385,10 +392,15 @@ export default function ProductForm({ initialData, productId: propProductId }: a
             const finalGalleryUrls =
                 combinedGalleryUrls.length > 0 ? combinedGalleryUrls : [thumbnailUrl];
 
+            // Get vendorName from selected store
+            const selectedStore = initialData?.stores?.find((s: any) => s._id === store || s.id === store);
+            const vendorName = selectedStore?.storeName || '';
+
             const productData = {
                 productId: productCode || `PROD-${Date.now()}`,
                 productTitle: title,
                 vendorStoreId: store,
+                vendorName: vendorName, // Add vendorName from store
                 shortDescription: shortDescription,
                 fullDescription: fullDescription,
                 specification: specification,

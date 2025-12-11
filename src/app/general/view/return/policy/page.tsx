@@ -21,7 +21,7 @@ const page = async () => {
         </p>
 
         <ReturnPolicyForm
-          initialData={JSON.parse(JSON.stringify(initialData))}
+          initialData={initialData || undefined}
         />
       </div>
     </div>

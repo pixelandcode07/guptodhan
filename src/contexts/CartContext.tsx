@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import api from '@/lib/axios';
@@ -56,15 +56,7 @@ type CartContextType = {
   closeAddToCartModal: () => void;
 };
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
-
-export const useCart = () => {
-  const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error('useCart must be used within a CartProvider');
-  }
-  return context;
-};
+export const CartContext = createContext<CartContextType | undefined>(undefined);
 
 type CartProviderProps = {
   children: ReactNode;
@@ -123,7 +115,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           productID?: string | { toString: () => string };
           productName?: string;
           productImage?: string;
+          storeName?: string;
+          color?: string;
+          size?: string;
           unitPrice?: number;
+          totalPrice?: number;
           quantity?: number;
         }
         
@@ -134,15 +130,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
             id: productIdStr || item._id?.toString() || '',
             cartId: item.cartID || '', // Always use cartID from database
             seller: {
-              name: 'Store',
+              name: item.storeName || 'Store',
               verified: true,
             },
             product: {
               id: productIdStr || '',
               name: item.productName || 'Unknown Product',
               image: item.productImage || '/img/product/p-1.png',
-              size: 'Standard',
-              color: 'Default', 
+              size: item.size || 'Standard',
+              color: item.color || 'Default', 
               price: item.unitPrice || 0,
               originalPrice: item.unitPrice || 0,
               quantity: item.quantity || 1,
@@ -223,14 +219,32 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       
       const { name, email } = getUserInfo();
       
+      // Extract store name from product data
+      // vendorStoreId can be an object (populated) or a string (ID)
+      let storeName = '';
+      if (productData.vendorStoreId) {
+        if (typeof productData.vendorStoreId === 'object' && productData.vendorStoreId !== null) {
+          storeName = productData.vendorStoreId.storeName || productData.vendorName || 'Unknown Store';
+        } else {
+          // If it's just an ID, use vendorName as fallback
+          storeName = productData.vendorName || 'Unknown Store';
+        }
+      } else {
+        // Fallback to vendorName if vendorStoreId is not available
+        storeName = productData.vendorName || 'Unknown Store';
+      }
+      
+      // Backend generates cartID, so we don't need to send it
       const cartPayload = {
-        cartID: `CID-${Math.random().toString(36).substring(2, 10)}`,
         userID: userId,
         userName: name,
         userEmail: email,
         productID: productData._id,
         productName: productData.productTitle,
         productImage: productData.thumbnailImage,
+        storeName: storeName,
+        color: undefined, // Can be added later if product has color options
+        size: undefined, // Can be added later if product has size options
         quantity: quantity,
         unitPrice: productData.discountPrice || productData.productPrice,
         totalPrice: quantity * (productData.discountPrice || productData.productPrice),
@@ -240,15 +254,19 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       const apiResponse = await api.post('/add-to-cart', cartPayload);
       
       if (apiResponse.data?.success) {
-        // Refetch cart items from API
+        // Refetch cart items from API to get the actual cartID from backend
         await fetchCartItems({ silent });
+        
+        // Get the cartID from the response or use the newly created item
+        const createdCartItem = apiResponse.data?.data;
+        const cartId = createdCartItem?.cartID || '';
         
         // Create cart item for modal display
         const newCartItem: CartItem = {
           id: productData._id,
-          cartId: cartPayload.cartID,
+          cartId: cartId,
           seller: {
-            name: 'Store',
+            name: storeName,
             verified: true,
           },
           product: {

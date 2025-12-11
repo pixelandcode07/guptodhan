@@ -2,8 +2,6 @@
 import { z } from 'zod';
 
 
-
-
 export const loginValidationSchema = z.object({
   identifier: z.string().min(1, { message: 'Email or Phone Number is required.' }),
   password: z.string().min(1, { message: 'Password cannot be empty.' }),
@@ -42,6 +40,7 @@ export const resetPasswordWithTokenSchema = z.object({
   newPassword: z.string().min(8, { message: 'Password must be at least 8 characters long.' }),
 });
 
+
 export const registerVendorValidationSchema = z.object({
   name: z.string().min(1, { message: 'Name is required.' }),
   email: z.email({ message: 'A valid email is required.' }),
@@ -50,8 +49,8 @@ export const registerVendorValidationSchema = z.object({
   address: z.string().min(1, { message: 'Address is required.' }),
 
   businessName: z.string().min(1, { message: 'Business name is required.' }),
-  businessCategory: z.string().min(1, { message: 'Business category is required.' }),
-  tradeLicenseNumber: z.string().min(1, { message: 'Trade license number is required.' }),
+  businessCategory: z.array(z.string()).min(1, { message: 'At least one business category is required.' }), // ← এখানে পরিবর্তন
+  tradeLicenseNumber: z.string().optional(), // optional করলাম
   businessAddress: z.string().min(1, { message: 'Business address is required.' }),
   ownerName: z.string().min(1, { message: 'Owner name is required.' }),
   status: z.enum(['pending', 'approved', 'rejected']).optional(),
@@ -60,7 +59,11 @@ export const registerVendorValidationSchema = z.object({
 }).transform((data) => ({
   ...data,
   status: data.status || 'pending',
-}));;
+  tradeLicenseNumber: data.tradeLicenseNumber || '',
+}));
+
+
+
 
 export const registerServiceProviderValidationSchema = z.object({
   name: z.string().min(1),

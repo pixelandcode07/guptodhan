@@ -1,8 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button";
-import { Plus, Shield, Move } from "lucide-react";
-import Link from "next/link";
+import { Plus, Shield } from "lucide-react";
 
 interface WarrantiesHeaderProps {
   onAddClick: () => void;
@@ -29,13 +28,6 @@ export default function WarrantiesHeader({ onAddClick }: WarrantiesHeaderProps) 
 
         {/* Action Buttons */}
         <div className="flex-shrink-0 flex flex-col sm:flex-row gap-2 sm:gap-3">
-          <Button variant="outline" asChild className="h-10 sm:h-auto text-xs sm:text-sm">
-            <Link href="/general/view/all/warrenties/rearrange">
-              <Move className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Rearrange Warranty</span>
-              <span className="sm:hidden">Rearrange</span>
-            </Link>
-          </Button>
           <Button 
             className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 w-full sm:w-auto h-10 sm:h-auto text-sm sm:text-base" 
             onClick={onAddClick}

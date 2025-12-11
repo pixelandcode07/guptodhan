@@ -242,7 +242,7 @@ const reorderMainCategories = async (req: NextRequest) => {
   });
 };
 
-// Get products by category slug
+// ✅ Get products by category slug with filters (Brand Name, SubCat Name, etc.)
 const getProductsByCategorySlug = async (
   req: NextRequest, 
   { params }: { params: Promise<{ slug: string }> }
@@ -250,10 +250,33 @@ const getProductsByCategorySlug = async (
   await dbConnect();
   const { slug } = await params;
   
-  // First find category by slug
-  const category = await CategoryServices.getCategoryBySlugFromDB(slug);
+  // URL থেকে ফিল্টার প্যারামিটারগুলো নিচ্ছি
+  const { searchParams } = new URL(req.url);
   
-  if (!category) {
+  const filters = {
+    search: searchParams.get("search") || undefined,
+    // এখন আর ID না, সরাসরি নাম যাচ্ছে (যেমন: "Smart Phone")
+    subCategory: searchParams.get("subCategory") || undefined, 
+    // নাম যাচ্ছে (যেমন: "Android")
+    childCategory: searchParams.get("childCategory") || undefined, 
+    // নাম যাচ্ছে (যেমন: "Samsung")
+    brand: searchParams.get("brand") || undefined, 
+    // নাম যাচ্ছে (যেমন: "XL")
+    size: searchParams.get("size") || undefined, 
+    
+    // প্রাইস এবং সর্টিং
+    priceMin: searchParams.get("priceMin") ? Number(searchParams.get("priceMin")) : undefined,
+    priceMax: searchParams.get("priceMax") ? Number(searchParams.get("priceMax")) : undefined,
+    sort: searchParams.get("sort") || undefined,
+  };
+  
+  // সার্ভিস কল করা হচ্ছে
+  const result = await CategoryServices.getProductsByCategorySlugWithFiltersFromDB(
+    slug,
+    filters
+  );
+  
+  if (!result) {
     return sendResponse({
       success: false,
       statusCode: StatusCodes.NOT_FOUND,
@@ -262,22 +285,20 @@ const getProductsByCategorySlug = async (
     });
   }
   
-  // Get products using category _id
-  const productIds = await CategoryServices.getProductIdsByCategoryFromDB(
-    category._id.toString()
-  );
-  
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: `Products for category "${category.name}" retrieved successfully!`,
+    message: `Products for category "${result.category.name}" retrieved successfully!`,
     data: {
       category: {
-        name: category.name,
-        slug: category.slug,
-        categoryId: category.categoryId,
+        name: result.category.name,
+        slug: result.category.slug,
+        categoryId: result.category.categoryId,
+        banner: result.category.categoryBanner,
+        icon: result.category.categoryIcon
       },
-      productIds,
+      products: result.products,
+      totalProducts: result.products.length,
     },
   });
 };
