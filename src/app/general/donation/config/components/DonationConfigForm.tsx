@@ -1,135 +1,6 @@
-// 'use client'
-
-// import UploadImageBtn from '@/components/ReusableComponents/UploadImageBtn'
-// import { Button } from '@/components/ui/button'
-// import { Input } from '@/components/ui/input'
-// import { Label } from '@/components/ui/label'
-// import { Textarea } from '@/components/ui/textarea'
-// import { Save } from 'lucide-react'
-// import React from 'react'
-// import { Controller, SubmitHandler, useForm } from 'react-hook-form'
-
-// export type Inputs = {
-//     title: string
-//     short_description: string
-//     button_text: string
-//     button_url: string
-// }
-
-
-
-
-// export default function DonationConfigForm() {
-
-//     const {
-//         register,
-//         handleSubmit,
-//         control,
-//         // setValue,
-//         formState: { errors },
-//     } = useForm<Inputs>()
-
-//     // const onSubmit:  = (data) => 
-
-//     const onSubmit: SubmitHandler<Inputs> = (data) => {
-//         console.log(data)
-//     }
-//     return (
-//         <div>
-//             <form onSubmit={handleSubmit(onSubmit)} className='bg-[#f8f9fb] m-5 md:m-10 p-5 border border-[#e4e7eb] rounded-xs space-y-5 '>
-//                 <div >
-//                     <h1 className="text-lg font-semibold border-l-2 border-blue-500">
-//                         <span className="pl-5">Donation Config Form:</span>
-//                     </h1>
-//                 </div>
-//                 {/* Title */}
-//                 <section className='grid grid-cols-1 md:grid-cols-12 gap-6  mb-2'>
-//                     <div className='col-span-4 md:col-span-2'>
-//                         <Label htmlFor="Title">Title</Label>
-//                     </div>
-//                     <div className='col-span-6 md:col-span-10'>
-//                         <Input
-//                             type="text"
-//                             placeholder="Donate Anything"
-//                             {...register("title")}
-//                             className='mb-8 border border-gray-500'
-//                         />
-//                     </div>
-//                 </section>
-//                 {/* Category Icon */}
-//                 <section className='grid grid-cols-1 md:grid-cols-12 gap-6  mb-2'>
-//                     <div className='col-span-4 md:col-span-2'>
-//                         <Label htmlFor="name">Category Icon</Label>
-//                     </div>
-//                     <div className='col-span-6 md:col-span-10'>
-//                         {/* <Textarea placeholder='Here will be a Photo upload btn' className='mb-8 border border-gray-500 ' /> */}
-//                         <Controller
-//                             name="category_image"
-//                             control={control}
-//                             render={({ field }) => (
-//                                 <UploadImageBtn value={field.value} onChange={field.onChange} />
-//                             )}
-//                         />
-//                     </div>
-//                 </section>
-//                 {/* Short Description */}
-//                 <section className='grid grid-cols-1 md:grid-cols-12 gap-6  mb-2'>
-//                     <div className='col-span-4 md:col-span-2'>
-//                         <Label htmlFor="name">Short Description</Label>
-//                     </div>
-//                     <div className='col-span-6 md:col-span-10'>
-//                         <Textarea
-//                             {...register("short_description")}
-//                             placeholder='Consider donating items that you no longer use or need but are still in good condition, such as furniture or electronics.'
-//                             className='mb-8 border border-gray-500' />
-//                     </div>
-//                 </section>
-//                 {/* Button Text */}
-//                 <section className='grid grid-cols-1 md:grid-cols-12 gap-6  mb-2'>
-//                     <div className='col-span-4 md:col-span-2'>
-//                         <Label htmlFor="name">Button Text</Label>
-//                     </div>
-//                     <div className='col-span-6 md:col-span-10'>
-//                         <Input
-//                             type="text"
-//                             placeholder="Donate goods"
-//                             {...register("button_text")}
-//                             className='mb-8 border border-gray-500'
-//                         />
-//                     </div>
-//                 </section>
-//                 {/* Button Url */}
-//                 <section className='grid grid-cols-1 md:grid-cols-12 gap-6  mb-2'>
-//                     <div className='col-span-4 md:col-span-2'>
-//                         <Label htmlFor="name">Button Url</Label>
-//                     </div>
-//                     <div className='col-span-6 md:col-span-10'>
-//                         <Input
-//                             type="text"
-//                             placeholder="#"
-//                             {...register("button_url")}
-//                             className='mb-8 border border-gray-500'
-//                         />
-//                     </div>
-//                 </section>
-
-//                 <section className='grid grid-cols-1 md:grid-cols-12 gap-6  mb-2'>
-//                     <div className='col-span-4 md:col-span-2'>
-//                         <Label htmlFor="name"></Label>
-//                     </div>
-//                     <div className='col-span-6 md:col-span-10'>
-//                         <Button variant={'BlueBtn'} type="submit"><Save />Save Info</Button>
-//                     </div>
-//                 </section>
-//             </form>
-//         </div>
-//     )
-// }
-
-
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useForm, Controller, SubmitHandler } from 'react-hook-form'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -140,6 +11,7 @@ import UploadImageBtn from '@/components/ReusableComponents/UploadImageBtn'
 import axios from 'axios'
 import { useSession } from 'next-auth/react'
 import { toast } from 'sonner'
+import { useRouter } from 'next/navigation' // 🔥 ১. Router ইমপোর্ট করুন
 
 export type DonationFormInputs = {
   title: string
@@ -153,14 +25,15 @@ export default function DonationConfigForm() {
   const { data: session } = useSession()
   const token = (session?.user as { accessToken?: string; role?: string })?.accessToken
   const adminRole = (session?.user as { role?: string })?.role === "admin"
-  console.log("token from donation page==>",token)
-  console.log("adminRole from donation page==>",adminRole)
+  
+  // 🔥 ২. রাউটার হুক ইনিশিয়ালইজ করুন
+  const router = useRouter()
 
   const {
     register,
     handleSubmit,
     control,
-    reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<DonationFormInputs>({
     defaultValues: {
@@ -172,8 +45,45 @@ export default function DonationConfigForm() {
     },
   })
 
-  const [previewImage, setPreviewImage] = useState<File | string | null>(null)
+  const [existingImage, setExistingImage] = useState<string | null>(null)
+  const [isImageRemoved, setIsImageRemoved] = useState(false)
+  const [loadingData, setLoadingData] = useState(true)
 
+  // ডাটা লোড করার সময় টাইমস্ট্যাম্প ব্যবহার করা হয়েছে যাতে ব্রাউজার ক্যাশ না ধরে
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await axios.get(`/api/v1/public/donation-configs?t=${new Date().getTime()}`);
+        if (res.data && res.data.data) {
+          const data = res.data.data;
+          
+          setValue('title', data.title || '')
+          setValue('shortDescription', data.shortDescription || '')
+          setValue('buttonText', data.buttonText || '')
+          setValue('buttonUrl', data.buttonUrl || '')
+          
+          if (data.image) {
+            setExistingImage(data.image)
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load config", error)
+      } finally {
+        setLoadingData(false)
+      }
+    }
+
+    fetchData()
+  }, [setValue])
+
+  const handleRemoveImage = () => {
+    setExistingImage(null)
+    setValue('image', null)
+    setIsImageRemoved(true)
+    toast.success('Image removed (Click Save to apply)')
+  }
+
+  // 🔥 ৩. সাবমিট ফাংশনে পরিবর্তন (মেইন ফিক্স)
   const onSubmit: SubmitHandler<DonationFormInputs> = async (data) => {
     if (!adminRole) {
       toast.error('Only admins can submit this form.')
@@ -186,22 +96,57 @@ export default function DonationConfigForm() {
       formData.append('shortDescription', data.shortDescription)
       formData.append('buttonText', data.buttonText)
       formData.append('buttonUrl', data.buttonUrl)
-      if (data.image) formData.append('image', data.image)
 
-      const response = await axios.post('/api/v1/donation-configs', formData, {
+      if (data.image) {
+        formData.append('image', data.image)
+      } else if (isImageRemoved) {
+        formData.append('isImageRemoved', 'true')
+      }
+
+      // সার্ভারে রিকোয়েস্ট পাঠানো
+      const response = await axios.patch('/api/v1/donation-configs', formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
           "x-user-role": adminRole,
         },
       })
-      toast.success('Donation config saved successfully!')
-      reset()
-      setPreviewImage(null)
+
+      toast.success('Updated successfully!')
+
+      // 👇👇👇 আসল কাজ এখানে 👇👇👇
+      
+      const updatedData = response.data.data; // সার্ভার থেকে আসা আপডেটেড ডাটা ধরলাম
+
+      // ১. ইমেজের স্টেট ম্যানুয়ালি আপডেট করে দিচ্ছি (Reload ছাড়াই প্রিভিউ চেঞ্জ হবে)
+      if (updatedData.image) {
+        setExistingImage(updatedData.image); 
+        setValue('image', null); // ইনপুট খালি করে দিচ্ছি
+      } else {
+        setExistingImage(null);
+      }
+      
+      // ২. টেক্সট ফিল্ডগুলোও আপডেট করে দিচ্ছি (যদি সার্ভার কিছু ফরম্যাট করে থাকে)
+      setValue('title', updatedData.title);
+      setValue('shortDescription', updatedData.shortDescription);
+      setValue('buttonText', updatedData.buttonText);
+      setValue('buttonUrl', updatedData.buttonUrl);
+
+      // ৩. Next.js এর সার্ভার ক্যাশ রিফ্রেশ করছি (ব্যাকগ্রাউন্ডে)
+      // এটি পেজ রিলোড দেয় না, কিন্তু সার্ভার কম্পোনেন্টগুলোকে রি-ফেচ করায়
+      router.refresh(); 
+
+      // ৪. ফ্ল্যাগ রিসেট
+      setIsImageRemoved(false);
+
     } catch (error: any) {
       console.error('Error saving config:', error)
       toast.error(error.response?.data?.message || 'Something went wrong!')
     }
+  }
+
+  if (loadingData) {
+    return <div className="p-10 text-center text-gray-500">Loading configuration...</div>
   }
 
   return (
@@ -223,30 +168,24 @@ export default function DonationConfigForm() {
         {errors.title && <p className="text-red-500 text-sm">{errors.title.message}</p>}
 
         {/* Image Upload */}
-        {/* <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center"> */}
         <div className='grid grid-cols-1 md:grid-cols-12 gap-4 items-center'>
           <Label className="col-span-12 md:col-span-2">Image</Label>
-          {/* col-span-12 md:col-span-2 */}
           <div className='col-span-10'>
-          <Controller
-          
-            name="image"
-            control={control}
-            render={({ field }) => (
-              <UploadImageBtn
-                value={field.value ?? null}
-                onChange={(file) => {
-                  field.onChange(file)
-                  setPreviewImage(file)
-                }}
-                onRemove={() => {
-                  field.onChange(null)
-                  setPreviewImage(null)
-                }}
-                fieldName="image"
-              />
-            )}
-          />
+            <Controller
+              name="image"
+              control={control}
+              render={({ field }) => (
+                <UploadImageBtn
+                  value={field.value || existingImage} 
+                  onChange={(file) => {
+                    field.onChange(file)
+                    setIsImageRemoved(false)
+                  }}
+                  onRemove={existingImage ? handleRemoveImage : undefined}
+                  fieldName="image"
+                />
+              )}
+            />
           </div>
         </div>
 
@@ -291,13 +230,14 @@ export default function DonationConfigForm() {
           <Button
             className="col-span-12 md:col-span-10 flex items-center gap-2"
             type="submit"
+            variant="default" // আপনার বাটন স্টাইল অনুযায়ী (BlueBtn বা default)
             disabled={isSubmitting || !adminRole}
           >
-            <Save /> Save Info
+            <Save className="w-4 h-4" /> 
+            {isSubmitting ? 'Saving...' : 'Update Info'}
           </Button>
         </div>
       </form>
     </div>
   )
 }
-
