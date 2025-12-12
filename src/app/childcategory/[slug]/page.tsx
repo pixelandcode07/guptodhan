@@ -36,7 +36,7 @@ async function getChildCategoryProducts(
   searchParams: Record<string, string> = {}
 ): Promise<ChildCategoryData | null> {
   const params = new URLSearchParams(searchParams);
-  const url = `${process.env.NEXTAUTH_URL}/api/v1/ecommerce-category/ecomChildCategory/slug/${slug}?${params.toString()}`;
+  const url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/ecommerce-category/ecomChildCategory/slug/${slug}?${params.toString()}`;
 
   try {
     const res = await fetch(url, {
