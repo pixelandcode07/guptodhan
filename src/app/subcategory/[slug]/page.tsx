@@ -34,7 +34,7 @@ interface SubCategoryData {
 
 async function getSubCategoryProducts(slug: string, searchParams: Record<string, string> = {}): Promise<SubCategoryData | null> {
   const params = new URLSearchParams(searchParams);
-  const url = `${process.env.NEXTAUTH_URL}/api/v1/ecommerce-category/ecomSubCategory/slug/${slug}?${params.toString()}`;
+  const url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/ecommerce-category/ecomSubCategory/slug/${slug}?${params.toString()}`;
 
   try {
     const res = await fetch(url, {
