@@ -1,0 +1,15 @@
+
+import { z } from 'zod';
+
+export const createSubCategoryValidationSchema = z.object({
+  name: z.string().min(1, { message: 'Sub-category name is required.' }),
+  category: z.string({ required_error: 'Parent category ID is required.' }), 
+  icon: z.string().url().optional(),
+});
+
+export const updateSubCategoryValidationSchema = z.object({
+  name: z.string().min(1).optional(),
+  category: z.string().optional(), // Parent category ID
+  status: z.enum(['active', 'inactive']).optional(),
+  icon: z.string().url().optional(), // Icon URL
+});

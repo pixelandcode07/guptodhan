@@ -1,0 +1,16 @@
+import { Document, Types } from 'mongoose';
+
+export interface IReview extends Document {
+  reviewId: string;
+  productId: Types.ObjectId | { _id: Types.ObjectId; productId: string };
+  userId: Types.ObjectId;
+  userName: string;
+  userEmail: string;
+  uploadedTime: Date;
+  rating: number;
+  comment: string;
+  userImage: string;
+
+  //multiple images
+  reviewImages?: string[];   
+}
