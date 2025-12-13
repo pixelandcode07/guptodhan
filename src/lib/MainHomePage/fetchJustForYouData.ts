@@ -2,7 +2,7 @@ import axios from 'axios';
 import { ProductCardType } from '@/types/ProductCardType';
 
 export async function fetchJustForYouData(): Promise<ProductCardType[]> {
-  const baseUrl = process.env.NEXTAUTH_URL;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
   try {
     const res = await axios.get(`${baseUrl}/api/v1/product/forYou`, {
