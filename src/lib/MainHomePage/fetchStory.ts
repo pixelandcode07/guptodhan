@@ -3,7 +3,7 @@ import axios from 'axios';
 import { IStory } from '../modules/story/story.interface';
 
 export async function fetchStory(): Promise<IStory[]> {
-    const baseUrl = process.env.NEXTAUTH_URL;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
     try {
         const res = await axios.get<ApiResponse<IStory[]>>(

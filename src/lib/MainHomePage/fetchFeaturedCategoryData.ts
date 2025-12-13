@@ -2,7 +2,7 @@ import { ApiResponse, FeaturedCategory } from '@/types/FeaturedCategoryType';
 import axios from 'axios';
 
 export async function fetchFeaturedCategories(): Promise<FeaturedCategory[]> {
-    const baseUrl = process.env.NEXTAUTH_URL;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
     try {
         const res = await axios.get<ApiResponse<FeaturedCategory[]>>(
