@@ -34,16 +34,12 @@ const adminRoutes = [
   "/api/v1/donation-configs",
   '/api/v1/classifieds/ads/[id]',
   '/api/v1/social_links',
-
 ];
 
 // 🔥 Vendor Routes (নতুন যোগ করা হয়েছে)
 const vendorRoutes = [
   '/dashboard', // Vendor Dashboard Frontend
-  '/api/v1/vendor-store/dashboard',
-  '/api/v1/vendor-store/storeWithProduct',
-  '/api/v1/vendor-store/vendorId',
-  '/api/v1/vendor-store/vendorProduct',
+  '/api/v1/vendor-store',
   '/api/v1/vendor-product',
   '/api/v1/vendor-orders',
   '/api/v1/withdrawal',
