@@ -18,26 +18,6 @@ function SkeletonSectionHeader() {
   );
 }
 
-
-// Temporay push
-
-
-
-// export function SkeletonHero() {
-//   return (
-//     <Skeleton className="h-[320px] w-full rounded-xl" />
-//   );
-// }
-
-
-// export function SkeletonSectionHeader() {
-//   return (
-//     <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 py-8">
-//       <Skeleton className="h-8 w-40 rounded-md" />
-//     </div>
-//   );
-// }
-
 export const dynamic = 'force-dynamic';
 
 export default function MainHomePage() {
