@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,26 +11,65 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 export default function TawkChatForm() {
+  const [loading, setLoading] = useState(false);
   const [chatStatus, setChatStatus] = useState('1');
   const [tawkLink, setTawkLink] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch('/api/v1/public/integrations');
+      const data = await res.json();
+      if (data.success) {
+        setChatStatus(data.data?.tawkToEnabled ? '1' : '0');
+        setTawkLink(data.data?.tawkToLink || '');
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
-    const formData = {
-      tawk_chat_status: chatStatus,
-      tawk_chat_link: tawkLink,
-    };
+    try {
+      const payload = {
+        tawkToEnabled: chatStatus === '1',
+        tawkToLink: tawkLink,
+      };
 
-    console.log('Form Data:', formData);
+      const res = await fetch('/api/v1/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success('Tawk.to Chat updated successfully!');
+        fetchData();
+      } else {
+        toast.error(data.message || 'Failed to update');
+      }
+    } catch (error) {
+      toast.error('An error occurred');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="tab-pane fade active show bg-white  ">
+    <div className="tab-pane fade active show bg-white">
       <form className="space-y-4" onSubmit={handleSubmit}>
-        {/* Allow Tawk.to Live Chat */}
         <div className="flex flex-col space-y-1">
           <Label htmlFor="tawk_chat_status">Allow Tawk.to Live Chat</Label>
           <Select value={chatStatus} onValueChange={setChatStatus}>
@@ -44,20 +83,19 @@ export default function TawkChatForm() {
           </Select>
         </div>
 
-        {/* Tawk.to Direct Chat Link */}
         <div className="flex flex-col space-y-1">
           <Label htmlFor="tawk_chat_link">Tawk.to Direct Chat Link</Label>
           <Input
             id="tawk_chat_link"
             value={tawkLink}
-            onChange={e => setTawkLink(e.target.value)}
+            onChange={(e) => setTawkLink(e.target.value)}
+            placeholder="https://embed.tawk.to/..."
           />
         </div>
 
-        {/* Submit Button */}
         <div>
-          <Button type="submit" variant="default">
-            ✓ Update
+          <Button type="submit" variant="default" disabled={loading}>
+            {loading ? 'Updating...' : '✓ Update'}
           </Button>
         </div>
       </form>

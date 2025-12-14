@@ -1,3 +1,5 @@
+// File: src/app/products/[productId]/page.tsx
+
 import dbConnect from '@/lib/db';
 import { VendorProductServices } from '@/lib/modules/product/vendorProduct.service';
 import { CategoryServices } from '@/lib/modules/ecommerce-category/services/ecomCategory.service';
@@ -107,7 +109,25 @@ export default async function ProductPage({ params }: ProductPageProps) {
       relatedProducts: relatedProducts,
     };
 
-    const categoriesInfo = JSON.parse(JSON.stringify(categoriesData || []));
+    // ✅ FIXED: Clean and validate categories data
+    const categoriesInfo = JSON.parse(JSON.stringify(categoriesData || []))
+      .filter((cat: any) => cat && cat._id) // Remove null/undefined entries
+      .map((cat: any, index: number) => ({
+        ...cat,
+        mainCategoryId: cat._id || `temp-cat-${index}`, // Ensure ID exists
+        subCategories: (cat.subCategories || [])
+          .filter((sub: any) => sub && sub._id)
+          .map((sub: any, subIndex: number) => ({
+            ...sub,
+            subCategoryId: sub._id || `temp-sub-${index}-${subIndex}`,
+            children: (sub.children || [])
+              .filter((child: any) => child && child._id)
+              .map((child: any, childIndex: number) => ({
+                ...child,
+                childCategoryId: child._id || `temp-child-${index}-${subIndex}-${childIndex}`,
+              })),
+          })),
+      }));
 
     // Rich Structured Data - Product Schema
     const jsonLd = {
@@ -150,7 +170,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
       dateModified: product.updatedAt?.toISOString(),
     };
 
-    // Organization Schema for Footer/Contact
     const organizationSchema = {
       '@context': 'https://schema.org',
       '@type': 'Organization',
@@ -259,19 +278,22 @@ export async function generateMetadata({ params }: ProductPageProps) {
         'buy online',
         'Bangladesh',
       ].join(', '),
+      
       openGraph: {
         title: product.productTitle,
         description: product.shortDescription,
         images: images,
-        type: 'product',
+        type: 'website',
         url: `https://www.guptodhandigital.com/products/${productId}`,
       },
+      
       twitter: {
         card: 'summary_large_image',
         title: product.productTitle,
         description: product.shortDescription,
         images: images,
       },
+      
       alternates: {
         canonical: `https://www.guptodhandigital.com/products/${productId}`,
       },

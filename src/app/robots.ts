@@ -21,6 +21,6 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     sitemap: 'https://www.guptodhandigital.com/sitemap.xml',
-    crawlDelay: 1,
+   
   };
 }
