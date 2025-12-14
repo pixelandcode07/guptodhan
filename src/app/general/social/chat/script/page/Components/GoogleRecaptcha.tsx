@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,29 +11,68 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 export default function RecaptchaForm() {
+  const [loading, setLoading] = useState(false);
   const [captchaStatus, setCaptchaStatus] = useState('0');
-  const [siteKey, setSiteKey] = useState<string>('');
+  const [siteKey, setSiteKey] = useState('');
+  const [secretKey, setSecretKey] = useState('');
 
-  const [secretKey, setSecretKey] = useState<string>('');
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const fetchData = async () => {
+    try {
+      const res = await fetch('/api/v1/public/integrations');
+      const data = await res.json();
+      if (data.success) {
+        setCaptchaStatus(data.data?.googleRecaptchaEnabled ? '1' : '0');
+        setSiteKey(data.data?.recaptchaSiteKey || '');
+        setSecretKey(data.data?.recaptchaSecretKey || '');
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
-    const formData = {
-      captcha_status: captchaStatus,
-      captcha_site_key: siteKey,
-      captcha_secret_key: secretKey,
-    };
+    try {
+      const payload = {
+        googleRecaptchaEnabled: captchaStatus === '1',
+        recaptchaSiteKey: siteKey,
+        recaptchaSecretKey: secretKey,
+      };
 
-    console.log(formData);
+      const res = await fetch('/api/v1/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success('Google reCAPTCHA updated successfully!');
+        fetchData();
+      } else {
+        toast.error(data.message || 'Failed to update');
+      }
+    } catch (error) {
+      toast.error('An error occurred');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="tab-pane fade  bg-white  w-full  mx-auto">
+    <div className="tab-pane fade bg-white w-full mx-auto">
       <form className="space-y-4 w-full" onSubmit={handleSubmit}>
-        {/* Allow Recaptcha */}
         <div className="flex flex-col space-y-1 w-full">
           <Label htmlFor="captcha_status">Allow Recaptcha</Label>
           <Select value={captchaStatus} onValueChange={setCaptchaStatus}>
@@ -47,31 +86,32 @@ export default function RecaptchaForm() {
           </Select>
         </div>
 
-        {/* Captcha Site Key */}
         <div className="flex flex-col space-y-1 w-full">
           <Label htmlFor="captcha_site_key">Captcha Site Key</Label>
           <Input
             id="captcha_site_key"
             value={siteKey}
-            onChange={e => setSiteKey(e.target.value)}
+            onChange={(e) => setSiteKey(e.target.value)}
+            placeholder="6Lc..."
             className="w-full"
           />
         </div>
 
-        {/* Captcha Secret Key */}
         <div className="flex flex-col space-y-1 w-full">
           <Label htmlFor="captcha_secret_key">Captcha Secret Key</Label>
           <Input
             id="captcha_secret_key"
             value={secretKey}
-            onChange={e => setSecretKey(e.target.value)}
+            onChange={(e) => setSecretKey(e.target.value)}
+            placeholder="6Lc..."
             className="w-full"
           />
         </div>
 
-        {/* Submit Button */}
         <div className="w-full">
-          <Button type="submit">✓ Update</Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Updating...' : '✓ Update'}
+          </Button>
         </div>
       </form>
     </div>

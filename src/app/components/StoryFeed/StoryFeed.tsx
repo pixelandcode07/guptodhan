@@ -3,7 +3,7 @@
 import { IStory } from '@/lib/modules/story/story.interface';
 import Image from 'next/image';
 import { useState, useCallback, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Pause, Play, ShoppingBag } from 'lucide-react';
 import {
   Carousel,
   CarouselContent,
@@ -12,6 +12,7 @@ import {
   CarouselPrevious
 } from '@/components/ui/carousel';
 import PageHeader from '@/components/ReusableComponents/PageHeader';
+import { useRouter } from 'next/navigation';
 
 interface StoryFeedProps {
   stories: IStory[];
@@ -21,10 +22,11 @@ const StoryFeed = ({ stories }: StoryFeedProps) => {
   const [currentStoryIndex, setCurrentStoryIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
+  const router = useRouter();
 
-  // Filter only active and unexpired stories
+  // Filter Logic: Active status check (Expiry temporarily disabled as per previous discussion)
   const activeStories = stories.filter(
-    story => story.status === 'active' && new Date(story.expiryDate) > new Date()
+    story => story.status === 'active'
   );
 
   const openStory = useCallback((index: number) => {
@@ -36,6 +38,7 @@ const StoryFeed = ({ stories }: StoryFeedProps) => {
   const closeStory = useCallback(() => {
     setCurrentStoryIndex(null);
     setIsPlaying(false);
+    setProgress(0);
   }, []);
 
   const goToNextStory = useCallback(() => {
@@ -56,25 +59,51 @@ const StoryFeed = ({ stories }: StoryFeedProps) => {
     }
   }, [currentStoryIndex, activeStories.length]);
 
-  // Auto-advance story every 10 seconds
+  // ✅ PRODUCT NAVIGATION FUNCTION (FIXED URL)
+  const handleNavigateToProduct = (e: React.MouseEvent, story: IStory) => {
+    e.stopPropagation(); // Prevent modal from closing or sliding
+    
+    if (story.productId) {
+      // Extract ID safely whether it's populated (object) or raw string
+      const productId = typeof story.productId === 'object' 
+        ? (story.productId as any)._id 
+        : story.productId;
+
+      if (productId) {
+        // 🔴 FIX: Changed '/product/' to '/products/' to match your folder structure
+        router.push(`/products/${productId}`); 
+      } else {
+        console.log("Product ID not found");
+      }
+    } else {
+      // Redirect to shop if no specific product linked
+      router.push('/shop');
+    }
+  };
+
+  // Progress bar animation
   useEffect(() => {
     if (!isPlaying || currentStoryIndex === null) return;
 
-    const timer = setTimeout(() => {
-      goToNextStory();
-    }, 10000); // 10000ms = 10 seconds
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          goToNextStory();
+          return 0;
+        }
+        return prev + 1;
+      });
+    }, 100);
 
-    return () => clearTimeout(timer);
+    return () => clearInterval(interval);
   }, [isPlaying, currentStoryIndex, goToNextStory]);
 
   if (!activeStories.length) return null;
 
-  const currentStory =
-    currentStoryIndex !== null ? activeStories[currentStoryIndex] : null;
+  const currentStory = currentStoryIndex !== null ? activeStories[currentStoryIndex] : null;
 
   return (
     <>
-      {/* Carousel Section */}
       <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 py-10 relative">
         <div className="flex justify-center mb-6">
           <PageHeader title="Stories" />
@@ -84,45 +113,45 @@ const StoryFeed = ({ stories }: StoryFeedProps) => {
           <CarouselContent className="-ml-4">
             {activeStories.map((story, index) => (
               <CarouselItem
-                key={story._id}
+                key={String(story._id)}
                 className="pl-4 basis-1/3 md:basis-1/4 xl:basis-1/6"
               >
                 {/* Story Preview Card */}
                 <div
                   onClick={() => openStory(index)}
-                  className="relative aspect-[12/18] rounded-xl overflow-hidden cursor-pointer transition-transform duration-300 ease-in-out hover:scale-105"
+                  className="relative aspect-[12/18] rounded-xl overflow-hidden cursor-pointer transition-transform duration-300 ease-in-out hover:scale-105 group border-2 border-transparent hover:border-yellow-400"
                 >
                   <Image
                     src={story.imageUrl}
-                    alt={story.title}
+                    alt={story.title || 'Story image'}
                     fill
-                    className="object-cover"
+                    className="object-cover transition-transform duration-500 group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 flex flex-col justify-end p-4 bg-gradient-to-t from-black/70 to-transparent">
-                    <h3 className="text-white font-bold text-lg line-clamp-2">
-                      {story.title}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-3">
+                    <h3 className="text-white font-bold text-sm line-clamp-2 leading-tight">
+                      {story.title || 'Untitled'}
                     </h3>
-                    <div className="flex justify-between items-center mt-1">
-                      <p className="text-white/90 text-xs">1 story</p>
-                      <button
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-yellow-400 text-xs font-semibold flex items-center gap-1"
-                      >
-                        ORDER NOW
-                        <ChevronRight size={14} />
-                      </button>
+                    
+                    <div className="flex justify-between items-center mt-2">
+                      {story.productId && (
+                        <button
+                          onClick={(e) => handleNavigateToProduct(e, story)}
+                          className="text-yellow-400 text-xs font-semibold flex items-center gap-1 hover:underline"
+                        >
+                          ORDER NOW <ChevronRight size={14} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
               </CarouselItem>
             ))}
           </CarouselContent>
-
-          <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 z-20 cursor-pointer text-white bg-black/30 rounded-full p-1 hover:bg-black/50 transition-colors">
-            <ChevronLeft size={28} />
+          <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 z-20 cursor-pointer text-white bg-black/40 border-none hover:bg-yellow-500 hover:text-black transition-all">
+             <ChevronLeft size={24} />
           </CarouselPrevious>
-          <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 z-20 cursor-pointer text-white bg-black/30 rounded-full p-1 hover:bg-black/50 transition-colors">
-            <ChevronRight size={28} />
+          <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 z-20 cursor-pointer text-white bg-black/40 border-none hover:bg-yellow-500 hover:text-black transition-all">
+             <ChevronRight size={24} />
           </CarouselNext>
         </Carousel>
       </div>
@@ -130,15 +159,15 @@ const StoryFeed = ({ stories }: StoryFeedProps) => {
       {/* Fullscreen Story Modal */}
       {currentStory && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm"
           onClick={closeStory}
         >
           <div
-            className="relative w-full max-w-md h-[95vh] rounded-lg overflow-hidden flex flex-col bg-gray-900 shadow-2xl"
+            className="relative w-full max-w-md h-full sm:h-[90vh] sm:rounded-2xl overflow-hidden flex flex-col bg-gray-900 shadow-2xl border border-gray-800"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Progress Bar */}
-            <div className="absolute top-2 left-2 right-2 p-2 flex gap-1 z-10">
+            <div className="absolute top-4 left-2 right-2 flex gap-1 z-30">
               {activeStories.map((_, i) => (
                 <div
                   key={i}
@@ -157,80 +186,82 @@ const StoryFeed = ({ stories }: StoryFeedProps) => {
               ))}
             </div>
 
-            {/* Top Buttons */}
-            <div className="absolute top-4 right-4 z-20 flex gap-2">
-              <button
-                onClick={() => setIsPlaying(!isPlaying)}
-                className="text-white p-2 rounded-full bg-black/30 backdrop-blur-sm hover:bg-black/50 transition-colors"
-                aria-label={isPlaying ? 'Pause story' : 'Play story'}
-              >
-                {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-              </button>
-              <button
-                onClick={closeStory}
-                className="text-white p-2 rounded-full bg-black/30 backdrop-blur-sm hover:bg-black/50 transition-colors"
-                aria-label="Close story"
-              >
-                <X size={24} />
-              </button>
-            </div>
+            {/* Top Controls */}
+            <div className="absolute top-8 left-4 right-4 z-30 flex justify-between items-center">
+               <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full border border-white/50 overflow-hidden relative">
+                         <Image src={currentStory.imageUrl} alt="avt" fill className="object-cover"/>
+                    </div>
+                    <div>
+                        <p className="text-white font-semibold text-sm drop-shadow-md">{currentStory.title}</p>
+                        {/* Show Linked Badge */}
+                        {currentStory.productId && (
+                          <p className="text-yellow-400 text-xs flex items-center gap-1">
+                             <ShoppingBag size={10} /> Product Linked
+                          </p>
+                        )}
+                    </div>
+               </div>
 
-            {/* Main Image */}
-            <div className="relative flex-grow">
-              <Image
-                src={currentStory.imageUrl}
-                alt={currentStory.title || 'Story'}
-                fill
-                priority
-                objectFit="cover"
-                className="select-none pointer-events-none"
-              />
-            </div>
-
-            {/* Bottom Buttons */}
-            <div className="absolute bottom-0 w-full p-6 bg-gradient-to-t from-black/80 to-transparent">
-              <h3 className="text-2xl font-bold mb-4 text-white">
-                {currentStory.title}
-              </h3>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex-1 bg-blue-700 text-white font-bold py-3 px-6 rounded-full transition-opacity hover:opacity-90"
-                >
-                  Visit Now
-                </button>
-                <button
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex-1 bg-yellow-500 text-black font-bold py-3 px-6 rounded-full transition-opacity hover:opacity-90"
-                >
-                  ORDER NOW
-                </button>
+              <div className="flex gap-4">
+                 <button
+                    onClick={() => setIsPlaying(!isPlaying)}
+                    className="text-white hover:text-yellow-400 transition-colors"
+                  >
+                    {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                  </button>
+                  <button
+                    onClick={closeStory}
+                    className="text-white hover:text-red-500 transition-colors"
+                  >
+                    <X size={28} />
+                  </button>
               </div>
             </div>
 
-            {/* Navigation Arrows */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                goToPreviousStory();
-              }}
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-full text-white transition-colors disabled:opacity-30"
-              disabled={activeStories.length <= 1}
-              aria-label="Previous story"
-            >
-              <ChevronLeft size={28} />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                goToNextStory();
-              }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-full text-white transition-colors disabled:opacity-30"
-              disabled={activeStories.length <= 1}
-              aria-label="Next story"
-            >
-              <ChevronRight size={28} />
-            </button>
+            {/* Main Image */}
+            <div className="relative flex-grow bg-black">
+              <Image
+                src={currentStory.imageUrl}
+                alt={currentStory.title || 'Story detail'}
+                fill
+                priority
+                className="object-contain"
+              />
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="absolute bottom-0 w-full p-6 bg-gradient-to-t from-black via-black/60 to-transparent z-20">
+              {currentStory.description && (
+                  <p className="text-white/90 text-sm mb-6 line-clamp-3 text-center">
+                      {currentStory.description}
+                  </p>
+              )}
+
+              <div className="flex flex-col gap-3">
+                {currentStory.productId ? (
+                   <button
+                     onClick={(e) => handleNavigateToProduct(e, currentStory)}
+                     className="w-full bg-yellow-500 text-black font-bold py-3.5 px-6 rounded-full transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-yellow-500/20 flex items-center justify-center gap-2"
+                   >
+                     ORDER NOW <ShoppingBag size={18} />
+                   </button>
+                ) : (
+                   <button
+                    className="w-full bg-gray-700/50 text-white font-semibold py-3.5 px-6 rounded-full cursor-default"
+                   >
+                     Enjoy the Story
+                   </button>
+                )}
+              </div>
+            </div>
+
+            {/* Tap Navigation Areas */}
+            <div className="absolute inset-0 flex z-10">
+                <div className="w-1/3 h-full" onClick={(e) => { e.stopPropagation(); goToPreviousStory(); }}></div>
+                <div className="w-1/3 h-full" onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying)}}></div>
+                <div className="w-1/3 h-full" onClick={(e) => { e.stopPropagation(); goToNextStory(); }}></div>
+            </div>
           </div>
         </div>
       )}
