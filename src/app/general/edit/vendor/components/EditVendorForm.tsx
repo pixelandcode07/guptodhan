@@ -43,9 +43,25 @@ export default function EditVendorForm({ vendor, token }: EditVendorFormProps) {
     const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const initialCategories = vendor.businessCategory
-        ? JSON.parse(vendor.businessCategory as string)
-        : [];
+    // const initialCategories = vendor.businessCategory
+    //     ? JSON.parse(vendor.businessCategory as string)
+    //     : [];
+    let initialCategories: string[] = [];
+
+    if (vendor.businessCategory) {
+        if (typeof vendor.businessCategory === 'string') {
+            try {
+                initialCategories = JSON.parse(vendor.businessCategory);
+            } catch (e) {
+                console.error('Failed to parse businessCategory:', e);
+                initialCategories = [];
+            }
+        } else if (Array.isArray(vendor.businessCategory)) {
+            initialCategories = vendor.businessCategory;
+        }
+    }
+
+
 
     const {
         register,

@@ -11,7 +11,7 @@ export default async function EditStorePage({
   const stores = await fetchStoreById(id);
   const store: StoreInterface | null = Array.isArray(stores) ? stores[0] ?? null : (stores as unknown as StoreInterface);
 
-  console.log("Store data==>", store)
+  // console.log("Store data==>", store)
 
   if (!store) {
     return <div className="p-6 text-yellow-600">Store not found.</div>;

@@ -28,5 +28,5 @@ export const updateVendorValidationSchema = z.object({
   tradeLicenseNumber: z.string().min(5, { message: 'Trade license number must be at least 5 characters.' }).optional(),
   businessAddress: z.string().min(5, { message: 'Business address must be at least 5 characters.' }).optional(),
   businessCategory: z.any().optional(), // Can be a JSON string or object
-  storeName: z.string().min(2, { message: 'Store name is required and must be at least 2 characters.' }),
+  // storeName: z.string().min(2, { message: 'Store name is required and must be at least 2 characters.' }),
 });

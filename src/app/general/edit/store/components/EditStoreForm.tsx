@@ -26,14 +26,22 @@ import RichTextEditor from "@/components/ReusableComponents/RichTextEditor";
 import { updateStore } from "@/lib/MultiVendorApis/updateStore";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import UploadImage from "@/components/ReusableComponents/UploadImage";
 
 type EditStoreFormProps = {
   store: StoreInterface;
 };
 
 export default function StoreForm({ store }: EditStoreFormProps) {
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+
+
   const cleanedStore = {
     ...store,
+    storeLogo: store.storeLogo || undefined,
+    storeBanner: store.storeBanner || undefined,
     storePhone: store.storePhone ?? "",
     storeEmail: store.storeEmail ?? "",
     storeAddress: store.storeAddress ?? "",
@@ -53,22 +61,6 @@ export default function StoreForm({ store }: EditStoreFormProps) {
 
   const router = useRouter();
 
-  // const onSubmit = async (values: StoreInterface) => {
-  //   try {
-  //     await toast.promise(
-  //       updateStore(store._id, values),
-  //       {
-  //         loading: "Updating store...",
-  //         success: "Store updated successfully!",
-  //         error: (err) => err.message || "Failed to update store",
-  //       }
-  //     );
-  //     router.push("/general/view/all/stores");
-  //     router.refresh();
-  //   } catch (error) {
-  //     console.error("Update failed:", error);
-  //   }
-  // };
 
   const onSubmit = async (values: StoreInterface) => {
     try {
@@ -85,12 +77,17 @@ export default function StoreForm({ store }: EditStoreFormProps) {
           val?.trim() ? (val.startsWith("http") ? val : `https://${val}`) : null,
         ])
       );
-
-      await toast.promise(updateStore(store._id, values), {
-        loading: "Updating store...",
-        success: "Store updated successfully!",
-        error: (err) => err.message || "Failed to update store",
-      });
+      await toast.promise(
+        updateStore(store._id, values, {
+          logo: logoFile || undefined,
+          banner: bannerFile || undefined,
+        }),
+        {
+          loading: "Updating store...",
+          success: "Store updated successfully!",
+          error: (err) => err.message || "Failed to update store",
+        }
+      );
 
       router.push("/general/view/all/stores");
       router.refresh();
@@ -99,22 +96,49 @@ export default function StoreForm({ store }: EditStoreFormProps) {
     }
   };
 
-
-
-
-
-
-
-
-
-
-
   return (
     <Form {...form}>
       <form
         className="space-y-6 p-4 border rounded-lg bg-white"
         onSubmit={form.handleSubmit(onSubmit)}
       >
+        {/* Store Logo Upload */}
+        <FormField
+          control={form.control}
+          name="storeLogo"
+          render={() => (
+            <FormItem>
+              <FormLabel>Store Logo</FormLabel>
+              <FormControl>
+                <UploadImage
+                  name="logo"
+                  label="Upload Store Logo"
+                  preview={store.storeLogo}
+                  onChange={(name, file) => setLogoFile(file)}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        {/* Store Banner Upload */}
+        <FormField
+          control={form.control}
+          name="storeBanner"
+          render={() => (
+            <FormItem>
+              <FormLabel>Store Banner</FormLabel>
+              <FormControl>
+                <UploadImage
+                  name="banner"
+                  label="Upload Store Banner"
+                  preview={store.storeBanner}
+                  onChange={(name, file) => setBannerFile(file)}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
         {/* Store Name */}
         <FormField
           control={form.control}
