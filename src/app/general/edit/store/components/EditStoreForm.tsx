@@ -102,43 +102,48 @@ export default function StoreForm({ store }: EditStoreFormProps) {
         className="space-y-6 p-4 border rounded-lg bg-white"
         onSubmit={form.handleSubmit(onSubmit)}
       >
-        {/* Store Logo Upload */}
-        <FormField
-          control={form.control}
-          name="storeLogo"
-          render={() => (
-            <FormItem>
-              <FormLabel>Store Logo</FormLabel>
-              <FormControl>
-                <UploadImage
-                  name="logo"
-                  label="Upload Store Logo"
-                  preview={store.storeLogo}
-                  onChange={(name, file) => setLogoFile(file)}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-
-        {/* Store Banner Upload */}
-        <FormField
-          control={form.control}
-          name="storeBanner"
-          render={() => (
-            <FormItem>
-              <FormLabel>Store Banner</FormLabel>
-              <FormControl>
-                <UploadImage
-                  name="banner"
-                  label="Upload Store Banner"
-                  preview={store.storeBanner}
-                  onChange={(name, file) => setBannerFile(file)}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-rows-2 gap-5">
+          <div>
+            {/* Store Logo Upload */}
+            <FormField
+              control={form.control}
+              name="storeLogo"
+              render={() => (
+                <FormItem>
+                  <FormLabel>Store Logo</FormLabel>
+                  <FormControl>
+                    <UploadImage
+                      name="logo"
+                      label="Upload Store Logo"
+                      preview={store.storeLogo}
+                      onChange={(name, file) => setLogoFile(file)}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </div>
+          <div>
+            {/* Store Banner Upload */}
+            <FormField
+              control={form.control}
+              name="storeBanner"
+              render={() => (
+                <FormItem>
+                  <FormLabel>Store Banner</FormLabel>
+                  <FormControl>
+                    <UploadImage
+                      name="banner"
+                      label="Upload Store Banner"
+                      preview={store.storeBanner}
+                      onChange={(name, file) => setBannerFile(file)}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
         {/* Store Name */}
         <FormField
           control={form.control}
