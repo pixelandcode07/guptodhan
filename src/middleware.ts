@@ -34,6 +34,7 @@ const adminRoutes = [
   "/api/v1/donation-configs",
   '/api/v1/classifieds/ads/[id]',
   '/api/v1/social_links',
+  '/api/v1/vendors'
 
 ];
 
@@ -158,7 +159,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // 🔥 Vendor Check (নতুন লজিক)
-  if (isVendorRoute && tokenPayload.role !== 'vendor') {
+  if (isVendorRoute && tokenPayload.role !== 'vendor' && !isAdminRoute ) {
     // যদি ড্যাশবোর্ডে এক্সেস করার চেষ্টা করে কিন্তু ভেন্ডর না হয়
     if (path.startsWith('/dashboard')) {
        return NextResponse.redirect(new URL('/', req.url));
