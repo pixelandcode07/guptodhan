@@ -27,7 +27,7 @@ export const fetchAllStores = async (): Promise<StoreInterface[]> => {
 
 
 export const fetchAllPublicStores = async (): Promise<StoreInterface[]> => {
-  const baseUrl = process.env.NEXTAUTH_URL;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
   if (!baseUrl) {
     console.error('API base URL is not configured');
