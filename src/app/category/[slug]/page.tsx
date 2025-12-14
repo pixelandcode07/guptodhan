@@ -21,29 +21,11 @@ async function getCategoryProducts(slug: string, searchParams: Record<string, st
 }
 
 export default async function CategoryPage(
-  // params,
-  // searchParams,
   props: any
-
-  // :{
-  //   // params: Promise<{ slug: string }>;
-  //   // searchParams: Promise<Record<string, string | string[] | undefined>>;
-  //   params: { slug: string };
-  //   searchParams: Record<string, string | string[] | undefined>;
-  // }
 ) {
-  // const { slug } = await params;
   const params = await Promise.resolve(props.params);
   const searchParams = await Promise.resolve(props.searchParams);
   const slug = params.slug;
-  // const resolvedSearchParams = await searchParams;
-
-  // const cleanParams: Record<string, string> = {};
-  // Object.entries(resolvedSearchParams).forEach(([key, value]) => {
-  //   if (value && typeof value === 'string') {
-  //     cleanParams[key] = value;
-  //   }
-  // });
   const cleanParams: Record<string, string> = {};
   Object.entries(searchParams).forEach(([key, value]) => {
     if (typeof value === 'string') {
