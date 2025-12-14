@@ -10,6 +10,10 @@ export interface IIntegrations extends Document {
   gtmId?: string;
   facebookPixelEnabled: boolean;
   facebookPixelId?: string;
+  googleSearchConsoleEnabled: boolean;
+  googleSearchConsoleId?: string;
+  microsoftClarityEnabled: boolean;
+  microsoftClarityId?: string;
 
   // Security
   googleRecaptchaEnabled: boolean;
