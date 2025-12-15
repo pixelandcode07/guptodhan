@@ -61,6 +61,7 @@ const getVendorProductByIdFromDB = async (id: string) => {
     .populate("vendorStoreId", "storeName storeLogo")
     .lean(); // Convert to plain JavaScript object
 
+
   if (!productDoc) return null;
 
   const reviews = await ReviewModel.find({ productId: id }).lean();
@@ -450,7 +451,10 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
     status: "active",
     productTitle: { $regex: regex },
   })
-    .select("productTitle productImage price") // Only necessary fields
+    .select("productTitle productImage price") // -> Add By Moinuddin
+    .populate("category", "slug") // -> Add By Moinuddin
+    .populate("subCategory", "slug") // -> Add By Moinuddin
+    .populate("childCategory", "slug") // -> Add By Moinuddin
     .limit(5)
     .sort({ createdAt: -1 });
 
