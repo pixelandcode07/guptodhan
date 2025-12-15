@@ -487,16 +487,47 @@ const basePopulate = [
   { path: "weightUnit", select: "name" },
 ];
 
-// OFFER PRODUCTS (running offers)
+// // OFFER PRODUCTS (running offers)
+// const getOfferProductsFromDB = async () => {
+//   return await VendorProductModel.find({
+//     status: "active",
+//     offerDeadline: { $gt: new Date() },
+//   })
+//     .populate(basePopulate)
+//     .sort({ createdAt: -1 })
+//     .limit(6);
+// };
+
 const getOfferProductsFromDB = async () => {
-  return await VendorProductModel.find({
+  const products = await VendorProductModel.find({
     status: "active",
     offerDeadline: { $gt: new Date() },
   })
     .populate(basePopulate)
     .sort({ createdAt: -1 })
     .limit(6);
+
+  const productsWithReviews = await Promise.all(
+    products.map(async (product) => {
+      const reviews = await ReviewModel.find({
+        productId: product._id,
+      }).sort({ uploadedTime: -1 });
+
+      return {
+        ...product.toObject(),
+        reviews,
+        totalReviews: reviews.length,
+        averageRating:
+          reviews.length > 0
+            ? reviews.reduce((a, b) => a + b.rating, 0) / reviews.length
+            : 0,
+      };
+    })
+  );
+
+  return productsWithReviews;
 };
+
 
 // BEST SELLING
 const getBestSellingProductsFromDB = async () => {
