@@ -5,7 +5,6 @@ import { ReviewModel } from "../product-review/productReview.model";
 import { ProductQAModel } from "../product-qna/productQNA.model";
 import { StoreModel } from "../vendor-store/vendorStore.model";
 
-
 const createVendorProductInDB = async (payload: Partial<IVendorProduct>) => {
   const result = await VendorProductModel.create(payload);
 
@@ -68,13 +67,24 @@ const getVendorProductByIdFromDB = async (id: string) => {
   const reviews = await ReviewModel.find({ productId: id }).lean();
   const qna = await ProductQAModel.find({ productId: id }).lean();
 
+    const ratingStats = await ReviewModel.aggregate([
+    { $match: { productId: new mongoose.Types.ObjectId(id) } },
+    {
+      $group: {
+        _id: "$productId",
+        totalReviews: { $sum: 1 },
+        averageRating: { $avg: "$rating" },
+      },
+    },
+  ]);
+
   return {
     ...productDoc,
+    ratingStats,
     reviews,
     qna,
   };
 };
-
 
 // filter for main category product
 const getVendorProductsByCategoryFromDB = async (
@@ -164,8 +174,6 @@ const getVendorProductsByCategoryFromDB = async (
 
   return result;
 };
-
-
 
 // filter for sub category product
 const getVendorProductsBySubCategoryFromDB = async (
@@ -435,7 +443,6 @@ const getLandingPageProductsFromDB = async () => {
   };
 };
 
-
 // live search suggestions + full search results
 const getLiveSuggestionsFromDB = async (searchTerm: string) => {
   const regex = new RegExp(searchTerm.split(" ").join("|"), "i");
@@ -490,17 +497,6 @@ const basePopulate = [
   { path: "weightUnit", select: "name" },
 ];
 
-// // OFFER PRODUCTS (running offers)
-// const getOfferProductsFromDB = async () => {
-//   return await VendorProductModel.find({
-//     status: "active",
-//     offerDeadline: { $gt: new Date() },
-//   })
-//     .populate(basePopulate)
-//     .sort({ createdAt: -1 })
-//     .limit(6);
-// };
-
 const getOfferProductsFromDB = async () => {
   const products = await VendorProductModel.find({
     status: "active",
@@ -512,18 +508,23 @@ const getOfferProductsFromDB = async () => {
 
   const productsWithReviews = await Promise.all(
     products.map(async (product) => {
-      const reviews = await ReviewModel.find({
-        productId: product._id,
-      }).sort({ uploadedTime: -1 });
+      const ratingStats = await ReviewModel.aggregate([
+        {
+          $match: { productId: product._id },
+        },
+        {
+          $group: {
+            _id: "$productId",
+            totalReviews: { $sum: 1 },
+            averageRating: { $avg: "$rating" },
+          },
+        },
+      ]);
 
       return {
         ...product.toObject(),
-        reviews,
-        totalReviews: reviews.length,
-        averageRating:
-          reviews.length > 0
-            ? reviews.reduce((a, b) => a + b.rating, 0) / reviews.length
-            : 0,
+        totalReviews: ratingStats[0]?.totalReviews || 0,
+        averageRating: ratingStats[0]?.averageRating || 0,
       };
     })
   );
@@ -531,20 +532,69 @@ const getOfferProductsFromDB = async () => {
   return productsWithReviews;
 };
 
-
 // BEST SELLING
 const getBestSellingProductsFromDB = async () => {
-  return await VendorProductModel.find({ status: "active" })
+  const products = await VendorProductModel.find({ status: "active" })
     .populate(basePopulate)
     .sort({ sellCount: -1 })
     .limit(6);
+
+  const productsWithReviews = await Promise.all(
+    products.map(async (product) => {
+      const ratingStats = await ReviewModel.aggregate([
+        {
+          $match: { productId: product._id },
+        },
+        {
+          $group: {
+            _id: "$productId",
+            totalReviews: { $sum: 1 },
+            averageRating: { $avg: "$rating" },
+          },
+        },
+      ]);
+
+      return {
+        ...product.toObject(),
+        totalReviews: ratingStats[0]?.totalReviews || 0,
+        averageRating: ratingStats[0]?.averageRating || 0,
+      };
+    })
+  );
+
+  return productsWithReviews;
 };
 
 // FOR YOU (random / all active)
 const getForYouProductsFromDB = async () => {
-  return await VendorProductModel.find({ status: "active" })
+  const products = await VendorProductModel.find({ status: "active" })
     .populate(basePopulate)
     .sort({ createdAt: -1 });
+
+      const productsWithReviews = await Promise.all(
+    products.map(async (product) => {
+      const ratingStats = await ReviewModel.aggregate([
+        {
+          $match: { productId: product._id },
+        },
+        {
+          $group: {
+            _id: "$productId",
+            totalReviews: { $sum: 1 },
+            averageRating: { $avg: "$rating" },
+          },
+        },
+      ]);
+
+      return {
+        ...product.toObject(),
+        totalReviews: ratingStats[0]?.totalReviews || 0,
+        averageRating: ratingStats[0]?.averageRating || 0,
+      };
+    })
+  );
+
+  return productsWithReviews;
 };
 
 const getVendorProductsByVendorIdFromDB = async (vendorId: string) => {
@@ -664,9 +714,32 @@ const getVendorStoreAndProductsFromDB = async (
   // Count for pagination
   const totalProducts = await VendorProductModel.countDocuments(filter);
 
+    const productsWithReviews = await Promise.all(
+    products.map(async (product) => {
+      const ratingStats = await ReviewModel.aggregate([
+        {
+          $match: { productId: product._id },
+        },
+        {
+          $group: {
+            _id: "$productId",
+            totalReviews: { $sum: 1 },
+            averageRating: { $avg: "$rating" },
+          },
+        },
+      ]);
+
+      return {
+        ...product.toObject(),
+        totalReviews: ratingStats[0]?.totalReviews || 0,
+        averageRating: ratingStats[0]?.averageRating || 0,
+      };
+    })
+  );
+
   return {
     store,
-    products,
+    productsWithReviews,
     pagination: {
       total: totalProducts,
       page,
