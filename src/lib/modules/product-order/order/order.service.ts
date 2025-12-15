@@ -189,10 +189,10 @@ const getSalesReportFromDB = async (filters: {
     }
 };
 
-const getReturnedOrdersByUserFromDB = async (userId: string) => {
+const getReturnedOrdersByUserFromDB = async (uesrId: string) => {
   try {
     const result = await OrderModel.find({
-      userId: new Types.ObjectId(userId),
+      userId: new Types.ObjectId(uesrId),
       orderStatus: "Returned", // filter only returned orders
     })
       .populate({

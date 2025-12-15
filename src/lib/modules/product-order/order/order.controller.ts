@@ -594,12 +594,12 @@ const getSalesReport = async (req: NextRequest) => {
 
 const getReturnedOrdersByUser = async (
   req: NextRequest,
-  { params }: { params: Promise<{ userId: string }> }
+  { params }: { params: Promise<{ uesrId: string }> }
 ) => {
   await dbConnect();
-  const { userId } = await params;
+  const { uesrId } = await params;
 
-  const result = await OrderServices.getReturnedOrdersByUserFromDB(userId);
+  const result = await OrderServices.getReturnedOrdersByUserFromDB(uesrId);
 
   return sendResponse({
     success: true,
