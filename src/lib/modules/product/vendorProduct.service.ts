@@ -66,8 +66,20 @@ const getVendorProductByIdFromDB = async (id: string) => {
   const reviews = await ReviewModel.find({ productId: id }).lean();
   const qna = await ProductQAModel.find({ productId: id }).lean();
 
+    const ratingStats = await ReviewModel.aggregate([
+    { $match: { productId: new mongoose.Types.ObjectId(id) } },
+    {
+      $group: {
+        _id: "$productId",
+        totalReviews: { $sum: 1 },
+        averageRating: { $avg: "$rating" },
+      },
+    },
+  ]);
+
   return {
     ...productDoc,
+    ratingStats,
     reviews,
     qna,
   };
