@@ -36,10 +36,10 @@ type Product = {
 };
 
 export default function ProductGridWithFilters({
-    initialProducts,
+    initialProducts = [],
     storeId,
 }: {
-    initialProducts: Product[];
+    initialProducts?: Product[];
     storeId: string;
 }) {
     const router = useRouter();
@@ -90,7 +90,7 @@ export default function ProductGridWithFilters({
         try {
             const res = await axios.get(`/api/v1/public/vendor-store/store-with-product/${storeId}${url}`);
             if (res.data.success) {
-                setProducts(res.data.data.products || []);
+                setProducts(res.data.data.productsWithReviews || []);
                 router.replace(`${pathname}${url}`, { scroll: false });
             }
         } catch (err) {
@@ -116,139 +116,6 @@ export default function ProductGridWithFilters({
         setIsFilterOpen(false);
     };
 
-    const FilterContent = () => (
-        <div className="space-y-6 pr-2">
-            {/* Search */}
-            <div className="space-y-2">
-                <Label>Search</Label>
-                <Input
-                    placeholder="Search products..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-                />
-            </div>
-
-            <Separator />
-
-            {/* Price */}
-            <div className="space-y-3">
-                <Label>Price Range</Label>
-                <div className="grid grid-cols-2 gap-3">
-                    <Input
-                        type="number"
-                        placeholder={`৳${absoluteMin.toLocaleString()}`}
-                        value={minPrice}
-                        onChange={(e) => setMinPrice(e.target.value)}
-                    />
-                    <Input
-                        type="number"
-                        placeholder={`৳${absoluteMax.toLocaleString()}`}
-                        value={maxPrice}
-                        onChange={(e) => setMaxPrice(e.target.value)}
-                    />
-                </div>
-            </div>
-
-            {uniqueBrands.length > 0 && (
-                <>
-                    <Separator />
-                    <div className="space-y-2">
-                        <Label>Brands</Label>
-                        {uniqueBrands.map(b => (
-                            <label key={b} className="flex items-center gap-2">
-                                <Checkbox
-                                    checked={selectedBrands.includes(b)}
-                                    onCheckedChange={(c) => setSelectedBrands(c ? [...selectedBrands, b] : selectedBrands.filter(x => x !== b))}
-                                />
-                                <span className="text-sm">{b}</span>
-                            </label>
-                        ))}
-                    </div>
-                </>
-            )}
-
-            {uniqueColors.length > 0 && (
-                <>
-                    <Separator />
-                    <div className="space-y-2">
-                        <Label>Colors</Label>
-                        {uniqueColors.map(c => (
-                            <label key={c} className="flex items-center gap-2">
-                                <Checkbox
-                                    checked={selectedColors.includes(c)}
-                                    onCheckedChange={(v) => setSelectedColors(v ? [...selectedColors, c] : selectedColors.filter(x => x !== c))}
-                                />
-                                <span className="text-sm capitalize">{c}</span>
-                            </label>
-                        ))}
-                    </div>
-                </>
-            )}
-
-            {uniqueSizes.length > 0 && (
-                <>
-                    <Separator />
-                    <div className="space-y-2">
-                        <Label>Sizes</Label>
-                        {uniqueSizes.map(s => (
-                            <label key={s} className="flex items-center gap-2">
-                                <Checkbox
-                                    checked={selectedSizes.includes(s)}
-                                    onCheckedChange={(v) => setSelectedSizes(v ? [...selectedSizes, s] : selectedSizes.filter(x => x !== s))}
-                                />
-                                <span className="text-sm">{s}</span>
-                            </label>
-                        ))}
-                    </div>
-                </>
-            )}
-
-            {uniqueFlags.length > 0 && (
-                <>
-                    <Separator />
-                    <div className="space-y-2">
-                        <Label>Flags</Label>
-                        {uniqueFlags.map(f => (
-                            <label key={f} className="flex items-center gap-2">
-                                <Checkbox
-                                    checked={selectedFlags.includes(f)}
-                                    onCheckedChange={(v) => setSelectedFlags(v ? [...selectedFlags, f] : selectedFlags.filter(x => x !== f))}
-                                />
-                                <span className="text-sm">{f}</span>
-                            </label>
-                        ))}
-                    </div>
-                </>
-            )}
-
-            <Separator />
-
-            <div className="space-y-3">
-                <Label>Sort By</Label>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Newest first" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="newest">Newest First</SelectItem>
-                        <SelectItem value="price-asc">Price: Low to High</SelectItem>
-                        <SelectItem value="price-desc">Price: High to Low</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-                <Button onClick={() => applyFilters(1)} className="flex-1" disabled={isLoading}>
-                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    Apply
-                </Button>
-                <Button variant="outline" onClick={clearFilters} className="flex-1">
-                    Clear All
-                </Button>
-            </div>
-        </div>
-    );
 
     return (
         <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto pt-10">
@@ -261,6 +128,7 @@ export default function ProductGridWithFilters({
                     onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
                     className="flex-1"
                 />
+                {/* Mobile Filter Sheet */}
                 <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                     <SheetTrigger asChild>
                         <Button variant="outline" size="icon">
@@ -276,7 +144,138 @@ export default function ProductGridWithFilters({
                                 </Button>
                             </SheetTitle>
                         </SheetHeader>
-                        <FilterContent />
+
+                        {/* Filter content */}
+                        <div className="space-y-6 pr-2">
+                            {/* Search */}
+                            <div className="space-y-2">
+                                <Label>Search</Label>
+                                <Input
+                                    placeholder="Search products..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                                />
+                            </div>
+
+                            <Separator />
+                            {/* Price */}
+                            <div className="space-y-3">
+                                <Label>Price Range</Label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Input
+                                        type="number"
+                                        placeholder={`৳${absoluteMin.toLocaleString()}`}
+                                        value={minPrice}
+                                        onChange={(e) => setMinPrice(e.target.value)}
+                                    />
+                                    <Input
+                                        type="number"
+                                        placeholder={`৳${absoluteMax.toLocaleString()}`}
+                                        value={maxPrice}
+                                        onChange={(e) => setMaxPrice(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            {uniqueBrands.length > 0 && (
+                                <>
+                                    <Separator />
+                                    <div className="space-y-2">
+                                        <Label>Brands</Label>
+                                        {uniqueBrands.map(b => (
+                                            <label key={b} className="flex items-center gap-2">
+                                                <Checkbox
+                                                    checked={selectedBrands.includes(b)}
+                                                    onCheckedChange={(c) => setSelectedBrands(c ? [...selectedBrands, b] : selectedBrands.filter(x => x !== b))}
+                                                />
+                                                <span className="text-sm">{b}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+
+                            {uniqueColors.length > 0 && (
+                                <>
+                                    <Separator />
+                                    <div className="space-y-2">
+                                        <Label>Colors</Label>
+                                        {uniqueColors.map(c => (
+                                            <label key={c} className="flex items-center gap-2">
+                                                <Checkbox
+                                                    checked={selectedColors.includes(c)}
+                                                    onCheckedChange={(v) => setSelectedColors(v ? [...selectedColors, c] : selectedColors.filter(x => x !== c))}
+                                                />
+                                                <span className="text-sm capitalize">{c}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+
+                            {uniqueSizes.length > 0 && (
+                                <>
+                                    <Separator />
+                                    <div className="space-y-2">
+                                        <Label>Sizes</Label>
+                                        {uniqueSizes.map(s => (
+                                            <label key={s} className="flex items-center gap-2">
+                                                <Checkbox
+                                                    checked={selectedSizes.includes(s)}
+                                                    onCheckedChange={(v) => setSelectedSizes(v ? [...selectedSizes, s] : selectedSizes.filter(x => x !== s))}
+                                                />
+                                                <span className="text-sm">{s}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+
+                            {uniqueFlags.length > 0 && (
+                                <>
+                                    <Separator />
+                                    <div className="space-y-2">
+                                        <Label>Flags</Label>
+                                        {uniqueFlags.map(f => (
+                                            <label key={f} className="flex items-center gap-2">
+                                                <Checkbox
+                                                    checked={selectedFlags.includes(f)}
+                                                    onCheckedChange={(v) => setSelectedFlags(v ? [...selectedFlags, f] : selectedFlags.filter(x => x !== f))}
+                                                />
+                                                <span className="text-sm">{f}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+
+                            <Separator />
+
+                            <div className="space-y-3">
+                                <Label>Sort By</Label>
+                                <Select value={sortBy} onValueChange={setSortBy}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Newest first" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="newest">Newest First</SelectItem>
+                                        <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                                        <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <Button onClick={() => applyFilters(1)} className="flex-1" disabled={isLoading}>
+                                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                                    Apply
+                                </Button>
+                                <Button variant="outline" onClick={clearFilters} className="flex-1">
+                                    Clear All
+                                </Button>
+                            </div>
+                        </div>
                     </SheetContent>
                 </Sheet>
             </div>
@@ -295,7 +294,136 @@ export default function ProductGridWithFilters({
                                 Clear
                             </Button>
                         </div>
-                        <FilterContent />
+                        <div className="space-y-6 pr-2">
+                            {/* Search */}
+                            <div className="space-y-2">
+                                <Label>Search</Label>
+                                <Input
+                                    placeholder="Search products..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
+                                />
+                            </div>
+
+                            <Separator />
+                            <div className="flex gap-3 pt-4">
+                                <Button onClick={() => applyFilters(1)} className="flex-1" disabled={isLoading}>
+                                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                                    Apply
+                                </Button>
+                                <Button variant="outline" onClick={clearFilters} className="flex-1">
+                                    Clear All
+                                </Button>
+                            </div>
+                            <Separator />
+                            {/* Price */}
+                            <div className="space-y-3">
+                                <Label>Price Range</Label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Input
+                                        type="number"
+                                        placeholder={`৳${absoluteMin.toLocaleString()}`}
+                                        value={minPrice}
+                                        onChange={(e) => setMinPrice(e.target.value)}
+                                    />
+                                    <Input
+                                        type="number"
+                                        placeholder={`৳${absoluteMax.toLocaleString()}`}
+                                        value={maxPrice}
+                                        onChange={(e) => setMaxPrice(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            {uniqueBrands.length > 0 && (
+                                <>
+                                    <Separator />
+                                    <div className="space-y-2">
+                                        <Label>Brands</Label>
+                                        {uniqueBrands.map(b => (
+                                            <label key={b} className="flex items-center gap-2">
+                                                <Checkbox
+                                                    checked={selectedBrands.includes(b)}
+                                                    onCheckedChange={(c) => setSelectedBrands(c ? [...selectedBrands, b] : selectedBrands.filter(x => x !== b))}
+                                                />
+                                                <span className="text-sm">{b}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+
+                            {uniqueColors.length > 0 && (
+                                <>
+                                    <Separator />
+                                    <div className="space-y-2">
+                                        <Label>Colors</Label>
+                                        {uniqueColors.map(c => (
+                                            <label key={c} className="flex items-center gap-2">
+                                                <Checkbox
+                                                    checked={selectedColors.includes(c)}
+                                                    onCheckedChange={(v) => setSelectedColors(v ? [...selectedColors, c] : selectedColors.filter(x => x !== c))}
+                                                />
+                                                <span className="text-sm capitalize">{c}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+
+                            {uniqueSizes.length > 0 && (
+                                <>
+                                    <Separator />
+                                    <div className="space-y-2">
+                                        <Label>Sizes</Label>
+                                        {uniqueSizes.map(s => (
+                                            <label key={s} className="flex items-center gap-2">
+                                                <Checkbox
+                                                    checked={selectedSizes.includes(s)}
+                                                    onCheckedChange={(v) => setSelectedSizes(v ? [...selectedSizes, s] : selectedSizes.filter(x => x !== s))}
+                                                />
+                                                <span className="text-sm">{s}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+
+                            {uniqueFlags.length > 0 && (
+                                <>
+                                    <Separator />
+                                    <div className="space-y-2">
+                                        <Label>Flags</Label>
+                                        {uniqueFlags.map(f => (
+                                            <label key={f} className="flex items-center gap-2">
+                                                <Checkbox
+                                                    checked={selectedFlags.includes(f)}
+                                                    onCheckedChange={(v) => setSelectedFlags(v ? [...selectedFlags, f] : selectedFlags.filter(x => x !== f))}
+                                                />
+                                                <span className="text-sm">{f}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+
+                            <Separator />
+
+                            <div className="space-y-3">
+                                <Label>Sort By</Label>
+                                <Select value={sortBy} onValueChange={setSortBy}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Newest first" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="newest">Newest First</SelectItem>
+                                        <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                                        <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
                     </Card>
                 </aside>
 
