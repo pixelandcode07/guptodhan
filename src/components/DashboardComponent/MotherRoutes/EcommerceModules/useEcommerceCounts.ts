@@ -13,6 +13,7 @@ interface EcommerceCounts {
   inTransitCount: string;
   deliveredCount: string;
   cancelledCount: string;
+  returnRequestCount: string;
 }
 
 export const useEcommerceCounts = (): EcommerceCounts => {
@@ -95,6 +96,15 @@ export const useEcommerceCounts = (): EcommerceCounts => {
     swrConfig
   );
 
+  const { data: returnRequestCountNum } = useSWR(
+    token ? ['/api/v1/product-order', 'Return Request', token, userRole] : null,
+    () =>
+      fetchCount(
+        `/api/v1/product-order?status=${encodeURIComponent('Return Request')}`
+      ),
+    swrConfig
+  );
+
   return {
     productCount: String(productCountNum ?? 0),
     reviewCount: String(reviewCountNum ?? 0),
@@ -106,6 +116,7 @@ export const useEcommerceCounts = (): EcommerceCounts => {
     inTransitCount: String(inTransitCountNum ?? 0),
     deliveredCount: String(deliveredCountNum ?? 0),
     cancelledCount: String(cancelledCountNum ?? 0),
+    returnRequestCount: String(returnRequestCountNum ?? 0),
   };
 };
 
