@@ -1,198 +1,3 @@
-// import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-// import { useForm } from 'react-hook-form'
-// import React, { useEffect, useState } from 'react'
-// import { DialogClose, DialogContent, DialogFooter, DialogTitle } from '@/components/ui/dialog'
-// import LogIn from './components/LogIn'
-// import CreateAccount from './components/CreateAccount'
-// import VerifyOTP from './components/VerifyOTP'
-// import SetPin from './components/SetPin'
-// import axios from 'axios'
-// import { auth, setupRecaptcha, signInWithPhoneNumber } from '@/lib/firebase'
-// import z from 'zod'
-// import { zodResolver } from '@hookform/resolvers/zod';
-// import { registerWithPhoneSchema } from '@/lib/modules/user/user.validation'
-// import Forgetpin from './components/Forgetpin'
-// import SetNewPin from './components/SetNewPin'
-// import { useRedirectAfterLogin } from '@/hooks/useRedirectAfterLogin'
-
-// // TypeScript interfaces for form data
-// export interface LoginFormData {
-//     phone: string
-//     pin: string
-//     rememberMe: boolean
-// }
-
-// export interface CreateAccountFormData {
-//     phoneNumber: string
-// }
-
-// export interface VerifyOtpFormData {
-//     otp: string
-// }
-
-// export interface SetPinFormData {
-//     pin: string
-// }
-
-// export type FormStep = 'login' | 'createAccount' | 'verifyOtp' | 'setPin' | 'forgetPin' | 'setNewPin'
-
-// export default function LogInRegister() {
-//     useRedirectAfterLogin();
-//     const [step, setStep] = useState<FormStep>('login')
-//     const [submittedPhone, setSubmittedPhone] = useState<string>('')
-//     const [userId, setUserId] = useState<string | null>(null)
-//     const [loading, setLoading] = useState<boolean>(false)
-//     const [error, setError] = useState<string | null>(null)
-
-//     useEffect(() => {
-//         const container = document.createElement('div')
-//         container.id = 'recaptcha-container'
-//         document.body.appendChild(container)
-//         return () => {
-//             document.body.removeChild(container)
-//         }
-//     }, [])
-
-//     // Login Form
-//     const {
-//         register: registerLogin,
-//         handleSubmit: handleSubmitLogin,
-//         formState: { errors: loginErrors },
-//     } = useForm<LoginFormData>({
-//         mode: 'onChange',
-//         defaultValues: {
-//             phone: '+880 1777777777',
-//             pin: '1234',
-//             rememberMe: false,
-//         },
-//     })
-//     const [showPin, setShowPin] = useState<boolean>(false)
-
-//     const onSubmitLogin = (data: LoginFormData) => {
-//         console.log('Login Data:', data)
-//     }
-
-//     // Create Account Form
-//     const {
-//         register: registerCreate,
-//         handleSubmit: handleSubmitCreate,
-//         formState: { errors: createErrors },
-//     } = useForm<CreateAccountFormData>({
-//         mode: 'onChange',
-//         defaultValues: {
-//             phoneNumber: '',
-//         },
-//         resolver: zodResolver(registerWithPhoneSchema.shape.body),
-//     })
-
-//     // Verify OTP Form
-//     const {
-//         register: registerOtp,
-//         handleSubmit: handleSubmitOtp,
-//         formState: { errors: otpErrors },
-//     } = useForm<VerifyOtpFormData>({
-//         mode: 'onChange',
-//         defaultValues: {
-//             otp: '',
-//         },
-//     })
-
-//     // Set PIN Form
-//     const {
-//         register: registerPin,
-//         handleSubmit: handleSubmitPin,
-//         formState: { errors: pinErrors },
-//     } = useForm<SetPinFormData>({
-//         mode: 'onChange',
-//         defaultValues: {
-//             pin: '',
-//         },
-//     })
-
-//     const onSubmitPin = async (data: SetPinFormData) => {
-//         setLoading(true)
-//         setError(null)
-//         setStep('login')
-//     }
-
-//     return (
-//         <DialogContent>
-//             <DialogTitle></DialogTitle>
-//             <Card className="border-none shadow-none">
-//                 <CardHeader>
-//                     <CardTitle className="text-center">
-//                         {step === 'login' && 'User Login'}
-//                         {step === 'createAccount' && 'Create Account'}
-//                         {step === 'verifyOtp' && 'Verify OTP'}
-//                         {step === 'setPin' && 'Create Account'}
-//                         {step === 'forgetPin' && 'Forget PIN'}
-//                         {step === 'setNewPin' && 'Set New PIN'}
-//                     </CardTitle>
-//                 </CardHeader>
-//                 <CardContent>
-
-//                     {/* LogIn */}
-//                     <LogIn 
-//                         step={step}
-//                         setStep={setStep}
-//                         registerLogin={registerLogin}
-//                         handleSubmitLogin={handleSubmitLogin}
-//                         loginErrors={loginErrors}
-//                         onSubmitLogin={onSubmitLogin}
-//                         showPin={showPin}
-//                         setShowPin={setShowPin}
-//                     />
-
-//                     {/* CreateAccount */}
-//                     <CreateAccount
-//                         step={step}
-//                         handleSubmitCreate={handleSubmitCreate}
-//                         registerCreate={registerCreate}
-//                         createErrors={createErrors}
-//                         setStep={setStep}
-//                         setSubmittedPhone={setSubmittedPhone}
-//                     />
-
-//                     {/* Verify OTP */}
-//                     <VerifyOTP
-//                         step={step}
-//                         setStep={setStep}
-//                         submittedPhone={submittedPhone}
-//                         handleSubmitOtp={handleSubmitOtp}
-//                         registerOtp={registerOtp}
-//                         otpErrors={otpErrors}
-//                     />
-
-//                     {/* Set pin */}
-//                     <SetPin
-//                         step={step}
-//                         setStep={setStep}
-//                         handleSubmitPin={handleSubmitPin}
-//                         onSubmitPin={onSubmitPin}
-//                         registerPin={registerPin}
-//                         pinErrors={pinErrors}
-//                         loading={loading}
-//                     />
-
-//                     {/* Forget PIN */}
-//                     <Forgetpin step={step} setStep={setStep} />
-
-//                     {/* Set New PIN */}
-//                     <SetNewPin step={step} setStep={setStep} />
-//                 </CardContent>
-//                 <DialogFooter>
-//                     <DialogClose asChild>
-//                     </DialogClose>
-//                 </DialogFooter>
-//             </Card>
-//         </DialogContent>
-//     )
-// }
-
-
-
-// src/app/components/LogInAndRegister/LogIn_Register.tsx
-
 'use client'
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -213,10 +18,11 @@ import { useRedirectAfterLogin } from '@/hooks/useRedirectAfterLogin'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
+// ✅ Import signIn from next-auth
+import { signIn } from 'next-auth/react'
 
-// Form Types
 export interface LoginFormData {
-  phone: string
+  identifier: string
   pin: string
   rememberMe: boolean
 }
@@ -246,7 +52,6 @@ export default function LogInRegister() {
   useRedirectAfterLogin()
   const router = useRouter()
 
-  // Close button ref — safe way to close dialog
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   const [step, setStep] = useState<FormStep>('login')
@@ -254,32 +59,107 @@ export default function LogInRegister() {
   const [registeredPhone, setRegisteredPhone] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
 
-  // Forms
-  const loginForm = useForm<LoginFormData>({ mode: 'onChange' })
+  useEffect(() => {
+    const container = document.createElement('div')
+    container.id = 'recaptcha-container'
+    document.body.appendChild(container)
+    return () => {
+        if(document.body.contains(container)){
+            document.body.removeChild(container)
+        }
+    }
+  }, [])
+
+  const loginForm = useForm<LoginFormData>({ 
+    mode: 'onChange',
+    defaultValues: {
+      identifier: '',
+      pin: '',
+      rememberMe: false,
+    },
+  })
+
   const createForm = useForm<CreateAccountFormData>({ mode: 'onChange' })
   const otpForm = useForm<VerifyOtpFormData>({ mode: 'onChange' })
   const pinForm = useForm<SetPinFormData>({ mode: 'onChange' })
 
-  const [showPin, setShowPin] = useState(false)
+  const [showPin, setShowPin] = useState<boolean>(false)
 
-  const onSubmitLogin = (data: LoginFormData) => {
-    console.log('Logged in:', data)
-    closeButtonRef.current?.click()
+  // ✅ Updated: Login Submit Handler with NextAuth signIn
+  const onSubmitLogin = async (data: LoginFormData) => {
+    try {
+      setLoading(true)
+      
+      // 1. Call Backend API to get Token & User Data
+      const res = await axios.post('/api/v1/auth/login', {
+        identifier: data.identifier, 
+        password: data.pin 
+      })
+
+      if (res.data.success) {
+        const { user, accessToken } = res.data.data;
+
+        // 2. 🔥 Tell NextAuth to create a session using these credentials
+        // এই অংশটিই আপনার মিসিং ছিল
+        const result = await signIn('credentials', {
+            redirect: false, // Page reload avoid korar jonno false rakhun
+            userId: user._id,
+            role: user.role,
+            accessToken: accessToken,
+            vendorId: user.vendorId, // Vendor ID pass
+            name: user.name,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            profilePicture: user.profilePicture,
+            address: user.address
+        });
+
+        if (result?.error) {
+            toast.error(result.error);
+        } else {
+            toast.success('Logged in successfully!');
+            closeButtonRef.current?.click();
+            window.location.reload(); // Refresh to reflect session state
+        }
+      }
+    } catch (error: any) {
+      console.error('Login Error:', error)
+      toast.error(error.response?.data?.message || 'Login failed')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // Called after successful registration
+  // ✅ Updated: Handle Account Created (Auto Login)
   const handleAccountCreated = async (phone: string, pin: string) => {
     try {
       const cleanPhone = phone.startsWith('0')
         ? phone
         : '0' + phone.replace('+88', '')
 
+      // 1. Call Backend
       const loginRes = await axios.post('/api/v1/auth/login', {
-        phone: cleanPhone,
-        pin,
+        identifier: cleanPhone,
+        password: pin,
       })
 
       if (loginRes.data.success) {
+        const { user, accessToken } = loginRes.data.data;
+
+        // 2. 🔥 Sync with NextAuth
+        await signIn('credentials', {
+            redirect: false,
+            userId: user._id,
+            role: user.role,
+            accessToken: accessToken,
+            vendorId: user.vendorId,
+            name: user.name,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            profilePicture: user.profilePicture,
+            address: user.address
+        });
+
         toast.success('Welcome to Guptodhan!', {
           description: 'Your account is ready and you are now logged in.',
           duration: 6000,
@@ -296,7 +176,7 @@ export default function LogInRegister() {
       })
       setStep('login')
     } finally {
-      closeButtonRef.current?.click() // Close dialog
+      closeButtonRef.current?.click()
       router.refresh()
     }
   }
@@ -305,7 +185,6 @@ export default function LogInRegister() {
     <DialogContent className="sm:max-w-md">
       <DialogTitle className="sr-only">Authentication</DialogTitle>
 
-      {/* Safe Close Button */}
       <DialogClose asChild>
         <button
           ref={closeButtonRef}
@@ -319,9 +198,9 @@ export default function LogInRegister() {
       <Card className="border-none shadow-none">
         <CardHeader>
           <CardTitle className="text-center text-xl font-bold">
-            {step === 'login' && 'Welcome Back'}
+            {step === 'login' && 'User Login'}
             {step === 'createAccount' && 'Create Account'}
-            {step === 'verifyOtp' && 'Verify Phone'}
+            {step === 'verifyOtp' && 'Verify OTP'}
             {step === 'setPin' && 'Set Your PIN'}
             {step === 'forgetPin' && 'Forgot PIN'}
             {step === 'setNewPin' && 'Set New PIN'}
@@ -329,8 +208,6 @@ export default function LogInRegister() {
         </CardHeader>
 
         <CardContent className="space-y-6">
-
-          {/* Login */}
           {step === 'login' && (
             <LogIn
               step={step}
@@ -344,7 +221,6 @@ export default function LogInRegister() {
             />
           )}
 
-          {/* Create Account */}
           <CreateAccount
             step={step}
             handleSubmitCreate={createForm.handleSubmit}
@@ -355,7 +231,6 @@ export default function LogInRegister() {
             setRegisteredPhone={setRegisteredPhone}
           />
 
-          {/* Verify OTP */}
           <VerifyOTP
             step={step}
             setStep={setStep}
@@ -365,7 +240,6 @@ export default function LogInRegister() {
             otpErrors={otpForm.formState.errors}
           />
 
-          {/* Set PIN */}
           <SetPin
             step={step}
             setStep={setStep}
@@ -378,7 +252,6 @@ export default function LogInRegister() {
             onSuccess={(pin) => handleAccountCreated(registeredPhone, pin)}
           />
 
-          {/* Other steps */}
           <Forgetpin step={step} setStep={setStep} />
           <SetNewPin step={step} setStep={setStep} />
         </CardContent>
