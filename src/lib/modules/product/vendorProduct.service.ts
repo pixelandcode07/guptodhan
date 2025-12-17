@@ -624,7 +624,6 @@ const getVendorStoreAndProductsFromDB = async (
   // 1. Fetch Vendor Store
   // -----------------------------
   const store = await StoreModel.findOne({
-    // vendorId: new mongoose.Types.ObjectId(vendorId),
     _id: id, // Change by Moinuddin
   });
 
