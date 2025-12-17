@@ -1,11 +1,6 @@
 // src/app/general/home/page.tsx
-
-// =========================================================
-// 🔥 STEP 1: Import models-index at the VERY TOP
-// =========================================================
 import '@/lib/models-index';
 
-import { Suspense } from 'react';
 import dbConnect from '@/lib/db';
 import { DashboardServices } from '@/lib/modules/dashboard/dashboard.service';
 import { DollarSign, ShoppingBag, Users, Store, Calendar } from 'lucide-react';
@@ -57,35 +52,35 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <KpiCard 
           title="Total Revenue" 
-          value={`৳${data.stats.totalRevenue.toLocaleString()}`} 
+          value={`৳${(data.stats.totalRevenue || 0).toLocaleString()}`} 
           growth={12.5}
           icon={DollarSign}
           iconColor="#10b981"
-          subtext="vs last 30 days"
+          subtext="all time"
+        />
+        <KpiCard 
+          title="Monthly Revenue" 
+          value={`৳${(data.stats.monthlyRevenue || 0).toLocaleString()}`} 
+          growth={8.2}
+          icon={DollarSign}
+          iconColor="#3b82f6"
+          subtext="this month"
         />
         <KpiCard 
           title="Total Orders" 
-          value={data.stats.totalOrders} 
-          growth={8.2}
+          value={data.stats.totalOrders || 0} 
+          growth={5.0}
           icon={ShoppingBag}
-          iconColor="#3b82f6"
-          subtext="processed"
+          iconColor="#f59e0b"
+          subtext="all time"
         />
         <KpiCard 
           title="Active Users" 
-          value={data.stats.totalUsers} 
+          value={data.stats.totalUsers || 0} 
           growth={-2.4}
           icon={Users}
-          iconColor="#f59e0b"
-          subtext="registered accounts"
-        />
-        <KpiCard 
-          title="Total Vendors" 
-          value={data.stats.totalVendors} 
-          growth={5.0}
-          icon={Store}
           iconColor="#8b5cf6"
-          subtext="active shops"
+          subtext="registered"
         />
       </div>
 
@@ -108,11 +103,11 @@ export default async function DashboardPage() {
                     <th className="px-6 py-3">Order ID</th>
                     <th className="px-6 py-3">Customer</th>
                     <th className="px-6 py-3">Amount</th>
-                    <th className="px-6 py-3">Status</th>
+                    <th className="px-6 py-3">Payment</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {data.recentOrders.length > 0 ? (
+                  {data.recentOrders && data.recentOrders.length > 0 ? (
                     data.recentOrders.map((order: any) => (
                       <tr key={order._id} className="hover:bg-gray-50 transition">
                         <td className="px-6 py-3 font-medium text-gray-900">#{order.orderId}</td>
@@ -120,7 +115,7 @@ export default async function DashboardPage() {
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 rounded-full bg-gray-200 overflow-hidden relative">
                               <Image 
-                                src={'/placeholder-user.jpg'} 
+                                src={order.userId?.profilePicture || '/placeholder-user.jpg'} 
                                 alt="user" 
                                 fill 
                                 className="object-cover" 
@@ -131,7 +126,7 @@ export default async function DashboardPage() {
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-3 font-medium">৳{order.totalAmount.toLocaleString()}</td>
+                        <td className="px-6 py-3 font-medium">৳{(order.totalAmount || 0).toLocaleString()}</td>
                         <td className="px-6 py-3">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-semibold 
                             ${order.paymentStatus === 'Paid' 
@@ -159,10 +154,10 @@ export default async function DashboardPage() {
         {/* Right: Top Products & Alerts (Takes 1 column) */}
         <div className="space-y-6">
           {/* Low Stock Alert */}
-          <LowStockAlert products={data.lowStockProducts} />
+          <LowStockAlert products={data.lowStockProducts || []} />
           
           {/* Top Products */}
-          <TopProducts products={data.topProducts} />
+          <TopProducts products={data.topProducts || []} />
         </div>
       </div>
     </div>
