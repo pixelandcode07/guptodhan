@@ -6,10 +6,9 @@ export interface IOrder extends Document {
   storeId?: Types.ObjectId;
   deliveryMethodId?: string;
   paymentMethod?: string;
+  transactionId?: string; // For payment gateway transaction ID
   
-  // ✅ IMPORTANT: Transaction ID field for payment tracking
-  transactionId?: string;
-  
+  // Shipping Info
   shippingName: string;
   shippingPhone: string;
   shippingEmail: string;
@@ -19,24 +18,32 @@ export interface IOrder extends Document {
   shippingPostalCode: string;
   shippingCountry: string;
   addressDetails?: string;
-  
+
+  // Costs
   deliveryCharge: number;
   totalAmount: number;
-  
+
+  // Statuses
   paymentStatus: 'Pending' | 'Paid' | 'Failed' | 'Refunded' | 'Cancelled';
-  orderStatus: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';
+  // ✅ Added 'Return Request'
+  orderStatus: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned' | 'Return Request';
   
+  // ✅ New Field for Return Logic
+  returnReason?: string;
+
+  // Meta
   orderForm: 'Website' | 'App';
   orderDate: Date;
   deliveryDate?: Date;
   
-  orderDetails?: Types.ObjectId[];
-  
-  parcelId?: string;
-  trackingId?: string;
-  
+  // Relations
+  orderDetails: Types.ObjectId[];
   couponId?: Types.ObjectId;
   
+  // Logistics
+  parcelId?: string;
+  trackingId?: string;
+
   createdAt?: Date;
   updatedAt?: Date;
 }

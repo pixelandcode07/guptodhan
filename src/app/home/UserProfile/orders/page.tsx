@@ -8,12 +8,15 @@ import OrderFilters from '@/components/UserProfile/Order/OrderFilters'
 import type { OrderStatus, OrderSummary } from '@/components/UserProfile/Order/types'
 import OrdersSkeleton from '@/components/UserProfile/Order/OrdersSkeleton'
 
+// Helper function to map backend status to UI status
 function mapOrderStatusToUI(status: string): OrderStatus {
   const s = status.toLowerCase()
   if (s === 'delivered') return 'delivered'
   if (s === 'cancelled' || s === 'canceled') return 'cancelled'
   if (s === 'shipped') return 'to_receive'
   if (s === 'processing') return 'to_ship'
+  if (s === 'return request') return 'return_refund' // Map new status
+  if (s === 'returned') return 'return_refund' // Map new status
   return 'to_pay'
 }
 
@@ -50,7 +53,6 @@ type ApiOrder = {
   shippingName?: string
   trackingId?: string
   parcelId?: string
-  steadfastInvoice?: string
 }
 
 export default function UserOrdersPage() {
@@ -62,9 +64,8 @@ export default function UserOrdersPage() {
   const { data: session, status } = useSession()
 
   const fetchUserOrders = useCallback(async () => {
-    // ✅ FIX 2: Don't run logic if session is loading or unauthenticated
+    // ✅ FIX 2: Wait for session to be authenticated
     if (status === 'loading') return
-    
     if (status === 'unauthenticated') {
       setLoading(false)
       return
@@ -77,9 +78,7 @@ export default function UserOrdersPage() {
       const token = (session as { accessToken?: string })?.accessToken
       const userRole = userLike.role
       
-      // Now this check is safe because we ensured status is 'authenticated'
       if (!userId) {
-        // Only log error if authenticated but missing ID (data integrity issue)
         console.error('Authenticated but no user ID found in session')
         setOrders([])
         setLoading(false)
@@ -92,39 +91,32 @@ export default function UserOrdersPage() {
           ...(userRole ? { 'x-user-role': userRole } : {}),
         }
       })
+      
       const apiOrders = (response.data?.data ?? []) as ApiOrder[]
       
       const mappedOrders: OrderSummary[] = apiOrders.map((order) => {
+        // Map order items
         const items = (order.orderDetails || []).map((detail, index) => {
-          let product: { productTitle?: string; thumbnailImage?: string; photoGallery?: string[] | string; productPrice?: number; _id?: string } | null = null
+          let product: any = null
           
+          // Handle populated product logic
           if (detail.productId) {
             if (typeof detail.productId === 'object' && detail.productId !== null) {
               const productObj = detail.productId as Record<string, unknown>
-              const hasProductFields = 'productTitle' in productObj || 
-                                       'thumbnailImage' in productObj || 
-                                       'photoGallery' in productObj ||
-                                       'productPrice' in productObj
-              
-              if (hasProductFields) {
-                product = productObj as { productTitle?: string; thumbnailImage?: string; photoGallery?: string[] | string; productPrice?: number; _id?: string }
-              } else {
-                product = null
+              // Check for product fields to confirm population
+              if ('productTitle' in productObj || 'thumbnailImage' in productObj) {
+                product = productObj
               }
-            } else if (typeof detail.productId === 'string') {
-              product = null
             }
           }
           
+          // Fallback image logic
           let productImage = '/img/product/p-1.png'
           if (product) {
             if (product.thumbnailImage) {
               productImage = product.thumbnailImage
-            } else if (product.photoGallery) {
-              const gallery = Array.isArray(product.photoGallery) ? product.photoGallery : [product.photoGallery]
-              if (gallery.length > 0 && gallery[0]) {
-                productImage = gallery[0]
-              }
+            } else if (product.photoGallery && Array.isArray(product.photoGallery) && product.photoGallery.length > 0) {
+              productImage = product.photoGallery[0]
             }
           }
           
@@ -142,6 +134,7 @@ export default function UserOrdersPage() {
           }
         })
         
+        // Fallback if no items found
         const orderItems = items.length > 0 ? items : [{
           id: order._id,
           title: `Order #${order.orderId}`,
@@ -176,7 +169,7 @@ export default function UserOrdersPage() {
     }
   }, [session, status])
 
-  // ✅ FIX 3: Update useEffect to depend on status
+  // ✅ FIX 3: Depend on status for initial fetch
   useEffect(() => {
     if (status === 'authenticated') {
       fetchUserOrders()
@@ -189,11 +182,10 @@ export default function UserOrdersPage() {
     return <OrdersSkeleton />;
   }
 
-  // Optional: Handle unauthenticated state UI
   if (status === 'unauthenticated') {
     return (
         <div className="p-6 text-center">
-            <p>Please log in to view your orders.</p>
+            <p className="text-gray-500">Please log in to view your orders.</p>
         </div>
     )
   }
@@ -207,12 +199,13 @@ export default function UserOrdersPage() {
       </div>
       
       <div className="px-4">
-        <OrderList orders={orders} filter={filter} />
+        {/* Pass refresh function to handle return updates */}
+        <OrderList orders={orders} filter={filter} onRefresh={fetchUserOrders} />
       </div>
       
       {orders.length === 0 && !loading && (
-        <div className="px-4 py-8 text-center text-gray-500">
-          <p>No orders found.</p>
+        <div className="px-4 py-12 text-center border border-dashed rounded-lg bg-gray-50 mt-4">
+          <p className="text-gray-500">No orders found.</p>
         </div>
       )}
     </div>

@@ -15,8 +15,7 @@ const orderSchema = new Schema<IOrder>(
     },
     storeId: {
       type: Schema.Types.ObjectId,
-      // ✅ FIX: আপনার VendorStore ফাইলে মডেলের নাম 'StoreModel' দেওয়া আছে, তাই এখানেও 'StoreModel' হতে হবে।
-      ref: 'StoreModel', 
+      ref: 'StoreModel', // Ensure this matches your VendorStore model name
     },
     deliveryMethodId: {
       type: String,
@@ -77,10 +76,15 @@ const orderSchema = new Schema<IOrder>(
       enum: ['Pending', 'Paid', 'Failed', 'Refunded', 'Cancelled'],
       default: 'Pending',
     },
+    // ✅ Updated Enum with 'Return Request'
     orderStatus: {
       type: String,
-      enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Returned'],
+      enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Returned', 'Return Request'],
       default: 'Pending',
+    },
+    // ✅ New Field
+    returnReason: {
+      type: String,
     },
     orderForm: {
       type: String,
@@ -116,7 +120,7 @@ const orderSchema = new Schema<IOrder>(
   }
 );
 
-// ✅ Indexes
+// Indexes
 orderSchema.index({ userId: 1, createdAt: -1 });
 orderSchema.index({ transactionId: 1 });
 orderSchema.index({ paymentStatus: 1 });
