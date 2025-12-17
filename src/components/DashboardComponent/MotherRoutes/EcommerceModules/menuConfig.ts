@@ -1,5 +1,6 @@
 import {
   Bell,
+  BookOpenText,
   Box,
   CloudDownload,
   Command,
@@ -160,6 +161,11 @@ export const MENU_CONFIG: MenuConfig = {
     icon: Headphones,
     items: [],
     url: '/general/view/all/customers',
+  },
+  'Story Management': {
+    icon: BookOpenText,
+    items: [],
+    url: '/general/story',
   },
   "Customer's Wishlist": {
     icon: Heart,
