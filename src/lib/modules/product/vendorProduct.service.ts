@@ -67,7 +67,7 @@ const getVendorProductByIdFromDB = async (id: string) => {
   const reviews = await ReviewModel.find({ productId: id }).lean();
   const qna = await ProductQAModel.find({ productId: id }).lean();
 
-    const ratingStats = await ReviewModel.aggregate([
+  const ratingStats = await ReviewModel.aggregate([
     { $match: { productId: new mongoose.Types.ObjectId(id) } },
     {
       $group: {
@@ -571,7 +571,7 @@ const getForYouProductsFromDB = async () => {
     .populate(basePopulate)
     .sort({ createdAt: -1 });
 
-      const productsWithReviews = await Promise.all(
+  const productsWithReviews = await Promise.all(
     products.map(async (product) => {
       const ratingStats = await ReviewModel.aggregate([
         {
@@ -714,7 +714,7 @@ const getVendorStoreAndProductsFromDB = async (
   // Count for pagination
   const totalProducts = await VendorProductModel.countDocuments(filter);
 
-    const productsWithReviews = await Promise.all(
+  const productsWithReviews = await Promise.all(
     products.map(async (product) => {
       const ratingStats = await ReviewModel.aggregate([
         {

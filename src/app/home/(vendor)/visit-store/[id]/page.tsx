@@ -15,7 +15,7 @@ export default async function VisitStore({ params }: { params: { id: string } })
     }
 
     const { data } = await res.json();
-    const { store, products } = data;
+    const { store, productsWithReviews } = data;
 
     return (
         <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pt-10">
@@ -23,7 +23,7 @@ export default async function VisitStore({ params }: { params: { id: string } })
             <StoreHeader store={store} />
 
             {/* Client-side interactive grid + filters */}
-            <ProductGridWithFilters initialProducts={products} storeId={id} />
+            <ProductGridWithFilters initialProducts={productsWithReviews} storeId={id} />
         </div>
     );
 }
