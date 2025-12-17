@@ -3,12 +3,11 @@ import { getToken } from 'next-auth/jwt';
 import { StatusCodes } from 'http-status-codes';
 import { jwtVerify } from 'jose';
 
-// ❗️ Admin Routes (আপনার আগের লিস্ট)
+// ❗️ Admin Routes
 const adminRoutes = [
   '/general',
   '/api/v1/users',
   '/api/v1/classifieds-banners',
-  // '/api/v1/reports',
   '/api/v1/classifieds-subcategories',
   '/api/v1/brands',
   '/api/v1/classifieds-categories',
@@ -23,7 +22,6 @@ const adminRoutes = [
   '/api/v1/custom-code',
   '/api/v1/integrations',
   '/api/v1/donation-categories',
-  '/api/v1/theme-settings',
   '/api/v1/ecommerce-banners',
   '/api/v1/ecommerce-banners/[id]',
   '/api/v1/vendor-category/[id]',
@@ -35,12 +33,11 @@ const adminRoutes = [
   '/api/v1/classifieds/ads/[id]',
   '/api/v1/social_links',
   '/api/v1/vendors/[id]'
-
 ];
 
-// 🔥 Vendor Routes (নতুন যোগ করা হয়েছে)
+// 🔥 Vendor Routes
 const vendorRoutes = [
-  '/dashboard', // Vendor Dashboard Frontend
+  '/dashboard',
   '/api/v1/vendor-store/dashboard',
   '/api/v1/vendor-store/storeWithProduct',
   '/api/v1/vendor-store/vendorId',
@@ -51,7 +48,7 @@ const vendorRoutes = [
   '/api/v1/vendors',
 ];
 
-// ❗️ Protected Routes (Logged in users - আপনার আগের লিস্ট)
+// ❗️ Protected Routes
 const protectedApiRoutes = [
   '/api/v1/auth/change-password',
   '/api/v1/auth/vendor-change-password',
@@ -92,10 +89,9 @@ const protectedApiRoutes = [
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
- 
-  // ১. রুট চেক করা
+  
   const isAdminRoute = adminRoutes.some((route) => path.startsWith(route));
-  const isVendorRoute = vendorRoutes.some((route) => path.startsWith(route)); // 🔥 Vendor Check
+  const isVendorRoute = vendorRoutes.some((route) => path.startsWith(route));
   const isProtectedApi = protectedApiRoutes.some((route) => path.startsWith(route));
 
   // পাবলিক route → allow
@@ -104,22 +100,33 @@ export async function middleware(req: NextRequest) {
   }
 
   let tokenPayload: any = null;
+  let token = null;
 
-  // 🔹 Try Bearer Token first
+  // ১. প্রথমে Header চেক করুন
   const authHeader = req.headers.get('authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    const rawToken = authHeader.split(' ')[1];
+    token = authHeader.split(' ')[1];
+  } 
+  
+  // ২. যদি হেডার না থাকে, তাহলে Cookie চেক করুন ✅ (এটি আপনার মিসিং ছিল)
+  else {
+    token = req.cookies.get('accessToken')?.value || req.cookies.get('refreshToken')?.value;
+  }
+
+  if (token) {
     try {
+      // Access Token Secret দিয়ে ভেরিফাই করা হচ্ছে
       const secret = new TextEncoder().encode(process.env.JWT_ACCESS_SECRET!);
-      const { payload } = await jwtVerify(rawToken, secret);
+      const { payload } = await jwtVerify(token, secret);
       tokenPayload = payload;
-      // console.log('✅ Verified via Bearer token:', tokenPayload);
     } catch (err: any) {
-      console.warn(`[Middleware] Bearer token invalid or expired: ${err.code || err.message}`);
+       // যদি Access Token ফেইল করে এবং এটি রিফ্রেশ টোকেন হয়, তবে Refresh Secret দিয়ে ট্রাই করতে পারেন
+       // কিন্তু নিরাপত্তার জন্য সাধারণত মিডলওয়্যারে Access Token ব্যবহার করা ভালো।
+       console.warn(`[Middleware] Token verification failed: ${err.message}`);
     }
   }
 
-  // 🔹 Try NextAuth Session Token if no (or expired) Bearer
+  // ৩. NextAuth Session চেক
   if (!tokenPayload) {
     const sessionToken = await getToken({
       req,
@@ -131,19 +138,14 @@ export async function middleware(req: NextRequest) {
         userId: sessionToken.id,
         role: sessionToken.role,
       };
-      console.log('✅ Using NextAuth session token:', tokenPayload);
-      console.log('✅ session token:', sessionToken);
     }
   }
 
-  // ❌ No Token Found (না Bearer, না NextAuth সেশন)
+  // ❌ No Token Found
   if (!tokenPayload) {
-    // যদি অ্যাডমিন প্যানেল বা ভেন্ডর ড্যাশবোর্ডে ঢোকার চেষ্টা করে, লগইন পেজে পাঠাও
     if (path.startsWith('/general') || path.startsWith('/dashboard')) {
       return NextResponse.redirect(new URL('/', req.url));
     }
-    
-    // API হলে JSON এরর দাও
     return NextResponse.json(
       { success: false, message: 'Unauthorized: No valid token provided' },
       { status: StatusCodes.UNAUTHORIZED },
@@ -158,13 +160,11 @@ export async function middleware(req: NextRequest) {
     );
   }
 
-  // 🔥 Vendor Check (নতুন লজিক)
+  // 🔥 Vendor Check
   if (isVendorRoute && tokenPayload.role !== 'vendor' && !isAdminRoute ) {
-    // যদি ড্যাশবোর্ডে এক্সেস করার চেষ্টা করে কিন্তু ভেন্ডর না হয়
     if (path.startsWith('/dashboard')) {
        return NextResponse.redirect(new URL('/', req.url));
     }
-
     return NextResponse.json(
       { success: false, message: 'Forbidden: You do not have permission (Vendor only).' },
       { status: StatusCodes.FORBIDDEN },
@@ -180,6 +180,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // 🔥 '/dashboard/:path*' এখানে যোগ করা হয়েছে
   matcher: ['/api/:path*', '/general/:path*', '/dashboard/:path*'],
 };
