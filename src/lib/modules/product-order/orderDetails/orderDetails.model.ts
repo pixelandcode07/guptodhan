@@ -1,24 +1,68 @@
-import { Schema, model, models } from 'mongoose';
-import { IOrderDetails } from './orderDetails.interface';
-// Import models to ensure they're registered
-import { VendorProductModel } from '@/lib/modules/product/vendorProduct.model';
+import { model, models, Schema } from "mongoose";
+import { IOrderDetails } from "./orderDetails.interface";
 
 const orderDetailsSchema = new Schema<IOrderDetails>(
   {
-    orderDetailsId: { type: String },
-    orderId: { type: Schema.Types.ObjectId, ref: 'OrderModel', required: true },
-    productId: { type: Schema.Types.ObjectId, ref: 'VendorProductModel', required: true },
-    vendorId: { type: Schema.Types.ObjectId, ref: 'Vendor', required: true },
-
-    quantity: { type: Number, required: true },
-    unitPrice: { type: Number, required: true },
-    discountPrice: { type: Number, default: 0 },
-    totalPrice: { type: Number, required: true },
-    size: { type: String },
-    color: { type: String },
+    orderDetailsId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    orderId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Order',
+      required: true,
+      index: true,
+    },
+    productId: {
+      type: Schema.Types.ObjectId,
+      ref: 'VendorProductModel',
+      required: true,
+      index: true,
+    },
+    vendorId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Vendor',
+      required: true,
+      index: true,
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    unitPrice: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    discountPrice: {
+      type: Number,
+      min: 0,
+    },
+    totalPrice: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    size: {
+      type: String,
+    },
+    color: {
+      type: String,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-export const OrderDetailsModel =
-  models.OrderDetailsModel || model<IOrderDetails>('OrderDetailsModel', orderDetailsSchema);
+// ✅ Create indexes
+orderDetailsSchema.index({ orderId: 1, createdAt: -1 });
+orderDetailsSchema.index({ productId: 1 });
+orderDetailsSchema.index({ vendorId: 1 });
+
+// ✅ Properly export the model
+// Check if model already exists to avoid "Cannot overwrite model" error
+export const OrderDetailsModel = 
+  models.OrderDetails || model<IOrderDetails>('OrderDetails', orderDetailsSchema);

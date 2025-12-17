@@ -10,69 +10,11 @@ import { OrderDetailsModel } from "../orderDetails/orderDetails.model";
 import { OrderModel } from "./order.model";
 import { v4 as uuidv4 } from "uuid";
 
-// Import all models to ensure they're registered before any populate operations
-// These MUST be imported before OrderServices is used
+// ✅ CRITICAL: Import ALL models FIRST - Order of imports matters!
+// These must be imported BEFORE OrderServices is used
 import "@/lib/modules/product/vendorProduct.model";
-import "@/lib/modules/vendor-store/vendorStore.model";
-
-// // Create a new order
-// const createOrder = async (req: NextRequest) => {
-//   await dbConnect();
-
-//   try {
-//     const body = await req.json();
-
-//     const payload: Partial<IOrder> = {
-//       orderId: body.orderId,
-//       userId: body.userId,
-//       storeId: body.storeId,
-//       deliveryMethodId: body.deliveryMethodId,
-//       paymentMethodId: body.paymentMethodId,
-
-//       shippingName: body.shippingName,
-//       shippingPhone: body.shippingPhone,
-//       shippingEmail: body.shippingEmail,
-//       shippingStreetAddress: body.shippingStreetAddress,
-//       shippingCity: body.shippingCity,
-//       shippingDistrict: body.shippingDistrict,
-//       shippingPostalCode: body.shippingPostalCode,
-//       shippingCountry: body.shippingCountry,
-//       addressDetails: body.addressDetails,
-
-//       deliveryCharge: body.deliveryCharge,
-//       totalAmount: body.totalAmount,
-
-//       paymentStatus: body.paymentStatus,
-//       orderStatus: body.orderStatus,
-//       orderForm: body.orderForm,
-//       orderDate: body.orderDate,
-//       deliveryDate: body.deliveryDate,
-
-//       parcelId: body.parcelId,
-//       trackingId: body.trackingId,
-//       couponId: body.couponId,
-
-//       orderDetails: body.orderDetails, // array of OrderDetails IDs
-//     };
-
-//     const result = await OrderServices.createOrderInDB(payload);
-
-//     return sendResponse({
-//       success: true,
-//       statusCode: StatusCodes.CREATED,
-//       message: 'Order created successfully!',
-//       data: result,
-//     });
-//   } catch (error) {
-//     console.error('Error creating order:', error);
-//     return sendResponse({
-//       success: false,
-//       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-//       message: 'Failed to create order',
-//       data: null,
-//     });
-//   }
-// };
+import "@/lib/modules/vendor-store/vendorStore.model"; // ✅ MUST import Store model
+import "@/lib/modules/promo-code/promoCode.model";
 
 interface ProductItem {
   productId: string;
@@ -84,6 +26,7 @@ interface ProductItem {
   color?: string;
 }
 
+// ✅ Helper: Convert value to ObjectId with validation
 const toObjectId = (
   value: unknown,
   label: string,
@@ -100,6 +43,11 @@ const toObjectId = (
     return value;
   }
 
+  // Handle object with _id property
+  if (typeof value === "object" && value !== null && "_id" in value) {
+    return toObjectId((value as { _id: unknown })._id, label, options);
+  }
+
   if (typeof value === "string" && Types.ObjectId.isValid(value)) {
     return new Types.ObjectId(value);
   }
@@ -109,7 +57,7 @@ const toObjectId = (
   throw new Error(`${label} is invalid.`);
 };
 
-// Main controller
+// ✅ Create Order with Details
 export const createOrderWithDetails = async (req: NextRequest) => {
   await dbConnect();
 
@@ -119,23 +67,23 @@ export const createOrderWithDetails = async (req: NextRequest) => {
   try {
     const body = await req.json();
 
-    // Validate body minimally
+    // Validate body
     if (
       !body.userId ||
       !body.products ||
       !Array.isArray(body.products) ||
       body.products.length === 0
     ) {
-      throw new Error("Invalid order data.");
+      throw new Error("Invalid order data: userId and products array required.");
     }
 
     const orderId = body.orderId || `ORD-${Date.now()}`;
 
-    // Step 1: Create OrderDetails documents
+    // Create OrderDetails documents
     const orderDetailsDocs: Partial<IOrderDetails>[] = body.products.map(
       (p: ProductItem) => ({
         orderDetailsId: uuidv4().split("-")[0],
-        orderId: new Types.ObjectId(), // temporary, will replace after Order doc is created
+        orderId: new Types.ObjectId(),
         productId: toObjectId(p.productId, "Product ID"),
         vendorId: toObjectId(p.vendorId, "Vendor ID"),
         quantity: p.quantity,
@@ -149,177 +97,102 @@ export const createOrderWithDetails = async (req: NextRequest) => {
       })
     );
 
-    // Step 2: Calculate totalAmount
+    // Calculate totalAmount
     const productsTotal = orderDetailsDocs.reduce(
       (sum, item) => sum + item.totalPrice!,
       0
     );
     const totalAmount = productsTotal + (body.deliveryCharge || 0);
 
-    // Step 3: Get storeId from first product if not provided
-    // Get vendorStoreId from the first product's vendorStoreId
+    // Get storeId
     let storeId: Types.ObjectId | undefined = undefined;
+
     if (body.storeId) {
       storeId = toObjectId(body.storeId, "Store ID", { optional: true });
-    } else if (body.products && body.products.length > 0) {
-      // Fetch the first product to get its vendorStoreId
+    }
+
+    if (!storeId && body.products && body.products.length > 0) {
       try {
         const { VendorProductModel } = await import(
           "@/lib/modules/product/vendorProduct.model"
         );
         const firstProduct = await VendorProductModel.findById(
-          body.products[0].productId
+          toObjectId(body.products[0].productId, "Product ID")
         ).select("vendorStoreId");
+
         if (firstProduct?.vendorStoreId) {
           storeId = firstProduct.vendorStoreId as Types.ObjectId;
         }
       } catch (error) {
         console.error("Error fetching product for storeId:", error);
-        // Will throw error later if storeId is still undefined
       }
     }
 
-    // Step 4: Get or find default payment method if not provided
-    let paymentMethodId: Types.ObjectId | undefined = undefined;
-    if (body.paymentMethodId) {
-      paymentMethodId = toObjectId(body.paymentMethodId, "Payment Method ID");
-    } else {
-      // Try to find COD payment method dynamically
-      try {
-        // Check if PaymentMethodModel exists in mongoose models
-        if (mongoose.models.PaymentMethodModel) {
-          const PaymentMethodModel = mongoose.models.PaymentMethodModel;
-          // Try to find a payment method with name containing "COD" or "Cash"
-          const codMethod = await PaymentMethodModel.findOne({
-            $or: [
-              { name: { $regex: /COD/i } },
-              { name: { $regex: /Cash/i } },
-              { name: { $regex: /On Delivery/i } },
-            ],
-          });
-          if (codMethod) {
-            paymentMethodId = codMethod._id as Types.ObjectId;
-          } else {
-            // If no COD method found, try to use the first payment method
-            const firstMethod = await PaymentMethodModel.findOne();
-            if (firstMethod) {
-              paymentMethodId = firstMethod._id as Types.ObjectId;
-            }
-          }
-        } else {
-          // PaymentMethodModel doesn't exist - create a default COD payment method
-          // Create a simple schema and model dynamically
-          const PaymentMethodSchema = new mongoose.Schema(
-            {
-              name: { type: String, required: true },
-              description: { type: String },
-              isActive: { type: Boolean, default: true },
-            },
-            { timestamps: true }
-          );
-
-          type PaymentMethodType = {
-            name: string;
-            description?: string;
-            isActive?: boolean;
-            _id: Types.ObjectId;
-          };
-          const PaymentMethodModel = (mongoose.models.PaymentMethodModel ||
-            mongoose.model<PaymentMethodType>(
-              "PaymentMethodModel",
-              PaymentMethodSchema
-            )) as mongoose.Model<PaymentMethodType>;
-
-          // Try to find or create a COD payment method
-          let codMethod = await PaymentMethodModel.findOne({
-            name: { $regex: /COD/i },
-          });
-          if (!codMethod) {
-            codMethod = await PaymentMethodModel.findOne({
-              name: { $regex: /Cash/i },
-            });
-          }
-          if (!codMethod) {
-            // Create a default COD payment method
-            codMethod = await PaymentMethodModel.create({
-              name: "Cash on Delivery (COD)",
-              description: "Pay when order is delivered",
-              isActive: true,
-            });
-          }
-          paymentMethodId = codMethod._id as Types.ObjectId;
-        }
-      } catch (error) {
-        console.error("Error finding payment method:", error);
-        throw new Error(
-          "Payment Method ID is required. Please provide paymentMethodId or ensure a default COD payment method exists in the database."
-        );
-      }
-    }
-
-    // Validate required fields
     if (!storeId) {
       throw new Error(
-        "Store ID is required. Could not determine store from products."
-      );
-    }
-    if (!paymentMethodId) {
-      throw new Error(
-        "Payment Method ID is required. Please provide paymentMethodId or ensure a default COD payment method exists in the database."
+        "Store ID is required. Could not determine store from request or products."
       );
     }
 
-    // Step 5: Create the main Order document
+    // Create Order document
     const orderPayload: Partial<IOrder> = {
       orderId,
       userId: toObjectId(body.userId, "User ID"),
       storeId: storeId,
       deliveryMethodId: body.deliveryMethodId,
       paymentMethod: body.paymentMethod,
-
-      shippingName: body.shippingName,
-      shippingPhone: body.shippingPhone,
-      shippingEmail: body.shippingEmail,
-      shippingStreetAddress: body.shippingStreetAddress,
-      shippingCity: body.shippingCity,
-      shippingDistrict: body.shippingDistrict,
-      shippingPostalCode: body.shippingPostalCode,
-      shippingCountry: body.shippingCountry,
-      addressDetails: body.addressDetails,
-
+      transactionId: body.transactionId || undefined,
+      shippingName: body.shippingName || "Guest User",
+      shippingPhone: body.shippingPhone || "01700000000",
+      shippingEmail: body.shippingEmail || "guest@example.com",
+      shippingStreetAddress: body.shippingStreetAddress || "Address not provided",
+      shippingCity: body.shippingCity || "Dhaka",
+      shippingDistrict: body.shippingDistrict || "Dhaka",
+      shippingPostalCode: body.shippingPostalCode || "1000",
+      shippingCountry: body.shippingCountry || "Bangladesh",
+      addressDetails: body.addressDetails || "Address details not provided",
       deliveryCharge: body.deliveryCharge || 0,
       totalAmount: totalAmount,
-
       paymentStatus: body.paymentStatus || "Pending",
       orderStatus: body.orderStatus || "Pending",
       orderForm: body.orderForm || "Website",
-      orderDate: new Date(),
+      orderDate: new Date(body.orderDate) || new Date(),
       deliveryDate: body.deliveryDate ? new Date(body.deliveryDate) : undefined,
-
-      parcelId: body.parcelId,
-      trackingId: body.trackingId,
-      couponId: body.couponId ? new Types.ObjectId(body.couponId) : undefined,
+      parcelId: body.parcelId || undefined,
+      trackingId: body.trackingId || undefined,
+      couponId: body.couponId ? toObjectId(body.couponId, "Coupon ID", { optional: true }) : undefined,
     };
 
-    // Step 6: Save Order first
+    // Save Order
     const orderDoc = await OrderModel.create([orderPayload], { session });
 
-    // Step 7: Replace temporary orderId in OrderDetails with actual Order _id
-    orderDetailsDocs.forEach((item) => (item.orderId = orderDoc[0]._id));
+    if (!orderDoc || orderDoc.length === 0) {
+      throw new Error("Failed to create order document.");
+    }
 
-    // Step 8: Insert all OrderDetails
+    // Replace temporary orderId in OrderDetails
+    orderDetailsDocs.forEach((item) => {
+      item.orderId = orderDoc[0]._id;
+    });
+
+    // Insert OrderDetails
     const createdOrderDetails = await OrderDetailsModel.insertMany(
       orderDetailsDocs,
       { session }
     );
 
-    // Step 9: Update Order document with OrderDetails references
+    // Update Order with OrderDetails references
     orderDoc[0].orderDetails = createdOrderDetails.map((d) => d._id);
     await orderDoc[0].save({ session });
 
     // Commit transaction
     await session.commitTransaction();
     session.endSession();
+
+    console.log("✅ Order created successfully:", {
+      orderId: orderDoc[0].orderId,
+      orderDetailsCount: createdOrderDetails.length,
+    });
 
     return sendResponse({
       success: true,
@@ -330,31 +203,30 @@ export const createOrderWithDetails = async (req: NextRequest) => {
         orderDetails: createdOrderDetails,
       },
     });
-  } catch (error) {
-    // Rollback transaction on error
+  } catch (error: any) {
     await session.abortTransaction();
     session.endSession();
-    console.error("Error creating order with details:", error);
+
+    const errorMessage = error?.message || "Failed to create order";
+    console.error("❌ Error creating order with details:", errorMessage);
 
     return sendResponse({
       success: false,
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-      message: "Failed to create order",
+      message: errorMessage,
       data: null,
     });
   }
 };
 
-// Get all orders (with optional userId filter)
+// ✅ Get All Orders
 const getAllOrders = async (req: NextRequest) => {
   await dbConnect();
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
   const userId = searchParams.get("userId");
 
-  // If userId is provided, get orders for that user only
   if (userId) {
-    // Validate userId is a valid ObjectId format
     if (!Types.ObjectId.isValid(userId)) {
       return sendResponse({
         success: false,
@@ -386,7 +258,6 @@ const getAllOrders = async (req: NextRequest) => {
     }
   }
 
-  // Otherwise, get all orders (admin view)
   const result = await OrderServices.getAllOrdersFromDB(status || undefined);
 
   return sendResponse({
@@ -397,7 +268,7 @@ const getAllOrders = async (req: NextRequest) => {
   });
 };
 
-// Get orders by user
+// ✅ Get Orders by User
 const getOrdersByUser = async (
   req: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
@@ -414,7 +285,7 @@ const getOrdersByUser = async (
   });
 };
 
-// Update order
+// ✅ Update Order
 const updateOrder = async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -424,7 +295,7 @@ const updateOrder = async (
   const body = await req.json();
 
   const payload: Partial<IOrder> = {};
-  Object.assign(payload, body); // simple merge, can add validation if needed
+  Object.assign(payload, body);
 
   const result = await OrderServices.updateOrderInDB(id, payload);
 
@@ -436,7 +307,7 @@ const updateOrder = async (
   });
 };
 
-// Delete order
+// ✅ Delete Order
 const deleteOrder = async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -454,11 +325,10 @@ const deleteOrder = async (
   });
 };
 
-// Get orders for the authenticated user
+// ✅ Get My Orders
 const getMyOrders = async (req: NextRequest) => {
   await dbConnect();
 
-  // Get user ID from query params first, then fall back to headers
   const { searchParams } = new URL(req.url);
   const userIdFromQuery = searchParams.get("userId");
   const userIdFromHeader = req.headers.get("x-user-id");
@@ -474,7 +344,6 @@ const getMyOrders = async (req: NextRequest) => {
     });
   }
 
-  // Validate userId is a valid ObjectId format
   if (!Types.ObjectId.isValid(userId)) {
     return sendResponse({
       success: false,
@@ -505,7 +374,7 @@ const getMyOrders = async (req: NextRequest) => {
   }
 };
 
-// Get order by ID (for authenticated user)
+// ✅ Get Order by ID
 const getOrderById = async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -513,7 +382,6 @@ const getOrderById = async (
   await dbConnect();
   const { id } = await params;
 
-  // Get user ID from headers
   const userId = req.headers.get("x-user-id");
   const userRole = req.headers.get("x-user-role")?.toLowerCase();
 
@@ -542,8 +410,7 @@ const getOrderById = async (
     });
   }
 
-  // Check if the order belongs to the authenticated user
-  // result is a lean object, userId might be populated (object) or just an ObjectId (string)
+  // Check if order belongs to user
   const orderResult = result as Record<string, unknown> | null;
   const orderUserId =
     orderResult && "userId" in orderResult
@@ -553,6 +420,7 @@ const getOrderById = async (
         ? (orderResult.userId as { _id: Types.ObjectId })._id.toString()
         : orderResult.userId?.toString() || ""
       : "";
+
   if (!isPrivileged && orderUserId && orderUserId !== userId) {
     return sendResponse({
       success: false,
@@ -570,6 +438,7 @@ const getOrderById = async (
   });
 };
 
+// ✅ Get Sales Report
 const getSalesReport = async (req: NextRequest) => {
   await dbConnect();
   const { searchParams } = new URL(req.url);
@@ -592,14 +461,15 @@ const getSalesReport = async (req: NextRequest) => {
   });
 };
 
+// ✅ Get Returned Orders by User
 const getReturnedOrdersByUser = async (
   req: NextRequest,
-  { params }: { params: Promise<{ uesrId: string }> }
+  { params }: { params: Promise<{ userId: string }> }
 ) => {
   await dbConnect();
-  const { uesrId } = await params;
+  const { userId } = await params;
 
-  const result = await OrderServices.getReturnedOrdersByUserFromDB(uesrId);
+  const result = await OrderServices.getReturnedOrdersByUserFromDB(userId);
 
   return sendResponse({
     success: true,
@@ -609,7 +479,7 @@ const getReturnedOrdersByUser = async (
   });
 };
 
-// order advance filter part
+// ✅ Get Filtered Orders
 const getFilteredOrders = async (req: NextRequest) => {
   await dbConnect();
 
@@ -651,7 +521,6 @@ export const OrderController = {
   updateOrder,
   deleteOrder,
   getSalesReport,
-
   getReturnedOrdersByUser,
   getFilteredOrders,
 };

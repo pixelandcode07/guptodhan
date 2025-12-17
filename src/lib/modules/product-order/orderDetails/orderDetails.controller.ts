@@ -5,42 +5,6 @@ import { OrderDetailsServices } from './orderDetails.service';
 import { IOrderDetails } from './orderDetails.interface';
 import dbConnect from '@/lib/db';
 
-// // Create a new order detail
-// const createOrderDetails = async (req: NextRequest) => {
-//   await dbConnect();
-  
-//   try {
-//     const body = await req.json();
-
-//     const payload: Partial<IOrderDetails> = {
-//       orderDetailsId: body.orderDetailsId,
-//       orderId: body.orderId,
-//       productId: body.productId,
-//       vendorId: body.vendorId,
-//       quantity: body.quantity,
-//       unitPrice: body.unitPrice,
-//       discountPrice: body.discountPrice,
-//       totalPrice: body.totalPrice,
-//     };
-
-//     const result = await OrderDetailsServices.createOrderDetailsInDB(payload);
-
-//     return sendResponse({
-//       success: true,
-//       statusCode: StatusCodes.CREATED,
-//       message: 'Order detail created successfully!',
-//       data: result,
-//     });
-//   } catch (error) {
-//     console.error('Error creating order detail:', error);
-//     return sendResponse({
-//       success: false,
-//       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-//       message: 'Failed to create order detail',
-//       data: null,
-//     });
-//   }
-// };
 
 // Get all order details
 const getAllOrderDetails = async () => {
