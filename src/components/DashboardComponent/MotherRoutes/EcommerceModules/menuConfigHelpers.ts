@@ -11,6 +11,7 @@ interface Counts {
   inTransitCount: string;
   deliveredCount: string;
   cancelledCount: string;
+  returnRequestCount: string;
 }
 
 export const buildDynamicMenuConfig = (
@@ -96,6 +97,13 @@ export const buildDynamicMenuConfig = (
             ...item,
             title: `Cancelled Orders (${counts.cancelledCount})`,
             count: counts.cancelledCount,
+          };
+        }
+        if (item.url === '/general/view/orders/return-request') {
+          return {
+            ...item,
+            title: `Return Request (${counts.returnRequestCount})`,
+            count: counts.returnRequestCount,
           };
         }
         return item;

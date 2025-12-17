@@ -120,6 +120,11 @@ export const MENU_CONFIG: MenuConfig = {
         url: '/general/view/orders/cancelled',
         count: '2',
       },
+      {
+        title: 'Return Request (0)',
+        url: '/general/view/orders/return-request',
+        count: '0',
+      },
     ],
   },
   'Promo Codes': {
