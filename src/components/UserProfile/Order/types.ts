@@ -1,20 +1,14 @@
-export type OrderStatus =
-  | 'all'
-  | 'to_pay'
-  | 'to_ship'
-  | 'to_receive'
-  | 'to_review'
-  | 'cancelled'
-  | 'delivered'
+// Add 'return_refund' to the union type
+export type OrderStatus = 'all' | 'to_pay' | 'to_ship' | 'to_receive' | 'to_review' | 'delivered' | 'cancelled' | 'return_refund';
 
-export interface OrderItemSummary {
+export interface OrderItem {
   id: string
   title: string
   thumbnailUrl: string
   priceFormatted: string
-  size?: string
-  color?: string
   quantity: number
+  size: string
+  color: string
 }
 
 export interface OrderSummary {
@@ -23,12 +17,10 @@ export interface OrderSummary {
   storeName: string
   storeVerified: boolean
   status: OrderStatus
-  paymentStatus?: string
-  deliveryMethod?: string
-  items: OrderItemSummary[]
+  paymentStatus: string
+  deliveryMethod: string
   createdAt: string
+  items: OrderItem[]
   trackingId?: string
   parcelId?: string
 }
-
-

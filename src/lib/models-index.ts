@@ -1,8 +1,6 @@
 // src/lib/models-index.ts
-import mongoose from 'mongoose';
-
 // ================================================================
-// Import all models to ensure they're registered
+// 🔥 CRITICAL: Import all models FIRST to register them
 // ================================================================
 import '@/lib/modules/ecommerce-category/models/ecomCategory.model';
 import '@/lib/modules/ecommerce-category/models/ecomSubCategory.model';
@@ -17,23 +15,37 @@ import '@/lib/modules/product/vendorProduct.model';
 import '@/lib/modules/product-review/productReview.model';
 import '@/lib/modules/vendors/vendor.model';
 import '@/lib/modules/integrations/integrations.model';
+import '@/lib/modules/user/user.model';
+import '@/lib/modules/product-order/order/order.model';
 
 // ================================================================
-// Export models using mongoose.models to avoid re-registration
+// Export models safely (avoid re-registration)
 // ================================================================
-export const CategoryModel = mongoose.models.EcomCategory || mongoose.model('EcomCategory');
-export const SubCategoryModel = mongoose.models.EcomSubCategory || mongoose.model('EcomSubCategory');
-export const ChildCategoryModel = mongoose.models.EcomChildCategory || mongoose.model('EcomChildCategory');
+import mongoose from 'mongoose';
 
-// ✅ FIXED: Brand -> BrandModel
-export const BrandModel = mongoose.models.BrandModel || mongoose.model('BrandModel');
+// Helper function to safely get models
+const getModel = (modelName: string) => {
+  if (!mongoose.models[modelName]) {
+    throw new Error(`Model ${modelName} is not registered. Check your model file.`);
+  }
+  return mongoose.models[modelName];
+};
 
-export const ProductModelModel = mongoose.models.ProductModel || mongoose.model('ProductModel');
-export const ProductFlagModel = mongoose.models.ProductFlag || mongoose.model('ProductFlag');
-export const WarrantyModel = mongoose.models.Warranty || mongoose.model('Warranty');
-export const ProductUnitModel = mongoose.models.ProductUnit || mongoose.model('ProductUnit');
-export const VendorProductModel = mongoose.models.VendorProduct || mongoose.model('VendorProduct');
-export const ProductReviewModel = mongoose.models.ProductReview || mongoose.model('ProductReview');
-export const VendorStoreModel = mongoose.models.VendorStore || mongoose.model('VendorStore');
-export const VendorModel = mongoose.models.Vendor || mongoose.model('Vendor');
-export const IntegrationsModel = mongoose.models.Integrations || mongoose.model('Integrations');
+export const CategoryModel = getModel('EcomCategory');
+export const SubCategoryModel = getModel('EcomSubCategory');
+export const ChildCategoryModel = getModel('EcomChildCategory');
+export const BrandModel = getModel('BrandModel');
+export const ProductModelModel = getModel('ProductModel');
+export const ProductFlagModel = getModel('ProductFlag');
+export const WarrantyModel = getModel('Warranty');
+export const ProductUnitModel = getModel('ProductUnit');
+export const VendorProductModel = getModel('VendorProduct');
+export const ProductReviewModel = getModel('ProductReview');
+export const VendorStoreModel = getModel('VendorStore');
+export const VendorModel = getModel('Vendor');
+export const IntegrationsModel = getModel('Integrations');
+export const UserModel = getModel('User');
+export const OrderModel = getModel('Order');
+
+// Export a constant to confirm models are loaded
+export const MODELS_LOADED = true;

@@ -1,96 +1,139 @@
+// src/lib/modules/dashboard/dashboard.service.ts
+
+// =========================================================
+// 🔥 STEP 1: Import models-index FIRST to register all models
+// =========================================================
+import '@/lib/models-index';
+
+// =========================================================
+// 🔥 STEP 2: Now import specific models
+// =========================================================
 import { OrderModel } from '../product-order/order/order.model';
 import { User } from '../user/user.model';
+import { VendorProductModel } from '../product/vendorProduct.model';
+import { VendorStoreModel } from '@/lib/models-index';
+import { StoreModel } from '../vendor-store/vendorStore.model';
 
 const getDashboardAnalyticsFromDB = async () => {
   const today = new Date();
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(today.getDate() - 30);
-  const startOfToday = new Date(new Date().setHours(0, 0, 0, 0));
-
-  const monthlyOrdersQuery = OrderModel.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
-  const todaysOrdersQuery = OrderModel.countDocuments({ createdAt: { $gte: startOfToday } });
-  const monthlyUsersQuery = User.countDocuments({ role: 'user', createdAt: { $gte: thirtyDaysAgo } });
   
-  const monthlyRevenueQuery = OrderModel.aggregate([
+  // --- 1. Existing KPIs (Growth Calculation) ---
+  const currentRevenueData = await OrderModel.aggregate([
     { $match: { createdAt: { $gte: thirtyDaysAgo }, paymentStatus: 'Paid' } },
     { $group: { _id: null, total: { $sum: '$totalAmount' } } }
   ]);
+  const currentRevenue = currentRevenueData[0]?.total || 0;
 
-  const salesByMonthQuery = OrderModel.aggregate([
-    { $match: { paymentStatus: { $in: ['Paid', 'Failed'] } } },
+  const totalOrders = await OrderModel.countDocuments({});
+  const totalUsers = await User.countDocuments({ role: 'user' });
+  const totalVendors = await StoreModel.countDocuments({});
+
+  // --- 2. Low Stock Alert (Stock < 10) ---
+  const lowStockProductsQuery = VendorProductModel.find({ 
+    stock: { $lte: 10 }, 
+    status: 'active' 
+  })
+    .select('productTitle thumbnailImage stock productPrice')
+    .limit(5)
+    .lean();
+
+  // --- 3. Pending Actions ---
+  const pendingVendorsCountQuery = VendorStoreModel.countDocuments({ status: 'pending' });
+  const pendingOrdersCountQuery = OrderModel.countDocuments({ orderStatus: 'Pending' });
+
+  // --- 4. Sales Graph Data (Last 14 Days) ---
+  const dailyRevenueQuery = OrderModel.aggregate([
+    { $match: { createdAt: { $gte: thirtyDaysAgo }, paymentStatus: 'Paid' } },
     {
       $group: {
-        _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
-        successful: { $sum: { $cond: [{ $eq: ["$paymentStatus", "Paid"] }, 1, 0] } },
-        failed: { $sum: { $cond: [{ $eq: ["$paymentStatus", "Failed"] }, 1, 0] } }
+        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+        totalSales: { $sum: "$totalAmount" },
       }
     },
-    { $sort: { "_id.year": 1, "_id.month": 1 } }
+    { $sort: { _id: 1 } },
+    { $limit: 14 }
   ]);
 
-  const orderStatusRatioQuery = OrderModel.aggregate([
-    { $match: { createdAt: { $gte: thirtyDaysAgo } } },
-    { $group: { _id: '$orderStatus', count: { $sum: 1 } } }
+  // --- 5. Top Selling Products ---
+  const topProductsQuery = OrderModel.aggregate([
+    { $match: { paymentStatus: 'Paid' } },
+    { $unwind: "$products" },
+    { 
+      $group: { 
+        _id: "$products.productId", 
+        totalSold: { $sum: "$products.quantity" }, 
+        revenue: { $sum: { $multiply: ["$products.quantity", "$products.price"] } }
+      } 
+    },
+    { $sort: { totalSold: -1 } },
+    { $limit: 5 },
+    { 
+      $lookup: { 
+        from: "vendorproducts", 
+        localField: "_id", 
+        foreignField: "_id", 
+        as: "details" 
+      } 
+    },
+    { $unwind: { path: "$details", preserveNullAndEmptyArrays: true } },
+    { 
+      $project: { 
+        name: { $ifNull: ["$details.productTitle", "Unknown Product"] }, 
+        image: { $ifNull: ["$details.thumbnailImage", "/placeholder-product.jpg"] }, 
+        totalSold: 1, 
+        revenue: 1 
+      } 
+    }
   ]);
 
-  const recentCustomersQuery = User.find({ role: 'user' })
-    .sort({ createdAt: -1 })
-    .limit(10)
-    .select('name email profilePicture phoneNumber address createdAt')
-    .lean();
-
-  // ✅ Populate remove করলাম - শুধু order data নিচ্ছি
+  // --- 6. Recent Orders ---
   const recentOrdersQuery = OrderModel.find({})
     .sort({ createdAt: -1 })
-    .limit(10)
-    .populate('userId', 'name email phoneNumber')
-    .select('orderId totalAmount paymentStatus createdAt')
+    .limit(6)
+    .populate('userId', 'name email')
+    .select('orderId totalAmount paymentStatus orderStatus createdAt')
     .lean();
 
+  // Execute all queries in parallel
   const [
-    monthlyOrdersCount,
-    todaysOrdersCount,
-    monthlyUsersCount,
-    revenueResult,
-    salesByMonth,
-    orderStatusRatio,
-    recentCustomers,
-    recentOrders,
+    lowStockProducts,
+    pendingVendors,
+    pendingOrders,
+    dailyRevenue,
+    topProducts,
+    recentOrders
   ] = await Promise.all([
-    monthlyOrdersQuery,
-    todaysOrdersQuery,
-    monthlyUsersQuery,
-    monthlyRevenueQuery,
-    salesByMonthQuery,
-    orderStatusRatioQuery,
-    recentCustomersQuery,
-    recentOrdersQuery,
+    lowStockProductsQuery,
+    pendingVendorsCountQuery,
+    pendingOrdersCountQuery,
+    dailyRevenueQuery,
+    topProductsQuery,
+    recentOrdersQuery
   ]);
 
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  
-  const salesAnalyticsData = salesByMonth.map(item => ({
-    name: `${monthNames[item._id.month - 1]}-${String(item._id.year).slice(-2)}`,
-    successful: item.successful,
-    failed: item.failed
-  }));
-
-  const orderRatioData = orderStatusRatio.map(item => ({
-    name: item._id,
-    value: item.count
+  // Format Chart Data
+  const revenueChart = dailyRevenue.map(item => ({
+    date: item._id,
+    Sales: item.totalSales,
   }));
 
   return {
     stats: {
-      monthlyOrders: monthlyOrdersCount,
-      todaysOrders: todaysOrdersCount,
-      monthlyRegisteredUsers: monthlyUsersCount,
-      monthlyRevenue: revenueResult[0]?.total || 0,
+      totalRevenue: currentRevenue,
+      totalOrders,
+      totalUsers,
+      totalVendors,
+      pendingVendors,
+      pendingOrders,
     },
-    salesAnalyticsChart: salesAnalyticsData,
-    orderRatioChart: orderRatioData,
-    recentCustomers: recentCustomers,
-    recentOrders: recentOrders,
+    charts: {
+      revenueOverTime: revenueChart,
+    },
+    lowStockProducts,
+    topProducts,
+    recentOrders,
   };
 };
 
