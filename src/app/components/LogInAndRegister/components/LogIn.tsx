@@ -24,27 +24,38 @@ export default function LogIn({ step, setStep, registerLogin,
             {step === 'login' && (
                 <form onSubmit={handleSubmitLogin(onSubmitLogin)} className="space-y-4">
                     <div className="space-y-2">
-                        <label htmlFor="phone" className="flex items-center text-[12px] font-medium text-gray-900">
-                            Phone number <Asterisk className="h-3 w-3 text-red-500" />
+                        {/* ✅ Label Updated: Phone or Email */}
+                        <label htmlFor="identifier" className="flex items-center text-[12px] font-medium text-gray-900">
+                            Phone number or Email <Asterisk className="h-3 w-3 text-red-500" />
                         </label>
+                        
+                        {/* ✅ Input Updated: type='text' to support both */}
                         <Input
-                            id="phone"
-                            type="tel"
-                            placeholder="+880 1777777777"
-                            {...registerLogin('phone', {
-                                required: 'Phone number is required',
-                                pattern: {
-                                    value: /^\+?\d{3}\s?\d{9,}$/,
-                                    message: 'Invalid phone number format (e.g., +880 1777777777)',
-                                },
+                            id="identifier"
+                            type="text" 
+                            placeholder="Enter phone or email"
+                            {...registerLogin('identifier', {
+                                required: 'Phone number or Email is required',
+                                validate: (value) => {
+                                    // Check if input is Email
+                                    if (value.includes('@')) {
+                                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                                        return emailRegex.test(value) || 'Invalid email format';
+                                    } 
+                                    // Otherwise Check if input is Phone
+                                    else {
+                                        const phoneRegex = /^\+?[\d\s-]{10,15}$/;
+                                        return phoneRegex.test(value) || 'Invalid phone number format';
+                                    }
+                                }
                             })}
-                            className={loginErrors.phone ? 'border-red-500' : ''}
-                            defaultValue="+880 1777777777"
+                            className={loginErrors.identifier ? 'border-red-500' : ''}
                         />
-                        {loginErrors.phone && (
-                            <p className="text-sm text-red-500">{loginErrors.phone.message}</p>
+                        {loginErrors.identifier && (
+                            <p className="text-sm text-red-500">{loginErrors.identifier.message}</p>
                         )}
                     </div>
+
                     <div className="space-y-2">
                         <label htmlFor="pin" className="flex items-center text-[12px] font-medium text-gray-900">
                             Enter your PIN number<Asterisk className="h-3 w-3 text-red-500" />
@@ -60,13 +71,8 @@ export default function LogIn({ step, setStep, registerLogin,
                                         value: 4,
                                         message: 'PIN must be at least 4 digits',
                                     },
-                                    pattern: {
-                                        value: /^\d{4,}$/,
-                                        message: 'PIN must be numeric',
-                                    },
                                 })}
                                 className={loginErrors.pin ? 'border-red-500' : ''}
-                                defaultValue="1234"
                             />
                             <Button
                                 type="button"
@@ -82,6 +88,7 @@ export default function LogIn({ step, setStep, registerLogin,
                             <p className="text-sm text-red-500">{loginErrors.pin.message}</p>
                         )}
                     </div>
+
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                             <input
@@ -100,16 +107,20 @@ export default function LogIn({ step, setStep, registerLogin,
                             Forgot PIN?
                         </a>
                     </div>
+                    
                     <Button type="submit" className="w-full bg-blue-600 text-white hover:bg-blue-700">
                         Login
                     </Button>
+                    
                     <Button
                         variant="outline"
                         className="w-full"
                         onClick={() => setStep('createAccount')}
+                        type="button"
                     >
                         Create Account
                     </Button>
+                    
                     <div className="text-center text-sm text-gray-600">OR LOGIN WITH</div>
                     <div className="flex justify-center space-x-2">
                         <SocialLoginPart />
