@@ -191,6 +191,58 @@ const deleteUserByAdmin = async (req: NextRequest, { params }: { params: { id: s
   });
 };
 
+
+const updateUserByAdmin = async (req: NextRequest, context: { params: Promise<{ id: string }> }) => {
+  await dbConnect();
+  
+  // 🔥 সমাধান: params-কে await করে আইডি বের করুন
+  const { id } = await context.params;
+
+  const body = await req.json();
+
+  const allowedFields = ['name', 'email', 'phoneNumber', 'address', 'role', 'isActive', 'isVerified'];
+  const payload: Record<string, any> = {};
+
+  for (const key of allowedFields) {
+    if (body[key] !== undefined) {
+      payload[key] = body[key];
+    }
+  }
+
+  const result = await UserServices.updateUserByAdminInDB(id, payload);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'User updated successfully by admin.',
+    data: result,
+  });
+};
+
+
+const getUserById = async (req: NextRequest, context: { params: Promise<{ id: string }> }) => {
+  await dbConnect();
+  const { id } = await context.params; // await যোগ করা হয়েছে
+
+  const result = await UserServices.getUserByIdFromDB(id);
+
+  if (!result) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.NOT_FOUND,
+      message: 'User not found!',
+      data: null,
+    });
+  }
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'User retrieved successfully!',
+    data: result,
+  });
+};
+
 export const UserController = {
   createUser,
   registerServiceProvider,
@@ -199,4 +251,6 @@ export const UserController = {
   getAllUsers,
   deleteMyAccount,
   deleteUserByAdmin,
+  updateUserByAdmin,
+  getUserById,
 };
