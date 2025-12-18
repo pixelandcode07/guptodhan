@@ -1,16 +1,24 @@
-import { Document } from 'mongoose';
-
-export interface IPKSlider extends Document {
+export interface IPKSlider {
+  _id?: string;
   sliderId: string;
   image: string;
   textPosition: string;
+  
+  // Web
   sliderLink: string;
+  buttonLink: string;
+  
+  // App
+  appRedirectType?: 'Product' | 'Category' | 'Brand' | 'Shop' | 'ExternalUrl' | 'None';
+  appRedirectId?: string;
+  
   subTitleWithColor: string;
   bannerTitleWithColor: string;
   bannerDescriptionWithColor: string;
   buttonWithColor: string;
-  buttonLink: string;
-  status: 'active' | 'inactive';
-  createdAt: Date;
-  orderCount: number;
+  
+  status?: string;
+  orderCount?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
