@@ -27,6 +27,7 @@ type SelectItem = {
   
   // Extra
   brandName?: string;
+  slug?: string;
 };
 
 type Props = {
@@ -49,24 +50,55 @@ export default function AppActionRow({
   const [selectedItemName, setSelectedItemName] = useState('');
   const [selectedItemImage, setSelectedItemImage] = useState('');
 
+  // 🔥 Helper: ডাটা থেকে নাম বের করার লজিক
+  const getDisplayName = (item: SelectItem) => {
+    return item.name || 
+           item.productTitle || 
+           item.title || 
+           item.storeName || 
+           item.brandName || 
+           'Unknown';
+  };
+
+  // 🔥 Helper: ডাটা থেকে ইমেজ বের করার লজিক
+  const getDisplayImage = (item: SelectItem) => {
+    return item.brandLogo || 
+           item.categoryIcon || 
+           item.storeLogo || 
+           item.thumbnailImage || 
+           ''; 
+  };
+
   // 1. Fetch items when Type changes
   useEffect(() => {
     if (appRedirectType === 'None' || appRedirectType === 'ExternalUrl') {
       setItems([]);
       setFilteredItems([]);
-      setAppRedirectValue('');
-      setSelectedItemName('');
-      setSelectedItemImage('');
+      // শুধুমাত্র টাইপ 'None' বা 'External' হলে ভ্যালু ক্লিয়ার করবে
+      if (appRedirectType === 'None') {
+        setAppRedirectValue('');
+        setSelectedItemName('');
+        setSelectedItemImage('');
+      }
       return;
     }
     
-    setAppRedirectValue(''); 
-    setSelectedItemName('');
-    setSelectedItemImage('');
+    // আইটেম লোড করা
     fetchItems(appRedirectType);
   }, [appRedirectType]);
 
-  // 2. Filter items when Search Term changes
+  // 2. 🔥 NEW: এডিট মোডে আইডি থাকলে সেই আইটেমের নাম ও ছবি খুঁজে বের করা
+  useEffect(() => {
+    if (appRedirectValue && items.length > 0) {
+      const selected = items.find(item => (item._id || item.id) === appRedirectValue);
+      if (selected) {
+        setSelectedItemName(getDisplayName(selected));
+        setSelectedItemImage(getDisplayImage(selected));
+      }
+    }
+  }, [appRedirectValue, items]);
+
+  // 3. Filter items when Search Term changes
   useEffect(() => {
     if (!searchTerm.trim()) {
       setFilteredItems(items);
@@ -80,7 +112,6 @@ export default function AppActionRow({
     }
   }, [searchTerm, items]);
 
-  // 🔥 Robust Fetch Function
   const fetchItems = async (type: AppRedirectType) => {
     setLoading(true);
     try {
@@ -108,7 +139,6 @@ export default function AppActionRow({
       const result = await response.json();
       
       let list: SelectItem[] = [];
-
       if (Array.isArray(result)) {
         list = result;
       } else if (result.data && Array.isArray(result.data)) {
@@ -123,7 +153,6 @@ export default function AppActionRow({
 
       setItems(list);
       setFilteredItems(list);
-
     } catch (error) {
       console.error("Fetch error:", error);
       setItems([]);
@@ -144,24 +173,6 @@ export default function AppActionRow({
     setSearchTerm('');
   };
 
-  const getDisplayName = (item: SelectItem) => {
-    return item.name || 
-           item.productTitle || 
-           item.title || 
-           item.storeName || 
-           item.brandName || 
-           'Unknown';
-  };
-
-  // 🔥 Helper to get image based on type
-  const getDisplayImage = (item: SelectItem) => {
-    return item.brandLogo || 
-           item.categoryIcon || 
-           item.storeLogo || 
-           item.thumbnailImage || 
-           ''; // Fallback empty
-  };
-
   const showSelector = appRedirectType !== 'None' && appRedirectType !== 'ExternalUrl';
 
   return (
@@ -169,7 +180,7 @@ export default function AppActionRow({
       <div className="flex items-center gap-2 mb-2">
         <span className="text-lg">📱</span>
         <h3 className="text-sm font-bold text-blue-900 uppercase tracking-wide">
-          Mobile App Navigation
+          Mobile App Navigation Settings
         </h3>
       </div>
 
@@ -179,18 +190,23 @@ export default function AppActionRow({
           <Label className="text-xs font-semibold uppercase text-gray-500">Action Type</Label>
           <Select 
             value={appRedirectType} 
-            onValueChange={(v) => setAppRedirectType(v as AppRedirectType)}
+            onValueChange={(v) => {
+              setAppRedirectType(v as AppRedirectType);
+              setSelectedItemName('');
+              setSelectedItemImage('');
+              setAppRedirectValue('');
+            }}
           >
-            <SelectTrigger className="bg-white">
+            <SelectTrigger className="bg-white border-2">
               <SelectValue placeholder="Select Type" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white">
               <SelectItem value="None">No Action</SelectItem>
-              <SelectItem value="Product">Product Details</SelectItem>
-              <SelectItem value="Category">Category Page</SelectItem>
-              <SelectItem value="Brand">Brand Page</SelectItem>
-              <SelectItem value="Shop">Shop Profile</SelectItem>
-              <SelectItem value="ExternalUrl">External Link</SelectItem>
+              <SelectItem value="Product">📦 Product Details</SelectItem>
+              <SelectItem value="Category">📂 Category Page</SelectItem>
+              <SelectItem value="Brand">🏢 Brand Page</SelectItem>
+              <SelectItem value="Shop">🛍️ Shop Profile</SelectItem>
+              <SelectItem value="ExternalUrl">🔗 External Link</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -203,16 +219,16 @@ export default function AppActionRow({
               value={appRedirectValue} 
               onChange={(e) => setAppRedirectValue(e.target.value)}
               placeholder="https://google.com"
-              className="bg-white"
+              className="bg-white border-2"
             />
           </div>
         )}
 
-        {/* Selected Item Info */}
+        {/* Selected Item Info Box */}
         {showSelector && (
           <div className="space-y-2">
             <Label className="text-xs font-semibold uppercase text-gray-500">Selected Target</Label>
-            <div className="flex items-center gap-3 p-2 bg-white border rounded-md h-10 overflow-hidden">
+            <div className="flex items-center gap-3 p-2 bg-white border-2 rounded-md h-10 overflow-hidden shadow-sm">
                {selectedItemImage && (
                  <div className="relative w-6 h-6 shrink-0 rounded overflow-hidden border">
                    <Image 
@@ -224,38 +240,36 @@ export default function AppActionRow({
                  </div>
                )}
                {selectedItemName ? (
-                 <span className="text-sm font-medium truncate">{selectedItemName}</span>
+                 <span className="text-sm font-medium truncate text-blue-900">{selectedItemName}</span>
                ) : (
-                 <span className="text-sm text-gray-400">No item selected</span>
+                 <span className="text-sm text-gray-400 italic">No item selected</span>
                )}
             </div>
-            {/* Hidden Input for ID just in case needed */}
-            <input type="hidden" value={appRedirectValue} />
           </div>
         )}
       </div>
 
       {/* Dynamic Item Selector List */}
       {showSelector && (
-        <div className="mt-4 pt-4 border-t border-blue-200">
+        <div className="mt-4 pt-4 border-t-2 border-blue-100">
           <div className="relative mb-3">
             <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
             <Input 
               placeholder={`Search ${appRedirectType}...`} 
-              className="pl-10 bg-white"
+              className="pl-10 bg-white border-2 focus:border-blue-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             {loading && <Loader2 className="absolute right-3 top-3 w-4 h-4 animate-spin text-blue-500" />}
           </div>
 
-          <div className="max-h-60 overflow-y-auto border rounded-md bg-white shadow-sm">
+          <div className="max-h-60 overflow-y-auto border-2 rounded-md bg-white shadow-inner">
             {!loading && filteredItems.length === 0 ? (
-              <p className="p-4 text-center text-sm text-gray-500">
-                {items.length === 0 ? "No data loaded yet." : "No matching items found."}
+              <p className="p-8 text-center text-sm text-gray-400 italic">
+                {items.length === 0 ? "Loading data or no items found..." : "No matching results."}
               </p>
             ) : (
-              <div className="divide-y">
+              <div className="divide-y divide-gray-100">
                 {filteredItems.map((item, idx) => {
                   const id = item._id || item.id;
                   const isSelected = appRedirectValue === id;
@@ -264,14 +278,14 @@ export default function AppActionRow({
 
                   return (
                     <button
-                      key={idx}
+                      key={id || idx}
+                      type="button"
                       onClick={() => handleSelectItem(item)}
-                      className={`w-full text-left p-2 px-3 text-sm hover:bg-blue-50 transition-colors flex items-center gap-3 ${
-                        isSelected ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                      className={`w-full text-left p-2 px-3 text-sm hover:bg-blue-50 transition-all flex items-center gap-3 ${
+                        isSelected ? 'bg-blue-100 text-blue-800 font-bold border-l-4 border-l-blue-600' : 'text-gray-600'
                       }`}
                     >
-                      {/* Image Preview */}
-                      <div className="relative w-8 h-8 shrink-0 rounded overflow-hidden bg-gray-100 border">
+                      <div className="relative w-8 h-8 shrink-0 rounded-md overflow-hidden bg-gray-50 border shadow-sm">
                         {imageUrl ? (
                            <Image 
                              src={imageUrl} 
@@ -280,7 +294,7 @@ export default function AppActionRow({
                              className="object-cover"
                            />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">N/A</div>
+                          <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-300">NO IMG</div>
                         )}
                       </div>
 
@@ -297,6 +311,13 @@ export default function AppActionRow({
             )}
           </div>
         </div>
+      )}
+
+      {/* Help Info */}
+      {showSelector && !loading && items.length > 0 && (
+        <p className="text-[10px] text-blue-500 italic">
+          * Showing top {items.length} items. Use search to find specific one.
+        </p>
       )}
     </div>
   );
