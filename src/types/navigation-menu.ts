@@ -7,14 +7,15 @@ export interface ChildCategory {
 export interface SubCategory {
     subCategoryId: string;
     name: string;
-    slug: string; // ✅ Added
+    slug: string;
     children: ChildCategory[];
 }
 
 export interface MainCategory {
     mainCategoryId: string;
+    categoryIcon: string;
     name: string;
-    slug: string; // ✅ Added
+    slug: string;
     subCategories: SubCategory[];
 }
 
