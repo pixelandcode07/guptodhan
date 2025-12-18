@@ -7,19 +7,25 @@ const pkSliderSchema = new Schema<IPKSlider>(
     image: { type: String, required: true },
     textPosition: { type: String, required: true },
     
-    // 🔗 Web Navigation (পিসি/ওয়েব ব্রাউজার)
     sliderLink: { type: String, required: true },
     buttonLink: { type: String, required: true },
     
-    // 📱 App Navigation (মোবাইল অ্যাপ) - নতুন
     appRedirectType: { 
       type: String, 
       enum: ['Product', 'Category', 'Brand', 'Shop', 'ExternalUrl', 'None'], 
       default: 'None' 
     },
-    appRedirectId: { type: String, default: null }, // Product ID, Category ID, Shop ID বা URL
+    appRedirectId: { type: String, default: null },
+
+    actionStatus: { 
+      type: String, 
+      enum: ['product', 'category', 'store', 'none'], 
+      default: 'none' 
+    },
+    productId: { type: String, default: null },
+    category: { type: String, default: null },
+    store: { type: String, default: null },
     
-    // কন্টেন্ট
     subTitleWithColor: { type: String, required: true },
     bannerTitleWithColor: { type: String, required: true },
     bannerDescriptionWithColor: { type: String, required: true },
@@ -31,5 +37,4 @@ const pkSliderSchema = new Schema<IPKSlider>(
   { timestamps: true }
 );
 
-export const PKSliderModel =
-  models.PKSliderModel || model<IPKSlider>('PKSliderModel', pkSliderSchema);
+export const PKSliderModel = models.PKSliderModel || model<IPKSlider>('PKSliderModel', pkSliderSchema);
