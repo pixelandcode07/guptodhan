@@ -48,6 +48,10 @@ export default function SlidersClient({ initialRows }: { initialRows: any[] }) {
       button_text: u.buttonWithColor ?? undefined,
       button_link: u.buttonLink ?? undefined,
       status: u.status ? (u.status === 'active' ? 'Active' : 'Inactive') : undefined,
+      
+      // 🔥 NEW: লাইভ আপডেটের জন্য অ্যাপ ডাটা হ্যান্ডলিং
+      app_type: u.appRedirectType ?? undefined,
+      app_target: u.appRedirectId ?? undefined,
     }
   }
 
@@ -57,8 +61,6 @@ export default function SlidersClient({ initialRows }: { initialRows: any[] }) {
     if (statusFilter === 'inactive') return r.status === 'Inactive'
     return true
   })
-
-  const searchedRows = filteredRows
 
   return (
     <div className="flex flex-col gap-3">
@@ -89,9 +91,7 @@ export default function SlidersClient({ initialRows }: { initialRows: any[] }) {
           <RearrangeButton href="/general/rearrange/sliders" label="Rearrange Slider" />
         </div>
       </div>
-      <DataTable columns={slider_columns} data={searchedRows} />
+      <DataTable columns={slider_columns} data={filteredRows} />
     </div>
   )
 }
-
-

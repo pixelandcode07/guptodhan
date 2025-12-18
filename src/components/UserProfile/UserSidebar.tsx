@@ -5,15 +5,37 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useSession } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, User, ShoppingBag, RotateCcw, Star, MapPin, KeyRound, LogOut, Calendar, Headset } from 'lucide-react'
+import { 
+  LayoutDashboard, 
+  User, 
+  ShoppingBag, 
+  RotateCcw, 
+  Star, 
+  MapPin, 
+  KeyRound, 
+  LogOut, 
+  Calendar, 
+  Headset,
+  HeartHandshake, // ✅ Donation Icon
+  Gift,           // ✅ Campaign Icon
+  Hand            // ✅ Claim Icon
+} from 'lucide-react'
 import api from '@/lib/axios'
 
 const items = [
+  // E-commerce Section
   { title: 'Dashboard', url: '/home/UserProfile', icon: LayoutDashboard },
   { title: 'Profile', url: '/home/UserProfile/profile', icon: User },
   { title: 'My Order', url: '/home/UserProfile/orders', icon: ShoppingBag },
   { title: 'My Return', url: '/home/UserProfile/returns', icon: RotateCcw },
   { title: 'My Review', url: '/home/UserProfile/reviews', icon: Star },
+
+  // 🔥 Donation Section (New)
+  { title: 'Donation Stats', url: '/home/UserProfile/donation-dashboard', icon: HeartHandshake },
+  { title: 'My Campaigns', url: '/home/UserProfile/my-campaigns', icon: Gift },
+  { title: 'My Requests', url: '/home/UserProfile/my-claims', icon: Hand },
+
+  // Support & Settings
   { title: 'Support Tickets', url: '/home/UserProfile/support-tickets', icon: Headset },
   { title: 'Saved Address', url: '/home/UserProfile/addresses', icon: MapPin },
   { title: 'Change Password', url: '/home/UserProfile/change-password', icon: KeyRound },
@@ -93,13 +115,13 @@ export default function UserSidebar() {
   const displayName = profileData.name || user?.name || 'Guest User'
   const displayImage = profileData.image || user?.image
 
-  // Format分钟 the createdAt date
+  // Format the createdAt date
   const formatCustomerDate = (date: Date | string | undefined) => {
     if (!date) return 'Recent'
     
     const customerDate = new Date(date)
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 
-                   'July', 'August', 'September', 'October', 'November', 'December']
+                    'July', 'August', 'September', 'October', 'November', 'December']
     
     const day = customerDate.getDate().toString().padStart(2, '0')
     const month = months[customerDate.getMonth()]

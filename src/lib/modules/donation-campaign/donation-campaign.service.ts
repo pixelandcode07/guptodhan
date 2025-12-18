@@ -1,5 +1,5 @@
 // ============================================
-// 🔥 DONATION CAMPAIGN SERVICE - FIXED
+// 🔥 DONATION CAMPAIGN SERVICE - UPDATED
 // ============================================
 
 import mongoose from "mongoose";
@@ -12,7 +12,6 @@ import "@/lib/modules/user/user.model";
 const createCampaignInDB = async (payload: Partial<IDonationCampaign>) => {
   await dbConnect();
   
-  // ✅ FIX: Validate category exists before creating
   if (payload.category) {
     const categoryExists = await mongoose.model('DonationCategory').findById(payload.category);
     if (!categoryExists) {
@@ -26,7 +25,9 @@ const createCampaignInDB = async (payload: Partial<IDonationCampaign>) => {
 
 const getAllCampaignsFromDB = async () => {
   await dbConnect();
-  return await DonationCampaign.find({ status: 'active' })
+  // অ্যাডমিনের জন্য সব স্ট্যাটাসই রিটার্ন করা উচিত, তাই ফিল্টার সরালাম
+  // আপনি চাইলে পাবলিক API এর জন্য আলাদা ফাংশন রাখতে পারেন
+  return await DonationCampaign.find({}) 
     .populate('creator', 'name profilePicture')
     .populate('category', 'name')
     .sort({ createdAt: -1 })
@@ -42,7 +43,7 @@ const getCampaignByIdFromDB = async (id: string) => {
 
     const campaign = await DonationCampaign.findById(id)
       .populate('creator', 'name profilePicture')
-      .populate('category', 'name')  // ✅ Make sure populate is correct
+      .populate('category', 'name')
       .lean();
 
     if (!campaign) {
@@ -52,8 +53,34 @@ const getCampaignByIdFromDB = async (id: string) => {
     return campaign;
 };
 
+// ✅ NEW: Update Campaign Service
+const updateCampaignInDB = async (id: string, payload: Partial<IDonationCampaign>) => {
+    await dbConnect();
+    
+    const result = await DonationCampaign.findByIdAndUpdate(id, payload, { new: true });
+    
+    if (!result) {
+        throw new Error('Campaign not found to update');
+    }
+    return result;
+};
+
+// ✅ NEW: Delete Campaign Service
+const deleteCampaignFromDB = async (id: string) => {
+    await dbConnect();
+    
+    const result = await DonationCampaign.findByIdAndDelete(id);
+    
+    if (!result) {
+        throw new Error('Campaign not found to delete');
+    }
+    return result;
+};
+
 export const DonationCampaignServices = {
   createCampaignInDB,
   getAllCampaignsFromDB,
   getCampaignByIdFromDB,
+  updateCampaignInDB, // Exported
+  deleteCampaignFromDB, // Exported
 };

@@ -20,38 +20,42 @@ import {
   googleLoginValidationSchema,
 } from './auth.validation';
 
-
-
-
-
+// --- User Login ---
 const loginUser = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
   const validatedData = loginValidationSchema.parse(body);
   const result = await AuthServices.loginUser(validatedData);
 
-  const { refreshToken, ...dataForResponseBody } = result;
+  const { refreshToken, accessToken, ...dataForResponseBody } = result;
 
   const response = sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
     message: 'User logged in successfully!',
-    data: dataForResponseBody, // এখন এখানে আর refreshToken নেই
+    data: { ...dataForResponseBody, accessToken }, // ফ্রন্টএন্ডের জন্য এক্সেস টোকেন ডাটাতেও থাকলো
   });
 
+  // ✅ 1. Refresh Token Cookie
   response.cookies.set('refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: 30 * 24 * 60 * 60, // 30 Days
+    path: '/',
+  });
+
+  // ✅ 2. Access Token Cookie (Middleware এর জন্য এটি জরুরি)
+  response.cookies.set('accessToken', accessToken, {
+    httpOnly: true, // সিকিউরিটির জন্য true রাখা ভালো
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60, // 1 Day
+    path: '/',
   });
 
   return response;
 };
 
-
-// Only check vendor role
-
-// vendorLogin ফাংশনের ভিতরে
+// --- Vendor Login ---
 const vendorLogin = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
@@ -75,49 +79,56 @@ const vendorLogin = async (req: NextRequest) => {
         role: user.role,
         profilePicture: user.profilePicture,
         address: user.address,
-        // 🔥 এই লাইনটি যোগ করুন যাতে ফ্রন্টএন্ড এটা পায়
-        vendorId: user.vendorId, 
+        vendorId: user.vendorId, // ✅ Vendor ID pass করা হচ্ছে
       }
     },
   });
 
-  // ... cookies set code same as before
+  // ✅ 1. Refresh Token Cookie
+  response.cookies.set('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 30 * 24 * 60 * 60,
+    path: '/',
+  });
+
+  // ✅ 2. Access Token Cookie
+  response.cookies.set('accessToken', accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60,
+    path: '/',
+  });
+
   return response;
 };
 
-
-// ------------------------------------
-// --- NEW: VENDOR CHANGE PASSWORD CONTROLLER ---
-// ------------------------------------
+// --- Vendor Change Password ---
 const vendorChangePassword = async (req: NextRequest) => {
-  await dbConnect();
-  const userId = req.headers.get('x-user-id');
-  if (!userId) { throw new Error("Authentication failure: User ID not found in token"); }
+  await dbConnect();
+  const userId = req.headers.get('x-user-id');
+  if (!userId) { throw new Error("Authentication failure: User ID not found in token"); }
 
-  const body = await req.json();
-  const validatedData = changePasswordValidationSchema.parse(body); // একই ভ্যালিডেশন ব্যবহার করা যাবে
+  const body = await req.json();
+  const validatedData = changePasswordValidationSchema.parse(body);
 
-  await AuthServices.vendorChangePassword(userId, validatedData);
+  await AuthServices.vendorChangePassword(userId, validatedData);
 
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: "Vendor password changed successfully",
-    data: null
-  });
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Vendor password changed successfully",
+    data: null
+  });
 };
 
-// ------------------------------------
-// --- NEW: VENDOR FORGOT PASSWORD CONTROLLERS ---
-// ------------------------------------
-
-// STEP 1: Send OTP
+// --- Vendor Forgot Password Flows ---
 const vendorSendForgotPasswordOtp = async (req: NextRequest) => {
-  await dbConnect();
-  const body = await req.json();
-  const validatedData = sendForgotPasswordOtpToEmailSchema.parse(body); // একই ভ্যালিডেশন
-  await AuthServices.vendorSendForgotPasswordOtpToEmail(validatedData.email);
-  return sendResponse({ 
+  await dbConnect();
+  const body = await req.json();
+  const validatedData = sendForgotPasswordOtpToEmailSchema.parse(body);
+  await AuthServices.vendorSendForgotPasswordOtpToEmail(validatedData.email);
+  return sendResponse({ 
     success: true, 
     statusCode: StatusCodes.OK, 
     message: 'A password reset OTP has been sent to your vendor email.', 
@@ -125,13 +136,12 @@ const vendorSendForgotPasswordOtp = async (req: NextRequest) => {
   });
 };
 
-// STEP 2: Verify OTP
 const vendorVerifyForgotPasswordOtp = async (req: NextRequest) => {
-  await dbConnect();
-  const body = await req.json();
-  const validatedData = verifyForgotPasswordOtpFromEmailSchema.parse(body);
-  const result = await AuthServices.vendorVerifyForgotPasswordOtpFromEmail(validatedData.email, validatedData.otp);
-  return sendResponse({ 
+  await dbConnect();
+  const body = await req.json();
+  const validatedData = verifyForgotPasswordOtpFromEmailSchema.parse(body);
+  const result = await AuthServices.vendorVerifyForgotPasswordOtpFromEmail(validatedData.email, validatedData.otp);
+  return sendResponse({ 
     success: true, 
     statusCode: StatusCodes.OK, 
     message: 'OTP verified successfully. Use the token to reset your password.', 
@@ -139,17 +149,13 @@ const vendorVerifyForgotPasswordOtp = async (req: NextRequest) => {
   });
 };
 
-// STEP 3: Reset Password
-// দ্রষ্টব্য: resetPasswordWithToken সার্ভিসটি আমরা আবার ব্যবহার করতে পারি, 
-// কারণ এটি userId দিয়ে কাজ করে, যা টোকেন থেকে আসে।
-// আমাদের শুধু একটি আলাদা কন্ট্রোলার দরকার।
-
 const vendorResetPassword = async (req: NextRequest) => {
-  await dbConnect();
-  const body = await req.json();
-  const validatedData = resetPasswordWithTokenSchema.parse(body); // একই ভ্যালিডেশন
-  await AuthServices.resetPasswordWithToken(validatedData.token, validatedData.newPassword);
-  return sendResponse({ 
+  await dbConnect();
+  const body = await req.json();
+  const validatedData = resetPasswordWithTokenSchema.parse(body);
+  // Reusing the unified reset service logic
+  await AuthServices.resetPasswordWithToken(validatedData.token, validatedData.newPassword);
+  return sendResponse({ 
     success: true, 
     statusCode: StatusCodes.OK, 
     message: 'Vendor password has been reset successfully!', 
@@ -157,21 +163,32 @@ const vendorResetPassword = async (req: NextRequest) => {
   });
 };
 
-
+// --- Refresh Token ---
 const refreshToken = async (req: NextRequest) => {
   await dbConnect();
   const token = req.cookies.get('refreshToken')?.value;
   const validatedData = refreshTokenValidationSchema.parse({ refreshToken: token });
   const result = await AuthServices.refreshToken(validatedData.refreshToken);
 
-  return sendResponse({
+  // নতুন অ্যাক্সেস টোকেন জেনারেট হলে সেটা কুকিতেও আপডেট করে দেওয়া ভালো
+  const response = sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
     message: 'Access token refreshed successfully!',
     data: result,
   });
+
+  response.cookies.set('accessToken', result.accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60,
+    path: '/',
+  });
+
+  return response;
 };
 
+// --- User Change Password ---
 const changePassword = async (req: NextRequest) => {
   await dbConnect();
   const userId = req.headers.get('x-user-id');
@@ -189,6 +206,7 @@ const changePassword = async (req: NextRequest) => {
   });
 };
 
+// --- User Set Password (Social Login) ---
 const setPassword = async (req: NextRequest) => {
   await dbConnect();
   const userId = req.headers.get('x-user-id');
@@ -206,7 +224,7 @@ const setPassword = async (req: NextRequest) => {
   });
 };
 
-// --- Forgot Password Controllers ---
+// --- Forgot Password (User) ---
 const sendForgotPasswordOtpToEmail = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
@@ -239,7 +257,7 @@ const resetPasswordWithToken = async (req: NextRequest) => {
   return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Password has been reset successfully!', data: null });
 };
 
-
+// --- Vendor Registration ---
 const registerVendor = async (req: NextRequest) => {
   await dbConnect();
 
@@ -257,22 +275,18 @@ const registerVendor = async (req: NextRequest) => {
     uploadToCloudinary(Buffer.from(await tradeLicenseFile.arrayBuffer()), 'vendor-documents'),
   ]);
 
-  // ✅ FIX: Use the keys exactly as they are appended in Frontend (VendorFormUserEnd.tsx)
   const payload: any = {
-    // User Model Fields
-    name: formData.get('name') as string,                 // Was 'owner_name'
-    email: formData.get('email') as string,               // Was 'owner_email'
-    password: formData.get('password') as string,         // Was 'owner_email_password'
-    phoneNumber: formData.get('phoneNumber') as string,   // Was 'owner_number'
-    address: formData.get('address') as string || '',     // Matches frontend
+    name: formData.get('name') as string,
+    email: formData.get('email') as string,
+    password: formData.get('password') as string,
+    phoneNumber: formData.get('phoneNumber') as string,
+    address: formData.get('address') as string || '',
 
-    // Vendor Model Fields
-    businessName: formData.get('businessName') as string, // Was 'business_name'
+    businessName: formData.get('businessName') as string,
     businessAddress: formData.get('businessAddress') as string || '', 
-    tradeLicenseNumber: formData.get('tradeLicenseNumber') as string || '', // Was 'trade_license_number'
-    ownerName: formData.get('ownerName') as string,       // Was 'owner_name' (Frontend sends both 'name' and 'ownerName')
+    tradeLicenseNumber: formData.get('tradeLicenseNumber') as string || '',
+    ownerName: formData.get('ownerName') as string,
 
-    // Parse JSON string for categories
     businessCategory: JSON.parse((formData.get('businessCategory') as string) || '[]'),
 
     ownerNidUrl: ownerNidUploadResult.secure_url,
@@ -281,9 +295,7 @@ const registerVendor = async (req: NextRequest) => {
     status: 'pending',
   };
 
-  // Zod validation
   const validatedData = registerVendorValidationSchema.parse(payload);
-
   const result = await AuthServices.registerVendor(validatedData);
 
   return sendResponse({
@@ -294,6 +306,7 @@ const registerVendor = async (req: NextRequest) => {
   });
 };
 
+// --- Service Provider Registration ---
 const registerServiceProvider = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
@@ -308,32 +321,41 @@ const registerServiceProvider = async (req: NextRequest) => {
   });
 };
 
-
+// --- Google Login ---
 const googleLoginHandler = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
   const validated = googleLoginValidationSchema.parse(body);
   
-  // এখানে আমরা AuthServices.loginWithGoogle এর বদলে সরাসরি loginWithGoogle ফাংশনটি কল করছি
   const result = await AuthServices.loginWithGoogle(validated.idToken);
 
-  const { refreshToken, ...data } = result;
+  const { refreshToken, accessToken, ...data } = result;
+  
   const response = sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
     message: 'User logged in successfully with Google!',
-    data,
+    data: { ...data, accessToken },
   });
 
+  // ✅ 1. Refresh Token Cookie
   response.cookies.set('refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 30 * 24 * 60 * 60, // 30 দিন
+    maxAge: 30 * 24 * 60 * 60,
+    path: '/',
+  });
+
+  // ✅ 2. Access Token Cookie
+  response.cookies.set('accessToken', accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60,
+    path: '/',
   });
 
   return response;
 };
-
 
 export const AuthController = {
   loginUser,
@@ -349,7 +371,7 @@ export const AuthController = {
   googleLoginHandler,
   vendorLogin,
   vendorChangePassword,
-  vendorSendForgotPasswordOtp,
-  vendorVerifyForgotPasswordOtp,
-  vendorResetPassword,
+  vendorSendForgotPasswordOtp,
+  vendorVerifyForgotPasswordOtp,
+  vendorResetPassword,
 };

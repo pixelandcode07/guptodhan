@@ -12,6 +12,8 @@ import TopRow from './TopRow';
 import DetailsFields from './DetailsFields';
 import ButtonRow from './ButtonRow';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+// 🔥 Import the reusable AppActionRow component
+import AppActionRow, { AppRedirectType } from '../../slider/Components/parts/AppActionRow'; 
 
 interface BannerFormProps {
   initialData?: {
@@ -25,6 +27,10 @@ interface BannerFormProps {
     bannerPosition?: string;
     textPosition?: string;
     bannerImage?: string;
+    status?: string;
+    // 🔥 New Fields for App Navigation
+    appTargetType?: string; // This corresponds to appRedirectType
+    appTargetId?: string;   // This corresponds to appRedirectValue/Id
   };
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -32,10 +38,9 @@ interface BannerFormProps {
 
 export default function BannerForm({ initialData, onSuccess, onCancel }: BannerFormProps) {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Get authentication data from session
   type SessionWithToken = { accessToken?: string; user?: { role?: string } };
   const sessionWithToken = session as SessionWithToken | null;
   const token = sessionWithToken?.accessToken;
@@ -52,9 +57,12 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
   const [buttonLink, setButtonLink] = useState('');
   const [bannerStatus, setBannerStatus] = useState<'active' | 'inactive'>('active');
 
+  // 🔥 App Specific States using AppRedirectType
+  const [appRedirectType, setAppRedirectType] = useState<AppRedirectType>('None');
+  const [appRedirectValue, setAppRedirectValue] = useState<string>('');
+
   const isEditMode = !!initialData;
 
-  // Populate form with initial data for edit mode
   useEffect(() => {
     if (initialData) {
       setSubTitle(initialData.subTitle || '');
@@ -64,7 +72,12 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
       setBannerLink(initialData.bannerLink || '');
       setButtonLink(initialData.buttonLink || '');
       
-      // Map backend position values to frontend values
+      // ✅ Populate App Data correctly
+      // Ensure the backend value maps to AppRedirectType
+      const backendType = initialData.appTargetType as AppRedirectType;
+      setAppRedirectType(backendType || 'None');
+      setAppRedirectValue(initialData.appTargetId || '');
+
       const positionMapping: Record<string, BannerPosition> = {
         'top-homepage': 'Top (Homepage)',
         'left-homepage': 'Left (Homepage)',
@@ -76,12 +89,10 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
       
       setBannerPosition(positionMapping[initialData.bannerPosition || ''] || '');
       setTextPosition(initialData.textPosition === 'left' ? 'Left' : 'Right');
-      // Default status to active if not provided
-      setBannerStatus(((initialData as any).status === 'inactive') ? 'inactive' : 'active');
+      setBannerStatus((initialData.status === 'inactive') ? 'inactive' : 'active');
     }
   }, [initialData]);
 
-  // Map frontend values to backend values
   const mapBannerPosition = (position: BannerPosition): string => {
     const mapping: Record<BannerPosition, string> = {
       'Top (Homepage)': 'top-homepage',
@@ -98,9 +109,8 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
     return position.toLowerCase();
   };
 
-  // URL validation function
   const isValidUrl = (url: string): boolean => {
-    if (!url.trim()) return true; // Empty URLs are allowed
+    if (!url.trim()) return true;
     try {
       new URL(url.trim());
       return true;
@@ -113,56 +123,37 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
     try {
       setIsSubmitting(true);
 
-      // Validate required fields
-      if (!image) {
+      // --- Validations ---
+      if (!image && !isEditMode) {
         toast.error('Please upload a banner image');
         return;
       }
-
       if (!bannerPosition) {
         toast.error('Please select a banner position');
         return;
       }
-
       if (!textPosition) {
         toast.error('Please select a text position');
         return;
       }
-
       if (!subTitle.trim()) {
         toast.error('Please enter a subtitle');
         return;
       }
-
       if (!title.trim()) {
         toast.error('Please enter a title');
         return;
       }
 
-      if (!description.trim()) {
-        toast.error('Please enter a description');
+      // ✅ App Navigation Validation
+      if (appRedirectType !== 'None' && !appRedirectValue.trim()) {
+        toast.error('Please select a target for Mobile App Navigation');
         return;
       }
 
-      if (!buttonText.trim()) {
-        toast.error('Please enter button text');
-        return;
-      }
-
-      // Validate URLs if they are filled
-      if (bannerLink.trim() && !isValidUrl(bannerLink)) {
-        toast.error('Please enter a valid banner URL (e.g., https://example.com)');
-        return;
-      }
-
-      if (buttonLink.trim() && !isValidUrl(buttonLink)) {
-        toast.error('Please enter a valid button URL (e.g., https://example.com)');
-        return;
-      }
-
-      // Create FormData for file upload
+      // Create FormData
       const formData = new FormData();
-      formData.append('bannerImage', image);
+      if (image) formData.append('bannerImage', image);
       formData.append('bannerPosition', mapBannerPosition(bannerPosition));
       formData.append('textPosition', mapTextPosition(textPosition));
       formData.append('subTitle', subTitle.trim());
@@ -173,25 +164,21 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
       if (buttonLink.trim()) formData.append('buttonLink', buttonLink.trim());
       formData.append('status', bannerStatus);
 
+      // 🔥 Append App Data
+      formData.append('appTargetType', appRedirectType);
+      formData.append('appTargetId', appRedirectValue.trim());
+
       let response;
+      const headers = {
+        'Content-Type': 'multipart/form-data',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        ...(userRole ? { 'x-user-role': userRole } : {}),
+      };
+
       if (isEditMode && initialData?._id) {
-        // Update existing banner
-        response = await axios.patch(`/api/v1/ecommerce-banners/${initialData._id}`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-            ...(userRole ? { 'x-user-role': userRole } : {}),
-          },
-        });
+        response = await axios.patch(`/api/v1/ecommerce-banners/${initialData._id}`, formData, { headers });
       } else {
-        // Create new banner
-        response = await axios.post('/api/v1/ecommerce-banners', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-            ...(userRole ? { 'x-user-role': userRole } : {}),
-          },
-        });
+        response = await axios.post('/api/v1/ecommerce-banners', formData, { headers });
       }
 
       if (response.data.success) {
@@ -207,9 +194,9 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
         const action = isEditMode ? 'update' : 'create';
         toast.error(`Failed to ${action} banner`);
       }
-    } catch (error: unknown) {
-      console.error('Error creating banner:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create banner';
+    } catch (error: any) {
+      console.error('Error creating/updating banner:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to save banner';
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -219,6 +206,7 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Image */}
         <div className="lg:col-span-1">
           <UploadImage
             name="bannerImage"
@@ -226,8 +214,10 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
             preview={initialData?.bannerImage}
             onChange={(name, file) => setImage(file)}
           />
-          <p className="text-[11px] text-gray-500 mt-2">Please upload jpg, jpeg, png file of 500px × 262px</p>
+          <p className="text-[11px] text-gray-500 mt-2">Recommended: 500px × 262px (or suitable size)</p>
         </div>
+
+        {/* Right Column - Fields */}
         <div className="lg:col-span-2 space-y-6">
           <TopRow
             bannerPosition={bannerPosition}
@@ -253,11 +243,22 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
             setButtonLink={setButtonLink}
             isValidUrl={isValidUrl}
           />
+
+          {/* 🔥 Reusable App Navigation Component */}
+          {/* Note: Ensure the path to AppActionRow is correct based on your folder structure */}
+          <AppActionRow 
+            appRedirectType={appRedirectType}
+            setAppRedirectType={setAppRedirectType}
+            appRedirectValue={appRedirectValue}
+            setAppRedirectValue={setAppRedirectValue}
+          />
+
+          {/* Status Selection */}
           <div>
             <label className="text-sm font-medium text-gray-700">Status</label>
             <div className="mt-2 max-w-xs">
               <Select value={bannerStatus} onValueChange={(v) => setBannerStatus(v as 'active' | 'inactive')}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -270,18 +271,17 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
         </div>
       </div>
 
+      {/* Action Buttons */}
       <div className="flex justify-center pb-5 gap-3">
         {onCancel && (
           <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>
         )}
-        <Button onClick={handleSave} disabled={isSubmitting}>
-          {isSubmitting ? (isEditMode ? 'Updating Banner...' : 'Creating Banner...') : (isEditMode ? 'Update Banner' : 'Save Banner')}
+        <Button onClick={handleSave} disabled={isSubmitting} className="min-w-[150px]">
+          {isSubmitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Banner' : 'Save Banner')}
         </Button>
       </div>
     </div>
   );
 }
-
-

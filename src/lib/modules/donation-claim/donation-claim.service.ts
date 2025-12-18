@@ -16,8 +16,19 @@ const deleteClaimFromDB = async (id: string) => {
   return result;
 };
 
+// ✅ NEW: Update Status Logic
+const updateClaimStatusInDB = async (id: string, status: string) => {
+  const result = await DonationClaim.findByIdAndUpdate(
+    id, 
+    { status: status }, 
+    { new: true } // রিটার্ন করার সময় আপডেটেড ডাটা দিবে
+  );
+  return result;
+};
+
 export const DonationClaimServices = {
   createClaimInDB,
   getAllClaimsFromDB,
-  deleteClaimFromDB
+  deleteClaimFromDB,
+  updateClaimStatusInDB // Exported
 };
