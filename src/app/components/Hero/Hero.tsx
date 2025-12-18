@@ -18,7 +18,7 @@ export default async function Hero() {
         <HeroNav categories={categories} />
       </nav>
 
-      <main className='max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pt-10'>
+      <main className='max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 md:pt-10'>
         <HeroImage
           leftBanners={leftBanners}
           rightBanners={rightBanners}

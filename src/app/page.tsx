@@ -23,21 +23,27 @@ export const dynamic = 'force-dynamic';
 export default function MainHomePage() {
   return (
     <div className="bg-gray-100 min-h-screen">
-      {/* Hero */}
-      <Suspense fallback={<SkeletonHero />}>
-        <Hero />
-      </Suspense>
+      <div className='flex flex-col-reverse lg:flex-col'>
+        <div className="heroandfeature">
+          {/* Hero */}
+          <Suspense fallback={<SkeletonHero />}>
+            <Hero />
+          </Suspense>
 
-      {/* Featured */}
-      <Suspense fallback={<SkeletonSectionHeader />}>
-        <Feature />
-      </Suspense>
+          {/* Featured */}
+          <Suspense fallback={<SkeletonSectionHeader />}>
+            <Feature />
+          </Suspense>
+        </div>
 
-      {/* Story */}
-      <Suspense fallback={<SkeletonSectionHeader />}>
-        {/* <StoryFeed /> */}
-        <StoryFeedWrapper />
-      </Suspense>
+        <div className="story">
+          {/* Story */}
+          <Suspense fallback={<SkeletonSectionHeader />}>
+            {/* <StoryFeed /> */}
+            <StoryFeedWrapper />
+          </Suspense>
+        </div>
+      </div>
 
       {/* Flash Sell */}
       <Suspense fallback={<SkeletonSectionHeader />}>

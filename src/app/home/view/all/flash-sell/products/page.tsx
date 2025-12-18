@@ -1,6 +1,6 @@
 
 import ProductGrid from '@/components/ReusableComponents/ProductGrid';
-import { fetchLandingPageProducts } from '@/lib/MainHomePage/fetchLandingPageProducts';
+import { fetchFlashSaleData } from '@/lib/MainHomePage/fetchFlashSaleData';
 import { generateGuptodhanMetadata } from '@/lib/metadata/generateGuptodhanMetadata';
 
 export async function generateMetadata() {
@@ -14,10 +14,10 @@ export async function generateMetadata() {
 }
 
 export default async function FlashProductsPage() {
-    const {runningOffers} = await fetchLandingPageProducts();
+    const products = await fetchFlashSaleData();
     return (
         <section className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 bg-gradient-to-b from-red-50 to-white py-10">
-            <ProductGrid products={runningOffers} />
+            <ProductGrid products={products} />
         </section>
     )
 }

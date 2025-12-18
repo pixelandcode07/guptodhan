@@ -1,5 +1,6 @@
 import ProductGrid from '@/components/ReusableComponents/ProductGrid';
-import { fetchLandingPageProducts } from '@/lib/MainHomePage/fetchLandingPageProducts';
+import { fetchBestSellingData } from '@/lib/MainHomePage/fetchBestSellingData';
+// import { fetchLandingPageProducts } from '@/lib/MainHomePage/fetchLandingPageProducts';
 import { generateGuptodhanMetadata } from '@/lib/metadata/generateGuptodhanMetadata';
 
 export async function generateMetadata() {
@@ -15,12 +16,11 @@ export async function generateMetadata() {
 
 
 export default async function BestSellProductsPage() {
-    const { bestSelling } = await fetchLandingPageProducts();
-    console.log('Best selling ads', bestSelling)
+    const products = await fetchBestSellingData()
 
     return (
         <section className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 bg-gradient-to-b from-red-50 to-white py-10">
-            <ProductGrid products={bestSelling} />
+            <ProductGrid products={products} />
         </section>
     );
 }

@@ -2,7 +2,7 @@
 
 import { Heart, LogOut, Menu, User, X, ShoppingBag, Gift, UserPlus, Truck, Phone, LogIn } from 'lucide-react';
 import Image from 'next/image';
-import { Dialog, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import LogInRegister from '../../LogInAndRegister/LogIn_Register';
 import SearchBar from './SearchBar';
@@ -33,7 +33,7 @@ export default function NavMain() {
   return (
     <div>
       {/* Main Top Bar */}
-      <div className="bg-[#0097E9] md:bg-[#FFFFFF] text-black md:max-w-[95vw] xl:max-w-[90vw] mx-auto flex justify-between items-center py-2 md:py-5 px-1 md:px-1 lg:px-10"> 
+      <div className="bg-[#0097E9] md:bg-[#FFFFFF] text-black md:max-w-[95vw] xl:max-w-[90vw] mx-auto flex justify-between items-center py-2 md:py-5 px-1 md:px-1 lg:px-10">
         <div className="flex justify-between items-center gap-2">
           <div className="flex lg:block items-center">
             {/* Mobile Menu Toggle */}
@@ -77,9 +77,9 @@ export default function NavMain() {
                   <li className="flex flex-col justify-center items-center text-[#00005E] font-medium">
                     <Link href={'/home/UserProfile'} className="flex flex-col items-center gap-1">
                       <Avatar className="h-5 w-5">
-                        <AvatarImage 
-                          src={user?.image && user.image !== 'undefined' ? user.image : undefined} 
-                          alt={user?.name ?? 'User'} 
+                        <AvatarImage
+                          src={user?.image && user.image !== 'undefined' ? user.image : undefined}
+                          alt={user?.name ?? 'User'}
                         />
                         <AvatarFallback className="bg-[#00005E] text-white text-xs font-medium">
                           {getInitials(user?.name)}
@@ -134,112 +134,113 @@ export default function NavMain() {
               onClick={() => setMobileOpen(false)}
               className="absolute inset-0 bg-black/50"
             />
-
-            <motion.div className="relative w-80 max-w-full bg-[#000066] text-white flex flex-col">
-              {/* Header */}
-              <div className="flex justify-between items-center p-4 border-b border-gray-600">
-                <h2 className="text-lg font-bold">Menu</h2>
-                <button onClick={() => setMobileOpen(false)} className="p-1 hover:bg-white/10 rounded">
-                  <X size={20} />
-                </button>
-              </div>
-
-              {/* Menu Items */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                {/* Buy & Sell + Donation */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <Link href="/home/buyandsell" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 transition">
-                    <ShoppingBag size={24} />
-                    <span className="text-xs mt-1">Buy & Sell</span>
-                  </Link>
-                  <Link href="/home/donation" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-green-600 to-green-700 rounded-lg hover:from-green-700 hover:to-green-800 transition">
-                    <Gift size={24} />
-                    <span className="text-xs mt-1">Donation</span>
-                  </Link>
+            <Dialog>
+              <motion.div className="relative w-80 max-w-full bg-[#000066] text-white flex flex-col">
+                {/* Header */}
+                <div className="flex justify-between items-center p-4 border-b border-gray-600">
+                  <h2 className="text-lg font-bold">Menu</h2>
+                  <button onClick={() => setMobileOpen(false)} className="p-1 hover:bg-white/10 rounded">
+                    <X size={20} />
+                  </button>
                 </div>
 
-                <hr className="border-gray-600 my-2" />
-
-                {/* Vendor Section */}
-                <div className="space-y-1">
-                  <h3 className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Vendor</h3>
-                  <Link href="/vendor/login" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
-                    <LogIn size={16} />
-                    <span>Vendor Login</span>
-                  </Link>
-                  <Link href="/vendor/register" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
-                    <UserPlus size={16} />
-                    <span>Vendor Registration</span>
-                  </Link>
-                </div>
-
-                <hr className="border-gray-600 my-2" />
-
-                {/* Service Provider */}
-                <div className="space-y-1">
-                  <h3 className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Service Provider</h3>
-                  <Link href="/service-provider/register" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
-                    <UserPlus size={16} />
-                    <span>Register</span>
-                  </Link>
-                  <Link href="/service-provider/login" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
-                    <LogIn size={16} />
-                    <span>Login</span>
-                  </Link>
-                </div>
-
-                <hr className="border-gray-600 my-2" />
-
-                {/* Others */}
-                <div className="space-y-1">
-                  <Link href="/track-order" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
-                    <Truck size={16} />
-                    <span>Track Order</span>
-                  </Link>
-                  <Link href="/contact" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
-                    <Phone size={16} />
-                    <span>Contact Us</span>
-                  </Link>
-                  <Link href="/wishlist" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
-                    <Heart size={16} />
-                    <span>Wishlist</span>
-                  </Link>
-                </div>
-              </div>
-
-              {/* Footer - Mobile Login/Profile */}
-              <div className="p-4 border-t border-gray-600">
-                {session ? (
-                  <div className="space-y-3">
-                    <Link href="/home/UserProfile" className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={user?.image && user.image !== 'undefined' ? user.image : undefined} />
-                        <AvatarFallback className="bg-white text-[#000066] font-medium">
-                          {getInitials(user?.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{user?.name || 'User'}</p>
-                        <p className="text-xs text-gray-300">{user?.email}</p>
-                      </div>
+                {/* Menu Items */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                  {/* Buy & Sell + Donation */}
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <Link href="/home/buyandsell" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 transition">
+                      <ShoppingBag size={24} />
+                      <span className="text-xs mt-1">Buy & Sell</span>
                     </Link>
-                    <button
-                      onClick={() => signOut()}
-                      className="w-full flex items-center justify-center gap-2 py-2 bg-red-600 hover:bg-red-700 rounded font-medium"
-                    >
-                      <LogOut size={16} />
-                      Logout
-                    </button>
+                    <Link href="/home/donation" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-green-600 to-green-700 rounded-lg hover:from-green-700 hover:to-green-800 transition">
+                      <Gift size={24} />
+                      <span className="text-xs mt-1">Donation</span>
+                    </Link>
                   </div>
-                ) : (
-                  <DialogTrigger className="w-full">
-                    <button className="w-full py-3 bg-white text-[#000066] rounded font-bold hover:bg-gray-100 transition">
-                      Login / Register
-                    </button>
-                  </DialogTrigger>
-                )}
-              </div>
-            </motion.div>
+
+                  <hr className="border-gray-600 my-2" />
+
+                  {/* Vendor Section */}
+                  <div className="space-y-1">
+                    <h3 className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Vendor</h3>
+                    <Link href="/vendor-singin" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
+                      <LogIn size={16} />
+                      <span>Vendor Login</span>
+                    </Link>
+                    <Link href="/vendor-singup" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
+                      <UserPlus size={16} />
+                      <span>Vendor Registration</span>
+                    </Link>
+                  </div>
+
+                  <hr className="border-gray-600 my-2" />
+
+                  {/* Service Provider */}
+                  <div className="space-y-1">
+                    <h3 className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Service Provider</h3>
+                    <Link href="/service-provider/register" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
+                      <UserPlus size={16} />
+                      <span>Register</span>
+                    </Link>
+                    <Link href="/service-provider/login" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
+                      <LogIn size={16} />
+                      <span>Login</span>
+                    </Link>
+                  </div>
+
+                  <hr className="border-gray-600 my-2" />
+
+                  {/* Others */}
+                  <div className="space-y-1">
+                    <Link href="/track-order" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
+                      <Truck size={16} />
+                      <span>Track Order</span>
+                    </Link>
+                    <Link href="/contact" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
+                      <Phone size={16} />
+                      <span>Contact Us</span>
+                    </Link>
+                    <Link href="/wishlist" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
+                      <Heart size={16} />
+                      <span>Wishlist</span>
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Footer - Mobile Login/Profile */}
+                <div className="p-4 mb-20 border-t border-gray-600">
+                  {session ? (
+                    <div className="space-y-3">
+                      <Link href="/home/UserProfile" className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={user?.image && user.image !== 'undefined' ? user.image : undefined} />
+                          <AvatarFallback className="bg-white text-[#000066] font-medium">
+                            {getInitials(user?.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{user?.name || 'User'}</p>
+                          <p className="text-xs text-gray-300">{user?.email}</p>
+                        </div>
+                      </Link>
+                      <button
+                        onClick={() => signOut()}
+                        className="w-full flex items-center justify-center gap-2 py-2 bg-red-600 hover:bg-red-700 rounded font-medium"
+                      >
+                        <LogOut size={16} />
+                        Logout
+                      </button>
+                    </div>
+                  ) : (
+                    <DialogTrigger className="w-full">
+                      <DialogContent className="sm:max-w-md p-0">
+                        <LogInRegister />
+                      </DialogContent>
+                    </DialogTrigger>
+                  )}
+                </div>
+              </motion.div>
+            </Dialog>
           </motion.div>
         )}
       </AnimatePresence>

@@ -8,7 +8,7 @@ import { ShopByCategory } from './ShopByCategory';
 export default async function Feature() {
   const featuredData = await fetchFeaturedCategories();
   return (
-    <div className="bg-gray-100 mb-0 my-3 max-w-[95vw] xl:max-w-[90vw] mx-auto px-4">
+    <div className="bg-gray-100 mb-0 my-3 md:max-w-[95vw] xl:max-w-[90vw] mx-auto px-4">
       <div className="hidden lg:flex justify-center">
         <PageHeader
           title="Featured Category"
