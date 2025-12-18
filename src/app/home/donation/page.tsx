@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
 // Data Fetching Function
 async function getDonationData() {
     // 🔥 URL ফিক্স: লোকালহোস্ট বা লাইভ লিংক নিশ্চিত করা
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
     
     console.log("🔍 Fetching Donation Data from:", baseUrl);
 
