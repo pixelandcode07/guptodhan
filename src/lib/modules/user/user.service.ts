@@ -4,6 +4,8 @@ import { TUserInput, TUser } from './user.interface';
 import { User } from './user.model';
 import { deleteFromCloudinary } from '@/lib/utils/cloudinary';
 import bcrypt from 'bcrypt'; 
+import '@/lib/modules/service-category/serviceCategory.model'; 
+import '@/lib/modules/service-subcategory/serviceSubCategory.model';
 
 const createUserIntoDB = async (payload: TUserInput): Promise<Partial<TUser> | null> => {
   const query = [];
@@ -89,6 +91,35 @@ const createServiceProviderIntoDB = async (payload: any) => {
 
 
 
+const updateUserByAdminInDB = async (
+  id: string, 
+  payload: Partial<TUser>
+): Promise<Partial<TUser> | null> => {
+  const user = await User.findById(id);
+  if (!user) throw new Error('User not found!');
+
+  // Password update না করলে ভালো (security)
+  if (payload.password) {
+    delete payload.password;
+  }
+
+  return User.findByIdAndUpdate(
+    id, 
+    payload, 
+    { new: true, runValidators: true }
+  ).select('-password');
+};
+
+const getUserByIdFromDB = async (id: string): Promise<Partial<TUser> | null> => {
+  // মডেলগুলো উপরে ইম্পোর্ট করায় এখন populate কাজ করবে
+  const user = await User.findById(id)
+    .select('-password')
+    .populate('serviceProviderInfo.serviceCategory')
+    .populate('serviceProviderInfo.subCategories');
+  
+  return user;
+};
+
 export const UserServices = {
   createUserIntoDB,
   getAllUsersFromDB,
@@ -96,4 +127,6 @@ export const UserServices = {
   updateMyProfileInDB,
   deleteUserFromDB,
   createServiceProviderIntoDB, 
+  updateUserByAdminInDB,
+  getUserByIdFromDB,
 };
