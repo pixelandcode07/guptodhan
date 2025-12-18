@@ -7,6 +7,8 @@ import { jwtVerify } from 'jose';
 const adminRoutes = [
   '/general',
   '/api/v1/users',
+  '/api/v1/donation-users',
+  '/api/v1/donation-stats/dashboard',
   '/api/v1/classifieds-banners',
   '/api/v1/classifieds-subcategories',
   '/api/v1/brands',
