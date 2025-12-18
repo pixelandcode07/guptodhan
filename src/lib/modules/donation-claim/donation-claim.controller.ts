@@ -160,8 +160,55 @@ const deleteClaim = async (
   }
 };
 
+
+// ✅ NEW: Update Status Controller
+const updateClaimStatus = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  await dbConnect();
+  try {
+    const { id } = await params;
+    const body = await req.json();
+    const { status } = body;
+
+    // Validation: Status must be allowed values
+    if (!['pending', 'approved', 'rejected'].includes(status)) {
+        return sendResponse({
+            success: false,
+            statusCode: StatusCodes.BAD_REQUEST,
+            message: 'Invalid status. Allowed: pending, approved, rejected',
+            data: null,
+        });
+    }
+
+    const result = await DonationClaimServices.updateClaimStatusInDB(id, status);
+    
+    if (!result) {
+       return sendResponse({
+        success: false,
+        statusCode: StatusCodes.NOT_FOUND,
+        message: 'Claim not found',
+        data: null,
+      });
+    }
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: `Claim request ${status} successfully!`,
+      data: result,
+    });
+  } catch (error) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: (error as Error).message,
+      data: null,
+    });
+  }
+};
+
 export const DonationClaimController = {
   createClaim,
   getClaims,
   deleteClaim,
+  updateClaimStatus,
 };
