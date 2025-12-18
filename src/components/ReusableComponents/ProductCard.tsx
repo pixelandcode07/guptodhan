@@ -1,161 +1,216 @@
+
 // 'use client';
 
-// import { Zap, Clock } from 'lucide-react';
+// import {
+//   Zap,
+//   Clock,
+//   Star,
+//   Tag,
+//   ShoppingBag,
+//   PackageCheck
+// } from 'lucide-react';
 // import Image from 'next/image';
 // import Link from 'next/link';
-// import { motion, AnimatePresence } from 'framer-motion';
+// import { motion } from 'framer-motion';
 // import { Badge } from '@/components/ui/badge';
 // import { cn } from '@/lib/utils';
 // import { Product } from '@/types/ProductType';
 // import { useEffect, useState } from 'react';
 
 // interface ProductCardProps {
-//     product: Product;
-//     index: number;
+//   product: Product;
+//   index: number;
 // }
-
 
 // export default function ProductCard({ product, index }: ProductCardProps) {
-//     const discountPct = product.productPrice > product.discountPrice
-//         ? Math.round(((product.productPrice - product.discountPrice) / product.productPrice) * 100)
-//         : 0;
+//   const discountPct =
+//     product.productPrice > product.discountPrice
+//       ? Math.round(
+//           ((product.productPrice - product.discountPrice) /
+//             product.productPrice) *
+//             100
+//         )
+//       : 0;
 
-//     return (
-//         <motion.div
-//             layout
-//             initial={{ opacity: 0, y: 30 }}
-//             animate={{ opacity: 1, y: 0 }}
-//             exit={{ opacity: 0, scale: 0.9 }}
-//             transition={{ delay: index * 0.06, type: 'spring', stiffness: 180 }}
-//             whileHover={{ y: -6, transition: { duration: 0.2 } }}
-//             className="group"
-//         >
-//             <Link
-//                 href={`/products/${product._id}`}
-//                 className="block bg-white rounded-2xl shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col h-full border border-gray-100"
-//             >
-//                 {/* Image */}
-//                 <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
-//                     <Image
-//                         src={product.thumbnailImage || '/placeholder.png'}
-//                         alt={product.productTitle}
-//                         fill
-//                         className="object-cover group-hover:scale-110 transition-transform duration-500"
-//                     />
+//   const hasOffer =
+//     product.offerDeadline &&
+//     new Date(product.offerDeadline) > new Date();
 
-//                     {/* Badges */}
-//                     <div className="absolute top-3 left-3 flex flex-col gap-2">
-//                         {/* Flash Badge */}
-//                         {product.offerDeadline && (
-//                             <motion.div
-//                                 animate={{ scale: [1, 1.15, 1] }}
-//                                 transition={{ repeat: Infinity, duration: 1.5 }}
-//                                 className="bg-gradient-to-r from-red-600 to-pink-600 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg"
-//                             >
-//                                 <Zap className="w-3.5 h-3.5" />
-//                                 FLASH
-//                             </motion.div>
-//                         )}
+//   return (
+//     <motion.div
+//       layout
+//       initial={{ opacity: 0, y: 24 }}
+//       animate={{ opacity: 1, y: 0 }}
+//       exit={{ opacity: 0, scale: 0.95 }}
+//       transition={{ delay: index * 0.05, type: 'spring', stiffness: 160 }}
+//       whileHover={{ y: -6 }}
+//       className="group"
+//     >
+//       <Link
+//         href={`/products/${product._id}`}
+//         className="flex h-full flex-col overflow-hidden rounded-2xl border bg-white transition-all duration-300 hover:border-blue-200 hover:shadow-xl"
+//       >
+//         {/* Image */}
+//         <div className="relative aspect-square bg-gray-50">
+//           <Image
+//             src={product.thumbnailImage || '/placeholder.png'}
+//             alt={product.productTitle}
+//             fill
+//             className="object-cover transition-transform duration-500 group-hover:scale-110"
+//           />
 
-//                         {/* Discount Badge */}
-//                         {discountPct > 0 && (
-//                             <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md">
-//                                 -{discountPct}%
-//                             </div>
-//                         )}
-//                     </div>
+//           {/* Gradient Overlay */}
+//           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition" />
 
-//                     {/* Stock Warning */}
-//                     {product.stock > 0 && product.stock < 10 && (
-//                         <div className="absolute bottom-3 left-3 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md animate-pulse">
-//                             Only {product.stock} left
-//                         </div>
-//                     )}
-//                 </div>
+//           {/* Top Badges */}
+//           <div className="absolute left-3 top-3 flex flex-col gap-2">
+//             {hasOffer && (
+//               <motion.div
+//                 animate={{ scale: [1, 1.15, 1] }}
+//                 transition={{ repeat: Infinity, duration: 1.4 }}
+//                 className="flex items-center gap-1 rounded-full bg-gradient-to-r from-red-600 to-pink-600 px-3 py-1 text-xs font-bold text-white shadow"
+//               >
+//                 <Zap className="h-3.5 w-3.5" />
+//                 Flash Deal
+//               </motion.div>
+//             )}
 
-//                 {/* Content */}
-//                 <div className="p-4 flex flex-col flex-grow space-y-3">
-//                     <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-blue-600 transition-colors">
-//                         {product.productTitle}
-//                     </h3>
+//             {discountPct > 0 && (
+//               <div className="flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white shadow">
+//                 <Tag className="h-3.5 w-3.5" />-{discountPct}%
+//               </div>
+//             )}
+//           </div>
 
-//                     {/* Brand & Flag */}
-//                     <div className="flex gap-1.5 flex-wrap">
-//                         {product?.brand && (
-//                             <Badge variant="secondary" className="text-xs py-0">
-//                                 {typeof product.brand === 'object' && product.brand !== null
-//                                     ? product.brand.name
-//                                     : product.brand}
-//                             </Badge>
-//                         )}
-//                         {product.flag?.name && (
-//                             <Badge
-//                                 className={cn(
-//                                     'text-xs text-white py-0',
-//                                     product.flag.color || 'bg-indigo-600'
-//                                 )}
-//                             >
-//                                 {product.flag.name}
-//                             </Badge>
-//                         )}
-//                     </div>
+//           {/* Stock Warning */}
+//           {product.stock > 0 && product.stock < 10 && (
+//             <div className="absolute bottom-3 left-3 rounded-full bg-orange-500 px-3 py-1 text-xs font-semibold text-white shadow animate-pulse">
+//               Only {product.stock} left
+//             </div>
+//           )}
+//         </div>
 
-//                     {/* Countdown */}
-//                     {product.offerDeadline && (
-//                         <div className="flex items-center gap-1 text-xs text-red-600 font-medium">
-//                             <Clock className="w-3.5 h-3.5" />
-//                             <Countdown deadline={product.offerDeadline} />
-//                         </div>
-//                     )}
+//         {/* Content */}
+//         <div className="flex flex-grow flex-col space-y-3 p-4">
+//           <h3 className="line-clamp-2 text-sm font-semibold leading-snug transition-colors group-hover:text-blue-600">
+//             {product.productTitle}
+//           </h3>
 
-//                     {/* Price */}
-//                     <div className="mt-auto space-y-1">
-//                         <p className="text-lg font-bold text-[#0097E9]">
-//                             ৳{product.discountPrice.toLocaleString()}
-//                         </p>
-//                         {product.productPrice > product.discountPrice && (
-//                             <p className="text-xs text-gray-500 line-through">
-//                                 ৳{product.productPrice.toLocaleString()}
-//                             </p>
-//                         )}
-//                     </div>
-//                 </div>
-//             </Link>
-//         </motion.div>
-//     );
+//           {/* Brand & Flag */}
+//           <div className="flex flex-wrap gap-1.5">
+//             {product?.brand && (
+//               <Badge variant="secondary" className="text-xs">
+//                 {typeof product.brand === 'object'
+//                   ? product.brand.name
+//                   : product.brand}
+//               </Badge>
+//             )}
+//             {product.flag?.name && (
+//               <Badge
+//                 className={cn(
+//                   'text-xs text-white',
+//                   product.flag.color || 'bg-indigo-600'
+//                 )}
+//               >
+//                 {product.flag.name}
+//               </Badge>
+//             )}
+//           </div>
+
+//           {/* Rating */}
+//           {product.totalReviews > 0 && (
+//             <div className="flex items-center gap-2 text-sm">
+//               <div className="flex items-center gap-1">
+//                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+//                 <span className="font-medium">
+//                   {product.averageRating.toFixed(1)}
+//                 </span>
+//               </div>
+//               <span className="text-gray-500">
+//                 ({product.totalReviews})
+//               </span>
+//             </div>
+//           )}
+
+//           {/* Sales */}
+//           {product.sellCount > 0 && (
+//             <div className="flex items-center gap-1 text-xs text-gray-600">
+//               <ShoppingBag className="h-3.5 w-3.5" />
+//               <span className="font-medium">
+//                 {product.sellCount.toLocaleString()}
+//               </span>{' '}
+//               sold
+//             </div>
+//           )}
+
+//           {/* Countdown */}
+//           {hasOffer && (
+//             <div className="flex items-center gap-1 text-xs font-medium text-red-600">
+//               <Clock className="h-3.5 w-3.5" />
+//               <Countdown deadline={product.offerDeadline} />
+//             </div>
+//           )}
+
+//           {/* Price */}
+//           <div className="mt-auto space-y-0.5">
+//             <p className="text-lg font-bold text-blue-600">
+//               ৳{product.discountPrice.toLocaleString()}
+//             </p>
+//             {product.productPrice > product.discountPrice && (
+//               <p className="text-xs text-gray-400 line-through">
+//                 ৳{product.productPrice.toLocaleString()}
+//               </p>
+//             )}
+//           </div>
+
+//           {/* Footer Hint */}
+//           <div className="flex items-center gap-1 pt-1 text-xs text-gray-500">
+//             <PackageCheck className="h-3.5 w-3.5" />
+//             Ready to ship
+//           </div>
+//         </div>
+//       </Link>
+//     </motion.div>
+//   );
 // }
 
-// // Countdown Component
+// /* Countdown Component */
 // function Countdown({ deadline }: { deadline: string }) {
-//     'use client';
-//     const [timeLeft, setTimeLeft] = useState('');
+//   const [timeLeft, setTimeLeft] = useState('');
 
-//     useEffect(() => {
-//         const interval = setInterval(() => {
-//             const diff = new Date(deadline).getTime() - Date.now();
-//             if (diff <= 0) {
-//                 setTimeLeft('Ended');
-//                 clearInterval(interval);
-//                 return;
-//             }
+//   useEffect(() => {
+//     const calculate = () => {
+//       const diff = new Date(deadline).getTime() - Date.now();
+//       if (diff <= 0) return setTimeLeft('Ended');
 
-//             const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-//             const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-//             const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+//       const d = Math.floor(diff / 86400000);
+//       const h = Math.floor((diff % 86400000) / 3600000);
+//       const m = Math.floor((diff % 3600000) / 60000);
 
-//             setTimeLeft(`${hours}h ${minutes}m left`);
-//         }, 1000);
+//       setTimeLeft(d > 0 ? `${d}d ${h}h left` : `${h}h ${m}m left`);
+//     };
 
-//         return () => clearInterval(interval);
-//     }, [deadline]);
+//     calculate();
+//     const t = setInterval(calculate, 60000);
+//     return () => clearInterval(t);
+//   }, [deadline]);
 
-//     return <span>{timeLeft}</span>;
+//   return <span>{timeLeft}</span>;
 // }
+
+
 
 
 'use client';
 
-import { Zap, Clock, Star } from 'lucide-react';
+import {
+    Zap,
+    Clock,
+    Star,
+    Tag,
+    ShoppingBag,
+    PackageCheck,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -170,76 +225,84 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, index }: ProductCardProps) {
-    const discountPct = product.productPrice > product.discountPrice
-        ? Math.round(((product.productPrice - product.discountPrice) / product.productPrice) * 100)
-        : 0;
+    const discountPct =
+        product.productPrice > product.discountPrice
+            ? Math.round(
+                ((product.productPrice - product.discountPrice) /
+                    product.productPrice) *
+                100
+            )
+            : 0;
 
-    const hasOffer = product.offerDeadline && new Date(product.offerDeadline) > new Date();
+    const hasOffer =
+        product.offerDeadline &&
+        new Date(product.offerDeadline) > new Date();
 
     return (
         <motion.div
             layout
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ delay: index * 0.06, type: 'spring', stiffness: 180 }}
-            whileHover={{ y: -6, transition: { duration: 0.2 } }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ delay: index * 0.04, type: 'spring', stiffness: 160 }}
+            whileHover={{ y: -4 }}
             className="group"
         >
             <Link
                 href={`/products/${product._id}`}
-                className="block bg-white rounded-2xl shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col h-full border border-gray-100"
+                className="flex h-full flex-col overflow-hidden rounded-xl sm:rounded-2xl border bg-white transition-all duration-300 hover:border-blue-200 hover:shadow-lg"
             >
                 {/* Image */}
-                <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+                <div className="relative aspect-[1/1] bg-gray-50">
                     <Image
                         src={product.thumbnailImage || '/placeholder.png'}
                         alt={product.productTitle}
                         fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                        className="object-cover transition-transform duration-500 group-hover:scale-110"
                     />
 
+                    {/* Hover Overlay (desktop only) */}
+                    <div className="pointer-events-none absolute inset-0 hidden sm:block bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition" />
+
                     {/* Badges */}
-                    <div className="absolute top-3 left-3 flex flex-col gap-2">
-                        {/* Flash Badge */}
+                    <div className="absolute left-2 top-2 sm:left-3 sm:top-3 flex flex-col gap-1 sm:gap-2">
                         {hasOffer && (
                             <motion.div
                                 animate={{ scale: [1, 1.15, 1] }}
-                                transition={{ repeat: Infinity, duration: 1.5 }}
-                                className="bg-gradient-to-r from-red-600 to-pink-600 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg"
+                                transition={{ repeat: Infinity, duration: 1.4 }}
+                                className="flex items-center gap-1 rounded-full bg-gradient-to-r from-red-600 to-pink-600 px-2 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-bold text-white shadow"
                             >
-                                <Zap className="w-3.5 h-3.5" />
-                                FLASH
+                                <Zap className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                Flash
                             </motion.div>
                         )}
 
-                        {/* Discount Badge */}
                         {discountPct > 0 && (
-                            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md">
-                                -{discountPct}%
+                            <div className="flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-bold text-white shadow">
+                                <Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5" />-{discountPct}%
                             </div>
                         )}
                     </div>
 
-                    {/* Low Stock Warning */}
+                    {/* Low Stock */}
                     {product.stock > 0 && product.stock < 10 && (
-                        <div className="absolute bottom-3 left-3 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md animate-pulse">
-                            Only {product.stock} left
+                        <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 rounded-full bg-orange-500 px-2 py-0.5 text-[10px] sm:text-xs font-semibold text-white shadow animate-pulse">
+                            {product.stock} left
                         </div>
                     )}
                 </div>
 
                 {/* Content */}
-                <div className="p-4 flex flex-col flex-grow space-y-3">
-                    <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-blue-600 transition-colors">
+                <div className="flex flex-grow flex-col space-y-2 sm:space-y-3 p-3 sm:p-4">
+                    <h3 className="line-clamp-2 text-[13px] sm:text-sm font-semibold leading-snug transition-colors group-hover:text-blue-600">
                         {product.productTitle}
                     </h3>
 
                     {/* Brand & Flag */}
-                    <div className="flex gap-1.5 flex-wrap">
+                    <div className="flex flex-wrap gap-1">
                         {product?.brand && (
-                            <Badge variant="secondary" className="text-xs py-0">
-                                {typeof product.brand === 'object' && product.brand !== null
+                            <Badge variant="secondary" className="text-[10px] sm:text-xs py-0">
+                                {typeof product.brand === 'object'
                                     ? product.brand.name
                                     : product.brand}
                             </Badge>
@@ -247,8 +310,8 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                         {product.flag?.name && (
                             <Badge
                                 className={cn(
-                                    'text-xs text-white py-0',
-                                    product.flag?.color || 'bg-indigo-600'
+                                    'text-[10px] sm:text-xs text-white py-0',
+                                    product.flag.color || 'bg-indigo-600'
                                 )}
                             >
                                 {product.flag.name}
@@ -256,44 +319,51 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                         )}
                     </div>
 
-                    {/* Rating & Reviews */}
+                    {/* Rating */}
                     {product.totalReviews > 0 && (
-                        <div className="flex items-center gap-2 text-sm">
-                            <div className="flex items-center gap-1">
-                                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                                <span className="font-medium">{product.averageRating.toFixed(1)}</span>
-                            </div>
+                        <div className="flex items-center gap-1.5 text-[11px] sm:text-sm">
+                            <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                            <span className="font-medium">
+                                {product.averageRating.toFixed(1)}
+                            </span>
                             <span className="text-gray-500">
-                                ({product.totalReviews} {product.totalReviews === 1 ? 'review' : 'reviews'})
+                                ({product.totalReviews})
                             </span>
                         </div>
                     )}
 
-                    {/* Sold Count */}
+                    {/* Sold */}
                     {product.sellCount > 0 && (
-                        <div className="text-xs text-gray-600">
-                            <span className="font-medium">{product.sellCount.toLocaleString()}</span> sold
+                        <div className="flex items-center gap-1 text-[11px] sm:text-xs text-gray-600">
+                            <ShoppingBag className="h-3.5 w-3.5" />
+                            {product.sellCount.toLocaleString()} sold
                         </div>
                     )}
 
                     {/* Countdown */}
                     {hasOffer && (
-                        <div className="flex items-center gap-1 text-xs text-red-600 font-medium">
-                            <Clock className="w-3.5 h-3.5" />
+                        <div className="flex items-center gap-1 text-[11px] sm:text-xs font-medium text-red-600">
+                            <Clock className="h-3.5 w-3.5" />
                             <Countdown deadline={product.offerDeadline} />
                         </div>
                     )}
 
                     {/* Price */}
-                    <div className="mt-auto space-y-1">
-                        <p className="text-lg font-bold text-[#0097E9]">
+                    <div className="mt-auto space-y-0.5">
+                        <p className="text-base sm:text-lg font-bold text-blue-600">
                             ৳{product.discountPrice.toLocaleString()}
                         </p>
                         {product.productPrice > product.discountPrice && (
-                            <p className="text-xs text-gray-500 line-through">
+                            <p className="text-[11px] sm:text-xs text-gray-400 line-through">
                                 ৳{product.productPrice.toLocaleString()}
                             </p>
                         )}
+                    </div>
+
+                    {/* Footer (desktop only) */}
+                    <div className="hidden sm:flex items-center gap-1 pt-1 text-xs text-gray-500">
+                        <PackageCheck className="h-3.5 w-3.5" />
+                        Ready to ship
                     </div>
                 </div>
             </Link>
@@ -301,34 +371,25 @@ export default function ProductCard({ product, index }: ProductCardProps) {
     );
 }
 
-// Countdown Component
+/* Countdown */
 function Countdown({ deadline }: { deadline: string }) {
-    'use client';
     const [timeLeft, setTimeLeft] = useState('');
 
     useEffect(() => {
-        const calculateTimeLeft = () => {
+        const calc = () => {
             const diff = new Date(deadline).getTime() - Date.now();
-            if (diff <= 0) {
-                setTimeLeft('Offer Ended');
-                return;
-            }
+            if (diff <= 0) return setTimeLeft('Ended');
 
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const d = Math.floor(diff / 86400000);
+            const h = Math.floor((diff % 86400000) / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
 
-            if (days > 0) {
-                setTimeLeft(`${days}d ${hours}h left`);
-            } else {
-                setTimeLeft(`${hours}h ${minutes}m left`);
-            }
+            setTimeLeft(d > 0 ? `${d}d ${h}h` : `${h}h ${m}m`);
         };
 
-        calculateTimeLeft();
-        const interval = setInterval(calculateTimeLeft, 60000); // Update every minute
-
-        return () => clearInterval(interval);
+        calc();
+        const t = setInterval(calc, 60000);
+        return () => clearInterval(t);
     }, [deadline]);
 
     return <span>{timeLeft}</span>;

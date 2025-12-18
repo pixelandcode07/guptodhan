@@ -62,16 +62,16 @@ const StoryFeed = ({ stories }: StoryFeedProps) => {
   // ✅ PRODUCT NAVIGATION FUNCTION (FIXED URL)
   const handleNavigateToProduct = (e: React.MouseEvent, story: IStory) => {
     e.stopPropagation(); // Prevent modal from closing or sliding
-    
+
     if (story.productId) {
       // Extract ID safely whether it's populated (object) or raw string
-      const productId = typeof story.productId === 'object' 
-        ? (story.productId as any)._id 
+      const productId = typeof story.productId === 'object'
+        ? (story.productId as any)._id
         : story.productId;
 
       if (productId) {
         // 🔴 FIX: Changed '/product/' to '/products/' to match your folder structure
-        router.push(`/products/${productId}`); 
+        router.push(`/products/${productId}`);
       } else {
         console.log("Product ID not found");
       }
@@ -104,8 +104,8 @@ const StoryFeed = ({ stories }: StoryFeedProps) => {
 
   return (
     <>
-      <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 py-10 relative">
-        <div className="flex justify-center mb-6">
+      <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 py-2 md:py-10 relative">
+        <div className="hidden lg:flex justify-center mb-6">
           <PageHeader title="Stories" />
         </div>
 
@@ -131,7 +131,7 @@ const StoryFeed = ({ stories }: StoryFeedProps) => {
                     <h3 className="text-white font-bold text-sm line-clamp-2 leading-tight">
                       {story.title || 'Untitled'}
                     </h3>
-                    
+
                     <div className="flex justify-between items-center mt-2">
                       {story.productId && (
                         <button
@@ -148,10 +148,10 @@ const StoryFeed = ({ stories }: StoryFeedProps) => {
             ))}
           </CarouselContent>
           <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 z-20 cursor-pointer text-white bg-black/40 border-none hover:bg-yellow-500 hover:text-black transition-all">
-             <ChevronLeft size={24} />
+            <ChevronLeft size={24} />
           </CarouselPrevious>
           <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 z-20 cursor-pointer text-white bg-black/40 border-none hover:bg-yellow-500 hover:text-black transition-all">
-             <ChevronRight size={24} />
+            <ChevronRight size={24} />
           </CarouselNext>
         </Carousel>
       </div>
@@ -188,34 +188,34 @@ const StoryFeed = ({ stories }: StoryFeedProps) => {
 
             {/* Top Controls */}
             <div className="absolute top-8 left-4 right-4 z-30 flex justify-between items-center">
-               <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full border border-white/50 overflow-hidden relative">
-                         <Image src={currentStory.imageUrl} alt="avt" fill className="object-cover"/>
-                    </div>
-                    <div>
-                        <p className="text-white font-semibold text-sm drop-shadow-md">{currentStory.title}</p>
-                        {/* Show Linked Badge */}
-                        {currentStory.productId && (
-                          <p className="text-yellow-400 text-xs flex items-center gap-1">
-                             <ShoppingBag size={10} /> Product Linked
-                          </p>
-                        )}
-                    </div>
-               </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full border border-white/50 overflow-hidden relative">
+                  <Image src={currentStory.imageUrl} alt="avt" fill className="object-cover" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-sm drop-shadow-md">{currentStory.title}</p>
+                  {/* Show Linked Badge */}
+                  {currentStory.productId && (
+                    <p className="text-yellow-400 text-xs flex items-center gap-1">
+                      <ShoppingBag size={10} /> Product Linked
+                    </p>
+                  )}
+                </div>
+              </div>
 
               <div className="flex gap-4">
-                 <button
-                    onClick={() => setIsPlaying(!isPlaying)}
-                    className="text-white hover:text-yellow-400 transition-colors"
-                  >
-                    {isPlaying ? <Pause size={24} /> : <Play size={24} />}
-                  </button>
-                  <button
-                    onClick={closeStory}
-                    className="text-white hover:text-red-500 transition-colors"
-                  >
-                    <X size={28} />
-                  </button>
+                <button
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="text-white hover:text-yellow-400 transition-colors"
+                >
+                  {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                </button>
+                <button
+                  onClick={closeStory}
+                  className="text-white hover:text-red-500 transition-colors"
+                >
+                  <X size={28} />
+                </button>
               </div>
             </div>
 
@@ -233,34 +233,34 @@ const StoryFeed = ({ stories }: StoryFeedProps) => {
             {/* Bottom Actions */}
             <div className="absolute bottom-0 w-full p-6 bg-gradient-to-t from-black via-black/60 to-transparent z-20">
               {currentStory.description && (
-                  <p className="text-white/90 text-sm mb-6 line-clamp-3 text-center">
-                      {currentStory.description}
-                  </p>
+                <p className="text-white/90 text-sm mb-6 line-clamp-3 text-center">
+                  {currentStory.description}
+                </p>
               )}
 
               <div className="flex flex-col gap-3">
                 {currentStory.productId ? (
-                   <button
-                     onClick={(e) => handleNavigateToProduct(e, currentStory)}
-                     className="w-full bg-yellow-500 text-black font-bold py-3.5 px-6 rounded-full transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-yellow-500/20 flex items-center justify-center gap-2"
-                   >
-                     ORDER NOW <ShoppingBag size={18} />
-                   </button>
+                  <button
+                    onClick={(e) => handleNavigateToProduct(e, currentStory)}
+                    className="w-full bg-yellow-500 text-black font-bold py-3.5 px-6 rounded-full transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-yellow-500/20 flex items-center justify-center gap-2"
+                  >
+                    ORDER NOW <ShoppingBag size={18} />
+                  </button>
                 ) : (
-                   <button
+                  <button
                     className="w-full bg-gray-700/50 text-white font-semibold py-3.5 px-6 rounded-full cursor-default"
-                   >
-                     Enjoy the Story
-                   </button>
+                  >
+                    Enjoy the Story
+                  </button>
                 )}
               </div>
             </div>
 
             {/* Tap Navigation Areas */}
             <div className="absolute inset-0 flex z-10">
-                <div className="w-1/3 h-full" onClick={(e) => { e.stopPropagation(); goToPreviousStory(); }}></div>
-                <div className="w-1/3 h-full" onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying)}}></div>
-                <div className="w-1/3 h-full" onClick={(e) => { e.stopPropagation(); goToNextStory(); }}></div>
+              <div className="w-1/3 h-full" onClick={(e) => { e.stopPropagation(); goToPreviousStory(); }}></div>
+              <div className="w-1/3 h-full" onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying) }}></div>
+              <div className="w-1/3 h-full" onClick={(e) => { e.stopPropagation(); goToNextStory(); }}></div>
             </div>
           </div>
         </div>

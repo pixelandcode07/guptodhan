@@ -27,7 +27,7 @@ export default function PageHeader({
   };
 
   return (
-    <div className="flex justify-between items-center gap-4 mb-6 border-b border-gray-300 pb-2 px-4 md:px-0">
+    <div className="flex justify-between items-center gap-4 mb-6 border-b border-gray-300 pb-2 px-0 md:px-0">
       <h1 className="text-base md:text-2xl lg:text-3xl font-medium text-[#00005E]">{title}</h1>
 
       {buttonLabel && (
