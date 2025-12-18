@@ -18,46 +18,32 @@ function SkeletonSectionHeader() {
   );
 }
 
-
-// Temporay push
-
-
-
-// export function SkeletonHero() {
-//   return (
-//     <Skeleton className="h-[320px] w-full rounded-xl" />
-//   );
-// }
-
-
-// export function SkeletonSectionHeader() {
-//   return (
-//     <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 py-8">
-//       <Skeleton className="h-8 w-40 rounded-md" />
-//     </div>
-//   );
-// }
-
 export const dynamic = 'force-dynamic';
 
 export default function MainHomePage() {
   return (
     <div className="bg-gray-100 min-h-screen">
-      {/* Hero */}
-      <Suspense fallback={<SkeletonHero />}>
-        <Hero />
-      </Suspense>
+      <div className='flex flex-col-reverse lg:flex-col'>
+        <div className="heroandfeature">
+          {/* Hero */}
+          <Suspense fallback={<SkeletonHero />}>
+            <Hero />
+          </Suspense>
 
-      {/* Featured */}
-      <Suspense fallback={<SkeletonSectionHeader />}>
-        <Feature />
-      </Suspense>
+          {/* Featured */}
+          <Suspense fallback={<SkeletonSectionHeader />}>
+            <Feature />
+          </Suspense>
+        </div>
 
-      {/* Story */}
-      <Suspense fallback={<SkeletonSectionHeader />}>
-        {/* <StoryFeed /> */}
-        <StoryFeedWrapper />
-      </Suspense>
+        <div className="story">
+          {/* Story */}
+          <Suspense fallback={<SkeletonSectionHeader />}>
+            {/* <StoryFeed /> */}
+            <StoryFeedWrapper />
+          </Suspense>
+        </div>
+      </div>
 
       {/* Flash Sell */}
       <Suspense fallback={<SkeletonSectionHeader />}>

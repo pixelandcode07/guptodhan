@@ -1,50 +1,225 @@
-'use client'
+'use client';
 
-import { Button } from '@/components/ui/button'
-import { signIn } from 'next-auth/react'
-import { toast } from 'sonner'
-import React from 'react'
+import { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-export default function SocialLoginPart() {
+// Import all form components
+import GoogleAnalyticsForm from './Components/GoogleAnalyticsForm';
+import GoogleTagManagerForm from './Components/GoogleTagManagerForm';
+import FacebookPixelForm from './Components/FacebookPixelForm';
+import GoogleSearchConsoleForm from './Components/GoogleSearchConsoleForm';
+import MicrosoftClarityForm from './Components/MicrosoftClarityForm';
+import GoogleRecaptcha from './Components/GoogleRecaptcha';
+import CrispLiveChat from './Components/CrispLiveChat';
+import TawkLiveChat from './Components/TawkLiveChat';
+import MessegeChatPlugin from './Components/MessegeChatPlugin';
+import SocialLoginForm from './Components/SocialLoginForm';
 
-    const handleSocialLogin = async (providerName: string) => {
-        try {
-            // ✅ FIX: signIn ফাংশনটি নিজেই রিডাইরেকশনের কাজটি করবে।
-            // সফলভাবে লগইন হলে এটি callbackUrl-এ পাঠিয়ে দেবে।
-            const result = await signIn(providerName, {
-                redirect: true, // নিশ্চিত করুন এটি true আছে (ডিফল্ট)
-                callbackUrl: '/', // লগইন সফল হওয়ার পর হোম পেজে যাবে
-            });
+export default function IntegrationsPage() {
+  const [activeTab, setActiveTab] = useState('analytics');
 
-            // যদি কোনো কারণে redirect না হয় এবং error থাকে
-            if (result?.error) {
-                toast.error("Login failed. Please try again.");
-            }
-        } catch (error) {
-            toast.error("An unexpected error occurred during login.");
-        }
-    }
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            🔗 Integrations
+          </h1>
+          <p className="text-gray-600">
+            Manage all your third-party integrations, analytics tools, and chat plugins
+          </p>
+        </div>
 
-    // ✅ FIX: যে useEffect টি সমস্যা করছিল, সেটি মুছে ফেলা হয়েছে।
+        {/* Main Tabs Container */}
+        <div className="bg-white rounded-lg shadow-lg">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
+            {/* Tabs Navigation */}
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 rounded-t-lg border-b">
+              {/* Analytics Tab */}
+              <TabsTrigger
+                value="analytics"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500"
+              >
+                📊 Analytics
+              </TabsTrigger>
 
-    return (
-        <>
-            <Button
-                onClick={() => handleSocialLogin("google")}
-                variant="outline" className="w-full flex-1">
-                <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,9.999,10c6.078,0,10.004-4.926,10.004-10c0-0.171-0.005-0.339-0.014-0.507c-0.588-0.1-1.127-0.252-1.718-0.444v0.444H12.545z" />
-                </svg>
-                Google
-            </Button>
-            <Button
-                onClick={() => handleSocialLogin("facebook")}
-                variant="outline" className="w-full flex-1">
-                <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                </svg>
-                Facebook
-            </Button>
-        </>
-    )
+              {/* SEO Tab */}
+              <TabsTrigger
+                value="seo"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500"
+              >
+                🔍 SEO
+              </TabsTrigger>
+
+              {/* Security Tab */}
+              <TabsTrigger
+                value="security"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500"
+              >
+                🔐 Security
+              </TabsTrigger>
+
+              {/* Chat Tab */}
+              <TabsTrigger
+                value="chat"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500"
+              >
+                💬 Chat
+              </TabsTrigger>
+
+              {/* Social Login Tab */}
+              <TabsTrigger
+                value="social"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500"
+              >
+                👥 Social
+              </TabsTrigger>
+            </TabsList>
+
+            {/* ============================================
+                ANALYTICS TAB
+                ============================================ */}
+            <TabsContent value="analytics" className="p-6 space-y-8">
+              {/* Google Analytics */}
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span>📈</span> Google Analytics
+                </h2>
+                <GoogleAnalyticsForm />
+              </div>
+
+              {/* Divider */}
+              <hr className="border-gray-200" />
+
+              {/* Google Tag Manager */}
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span>🏷️</span> Google Tag Manager
+                </h2>
+                <GoogleTagManagerForm />
+              </div>
+
+              {/* Divider */}
+              <hr className="border-gray-200" />
+
+              {/* Facebook Pixel */}
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span>📱</span> Facebook Pixel
+                </h2>
+                <FacebookPixelForm />
+              </div>
+            </TabsContent>
+
+            {/* ============================================
+                SEO TAB
+                ============================================ */}
+            <TabsContent value="seo" className="p-6 space-y-8">
+              {/* Google Search Console */}
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span>🔍</span> Google Search Console
+                </h2>
+                <GoogleSearchConsoleForm />
+              </div>
+
+              {/* Divider */}
+              <hr className="border-gray-200" />
+
+              {/* Microsoft Clarity */}
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span>🎯</span> Microsoft Clarity
+                </h2>
+                <MicrosoftClarityForm />
+              </div>
+            </TabsContent>
+
+            {/* ============================================
+                SECURITY TAB
+                ============================================ */}
+            <TabsContent value="security" className="p-6">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span>🔐</span> Google reCAPTCHA
+                </h2>
+                <GoogleRecaptcha />
+              </div>
+            </TabsContent>
+
+            {/* ============================================
+                CHAT TAB
+                ============================================ */}
+            <TabsContent value="chat" className="p-6 space-y-8">
+              {/* Crisp Chat */}
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span>💬</span> Crisp Live Chat
+                </h2>
+                <CrispLiveChat />
+              </div>
+
+              {/* Divider */}
+              <hr className="border-gray-200" />
+
+              {/* Tawk Chat */}
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span>💬</span> Tawk.to Live Chat
+                </h2>
+                <TawkLiveChat />
+              </div>
+
+              {/* Divider */}
+              <hr className="border-gray-200" />
+
+              {/* Messenger Chat */}
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span>💬</span> Facebook Messenger Chat
+                </h2>
+                <MessegeChatPlugin />
+              </div>
+            </TabsContent>
+
+            {/* ============================================
+                SOCIAL LOGIN TAB
+                ============================================ */}
+            <TabsContent value="social" className="p-6">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span>👥</span> Social Login Settings
+                </h2>
+                <SocialLoginForm />
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Info Box */}
+        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="font-semibold text-blue-900 mb-2">💡 Tips:</h3>
+          <ul className="text-sm text-blue-800 space-y-1">
+            <li>
+              • Update these settings to enable analytics, chat, and security features
+            </li>
+            <li>
+              • Most integrations require you to create an account on the respective platforms
+            </li>
+            <li>
+              • Get your API keys/IDs from each service's dashboard
+            </li>
+            <li>
+              • Test your integrations after updating to ensure they work correctly
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
 }

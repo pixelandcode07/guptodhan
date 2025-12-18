@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -11,34 +11,73 @@ import {
   SelectItem,
   SelectValue,
 } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 export default function SocialLoginForm() {
+  const [loading, setLoading] = useState(false);
   const [fbLogin, setFbLogin] = useState('1');
-  const [fbAppId, setFbAppId] = useState('123456789012345');
-  const [fbAppSecret, setFbAppSecret] = useState('dummy_fb_secret');
-  const [fbRedirect, setFbRedirect] = useState('http://localhost/fb-callback');
+  const [fbAppId, setFbAppId] = useState('');
+  const [fbAppSecret, setFbAppSecret] = useState('');
 
   const [gmailLogin, setGmailLogin] = useState('1');
-  const [gmailClientId, setGmailClientId] = useState(
-    'dummy-client-id.apps.googleusercontent.com'
-  );
-  const [gmailSecret, setGmailSecret] = useState('dummy-gmail-secret');
-  const [gmailRedirect, setGmailRedirect] = useState('/auth/google/callback');
+  const [gmailClientId, setGmailClientId] = useState('');
+  const [gmailSecret, setGmailSecret] = useState('');
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch('/api/v1/public/integrations');
+      const data = await res.json();
+      if (data.success) {
+        setFbLogin(data.data?.facebookLoginEnabled ? '1' : '0');
+        setFbAppId(data.data?.facebookAppId || '');
+        setFbAppSecret(data.data?.facebookAppSecret || '');
+        setGmailLogin(data.data?.googleLoginEnabled ? '1' : '0');
+        setGmailClientId(data.data?.googleClientId || '');
+        setGmailSecret(data.data?.googleClientSecret || '');
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Replace this with actual API call
-    console.log({
-      fbLogin,
-      fbAppId,
-      fbAppSecret,
-      fbRedirect,
-      gmailLogin,
-      gmailClientId,
-      gmailSecret,
-      gmailRedirect,
-    });
-    alert('Form submitted (dummy data)');
+    setLoading(true);
+
+    try {
+      const payload = {
+        facebookLoginEnabled: fbLogin === '1',
+        facebookAppId: fbAppId,
+        facebookAppSecret: fbAppSecret,
+        googleLoginEnabled: gmailLogin === '1',
+        googleClientId: gmailClientId,
+        googleClientSecret: gmailSecret,
+      };
+
+      const res = await fetch('/api/v1/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success('Social Login settings updated successfully!');
+        fetchData();
+      } else {
+        toast.error(data.message || 'Failed to update');
+      }
+    } catch (error) {
+      toast.error('An error occurred');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -63,7 +102,7 @@ export default function SocialLoginForm() {
           <Input
             id="fb_app_id"
             value={fbAppId}
-            onChange={e => setFbAppId(e.target.value)}
+            onChange={(e) => setFbAppId(e.target.value)}
             placeholder="ex. 123456789012345"
           />
         </div>
@@ -73,18 +112,8 @@ export default function SocialLoginForm() {
           <Input
             id="fb_app_secret"
             value={fbAppSecret}
-            onChange={e => setFbAppSecret(e.target.value)}
+            onChange={(e) => setFbAppSecret(e.target.value)}
             placeholder="ex. dummy_fb_secret"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="fb_redirect_url">Facebook Redirect Url</Label>
-          <Input
-            id="fb_redirect_url"
-            value={fbRedirect}
-            onChange={e => setFbRedirect(e.target.value)}
-            placeholder="ex. http://localhost/fb-callback"
           />
         </div>
 
@@ -109,7 +138,7 @@ export default function SocialLoginForm() {
           <Input
             id="gmail_client_id"
             value={gmailClientId}
-            onChange={e => setGmailClientId(e.target.value)}
+            onChange={(e) => setGmailClientId(e.target.value)}
             placeholder="ex. dummy-client-id.apps.googleusercontent.com"
           />
         </div>
@@ -119,24 +148,14 @@ export default function SocialLoginForm() {
           <Input
             id="gmail_secret_id"
             value={gmailSecret}
-            onChange={e => setGmailSecret(e.target.value)}
+            onChange={(e) => setGmailSecret(e.target.value)}
             placeholder="ex. dummy-gmail-secret"
           />
         </div>
 
-        <div>
-          <Label htmlFor="gmail_redirect_url">Gmail Redirect Url</Label>
-          <Input
-            id="gmail_redirect_url"
-            value={gmailRedirect}
-            onChange={e => setGmailRedirect(e.target.value)}
-            placeholder="ex. /auth/google/callback"
-          />
-        </div>
-
         <div className="pt-2">
-          <Button type="submit" variant="default">
-            ✓ Update
+          <Button type="submit" variant="default" disabled={loading}>
+            {loading ? 'Updating...' : '✓ Update'}
           </Button>
         </div>
       </form>

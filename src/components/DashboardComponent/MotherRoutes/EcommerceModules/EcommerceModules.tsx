@@ -49,11 +49,10 @@ export function EcommerceModules({
                   <SidebarMenuButton
                     asChild
                     isActive={active}
-                    className={`flex items-center gap-2 pl-5 ${
-                      active
-                        ? 'bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md font-medium'
-                        : 'text-white bg-[#132843]'
-                    }`}>
+                    className={`flex items-center gap-2 pl-5 ${active
+                      ? 'bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md font-medium'
+                      : 'text-white bg-[#132843]'
+                      }`}>
                     <Link href={cfg.url || '#'}>
                       <cfg.icon />
                       <span>{item.title}</span>
@@ -87,27 +86,25 @@ export function EcommerceModules({
                           <SidebarMenuButton
                             asChild
                             isActive={active}
-                            className={`flex items-center gap-2 pl-5 ${
-                              active
-                                ? 'bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md font-medium'
-                                : 'text-white bg-[#132843]'
-                            }`}>
+                            className={`flex items-center gap-2 pl-5 ${active
+                              ? 'bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md font-medium'
+                              : 'text-white bg-[#132843]'
+                              }`}>
                             <Link href={subItem.url}>
                               <span>{subItem.title}</span>
                               {subItem.count && (
                                 <span
-                                  className={`ml-auto text-xs px-2 py-1 rounded ${
-                                    subItem.count === '0'
-                                      ? 'bg-orange-500 text-white'
-                                      : subItem.url === '/general/view/all/product'
+                                  className={`ml-auto text-xs px-2 py-1 rounded ${subItem.count === '0'
+                                    ? 'bg-orange-500 text-white'
+                                    : subItem.url === '/general/view/all/product'
                                       ? 'text-green-500'
                                       : subItem.url === '/general/view/product/reviews'
-                                      ? 'text-blue-400'
-                                      : subItem.url ===
-                                        '/general/view/product/question/answer'
-                                      ? 'text-purple-400'
-                                      : 'text-blue-400'
-                                  }`}>
+                                        ? 'text-blue-400'
+                                        : subItem.url ===
+                                          '/general/view/product/question/answer'
+                                          ? 'text-purple-400'
+                                          : 'text-blue-400'
+                                    }`}>
                                   {subItem.count}
                                 </span>
                               )}

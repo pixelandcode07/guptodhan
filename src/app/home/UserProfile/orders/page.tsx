@@ -8,12 +8,15 @@ import OrderFilters from '@/components/UserProfile/Order/OrderFilters'
 import type { OrderStatus, OrderSummary } from '@/components/UserProfile/Order/types'
 import OrdersSkeleton from '@/components/UserProfile/Order/OrdersSkeleton'
 
+// Helper function to map backend status to UI status
 function mapOrderStatusToUI(status: string): OrderStatus {
   const s = status.toLowerCase()
   if (s === 'delivered') return 'delivered'
   if (s === 'cancelled' || s === 'canceled') return 'cancelled'
   if (s === 'shipped') return 'to_receive'
   if (s === 'processing') return 'to_ship'
+  if (s === 'return request') return 'return_refund' // Map new status
+  if (s === 'returned') return 'return_refund' // Map new status
   return 'to_pay'
 }
 
@@ -50,16 +53,24 @@ type ApiOrder = {
   shippingName?: string
   trackingId?: string
   parcelId?: string
-  steadfastInvoice?: string
 }
 
 export default function UserOrdersPage() {
   const [orders, setOrders] = useState<OrderSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<OrderStatus>('all')
-  const { data: session } = useSession()
+  
+  // ✅ FIX 1: Get status from useSession
+  const { data: session, status } = useSession()
 
   const fetchUserOrders = useCallback(async () => {
+    // ✅ FIX 2: Wait for session to be authenticated
+    if (status === 'loading') return
+    if (status === 'unauthenticated') {
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       const userLike = (session?.user ?? {}) as { id?: string; _id?: string; role?: string }
@@ -68,8 +79,9 @@ export default function UserOrdersPage() {
       const userRole = userLike.role
       
       if (!userId) {
-        console.error('No user ID found in session')
+        console.error('Authenticated but no user ID found in session')
         setOrders([])
+        setLoading(false)
         return
       }
 
@@ -79,92 +91,36 @@ export default function UserOrdersPage() {
           ...(userRole ? { 'x-user-role': userRole } : {}),
         }
       })
+      
       const apiOrders = (response.data?.data ?? []) as ApiOrder[]
       
-      // Debug: log first order to see structure
-      if (apiOrders.length > 0) {
-        console.log('First order from API:', JSON.stringify(apiOrders[0], null, 2))
-        if (apiOrders[0].orderDetails && apiOrders[0].orderDetails.length > 0) {
-          console.log('First orderDetail:', JSON.stringify(apiOrders[0].orderDetails[0], null, 2))
-          console.log('productId type:', typeof apiOrders[0].orderDetails[0].productId)
-          console.log('productId value:', apiOrders[0].orderDetails[0].productId)
-        }
-      }
-      
       const mappedOrders: OrderSummary[] = apiOrders.map((order) => {
-        // Map all order items from orderDetails
+        // Map order items
         const items = (order.orderDetails || []).map((detail, index) => {
-          // Check if productId is populated (object with product data) or just an ID
-          let product: { productTitle?: string; thumbnailImage?: string; photoGallery?: string[] | string; productPrice?: number; _id?: string } | null = null
+          let product: any = null
           
+          // Handle populated product logic
           if (detail.productId) {
-            // Check if productId is an object (populated) or a string/primitive (not populated)
             if (typeof detail.productId === 'object' && detail.productId !== null) {
               const productObj = detail.productId as Record<string, unknown>
-              
-              // Check if it's populated by looking for product-specific fields
-              // Populated objects will have productTitle, thumbnailImage, etc.
-              // Non-populated ObjectIds will only have _id or be a plain object with just _id
-              const hasProductFields = 'productTitle' in productObj || 
-                                       'thumbnailImage' in productObj || 
-                                       'photoGallery' in productObj ||
-                                       'productPrice' in productObj
-              
-              if (hasProductFields) {
-                // It's populated - use it
-                product = productObj as { productTitle?: string; thumbnailImage?: string; photoGallery?: string[] | string; productPrice?: number; _id?: string }
-              } else {
-                // Check if it's just an ObjectId wrapper (only has _id)
-                const keys = Object.keys(productObj)
-                if (keys.length === 1 && keys[0] === '_id') {
-                  // It's just an ObjectId, not populated
-                  product = null
-                } else if (keys.length === 0) {
-                  // Empty object
-                  product = null
-                } else {
-                  // Has other fields but not product fields - might be populated differently
-                  // Log for debugging
-                  console.warn('Unexpected productId structure:', productObj)
-                  product = null
-                }
+              // Check for product fields to confirm population
+              if ('productTitle' in productObj || 'thumbnailImage' in productObj) {
+                product = productObj
               }
-            } else if (typeof detail.productId === 'string') {
-              // productId is just a string ID, not populated
-              product = null
             }
           }
           
-          // Debug for first item
-          if (index === 0) {
-            console.log(`OrderDetail ${index}:`, detail)
-            console.log(`productId type:`, typeof detail.productId)
-            console.log(`productId value:`, detail.productId)
-            console.log(`Extracted product:`, product)
-            if (product) {
-              console.log(`  - productTitle:`, product.productTitle)
-              console.log(`  - thumbnailImage:`, product.thumbnailImage)
-              console.log(`  - photoGallery:`, product.photoGallery)
-            }
-          }
-          
-          // Get product image - check populated product object first
+          // Fallback image logic
           let productImage = '/img/product/p-1.png'
           if (product) {
             if (product.thumbnailImage) {
               productImage = product.thumbnailImage
-            } else if (product.photoGallery) {
-              const gallery = Array.isArray(product.photoGallery) ? product.photoGallery : [product.photoGallery]
-              if (gallery.length > 0 && gallery[0]) {
-                productImage = gallery[0]
-              }
+            } else if (product.photoGallery && Array.isArray(product.photoGallery) && product.photoGallery.length > 0) {
+              productImage = product.photoGallery[0]
             }
           }
           
-          // Get product name - use populated product title if available
           const productName = product?.productTitle || order.shippingName || `Product ${index + 1}`
-          
-          // Get price - prefer orderDetails unitPrice, fallback to product price
           const productPrice = detail.unitPrice || product?.productPrice || 0
           
           return {
@@ -178,7 +134,7 @@ export default function UserOrdersPage() {
           }
         })
         
-        // If no items, create a fallback item
+        // Fallback if no items found
         const orderItems = items.length > 0 ? items : [{
           id: order._id,
           title: `Order #${order.orderId}`,
@@ -211,14 +167,27 @@ export default function UserOrdersPage() {
     } finally {
       setLoading(false)
     }
-  }, [session])
+  }, [session, status])
 
+  // ✅ FIX 3: Depend on status for initial fetch
   useEffect(() => {
-    fetchUserOrders()
-  }, [fetchUserOrders])
+    if (status === 'authenticated') {
+      fetchUserOrders()
+    } else if (status === 'unauthenticated') {
+      setLoading(false)
+    }
+  }, [status, fetchUserOrders])
 
   if (loading) {
     return <OrdersSkeleton />;
+  }
+
+  if (status === 'unauthenticated') {
+    return (
+        <div className="p-6 text-center">
+            <p className="text-gray-500">Please log in to view your orders.</p>
+        </div>
+    )
   }
 
   return (
@@ -230,12 +199,13 @@ export default function UserOrdersPage() {
       </div>
       
       <div className="px-4">
-        <OrderList orders={orders} filter={filter} />
+        {/* Pass refresh function to handle return updates */}
+        <OrderList orders={orders} filter={filter} onRefresh={fetchUserOrders} />
       </div>
       
       {orders.length === 0 && !loading && (
-        <div className="px-4 py-8 text-center text-gray-500">
-          <p>No orders found.</p>
+        <div className="px-4 py-12 text-center border border-dashed rounded-lg bg-gray-50 mt-4">
+          <p className="text-gray-500">No orders found.</p>
         </div>
       )}
     </div>

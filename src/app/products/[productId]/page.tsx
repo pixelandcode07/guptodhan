@@ -1,3 +1,5 @@
+// File: src/app/products/[productId]/page.tsx
+
 import dbConnect from '@/lib/db';
 import { VendorProductServices } from '@/lib/modules/product/vendorProduct.service';
 import { CategoryServices } from '@/lib/modules/ecommerce-category/services/ecomCategory.service';
@@ -11,23 +13,36 @@ import { ProductSizeServices } from '@/lib/modules/product-config/services/produ
 import { notFound } from 'next/navigation';
 import ProductDetailsClient from './components/ProductDetailsClient';
 import { HeroNav } from '@/app/components/Hero/HeroNav';
-import { MainCategory } from '@/types/navigation-menu';
+import Script from 'next/script';
 
 interface ProductPageProps {
-  params: Promise<{
-    productId: string;
-  }>;
+  params: Promise<{ productId: string }>;
 }
 
-// This is a Server Component for dynamic product routes
+interface IVendorProduct {
+  _id: string;
+  productTitle: string;
+  shortDescription?: string;
+  fullDescription?: string;
+  productPrice?: number;
+  discountPrice?: number;
+  stock?: number;
+  photoGallery?: string[];
+  thumbnailImage?: string;
+  productTag?: string[];
+  brand?: any;
+  category?: any;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 export default async function ProductPage({ params }: ProductPageProps) {
   await dbConnect();
   const { productId } = await params;
-  
+
   try {
-    // Fetch the specific product by ID and all related data
     const [
-      product,
+      rawProduct,
       categoriesData,
       storesData,
       brandsData,
@@ -47,24 +62,29 @@ export default async function ProductPage({ params }: ProductPageProps) {
       ProductColorServices.getAllProductColorsFromDB(),
       ProductSizeServices.getAllProductSizesFromDB(),
     ]);
-    
-    if (!product) {
+
+    if (!rawProduct) {
       notFound();
     }
 
-    // Fetch related products from the same category (excluding current product)
+    const product = rawProduct as unknown as IVendorProduct;
+
     let relatedProducts: any[] = [];
+
     if (product.category) {
-      const categoryId = typeof product.category === 'object' && product.category !== null
-        ? product.category._id?.toString() || product.category.id
-        : product.category.toString();
-      
+      const categoryId =
+        typeof product.category === 'object' && product.category !== null
+          ? (product.category as any)._id?.toString() ||
+            (product.category as any).id
+          : product.category.toString();
+
       if (categoryId) {
-        const allCategoryProducts = await VendorProductServices.getVendorProductsByCategoryFromDB(
-          categoryId,
-          {}
-        );
-        // Filter out current product and limit to 5
+        const allCategoryProducts =
+          await VendorProductServices.getVendorProductsByCategoryFromDB(
+            categoryId,
+            {}
+          );
+
         relatedProducts = allCategoryProducts
           .filter((p: any) => p._id?.toString() !== productId)
           .slice(0, 5)
@@ -72,7 +92,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
       }
     }
 
-    // Transform data to plain objects
     const productData = {
       product: JSON.parse(JSON.stringify(product)),
       relatedData: {
@@ -87,35 +106,135 @@ export default async function ProductPage({ params }: ProductPageProps) {
           sizes: JSON.parse(JSON.stringify(sizesData || [])),
         },
       },
-      relatedProducts: relatedProducts
+      relatedProducts: relatedProducts,
     };
-  const categoriesInfo: MainCategory[] = [];
+
+    // ✅ FIXED: Clean and validate categories data
+    const categoriesInfo = JSON.parse(JSON.stringify(categoriesData || []))
+      .filter((cat: any) => cat && cat._id) // Remove null/undefined entries
+      .map((cat: any, index: number) => ({
+        ...cat,
+        mainCategoryId: cat._id || `temp-cat-${index}`, // Ensure ID exists
+        subCategories: (cat.subCategories || [])
+          .filter((sub: any) => sub && sub._id)
+          .map((sub: any, subIndex: number) => ({
+            ...sub,
+            subCategoryId: sub._id || `temp-sub-${index}-${subIndex}`,
+            children: (sub.children || [])
+              .filter((child: any) => child && child._id)
+              .map((child: any, childIndex: number) => ({
+                ...child,
+                childCategoryId: child._id || `temp-child-${index}-${subIndex}-${childIndex}`,
+              })),
+          })),
+      }));
+
+    // Rich Structured Data - Product Schema
+    const jsonLd = {
+      '@context': 'https://schema.org/',
+      '@type': 'Product',
+      name: product.productTitle,
+      image: product.photoGallery || [product.thumbnailImage],
+      description: product.fullDescription || product.shortDescription,
+      sku: productId,
+      brand: {
+        '@type': 'Brand',
+        name:
+          typeof product.brand === 'object'
+            ? product.brand?.name
+            : 'Guptodhan',
+      },
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: '4.5',
+        ratingCount: '100',
+      },
+      offers: {
+        '@type': 'Offer',
+        url: `https://www.guptodhandigital.com/products/${productId}`,
+        priceCurrency: 'BDT',
+        price: product.discountPrice || product.productPrice || 0,
+        priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split('T')[0],
+        availability:
+          (product.stock || 0) > 0
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock',
+        seller: {
+          '@type': 'Organization',
+          name: 'Guptodhan',
+        },
+      },
+      datePublished: product.createdAt?.toISOString(),
+      dateModified: product.updatedAt?.toISOString(),
+    };
+
+    const organizationSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'Guptodhan',
+      url: 'https://www.guptodhandigital.com',
+      logo: 'https://www.guptodhandigital.com/logo.png',
+      sameAs: [
+        'https://www.facebook.com/guptodhan',
+        'https://www.instagram.com/guptodhan',
+        'https://www.twitter.com/guptodhan',
+      ],
+      contactPoint: {
+        '@type': 'ContactPoint',
+        contactType: 'Customer Service',
+        telephone: '+880-XXX-XXXXXX',
+        email: 'support@guptodhan.com',
+      },
+    };
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-        {/* HeroNav - Category Navigation */}
+        <Script
+          id="product-schema"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <Script
+          id="organization-schema"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+
         <HeroNav categories={categoriesInfo} />
-        
 
         <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">
-          {/* Header Section */}
           <div className="mb-6 sm:mb-8">
             <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-100 rounded-lg">
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <svg
+                    className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
                   </svg>
                 </div>
                 <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Product Details</h1>
-                  <p className="text-sm text-gray-600">View and manage product information</p>
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                    {product.productTitle}
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    Product Details & Specifications
+                  </p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Product Details Component */}
           <ProductDetailsClient productData={productData} />
         </div>
       </div>
@@ -126,30 +245,63 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 }
 
-// Generate metadata for SEO
 export async function generateMetadata({ params }: ProductPageProps) {
   await dbConnect();
   const { productId } = await params;
-  
+
   try {
-    const product = await VendorProductServices.getVendorProductByIdFromDB(productId);
-    
-    if (!product) {
+    const rawProduct =
+      await VendorProductServices.getVendorProductByIdFromDB(productId);
+
+    if (!rawProduct) {
       return {
         title: 'Product Not Found',
         description: 'The requested product could not be found.',
       };
     }
 
+    const product = rawProduct as unknown as IVendorProduct;
+    const images = product.photoGallery && product.photoGallery.length > 0
+      ? [product.photoGallery[0]]
+      : product.thumbnailImage
+        ? [product.thumbnailImage]
+        : [];
+
     return {
-      title: `${product.productTitle} - Product Details`,
-      description: product.shortDescription || `View details for ${product.productTitle}`,
-      keywords: product.productTag?.join(', ') || product.productTitle,
+      title: `${product.productTitle} - Buy Online at Guptodhan`,
+      description:
+        product.shortDescription || product.fullDescription?.slice(0, 160) ||
+        'High-quality product available on Guptodhan marketplace',
+      keywords: [
+        product.productTitle,
+        ...(product.productTag || []),
+        'buy online',
+        'Bangladesh',
+      ].join(', '),
+      
+      openGraph: {
+        title: product.productTitle,
+        description: product.shortDescription,
+        images: images,
+        type: 'website',
+        url: `https://www.guptodhandigital.com/products/${productId}`,
+      },
+      
+      twitter: {
+        card: 'summary_large_image',
+        title: product.productTitle,
+        description: product.shortDescription,
+        images: images,
+      },
+      
+      alternates: {
+        canonical: `https://www.guptodhandigital.com/products/${productId}`,
+      },
     };
-  } catch {
+  } catch (error) {
     return {
-      title: 'Product Details',
-      description: 'View product information',
+      title: 'Product Details | Guptodhan',
+      description: 'View product information and details',
     };
   }
 }

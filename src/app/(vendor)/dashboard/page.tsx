@@ -59,9 +59,9 @@ export default async function VendorDashboard() {
     totalOrders = 0,
     totalProducts = 0,
     totalSell = 0,
-  } = data.stats;
+  } = data.stats || {};
 
-  const { todaysOrders = [], deliveredCancelledOrders = [], allOrders = [] } = data.orders;
+  const { todaysOrders = [], deliveredCancelledOrders = [], allOrders = [] } = data.orders || {};
   const bestSellingProducts = data.bestSellingProducts || [];
 
   return (

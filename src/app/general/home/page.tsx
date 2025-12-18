@@ -1,86 +1,163 @@
-import ChartCard from './Components/CardChart';
-import CircleChart from './Components/CircleChart';
-import SalesAnalyticsChart from './Components/SalaesAnlytcChart';
-import { DataTable } from '@/components/TableHelper/data-table';
-import { customer_data_columns } from '@/components/TableHelper/customer_data_column';
-import { transactions_columns } from '@/components/TableHelper/transations_columns';
-import { DashboardServices } from '@/lib/modules/dashboard/dashboard.service';
+// src/app/general/home/page.tsx
+import '@/lib/models-index';
+
 import dbConnect from '@/lib/db';
+import { DashboardServices } from '@/lib/modules/dashboard/dashboard.service';
+import { DollarSign, ShoppingBag, Users, Store, Calendar } from 'lucide-react';
+import KpiCard from './Components/KpiCard';
+import RevenueChart from './Components/RevenueChart';
+import TopProducts from './Components/TopProducts';
+import LowStockAlert from './Components/LowStockAlert';
+import AdminActionCards from './Components/AdminActionCards';
+import Image from 'next/image';
 
 export default async function DashboardPage() {
+  // Connect to database
   await dbConnect();
-  const analyticsData = await DashboardServices.getDashboardAnalyticsFromDB();
+  
+  // Fetch dashboard data
+  const data = await DashboardServices.getDashboardAnalyticsFromDB();
 
-  const kpiCardData = [
-    { title: 'No of Orders (Monthly)', value: analyticsData.stats.monthlyOrders, color: '#3b82f6', iconName: 'ShoppingCart', iconColor: '#3b82f6' },
-    { title: 'Total Revenue (Monthly)', value: `৳${analyticsData.stats.monthlyRevenue.toLocaleString()}`, color: '#22c55e', iconName: 'DollarSign', iconColor: '#22c55e' },
-    { title: 'Todays Orders', value: analyticsData.stats.todaysOrders, color: '#f97316', iconName: 'Package', iconColor: '#f97316', withButton: true },
-    { title: 'Registered Users (Monthly)', value: analyticsData.stats.monthlyRegisteredUsers, color: '#ef4444', iconName: 'Users', iconColor: '#ef4444' },
-  ];
-
-  // ✅ Customer data
-  const customerData = analyticsData.recentCustomers.map((user: any) => ({
-    avatar: user.profilePicture || null,
-    name: user.name || 'N/A',
-    phone: user.phoneNumber || 'N/A',
-    email: user.email || 'N/A',
-    location: user.address || 'N/A',
-    date: new Date(user.createdAt).toLocaleString(),
-  }));
-
-  // ✅ Transaction data - handle payment method properly
-  const transactionsData = analyticsData.recentOrders.map((order: any) => ({
-    trxId: order.orderId,
-    amount: `৳ ${order.totalAmount?.toLocaleString() || 0}`,
-    cardType: 'N/A',
-    payment: typeof order.paymentMethodId === 'object' && order.paymentMethodId?.name
-      ? order.paymentMethodId.name
-      : 'Cash', // ✅ Extract payment method name
-    status: order.paymentStatus,
-  }));
+  // Time based greeting
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpiCardData.map(card => (
-          <ChartCard
-            key={card.title}
-            title={card.title}
-            value={card.value}
-            color={card.color}
-            data={[]}
-            iconName={card.iconName as any}
-            iconColor={card.iconColor}
-            withButton={card.withButton}
-          />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-2">
-          <CircleChart data={analyticsData.orderRatioChart} />
+    <div className="p-6 md:p-8 space-y-8 bg-gray-50/50 min-h-screen">
+      
+      {/* 1. Header with Date & Action */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{greeting}, Admin! 👋</h1>
+          <p className="text-gray-500 text-sm mt-1">Here is what's happening with your store today.</p>
         </div>
-        <div className="lg:col-span-3">
-          <SalesAnalyticsChart data={analyticsData.salesAnalyticsChart} />
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2 bg-white px-4 py-2 rounded-lg border shadow-sm text-sm font-medium text-gray-600">
+            <Calendar className="w-4 h-4 text-gray-500" />
+            <span>{new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          </div>
+          <button className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition">
+            Download Report
+          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Recent Customers</h2>
-          <DataTable
-            columns={customer_data_columns}
-            data={customerData}
+      {/* 2. Admin Action Center */}
+      <AdminActionCards 
+        pendingVendors={data.stats.pendingVendors} 
+        pendingOrders={data.stats.pendingOrders} 
+      />
 
-          />
+      {/* 3. KPI Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <KpiCard 
+          title="Total Revenue" 
+          value={`৳${(data.stats.totalRevenue || 0).toLocaleString()}`} 
+          growth={12.5}
+          icon={DollarSign}
+          iconColor="#10b981"
+          subtext="all time"
+        />
+        <KpiCard 
+          title="Monthly Revenue" 
+          value={`৳${(data.stats.monthlyRevenue || 0).toLocaleString()}`} 
+          growth={8.2}
+          icon={DollarSign}
+          iconColor="#3b82f6"
+          subtext="this month"
+        />
+        <KpiCard 
+          title="Total Orders" 
+          value={data.stats.totalOrders || 0} 
+          growth={5.0}
+          icon={ShoppingBag}
+          iconColor="#f59e0b"
+          subtext="all time"
+        />
+        <KpiCard 
+          title="Active Users" 
+          value={data.stats.totalUsers || 0} 
+          growth={-2.4}
+          icon={Users}
+          iconColor="#8b5cf6"
+          subtext="registered"
+        />
+      </div>
+
+      {/* 4. Analytics & Alerts Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Left: Revenue Chart & Recent Orders (Takes 2 columns) */}
+        <div className="xl:col-span-2 space-y-6">
+          <RevenueChart data={data.charts.revenueOverTime} />
+          
+          {/* Recent Orders Section */}
+          <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="font-bold text-gray-800">Recent Orders</h3>
+              <a href="/orders" className="text-sm text-blue-600 hover:underline">View All</a>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-50 text-gray-500 font-medium">
+                  <tr>
+                    <th className="px-6 py-3">Order ID</th>
+                    <th className="px-6 py-3">Customer</th>
+                    <th className="px-6 py-3">Amount</th>
+                    <th className="px-6 py-3">Payment</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {data.recentOrders && data.recentOrders.length > 0 ? (
+                    data.recentOrders.map((order: any) => (
+                      <tr key={order._id} className="hover:bg-gray-50 transition">
+                        <td className="px-6 py-3 font-medium text-gray-900">#{order.orderId}</td>
+                        <td className="px-6 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-gray-200 overflow-hidden relative">
+                              <Image 
+                                src={order.userId?.profilePicture || '/placeholder-user.jpg'} 
+                                alt="user" 
+                                fill 
+                                className="object-cover" 
+                              />
+                            </div>
+                            <span className="truncate max-w-[100px]">
+                              {order.userId?.name || 'Guest'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-3 font-medium">৳{(order.totalAmount || 0).toLocaleString()}</td>
+                        <td className="px-6 py-3">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold 
+                            ${order.paymentStatus === 'Paid' 
+                              ? 'bg-green-50 text-green-700 border border-green-200' 
+                              : 'bg-red-50 text-red-700 border border-red-200'
+                            }`}>
+                            {order.paymentStatus}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                        No recent orders found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Payment History</h2>
-          <DataTable
-            columns={transactions_columns}
-            data={transactionsData}
 
-          />
+        {/* Right: Top Products & Alerts (Takes 1 column) */}
+        <div className="space-y-6">
+          {/* Low Stock Alert */}
+          <LowStockAlert products={data.lowStockProducts || []} />
+          
+          {/* Top Products */}
+          <TopProducts products={data.topProducts || []} />
         </div>
       </div>
     </div>

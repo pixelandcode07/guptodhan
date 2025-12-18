@@ -60,7 +60,7 @@ interface EcommerceBannersResponse {
 }
 
 export async function fetchEcommerceBanners(): Promise<EcommerceBannersResponse> {
-  const baseUrl = process.env.NEXTAUTH_URL;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
   if (!baseUrl) {
     console.error('NEXTAUTH_URL is not configured');

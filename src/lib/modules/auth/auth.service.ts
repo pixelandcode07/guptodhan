@@ -351,25 +351,33 @@ const resetPasswordWithToken = async (token: string, newPassword: string) => {
     throw new Error('Invalid or expired reset token');
   }
 
-  // এখন চেক করো type আছে কিনা
-  if (decoded.type !== 'vendor_password_reset') {
-    throw new Error('Invalid or unauthorized token');
+  // ✅ FIX: এখানে লজিক ঠিক করা হয়েছে যাতে Vendor এবং User উভয়েই পাসওয়ার্ড রিসেট করতে পারে
+
+  // ১. যদি Vendor Token হয়
+  if (decoded.type === 'vendor_password_reset') {
+    const user = await User.findById(decoded.userId);
+    if (!user) throw new Error('User not found');
+    if (user.role !== 'vendor') throw new Error('This token is not valid for vendor accounts');
+    
+    user.password = newPassword;
+    await user.save();
+    return null;
   }
 
-  // userId আছে কিনা চেক করো
-  if (!decoded.userId) {
-    throw new Error('Token does not contain user ID');
+  // ২. যদি Normal User Token হয় (যেখানে purpose: 'password-reset' থাকে)
+  else if (decoded.purpose === 'password-reset') {
+    const user = await User.findById(decoded.userId);
+    if (!user) throw new Error('User not found');
+    
+    user.password = newPassword;
+    await user.save();
+    return null;
   }
 
-  const user = await User.findById(decoded.userId);
-  if (!user) throw new Error('User not found');
-  if (user.role !== 'vendor') throw new Error('This token is not valid for vendor accounts');
-
-  user.password = newPassword;
-  user.passwordChangedAt = new Date();
-  await user.save();
-
-  return null;
+  // ৩. যদি কোনোটাই না হয়
+  else {
+    throw new Error('Invalid or unauthorized token payload');
+  }
 };
 
 

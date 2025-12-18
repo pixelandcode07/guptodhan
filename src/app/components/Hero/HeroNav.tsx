@@ -128,6 +128,7 @@ export function HeroNav({ categories }: HeroNavProps) {
                     <AnimatePresence>
                       {openDropdown === main.mainCategoryId && (
                         <motion.div
+                          key={`dropdown-${main.mainCategoryId}`}
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
@@ -139,69 +140,69 @@ export function HeroNav({ categories }: HeroNavProps) {
                           onMouseLeave={handleMouseLeave}
                         >
                           <div className="py-2">
-                            {main.subCategories?.map((sub) => {
-                              const hasChildren =
-                                sub.children && sub.children.length > 0;
-                              return (
-                                <div
-                                  key={sub.subCategoryId}
-                                  className="relative flex items-center"
-                                  onMouseEnter={() =>
-                                    hasChildren && handleSubEnter(sub.subCategoryId)
-                                  }
-                                  onMouseLeave={handleSubLeave}
-                                >
-                                  <Link
-                                    href={`/subcategory/${sub.slug}`}
-                                    className="flex-1 block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 hover:text-black font-medium transition-colors"
+                            {main.subCategories && main.subCategories.length > 0 ? (
+                              main.subCategories.map((sub) => {
+                                const hasChildren =
+                                  sub.children && sub.children.length > 0;
+                                return (
+                                  <div
+                                    key={sub.subCategoryId}
+                                    className="relative flex items-center"
+                                    onMouseEnter={() =>
+                                      hasChildren && handleSubEnter(sub.subCategoryId)
+                                    }
+                                    onMouseLeave={handleSubLeave}
                                   >
-                                    {sub.name}
-                                  </Link>
+                                    <Link
+                                      href={`/subcategory/${sub.slug}`}
+                                      className="flex-1 block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 hover:text-black font-medium transition-colors"
+                                    >
+                                      {sub.name}
+                                    </Link>
 
-                                  {/* ChevronRight when children exist */}
-                                  {hasChildren && (
-                                    <ChevronRight className="mr-2 w-4 h-4 text-gray-600" />
-                                  )}
+                                    {/* ChevronRight when children exist */}
+                                    {hasChildren && (
+                                      <ChevronRight className="mr-2 w-4 h-4 text-gray-600" />
+                                    )}
 
-                                  {/* ---- Second level dropdown (children) ---- */}
-                                  <AnimatePresence>
-                                    {hasChildren &&
-                                      openSubDropdown === sub.subCategoryId && (
-                                        <motion.div
-                                          initial={{ opacity: 0, x: -10 }}
-                                          animate={{ opacity: 1, x: 0 }}
-                                          exit={{ opacity: 0, x: -10 }}
-                                          transition={{ duration: 0.2 }}
-                                          className="absolute left-full top-0 ml-1 w-56 bg-white rounded-md shadow-lg border z-50"
-                                        >
-                                          <div className="py-2">
-                                            {sub.children!.map((child) => (
-                                              <Link
-                                                key={child.childCategoryId}
-                                                href={`/childcategory/${child.slug}`}
-                                                className="block px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-black transition-colors"
-                                              >
-                                                {child.name}
-                                              </Link>
-                                            ))}
-                                          </div>
-                                        </motion.div>
-                                      )}
-                                  </AnimatePresence>
-                                </div>
-                              );
-                            })}
-
-                            {/* Empty state */}
-                            {(!main.subCategories ||
-                              main.subCategories.length === 0) && (
-                                <Link
-                                  href={`/category/${main.slug}`}
-                                  className="block px-4 py-2 text-sm text-gray-500 italic"
-                                >
-                                  No subcategories
-                                </Link>
-                              )}
+                                    {/* ---- Second level dropdown (children) ---- */}
+                                    <AnimatePresence>
+                                      {hasChildren &&
+                                        openSubDropdown === sub.subCategoryId && (
+                                          <motion.div
+                                            key={`sub-dropdown-${sub.subCategoryId}`}
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -10 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="absolute left-full top-0 ml-1 w-56 bg-white rounded-md shadow-lg border z-50"
+                                          >
+                                            <div className="py-2">
+                                              {sub.children!.map((child) => (
+                                                <Link
+                                                  key={child.childCategoryId}
+                                                  href={`/childcategory/${child.slug}`}
+                                                  className="block px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-black transition-colors"
+                                                >
+                                                  {child.name}
+                                                </Link>
+                                              ))}
+                                            </div>
+                                          </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <Link
+                                key={`no-sub-${main.mainCategoryId}`}
+                                href={`/category/${main.slug}`}
+                                className="block px-4 py-2 text-sm text-gray-500 italic"
+                              >
+                                No subcategories
+                              </Link>
+                            )}
                           </div>
                         </motion.div>
                       )}
@@ -235,6 +236,7 @@ export function HeroNav({ categories }: HeroNavProps) {
                   <AnimatePresence>
                     {openDropdown === "more" && (
                       <motion.div
+                        key="more-dropdown"
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}

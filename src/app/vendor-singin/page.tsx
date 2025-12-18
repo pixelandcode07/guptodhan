@@ -197,7 +197,12 @@ export default function VendorSignInPage() {
             {/* Support */}
             <div className="mt-8 text-center text-sm text-slate-600">
               Need help?{" "}
-              <a href="#" className="text-emerald-600 font-semibold hover:underline">
+              <a
+                href="https://wa.me/8801816500600?text=Hello!%20Hope%20you're%20having%20a%20great%20day!%20I%20need%20assistance%20with...%20Thank%20you!"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-600 font-semibold hover:underline"
+              >
                 Contact Vendor Support
               </a>
             </div>

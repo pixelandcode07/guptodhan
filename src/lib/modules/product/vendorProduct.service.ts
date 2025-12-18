@@ -5,7 +5,6 @@ import { ReviewModel } from "../product-review/productReview.model";
 import { ProductQAModel } from "../product-qna/productQNA.model";
 import { StoreModel } from "../vendor-store/vendorStore.model";
 
-
 const createVendorProductInDB = async (payload: Partial<IVendorProduct>) => {
   const result = await VendorProductModel.create(payload);
 
@@ -61,40 +60,31 @@ const getVendorProductByIdFromDB = async (id: string) => {
     .populate("weightUnit", "name")
     .populate("vendorStoreId", "storeName storeLogo")
     .lean(); // Convert to plain JavaScript object
-    
+
 
   if (!productDoc) return null;
 
   const reviews = await ReviewModel.find({ productId: id }).lean();
   const qna = await ProductQAModel.find({ productId: id }).lean();
 
+  const ratingStats = await ReviewModel.aggregate([
+    { $match: { productId: new mongoose.Types.ObjectId(id) } },
+    {
+      $group: {
+        _id: "$productId",
+        totalReviews: { $sum: 1 },
+        averageRating: { $avg: "$rating" },
+      },
+    },
+  ]);
+
   return {
     ...productDoc,
+    ratingStats,
     reviews,
     qna,
   };
 };
-
-// const getVendorProductsByCategoryFromDB = async (categoryId: string) => {
-//   // Convert to ObjectId
-//   const categoryObjectId = new mongoose.Types.ObjectId(categoryId);
-
-//   // Query DB
-//   const result = await VendorProductModel.find({
-//     category: categoryObjectId,
-//     status: "active", // production-ready: only active products
-//   })
-//     .populate("brand", "name")
-//     .populate("flag", "name")
-//     .populate("warranty", "warrantyName")
-//     .populate("productModel", "name")
-//     .populate("category", "name")
-//     .populate("weightUnit", "name")
-//     .populate("vendorStoreId", "storeName")
-//     .sort({ createdAt: -1 });
-
-//   return result;
-// };
 
 // filter for main category product
 const getVendorProductsByCategoryFromDB = async (
@@ -185,23 +175,6 @@ const getVendorProductsByCategoryFromDB = async (
   return result;
 };
 
-// const getVendorProductsBySubCategoryFromDB = async (subCategoryId: string) => {
-//   const result = await VendorProductModel.find({
-//     subCategory: subCategoryId,
-//     status: 'active'
-//   })
-//     .populate('brand', 'name') // 'brandName' -> 'name'
-//     .populate('flag', 'name') // 'flagName' -> 'name'
-//     .populate('warranty', 'warrantyName')
-//     .populate('productModel', 'name') // 'modelName' -> 'name'
-//     .populate('category', 'name') // 'categoryName' -> 'name'
-//     .populate('subCategory', 'name') // 'subCategoryName' -> 'name'
-//     .populate('weightUnit', 'name') // 'unitName' -> 'name'
-//     .populate('vendorStoreId', 'storeName')
-//     .sort({ createdAt: -1 });
-//   return result;
-// };
-
 // filter for sub category product
 const getVendorProductsBySubCategoryFromDB = async (
   subCategoryId: string,
@@ -277,24 +250,6 @@ const getVendorProductsBySubCategoryFromDB = async (
 
   return result;
 };
-
-// const getVendorProductsByChildCategoryFromDB = async (childCategoryId: string) => {
-//   const result = await VendorProductModel.find({
-//     childCategory: childCategoryId,
-//     status: 'active'
-//   })
-//     .populate('brand', 'name') // 'brandName' -> 'name'
-//     .populate('flag', 'name') // 'flagName' -> 'name'
-//     .populate('warranty', 'warrantyName')
-//     .populate('productModel', 'name') // 'modelName' -> 'name'
-//     .populate('category', 'name') // 'categoryName' -> 'name'
-//     .populate('subCategory', 'name') // 'subCategoryName' -> 'name'
-//     .populate('childCategory', 'name') // 'childCategoryName' -> 'name'
-//     .populate('weightUnit', 'name') // 'unitName' -> 'name'
-//     .populate('vendorStoreId', 'storeName')
-//     .sort({ createdAt: -1 });
-//   return result;
-// };
 
 // filter for child category product
 const getVendorProductsByChildCategoryFromDB = async (
@@ -488,31 +443,6 @@ const getLandingPageProductsFromDB = async () => {
   };
 };
 
-// // search vendor product
-// const searchVendorProductsFromDB = async (searchTerm: string) => {
-//   const result = await VendorProductModel.find({
-//     status: 'active',
-//     $or: [
-//       { productTitle: { $regex: searchTerm, $options: 'i' } },
-//       { shortDescription: { $regex: searchTerm, $options: 'i' } },
-//       { productTag: { $in: [new RegExp(searchTerm, 'i')] } },
-//     ],
-//   })
-//     .populate('brand', 'name')
-//     .populate('flag', 'name')
-//     .populate('brand', 'name')
-//     .populate('flag', 'name')
-//     .populate('warranty', 'warrantyName')
-//     .populate('productModel', 'name')
-//     .populate('category', 'name')
-//     .populate('productModel', 'name')
-//     .populate('category', 'name')
-//     .populate('weightUnit', 'name')
-//     .populate('vendorStoreId', 'storeName')
-//     .sort({ createdAt: -1 });
-//   return result;
-// };
-
 // live search suggestions + full search results
 const getLiveSuggestionsFromDB = async (searchTerm: string) => {
   const regex = new RegExp(searchTerm.split(" ").join("|"), "i");
@@ -521,7 +451,10 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
     status: "active",
     productTitle: { $regex: regex },
   })
-    .select("productTitle productImage price") // Only necessary fields
+    .select("productTitle productImage price") // -> Add By Moinuddin
+    .populate("category", "slug") // -> Add By Moinuddin
+    .populate("subCategory", "slug") // -> Add By Moinuddin
+    .populate("childCategory", "slug") // -> Add By Moinuddin
     .limit(5)
     .sort({ createdAt: -1 });
 
@@ -556,7 +489,7 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
 };
 
 const basePopulate = [
-  { path: "brand", select: "name" },
+  { path: "brand", select: "name brandName" },
   { path: "flag", select: "name" },
   { path: "warranty", select: "warrantyName" },
   { path: "productModel", select: "name" },
@@ -564,30 +497,104 @@ const basePopulate = [
   { path: "weightUnit", select: "name" },
 ];
 
-// OFFER PRODUCTS (running offers)
 const getOfferProductsFromDB = async () => {
-  return await VendorProductModel.find({
+  const products = await VendorProductModel.find({
     status: "active",
     offerDeadline: { $gt: new Date() },
   })
     .populate(basePopulate)
     .sort({ createdAt: -1 })
     .limit(6);
+
+  const productsWithReviews = await Promise.all(
+    products.map(async (product) => {
+      const ratingStats = await ReviewModel.aggregate([
+        {
+          $match: { productId: product._id },
+        },
+        {
+          $group: {
+            _id: "$productId",
+            totalReviews: { $sum: 1 },
+            averageRating: { $avg: "$rating" },
+          },
+        },
+      ]);
+
+      return {
+        ...product.toObject(),
+        totalReviews: ratingStats[0]?.totalReviews || 0,
+        averageRating: ratingStats[0]?.averageRating || 0,
+      };
+    })
+  );
+
+  return productsWithReviews;
 };
 
 // BEST SELLING
 const getBestSellingProductsFromDB = async () => {
-  return await VendorProductModel.find({ status: "active" })
+  const products = await VendorProductModel.find({ status: "active" })
     .populate(basePopulate)
     .sort({ sellCount: -1 })
     .limit(6);
+
+  const productsWithReviews = await Promise.all(
+    products.map(async (product) => {
+      const ratingStats = await ReviewModel.aggregate([
+        {
+          $match: { productId: product._id },
+        },
+        {
+          $group: {
+            _id: "$productId",
+            totalReviews: { $sum: 1 },
+            averageRating: { $avg: "$rating" },
+          },
+        },
+      ]);
+
+      return {
+        ...product.toObject(),
+        totalReviews: ratingStats[0]?.totalReviews || 0,
+        averageRating: ratingStats[0]?.averageRating || 0,
+      };
+    })
+  );
+
+  return productsWithReviews;
 };
 
 // FOR YOU (random / all active)
 const getForYouProductsFromDB = async () => {
-  return await VendorProductModel.find({ status: "active" })
+  const products = await VendorProductModel.find({ status: "active" })
     .populate(basePopulate)
     .sort({ createdAt: -1 });
+
+  const productsWithReviews = await Promise.all(
+    products.map(async (product) => {
+      const ratingStats = await ReviewModel.aggregate([
+        {
+          $match: { productId: product._id },
+        },
+        {
+          $group: {
+            _id: "$productId",
+            totalReviews: { $sum: 1 },
+            averageRating: { $avg: "$rating" },
+          },
+        },
+      ]);
+
+      return {
+        ...product.toObject(),
+        totalReviews: ratingStats[0]?.totalReviews || 0,
+        averageRating: ratingStats[0]?.averageRating || 0,
+      };
+    })
+  );
+
+  return productsWithReviews;
 };
 
 const getVendorProductsByVendorIdFromDB = async (vendorId: string) => {
@@ -617,7 +624,6 @@ const getVendorStoreAndProductsFromDB = async (
   // 1. Fetch Vendor Store
   // -----------------------------
   const store = await StoreModel.findOne({
-    // vendorId: new mongoose.Types.ObjectId(vendorId),
     _id: id, // Change by Moinuddin
   });
 
@@ -707,9 +713,32 @@ const getVendorStoreAndProductsFromDB = async (
   // Count for pagination
   const totalProducts = await VendorProductModel.countDocuments(filter);
 
+  const productsWithReviews = await Promise.all(
+    products.map(async (product) => {
+      const ratingStats = await ReviewModel.aggregate([
+        {
+          $match: { productId: product._id },
+        },
+        {
+          $group: {
+            _id: "$productId",
+            totalReviews: { $sum: 1 },
+            averageRating: { $avg: "$rating" },
+          },
+        },
+      ]);
+
+      return {
+        ...product.toObject(),
+        totalReviews: ratingStats[0]?.totalReviews || 0,
+        averageRating: ratingStats[0]?.averageRating || 0,
+      };
+    })
+  );
+
   return {
     store,
-    products,
+    productsWithReviews,
     pagination: {
       total: totalProducts,
       page,

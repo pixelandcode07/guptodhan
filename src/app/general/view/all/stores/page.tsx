@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic"; // ⚡️ Add this to prevent build-time fetch error
+export const dynamic = "force-dynamic";
 
 import { fetchAllStores } from '@/lib/MultiVendorApis/fetchAllStore';
 import ClientDataTableStore from './components/ClientDataTableStore';

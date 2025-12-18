@@ -2,29 +2,16 @@ import { IOrder } from './order.interface';
 import { OrderModel } from './order.model';
 import { Types } from 'mongoose';
 
-
+// ✅ Import Models explicitly to prevent MissingSchemaError
 import '@/lib/modules/product/vendorProduct.model';
-import '@/lib/modules/vendor-store/vendorStore.model';
-import '@/lib/modules/promo-code/promoCode.model'; // Import PromoCodeModel for couponId populate
-import '../orderDetails/orderDetails.model';
-
-
-
-import { StoreModel } from '@/lib/modules/vendor-store/vendorStore.model';
-import { VendorProductModel } from '@/lib/modules/product/vendorProduct.model';
-import { Vendor } from '../../vendors/vendor.model';
-
-
-const _ = { StoreModel, VendorProductModel, Vendor };
-
+import '@/lib/modules/vendor-store/vendorStore.model'; 
+import '@/lib/modules/promo-code/promoCode.model';
 
 const createOrderInDB = async (payload: Partial<IOrder>) => {
   const result = await OrderModel.create(payload);
-  console.log(result)
   return result;
 };
 
-// Get all orders
 const getAllOrdersFromDB = async (status?: string) => {
   try {
     const filter: Record<string, unknown> = {};
@@ -36,19 +23,20 @@ const getAllOrdersFromDB = async (status?: string) => {
       .populate('storeId', 'storeName')
       .populate({
         path: 'orderDetails',
+        model: 'OrderDetails',
         populate: {
           path: 'productId',
           select: 'productTitle thumbnailImage productPrice discountPrice photoGallery',
-          model: 'VendorProductModel'
-        }
+          model: 'VendorProductModel',
+        },
       })
       .populate({
         path: 'couponId',
         select: 'code value type title minimumOrderAmount',
-        model: 'PromoCodeModel'
+        model: 'PromoCodeModel',
       })
       .sort({ orderDate: -1 })
-      .lean(); 
+      .lean();
     return result;
   } catch (error) {
     console.error('Error in getAllOrdersFromDB:', error);
@@ -56,21 +44,21 @@ const getAllOrdersFromDB = async (status?: string) => {
   }
 };
 
-// Get orders by user
 const getOrdersByUserFromDB = async (userId: string) => {
   try {
     const result = await OrderModel.find({ userId: new Types.ObjectId(userId) })
       .populate({
         path: 'orderDetails',
+        model: 'OrderDetails',
         populate: {
           path: 'productId',
           select: 'productTitle thumbnailImage productPrice discountPrice photoGallery',
-          model: 'VendorProductModel'
-        }
+          model: 'VendorProductModel',
+        },
       })
       .populate('storeId', 'storeName')
       .sort({ orderDate: -1 })
-      .lean(); 
+      .lean();
     return result;
   } catch (error) {
     console.error('Error in getOrdersByUserFromDB:', error);
@@ -78,7 +66,6 @@ const getOrdersByUserFromDB = async (userId: string) => {
   }
 };
 
-// Update order
 const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
   const result = await OrderModel.findByIdAndUpdate(id, payload, { new: true });
   if (!result) {
@@ -87,7 +74,6 @@ const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
   return result;
 };
 
-// Delete order
 const deleteOrderFromDB = async (id: string) => {
   const result = await OrderModel.findByIdAndDelete(id);
   if (!result) {
@@ -96,167 +82,130 @@ const deleteOrderFromDB = async (id: string) => {
   return null;
 };
 
-// Get order by ID
 const getOrderByIdFromDB = async (id: string) => {
   const result = await OrderModel.findById(id)
     .populate('userId', 'name email phoneNumber')
     .populate('storeId', 'storeName')
     .populate({
       path: 'orderDetails',
+      model: 'OrderDetails',
       populate: {
         path: 'productId',
         select: 'productTitle thumbnailImage productPrice discountPrice photoGallery',
-        model: 'VendorProductModel'
-      }
+        model: 'VendorProductModel',
+      },
     })
     .populate({
       path: 'couponId',
       select: 'code value type title minimumOrderAmount',
-      model: 'PromoCodeModel'
+      model: 'PromoCodeModel',
     })
-    .lean(); // Use lean() to get plain JavaScript objects for better serialization
+    .lean();
   return result;
 };
 
-
 const getSalesReportFromDB = async (filters: {
-    startDate?: string;
-    endDate?: string;
-    orderStatus?: string;
-    paymentStatus?: string;
-    paymentMethod?: string;
+  startDate?: string;
+  endDate?: string;
+  orderStatus?: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
 }) => {
-    try {
-        const query: Record<string, any> = {};
+  try {
+    const query: Record<string, any> = {};
 
-        // Date filter
-        if (filters.startDate || filters.endDate) {
-            query.orderDate = {};
-            if (filters.startDate) {
-                query.orderDate.$gte = new Date(filters.startDate);
-            }
-            if (filters.endDate) {
-                // Add 23:59:59 to include the entire end date
-                const endDate = new Date(filters.endDate);
-                endDate.setHours(23, 59, 59, 999);
-                query.orderDate.$lte = endDate;
-            }
-        }
-
-        // Order Status filter - শুধুমাত্র value থাকলে filter apply হবে
-        if (filters.orderStatus && filters.orderStatus.trim()) {
-            query.orderStatus = filters.orderStatus.trim();
-        }
-
-        // Payment Status filter - শুধুমাত্র value থাকলে filter apply হবে
-        if (filters.paymentStatus && filters.paymentStatus.trim()) {
-            query.paymentStatus = filters.paymentStatus.trim();
-        }
-
-        // Payment Method filter - শুধুমাত্র value থাকলে filter apply হবে
-        if (filters.paymentMethod && filters.paymentMethod.trim()) {
-            query.paymentMethod = { $regex: filters.paymentMethod.trim(), $options: 'i' };
-        }
-
-        console.log('SalesReport query:', JSON.stringify(query, null, 2));
-
-        const result = await OrderModel.find(query)
-            .populate('userId', 'name email phoneNumber')
-            .populate('storeId', 'storeName')
-            .populate({
-                path: 'orderDetails',
-                populate: {
-                    path: 'productId',
-                    select: 'productTitle thumbnailImage productPrice discountPrice',
-                    model: 'VendorProductModel'
-                }
-            })
-            .populate({
-                path: 'couponId',
-                select: 'code value type title minimumOrderAmount',
-                model: 'PromoCodeModel'
-            })
-            .sort({ orderDate: -1 })
-            .lean();
-
-        console.log(`SalesReport: ${result.length} orders found`);
-
-        return result;
-
-    } catch (error) {
-        console.error('Error in getSalesReportFromDB:', error);
-        throw error;
+    if (filters.startDate || filters.endDate) {
+      query.orderDate = {};
+      if (filters.startDate) {
+        query.orderDate.$gte = new Date(filters.startDate);
+      }
+      if (filters.endDate) {
+        const endDate = new Date(filters.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        query.orderDate.$lte = endDate;
+      }
     }
+
+    if (filters.orderStatus?.trim()) query.orderStatus = filters.orderStatus.trim();
+    if (filters.paymentStatus?.trim()) query.paymentStatus = filters.paymentStatus.trim();
+    if (filters.paymentMethod?.trim()) {
+      query.paymentMethod = { $regex: filters.paymentMethod.trim(), $options: 'i' };
+    }
+
+    const result = await OrderModel.find(query)
+      .populate('userId', 'name email phoneNumber')
+      .populate('storeId', 'storeName')
+      .populate({
+        path: 'orderDetails',
+        model: 'OrderDetails',
+        populate: {
+          path: 'productId',
+          select: 'productTitle thumbnailImage productPrice discountPrice',
+          model: 'VendorProductModel',
+        },
+      })
+      .populate({
+        path: 'couponId',
+        select: 'code value type title minimumOrderAmount',
+        model: 'PromoCodeModel',
+      })
+      .sort({ orderDate: -1 })
+      .lean();
+
+    return result;
+  } catch (error) {
+    console.error('Error in getSalesReportFromDB:', error);
+    throw error;
+  }
 };
 
 const getReturnedOrdersByUserFromDB = async (userId: string) => {
   try {
     const result = await OrderModel.find({
       userId: new Types.ObjectId(userId),
-      orderStatus: "Returned", // filter only returned orders
+      // Check both Returned and Return Request status
+      orderStatus: { $in: ['Returned', 'Return Request'] }, 
     })
       .populate({
-        path: "orderDetails",
+        path: 'orderDetails',
+        model: 'OrderDetails',
         populate: {
-          path: "productId",
-          select: "productTitle thumbnailImage productPrice discountPrice",
-          model: "VendorProductModel",
+          path: 'productId',
+          select: 'productTitle thumbnailImage productPrice discountPrice',
+          model: 'VendorProductModel',
         },
       })
-      .populate("storeId", "storeName")
-      .sort({ orderDate: -1 })
+      .populate('storeId', 'storeName')
+      .sort({ updatedAt: -1 })
       .lean();
 
     return result;
   } catch (error) {
-    console.error("Error in getReturnedOrdersByUserFromDB:", error);
+    console.error('Error in getReturnedOrdersByUserFromDB:', error);
     throw error;
   }
 };
 
-
-// order advance filter part 
 const getFilteredOrdersFromDB = async (filters: any) => {
   const query: any = {};
 
-  // --------------------------
-  // BASIC TEXT / ENUM FILTERS
-  // --------------------------
-  if (filters.orderId) query.orderId = filters.orderId.trim();
-
-  if (filters.orderForm) query.orderForm = filters.orderForm; // Website/App
-
+  if (filters.orderId?.trim()) query.orderId = filters.orderId.trim();
+  if (filters.orderForm) query.orderForm = filters.orderForm;
   if (filters.paymentStatus) query.paymentStatus = filters.paymentStatus;
-
   if (filters.orderStatus) query.orderStatus = filters.orderStatus;
 
-  if (filters.customerName) {
-    query.shippingName = { $regex: filters.customerName, $options: "i" };
-  }
-
-  if (filters.customerPhone) {
-    query.shippingPhone = { $regex: filters.customerPhone, $options: "i" };
-  }
-
+  if (filters.customerName) query.shippingName = { $regex: filters.customerName, $options: 'i' };
+  if (filters.customerPhone) query.shippingPhone = { $regex: filters.customerPhone, $options: 'i' };
   if (filters.deliveryMethod) query.deliveryMethodId = filters.deliveryMethod;
 
-  // --------------------------
-  // PRODUCT FILTER (ordered product)
-  // --------------------------
   if (filters.orderedProduct && Types.ObjectId.isValid(filters.orderedProduct)) {
     query.orderDetails = { $in: [filters.orderedProduct] };
   }
 
-  // --------------------------
-  // COUPON CODE FILTER
-  // --------------------------
   if (filters.couponCode) {
-    query["coupon.code"] = filters.couponCode.toUpperCase();
+    query['coupon.code'] = filters.couponCode.toUpperCase();
   }
 
-  // --------------------------
-  // DATE RANGE
-  // --------------------------
   if (filters.startDate && filters.endDate) {
     query.orderDate = {
       $gte: new Date(filters.startDate),
@@ -264,25 +213,22 @@ const getFilteredOrdersFromDB = async (filters: any) => {
     };
   }
 
-  // --------------------------
-  // FINAL DB CALL
-  // --------------------------
   const orders = await OrderModel.find(query)
-    .populate("userId", "name email phoneNumber")
-    .populate("storeId", "storeName")
+    .populate('userId', 'name email phoneNumber')
+    .populate('storeId', 'storeName')
     .populate({
-      path: "orderDetails",
+      path: 'orderDetails',
+      model: 'OrderDetails',
       populate: {
-        path: "productId",
-        select:
-          "productTitle thumbnailImage productPrice discountPrice photoGallery",
-        model: "VendorProductModel",
+        path: 'productId',
+        select: 'productTitle thumbnailImage productPrice discountPrice photoGallery',
+        model: 'VendorProductModel',
       },
     })
     .populate({
-      path: "couponId",
-      select: "code value type title minimumOrderAmount",
-      model: "PromoCodeModel",
+      path: 'couponId',
+      select: 'code value type title minimumOrderAmount',
+      model: 'PromoCodeModel',
     })
     .sort({ orderDate: -1 })
     .lean();
@@ -290,6 +236,23 @@ const getFilteredOrdersFromDB = async (filters: any) => {
   return orders;
 };
 
+// ✅ Request Return Logic
+const requestReturnInDB = async (orderId: string, reason: string) => {
+  // Find by _id (ObjectId)
+  const order = await OrderModel.findById(orderId);
+  if (!order) throw new Error('Order not found');
+
+  if (order.orderStatus !== 'Delivered') {
+    throw new Error('Only delivered orders can be returned');
+  }
+
+  // Update status and reason
+  order.orderStatus = 'Return Request';
+  order.returnReason = reason;
+  
+  await order.save();
+  return order;
+};
 
 export const OrderServices = {
   createOrderInDB,
@@ -300,6 +263,6 @@ export const OrderServices = {
   deleteOrderFromDB,
   getSalesReportFromDB,
   getReturnedOrdersByUserFromDB,
-
-  getFilteredOrdersFromDB
+  getFilteredOrdersFromDB,
+  requestReturnInDB, // ✅ Exported
 };

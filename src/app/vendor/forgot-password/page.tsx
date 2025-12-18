@@ -236,7 +236,7 @@ export default function VendorForgotPassword() {
               <p className="text-slate-600">
                 <ArrowLeft size={14} className="inline mr-1" />
                 Back to{" "}
-                <Link href="/vendor-signin" className="text-emerald-600 font-bold hover:underline">
+                <Link href="/vendor-singin" className="text-emerald-600 font-bold hover:underline">
                   Sign In
                 </Link>
               </p>

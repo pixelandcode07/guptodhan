@@ -23,7 +23,6 @@ export default async function BuySellCategories() {
                                 className="object-contain group-hover:scale-110 transition-transform"
                             />
                         </div>
-
                         <div className="flex flex-col justify-center items-center min-w-0 flex-1">
                             <span className="font-medium text-gray-800 text-sm truncate">{cat.name}</span>
                             <span className="text-xs text-gray-500">{cat.adCount ?? 0} ads</span>

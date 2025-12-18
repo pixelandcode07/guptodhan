@@ -1,5 +1,6 @@
 import {
   Bell,
+  BookOpenText,
   Box,
   CloudDownload,
   Command,
@@ -119,6 +120,11 @@ export const MENU_CONFIG: MenuConfig = {
         url: '/general/view/orders/cancelled',
         count: '2',
       },
+      {
+        title: 'Return Request (0)',
+        url: '/general/view/orders/return-request',
+        count: '0',
+      },
     ],
   },
   'Promo Codes': {
@@ -160,6 +166,11 @@ export const MENU_CONFIG: MenuConfig = {
     icon: Headphones,
     items: [],
     url: '/general/view/all/customers',
+  },
+  'Story Management': {
+    icon: BookOpenText,
+    items: [],
+    url: '/general/story',
   },
   "Customer's Wishlist": {
     icon: Heart,

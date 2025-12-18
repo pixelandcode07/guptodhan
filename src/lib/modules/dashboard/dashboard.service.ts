@@ -1,97 +1,277 @@
-import { OrderModel } from '../product-order/order/order.model';
-import { User } from '../user/user.model';
+// src/lib/modules/dashboard/dashboard.service.ts
+import { OrderModel, VendorProductModel, VendorStoreModel, UserModel } from '@/lib/models-index';
 
 const getDashboardAnalyticsFromDB = async () => {
   const today = new Date();
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(today.getDate() - 30);
-  const startOfToday = new Date(new Date().setHours(0, 0, 0, 0));
 
-  const monthlyOrdersQuery = OrderModel.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
-  const todaysOrdersQuery = OrderModel.countDocuments({ createdAt: { $gte: startOfToday } });
-  const monthlyUsersQuery = User.countDocuments({ role: 'user', createdAt: { $gte: thirtyDaysAgo } });
-  
-  const monthlyRevenueQuery = OrderModel.aggregate([
-    { $match: { createdAt: { $gte: thirtyDaysAgo }, paymentStatus: 'Paid' } },
-    { $group: { _id: null, total: { $sum: '$totalAmount' } } }
-  ]);
+  try {
+    // --- 1. Monthly Orders Count ---
+    const monthlyOrders = await OrderModel.countDocuments({
+      createdAt: { $gte: thirtyDaysAgo },
+    });
 
-  const salesByMonthQuery = OrderModel.aggregate([
-    { $match: { paymentStatus: { $in: ['Paid', 'Failed'] } } },
-    {
-      $group: {
-        _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
-        successful: { $sum: { $cond: [{ $eq: ["$paymentStatus", "Paid"] }, 1, 0] } },
-        failed: { $sum: { $cond: [{ $eq: ["$paymentStatus", "Failed"] }, 1, 0] } }
+    // --- 2. Monthly Revenue ---
+    const monthlyRevenueData = await OrderModel.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: thirtyDaysAgo },
+          paymentStatus: 'Paid',
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$totalAmount' },
+        },
+      },
+    ]);
+
+    const monthlyRevenue = monthlyRevenueData[0]?.total || 0;
+
+    // --- 3. Today's Orders ---
+    const todayStart = new Date(today);
+    todayStart.setHours(0, 0, 0, 0);
+
+    const todayEnd = new Date(today);
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const todaysOrders = await OrderModel.countDocuments({
+      createdAt: { $gte: todayStart, $lte: todayEnd },
+    });
+
+    // --- 4. Monthly Registered Users ---
+    const monthlyRegisteredUsers = await UserModel.countDocuments({
+      createdAt: { $gte: thirtyDaysAgo },
+      role: 'user',
+    });
+
+    // --- 5. Total Stats (All Time) ---
+    const totalOrders = await OrderModel.countDocuments({});
+    const totalUsers = await UserModel.countDocuments({ role: 'user' });
+    
+    const totalRevenueData = await OrderModel.aggregate([
+      {
+        $match: { paymentStatus: 'Paid' },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$totalAmount' },
+        },
+      },
+    ]);
+
+    const totalRevenue = totalRevenueData[0]?.total || 0;
+
+    // --- 6. Pending Vendors & Orders ---
+    const pendingVendors = await VendorStoreModel.countDocuments({ status: 'pending' });
+    const pendingOrders = await OrderModel.countDocuments({ orderStatus: 'Pending' });
+
+    // --- 7. Sales Analytics Chart (Last 14 Days - Successful vs Failed) ---
+    const salesAnalyticsData = await OrderModel.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: thirtyDaysAgo },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            status: '$paymentStatus',
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { '_id.date': 1 },
+      },
+    ]);
+
+    // Transform to chart format
+    const salesMap = new Map();
+    salesAnalyticsData.forEach((item) => {
+      const date = item._id.date;
+      if (!salesMap.has(date)) {
+        salesMap.set(date, { name: date, successful: 0, failed: 0 });
       }
-    },
-    { $sort: { "_id.year": 1, "_id.month": 1 } }
-  ]);
+      const current = salesMap.get(date);
+      if (item._id.status === 'Paid') {
+        current.successful = item.count;
+      } else {
+        current.failed = item.count;
+      }
+    });
 
-  const orderStatusRatioQuery = OrderModel.aggregate([
-    { $match: { createdAt: { $gte: thirtyDaysAgo } } },
-    { $group: { _id: '$orderStatus', count: { $sum: 1 } } }
-  ]);
+    const salesAnalyticsChart = Array.from(salesMap.values());
 
-  const recentCustomersQuery = User.find({ role: 'user' })
-    .sort({ createdAt: -1 })
-    .limit(10)
-    .select('name email profilePicture phoneNumber address createdAt')
-    .lean();
+    // --- 8. Order Ratio Chart (Payment Status Distribution) ---
+    const orderRatioData = await OrderModel.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: thirtyDaysAgo },
+        },
+      },
+      {
+        $group: {
+          _id: '$paymentStatus',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
 
-  // ✅ Populate remove করলাম - শুধু order data নিচ্ছি
-  const recentOrdersQuery = OrderModel.find({})
-    .sort({ createdAt: -1 })
-    .limit(10)
-    .populate('userId', 'name email phoneNumber')
-    .select('orderId totalAmount paymentStatus createdAt')
-    .lean();
+    const orderRatioChart = orderRatioData.map((item) => ({
+      name: item._id || 'Unknown',
+      value: item.count,
+    }));
 
-  const [
-    monthlyOrdersCount,
-    todaysOrdersCount,
-    monthlyUsersCount,
-    revenueResult,
-    salesByMonth,
-    orderStatusRatio,
-    recentCustomers,
-    recentOrders,
-  ] = await Promise.all([
-    monthlyOrdersQuery,
-    todaysOrdersQuery,
-    monthlyUsersQuery,
-    monthlyRevenueQuery,
-    salesByMonthQuery,
-    orderStatusRatioQuery,
-    recentCustomersQuery,
-    recentOrdersQuery,
-  ]);
+    // --- 9. Order Status Distribution ---
+    const orderStatusData = await OrderModel.aggregate([
+      {
+        $group: {
+          _id: '$orderStatus',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
 
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  
-  const salesAnalyticsData = salesByMonth.map(item => ({
-    name: `${monthNames[item._id.month - 1]}-${String(item._id.year).slice(-2)}`,
-    successful: item.successful,
-    failed: item.failed
-  }));
+    const orderStatusChart = orderStatusData.map((item) => ({
+      name: item._id || 'Unknown',
+      value: item.count,
+    }));
 
-  const orderRatioData = orderStatusRatio.map(item => ({
-    name: item._id,
-    value: item.count
-  }));
+    // --- 10. Recent Customers ---
+    const recentCustomers = await UserModel.find({ role: 'user' })
+      .select('name email profilePicture phoneNumber address createdAt')
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
 
-  return {
-    stats: {
-      monthlyOrders: monthlyOrdersCount,
-      todaysOrders: todaysOrdersCount,
-      monthlyRegisteredUsers: monthlyUsersCount,
-      monthlyRevenue: revenueResult[0]?.total || 0,
-    },
-    salesAnalyticsChart: salesAnalyticsData,
-    orderRatioChart: orderRatioData,
-    recentCustomers: recentCustomers,
-    recentOrders: recentOrders,
-  };
+    // --- 11. Recent Orders ---
+    const recentOrders = await OrderModel.find({})
+      .select(
+        'orderId totalAmount paymentStatus paymentMethod orderStatus createdAt userId'
+      )
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .populate('userId', 'name email')
+      .lean();
+
+    // --- 12. Low Stock Products ---
+    const lowStockProducts = await VendorProductModel.find({
+      stock: { $lte: 10 },
+      status: 'active',
+    })
+      .select('productTitle thumbnailImage stock productPrice')
+      .limit(5)
+      .lean();
+
+    // --- 13. Top Selling Products ---
+    const topProducts = await OrderModel.aggregate([
+      {
+        $match: { paymentStatus: 'Paid' },
+      },
+      {
+        $unwind: '$orderDetails',
+      },
+      {
+        $lookup: {
+          from: 'orderdetails',
+          localField: 'orderDetails',
+          foreignField: '_id',
+          as: 'productDetails',
+        },
+      },
+      {
+        $unwind: { path: '$productDetails', preserveNullAndEmptyArrays: true },
+      },
+      {
+        $group: {
+          _id: '$productDetails.productId',
+          totalSold: { $sum: '$productDetails.quantity' },
+          revenue: { $sum: { $multiply: ['$productDetails.quantity', '$productDetails.price'] } },
+        },
+      },
+      {
+        $sort: { totalSold: -1 },
+      },
+      {
+        $limit: 5,
+      },
+      {
+        $lookup: {
+          from: 'vendorproducts',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'productInfo',
+        },
+      },
+      {
+        $unwind: { path: '$productInfo', preserveNullAndEmptyArrays: true },
+      },
+      {
+        $project: {
+          name: { $ifNull: ['$productInfo.productTitle', 'Unknown Product'] },
+          image: { $ifNull: ['$productInfo.thumbnailImage', '/placeholder-product.jpg'] },
+          totalSold: 1,
+          revenue: 1,
+        },
+      },
+    ]);
+
+    // --- 14. Revenue Over Time (Last 14 Days) ---
+    const revenueOverTime = await OrderModel.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: thirtyDaysAgo },
+          paymentStatus: 'Paid',
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          Sales: { $sum: '$totalAmount' },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ]);
+
+    const revenueChart = revenueOverTime.map((item) => ({
+      date: item._id,
+      Sales: item.Sales,
+    }));
+
+    return {
+      stats: {
+        monthlyOrders,
+        monthlyRevenue,
+        todaysOrders,
+        monthlyRegisteredUsers,
+        totalOrders,
+        totalUsers,
+        totalRevenue,
+        pendingVendors,
+        pendingOrders,
+      },
+      salesAnalyticsChart,
+      orderRatioChart,
+      orderStatusChart,
+      recentCustomers,
+      recentOrders,
+      lowStockProducts,
+      topProducts,
+      charts: {
+        revenueOverTime: revenueChart,
+      },
+    };
+  } catch (error: any) {
+    console.error('❌ Dashboard Analytics Error:', error.message);
+    throw error;
+  }
 };
 
 export const DashboardServices = {

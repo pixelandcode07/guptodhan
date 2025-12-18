@@ -4,7 +4,7 @@ import { fetchVendorById } from '@/lib/MultiVendorApis/vendorActions';
 import EditVendorForm from '../components/EditVendorForm';
 
 export default async function EditVendorPage({ params }: { params: { id: string } }) {
-    const {id} = await params;
+  const { id } = await params;
   const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== 'admin') {

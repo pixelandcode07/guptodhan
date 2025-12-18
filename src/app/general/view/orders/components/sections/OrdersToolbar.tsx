@@ -23,13 +23,13 @@ export default function OrdersToolbar({
 }: OrdersToolbarProps) {
     const router = useRouter();
     const normalized = (initialStatus || '').toLowerCase().replace(/\s+/g, '-');
-    const statusOptions = ["Select Status", "Pending", "Approved", "Ready to Ship", "In Transit", "Delivered", "Cancelled"];
-    
+    const statusOptions = ["Select Status", "Pending", "Approved", "Ready to Ship", "In Transit", "Delivered", "Cancelled", "Return Request"];    
     const labelFromSlug = (slug: string) => {
         switch (slug) {
             case 'ready-to-ship': return 'Ready to Ship';
             case 'in-transit': return 'In Transit';
             case 'steadfast': return 'Steadfast';
+            case 'return-request': return 'Return Request';
             default: return slug ? slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Select Status';
         }
     }
@@ -43,6 +43,7 @@ export default function OrdersToolbar({
             case 'Delivered': return 'delivered';
             case 'Cancelled': return 'cancelled';
             case 'Steadfast': return 'steadfast';
+            case 'Return Request': return 'return-request';
             default: return '';
         }
     }

@@ -33,33 +33,26 @@ export default async function VendorShopsPage({ searchParams }: VendorShopsPageP
 
     return (
         <>
-            {/* Hero Banner */}
-            <section className="relative h-96 md:h-[520px] w-full overflow-hidden">
+            {/* Hero Banner - Optimized for 1920x600 Image */}
+            <section className="relative w-full aspect-[1920/600] min-h-[300px] max-h-[600px] overflow-hidden bg-gray-900">
                 <Image
-                    src="https://res.cloudinary.com/donrqkwe5/image/upload/v1764791110/stores/banner/v2vz7iq1y6vgwumazixs.jpg"
-                    alt="Discover Vendor Stores"
+                    // আপনার আপলোড করা ইমেজের লিঙ্ক এখানে বসাবেন
+                    src="https://res.cloudinary.com/donrqkwe5/image/upload/v1766044937/uqm2xd1jbicyjxkriwxl.jpg" 
+                    alt="Vendor Stores Banner"
                     fill
-                    className="object-cover brightness-75"
+                    className="object-cover object-center"
                     priority
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-6">
-                    <h1 className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-2xl">
-                        Discover Vendor Stores
-                    </h1>
-                    <p className="text-lg md:text-2xl max-w-4xl drop-shadow-lg">
-                        Explore trusted sellers and shop directly from the best stores
-                    </p>
-                </div>
+                {/* টেক্সট সরিয়ে দেওয়া হয়েছে ইমেজের সৌন্দর্য বজায় রাখার জন্য */}
             </section>
 
-            {/* Breadcrumb */}
-            <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 py-8">
-                <Breadcrumb>
+            {/* Breadcrumb & Title Section */}
+            <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pt-10 pb-6">
+                <Breadcrumb className="mb-4">
                     <BreadcrumbList className="flex items-center gap-2 text-sm md:text-base">
                         <BreadcrumbItem>
                             <BreadcrumbLink asChild>
-                                <Link href="/" className="flex items-center gap-2 hover:text-[#0097E9]">
+                                <Link href="/" className="flex items-center gap-2 hover:text-[#0097E9] transition-colors">
                                     <Home size={18} />
                                     Home
                                 </Link>
@@ -67,64 +60,60 @@ export default async function VendorShopsPage({ searchParams }: VendorShopsPageP
                         </BreadcrumbItem>
                         <BreadcrumbSeparator />
                         <BreadcrumbItem>
-                            <BreadcrumbPage className="font-medium text-gray-900">
+                            <BreadcrumbPage className="font-medium text-gray-900 uppercase tracking-wider">
                                 Vendor Stores
                             </BreadcrumbPage>
                         </BreadcrumbItem>
                     </BreadcrumbList>
                 </Breadcrumb>
+                
+                {/* টাইটেল এখন ব্যানারের নিচে, ক্লিন লুকের জন্য */}
+                <h1 className="text-3xl md:text-4xl font-extrabold text-[#00005E]">
+                    Explore Our Trusted Vendor Stores
+                </h1>
+                <p className="text-gray-500 mt-2">Discover quality products directly from our verified sellers.</p>
             </div>
 
             {/* Sticky Nav */}
             <StickyNavTrigger categories={categories} />
 
             {/* Stores Grid + Pagination */}
-            <section className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pb-20 bg-gray-50">
+            <section className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pb-20 bg-gray-50/50">
                 {allPublicVendors.length === 0 ? (
-                    <div className="text-center py-32">
-                        <p className="text-xl text-gray-500">No stores available yet.</p>
+                    <div className="text-center py-32 bg-white rounded-2xl border border-dashed">
+                        <p className="text-xl text-gray-400">No stores available at the moment.</p>
                     </div>
                 ) : (
                     <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8 mb-12">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
                             {paginatedStores.map((store) => (
                                 <VendorStoreCard key={store._id} store={store} />
                             ))}
                         </div>
 
-                        {/* Pagination */}
+                        {/* Pagination Section */}
                         {totalPages > 1 && (
                             <Pagination className="mt-10">
                                 <PaginationContent>
                                     <PaginationItem>
                                         <PaginationPrevious
                                             href={`?page=${validPage - 1}`}
-                                            className={validPage <= 1 ? "pointer-events-none opacity-50" : "hover:text-[#0097E9]"}
+                                            className={validPage <= 1 ? "pointer-events-none opacity-40" : "hover:text-[#0097E9] border-none shadow-sm"}
                                         />
                                     </PaginationItem>
 
-                                    {/* Show first page */}
-                                    {validPage > 3 && (
-                                        <>
-                                            <PaginationItem>
-                                                <PaginationLink href="?page=1">1</PaginationLink>
-                                            </PaginationItem>
-                                            <PaginationItem>
-                                                <PaginationEllipsis />
-                                            </PaginationItem>
-                                        </>
-                                    )}
-
-                                    {/* Show pages around current */}
                                     {Array.from({ length: totalPages }, (_, i) => i + 1)
-                                        .filter((page) => page === 1 || page === totalPages || Math.abs(page - validPage) <= 2)
+                                        .filter((page) => page === 1 || page === totalPages || Math.abs(page - validPage) <= 1)
                                         .map((page, idx, arr) => (
                                             <PaginationItem key={page}>
                                                 {idx > 0 && page - arr[idx - 1] > 1 && <PaginationEllipsis />}
                                                 <PaginationLink
                                                     href={`?page=${page}`}
                                                     isActive={page === validPage}
-                                                    className={page === validPage ? "bg-[#0097E9] text-white hover:bg-[#0097E9]/90" : ""}
+                                                    className={page === validPage 
+                                                        ? "bg-[#0097E9] text-white hover:bg-[#0097E9]/90 border-none shadow-md" 
+                                                        : "hover:text-[#0097E9] border-none bg-white shadow-sm"
+                                                    }
                                                 >
                                                     {page}
                                                 </PaginationLink>
@@ -134,7 +123,7 @@ export default async function VendorShopsPage({ searchParams }: VendorShopsPageP
                                     <PaginationItem>
                                         <PaginationNext
                                             href={`?page=${validPage + 1}`}
-                                            className={validPage >= totalPages ? "pointer-events-none opacity-50" : "hover:text-[#0097E9]"}
+                                            className={validPage >= totalPages ? "pointer-events-none opacity-40" : "hover:text-[#0097E9] border-none shadow-sm"}
                                         />
                                     </PaginationItem>
                                 </PaginationContent>

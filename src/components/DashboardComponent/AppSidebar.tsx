@@ -45,6 +45,7 @@ const data = {
     { title: 'SMS Service' },
     { title: 'Gateway & API' },
     { title: 'Customers' },
+    { title: 'Story Management' },
     { title: "Customer's Wishlist" },
     { title: 'Delivery Charges' },
     { title: 'Upazila & Thana' },

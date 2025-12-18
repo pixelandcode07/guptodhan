@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
@@ -8,15 +8,32 @@ import UploadImage from '@/components/ReusableComponents/UploadImage';
 import TopRow from './parts/TopRow';
 import DetailsFields from './parts/DetailsFields';
 import ButtonRow from './parts/ButtonRow';
+import AppActionRow, { AppRedirectType } from './parts/AppActionRow'; 
 import { useRouter } from 'next/navigation';
 
 export type TextPosition = 'Left' | 'Right';
 
-export default function SliderForm() {
-  const { data: session, status } = useSession();
+interface SliderFormProps {
+  initialData?: {
+    _id?: string;
+    image?: string;
+    textPosition?: string;
+    sliderLink?: string;
+    subTitleWithColor?: string;
+    bannerTitleWithColor?: string;
+    bannerDescriptionWithColor?: string;
+    buttonWithColor?: string;
+    buttonLink?: string;
+    status?: string;
+    appRedirectType?: string;
+    appRedirectId?: string;
+  };
+}
+
+export default function SliderForm({ initialData }: SliderFormProps) {
+  const { data: session } = useSession();
   const router = useRouter();
   
-  // Get authentication data from session
   type SessionWithToken = { accessToken?: string; user?: { role?: string } };
   const sessionWithToken = session as SessionWithToken | null;
   const token = sessionWithToken?.accessToken;
@@ -30,66 +47,77 @@ export default function SliderForm() {
   const [description, setDescription] = useState('');
   const [buttonText, setButtonText] = useState('');
   const [buttonLink, setButtonLink] = useState('');
+  
+  const [appRedirectType, setAppRedirectType] = useState<AppRedirectType>('None');
+  const [appRedirectValue, setAppRedirectValue] = useState('');
+
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isEditMode = !!initialData?._id;
+
+  // Load Data on Edit
+  useEffect(() => {
+    if (initialData) {
+      setTextPosition((initialData.textPosition as TextPosition) || '');
+      setSliderLink(initialData.sliderLink || '');
+      setSubTitle(initialData.subTitleWithColor || '');
+      setTitle(initialData.bannerTitleWithColor || '');
+      setDescription(initialData.bannerDescriptionWithColor || '');
+      setButtonText(initialData.buttonWithColor || '');
+      setButtonLink(initialData.buttonLink || '');
+
+      // App Data
+      setAppRedirectType((initialData.appRedirectType as AppRedirectType) || 'None');
+      setAppRedirectValue(initialData.appRedirectId || '');
+    }
+  }, [initialData]);
 
   const handleSave = async () => {
     if (isSubmitting) return;
     try {
       setIsSubmitting(true);
-      
 
-      // Basic validations
-      if (!image) throw new Error('Please upload an image.');
+      if (!image && !isEditMode && !initialData?.image) throw new Error('Please upload an image.');
       if (!textPosition) throw new Error('Please select text position.');
-      if (!sliderLink) throw new Error('Please provide slider link.');
       if (!subTitle) throw new Error('Please provide sub title.');
       if (!title) throw new Error('Please provide slider title.');
       if (!description) throw new Error('Please provide slider description.');
-      if (!buttonText) throw new Error('Please provide button text.');
-      if (!buttonLink) throw new Error('Please provide button link.');
+      
+      if (appRedirectType !== 'None' && !appRedirectValue.trim()) {
+        throw new Error('Please select a target for Mobile App Navigation.');
+      }
 
-      // URL validation function
+      // URL Validation
       const isValidUrl = (url: string): boolean => {
-        if (!url.trim()) return false;
-        try {
-          new URL(url.trim());
-          return true;
-        } catch {
-          return false;
-        }
+        if (!url || !url.trim()) return true; 
+        try { new URL(url.trim()); return true; } catch { return false; }
       };
 
-      // URL validations
-      if (!isValidUrl(sliderLink)) {
-        throw new Error('Please enter a valid slider URL (e.g., https://example.com)');
-      }
-      if (!isValidUrl(buttonLink)) {
-        throw new Error('Please enter a valid button URL (e.g., https://example.com)');
+      if (sliderLink && !isValidUrl(sliderLink)) throw new Error('Invalid slider URL');
+      if (buttonLink && !isValidUrl(buttonLink)) throw new Error('Invalid button URL');
+
+      // Image Handling
+      let imageUrl = initialData?.image || ''; 
+
+      if (image) {
+        const formData = new FormData();
+        formData.append('file', image);
+        
+        const uploadRes = await fetch('/api/v1/upload', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            ...(userRole ? { 'x-user-role': userRole } : {}),
+          }
+        });
+        
+        if (!uploadRes.ok) throw new Error('Image upload failed');
+        const uploadData = await uploadRes.json();
+        imageUrl = uploadData.url;
       }
 
-      // 1) Upload image
-      const formData = new FormData();
-      formData.append('file', image);
-      
-      const uploadRes = await fetch('/api/v1/upload', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-          ...(userRole ? { 'x-user-role': userRole } : {}),
-        }
-      });
-      if (!uploadRes.ok) {
-        const err = await uploadRes.json().catch(() => ({}));
-        throw new Error(err?.message || 'Image upload failed');
-      }
-      const uploadData = await uploadRes.json();
-      const imageUrl: string = uploadData.url;
-      if (!imageUrl) throw new Error('Image URL not returned by uploader');
-
-      // 2) Build API payload to match server validation
       const payload = {
-        sliderId: `SL-${Date.now()}`,
+        ...(!isEditMode && { sliderId: `SL-${Date.now()}` }),
         image: imageUrl,
         textPosition,
         sliderLink,
@@ -98,12 +126,19 @@ export default function SliderForm() {
         bannerDescriptionWithColor: description,
         buttonWithColor: buttonText,
         buttonLink,
-        status: 'active' as const,
+        status: initialData?.status || 'active',
+        appRedirectType,
+        appRedirectId: appRedirectValue || null,
       };
 
-      // 3) Create slider
-      const res = await fetch('/api/v1/slider-form', {
-        method: 'POST',
+      const url = isEditMode 
+        ? `/api/v1/slider-form/${initialData._id}` 
+        : '/api/v1/slider-form';
+      
+      const method = isEditMode ? 'PATCH' : 'POST';
+
+      const res = await fetch(url, {
+        method: method,
         headers: { 
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -111,13 +146,13 @@ export default function SliderForm() {
         },
         body: JSON.stringify(payload),
       });
+      
       const json = await res.json();
       if (!res.ok || json?.success === false) {
-        throw new Error(json?.message || 'Failed to create slider');
+        throw new Error(json?.message || 'Failed to save slider');
       }
 
-      // 4) Redirect to list view
-      toast.success('Slider created successfully!');
+      toast.success(`Slider ${isEditMode ? 'updated' : 'created'} successfully!`);
       router.push('/general/view/all/sliders');
     } catch (error: any) {
       toast.error(error?.message || 'Something went wrong');
@@ -129,21 +164,29 @@ export default function SliderForm() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column */}
         <div className="lg:col-span-1">
           <UploadImage 
             name="sliderImage"
             label="Slider Image"
+            preview={initialData?.image} 
             onChange={(name, file) => setImage(file)}
           />
-          <p className="text-[11px] text-gray-500 mt-2">Please upload jpg, jpeg, png file of 1000px × 500px</p>
+          <p className="text-[11px] text-gray-500 mt-2">
+            Please upload jpg, jpeg, png file of 1000px × 500px
+          </p>
         </div>
+
+        {/* Right Column */}
         <div className="lg:col-span-2 space-y-6">
+          {/* 🔥 FIX: TopRow এখন সব প্রপস পাচ্ছে */}
           <TopRow
             textPosition={textPosition}
             setTextPosition={setTextPosition}
             sliderLink={sliderLink}
             setSliderLink={setSliderLink}
           />
+          
           <DetailsFields
             subTitle={subTitle}
             setSubTitle={setSubTitle}
@@ -152,22 +195,32 @@ export default function SliderForm() {
             description={description}
             setDescription={setDescription}
           />
+          
           <ButtonRow
             buttonText={buttonText}
             setButtonText={setButtonText}
             buttonLink={buttonLink}
             setButtonLink={setButtonLink}
           />
+
+          <AppActionRow 
+            appRedirectType={appRedirectType}
+            setAppRedirectType={setAppRedirectType}
+            appRedirectValue={appRedirectValue}
+            setAppRedirectValue={setAppRedirectValue}
+          />
         </div>
       </div>
 
       <div className="flex justify-center pb-5">
-        <Button onClick={handleSave} disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : 'Save Slider'}
+        <Button 
+          onClick={handleSave} 
+          disabled={isSubmitting}
+          className="w-full md:w-auto px-8 py-6 text-base"
+        >
+          {isSubmitting ? 'Saving...' : (isEditMode ? 'Update Slider' : 'Save Slider')}
         </Button>
       </div>
     </div>
   );
 }
-
-

@@ -14,9 +14,11 @@ const createOrUpdateIntegrations = async (req: NextRequest) => {
     // Boolean মানগুলোকে সঠিকভাবে পার্স করা হচ্ছে
     const parsedBody = {
         ...body,
-       googleAnalyticsEnabled: body.googleAnalyticsEnabled === 'Enable' || body.googleAnalyticsEnabled === true,
+        googleAnalyticsEnabled: body.googleAnalyticsEnabled === 'Enable' || body.googleAnalyticsEnabled === true,
         googleTagManagerEnabled: body.googleTagManagerEnabled === 'Enable' || body.googleTagManagerEnabled === true,
         facebookPixelEnabled: body.facebookPixelEnabled === 'Enable' || body.facebookPixelEnabled === true,
+        googleSearchConsoleEnabled: body.googleSearchConsoleEnabled === 'Enable' || body.googleSearchConsoleEnabled === true,
+        microsoftClarityEnabled: body.microsoftClarityEnabled === 'Enable' || body.microsoftClarityEnabled === true,
         googleRecaptchaEnabled: body.googleRecaptchaEnabled === 'Enable' || body.googleRecaptchaEnabled === true,
         googleLoginEnabled: body.googleLoginEnabled === 'Enable' || body.googleLoginEnabled === true,
         facebookLoginEnabled: body.facebookLoginEnabled === 'Enable' || body.facebookLoginEnabled === true,
