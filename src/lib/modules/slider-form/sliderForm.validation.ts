@@ -8,9 +8,13 @@ export const createPKSliderValidationSchema = z.object({
   sliderLink: z.string().url('Invalid web link URL'),
   buttonLink: z.string().url('Invalid button link URL'),
   
-  // 🆕 App Navigation Validation
   appRedirectType: z.enum(['Product', 'Category', 'Brand', 'Shop', 'ExternalUrl', 'None']).default('None'),
   appRedirectId: z.string().optional().nullable(),
+
+  actionStatus: z.enum(['product', 'category', 'store', 'none']).default('none'),
+  productId: z.string().optional().nullable(),
+  category: z.string().optional().nullable(),
+  store: z.string().optional().nullable(),
   
   subTitleWithColor: z.string().min(1, 'Sub title is required'),
   bannerTitleWithColor: z.string().min(1, 'Banner title is required'),
