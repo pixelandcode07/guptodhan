@@ -346,14 +346,10 @@ const resetPasswordWithToken = async (token: string, newPassword: string) => {
 
   try {
     decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
-    // console.log("Decoded JWT:", decoded); 
   } catch (error) {
     throw new Error('Invalid or expired reset token');
   }
 
-  // ✅ FIX: এখানে লজিক ঠিক করা হয়েছে যাতে Vendor এবং User উভয়েই পাসওয়ার্ড রিসেট করতে পারে
-
-  // ১. যদি Vendor Token হয়
   if (decoded.type === 'vendor_password_reset') {
     const user = await User.findById(decoded.userId);
     if (!user) throw new Error('User not found');
@@ -364,7 +360,6 @@ const resetPasswordWithToken = async (token: string, newPassword: string) => {
     return null;
   }
 
-  // ২. যদি Normal User Token হয় (যেখানে purpose: 'password-reset' থাকে)
   else if (decoded.purpose === 'password-reset') {
     const user = await User.findById(decoded.userId);
     if (!user) throw new Error('User not found');
@@ -374,58 +369,10 @@ const resetPasswordWithToken = async (token: string, newPassword: string) => {
     return null;
   }
 
-  // ৩. যদি কোনোটাই না হয়
   else {
     throw new Error('Invalid or unauthorized token payload');
   }
 };
-
-
-
-
-
-
-// const registerVendor = async (payload: any) => {
-//   const { name, email, password, phoneNumber, address, ...vendorData } = payload;
-
-//   // 👇 --- এখানে পরিবর্তন --- 👇
-//   const userData = {
-//     name,
-//     email,
-//     password,
-//     phoneNumber,
-//     address,
-//     role: 'user',     // <-- 'vendor' থেকে 'user' করা হয়েছে
-//     isActive: false   // <-- এটি যোগ করা হয়েছে
-//   };
-//   // 👆 --- পরিবর্তন শেষ --- 👆
-
-//   const session = await mongoose.startSession();
-//   try {
-//     session.startTransaction();
-
-//     // User.create ব্যবহার করলে pre-save হুক (পাসওয়ার্ড হ্যশিং) কাজ করবে
-//     const newUser = (await User.create([userData], { session }))[0];
-//     if (!newUser) { throw new Error('Failed to create user'); }
-
-//     vendorData.user = newUser._id;
-//     const newVendor = (await Vendor.create([vendorData], { session }))[0];
-//     if (!newVendor) { throw new Error('Failed to create vendor profile'); }
-
-//     newUser.vendorInfo = newVendor._id;
-//     await newUser.save({ session });
-
-//     await session.commitTransaction();
-//     return newUser;
-//   } catch (error) {
-//     await session.abortTransaction();
-//     throw error;
-//   } finally {
-//     session.endSession();
-//   }
-// };
-
-// auth.service.ts → registerVendor
 
 const registerVendor = async (payload: any) => {
   const { name, email, password, phoneNumber, address, businessCategory, ...vendorData } = payload;
@@ -480,11 +427,9 @@ const registerServiceProvider = async (payload: any) => {
     password,
     phoneNumber,
     address,
-    // The rest of the payload contains the service provider info
     ...providerData
   } = payload;
 
-  // ✅ FIX: Add the providerData directly to the user object
   const userData = {
     name,
     email,
@@ -492,7 +437,7 @@ const registerServiceProvider = async (payload: any) => {
     phoneNumber,
     address,
     role: 'service-provider',
-    serviceProviderInfo: providerData // Embed the service data directly as defined in your schema
+    serviceProviderInfo: providerData,
   };
 
   const session = await mongoose.startSession();
@@ -502,9 +447,6 @@ const registerServiceProvider = async (payload: any) => {
     // Create the user with the embedded info
     const newUser = (await User.create([userData], { session }))[0];
     if (!newUser) { throw new Error('Failed to create user'); }
-
-    // ❗ REMOVED: No need to create a separate ServiceProvider document
-    // ❗ REMOVED: The line that was causing the error (newUser.serviceProviderInfo = newProvider._id;)
 
     await session.commitTransaction();
     return newUser;
