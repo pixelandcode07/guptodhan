@@ -6,21 +6,21 @@ const userRole = [
         url: '/general/view/system/users',
         icon: Users,
     },
-    {
-        title: 'Permission Routes',
-        url: '/general/view/permission/routes',
-        icon: ShieldCheck,
-    },
+    // {
+    //     title: 'Permission Routes',
+    //     url: '/general/view/permission/routes',
+    //     icon: ShieldCheck,
+    // },
     {
         title: 'User Roles',
         url: '/general/view/user/roles',
         icon: UserCog,
     },
-    {
-        title: 'Addign Role Permission',
-        url: '/general/view/user/role/permission',
-        icon: UserCheck,
-    },
+    // {
+    //     title: 'Addign Role Permission',
+    //     url: '/general/view/user/role/permission',
+    //     icon: UserCheck,
+    // },
 ]
 
 export default function UserRolePermision() {
