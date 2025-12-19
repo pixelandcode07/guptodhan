@@ -257,12 +257,23 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 const opts = Array.isArray(p.productOptions) ? p.productOptions : [];
                 if (opts.length > 0) {
                     setHasVariant(true);
+                    
+                    const colorNameToIdMap = new Map<string, string>(
+                        initialData?.variantOptions?.colors?.map((c: any) => [c.colorName, c._id]) || []
+                    );
+                    const sizeNameToIdMap = new Map<string, string>(
+                        initialData?.variantOptions?.sizes?.map((s: any) => [s.name, s._id]) || []
+                    );
+                    
+                    const getFirstValue = (val: any) => Array.isArray(val) ? val[0] : val;
+                    const getNameToId = (name: string, map: Map<string, string>) => map.get(name) || name;
+                    
                     const mapped = opts.map((opt: any, idx: number) => ({
                         id: Date.now() + idx,
                         image: null,
                         imageUrl: opt.productImage || '',
-                        color: opt.color || '',
-                        size: opt.size || '',
+                        color: opt.color ? getNameToId(getFirstValue(opt.color), colorNameToIdMap) : '',
+                        size: opt.size ? getNameToId(getFirstValue(opt.size), sizeNameToIdMap) : '',
                         storage: opt.storage || '',
                         simType: opt.simType || '',
                         condition: opt.condition || '',
@@ -447,7 +458,6 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                             return {
                                 ...rest,
                                 productImage: uploadedImage,
-                                unit: normalizeToStringArray(variant.unit),
                                 simType: normalizeToStringArray(variant.simType),
                                 condition: normalizeToStringArray(variant.condition),
                                 color: normalizeToStringArray(variant.color),
