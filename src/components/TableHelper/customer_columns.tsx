@@ -3,9 +3,13 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { Trash2, Download } from 'lucide-react';
+import { confirmDelete } from '@/components/ReusableComponents/ConfirmToast';
+import { toast } from 'sonner';
+import axios from 'axios';
 
 export type Customer = {
   id: number;
+  _id?: string;
   image: string;
   name: string;
   email: string;
@@ -116,10 +120,44 @@ export const customer_columns: ColumnDef<Customer>[] = [
   {
     id: 'action',
     header: 'Action',
-    cell: () => {
+    cell: ({ row, table }) => {
+      const customer = row.original;
+
+      const handleDelete = async (customer: Customer) => {
+        if (!customer._id) {
+          toast.error('Customer ID not found');
+          return;
+        }
+
+        const confirmed = await confirmDelete(`Delete customer "${customer.name}"?`);
+        if (!confirmed) return;
+
+        try {
+          await toast.promise(
+            axios.delete(`/api/v1/users/${customer._id}`),
+            {
+              loading: 'Deleting...',
+              success: 'Customer deleted successfully!',
+              error: (err) => err.response?.data?.message || 'Failed to delete customer',
+            }
+          );
+
+          const setData = table.options.meta?.setData as
+            | React.Dispatch<React.SetStateAction<Customer[]>>
+            | undefined;
+
+          if (setData) {
+            setData((prev) => prev.filter((item) => item._id !== customer._id));
+          }
+        } catch (error) {
+          console.error('Delete error:', error);
+        }
+      };
+
       return (
         <div className="flex items-center gap-2">
           <Button
+            onClick={() => handleDelete(customer)}
             variant="ghost"
             size="sm"
             className="text-red-600 hover:text-red-700 hover:bg-red-50">
