@@ -26,6 +26,7 @@ export default function CreateCategory() {
     register,
     handleSubmit,
     control,
+    reset,
     formState: { errors },
   } = useForm<Inputs>()
 
@@ -47,7 +48,8 @@ export default function CreateCategory() {
       })
 
       toast.success("Category created successfully!")
-      router.push("/general/categories?page=view-category") // redirect to view tab
+      router.push("/general/categories?page=view-category")
+      reset()
     } catch (error) {
       console.log(error)
       toast.error("Failed to create category")

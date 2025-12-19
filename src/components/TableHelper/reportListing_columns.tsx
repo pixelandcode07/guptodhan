@@ -44,8 +44,8 @@ export const reportListing_columns: ColumnDef<ReportListing>[] = [
         header: 'Reported By',
         cell: ({ row }) => (
             <div className="text-sm">
-                <div className="font-medium">{row.original.reporter.name}</div>
-                <div className="text-gray-500">{row.original.reporter.email}</div>
+                <div className="font-medium">{row.original.reporter?.name}</div>
+                <div className="text-gray-500">{row.original.reporter?.email}</div>
             </div>
         ),
     },

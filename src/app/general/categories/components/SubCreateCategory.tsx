@@ -39,6 +39,7 @@ export default function SubCreateCategory() {
     register,
     handleSubmit,
     control,
+    reset,
     formState: { errors },
   } = useForm<Inputs>()
 
@@ -84,7 +85,8 @@ export default function SubCreateCategory() {
       })
 
       toast.success("Sub-category created successfully!")
-      router.push("/general/categories?page=view") // Adjust redirect as needed
+      router.push("/general/categories?page=view")
+      reset()
     } catch (error) {
       console.log(error)
       toast.error("Failed to create sub-category")
