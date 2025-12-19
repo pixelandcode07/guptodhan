@@ -19,6 +19,7 @@ export default function CreateNewStoreFrom() {
         register,
         handleSubmit,
         control,
+        reset,
         formState: { errors, isSubmitting },
     } = useForm<Inputs>({
         defaultValues: {
@@ -83,7 +84,7 @@ export default function CreateNewStoreFrom() {
         });
 
         try {
-            const res = await axios.post('/api/v1/vendor-store', formData, {
+            await axios.post('/api/v1/vendor-store', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                     ...(token && { Authorization: `Bearer ${token}` }),
@@ -91,9 +92,10 @@ export default function CreateNewStoreFrom() {
             });
 
             toast.success('Store created successfully!');
-            console.log(res.data);
+            reset();
+            // console.log(res.data);
         } catch (err: any) {
-            console.error('Error:', err);
+            // console.error('Error:', err);
             toast.error(err.response?.data?.message || 'Failed to create store');
         }
     };

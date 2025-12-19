@@ -30,6 +30,7 @@ export default function ShipingForm({ initialData }: ShipingFormProps) {
     }
   }, [initialData]);
 
+
   const handleUpdate = async () => {
     if (!token) {
       toast.error('You are not authorized. Please log in.');
@@ -50,46 +51,34 @@ export default function ShipingForm({ initialData }: ShipingFormProps) {
     setLoading(true);
 
     try {
-      const url = initialData?._id
-        ? '/api/v1/shipping-policy'
-        : '/api/v1/shipping-policy';
-
-      const method = initialData?._id ? 'PATCH' : 'POST';
-
-      // const url = initialData?._id
-      //   ? `/api/v1/shipping-policy/${initialData._id}`
-      //   : '/api/v1/shipping-policy';
-      // const method = initialData?._id ? 'PATCH' : 'POST';
-
-      const payload = {
-        status: initialData?.status || 'active',
-        content,
-      };
-
-      const res = await axios({
-        method,
-        url,
-        data: payload,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'X-User-Role': adminRole,
-          'X-User-Id': (session?.user as any)?.id || '',
+      const res = await axios.post(
+        '/api/v1/shipping-policy',
+        {
+          status: initialData?.status || 'active',
+          content,
         },
-      });
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'X-User-Role': adminRole,
+            'X-User-Id': (session?.user as any)?.id || '',
+          },
+        }
+      );
 
       if (res.data.success) {
         toast.success('Shipping Policy updated successfully!');
       }
     } catch (error: any) {
-      toast.error(
-        error.response?.data?.message || 'Failed to update Shipping Policy.'
-      );
+      toast.error(error.response?.data?.message || 'Failed to update Shipping Policy.');
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
+
+
 
   return (
     <div>

@@ -31,6 +31,7 @@ export default function CreateVendorForm({ vendorCategories }: CreateVendorFormP
     register,
     handleSubmit,
     setValue,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<Inputs>({
     defaultValues: {
@@ -81,6 +82,7 @@ export default function CreateVendorForm({ vendorCategories }: CreateVendorFormP
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       toast.success('Vendor created successfully!');
+      reset();
       // console.log("Response", data)
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to create vendor');

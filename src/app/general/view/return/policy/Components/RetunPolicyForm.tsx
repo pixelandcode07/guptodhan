@@ -32,6 +32,7 @@ export default function ReturnPolicyForm({
     }
   }, [initialData]);
 
+
   const handleUpdate = async () => {
     if (!token) {
       toast.error('You are not authorized. Please log in.');
@@ -52,48 +53,32 @@ export default function ReturnPolicyForm({
     setLoading(true);
 
     try {
-      const url = initialData?._id
-        ? '/api/v1/return-policy'
-        : '/api/v1/return-policy';
-
-      const method = initialData?._id ? 'PATCH' : 'POST';
-
-      // const url = initialData?._id
-      //   ? `/api/v1/return-policy/${initialData._id}`
-      //   : '/api/v1/return-policy';
-
-      // const method = initialData?._id ? 'PATCH' : 'POST';
-
-      const payload = {
-        status: initialData?.status || 'active',
-        content,
-      };
-
-      const res = await axios({
-        method,
-        url,
-        data: payload,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'X-User-Role': adminRole,
-          'X-User-Id': (session?.user as any)?.id || '',
+      const res = await axios.post(
+        '/api/v1/return-policy',
+        {
+          status: initialData?.status || 'active',
+          content,
         },
-      });
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'X-User-Role': adminRole,
+            'X-User-Id': (session?.user as any)?.id || '',
+          },
+        }
+      );
 
       if (res.data.success) {
         toast.success('Return Policy updated successfully!');
       }
     } catch (error: any) {
-      toast.error(
-        error.response?.data?.message || 'Failed to update Return Policy.'
-      );
+      toast.error(error.response?.data?.message || 'Failed to update Return Policy.');
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <div>
       <RichTextEditor value={content} onChange={setContent} />

@@ -7,6 +7,7 @@ import ReportListing from './components/ReportListing';
 export default async function ReportsPage() {
     const session = await getServerSession(authOptions);
     const token = session?.accessToken;
+    // console.log("AccessToken", token)
 
     if (!session || session.user.role !== 'admin') {
         return (

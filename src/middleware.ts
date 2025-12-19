@@ -34,7 +34,8 @@ const adminRoutes = [
   "/api/v1/donation-configs",
   '/api/v1/classifieds/ads/[id]',
   '/api/v1/social_links',
-  '/api/v1/vendors/[id]'
+  '/api/v1/vendors/[id]',
+  '/api/v1/shipping-policy',
 ];
 
 // 🔥 Vendor Routes
