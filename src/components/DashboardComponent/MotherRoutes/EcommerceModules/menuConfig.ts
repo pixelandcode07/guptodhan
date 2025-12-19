@@ -22,7 +22,7 @@ export const MENU_CONFIG: MenuConfig = {
   Config: {
     icon: Settings,
     items: [
-      { title: 'Setup Your Config', url: '/general/config/setup' },
+      // { title: 'Setup Your Config', url: '/general/config/setup' },
       { title: 'Product Sizes', url: '/general/view/all/sizes' },
       { title: 'Storage', url: '/general/view/all/storages' },
       { title: 'Sim Type', url: '/general/view/all/sims' },
@@ -33,7 +33,7 @@ export const MENU_CONFIG: MenuConfig = {
       { title: 'Product Brands', url: '/general/view/all/brands' },
       { title: 'Models of Brand', url: '/general/view/all/models' },
       { title: 'Product Flags', url: '/general/view/all/flags' },
-      { title: 'Contact Config', url: '/general/contact/config' },
+      // { title: 'Contact Config', url: '/general/contact/config' },
     ],
   },
   Category: {
@@ -69,11 +69,11 @@ export const MENU_CONFIG: MenuConfig = {
         url: '/general/view/all/product',
         count: '0',
       },
-      {
-        title: 'Bulk Upload New',
-        url: '/general/products/from/excel',
-        isNew: true,
-      },
+      // {
+      //   title: 'Bulk Upload New',
+      //   url: '/general/products/from/excel',
+      //   isNew: true,
+      // },
       {
         title: "Products's Review (0)",
         url: '/general/view/product/reviews',
@@ -155,10 +155,10 @@ export const MENU_CONFIG: MenuConfig = {
   'Gateway & API': {
     icon: Settings,
     items: [
-      { title: 'Email Credentials', url: '/general/view/email/credential' },
-      { title: 'Email Templates', url: '/general/view/email/templates' },
-      { title: 'SMS Gateways', url: '/general/setup/sms/gateways' },
-      { title: 'Payment Gateways', url: '/general/setup/payment/gateways' },
+      // { title: 'Email Credentials', url: '/general/view/email/credential' },
+      // { title: 'Email Templates', url: '/general/view/email/templates' },
+      // { title: 'SMS Gateways', url: '/general/setup/sms/gateways' },
+      // { title: 'Payment Gateways', url: '/general/setup/payment/gateways' },
       { title: 'Courier API Keys', url: '/general/setup/courier/api/keys' },
     ],
   },
@@ -196,20 +196,20 @@ export const MENU_CONFIG: MenuConfig = {
     icon: Printer,
     items: [{ title: 'Sales Report', url: '/general/sales/report' }],
   },
-  'Download Backup': {
-    icon: CloudDownload,
-    items: [
-      { title: 'Database Backup', url: '/general/backup/database' },
-      { title: 'Product Images Backup', url: '/general/backup/product-images' },
-      { title: 'User Images Backup', url: '/general/backup/user-images' },
-      { title: 'Banner Images Backup', url: '/general/backup/banner-images' },
-      { title: 'Category Icon Backup', url: '/general/backup/category-icons' },
-      { title: 'Subcategory Backup', url: '/general/backup/subcategory' },
-      { title: 'Flag Icon Backup', url: '/general/backup/flag-icons' },
-      { title: 'Ticket Files Backup', url: '/general/backup/ticket-files' },
-      { title: 'Blog Files Backup', url: '/general/backup/blog-files' },
-      { title: 'Other Images Backup', url: '/general/backup/other-images' },
-    ],
-  },
+  // 'Download Backup': {
+  //   icon: CloudDownload,
+  //   items: [
+  //     { title: 'Database Backup', url: '/general/backup/database' },
+  //     { title: 'Product Images Backup', url: '/general/backup/product-images' },
+  //     { title: 'User Images Backup', url: '/general/backup/user-images' },
+  //     { title: 'Banner Images Backup', url: '/general/backup/banner-images' },
+  //     { title: 'Category Icon Backup', url: '/general/backup/category-icons' },
+  //     { title: 'Subcategory Backup', url: '/general/backup/subcategory' },
+  //     { title: 'Flag Icon Backup', url: '/general/backup/flag-icons' },
+  //     { title: 'Ticket Files Backup', url: '/general/backup/ticket-files' },
+  //     { title: 'Blog Files Backup', url: '/general/backup/blog-files' },
+  //     { title: 'Other Images Backup', url: '/general/backup/other-images' },
+  //   ],
+  // },
 };
 
