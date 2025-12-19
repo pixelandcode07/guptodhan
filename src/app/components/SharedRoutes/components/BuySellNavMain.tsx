@@ -1,6 +1,6 @@
 "use client";
 
-import { User, LogOut, Settings } from "lucide-react";
+import { User, LogOut, Settings, Plus } from "lucide-react";
 import {
     Dialog,
     DialogTrigger,
@@ -115,16 +115,21 @@ export default function BuySellNavMain() {
                             </DropdownMenu>
                         ) : (
                             <DialogTrigger asChild>
-                                <button className="hidden md:flex items-center gap-2 text-[#00005E] font-bold hover:text-[#00008B] transition">
-                                    <User size={28} strokeWidth={2.2} />
-                                    <span className="text-sm">Login / Register</span>
+                                <button
+                                    // onClick={() => {
+                                    //     localStorage.setItem("redirectAfterLogin", window.location.pathname + window.location.search);
+                                    // }}
+                                    className="flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer"
+                                >
+                                    <User size={20} />
+                                    <span className="text-[#00005E] text-[12px]">Login / Register</span>
                                 </button>
                             </DialogTrigger>
                         )}
 
                         {/* Post Ad Button */}
                         <Button onClick={handlePostAdClick} variant="BlueBtn" size="lg" className="font-bold px-6">
-                            + Post a Free Ad
+                            <Plus size={20} /> Post a Free Ad
                         </Button>
                     </div>
 
