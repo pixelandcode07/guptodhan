@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Star, Heart, Share2, BadgeCheck } from 'lucide-react';
@@ -21,9 +21,12 @@ interface ProductInfoProps {
 export default function ProductInfo({ product, reviews, averageRating, relatedData }: ProductInfoProps) {
   const router = useRouter();
   const { addToCart, isLoading: cartLoading, isAddingToCart } = useCart();
-  const { addToWishlist } = useWishlist();
+  const { addToWishlist, removeFromWishlist, isInWishlist, getWishlistItemId, isLoading: wishlistLoading } = useWishlist();
   const [quantity] = useState(1);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
+  const [isInWishlistState, setIsInWishlistState] = useState(false);
+  const [wishlistItemId, setWishlistItemId] = useState<string | null>(null);
+  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
 
   const discountPercent = product.discountPrice && product.productPrice 
     ? calculateDiscountPercent(product.productPrice, product.discountPrice)
@@ -66,6 +69,44 @@ export default function ProductInfo({ product, reviews, averageRating, relatedDa
 
   const handleAddToCart = async () => {
     await addToCart(product._id, quantity);
+  };
+
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      const inWishlist = await isInWishlist(product._id);
+      setIsInWishlistState(inWishlist);
+      if (inWishlist) {
+        const itemId = await getWishlistItemId(product._id);
+        setWishlistItemId(itemId);
+      } else {
+        setWishlistItemId(null);
+      }
+    };
+    checkWishlistStatus();
+  }, [product._id, isInWishlist, getWishlistItemId]);
+
+  const handleToggleWishlist = async () => {
+    if (isTogglingWishlist || wishlistLoading) return;
+
+    setIsTogglingWishlist(true);
+    try {
+      if (isInWishlistState && wishlistItemId) {
+        await removeFromWishlist(wishlistItemId);
+        setIsInWishlistState(false);
+        setWishlistItemId(null);
+      } else {
+        const success = await addToWishlist(product._id);
+        if (success) {
+          setIsInWishlistState(true);
+          const itemId = await getWishlistItemId(product._id);
+          setWishlistItemId(itemId);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+    } finally {
+      setIsTogglingWishlist(false);
+    }
   };
 
   return (
@@ -136,13 +177,31 @@ export default function ProductInfo({ product, reviews, averageRating, relatedDa
 
       <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0 mt-4 sm:mt-6 pt-4 border-t border-gray-100">
         <button 
-          onClick={() => addToWishlist(product._id)} 
-          className="flex items-center gap-2 text-gray-500 hover:text-red-500 transition-colors text-xs sm:text-sm group w-full sm:w-auto justify-center sm:justify-start"
+          onClick={handleToggleWishlist}
+          disabled={isTogglingWishlist || wishlistLoading}
+          className={`flex items-center gap-2 transition-colors text-xs sm:text-sm group w-full sm:w-auto justify-center sm:justify-start ${
+            isInWishlistState 
+              ? 'text-red-500' 
+              : 'text-gray-500 hover:text-red-500'
+          } ${isTogglingWishlist || wishlistLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          <div className="p-1.5 sm:p-2 bg-gray-100 rounded-full group-hover:bg-red-50 transition-colors">
-            <Heart size={16} className="sm:w-[18px] sm:h-[18px] group-hover:fill-red-500" />
+          <div className={`p-1.5 sm:p-2 rounded-full transition-colors ${
+            isInWishlistState 
+              ? 'bg-red-50' 
+              : 'bg-gray-100 group-hover:bg-red-50'
+          }`}>
+            <Heart 
+              size={16} 
+              className={`sm:w-[18px] sm:h-[18px] ${
+                isInWishlistState 
+                  ? 'fill-red-500 text-red-500' 
+                  : 'group-hover:fill-red-500'
+              }`} 
+            />
           </div>
-          <span className="hidden sm:inline">Add to Wishlist</span>
+          <span className="hidden sm:inline">
+            {isInWishlistState ? 'Remove from Wishlist' : 'Add to Wishlist'}
+          </span>
           <span className="sm:hidden">Wishlist</span>
         </button>
         <button 
