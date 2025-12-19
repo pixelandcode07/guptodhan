@@ -18,18 +18,18 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
   const colorIds = new Set<string>();
   const sizeIds = new Set<string>();
 
-  products.forEach((p: any) => {
-    p.productOptions?.forEach((opt: any) => {
-      opt.color?.forEach((id: any) => colorIds.add(String(id)));
-      opt.size?.forEach((id: any) => sizeIds.add(String(id)));
-    });
-  });
+  for (const p of products) {
+    for (const opt of p.productOptions || []) {
+      if (Array.isArray(opt.color)) opt.color.forEach((id: any) => colorIds.add(String(id)));
+      if (Array.isArray(opt.size)) opt.size.forEach((id: any) => sizeIds.add(String(id)));
+    }
+  }
 
-  if (colorIds.size === 0 && sizeIds.size === 0) return products;
+  if (!colorIds.size && !sizeIds.size) return products;
 
   const [colors, sizes] = await Promise.all([
-    colorIds.size > 0 ? ProductColor.find({ _id: { $in: Array.from(colorIds) } }).lean() : [],
-    sizeIds.size > 0 ? ProductSize.find({ _id: { $in: Array.from(sizeIds) } }).lean() : [],
+    colorIds.size ? ProductColor.find({ _id: { $in: Array.from(colorIds) } }).lean() : [],
+    sizeIds.size ? ProductSize.find({ _id: { $in: Array.from(sizeIds) } }).lean() : [],
   ]);
 
   const colorMap = new Map(colors.map((c: any) => [String(c._id), c.colorName]));
@@ -39,8 +39,8 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
     ...p,
     productOptions: p.productOptions?.map((opt: any) => ({
       ...opt,
-      color: opt.color?.map((id: any) => colorMap.get(String(id)) || String(id)),
-      size: opt.size?.map((id: any) => sizeMap.get(String(id)) || String(id)),
+      color: Array.isArray(opt.color) ? opt.color.map((id: any) => colorMap.get(String(id)) || String(id)) : opt.color,
+      size: Array.isArray(opt.size) ? opt.size.map((id: any) => sizeMap.get(String(id)) || String(id)) : opt.size,
     })) || p.productOptions,
   }));
 };
