@@ -64,9 +64,9 @@ async function getSeoPage(id: string, token: string) {
 export default async function EditSeoPage({
     params,
 }: {
-    params: Promise<{ id: string }>; // ← params is Promise
+    params: Promise<{ id: string }>; 
 }) {
-    const { id } = await params; // ← Await the whole params object
+    const { id } = await params;
 
     const session = await getServerSession(authOptions);
 

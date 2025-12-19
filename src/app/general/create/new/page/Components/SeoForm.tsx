@@ -119,6 +119,7 @@ export default function SeoForm({ defaultData }: SeoFormProps) {
   const handleUpdate = async () => {
     if (!pageTitle.trim()) return toast.error('Page Title is required');
     if (!metaTitle.trim()) return toast.error('Meta Title is required');
+    console.log('Page Content being sent:', pageContent);
 
     setLoading(true);
     const formData = new FormData();
@@ -133,9 +134,10 @@ export default function SeoForm({ defaultData }: SeoFormProps) {
     if (image) formData.append('ogImage', image);
 
     try {
-      await axios.post('/api/v1/seo-settings', formData, {
+      const { data } = await axios.post('/api/v1/seo-settings', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      console.log('Created SEO page:', data);
       toast.success('Page created successfully! Ready for the next one.');
       setPageTitle('');
       setMetaTitle('');
