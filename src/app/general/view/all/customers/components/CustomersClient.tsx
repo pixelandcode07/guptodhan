@@ -39,7 +39,11 @@ export default function CustomersClient({ initialRows }: { initialRows: Customer
           customers={rows}
         />
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          <DataTable columns={columns} data={filtered} />
+          <DataTable 
+            columns={columns} 
+            data={filtered}
+            setData={setRows}
+          />
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -73,6 +73,9 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
   const [quantity, setQuantity] = useState(1);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
+  const [isInWishlistState, setIsInWishlistState] = useState(false);
+  const [wishlistItemId, setWishlistItemId] = useState<string | null>(null);
+  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
 
   // Helper functions to get names by ID using server data
   const getCategoryName = (categoryId: string) => {
@@ -126,10 +129,44 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
     }
   };
 
-  const { addToWishlist, isLoading: isWishlistLoading } = useWishlist();
+  const { addToWishlist, removeFromWishlist, isInWishlist, getWishlistItemId, isLoading: isWishlistLoading } = useWishlist();
+
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      const inWishlist = await isInWishlist(product._id);
+      setIsInWishlistState(inWishlist);
+      if (inWishlist) {
+        const itemId = await getWishlistItemId(product._id);
+        setWishlistItemId(itemId);
+      } else {
+        setWishlistItemId(null);
+      }
+    };
+    checkWishlistStatus();
+  }, [product._id, isInWishlist, getWishlistItemId]);
 
   const handleWishlist = async () => {
-    await addToWishlist(product._id);
+    if (isTogglingWishlist || isWishlistLoading) return;
+
+    setIsTogglingWishlist(true);
+    try {
+      if (isInWishlistState && wishlistItemId) {
+        await removeFromWishlist(wishlistItemId);
+        setIsInWishlistState(false);
+        setWishlistItemId(null);
+      } else {
+        const success = await addToWishlist(product._id);
+        if (success) {
+          setIsInWishlistState(true);
+          const itemId = await getWishlistItemId(product._id);
+          setWishlistItemId(itemId);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+    } finally {
+      setIsTogglingWishlist(false);
+    }
   };
 
   const handleShare = () => {
@@ -214,10 +251,11 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
                   variant="outline" 
                   size="sm" 
                   onClick={handleWishlist}
-                  disabled={isWishlistLoading}
+                  disabled={isTogglingWishlist || isWishlistLoading}
+                  className={isInWishlistState ? 'text-red-500 border-red-500 hover:bg-red-50' : ''}
                 >
-                  <Heart className="w-4 h-4 mr-1" />
-                  Wishlist
+                  <Heart className={`w-4 h-4 mr-1 ${isInWishlistState ? 'fill-red-500' : ''}`} />
+                  {isInWishlistState ? 'Remove from Wishlist' : 'Add to Wishlist'}
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleShare}>
                   <Share2 className="w-4 h-4 mr-1" />
