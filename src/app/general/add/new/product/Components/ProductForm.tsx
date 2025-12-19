@@ -329,7 +329,6 @@ export default function ProductForm({ initialData, productId: propProductId }: a
             return toast.error("Please fill all required fields (*).");
         }
         
-        // Validate vendorName can be extracted from store
         const selectedStore = initialData?.stores?.find((s: any) => s._id === store || s.id === store);
         if (!selectedStore?.storeName) {
             return toast.error("Unable to determine vendor name. Please select a valid store.");
@@ -357,7 +356,6 @@ export default function ProductForm({ initialData, productId: propProductId }: a
             
             for (let i = 0; i < variants.length; i++) {
                 const variant = variants[i];
-                // Allow stock to be 0 (out of stock is valid)
                 if (variant.stock === undefined || variant.stock < 0) {
                     return toast.error(`Variant ${i + 1}: Stock must be 0 or greater.`);
                 }
@@ -403,7 +401,6 @@ export default function ProductForm({ initialData, productId: propProductId }: a
             const finalGalleryUrls =
                 combinedGalleryUrls.length > 0 ? combinedGalleryUrls : [thumbnailUrl];
 
-            // Get vendorName from selected store
             const selectedStore = initialData?.stores?.find((s: any) => s._id === store || s.id === store);
             const vendorName = selectedStore?.storeName || '';
 
@@ -411,7 +408,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 productId: productCode || `PROD-${Date.now()}`,
                 productTitle: title,
                 vendorStoreId: store,
-                vendorName: vendorName, // Add vendorName from store
+                vendorName: vendorName,
                 shortDescription: shortDescription,
                 fullDescription: fullDescription,
                 specification: specification,
@@ -506,7 +503,6 @@ export default function ProductForm({ initialData, productId: propProductId }: a
     
     return (
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-            {/* Sticky Action Bar */}
             <div className="flex justify-end gap-2 sticky top-4 z-10 bg-gray-50/80 backdrop-blur-sm py-2 px-4 rounded-lg shadow-sm -mt-4">
                 <Button type="button" variant="destructive">
                     <X className="mr-2 h-4 w-4" /> Discard
@@ -517,11 +513,8 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 </Button>
             </div>
 
-            {/* Main Content Grid */}
             <div className="space-y-4 sm:space-y-6">
-                {/* Row 1: Basic Information and Thumbnail Image */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                    {/* Basic Information Card */}
                     <Card className="shadow-sm border-gray-200 flex flex-col h-full">
                         <CardHeader className="pb-4 border-b border-gray-100">
                             <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">
@@ -577,7 +570,6 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                         </CardContent>
                     </Card>
 
-                    {/* Thumbnail Upload Card */}
                     <Card className="shadow-sm border-gray-200 flex flex-col h-full">
                         <CardHeader className="pb-4 border-b border-gray-100">
                             <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
@@ -638,9 +630,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                     </Card>
                 </div>
 
-                {/* Row 2: Detailed Information and Pricing & Inventory */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                    {/* Detailed Information Card */}
                     <Card className="shadow-sm border-gray-200 flex flex-col h-full">
                         <CardHeader className="pb-4 border-b border-gray-100">
                             <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
@@ -673,7 +663,6 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                         </CardContent>
                     </Card>
 
-                    {/* Pricing & Inventory Card */}
                     <Card className="shadow-sm border-gray-200 flex flex-col h-full">
                         <CardHeader className="pb-4 border-b border-gray-100">
                             <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
@@ -703,21 +692,20 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                     </Card>
                 </div>
 
-                {/* Row 3: Product Image Gallery and Product Details */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                    {/* Product Image Gallery */}
-                    <ProductImageGallery
-                        galleryImages={galleryImages}
-                        setGalleryImages={setGalleryImages}
-                        existingGalleryUrls={existingGalleryUrls}
-                        onRemoveExisting={(url) => {
-                            setExistingGalleryUrls(prev => prev.filter(item => item !== url));
-                            setRemovedGalleryUrls(prev => prev.includes(url) ? prev : [...prev, url]);
-                        }}
-                    />
+                <div className={`grid gap-4 sm:gap-6 ${hasVariant ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
+                    {!hasVariant && (
+                        <ProductImageGallery
+                            galleryImages={galleryImages}
+                            setGalleryImages={setGalleryImages}
+                            existingGalleryUrls={existingGalleryUrls}
+                            onRemoveExisting={(url) => {
+                                setExistingGalleryUrls(prev => prev.filter(item => item !== url));
+                                setRemovedGalleryUrls(prev => prev.includes(url) ? prev : [...prev, url]);
+                            }}
+                        />
+                    )}
 
-                    {/* Product Details Card */}
-                    <Card className={`shadow-sm border-gray-200 flex flex-col h-full ${!hasVariant ? '' : 'lg:col-span-2'}`}>
+                    <Card className="shadow-sm border-gray-200 flex flex-col h-full">
                         <CardHeader className="pb-4 border-b border-gray-100">
                             <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
                                 Product Details
@@ -948,7 +936,6 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 </div>
             </div>
 
-            {/* Product Variants Section - Keep original simple design */}
             <Card>
                 <CardContent className="p-6">
                     <div className="flex items-center justify-center space-x-3 mb-4">
@@ -965,7 +952,6 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 </CardContent>
             </Card>
 
-            {/* SEO Information Card */}
             <Card className="shadow-sm border-gray-200">
                 <CardHeader className="pb-4 border-b border-gray-100">
                     <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
@@ -1015,7 +1001,6 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 </CardContent>
             </Card>
 
-            {/* Bottom Action Buttons */}
             <div className="flex justify-end gap-2">
                 <Button type="button" variant="destructive">
                     <X className="mr-2 h-4 w-4" /> Discard
