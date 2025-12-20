@@ -152,7 +152,7 @@ export default function PricingInventory({
               variant="default"
               size="icon"
               onClick={() => handleNumberChange('stock', 1)}
-                className="absolute right-0 h-10 w-8 bg-blue-600 hover:bg-blue-700 text-white rounded-r-md rounded-l-none border-l border-blue-700"
+                className="absolute right-0 h-10 w-8 bg-blue-610 hover:bg-blue-700 text-white rounded-r-md rounded-l-none border-l border-blue-700"
             >
               <Plus className="h-4 w-4" />
             </Button>
