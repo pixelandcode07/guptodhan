@@ -37,6 +37,7 @@ const vendorProductSchema = new Schema<IVendorProduct>(
     productPrice: { type: Number },
     discountPrice: { type: Number },
     stock: { type: Number },
+    deliveryCharge: { type: Number },
     sku: { type: String },
     rewardPoints: { type: Number },
     category: { type: Schema.Types.ObjectId, ref: 'CategoryModel', required: true }, 
