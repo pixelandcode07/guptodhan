@@ -28,6 +28,7 @@ interface DashboardResponse {
 
 export default async function VendorDashboard() {
   const session = await getServerSession(authOptions);
+  console.log("Vendor Dashboard Session:", session);
 
   if (!session?.user) {
     return <div>Please log in to view dashboard.</div>;
