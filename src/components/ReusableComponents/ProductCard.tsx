@@ -148,11 +148,11 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                     {/* Price */}
                     <div className="mt-auto space-y-0.5">
                         <p className="text-base sm:text-lg font-bold text-blue-600">
-                            ৳{product.discountPrice.toLocaleString()}
+                            ৳{product?.discountPrice?.toLocaleString()}
                         </p>
-                        {product.productPrice > product.discountPrice && (
+                        {product?.productPrice > product?.discountPrice && (
                             <p className="text-[11px] sm:text-xs text-gray-400 line-through">
-                                ৳{product.productPrice.toLocaleString()}
+                                ৳{product?.productPrice?.toLocaleString()}
                             </p>
                         )}
                     </div>
