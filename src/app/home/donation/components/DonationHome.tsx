@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import DonationClaimModal from './DonationClaimModal'
 import { Badge } from '@/components/ui/badge'
-import { useSession } from 'next-auth/react' // 🔥 Session Import
+import { useSession } from 'next-auth/react' 
+import Link from 'next/link' // 🔥 Link Import kora hoyeche
 
-// Interface Update: creator info is needed
+// Interface Update
 interface DonationCampaign {
     _id: string;
     title: string;
@@ -18,7 +19,7 @@ interface DonationCampaign {
     category?: { _id: string; name: string; };
     description?: string;
     createdAt?: string;
-    creator?: { _id: string; name: string }; // 🔥 Creator Info Added
+    creator?: { _id: string; name: string };
 }
 
 interface DonationCategory {
@@ -32,7 +33,7 @@ interface DonationHomeProps {
 }
 
 export default function DonationHome({ initialCampaigns, initialCategories }: DonationHomeProps) {
-    const { data: session } = useSession() // 🔥 Get current user
+    const { data: session } = useSession()
     const [campaigns, setCampaigns] = useState<DonationCampaign[]>(initialCampaigns)
     const [category, setCategory] = useState<string>('all')
     const [displayCount, setDisplayCount] = useState<number>(8)
@@ -63,7 +64,6 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
             <DonationClaimModal open={claimOpen} onOpenChange={setClaimOpen} item={selectedItem} />
 
             <section id='browse-items' className='mt-6 px-4'>
-                {/* Header & Filter Section (Same as before) */}
                 <div className='flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-white p-4 rounded-lg shadow-sm border'>
                     <h2 className='text-2xl font-bold text-gray-800'>Browse Donations</h2>
                     <div className='flex items-center gap-3 w-full sm:w-auto'>
@@ -92,13 +92,13 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                     <>
                         <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6'>
                             {filteredItems.slice(0, displayCount).map(camp => {
-                                // 🔥 Check Ownership
-                                // session.user.id (from NextAuth) vs camp.creator._id (from DB)
                                 const isOwner = session?.user && (session.user as any).id === camp.creator?._id;
 
                                 return (
                                     <div key={camp._id} className='bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group flex flex-col h-full'>
-                                        <div className="relative w-full aspect-[4/3] bg-gray-200 overflow-hidden">
+                                        
+                                        {/* 🔥 Image area wrapped in Link */}
+                                        <Link href={`/home/donation/${camp._id}`} className="relative w-full aspect-[4/3] bg-gray-200 overflow-hidden block">
                                             <Image
                                                 src={camp.images?.[0] || '/img/placeholder.png'}
                                                 alt={camp.title}
@@ -106,29 +106,31 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                                 className="object-cover group-hover:scale-105 transition-transform duration-500"
                                             />
                                             {camp.category?.name && (
-                                                <div className="absolute top-3 right-3">
+                                                <div className="absolute top-3 right-3 z-10">
                                                     <Badge variant="secondary" className="bg-white/90 text-black shadow-sm backdrop-blur-sm">
                                                         {camp.category.name}
                                                     </Badge>
                                                 </div>
                                             )}
-                                            {/* 🔥 যদি নিজের হয়, ব্যাজ দেখাবে */}
                                             {isOwner && (
-                                                <div className="absolute top-3 left-3">
+                                                <div className="absolute top-3 left-3 z-10">
                                                     <Badge className="bg-blue-600 text-white shadow-sm">My Post</Badge>
                                                 </div>
                                             )}
-                                        </div>
+                                        </Link>
                                         
                                         <div className='p-4 flex flex-col flex-grow'>
-                                            <h3 className='font-bold text-gray-900 text-lg mb-2 line-clamp-1' title={camp.title}>
-                                                {camp.title}
-                                            </h3>
+                                            {/* 🔥 Title wrapped in Link */}
+                                            <Link href={`/home/donation/${camp._id}`}>
+                                                <h3 className='font-bold text-gray-900 text-lg mb-2 line-clamp-1 hover:text-blue-600 transition-colors' title={camp.title}>
+                                                    {camp.title}
+                                                </h3>
+                                            </Link>
+                                            
                                             <p className='text-sm text-gray-500 line-clamp-2 mb-4 flex-grow'>
                                                 {camp.description || 'No description available.'}
                                             </p>
                                             
-                                            {/* 🔥 Button Logic Updated */}
                                             {isOwner ? (
                                                 <Button 
                                                     className='w-full bg-gray-100 text-gray-400 cursor-not-allowed hover:bg-gray-100 mt-auto'
