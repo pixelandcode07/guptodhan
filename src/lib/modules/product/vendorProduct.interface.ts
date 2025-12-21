@@ -34,7 +34,6 @@ export interface IVendorProduct {
   productPrice?: number;
   discountPrice?: number;
   stock?: number;
-  deliveryCharge?: number;
   sku?: string;
   rewardPoints?: number;
   category: Types.ObjectId | { _id: Types.ObjectId; categoryName: string };
