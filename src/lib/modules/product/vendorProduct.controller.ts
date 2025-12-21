@@ -641,6 +641,27 @@ const getVendorStoreAndProducts = async (
 };
 
 
+// for vendor dashboard to see their products
+const getVendorStoreAndProductsVendorDashboard = async (
+  req: NextRequest,
+  { params }: { params: { vendorId: string } }
+) => {
+  await dbConnect();
+  const { vendorId } = await params;
+
+  console.log("Controller Vendor ID:", await params);
+
+  const result = await VendorProductServices.getVendorStoreAndProductsFromDBVendorDashboard(
+    vendorId,
+  );
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Vendor store & products retrieved successfully!",
+    data: result,
+  });
+};
 
 export const VendorProductController = {
   createVendorProduct,
@@ -663,5 +684,6 @@ export const VendorProductController = {
   getBestSellingProducts,
   getForYouProducts,
 
-  getVendorStoreAndProducts
+  getVendorStoreAndProducts,
+  getVendorStoreAndProductsVendorDashboard
 };
