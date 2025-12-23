@@ -21,6 +21,7 @@ import ProductImageGallery from './ProductImageGallery';
 import PricingInventory from './PricingInventory';
 import TagInput from './TagInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 
 const getIdFromRef = (value: unknown): string => {
     if (!value) return '';
@@ -512,174 +513,164 @@ export default function ProductForm({ initialData, productId: propProductId }: a
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-            {/* <div className="flex justify-end gap-2 sticky top-4 z-10 bg-gray-50/80 backdrop-blur-sm py-2 px-4 rounded-lg shadow-sm -mt-4">
-                <Button type="button" variant="destructive">
-                    <X className="mr-2 h-4 w-4" /> Discard
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
-                    <Save className="mr-2 h-4 w-4" /> {isEditMode ? "Update Product" : "Save Product"}
-                </Button>
-            </div> */}
+        <form onSubmit={handleSubmit} className="max-w-7xl mx-auto">
+            {/* Fixed Action Bar – Always Visible at Bottom on Mobile */}
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg lg:hidden">
+                <div className="flex justify-end gap-3 p-4">
+                    <Button type="button" variant="outline" size="sm" className="flex-1 sm:flex-initial">
+                        <X className="mr-2 h-4 w-4" /> Discard
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting} size="sm" className="flex-1 sm:flex-initial">
+                        {isSubmitting && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
+                        <Save className="mr-2 h-4 w-4" />
+                        {isEditMode ? "Update Product" : "Save Product"}
+                    </Button>
+                </div>
+            </div>
 
-            <div className="space-y-4 sm:space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-2">
-                    <Card className="shadow-sm border-gray-200 flex flex-col h-full gap-0">
-                        <CardHeader className=" border-b border-gray-100">
-                            <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">
+            <div className="space-y-8 pb-24 lg:pb-8">
+                {/* Section 1: Basic Info + Thumbnail */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Basic Information */}
+                    <Card className="shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+                        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
+                            <CardTitle className="text-xl font-bold text-gray-900">
                                 Basic Information
                             </CardTitle>
-                            <p className="text-sm text-gray-500 mt-1">Essential product details</p>
+                            <p className="text-sm text-gray-600 mt-1">Core product details</p>
                         </CardHeader>
-                        <CardContent className="pt-2 space-y-5 flex-1">
+                        <CardContent className="pt-6 space-y-6">
                             <div className="space-y-2">
-                                <Label htmlFor="title" className="text-sm font-medium text-gray-700">
+                                <Label htmlFor="title" className="font-semibold">
                                     Product Title <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
                                     id="title"
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
-                                    placeholder="Enter product name"
+                                    placeholder="e.g. Hybrid Car 2025 Edition"
                                     required
-                                    className="h-11"
+                                    className="h-12 text-base"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="shortDescription" className="text-sm font-medium text-gray-700">
+                                <Label htmlFor="shortDescription" className="font-semibold">
                                     Short Description
-                                    <span className="text-xs text-gray-500 ml-2">(Max 255 characters)</span>
+                                    <span className="text-xs text-gray-500 ml-2">(Max 255 chars)</span>
                                 </Label>
                                 <Textarea
                                     id="shortDescription"
                                     value={shortDescription}
                                     onChange={(e) => setShortDescription(e.target.value)}
                                     maxLength={255}
-                                    placeholder="Brief description of your product"
-                                    className="min-h-[100px] resize-none"
+                                    placeholder="A powerful hybrid vehicle with advanced features..."
+                                    className="min-h-32 resize-none"
                                 />
-                                <div className="text-xs text-gray-500 text-right">
-                                    {shortDescription.length}/255
-                                </div>
+                                <p className="text-xs text-right text-gray-500">{shortDescription.length}/255</p>
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="productTags" className="text-sm font-medium text-gray-700">
+                                <Label htmlFor="productTags" className="font-semibold">
                                     Product Tags
-                                    <span className="text-xs text-gray-500 ml-2">(Press comma or enter to add)</span>
+                                    <span className="text-xs text-gray-500 ml-2">(comma or enter)</span>
                                 </Label>
                                 <TagInput
-                                    id="productTags"
                                     value={productTags}
                                     onChange={setProductTags}
-                                    placeholder="Type a tag and press comma or enter"
+                                    placeholder="vehicle, hybrid, luxury..."
                                 />
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="shadow-sm border-gray-200 flex flex-col h-full gap-0">
-                        <CardHeader className="pb-4 border-b border-gray-100">
-                            <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
+                    {/* Thumbnail Upload */}
+                    <Card className="shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+                        <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-t-lg">
+                            <CardTitle className="text-xl font-bold text-gray-900">
                                 Thumbnail Image <span className="text-red-500">*</span>
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-6 flex-1">
-                            <label
-                                htmlFor="thumbnail-upload"
-                                className="cursor-pointer group block w-full h-full"
-                            >
-                                <div className="flex items-center justify-center w-full h-full min-h-[300px] border-2 border-dashed border-gray-300 rounded-lg p-4 transition-colors hover:border-blue-400 hover:bg-blue-50/50">
+                        <CardContent className="pt-6">
+                            <label htmlFor="thumbnail-upload" className="block cursor-pointer">
+                                <div className="border-3 border-dashed border-gray-300 rounded-xl p-8 hover:border-blue-500 hover:bg-blue-50/30 transition-all min-h-96 flex items-center justify-center">
                                     {thumbnailPreview ? (
-                                        <div className="relative w-full h-full min-h-[300px] rounded-md overflow-hidden">
+                                        <div className="relative w-full h-96 group">
                                             <Image
                                                 src={thumbnailPreview}
-                                                alt="Thumbnail Preview"
+                                                alt="Thumbnail"
                                                 fill
-                                                style={{ objectFit: 'contain' }}
-                                                className="rounded-md"
+                                                className="object-contain rounded-lg"
                                             />
                                             <Button
                                                 type="button"
                                                 variant="destructive"
                                                 size="icon"
-                                                className="absolute top-2 right-2 h-8 w-8 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity shadow-xl"
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
-                                                    if (!thumbnail && thumbnailPreview) {
-                                                        setRemovedThumbnailUrl((prev) => prev ?? thumbnailPreview);
-                                                    }
-                                                    setInitialThumbnailUrl(null);
                                                     setThumbnail(null);
                                                     setThumbnailPreview(null);
+                                                    setInitialThumbnailUrl(null);
                                                 }}
                                             >
-                                                <X className="h-4 w-4" />
+                                                <X className="h-5 w-5" />
                                             </Button>
                                         </div>
                                     ) : (
-                                        <div className="text-center text-gray-500">
-                                            <UploadCloud className="mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-2 text-gray-400" />
-                                            <p className="text-sm font-medium">Click to upload</p>
-                                            <p className="text-xs text-gray-400 mt-1">or drag and drop</p>
+                                        <div className="text-center">
+                                            <UploadCloud className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+                                            <p className="font-semibold text-gray-700">Click to upload thumbnail</p>
+                                            <p className="text-sm text-gray-500 mt-2">Supports JPG, PNG, WebP</p>
                                         </div>
                                     )}
                                 </div>
                                 <Input
                                     id="thumbnail-upload"
                                     type="file"
-                                    className="hidden"
-                                    onChange={handleThumbnailChange}
                                     accept="image/*"
+                                    onChange={handleThumbnailChange}
+                                    className="hidden"
                                 />
                             </label>
                         </CardContent>
                     </Card>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                    <Card className="shadow-sm border-gray-200 flex flex-col h-full gap-0">
-                        <CardHeader className="pb-0 border-b border-gray-100">
-                            <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
-                                Detailed Information
-                            </CardTitle>
+                {/* Section 2: Detailed Content + Pricing */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Rich Text Editors */}
+                    <Card className="shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+                        <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-t-lg">
+                            <CardTitle className="text-xl font-bold">Detailed Information</CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-1 flex-1">
-                            <Tabs defaultValue="description" className="w-full h-full flex flex-col">
-                                <TabsList className="grid w-full grid-cols-3 bg-gray-50 h-auto p-1">
-                                    <TabsTrigger value="description" className="text-xs sm:text-sm py-2.5 data-[state=active]:bg-white">
-                                        Description
-                                    </TabsTrigger>
-                                    <TabsTrigger value="specification" className="text-xs sm:text-sm py-2.5 data-[state=active]:bg-white">
-                                        Specification
-                                    </TabsTrigger>
-                                    <TabsTrigger value="warranty" className="text-xs sm:text-sm py-2.5 data-[state=active]:bg-white">
-                                        Warranty
-                                    </TabsTrigger>
+                        <CardContent className="pt-6">
+                            <Tabs defaultValue="description" className="w-full">
+                                <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-100">
+                                    <TabsTrigger value="description">Description</TabsTrigger>
+                                    <TabsTrigger value="specification">Specification</TabsTrigger>
+                                    <TabsTrigger value="warranty">Warranty Policy</TabsTrigger>
                                 </TabsList>
-                                <TabsContent value="description" className="mt-4 border border-gray-200 rounded-lg p-3 sm:p-4 flex-1">
+                                <TabsContent value="description">
                                     <RichTextEditor value={fullDescription} onChange={setFullDescription} />
                                 </TabsContent>
-                                <TabsContent value="specification" className="mt-4 border border-gray-200 rounded-lg p-3 sm:p-4 flex-1">
+                                <TabsContent value="specification">
                                     <RichTextEditor value={specification} onChange={setSpecification} />
                                 </TabsContent>
-                                <TabsContent value="warranty" className="mt-4 border border-gray-200 rounded-lg p-3 sm:p-4 flex-1">
+                                <TabsContent value="warranty">
                                     <RichTextEditor value={warrantyPolicy} onChange={setWarrantyPolicy} />
                                 </TabsContent>
                             </Tabs>
                         </CardContent>
                     </Card>
 
-                    <Card className="shadow-sm border-gray-200 flex flex-col h-full gap-0">
-                        <CardHeader className="pb-1 border-b border-gray-100">
-                            <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
-                                Pricing & Inventory
-                            </CardTitle>
+                    {/* Pricing & Inventory */}
+                    <Card className="shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+                        <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-t-lg">
+                            <CardTitle className="text-xl font-bold">Pricing & Inventory</CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-1 space-y-4 flex-1">
+                        <CardContent className="pt-6 space-y-6">
                             <PricingInventory
                                 formData={pricingFormData}
                                 handleInputChange={handlePricingInputChange}
@@ -687,22 +678,22 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                             />
 
                             <div className="space-y-2">
-                                <Label htmlFor="sku" className="text-sm font-medium text-gray-700">
-                                    Product Code (SKU)
-                                </Label>
+                                <Label htmlFor="sku" className="font-semibold">Product SKU</Label>
                                 <Input
                                     id="sku"
                                     value={productCode}
                                     onChange={(e) => setProductCode(e.target.value)}
-                                    placeholder="Enter SKU"
-                                    className="h-11"
+                                    placeholder="e.g. HYBRID-2025-X"
+                                    className="h-12"
                                 />
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                <div className={`grid gap-4 sm:gap-6 ${hasVariant ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
+                {/* Section 3: Product Details + Gallery */}
+                <div className={`grid gap-8 ${hasVariant ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
+                    {/* Product Image Gallery (Hidden if has variant) */}
                     {!hasVariant && (
                         <ProductImageGallery
                             galleryImages={galleryImages}
@@ -710,18 +701,23 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                             existingGalleryUrls={existingGalleryUrls}
                             onRemoveExisting={(url) => {
                                 setExistingGalleryUrls(prev => prev.filter(item => item !== url));
-                                setRemovedGalleryUrls(prev => prev.includes(url) ? prev : [...prev, url]);
+                                setRemovedGalleryUrls(prev => [...prev, url]);
                             }}
                         />
                     )}
 
-                    <Card className="shadow-sm border-gray-200 flex flex-col h-full gap-0">
-                        <CardHeader className="pb-1 border-b border-gray-100">
-                            <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
-                                Product Details
-                            </CardTitle>
+                    {/* Product Details */}
+                    <Card className="shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+                        <CardHeader className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-t-lg">
+                            <CardTitle className="text-xl font-bold">Product Details</CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-1 flex-1">
+                        {/* <CardContent className="pt-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* All your Select fields remain the same */}
+                        {/* Store, Category, Subcategory, etc. */}
+                        {/* ... (kept unchanged for brevity) */}
+                        {/* </div> */}
+                        <CardContent className="pt-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="store" className="text-sm font-medium text-gray-700">
@@ -947,83 +943,86 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                                 </div>
                             )}
                         </CardContent>
+
+                        <Separator className="my-8" />
                     </Card>
                 </div>
-            </div>
 
-            <Card>
-                <CardContent className="p-6">
-                    <div className="flex items-center justify-center space-x-3 mb-4">
-                        <Label htmlFor="hasVariantSwitch">Product Has Variant?</Label>
-                        <Switch id="hasVariantSwitch" checked={hasVariant} onCheckedChange={setHasVariant} />
-                    </div>
-                    {hasVariant && (
-                        <ProductVariantForm
-                            variants={variants}
-                            setVariants={setVariants}
-                            variantData={initialData.variantOptions}
-                        />
-                    )}
-                </CardContent>
-            </Card>
-
-            <Card className="shadow-sm border-gray-200">
-                <CardHeader className="pb-4 border-b border-gray-100">
-                    <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
-                        SEO Information
-                    </CardTitle>
-                    <p className="text-sm text-gray-500 mt-1">Optional: Improve search engine visibility</p>
-                </CardHeader>
-                <CardContent className="pt-6 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="metaTitle" className="text-sm font-medium text-gray-700">
-                                Meta Title
+                {/* Variants Section */}
+                <Card className="shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+                    <CardContent className="p-8">
+                        <div className="flex items-center justify-center gap-4 mb-8">
+                            <Label htmlFor="hasVariantSwitch" className="text-lg font-semibold">
+                                Does this product have variants? (Color, Size, etc.)
                             </Label>
-                            <Input
-                                id="metaTitle"
-                                value={metaTitle}
-                                onChange={(e) => setMetaTitle(e.target.value)}
-                                placeholder="SEO title"
-                                className="h-11"
+                            <Switch
+                                id="hasVariantSwitch"
+                                checked={hasVariant}
+                                onCheckedChange={setHasVariant}
+                                className="scale-125"
                             />
                         </div>
+                        {hasVariant && (
+                            <div className="mt-6">
+                                <ProductVariantForm
+                                    variants={variants}
+                                    setVariants={setVariants}
+                                    variantData={initialData.variantOptions}
+                                />
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* SEO Section */}
+                <Card className="shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+                    <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-t-lg">
+                        <CardTitle className="text-xl font-bold">SEO & Metadata</CardTitle>
+                        <p className="text-sm text-gray-600">Optimize for search engines (optional but recommended)</p>
+                    </CardHeader>
+                    <CardContent className="pt-6 space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label className="font-semibold">Meta Title</Label>
+                                <Input
+                                    value={metaTitle}
+                                    onChange={(e) => setMetaTitle(e.target.value)}
+                                    placeholder="Hybrid Car 2025 - Best Price in Bangladesh"
+                                    className="h-12"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="font-semibold">Meta Keywords</Label>
+                                <TagInput
+                                    value={metaKeywordTags}
+                                    onChange={setMetaKeywordTags}
+                                    placeholder="hybrid car, electric vehicle, bangladesh..."
+                                />
+                            </div>
+                        </div>
                         <div className="space-y-2">
-                            <Label htmlFor="metaKeywords" className="text-sm font-medium text-gray-700">
-                                Meta Keywords
-                                <span className="text-xs text-gray-500 ml-2">(Press comma or enter to add)</span>
-                            </Label>
-                            <TagInput
-                                id="metaKeywords"
-                                value={metaKeywordTags}
-                                onChange={setMetaKeywordTags}
-                                placeholder="Type a keyword and press comma or enter"
+                            <Label className="font-semibold">Meta Description</Label>
+                            <Textarea
+                                value={metaDescription}
+                                onChange={(e) => setMetaDescription(e.target.value)}
+                                placeholder="Buy the latest hybrid car at the best price..."
+                                className="min-h-32"
                             />
                         </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="metaDescription" className="text-sm font-medium text-gray-700">
-                            Meta Description
-                        </Label>
-                        <Textarea
-                            id="metaDescription"
-                            value={metaDescription}
-                            onChange={(e) => setMetaDescription(e.target.value)}
-                            placeholder="SEO description"
-                            className="min-h-[100px] resize-none"
-                        />
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
 
-            <div className="flex justify-end gap-2">
-                <Button type="button" variant="destructive">
-                    <X className="mr-2 h-4 w-4" /> Discard
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
-                    <Save className="mr-2 h-4 w-4" /> {isEditMode ? "Update Product" : "Save Product"}
-                </Button>
+                {/* Desktop Action Buttons */}
+                <div className="hidden lg:flex justify-end gap-4 pt-6">
+                    <Button type="button" variant="outline" size="lg">
+                        <X className="mr-2 h-5 w-5" /> Discard Changes
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting} size="lg" className="min-w-48">
+                        {isSubmitting && <Loader2 className="animate-spin mr-2 h-5 w-5" />}
+                        <Save className="mr-2 h-5 w-5" />
+                        {isEditMode ? "Update Product" : "Save Product"}
+                    </Button>
+                </div>
             </div>
         </form>
     );

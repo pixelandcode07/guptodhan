@@ -3,6 +3,7 @@ import { DataTable } from '@/components/TableHelper/data-table';
 import { vendor_product_columns } from '@/components/TableHelper/vendor_product_columns';
 import { fetchSingleVendorAds } from '@/lib/VendorApis/fetchSingleVendorAds';
 import { getServerSession } from 'next-auth';
+import ClientDataTable from './components/ClientDataTable';
 
 
 
@@ -16,9 +17,11 @@ export default async function VendorProductPage() {
 
   return (
     <div>
-      This is vendor product page.
+      <h1 className="text-lg font-semibold border-l-4 border-blue-500 pl-4 mb-6">
+        See All Your Products
+      </h1>
       <main>
-        <DataTable columns={vendor_product_columns} data={vendorData.products} />
+        <ClientDataTable vendorData={vendorData.products} />
       </main>
     </div>
   )
