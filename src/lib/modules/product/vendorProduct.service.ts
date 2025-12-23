@@ -691,6 +691,7 @@ const getVendorProductsByVendorIdFromDB = async (vendorId: string) => {
     .populate("vendorStoreId", "storeName")
     .lean();
 
+    console.log("Products fetched for vendor:", products);
   // Populate color and size names
   return await populateColorAndSizeNamesForProducts(products || []);
 };
@@ -830,6 +831,28 @@ const getVendorStoreAndProductsFromDB = async (
   };
 };
 
+// for vendor dashboard to see their products
+const getVendorStoreAndProductsFromDBVendorDashboard = async (vendorId: string) => {
+  // 1. Find store by vendorId
+  const store = await StoreModel.findOne({ vendorId });
+
+  if (!store) {
+    throw new Error("Store not found for this vendor");
+  }
+
+  // 2. Find all products for this store
+  const products = await VendorProductModel.find({
+    vendorStoreId: store._id,
+  });
+
+  // 3. Return only data
+  return {
+    store,
+    products,
+  };
+};
+
+
 export const VendorProductServices = {
   createVendorProductInDB,
   getAllVendorProductsFromDB,
@@ -853,4 +876,5 @@ export const VendorProductServices = {
   getForYouProductsFromDB,
 
   getVendorStoreAndProductsFromDB,
+  getVendorStoreAndProductsFromDBVendorDashboard
 };
