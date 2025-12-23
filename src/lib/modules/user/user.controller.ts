@@ -58,7 +58,7 @@ const registerServiceProvider = async (req: NextRequest) => {
       role: 'service-provider',
       serviceProviderInfo: {
         serviceCategory: new Types.ObjectId(payload.serviceCategory),
-        subCategories: payload.subCategories.map((id: string) => new Types.ObjectId(id)),
+        // subCategories: payload.subCategories.map((id: string) => new Types.ObjectId(id)),
         cvUrl: payload.cvUrl,
         bio: payload.bio,
       },

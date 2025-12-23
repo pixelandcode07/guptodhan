@@ -20,7 +20,7 @@
   phoneNumber: z.string({ required_error: 'Phone number is required.' }).regex(bdPhoneNumberRegex, 'Invalid Bangladeshi phone number format.'),
   address: z.string({ required_error: 'Address is required.' }).min(1, 'Address cannot be empty.'),
   serviceCategory: z.string({ required_error: 'Service category is required.' }),
-  subCategories: z.array(z.string()).min(1, 'At least one skill/sub-category must be selected.'),
+  // subCategories: z.array(z.string()).min(1, 'At least one skill/sub-category must be selected.'),
   
   profilePicture: z.string().url('Invalid URL for profile picture.').optional(),
   cvUrl: z.string().url('Invalid URL for CV.').optional(),

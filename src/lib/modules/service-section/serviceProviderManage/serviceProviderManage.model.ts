@@ -1,6 +1,6 @@
-import { Schema, model, Types } from "mongoose";
-import { v4 as uuidv4 } from "uuid";
 import { IBooking } from "./serviceProviderManage.interface";
+import mongoose, { Schema, Types } from "mongoose";
+import { v4 as uuidv4 } from "uuid";
 
 const bookingSchema = new Schema<IBooking>(
   {
@@ -21,20 +21,11 @@ const bookingSchema = new Schema<IBooking>(
       ref: "User",
       required: true,
     },
-    customer_name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
 
     // Provider Info (assigned later)
     provider_id: {
       type: Schema.Types.ObjectId,
       ref: "Provider",
-    },
-    provider_name: {
-      type: String,
-      trim: true,
     },
 
     // Service Info (CORE)
@@ -42,11 +33,6 @@ const bookingSchema = new Schema<IBooking>(
       type: Schema.Types.ObjectId,
       ref: "Service",
       required: true,
-    },
-    service_name: {
-      type: String,
-      required: true,
-      trim: true,
     },
 
     // Booking Schedule (CORE)
@@ -125,4 +111,5 @@ const bookingSchema = new Schema<IBooking>(
   }
 );
 
-export const BookingModel = model<IBooking>("Booking", bookingSchema);
+export const BookingModel =
+mongoose.models.Booking || mongoose.model<IBooking>("Booking", bookingSchema);

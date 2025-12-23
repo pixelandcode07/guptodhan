@@ -357,6 +357,58 @@ const googleLoginHandler = async (req: NextRequest) => {
   return response;
 };
 
+// ------------------------------------
+// --- SERVICE PROVIDER LOGIN ---
+// ------------------------------------
+const serviceProviderLogin = async (req: NextRequest) => {
+  await dbConnect();
+
+  const body = await req.json();
+  const validatedData = loginValidationSchema.parse(body);
+
+  const result = await AuthServices.serviceProviderLogin(validatedData);
+
+  const { refreshToken, accessToken, user } = result;
+
+  const response = sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Service provider logged in successfully!',
+    data: {
+      accessToken,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        profilePicture: user.profilePicture,
+        address: user.address,
+        serviceProviderInfo: user.serviceProviderInfo,
+      },
+    },
+  });
+
+  // 🍪 Refresh Token Cookie
+  response.cookies.set('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 30 * 24 * 60 * 60,
+    path: '/',
+  });
+
+  // 🍪 Access Token Cookie
+  response.cookies.set('accessToken', accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60,
+    path: '/',
+  });
+
+  return response;
+};
+
+
 export const AuthController = {
   loginUser,
   refreshToken,
@@ -368,6 +420,7 @@ export const AuthController = {
   resetPasswordWithToken,
   registerVendor,
   registerServiceProvider,
+  serviceProviderLogin,
   googleLoginHandler,
   vendorLogin,
   vendorChangePassword,
