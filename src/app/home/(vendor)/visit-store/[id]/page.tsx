@@ -1,4 +1,3 @@
-// app/home/visit-store/[id]/page.tsx
 import StoreHeader from './StoreHeader';
 import ProductGridWithFilters from './ProductGridWithFilters';
 
