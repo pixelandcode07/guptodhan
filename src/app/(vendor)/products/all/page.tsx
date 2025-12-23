@@ -9,10 +9,8 @@ import { getServerSession } from 'next-auth';
 export default async function VendorProductPage() {
   const session = await getServerSession(authOptions);
   const vendorId = session?.user?.vendorId;
-  // console.log("Vendor Id===", vendorId)
   const vendorData = await fetchSingleVendorAds(vendorId);
-  // console.log("Store===", store)
-  console.log("Products===", vendorData)
+  // console.log("Products===", vendorData)
 
 
 
