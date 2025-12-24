@@ -1,3 +1,6 @@
+// ✅ src/app/home/donation/[id]/page.tsx
+// This file already looks good, but ensure these changes:
+
 import { notFound } from "next/navigation";
 import dbConnect from "@/lib/db";
 import { DonationCampaignServices } from "@/lib/modules/donation-campaign/donation-campaign.service";
@@ -32,6 +35,7 @@ export default async function DonationDetailsPage({ params }: Props) {
 
   if (!campaign) notFound();
 
+  // ✅ Ensure proper serialization
   const serializedCampaign = JSON.parse(JSON.stringify(campaign));
 
   return (
