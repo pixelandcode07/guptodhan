@@ -7,7 +7,7 @@ import { connectRedis, redisClient } from '@/lib/redis';
 import { sendEmail } from '@/lib/utils/email';
 import mongoose from 'mongoose';
 import { ServiceProvider } from '../service-provider/serviceProvider.model';
-import bcrypt from 'bcrypt'; 
+import bcrypt from 'bcrypt';
 import { User } from '../user/user.model';
 import { verifyGoogleToken } from '@/lib/utils/verifyGoogleToken';
 import { Vendor } from '../vendors/vendor.model';
@@ -69,7 +69,14 @@ const loginUser = async (payload: TLoginUser) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password, ...userWithoutPassword } = user.toObject();
 
-  return { accessToken, refreshToken, user: userWithoutPassword };
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      ...userWithoutPassword,
+      hasPassword: !!password, // ← এটা যোগ করো
+    },
+  };
 };
 
 
@@ -78,7 +85,7 @@ const vendorLogin = async (payload: TLoginUser) => {
   const { identifier, password: plainPassword } = payload;
 
   const isEmail = identifier.includes('@');
-  
+
   // 🔥 ১. এখানে populate('vendorInfo') যোগ করতে হবে যাতে ভেন্ডর আইডি পাওয়া যায়
   const user = isEmail
     ? await User.findOne({ email: identifier }).select('+password').populate('vendorInfo')
@@ -121,7 +128,8 @@ const vendorLogin = async (payload: TLoginUser) => {
       address: userWithoutPassword.address,
       isActive: userWithoutPassword.isActive,
       // vendorId: (userWithoutPassword.vendorInfo as any)?._id || null, 
-      vendorId:userWithoutPassword.vendorInfo?._id || null, 
+      vendorId: userWithoutPassword.vendorInfo?._id || null,
+      hasPassword: !!password,
     }
   };
 };
@@ -355,7 +363,7 @@ const resetPasswordWithToken = async (token: string, newPassword: string) => {
     const user = await User.findById(decoded.userId);
     if (!user) throw new Error('User not found');
     if (user.role !== 'vendor') throw new Error('This token is not valid for vendor accounts');
-    
+
     user.password = newPassword;
     await user.save();
     return null;
@@ -364,7 +372,7 @@ const resetPasswordWithToken = async (token: string, newPassword: string) => {
   else if (decoded.purpose === 'password-reset') {
     const user = await User.findById(decoded.userId);
     if (!user) throw new Error('User not found');
-    
+
     user.password = newPassword;
     await user.save();
     return null;
@@ -496,7 +504,16 @@ const loginWithGoogle = async (idToken: string) => {
   );
 
   const { password, ...userWithoutPassword } = user.toObject();
-  return { accessToken, refreshToken, user: userWithoutPassword };
+  return {
+    accessToken,
+    refreshToken,
+    // user: userWithoutPassword
+    user: {
+      ...userWithoutPassword,
+      hasPassword: !!password,
+    },
+
+  };
 };
 
 

@@ -1,6 +1,4 @@
-// ============================================
-// 🔥 DONATION CAMPAIGN SERVICE - UPDATED
-// ============================================
+// src/lib/modules/donation-campaign/donation-campaign.service.ts
 
 import mongoose from "mongoose";
 import { IDonationCampaign } from "./donation-campaign.interface";
@@ -25,8 +23,6 @@ const createCampaignInDB = async (payload: Partial<IDonationCampaign>) => {
 
 const getAllCampaignsFromDB = async () => {
   await dbConnect();
-  // অ্যাডমিনের জন্য সব স্ট্যাটাসই রিটার্ন করা উচিত, তাই ফিল্টার সরালাম
-  // আপনি চাইলে পাবলিক API এর জন্য আলাদা ফাংশন রাখতে পারেন
   return await DonationCampaign.find({}) 
     .populate('creator', 'name profilePicture')
     .populate('category', 'name')
@@ -35,52 +31,75 @@ const getAllCampaignsFromDB = async () => {
 };
 
 const getCampaignByIdFromDB = async (id: string) => {
-    await dbConnect();
+  await dbConnect();
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        throw new Error('Invalid Campaign ID format');
-    }
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new Error('Invalid Campaign ID format');
+  }
 
-    const campaign = await DonationCampaign.findById(id)
-      .populate('creator', 'name profilePicture')
-      .populate('category', 'name')
-      .lean();
+  const campaign = await DonationCampaign.findById(id)
+    .populate('creator', 'name profilePicture')
+    .populate('category', 'name')
+    .lean();
 
-    if (!campaign) {
-        throw new Error('Campaign not found');
-    }
+  if (!campaign) {
+    throw new Error('Campaign not found');
+  }
 
-    return campaign;
+  return campaign;
 };
 
-// ✅ NEW: Update Campaign Service
 const updateCampaignInDB = async (id: string, payload: Partial<IDonationCampaign>) => {
-    await dbConnect();
-    
-    const result = await DonationCampaign.findByIdAndUpdate(id, payload, { new: true });
-    
-    if (!result) {
-        throw new Error('Campaign not found to update');
-    }
-    return result;
+  await dbConnect();
+  
+  const result = await DonationCampaign.findByIdAndUpdate(id, payload, { new: true });
+  
+  if (!result) {
+    throw new Error('Campaign not found to update');
+  }
+  return result;
 };
 
-// ✅ NEW: Delete Campaign Service
 const deleteCampaignFromDB = async (id: string) => {
-    await dbConnect();
-    
-    const result = await DonationCampaign.findByIdAndDelete(id);
-    
-    if (!result) {
-        throw new Error('Campaign not found to delete');
-    }
-    return result;
+  await dbConnect();
+  
+  const result = await DonationCampaign.findByIdAndDelete(id);
+  
+  if (!result) {
+    throw new Error('Campaign not found to delete');
+  }
+  return result;
+};
+
+// ✅ NEW: Increment donors when donation made
+const incrementDonorCount = async (campaignId: string, amount: number) => {
+  await dbConnect();
+  
+  const result = await DonationCampaign.findByIdAndUpdate(
+    campaignId,
+    {
+      $inc: { 
+        donorsCount: 1,      // Increment donors
+        raisedAmount: amount // Add amount
+      }
+    },
+    { new: true }
+  );
+
+  // Check if goal reached
+  if (result && result.goalAmount && result.raisedAmount >= result.goalAmount) {
+    result.status = 'completed';
+    await result.save();
+  }
+
+  return result;
 };
 
 export const DonationCampaignServices = {
   createCampaignInDB,
   getAllCampaignsFromDB,
   getCampaignByIdFromDB,
-  updateCampaignInDB, // Exported
-  deleteCampaignFromDB, // Exported
+  updateCampaignInDB,
+  deleteCampaignFromDB,
+  incrementDonorCount // ← Export this
 };

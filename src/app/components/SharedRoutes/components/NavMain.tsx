@@ -12,6 +12,7 @@ import { useState } from 'react';
 import CartIcon from '@/components/CartIcon';
 import WishlistIcon from '@/components/WishlistIcon';
 import { motion, AnimatePresence } from 'framer-motion';
+import MessageIcon from '../../MessageIcon';
 
 export default function NavMain() {
   const { data: session } = useSession();
@@ -53,11 +54,6 @@ export default function NavMain() {
               <Image src="/white-logo.png" width={120} height={40} alt="logo" />
             </Link>
           </div>
-
-          {/* Mobile Search */}
-          {/* <div className="search flex md:hidden max-w-1/2 items-center justify-center w-full my-2 md:my-5 relative">
-            <SearchBar />
-          </div> */}
           {/* Mobile Search Trigger */}
           <div className="flex md:hidden flex-1 justify-end px-2">
             <button
@@ -79,6 +75,7 @@ export default function NavMain() {
           <Dialog>
             <ul className="flex gap-4 text-base items-center">
               <li><WishlistIcon className="text-[#00005E]" /></li>
+              <li><MessageIcon /></li>
               <li><CartIcon /></li>
 
               {session ? (
@@ -206,7 +203,10 @@ export default function NavMain() {
                       <Truck size={16} />
                       <span>Track Order</span>
                     </Link>
-                    <Link href="/contact" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
+                    <Link href="https://wa.me/8801816500600?text=Hello!%20Hope%20you're%20having%20a%20great%20day!%20I%20need%20assistance%20with...%20Thank%20you!"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
                       <Phone size={16} />
                       <span>Contact Us</span>
                     </Link>

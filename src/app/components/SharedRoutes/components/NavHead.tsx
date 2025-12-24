@@ -20,7 +20,14 @@ export default function NavHead() {
                     </> : null}
                     <li className='text-sm hover:text-black hover:font-semibold cursor-pointer'>Track Order</li>
                     <li className='text-sm'>|</li>
-                    <li className='text-sm hover:text-black hover:font-semibold cursor-pointer'>Contact Us</li>
+                    <li className='text-sm hover:text-black hover:font-semibold cursor-pointer'>
+                        <Link
+                            href="https://wa.me/8801816500600?text=Hello!%20Hope%20you're%20having%20a%20great%20day!%20I%20need%20assistance%20with...%20Thank%20you!"
+                            target="_blank"
+                            rel="noopener noreferrer">
+                            Contact Us
+                        </Link></li>
+
                 </ul>
             </div>
         </div>
