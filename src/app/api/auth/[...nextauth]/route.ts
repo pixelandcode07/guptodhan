@@ -56,7 +56,8 @@ export const authOptions = {
       if (account.provider === 'google') {
         try {
           await dbConnect();
-          let existingUser = await User.findOne({ email: user.email });
+          // let existingUser = await User.findOne({ email: user.email });
+          let existingUser = await User.findOne({ email: user.email }).select('+password'); // For Password Check
           if (!existingUser) {
             existingUser = await User.create({
               name: user.name,
@@ -98,6 +99,10 @@ export const authOptions = {
         
         // 🔥 Saving Vendor ID to Token
         token.vendorId = user.vendorId || dbUser.vendorInfo?._id;
+
+
+        // hasPassword সেট করা হচ্ছে
+        token.hasPassword = !!dbUser.password || user.hasPassword || false;
 
         const accessTokenPayload = { userId: token.id, role: token.role };
         const refreshTokenPayload = { userId: token.id, role: token.role };
@@ -186,6 +191,8 @@ export const authOptions = {
 
         // 🔥 VENDOR ID ADDED HERE (Most Important Part)
         session.user.vendorId = token.vendorId;
+        // hasPassword টোকেন থেকে সেশনে পাস করা
+        session.user.hasPassword = token.hasPassword ?? false;
       }
 
       session.accessToken = token.accessToken;
