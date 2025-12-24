@@ -13,30 +13,63 @@ const getMyConversationsFromDB = async (userId: string) => {
 
 const getMessagesFromDB = async (conversationId: string, userId: string) => {
   // নিরাপত্তা: নিশ্চিত করা হচ্ছে যে শুধুমাত্র কথোপকথনের অংশগ্রহণকারীরাই মেসেজ দেখতে পারবে
-  const conversation = await Conversation.findOne({ _id: conversationId, participants: userId });
-  if (!conversation) { throw new Error("Conversation not found or you are not a participant."); }
+  const conversation = await Conversation.findOne({
+    _id: conversationId,
+    participants: userId,
+  });
 
-  return await Message.find({ conversation: conversationId }).sort({ createdAt: 'asc' });
+  if (!conversation) {
+    throw new Error('Conversation not found or you are not a participant.');
+  }
+
+  return await Message.find({ conversation: conversationId }).sort({
+    createdAt: 'asc',
+  });
 };
 
-const startConversationInDB = async (adId: string, buyerId: string, sellerId: string) => {
-    // চেক করা হচ্ছে এই বিজ্ঞাপন নিয়ে আগে থেকেই কোনো চ্যাট আছে কিনা
-    let conversation = await Conversation.findOne({
-        ad: adId,
-        participants: { $all: [buyerId, sellerId] },
+const startConversationInDB = async (
+  adId: string,
+  buyerId: string,
+  sellerId: string
+) => {
+  // চেক করা হচ্ছে এই বিজ্ঞাপন নিয়ে আগে থেকেই কোনো চ্যাট আছে কিনা
+  let conversation = await Conversation.findOne({
+    ad: adId,
+    participants: { $all: [buyerId, sellerId] },
+  });
+
+  if (!conversation) {
+    conversation = await Conversation.create({
+      ad: adId,
+      participants: [buyerId, sellerId],
     });
-    if (!conversation) {
-        conversation = await Conversation.create({
-            ad: adId,
-            participants: [buyerId, sellerId],
-        });
-    }
-    return conversation;
+  }
+
+  return conversation;
 };
 
+// ==========================================
+// ✅ GET SINGLE CONVERSATION WITH FULL DATA
+// ==========================================
+const getConversationFromDB = async (conversationId: string, userId: string) => {
+  const conversation = await Conversation.findOne({
+    _id: conversationId,
+    participants: userId,
+  })
+    .populate('participants', 'name profilePicture') 
+    .populate('ad', 'title images')
+    .populate('lastMessage');
+
+  if (!conversation) {
+    throw new Error('Conversation not found or access denied.');
+  }
+
+  return conversation;
+};
 
 export const ConversationServices = {
   getMyConversationsFromDB,
   getMessagesFromDB,
   startConversationInDB,
+  getConversationFromDB, // ✅ EXPORT THIS
 };
