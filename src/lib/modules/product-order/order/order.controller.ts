@@ -272,6 +272,28 @@ const requestReturn = async (req: NextRequest) => {
   }
 };
 
+const getVendorStoreAndOrdersVendor = async (
+  req: NextRequest,
+  { params }: { params: { vendorId: string } }
+) => {
+  await dbConnect();
+
+  const { vendorId } = await params;
+  console.log('🟢 Controller Vendor ID:', await params);
+
+  const result =
+    await OrderServices.getVendorStoreAndOrdersFromDBVendor(
+      vendorId
+    );
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Vendor store & orders retrieved successfully!',
+    data: result,
+  });
+};
+
 export const OrderController = {
   createOrderWithDetails,
   getAllOrders,
@@ -283,4 +305,5 @@ export const OrderController = {
   getReturnedOrdersByUser,
   // getFilteredOrders, // এটি এখন getAllOrders এর মধ্যেই হ্যান্ডেল করা হচ্ছে
   requestReturn,
+  getVendorStoreAndOrdersVendor
 };

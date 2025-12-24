@@ -852,6 +852,49 @@ const getVendorStoreAndProductsFromDBVendorDashboard = async (vendorId: string) 
   };
 };
 
+const getVendorStoreProductsWithReviewsFromDB = async (vendorId: string) => {
+  // 1️⃣ Find store by vendorId
+  const store = await StoreModel.findOne({ vendorId });
+
+  if (!store) {
+    throw new Error('Store not found for this vendor');
+  }
+
+  // 2️⃣ Find products using storeId
+  const products = await VendorProductModel.find({
+    vendorStoreId: store._id,
+  });
+
+  // 3️⃣ Attach reviews for each product
+  const productsWithReviews = await Promise.all(
+    products.map(async (product) => {
+      const reviewStats = await ReviewModel.aggregate([
+        {
+          $match: { productId: product._id },
+        },
+        {
+          $group: {
+            _id: '$productId',
+            totalReviews: { $sum: 1 },
+            averageRating: { $avg: '$rating' },
+          },
+        },
+      ]);
+
+      return {
+        ...product.toObject(),
+        totalReviews: reviewStats[0]?.totalReviews || 0,
+        averageRating: reviewStats[0]?.averageRating || 0,
+      };
+    })
+  );
+
+  return {
+    store,
+    products: productsWithReviews,
+  };
+};
+
 
 export const VendorProductServices = {
   createVendorProductInDB,
@@ -876,5 +919,6 @@ export const VendorProductServices = {
   getForYouProductsFromDB,
 
   getVendorStoreAndProductsFromDB,
-  getVendorStoreAndProductsFromDBVendorDashboard
+  getVendorStoreAndProductsFromDBVendorDashboard,
+  getVendorStoreProductsWithReviewsFromDB
 };

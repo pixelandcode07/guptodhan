@@ -1,6 +1,7 @@
 import { IOrder } from './order.interface';
 import { OrderModel } from './order.model';
 import { Types } from 'mongoose';
+import { StoreModel } from '../../vendor-store/vendorStore.model';
 
 // ✅ Import Models explicitly to prevent MissingSchemaError
 import '@/lib/modules/product/vendorProduct.model';
@@ -254,6 +255,31 @@ const requestReturnInDB = async (orderId: string, reason: string) => {
   return order;
 };
 
+const getVendorStoreAndOrdersFromDBVendor = async (
+  vendorId: string
+) => {
+  // 1️⃣ Find store by vendorId
+  const store = await StoreModel.findOne({ vendorId });
+
+  if (!store) {
+    throw new Error('Store not found for this vendor');
+  }
+
+  // 2️⃣ Find all orders for this store
+  const orders = await OrderModel.find({
+    storeId: store._id,
+  })
+    .populate('userId', 'name email')
+    .populate('orderDetails')
+    .sort({ createdAt: -1 });
+
+  // 3️⃣ Return data
+  return {
+    store,
+    orders,
+  };
+};
+
 export const OrderServices = {
   createOrderInDB,
   getAllOrdersFromDB,
@@ -265,4 +291,5 @@ export const OrderServices = {
   getReturnedOrdersByUserFromDB,
   getFilteredOrdersFromDB,
   requestReturnInDB, // ✅ Exported
+  getVendorStoreAndOrdersFromDBVendor
 };
