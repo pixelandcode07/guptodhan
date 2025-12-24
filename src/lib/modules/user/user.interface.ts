@@ -18,7 +18,7 @@ export type TUser = {
   vendorInfo?: Types.ObjectId;
   serviceProviderInfo?: {
     serviceCategory: Types.ObjectId;
-    subCategories: Types.ObjectId[];
+    // subCategories: Types.ObjectId[];
     cvUrl?: string;
     bio?: string;
   };

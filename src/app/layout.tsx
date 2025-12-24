@@ -5,6 +5,7 @@ import SessionProviderWrapper from '@/Providers/SessionProviderWrapper';
 import { Toaster } from '@/components/ui/sonner';
 import Script from 'next/script';
 import PathnameDetector from '@/Providers/PathnameDetector';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({
@@ -352,15 +353,19 @@ fbq('track', 'PageView');`,
           />
         )}
 
+        {/* ✅ SessionProviderWrapper wraps everything */}
         <SessionProviderWrapper>
-          <PathnameDetector>
-            {children}
-            <Script
-              src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
-              strategy="beforeInteractive"
-            />
-            <Toaster position="top-center" />
-          </PathnameDetector>
+          {/* ✅ AuthProvider wraps children - ADD THIS */}
+          <AuthProvider>
+            <PathnameDetector>
+              {children}
+              <Script
+                src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+                strategy="beforeInteractive"
+              />
+              <Toaster position="top-center" />
+            </PathnameDetector>
+          </AuthProvider>
         </SessionProviderWrapper>
       </body>
     </html>

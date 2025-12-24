@@ -12,10 +12,8 @@ export const bookingStatusEnum = z.enum([
 
 export const createBookingValidationSchema = z.object({
   customer_id: z.string().min(1, { message: "Customer ID is required." }),
-  customer_name: z.string().min(1, { message: "Customer name is required." }),
 
   service_id: z.string().min(1, { message: "Service ID is required." }),
-  service_name: z.string().min(1, { message: "Service name is required." }),
 
   booking_date: z.string().min(1, { message: "Booking date is required." }),
   time_slot: z.string().min(1, { message: "Time slot is required." }),

@@ -7,6 +7,7 @@ import { connectRedis, redisClient } from '@/lib/redis';
 import { sendEmail } from '@/lib/utils/email';
 import mongoose from 'mongoose';
 import { ServiceProvider } from '../service-provider/serviceProvider.model';
+import bcrypt from 'bcrypt'; 
 import { User } from '../user/user.model';
 import { verifyGoogleToken } from '@/lib/utils/verifyGoogleToken';
 import { Vendor } from '../vendors/vendor.model';
@@ -498,6 +499,87 @@ const loginWithGoogle = async (idToken: string) => {
   return { accessToken, refreshToken, user: userWithoutPassword };
 };
 
+
+// ------------------------------------
+// --- SERVICE PROVIDER LOGIN ---
+// ------------------------------------
+const serviceProviderLogin = async (payload: TLoginUser) => {
+  const { identifier, password: plainPassword } = payload;
+
+  const isEmail = identifier.includes('@');
+
+  const user = isEmail
+    ? await User.isUserExistsByEmail(identifier)
+    : await User.isUserExistsByPhone(identifier);
+
+  if (!user) {
+    throw new Error('Invalid credentials.');
+  }
+
+
+  // ✅ Role check
+  if (user.role !== 'service-provider') {
+    throw new Error('Access denied. Service provider account required.');
+  }
+
+  // ✅ Account status check
+  if (!user.isActive) {
+    throw new Error('Your account is inactive. Please contact support.');
+  }
+
+  if (!user.password) {
+    throw new Error('Password not set. Please use social login.');
+  }
+
+  const isPasswordMatched = await user.isPasswordMatched(
+    plainPassword,
+    user.password
+  );
+
+  console.log('🟢 PASSWORD MATCHED:', isPasswordMatched);
+
+  if (!isPasswordMatched) {
+    throw new Error('Incorrect password!');
+  }
+
+  // 🔐 JWT Payload
+  const jwtPayload = {
+    userId: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  };
+
+  const accessToken = generateToken(
+    jwtPayload,
+    process.env.JWT_ACCESS_SECRET!,
+    process.env.JWT_ACCESS_EXPIRES_IN!
+  );
+
+  const refreshToken = generateToken(
+    jwtPayload,
+    process.env.JWT_REFRESH_SECRET!,
+    process.env.JWT_REFRESH_EXPIRES_IN!
+  );
+
+  const { password, ...userWithoutPassword } = user.toObject();
+
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      _id: userWithoutPassword._id,
+      name: userWithoutPassword.name,
+      email: userWithoutPassword.email,
+      phoneNumber: userWithoutPassword.phoneNumber,
+      role: userWithoutPassword.role,
+      profilePicture: userWithoutPassword.profilePicture,
+      address: userWithoutPassword.address,
+      serviceProviderInfo: userWithoutPassword.serviceProviderInfo || null,
+    },
+  };
+};
+
+
 export const AuthServices = {
   loginUser,
   refreshToken,
@@ -509,6 +591,7 @@ export const AuthServices = {
   resetPasswordWithToken,
   registerVendor,
   registerServiceProvider,
+  serviceProviderLogin,
   loginWithGoogle,
   vendorLogin,
   vendorChangePassword,
