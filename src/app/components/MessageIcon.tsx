@@ -51,22 +51,18 @@ export default function MessageIcon() {
   }, [isConnected, userId, on, off]);
 
   return (
-    // <div className='flex justify-between items-center'>
-      
-      <div>
-        <Link href="/home/chat" className="flex flex-col justify-center items-center text-[#00005E] font-medium relative group">
-          <div className="relative">
-            <MessageSquare size={20} className="flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </div>
-          <span className="text-[#00005E] text-[12px]">Chat</span>
-        </Link>
-      </div>
-
-    // {/* </div> */}
+    <div>
+      <Link href="/home/chat" className="flex flex-col justify-center items-center text-[#00005E] font-medium relative group">
+        <div className="relative">
+          <MessageSquare size={20} className="flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </div>
+        <span className="text-[#00005E] text-[12px]">Chat</span>
+      </Link>
+    </div>
   );
 }

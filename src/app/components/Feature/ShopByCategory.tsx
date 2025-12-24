@@ -60,7 +60,7 @@ export function ShopByCategory({ featuredData }: FeatureProps) {
                       alt={category.name}
                       width={64}
                       height={64}
-                      className="object-contain"
+                      className="object-contain rounded-md"
                     />
                   </div>
 
