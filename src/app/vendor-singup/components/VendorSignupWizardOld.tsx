@@ -324,9 +324,17 @@ export default function VendorSignupWizardOld({ vendorCategories }: Props) {
                 <p className="text-sm text-slate-700">
                   Already have an account? <Link className="text-emerald-600 font-semibold hover:underline" href="/vendor-singin">Sign In</Link>
                 </p>
-                <p className="text-sm text-slate-600">
-                  Need help? <a className="text-emerald-600 font-semibold hover:underline" href="#">Contact Support</a>
-                </p>
+                <div className="mt-8 text-center text-sm text-slate-600">
+                  Need help?{" "}
+                  <a
+                    href="https://wa.me/8801816500600?text=Hello!%20Hope%20you're%20having%20a%20great%20day!%20I%20need%20assistance%20with...%20Thank%20you!"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-emerald-600 font-semibold hover:underline"
+                  >
+                    Contact Vendor Support
+                  </a>
+                </div>
               </div>
             </div>
           </div>
