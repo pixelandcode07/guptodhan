@@ -82,7 +82,7 @@ export default function MobileFooter() {
 
                     <li>
                         <Link
-                            href="/messages"
+                            href="/home/chat"
                             className={`flex flex-col items-center gap-1 px-3 py-2 text-xs font-medium ${isActive("/messages") ? "text-[#0097E9]" : "text-gray-600"
                                 }`}
                         >
