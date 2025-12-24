@@ -22,17 +22,17 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, index }: ProductCardProps) {
+    // 🔥 Safe Price Calculation: ০ বা undefined হলে যেন NaN না আসে
+    const pPrice = product?.productPrice || 0;
+    const dPrice = product?.discountPrice || 0;
+
     const discountPct =
-        product.productPrice > product.discountPrice
-            ? Math.round(
-                ((product.productPrice - product.discountPrice) /
-                    product.productPrice) *
-                100
-            )
+        pPrice > dPrice
+            ? Math.round(((pPrice - dPrice) / pPrice) * 100)
             : 0;
 
     const hasOffer =
-        product.offerDeadline &&
+        product?.offerDeadline &&
         new Date(product.offerDeadline) > new Date();
 
     return (
@@ -46,19 +46,18 @@ export default function ProductCard({ product, index }: ProductCardProps) {
             className="group"
         >
             <Link
-                href={`/products/${product._id}`}
+                href={`/products/${product?._id}`}
                 className="flex h-full flex-col overflow-hidden rounded-xl sm:rounded-2xl border bg-white transition-all duration-300 hover:border-blue-200 hover:shadow-lg"
             >
                 {/* Image */}
                 <div className="relative aspect-[1/1] bg-gray-50">
                     <Image
-                        src={product.thumbnailImage || '/placeholder.png'}
-                        alt={product.productTitle}
+                        src={product?.thumbnailImage || '/placeholder.png'}
+                        alt={product?.productTitle || 'Product'}
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-110"
                     />
 
-                    {/* Hover Overlay (desktop only) */}
                     <div className="pointer-events-none absolute inset-0 hidden sm:block bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition" />
 
                     {/* Badges */}
@@ -82,7 +81,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                     </div>
 
                     {/* Low Stock */}
-                    {product.stock > 0 && product.stock < 10 && (
+                    {product?.stock !== undefined && product.stock > 0 && product.stock < 10 && (
                         <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 rounded-full bg-orange-500 px-2 py-0.5 text-[10px] sm:text-xs font-semibold text-white shadow animate-pulse">
                             {product.stock} left
                         </div>
@@ -92,7 +91,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                 {/* Content */}
                 <div className="flex flex-grow flex-col space-y-2 sm:space-y-3 p-3 sm:p-4">
                     <h3 className="line-clamp-2 text-[13px] sm:text-sm font-semibold leading-snug transition-colors group-hover:text-blue-600">
-                        {product.productTitle}
+                        {product?.productTitle}
                     </h3>
 
                     {/* Brand & Flag */}
@@ -100,15 +99,16 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                         {product?.brand && (
                             <Badge variant="secondary" className="text-[10px] sm:text-xs py-0">
                                 {typeof product.brand === 'object'
-                                    ? product.brand.name
+                                    ? (product.brand as any).name
                                     : product.brand}
                             </Badge>
                         )}
-                        {product.flag?.name && (
+                        {product?.flag?.name && (
                             <Badge
                                 className={cn(
                                     'text-[10px] sm:text-xs text-white py-0',
-                                    product.flag.color || 'bg-indigo-600'
+                                    // 🔥 TypeScript Fix: (product.flag as any).color ব্যবহার করা হয়েছে
+                                    (product.flag as any).color || 'bg-indigo-600'
                                 )}
                             >
                                 {product.flag.name}
@@ -117,11 +117,11 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                     </div>
 
                     {/* Rating */}
-                    {product.totalReviews > 0 && (
+                    {product?.totalReviews !== undefined && product.totalReviews > 0 && (
                         <div className="flex items-center gap-1.5 text-[11px] sm:text-sm">
                             <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
                             <span className="font-medium">
-                                {product.averageRating.toFixed(1)}
+                                {(product.averageRating || 0).toFixed(1)}
                             </span>
                             <span className="text-gray-500">
                                 ({product.totalReviews})
@@ -130,10 +130,10 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                     )}
 
                     {/* Sold */}
-                    {product.sellCount > 0 && (
+                    {product?.sellCount !== undefined && product.sellCount > 0 && (
                         <div className="flex items-center gap-1 text-[11px] sm:text-xs text-gray-600">
                             <ShoppingBag className="h-3.5 w-3.5" />
-                            {product.sellCount.toLocaleString()} sold
+                            {(product.sellCount || 0).toLocaleString()} sold
                         </div>
                     )}
 
@@ -141,23 +141,23 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                     {hasOffer && (
                         <div className="flex items-center gap-1 text-[11px] sm:text-xs font-medium text-red-600">
                             <Clock className="h-3.5 w-3.5" />
-                            <Countdown deadline={product.offerDeadline} />
+                            <Countdown deadline={product.offerDeadline!} />
                         </div>
                     )}
 
                     {/* Price */}
                     <div className="mt-auto space-y-0.5">
                         <p className="text-base sm:text-lg font-bold text-blue-600">
-                            ৳{product?.discountPrice?.toLocaleString()}
+                            {/* 🔥 toLocaleString Crash Fix: Default value 0 দেওয়া হয়েছে */}
+                            ৳{(dPrice || 0).toLocaleString()}
                         </p>
-                        {product?.productPrice > product?.discountPrice && (
+                        {pPrice > dPrice && (
                             <p className="text-[11px] sm:text-xs text-gray-400 line-through">
-                                ৳{product?.productPrice?.toLocaleString()}
+                                ৳{(pPrice || 0).toLocaleString()}
                             </p>
                         )}
                     </div>
 
-                    {/* Footer (desktop only) */}
                     <div className="hidden sm:flex items-center gap-1 pt-1 text-xs text-gray-500">
                         <PackageCheck className="h-3.5 w-3.5" />
                         Ready to ship
