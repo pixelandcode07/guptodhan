@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner' 
+import { useSession } from 'next-auth/react' // ✅ ১. useSession ইম্পোর্ট করুন
 
 type DonationItem = { 
   id: string; 
   title: string; 
   image: string; 
-  type: string; // 🔥 item type (money, clothes etc)
+  type: string; 
 }
 
 interface DonationClaimModalProps {
@@ -22,19 +23,21 @@ interface DonationClaimModalProps {
 }
 
 export default function DonationClaimModal({ open, onOpenChange, item }: DonationClaimModalProps) {
+  // ✅ ২. সেশন থেকে টোকেন নিন
+  const { data: session } = useSession()
+  const token = (session as any)?.accessToken 
+
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     email: '',
     reason: '',
-    // 🔥 Money এর জন্য নতুন ফিল্ড
     amount: '',
     paymentMethod: 'bkash',
     accountNumber: ''
   })
 
-  // মডাল ওপেন হলে বা আইটেম চেঞ্জ হলে ফর্ম রিসেট না হয়, কিন্তু টাইপ চেক করার জন্য এফেক্ট রাখা ভালো
   useEffect(() => {
     if (!open) {
         setFormData({ name: '', phone: '', email: '', reason: '', amount: '', paymentMethod: 'bkash', accountNumber: '' })
@@ -46,47 +49,39 @@ export default function DonationClaimModal({ open, onOpenChange, item }: Donatio
   }
 
   const handleSubmit = async () => {
-    // Basic Validation
-    if (!formData.name || !formData.phone || !formData.email || !formData.reason) {
-      toast.error("Please fill in basic information fields")
-      return
-    }
-    if (formData.phone.length < 11) {
-      toast.error("Invalid phone number")
+    // লগইন চেক
+    if (!session) {
+      toast.error("Please login first to submit a request")
       return
     }
 
-    // 🔥 Money Validation
-    if (item?.type === 'money') {
-        if (!formData.amount || Number(formData.amount) <= 0) {
-            toast.error("Please enter a valid amount")
-            return
-        }
-        if (!formData.accountNumber) {
-            toast.error("Please enter your account number to receive money")
-            return
-        }
+    if (!formData.name || !formData.phone || !formData.email || !formData.reason) {
+      toast.error("Please fill in basic information fields")
+      return
     }
 
     try {
       setLoading(true)
 
-      // Reason এর সাথে টাকার তথ্য যোগ করে দিচ্ছি (কারণ ব্যাকএন্ডে এই ফিল্ডগুলো নাও থাকতে পারে)
-      // যদি ব্যাকএন্ড আপডেট করেন তবে আলাদা ফিল্ড পাঠাবেন।
       let finalReason = formData.reason;
       if (item?.type === 'money') {
           finalReason += `\n\n[Money Request Details]\nAmount: ${formData.amount} BDT\nMethod: ${formData.paymentMethod}\nAccount: ${formData.accountNumber}`;
       }
 
+      // ✅ ৩. fetch কল-এ Authorization হেডার যোগ করুন
       const response = await fetch('/api/v1/donation-claims', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          // টোকেন পাঠানো হচ্ছে যাতে মিডলওয়্যার চিনতে পারে
+          'Authorization': `Bearer ${token}` 
+        },
         body: JSON.stringify({
           itemId: item?.id,
           name: formData.name,
           phone: formData.phone,
           email: formData.email,
-          reason: finalReason // 🔥 বিস্তারিত তথ্য এখানে যাচ্ছে
+          reason: finalReason 
         }),
       })
 
@@ -147,7 +142,7 @@ export default function DonationClaimModal({ open, onOpenChange, item }: Donatio
             <Input name="email" type="email" placeholder="example@email.com" value={formData.email} onChange={handleChange} />
           </div>
 
-          {/* 🔥 Conditional Fields for Money */}
+          {/* Conditional Fields for Money */}
           {item?.type === 'money' && (
              <div className="bg-blue-50 p-4 rounded-md border border-blue-100 space-y-3">
                 <h4 className="text-sm font-semibold text-blue-800">Payment Details</h4>
