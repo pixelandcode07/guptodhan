@@ -12,6 +12,7 @@ import { useState } from 'react';
 import CartIcon from '@/components/CartIcon';
 import WishlistIcon from '@/components/WishlistIcon';
 import { motion, AnimatePresence } from 'framer-motion';
+import MessageIcon from '../../MessageIcon';
 
 export default function NavMain() {
   const { data: session } = useSession();
@@ -79,6 +80,7 @@ export default function NavMain() {
           <Dialog>
             <ul className="flex gap-4 text-base items-center">
               <li><WishlistIcon className="text-[#00005E]" /></li>
+              <li><MessageIcon /></li>
               <li><CartIcon /></li>
 
               {session ? (
