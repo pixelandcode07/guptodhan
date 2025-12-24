@@ -120,6 +120,8 @@ const getUserByIdFromDB = async (id: string): Promise<Partial<TUser> | null> => 
   return user;
 };
 
+
+
 export const UserServices = {
   createUserIntoDB,
   getAllUsersFromDB,
