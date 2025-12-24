@@ -663,6 +663,30 @@ const getVendorStoreAndProductsVendorDashboard = async (
   });
 };
 
+
+const getVendorStoreProductsWithReviews = async (
+  req: NextRequest,
+  { params }: { params: { vendorId: string } }
+) => {
+  await dbConnect();
+
+  const { vendorId } =await params;
+  console.log('🟢 Vendor ID:', await params);
+  console.log('🟢 Vendor ID:', vendorId);
+
+  const result =
+    await VendorProductServices.getVendorStoreProductsWithReviewsFromDB(
+      vendorId
+    );
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Vendor store products with reviews retrieved successfully!',
+    data: result,
+  });
+};
+
 export const VendorProductController = {
   createVendorProduct,
   getAllVendorProducts,
@@ -685,5 +709,6 @@ export const VendorProductController = {
   getForYouProducts,
 
   getVendorStoreAndProducts,
-  getVendorStoreAndProductsVendorDashboard
+  getVendorStoreAndProductsVendorDashboard,
+  getVendorStoreProductsWithReviews
 };
