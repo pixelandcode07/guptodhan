@@ -149,76 +149,76 @@ const getCategoryById = async (
 };
 // ✅ NEW: Get public categories with ad counts
 const getPublicCategoriesWithCounts = async (req: NextRequest) => {
-  await dbConnect();
+    await dbConnect();
 
-  const { searchParams } = new URL(req.url);
-  const categoryId = searchParams.get('categoryId'); // UI থেকে পাঠাবে
+    const { searchParams } = new URL(req.url);
+    const categoryId = searchParams.get('categoryId'); // UI থেকে পাঠাবে
 
-  const result = await ClassifiedCategoryServices.getPublicCategoriesWithCountsFromDB(categoryId || undefined);
+    const result = await ClassifiedCategoryServices.getPublicCategoriesWithCountsFromDB(categoryId || undefined);
 
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: categoryId
-      ? 'Specific category ad counts retrieved successfully!'
-      : 'All categories with ad counts retrieved successfully!',
-    data: result,
-  });
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: categoryId
+            ? 'Specific category ad counts retrieved successfully!'
+            : 'All categories with ad counts retrieved successfully!',
+        data: result,
+    });
 };
 
 
 const searchAds = async (req: NextRequest) => {
-  await dbConnect();
-  const { searchParams } = new URL(req.url);
-  
-  const filters: Record<string, any> = {};
-  
-  // Read all possible filters from the URL query
-  if (searchParams.get('category')) filters.category = searchParams.get('category');
-  if (searchParams.get('subCategory')) filters.subCategory = searchParams.get('subCategory');
-  if (searchParams.get('brand')) filters.brand = searchParams.get('brand');
-  if (searchParams.get('division')) filters.division = searchParams.get('division');
-  if (searchParams.get('district')) filters.district = searchParams.get('district');
-  if (searchParams.get('upazila')) filters.upazila = searchParams.get('upazila');
-  if (searchParams.get('minPrice')) filters.minPrice = searchParams.get('minPrice');
-  if (searchParams.get('maxPrice')) filters.maxPrice = searchParams.get('maxPrice');
-  
-  const result = await ClassifiedAdServices.searchAdsInDB(filters);
-  
-  return sendResponse({ 
-    success: true, 
-    statusCode: StatusCodes.OK, 
-    message: 'Ads retrieved based on search criteria', 
-    data: result 
-  });
+    await dbConnect();
+    const { searchParams } = new URL(req.url);
+
+    const filters: Record<string, any> = {};
+
+    // Read all possible filters from the URL query
+    if (searchParams.get('category')) filters.category = searchParams.get('category');
+    if (searchParams.get('subCategory')) filters.subCategory = searchParams.get('subCategory');
+    if (searchParams.get('brand')) filters.brand = searchParams.get('brand');
+    if (searchParams.get('division')) filters.division = searchParams.get('division');
+    if (searchParams.get('district')) filters.district = searchParams.get('district');
+    if (searchParams.get('upazila')) filters.upazila = searchParams.get('upazila');
+    if (searchParams.get('minPrice')) filters.minPrice = searchParams.get('minPrice');
+    if (searchParams.get('maxPrice')) filters.maxPrice = searchParams.get('maxPrice');
+
+    const result = await ClassifiedAdServices.searchAdsInDB(filters);
+
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Ads retrieved based on search criteria',
+        data: result
+    });
 };
 
 
 // Reorder buy and sell (drag-and-drop)
 const reorderClassifiedCategory = async (req: NextRequest) => {
-  await dbConnect();
-  const body = await req.json();
-  const { orderedIds } = body;
+    await dbConnect();
+    const body = await req.json();
+    const { orderedIds } = body;
 
-  // Validate input
-  if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+    // Validate input
+    if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+        return sendResponse({
+            success: false,
+            statusCode: StatusCodes.BAD_REQUEST,
+            message: 'Invalid request: "orderedIds" must be a non-empty array.',
+            data: null,
+        });
+    }
+
+    // Call the reorder service
+    const result = await reorderClassifiedCategoryService(orderedIds);
+
     return sendResponse({
-      success: false,
-      statusCode: StatusCodes.BAD_REQUEST,
-      message: 'Invalid request: "orderedIds" must be a non-empty array.',
-      data: null,
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: result.message || "Buy and sell / classified reordered successfully!",
+        data: null,
     });
-  }
-
-  // Call the reorder service
-  const result = await reorderClassifiedCategoryService(orderedIds);
-
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: result.message || "Buy and sell / classified reordered successfully!",
-    data: null,
-  });
 };
 
 
