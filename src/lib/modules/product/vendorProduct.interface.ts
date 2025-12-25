@@ -1,24 +1,26 @@
-import { Document, Types } from 'mongoose';
+// File: vendorProduct.interface.ts
+
+import { Types } from "mongoose";
 
 export interface IProductOption {
   productImage?: string;
-
-  // changed to array
+  
+  // ✅ FIXED: Made all fields optional with ? 
   unit?: string[];
   simType?: string[];
   condition?: string[];
-  warranty: string,
-
+  warranty?: string; // ✅ Made optional
+  
   stock?: number;
   price?: number;
   discountPrice?: number;
-
-  // changed to array
-  color?: string[];
-  size?: string[];
+  
+  color?: string[]; // ✅ Made optional
+  size?: string[];  // ✅ Made optional
 }
 
 export interface IVendorProduct {
+  _id?: string;
   productId: string;
   productTitle: string;
   vendorStoreId: Types.ObjectId;
@@ -30,27 +32,28 @@ export interface IVendorProduct {
   productTag?: string[];
   videoUrl?: string;
   photoGallery?: string[];
-  thumbnailImage?: string;
+  thumbnailImage: string;
   productPrice?: number;
   discountPrice?: number;
   stock?: number;
   sku?: string;
   rewardPoints?: number;
-  category: Types.ObjectId | { _id: Types.ObjectId; categoryName: string };
+  category: Types.ObjectId;
   subCategory?: Types.ObjectId;
   childCategory?: Types.ObjectId;
-  brand?: Types.ObjectId | { _id: Types.ObjectId; brandName: string };
-  productModel?: Types.ObjectId | { _id: Types.ObjectId; modelName: string };
-  flag?: Types.ObjectId | { _id: Types.ObjectId; flagName: string };
-  warranty?: Types.ObjectId | { _id: Types.ObjectId; warrantyName: string };
-  weightUnit?: Types.ObjectId | { _id: Types.ObjectId; unitName: string };
+  brand?: Types.ObjectId;
+  productModel?: Types.ObjectId;
+  flag?: Types.ObjectId;
+  warranty?: Types.ObjectId;
+  weightUnit?: Types.ObjectId;
   offerDeadline?: Date;
   metaTitle?: string;
   metaKeyword?: string;
   metaDescription?: string;
   status: 'active' | 'inactive';
   sellCount?: number;
-  productOptions?: IProductOption[];
+  productOptions?: IProductOption[]; // ✅ Made optional
   createdAt?: Date;
   updatedAt?: Date;
+  __v?: number;
 }

@@ -6,20 +6,30 @@ const productOptionSchema = new Schema(
   {
     productImage: { type: String },
 
+    // ✅ FIXED: Changed from String to ObjectId
+    color: [{ 
+      type: Schema.Types.ObjectId, 
+      ref: 'ProductColor'  // Reference to ProductColor model
+    }],
+    
+    size: [{ 
+      type: Schema.Types.ObjectId, 
+      ref: 'ProductSize'   // Reference to ProductSize model
+    }],
+
+    // Other fields remain as strings/arrays
     unit: [{ type: String }],
     simType: [{ type: String }],
     condition: [{ type: String }],
-    warranty: {type: String},
+    warranty: { type: String },
 
     stock: { type: Number },
     price: { type: Number },
     discountPrice: { type: Number },
-
-    color: [{ type: String }],
-    size: [{ type: String }],
   },
   { _id: false }
 );
+
 const vendorProductSchema = new Schema<IVendorProduct>(
   {
     productId: { type: String, required: true, unique: true },
