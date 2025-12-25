@@ -30,8 +30,12 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
 
   // Fetch all colors and sizes at once
   const [colors, sizes] = await Promise.all([
-    colorIds.size ? ProductColor.find({ _id: { $in: Array.from(colorIds) } }).lean() : [],
-    sizeIds.size ? ProductSize.find({ _id: { $in: Array.from(sizeIds) } }).lean() : [],
+    colorIds.size
+      ? ProductColor.find({ _id: { $in: Array.from(colorIds) } }).lean()
+      : [],
+    sizeIds.size
+      ? ProductSize.find({ _id: { $in: Array.from(sizeIds) } }).lean()
+      : [],
   ]);
 
   // Create maps for quick lookup
@@ -86,7 +90,7 @@ const getAllVendorProductsFromDB = async () => {
     .populate("vendorStoreId", "storeName")
     .sort({ createdAt: -1 })
     .lean();
-  
+
   return await populateColorAndSizeNamesForProducts(result);
 };
 
@@ -101,7 +105,7 @@ const getActiveVendorProductsFromDB = async () => {
     .populate("vendorStoreId", "storeName")
     .sort({ createdAt: -1 })
     .lean();
-  
+
   return await populateColorAndSizeNamesForProducts(result);
 };
 
@@ -397,7 +401,7 @@ const getVendorProductsByBrandFromDB = async (brandId: string) => {
     .populate("vendorStoreId", "storeName")
     .sort({ createdAt: -1 })
     .lean();
-  
+
   return await populateColorAndSizeNamesForProducts(result);
 };
 
@@ -503,7 +507,11 @@ const getLandingPageProductsFromDB = async () => {
       .lean(),
   ]);
 
-  const [populatedRunningOffers, populatedBestSelling, populatedRandomProducts] = await Promise.all([
+  const [
+    populatedRunningOffers,
+    populatedBestSelling,
+    populatedRandomProducts,
+  ] = await Promise.all([
     populateColorAndSizeNamesForProducts(runningOffers),
     populateColorAndSizeNamesForProducts(bestSelling),
     populateColorAndSizeNamesForProducts(randomProducts),
@@ -786,7 +794,9 @@ const getVendorStoreAndProductsFromDB = async (
     })
   );
 
-  const populatedProducts = await populateColorAndSizeNamesForProducts(productsWithReviews);
+  const populatedProducts = await populateColorAndSizeNamesForProducts(
+    productsWithReviews
+  );
 
   return {
     store,
