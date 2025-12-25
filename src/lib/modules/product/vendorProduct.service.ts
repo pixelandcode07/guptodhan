@@ -7,48 +7,65 @@ import { StoreModel } from "../vendor-store/vendorStore.model";
 import { ProductColor } from "../product-config/models/productColor.model";
 import { ProductSize } from "../product-config/models/productSize.model";
 
-const populateColorAndSizeNames = async (product: any) => {
-  if (!product?.productOptions?.length) return product;
-  return (await populateColorAndSizeNamesForProducts([product]))[0];
-};
-
+// ✅ SINGLE DEFINITION - No duplicate functions
 const populateColorAndSizeNamesForProducts = async (products: any[]) => {
   if (!products?.length) return products;
 
   const colorIds = new Set<string>();
   const sizeIds = new Set<string>();
 
+  // Collect all color and size IDs
   for (const p of products) {
     for (const opt of p.productOptions || []) {
-      if (Array.isArray(opt.color)) opt.color.forEach((id: any) => colorIds.add(String(id)));
-      if (Array.isArray(opt.size)) opt.size.forEach((id: any) => sizeIds.add(String(id)));
+      if (Array.isArray(opt.color)) {
+        opt.color.forEach((id: any) => colorIds.add(String(id)));
+      }
+      if (Array.isArray(opt.size)) {
+        opt.size.forEach((id: any) => sizeIds.add(String(id)));
+      }
     }
   }
 
   if (!colorIds.size && !sizeIds.size) return products;
 
+  // Fetch all colors and sizes at once
   const [colors, sizes] = await Promise.all([
-    colorIds.size ? ProductColor.find({ _id: { $in: Array.from(colorIds) } }).lean() : [],
-    sizeIds.size ? ProductSize.find({ _id: { $in: Array.from(sizeIds) } }).lean() : [],
+    colorIds.size
+      ? ProductColor.find({ _id: { $in: Array.from(colorIds) } }).lean()
+      : [],
+    sizeIds.size
+      ? ProductSize.find({ _id: { $in: Array.from(sizeIds) } }).lean()
+      : [],
   ]);
 
+  // Create maps for quick lookup
   const colorMap = new Map(colors.map((c: any) => [String(c._id), c.colorName]));
   const sizeMap = new Map(sizes.map((s: any) => [String(s._id), s.name]));
 
+  // Transform products with color and size names
   return products.map((p: any) => ({
     ...p,
     productOptions: p.productOptions?.map((opt: any) => ({
       ...opt,
-      color: Array.isArray(opt.color) ? opt.color.map((id: any) => colorMap.get(String(id)) || String(id)) : opt.color,
-      size: Array.isArray(opt.size) ? opt.size.map((id: any) => sizeMap.get(String(id)) || String(id)) : opt.size,
+      color: Array.isArray(opt.color) 
+        ? opt.color.map((id: any) => colorMap.get(String(id)) || String(id)) 
+        : opt.color,
+      size: Array.isArray(opt.size) 
+        ? opt.size.map((id: any) => sizeMap.get(String(id)) || String(id)) 
+        : opt.size,
     })) || p.productOptions,
   }));
+};
+
+// ✅ Helper function to populate single product
+const populateColorAndSizeNames = async (product: any) => {
+  if (!product?.productOptions?.length) return product;
+  return (await populateColorAndSizeNamesForProducts([product]))[0];
 };
 
 const createVendorProductInDB = async (payload: Partial<IVendorProduct>) => {
   const result = await VendorProductModel.create(payload);
 
-  // Populate related fields to return names instead of IDs
   const populatedResult = await VendorProductModel.findById(result._id)
     .populate("brand", "name")
     .populate("flag", "name")
@@ -73,7 +90,7 @@ const getAllVendorProductsFromDB = async () => {
     .populate("vendorStoreId", "storeName")
     .sort({ createdAt: -1 })
     .lean();
-  
+
   return await populateColorAndSizeNamesForProducts(result);
 };
 
@@ -88,7 +105,7 @@ const getActiveVendorProductsFromDB = async () => {
     .populate("vendorStoreId", "storeName")
     .sort({ createdAt: -1 })
     .lean();
-  
+
   return await populateColorAndSizeNamesForProducts(result);
 };
 
@@ -103,13 +120,37 @@ const getVendorProductByIdFromDB = async (id: string) => {
     .populate("childCategory", "name")
     .populate("weightUnit", "name")
     .populate("vendorStoreId", "storeName storeLogo")
-    .lean(); // Convert to plain JavaScript object
-
+    // ✅ Populate nested color and size references
+    .populate({
+      path: "productOptions.color",
+      model: "ProductColor",
+      select: "colorName"
+    })
+    .populate({
+      path: "productOptions.size",
+      model: "ProductSize",
+      select: "name"
+    })
+    .lean() as any; // ✅ Cast to 'any' to avoid TypeScript issues with lean()
 
   if (!productDoc) return null;
 
-  // Populate color and size names
-  const populatedProduct = await populateColorAndSizeNames(productDoc);
+  // ✅ Proper type casting for productOptions
+  const productOptions = (productDoc.productOptions || []) as any[];
+
+  // Transform the data to extract names from populated objects
+  const transformedProduct = {
+    ...productDoc,
+    productOptions: productOptions.map((option: any) => ({
+      ...option,
+      color: Array.isArray(option.color) 
+        ? option.color.map((c: any) => c?.colorName || c)
+        : option.color,
+      size: Array.isArray(option.size)
+        ? option.size.map((s: any) => s?.name || s)
+        : option.size,
+    }))
+  };
 
   const reviews = await ReviewModel.find({ productId: id }).lean();
   const qna = await ProductQAModel.find({ productId: id }).lean();
@@ -126,14 +167,14 @@ const getVendorProductByIdFromDB = async (id: string) => {
   ]);
 
   return {
-    ...populatedProduct,
+    ...transformedProduct,
     ratingStats,
     reviews,
     qna,
   };
 };
 
-// filter for main category product
+
 const getVendorProductsByCategoryFromDB = async (
   categoryId: string,
   filters: {
@@ -143,34 +184,29 @@ const getVendorProductsByCategoryFromDB = async (
     childCategory?: string;
     brand?: string;
     search?: string;
-    sort?: string; // priceLowHigh, priceHighLow, new, old
-  }
+    sort?: string;
+  } = {}
 ) => {
   const query: any = {
     status: "active",
   };
 
-  // Category filter
   if (categoryId) {
     query.category = new mongoose.Types.ObjectId(categoryId);
   }
 
-  // Sub Category
   if (filters.subCategory) {
     query.subCategory = new mongoose.Types.ObjectId(filters.subCategory);
   }
 
-  // Child Category
   if (filters.childCategory) {
     query.childCategory = new mongoose.Types.ObjectId(filters.childCategory);
   }
 
-  // Brand
   if (filters.brand) {
     query.brand = new mongoose.Types.ObjectId(filters.brand);
   }
 
-  // Search (title, tags, description)
   if (filters.search) {
     query.$or = [
       { productTitle: { $regex: filters.search, $options: "i" } },
@@ -179,10 +215,8 @@ const getVendorProductsByCategoryFromDB = async (
     ];
   }
 
-  // Price Range
   if (filters.priceMin || filters.priceMax) {
     query["productOptions.price"] = {};
-
     if (filters.priceMin) {
       query["productOptions.price"].$gte = Number(filters.priceMin);
     }
@@ -191,23 +225,17 @@ const getVendorProductsByCategoryFromDB = async (
     }
   }
 
-  // Sorting
-  let sortQuery: any = { createdAt: -1 }; // default newest
-
+  let sortQuery: any = { createdAt: -1 };
   if (filters.sort === "priceLowHigh") {
     sortQuery = { "productOptions.price": 1 };
-  }
-  if (filters.sort === "priceHighLow") {
+  } else if (filters.sort === "priceHighLow") {
     sortQuery = { "productOptions.price": -1 };
-  }
-  if (filters.sort === "new") {
+  } else if (filters.sort === "new") {
     sortQuery = { createdAt: -1 };
-  }
-  if (filters.sort === "old") {
+  } else if (filters.sort === "old") {
     sortQuery = { createdAt: 1 };
   }
 
-  // Database query
   const result = await VendorProductModel.find(query)
     .populate("brand", "name")
     .populate("flag", "name")
@@ -223,7 +251,6 @@ const getVendorProductsByCategoryFromDB = async (
   return await populateColorAndSizeNamesForProducts(result);
 };
 
-// filter for sub category product
 const getVendorProductsBySubCategoryFromDB = async (
   subCategoryId: string,
   filters: {
@@ -232,25 +259,22 @@ const getVendorProductsBySubCategoryFromDB = async (
     brand?: string;
     childCategory?: string;
     search?: string;
-    sort?: string; // priceLowHigh | priceHighLow | new | old
-  }
+    sort?: string;
+  } = {}
 ) => {
   const query: any = {
     status: "active",
     subCategory: new mongoose.Types.ObjectId(subCategoryId),
   };
 
-  // Brand filter
   if (filters.brand) {
     query.brand = new mongoose.Types.ObjectId(filters.brand);
   }
 
-  // Child category filter
   if (filters.childCategory) {
     query.childCategory = new mongoose.Types.ObjectId(filters.childCategory);
   }
 
-  // Search filter
   if (filters.search) {
     query.productTitle = {
       $regex: filters.search,
@@ -258,22 +282,17 @@ const getVendorProductsBySubCategoryFromDB = async (
     };
   }
 
-  // Price filter inside productOptions array
   if (filters.priceMin || filters.priceMax) {
     query["productOptions.price"] = {};
-
     if (filters.priceMin) {
       query["productOptions.price"].$gte = Number(filters.priceMin);
     }
-
     if (filters.priceMax) {
       query["productOptions.price"].$lte = Number(filters.priceMax);
     }
   }
 
-  // Sorting logic
-  let sortQuery: any = { createdAt: -1 }; // default
-
+  let sortQuery: any = { createdAt: -1 };
   if (filters.sort === "priceLowHigh") {
     sortQuery = { "productOptions.price": 1 };
   } else if (filters.sort === "priceHighLow") {
@@ -300,7 +319,6 @@ const getVendorProductsBySubCategoryFromDB = async (
   return await populateColorAndSizeNamesForProducts(result);
 };
 
-// filter for child category product
 const getVendorProductsByChildCategoryFromDB = async (
   childCategoryId: string,
   filters: {
@@ -309,25 +327,22 @@ const getVendorProductsByChildCategoryFromDB = async (
     brand?: string;
     subCategory?: string;
     search?: string;
-    sort?: string; // priceLowHigh | priceHighLow | new | old
-  }
+    sort?: string;
+  } = {}
 ) => {
   const query: any = {
     status: "active",
     childCategory: new mongoose.Types.ObjectId(childCategoryId),
   };
 
-  // Sub category filter
   if (filters.subCategory) {
     query.subCategory = new mongoose.Types.ObjectId(filters.subCategory);
   }
 
-  // Brand filter
   if (filters.brand) {
     query.brand = new mongoose.Types.ObjectId(filters.brand);
   }
 
-  // Search filter (productTitle)
   if (filters.search) {
     query.productTitle = {
       $regex: filters.search,
@@ -335,10 +350,8 @@ const getVendorProductsByChildCategoryFromDB = async (
     };
   }
 
-  // Price filter in productOptions array
   if (filters.priceMin || filters.priceMax) {
     query["productOptions.price"] = {};
-
     if (filters.priceMin) {
       query["productOptions.price"].$gte = Number(filters.priceMin);
     }
@@ -347,9 +360,7 @@ const getVendorProductsByChildCategoryFromDB = async (
     }
   }
 
-  // Sorting
-  let sortQuery: any = { createdAt: -1 }; // default: newest first
-
+  let sortQuery: any = { createdAt: -1 };
   if (filters.sort === "priceLowHigh") {
     sortQuery = { "productOptions.price": 1 };
   } else if (filters.sort === "priceHighLow") {
@@ -381,16 +392,16 @@ const getVendorProductsByBrandFromDB = async (brandId: string) => {
     brand: brandId,
     status: "active",
   })
-    .populate("brand", "name") // 'brandName' -> 'name'
-    .populate("flag", "name") // 'flagName' -> 'name'
+    .populate("brand", "name")
+    .populate("flag", "name")
     .populate("warranty", "warrantyName")
-    .populate("productModel", "name") // 'modelName' -> 'name'
-    .populate("category", "name") // 'categoryName' -> 'name'
-    .populate("weightUnit", "name") // 'unitName' -> 'name'
+    .populate("productModel", "name")
+    .populate("category", "name")
+    .populate("weightUnit", "name")
     .populate("vendorStoreId", "storeName")
     .sort({ createdAt: -1 })
     .lean();
-  
+
   return await populateColorAndSizeNamesForProducts(result);
 };
 
@@ -402,16 +413,15 @@ const updateVendorProductInDB = async (
     new: true,
     runValidators: true,
   })
-    .populate("brand", "name") // 'brandName' -> 'name'
-    .populate("flag", "name") // 'flagName' -> 'name'
+    .populate("brand", "name")
+    .populate("flag", "name")
     .populate("warranty", "warrantyName")
-    .populate("productModel", "name") // 'modelName' -> 'name'
-    .populate("category", "name") // 'categoryName' -> 'name'
-    .populate("weightUnit", "name") // 'unitName' -> 'name'
+    .populate("productModel", "name")
+    .populate("category", "name")
+    .populate("weightUnit", "name")
     .populate("vendorStoreId", "storeName")
     .lean();
 
-  // Populate color and size names
   return await populateColorAndSizeNames(result);
 };
 
@@ -426,16 +436,15 @@ const addProductOptionInDB = async (id: string, option: any) => {
     { $push: { productOptions: option } },
     { new: true, runValidators: true }
   )
-    .populate("brand", "name") // 'brandName' -> 'name'
-    .populate("flag", "name") // 'flagName' -> 'name'
+    .populate("brand", "name")
+    .populate("flag", "name")
     .populate("warranty", "warrantyName")
-    .populate("productModel", "name") // 'modelName' -> 'name'
-    .populate("category", "name") // 'categoryName' -> 'name'
+    .populate("productModel", "name")
+    .populate("category", "name")
     .populate("weightUnit", "name")
     .populate("vendorStoreId", "storeName")
     .lean();
   
-  // Populate color and size names
   return await populateColorAndSizeNames(result);
 };
 
@@ -458,11 +467,9 @@ const removeProductOptionFromDB = async (id: string, optionIndex: number) => {
     .populate("vendorStoreId", "storeName")
     .lean();
   
-  // Populate color and size names
   return await populateColorAndSizeNames(result);
 };
 
-//landing page all products
 const getLandingPageProductsFromDB = async () => {
   const [runningOffers, bestSelling, randomProducts] = await Promise.all([
     VendorProductModel.find({
@@ -500,7 +507,11 @@ const getLandingPageProductsFromDB = async () => {
       .lean(),
   ]);
 
-  const [populatedRunningOffers, populatedBestSelling, populatedRandomProducts] = await Promise.all([
+  const [
+    populatedRunningOffers,
+    populatedBestSelling,
+    populatedRandomProducts,
+  ] = await Promise.all([
     populateColorAndSizeNamesForProducts(runningOffers),
     populateColorAndSizeNamesForProducts(bestSelling),
     populateColorAndSizeNamesForProducts(randomProducts),
@@ -513,7 +524,6 @@ const getLandingPageProductsFromDB = async () => {
   };
 };
 
-// live search suggestions + full search results
 const getLiveSuggestionsFromDB = async (searchTerm: string) => {
   const regex = new RegExp(searchTerm.split(" ").join("|"), "i");
 
@@ -521,10 +531,10 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
     status: "active",
     productTitle: { $regex: regex },
   })
-    .select("productTitle productImage price") // -> Add By Moinuddin
-    .populate("category", "slug") // -> Add By Moinuddin
-    .populate("subCategory", "slug") // -> Add By Moinuddin
-    .populate("childCategory", "slug") // -> Add By Moinuddin
+    .select("productTitle productImage price")
+    .populate("category", "slug")
+    .populate("subCategory", "slug")
+    .populate("childCategory", "slug")
     .limit(5)
     .sort({ createdAt: -1 });
 
@@ -556,7 +566,6 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
     .sort({ createdAt: -1 })
     .lean();
 
-  // Populate color and size names
   return await populateColorAndSizeNamesForProducts(results);
 };
 
@@ -602,11 +611,9 @@ const getOfferProductsFromDB = async () => {
     })
   );
 
-  // Populate color and size names
   return await populateColorAndSizeNamesForProducts(productsWithReviews);
 };
 
-// BEST SELLING
 const getBestSellingProductsFromDB = async () => {
   const products = await VendorProductModel.find({ status: "active" })
     .populate(basePopulate)
@@ -637,11 +644,9 @@ const getBestSellingProductsFromDB = async () => {
     })
   );
 
-  // Populate color and size names
   return await populateColorAndSizeNamesForProducts(productsWithReviews);
 };
 
-// FOR YOU (random / all active)
 const getForYouProductsFromDB = async () => {
   const products = await VendorProductModel.find({ status: "active" })
     .populate(basePopulate)
@@ -671,7 +676,6 @@ const getForYouProductsFromDB = async () => {
     })
   );
 
-  // Populate color and size names
   return await populateColorAndSizeNamesForProducts(productsWithReviews);
 };
 
@@ -691,37 +695,26 @@ const getVendorProductsByVendorIdFromDB = async (vendorId: string) => {
     .populate("vendorStoreId", "storeName")
     .lean();
 
-    console.log("Products fetched for vendor:", products);
-  // Populate color and size names
   return await populateColorAndSizeNamesForProducts(products || []);
 };
 
-// SERVICE for the vendor store page with products and filters
 const getVendorStoreAndProductsFromDB = async (
-  id: string, // Change by Moinuddin
+  id: string,
   query: any
 ) => {
-  // -----------------------------
-  // 1. Fetch Vendor Store
-  // -----------------------------
   const store = await StoreModel.findOne({
-    _id: id, // Change by Moinuddin
+    _id: id,
   });
 
   if (!store) {
     throw new Error("Store not found for this vendor.");
   }
 
-  // -----------------------------
-  // 2. Build Filters for Products
-  // -----------------------------
-
   const filter: any = {
     vendorStoreId: store._id,
     status: "active",
   };
 
-  // Price Range
   if (query.min && query.max) {
     filter["productOptions.price"] = {
       ...(query.min && { $gte: Number(query.min) }),
@@ -729,54 +722,39 @@ const getVendorStoreAndProductsFromDB = async (
     };
   }
 
-  // Sizes
   if (query.size) {
     filter["productOptions.size"] = { $in: query.size.split(",") };
   }
 
-  // Brand
   if (query.brand) {
     filter.brand = { $in: query.brand.split(",") };
   }
 
-  // Color
   if (query.color) {
     filter["productOptions.color"] = { $in: query.color.split(",") };
   }
 
-  // Flags
   if (query.flag) {
     filter.flag = { $in: query.flag.split(",") };
   }
 
-  // Search
   if (query.search) {
     filter.productTitle = { $regex: query.search, $options: "i" };
   }
 
-  // Category Hierarchy Filters
   if (query.category) filter.category = query.category;
   if (query.subCategory) filter.subCategory = query.subCategory;
   if (query.childCategory) filter.childCategory = query.childCategory;
 
-  // -----------------------------
-  // Sorting
-  // -----------------------------
   let sortObj = {};
   if (query.sortBy === "price-asc") sortObj = { productPrice: 1 };
   if (query.sortBy === "price-desc") sortObj = { productPrice: -1 };
-  else sortObj = { createdAt: -1 }; // default newest first
+  else sortObj = { createdAt: -1 };
 
-  // -----------------------------
-  // Pagination
-  // -----------------------------
   const page = Number(query.page) || 1;
   const limit = Number(query.limit) || 20;
   const skip = (page - 1) * limit;
 
-  // -----------------------------
-  // 3. Fetch Products with Filters
-  // -----------------------------
   const products = await VendorProductModel.find(filter)
     .populate("brand", "name")
     .populate("flag", "name")
@@ -791,7 +769,6 @@ const getVendorStoreAndProductsFromDB = async (
     .skip(skip)
     .limit(limit);
 
-  // Count for pagination
   const totalProducts = await VendorProductModel.countDocuments(filter);
 
   const productsWithReviews = await Promise.all(
@@ -817,7 +794,9 @@ const getVendorStoreAndProductsFromDB = async (
     })
   );
 
-  const populatedProducts = await populateColorAndSizeNamesForProducts(productsWithReviews);
+  const populatedProducts = await populateColorAndSizeNamesForProducts(
+    productsWithReviews
+  );
 
   return {
     store,
@@ -831,70 +810,22 @@ const getVendorStoreAndProductsFromDB = async (
   };
 };
 
-// for vendor dashboard to see their products
 const getVendorStoreAndProductsFromDBVendorDashboard = async (vendorId: string) => {
-  // 1. Find store by vendorId
   const store = await StoreModel.findOne({ vendorId });
 
   if (!store) {
     throw new Error("Store not found for this vendor");
   }
 
-  // 2. Find all products for this store
   const products = await VendorProductModel.find({
     vendorStoreId: store._id,
   });
 
-  // 3. Return only data
   return {
     store,
     products,
   };
 };
-
-const getVendorStoreProductsWithReviewsFromDB = async (vendorId: string) => {
-  // 1️⃣ Find store by vendorId
-  const store = await StoreModel.findOne({ vendorId });
-
-  if (!store) {
-    throw new Error('Store not found for this vendor');
-  }
-
-  // 2️⃣ Find products using storeId
-  const products = await VendorProductModel.find({
-    vendorStoreId: store._id,
-  });
-
-  // 3️⃣ Attach reviews for each product
-  const productsWithReviews = await Promise.all(
-    products.map(async (product) => {
-      const reviewStats = await ReviewModel.aggregate([
-        {
-          $match: { productId: product._id },
-        },
-        {
-          $group: {
-            _id: '$productId',
-            totalReviews: { $sum: 1 },
-            averageRating: { $avg: '$rating' },
-          },
-        },
-      ]);
-
-      return {
-        ...product.toObject(),
-        totalReviews: reviewStats[0]?.totalReviews || 0,
-        averageRating: reviewStats[0]?.averageRating || 0,
-      };
-    })
-  );
-
-  return {
-    store,
-    products: productsWithReviews,
-  };
-};
-
 
 export const VendorProductServices = {
   createVendorProductInDB,
@@ -913,12 +844,9 @@ export const VendorProductServices = {
   getLiveSuggestionsFromDB,
   getSearchResultsFromDB,
   getVendorProductsByVendorIdFromDB,
-
   getOfferProductsFromDB,
   getBestSellingProductsFromDB,
   getForYouProductsFromDB,
-
   getVendorStoreAndProductsFromDB,
-  getVendorStoreAndProductsFromDBVendorDashboard,
-  getVendorStoreProductsWithReviewsFromDB
+  getVendorStoreAndProductsFromDBVendorDashboard
 };

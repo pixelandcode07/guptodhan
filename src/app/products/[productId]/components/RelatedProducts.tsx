@@ -3,100 +3,69 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
-interface RelatedProduct {
-  _id: string;
-  productTitle: string;
-  thumbnailImage: string;
-  productPrice: number;
-  discountPrice?: number;
-  stock?: number;
-  brand?: { _id: string; name: string } | string;
-  category?: { _id: string; name: string } | string;
-}
-
-interface RelatedProductsProps {
-  products: RelatedProduct[];
-  categoryName?: string;
-}
-
-export default function RelatedProducts({ products, categoryName }: RelatedProductsProps) {
-  if (!products || products.length === 0) {
-    return null;
-  }
+export default function RelatedProducts({ products, categoryName }: any) {
+  if (!products?.length) return null;
 
   return (
-    <div className="mt-8 sm:mt-10 md:mt-12 bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-3 sm:p-4 md:p-6 pb-1 sm:pb-2">
-        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">
-          <span className="block sm:inline">More Products</span>
-          {categoryName && (
-            <span className="block sm:inline text-sm sm:text-base md:text-lg font-normal text-gray-600 sm:ml-2 mt-1 sm:mt-0">
-              from {categoryName}
-            </span>
-          )}
-        </h2>
+    <div className="mt-12 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 px-1">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">You Might Also Like</h2>
+          <p className="text-slate-500 text-sm">More picks from {categoryName || 'this category'}</p>
+        </div>
+        <Link href={`/category/${categoryName}`} className="text-sm font-bold text-blue-600 hover:underline">
+          View All Products
+        </Link>
       </div>
-      <div className="px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
-          {products.map((product) => {
-            const brandName = typeof product.brand === 'object' && product.brand !== null
-              ? product.brand.name
-              : 'No Brand';
-            const finalPrice = product.discountPrice || product.productPrice;
-            const originalPrice = product.discountPrice ? product.productPrice : null;
-            const discountPercent = product.discountPrice && product.productPrice
-              ? Math.round(((product.productPrice - product.discountPrice) / product.productPrice) * 100)
-              : 0;
 
-            return (
-              <Link
-                key={product._id}
-                href={`/products/${product._id}`}
-                className="group bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200 hover:border-[#0099cc]"
-              >
-                <div className="relative aspect-square bg-gray-100">
-                  <Image
-                    src={product.thumbnailImage || '/placeholder-product.png'}
-                    alt={product.productTitle}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-200"
-                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
-                  />
-                  {discountPercent > 0 && (
-                    <div className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
-                      -{discountPercent}%
-                    </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        {products.map((product: any) => {
+          const finalPrice = product.discountPrice || product.productPrice;
+          const discountPercent = product.discountPrice 
+            ? Math.round(((product.productPrice - product.discountPrice) / product.productPrice) * 100) 
+            : 0;
+
+          return (
+            <Link
+              key={product._id}
+              href={`/products/${product._id}`}
+              className="group bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full"
+            >
+              <div className="relative aspect-[4/5] bg-slate-50 p-2 overflow-hidden">
+                <Image
+                  src={product.thumbnailImage || '/placeholder.png'}
+                  alt={product.productTitle}
+                  fill
+                  className="object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
+                />
+                {discountPercent > 0 && (
+                  <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-black px-2 py-1 rounded shadow-sm">
+                    {discountPercent}% OFF
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 flex flex-col flex-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase mb-1 truncate">
+                  {typeof product.brand === 'object' ? product.brand.name : 'Generic'}
+                </p>
+                <h3 className="text-[13px] font-medium text-slate-700 line-clamp-2 mb-3 leading-snug group-hover:text-blue-600 transition-colors">
+                  {product.productTitle}
+                </h3>
+                
+                <div className="mt-auto pt-2 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-bold text-slate-900">৳{finalPrice.toLocaleString()}</span>
+                  </div>
+                  {product.discountPrice && (
+                    <span className="text-[11px] text-slate-400 line-through">৳{product.productPrice.toLocaleString()}</span>
                   )}
                 </div>
-                <div className="p-2 sm:p-3">
-                  <h3 className="text-xs sm:text-sm font-medium text-gray-900 line-clamp-2 mb-1.5 sm:mb-2 group-hover:text-[#0099cc] transition-colors min-h-10 sm:min-h-12">
-                    {product.productTitle}
-                  </h3>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1.5 sm:mb-2">
-                    <span className="text-sm sm:text-base md:text-lg font-bold text-[#0099cc]">
-                      ৳{finalPrice.toLocaleString()}
-                    </span>
-                    {originalPrice && (
-                      <span className="text-[10px] sm:text-xs text-gray-400 line-through">
-                        ৳{originalPrice.toLocaleString()}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between text-[10px] sm:text-xs text-gray-500">
-                    <span className="truncate flex-1 mr-1">{brandName}</span>
-                    {product.stock !== undefined && (
-                      <span className={`${product.stock > 0 ? 'text-green-600' : 'text-red-600'} shrink-0 text-[10px] sm:text-xs`}>
-                        {product.stock > 0 ? 'In Stock' : 'Out'}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
 }
-

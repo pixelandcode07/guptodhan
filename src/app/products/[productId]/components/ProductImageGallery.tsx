@@ -1,56 +1,66 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { imageFade } from './constants';
 import { Product } from './types';
+import { ZoomIn, ChevronLeft, ChevronRight } from 'lucide-react';
 
-interface ProductImageGalleryProps {
-  product: Product;
-}
+export default function ProductImageGallery({ product, selectedColor = '', selectedSize = '' }: any) {
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [currentImages, setCurrentImages] = useState<string[]>([]);
+  const [isZoomed, setIsZoomed] = useState(false);
 
-export default function ProductImageGallery({ product }: ProductImageGalleryProps) {
-  const [selectedImage, setSelectedImage] = useState(product.thumbnailImage);
+  useEffect(() => {
+    let newImages: string[] = [];
+    const defaultImages = [product.thumbnailImage, ...(product.photoGallery || [])].filter(Boolean);
+
+    if (selectedColor && product.productOptions) {
+      const matchedVariant = product.productOptions.find((option: any) => {
+        const optionColor = Array.isArray(option.color) ? option.color[0] : option.color;
+        const optionSize = Array.isArray(option.size) ? option.size[0] : option.size;
+        return optionColor === selectedColor && (selectedSize ? optionSize === selectedSize : true);
+      });
+      if (matchedVariant?.productImage) {
+        newImages = [matchedVariant.productImage, ...defaultImages];
+      } else {
+        newImages = defaultImages;
+      }
+    } else {
+      newImages = defaultImages;
+    }
+    setCurrentImages(Array.from(new Set(newImages)));
+    setSelectedImageIndex(0);
+  }, [selectedColor, selectedSize, product]);
+
+  const mainImage = currentImages[selectedImageIndex] || product.thumbnailImage;
 
   return (
-    <div className="p-3 sm:p-4 border-b md:border-b-0 md:border-r border-gray-100">
-      <div className="relative h-[250px] sm:h-[300px] md:h-[350px] lg:h-[400px] w-full bg-white rounded-md flex items-center justify-center overflow-hidden mb-3 sm:mb-4 group">
-        <AnimatePresence mode='wait'>
-          <motion.div
-            key={selectedImage}
-            variants={imageFade}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            className="relative w-full h-full"
-          >
-            <Image 
-              src={selectedImage} 
-              alt={product.productTitle} 
-              fill 
-              className="object-contain hover:scale-110 transition-transform duration-500 cursor-zoom-in"
-              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 40vw"
-              priority
-            />
-          </motion.div>
-        </AnimatePresence>
+    <div className="sticky top-20 p-4 sm:p-6 bg-gradient-to-br from-gray-50 to-white border-r">
+      <div className="relative bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-100 group">
+        <div className="relative aspect-square">
+          <AnimatePresence mode="wait">
+            <motion.div key={mainImage} variants={imageFade} initial="initial" animate="animate" exit="exit" className="relative w-full h-full">
+              <Image 
+                src={mainImage} alt={product.productTitle} fill 
+                className={`object-contain transition-transform duration-700 ${isZoomed ? 'scale-150' : 'group-hover:scale-105'}`} 
+                priority 
+              />
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
-      
-      <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-200">
-        {(product.photoGallery || [product.thumbnailImage]).map((img, idx) => (
-          <motion.div 
-            key={idx}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setSelectedImage(img)}
-            className={`relative w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 border-2 rounded-md cursor-pointer overflow-hidden shrink-0 ${selectedImage === img ? 'border-[#0099cc]' : 'border-gray-200'}`}
+      <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
+        {currentImages.map((img, idx) => (
+          <div 
+            key={idx} onClick={() => setSelectedImageIndex(idx)}
+            className={`relative w-16 h-16 rounded-lg cursor-pointer border-2 ${selectedImageIndex === idx ? 'border-blue-500' : 'border-gray-200'}`}
           >
-            <Image src={img} alt="thumb" fill className="object-cover" sizes="(max-width: 640px) 48px, (max-width: 768px) 56px, 64px" />
-          </motion.div>
+            <Image src={img} alt="thumb" fill className="object-cover rounded-lg" />
+          </div>
         ))}
       </div>
     </div>
   );
 }
-
