@@ -64,14 +64,14 @@ const menuItems = [
         url: "/reviews",
         icon: Star,
     },
-    {
-        title: "Withdrawal",
-        icon: DollarSign,
-        subItems: [
-            { title: "Withdraw Amount", url: "/withdrawal/request", icon: Wallet },
-            { title: "Withdrawal History", url: "/withdrawal/history", icon: History },
-        ],
-    },
+    // {
+    //     title: "Withdrawal",
+    //     icon: DollarSign,
+    //     subItems: [
+    //         { title: "Withdraw Amount", url: "/withdrawal/request", icon: Wallet },
+    //         { title: "Withdrawal History", url: "/withdrawal/history", icon: History },
+    //     ],
+    // },
     {
         title: "Store",
         url: "/store",

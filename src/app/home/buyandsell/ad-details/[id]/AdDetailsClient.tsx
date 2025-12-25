@@ -1,9 +1,8 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\app\home\buyandsell\ad-details\[id]\AdDetailsClient.tsx
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react'; // ✅ Use NextAuth
+import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -248,9 +247,9 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                   {isStartingChat ? 'Starting Chat...' : 'Message Seller'}
                 </Button>
 
-                <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700">
+                {/* <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700">
                   <ShoppingCart className="w-5 h-5 mr-2" /> Buy Now
-                </Button>
+                </Button> */}
 
                 <Button
                   size="lg"
