@@ -4,8 +4,8 @@ import Link from "next/link";
 
 export default function GuptodhanVendorBanner() {
     return (
-        <section className="w-full bg-gradient-to-r from-emerald-50 via-white to-sky-50 py-12">
-            <div className="max-w-[90vw] mx-auto px-6 md:px-12 lg:px-20">
+        <section className="w-full bg-gradient-to-r from-emerald-50 via-white to-sky-50 md:py-12">
+            <div className="md:max-w-[90vw] mx-auto px-0 md:px-12 lg:px-20">
                 <div className="relative overflow-hidden rounded-3xl shadow-2xl bg-white/60 backdrop-blur-md p-8 md:p-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
 
                     {/* Decorative blobs */}

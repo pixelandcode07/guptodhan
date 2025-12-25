@@ -1,9 +1,5 @@
-import React from 'react'
+import RearrangeBuySellCategoriesClient from './components/RearrangeBuySellCategoriesClient';
 
-export default function RearrangePage() {
-    return (
-        <div>
-            This is Rearrange Page
-        </div>
-    )
+export default function RearrangeBuySellCategoriesPage() {
+  return <RearrangeBuySellCategoriesClient />;
 }

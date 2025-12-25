@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
   ChevronLeft, ChevronRight, MapPin, Phone, Mail,
-  Shield, Share2, Heart, Flag, ShoppingCart
+  Shield, Share2, Heart, Flag, ShoppingCart, MessageCircle
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -42,9 +44,68 @@ interface Ad {
 }
 
 export default function AdDetailsClient({ ad }: { ad: Ad }) {
+  const router = useRouter();
+  const { data: session, status } = useSession(); // ✅ Get NextAuth session
+
   const [selectedImage, setSelectedImage] = useState(0);
   const [showPhone, setShowPhone] = useState(false);
   const [expandedDesc, setExpandedDesc] = useState(false);
+  const [isStartingChat, setIsStartingChat] = useState(false);
+  const [chatError, setChatError] = useState('');
+
+  // ==========================================
+  // HANDLE START CHAT
+  // ==========================================
+  const handleStartChat = async () => {
+    setChatError('');
+
+    // ✅ Check if user is authenticated with NextAuth
+    if (status !== 'authenticated' || !session?.user) {
+      router.push('/login'); // Redirect to login
+      return;
+    }
+
+    // ✅ Get user ID from NextAuth session
+    const userId = (session.user as any).id;
+    const token = (session.user as any).accessToken;
+
+    // Check if user is trying to chat with themselves
+    if (userId === ad.user._id) {
+      setChatError('You cannot start conversation with yourself');
+      return;
+    }
+
+    try {
+      setIsStartingChat(true);
+
+      // Call API to start/get conversation
+      const response = await fetch('/api/v1/conversations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // ✅ Use NextAuth token
+        },
+        body: JSON.stringify({
+          adId: ad._id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start conversation');
+      }
+
+      const data = await response.json();
+      const conversationId = data.data._id;
+
+      // Navigate to chat page
+      router.push(`/home/chat/${conversationId}`);
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      setChatError('Failed to start conversation. Please try again.');
+    } finally {
+      setIsStartingChat(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -80,7 +141,6 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                     src={ad.images[selectedImage] || '/placeholder.png'}
                     alt={ad.title}
                     fill
-                    // fill
                     className="object-contain p-4 lg:p-8"
                     priority={selectedImage === 0}
                     sizes="(max-width: 1024px) 100vw, 70vw"
@@ -168,10 +228,28 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
 
               <Separator className="my-6" />
 
+              {/* Error Message */}
+              {chatError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+                  {chatError}
+                </div>
+              )}
+
               <div className="space-y-3">
-                <Button size="lg" className="w-full bg-green-600">
-                  <ShoppingCart className="w-5 h-5 mr-2" /> Buy Now
+                {/* MESSAGE SELLER BUTTON (CHAT) */}
+                <Button
+                  size="lg"
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  onClick={handleStartChat}
+                  disabled={isStartingChat}
+                >
+                  <MessageCircle className="w-5 h-5 mr-2" />
+                  {isStartingChat ? 'Starting Chat...' : 'Message Seller'}
                 </Button>
+
+                {/* <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700">
+                  <ShoppingCart className="w-5 h-5 mr-2" /> Buy Now
+                </Button> */}
 
                 <Button
                   size="lg"
@@ -188,7 +266,7 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                 <Button variant="outline" className="flex-1"><Heart className="w-5 h-5 mr-2" /> Save</Button>
                 <Button variant="outline" className="flex-1"><Share2 className="w-5 h-5 mr-2" /> Share</Button>
 
-                {/* Reusable Report Dialog - Icon */}
+                {/* Report Dialog */}
                 <ReportDialog
                   adId={ad._id}
                   adTitle={ad.title}
@@ -220,7 +298,7 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                 {ad.district}, {ad.division}
               </div>
 
-              {/* Reusable Report Dialog - Full Button */}
+              {/* Report Dialog Full Button */}
               <ReportDialog
                 adId={ad._id}
                 adTitle={ad.title}

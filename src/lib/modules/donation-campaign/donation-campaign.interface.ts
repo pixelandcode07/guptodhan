@@ -1,13 +1,24 @@
+// src/lib/modules/donation-campaign/donation-campaign.interface.ts
+
 import { Document, Types } from 'mongoose';
 
 export interface IDonationCampaign extends Document {
-  creator: Types.ObjectId; // User মডেলের রেফারেন্স
-  category: Types.ObjectId; // DonationCategory মডেলের রেফারেন্স
+  creator: Types.ObjectId;
+  category: Types.ObjectId;
   title: string;
   item: 'money' | 'clothes' | 'food' | 'books' | 'other';
   description: string;
-  images: string[]; // Cloudinary URL Array
+  images: string[];
   status: 'active' | 'inactive' | 'completed';
-  goalAmount?: number; // যদি item 'money' হয়
-  raisedAmount?: number; // এখন পর্যন্ত কত টাকা উঠেছে
+  
+  // ✅ Amount tracking
+  goalAmount?: number;
+  raisedAmount?: number;
+  
+  // ✅ Add this field
+  donorsCount?: number;  // Number of people who contributed
+  
+  // ✅ Timestamps
+  createdAt?: Date;
+  updatedAt?: Date;
 }

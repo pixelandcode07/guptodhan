@@ -22,7 +22,8 @@ function LayoutContent({ children }: { children: ReactNode }) {
     pathname.startsWith('/join-as-vendor') ||
     pathname.startsWith('/vendor-singin') ||
     pathname.startsWith('/vendor/forgot-password') ||
-    pathname.startsWith('/vendor-singup');
+    pathname.startsWith('/vendor-singup') ||
+    pathname.startsWith('/home/chat');
 
   return (
     <>

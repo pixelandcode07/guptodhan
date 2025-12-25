@@ -25,11 +25,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import LogInRegister from "../../LogInAndRegister/LogIn_Register";
+import { useState, useEffect } from "react"; // স্টেট ইম্পোর্ট করা হয়েছে
 
 export default function MobileFooter() {
     const pathname = usePathname() || "";
     const { data: session } = useSession();
     const user = session?.user;
+    
+    // হাইড্রেশন এরর ফিক্স করার জন্য স্টেট
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const isActive = (path: string) => pathname.startsWith(path);
 
@@ -43,6 +51,8 @@ export default function MobileFooter() {
             .toUpperCase()
             .slice(0, 2);
     };
+
+    if (!mounted) return null;
 
     return (
         <>
@@ -72,7 +82,7 @@ export default function MobileFooter() {
 
                     <li>
                         <Link
-                            href="/messages"
+                            href="/home/chat"
                             className={`flex flex-col items-center gap-1 px-3 py-2 text-xs font-medium ${isActive("/messages") ? "text-[#0097E9]" : "text-gray-600"
                                 }`}
                         >
@@ -92,7 +102,6 @@ export default function MobileFooter() {
                         </Link>
                     </li>
 
-                    {/* PROFILE / SIGN IN – THIS IS THE FIX */}
                     <li>
                         {user ? (
                             <DropdownMenu>

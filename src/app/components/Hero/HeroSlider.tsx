@@ -98,7 +98,7 @@ export default function HeroSlider({ sliders }: HeroSliderProps) {
               src={current.image}
               alt={current.bannerTitleWithColor}
               fill
-              className="object-cover"
+              className="object-fill"
               priority={index === 0}
             />
           </Link>

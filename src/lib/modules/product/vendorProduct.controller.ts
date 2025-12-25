@@ -39,8 +39,9 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
       weightUnit: validatedData.weightUnit
         ? new Types.ObjectId(validatedData.weightUnit)
         : undefined,
-      productOptions: (validatedData.productOptions ?? []).map((option) => ({
-        ...option,
+      // ✅ FIXED: Properly handle productOptions with warranty as optional
+      productOptions: (validatedData.productOptions ?? []).map((option: any) => ({
+        productImage: option.productImage || undefined,
         unit: Array.isArray(option.unit)
           ? option.unit
           : option.unit
@@ -66,6 +67,11 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
           : option.size
             ? [option.size]
             : [],
+        // ✅ FIXED: warranty is now optional
+        warranty: option.warranty || undefined,
+        stock: option.stock || undefined,
+        price: option.price || undefined,
+        discountPrice: option.discountPrice || undefined,
       })),
     };
 
@@ -156,28 +162,6 @@ const getVendorProductById = async (
   });
 };
 
-// const getVendorProductsByCategory = async (
-//   req: NextRequest,
-//   context: { params: Promise<{ id: string }> } // Next.js App Router e params Promise
-// ) => {
-//   await dbConnect();
-
-//   // Unwrap the params promise
-//   const resolvedParams = await context.params;
-//   const categoryId = resolvedParams.id;
-
-//   console.log("Category ID:", categoryId);
-
-//   // Call service
-//   const result = await VendorProductServices.getVendorProductsByCategoryFromDB(categoryId);
-
-//   return sendResponse({
-//     success: true,
-//     statusCode: StatusCodes.OK,
-//     message: "Category products retrieved successfully!",
-//     data: result,
-//   });
-// };
 
 
 // filter for main category product
@@ -217,24 +201,6 @@ const getVendorProductsByCategory = async (
 
 
 
-// const getVendorProductsBySubCategory = async (
-//   req: NextRequest,
-//   { params }: { params: { subCategoryId: string } }
-// ) => {
-//   await dbConnect();
-//   const result =
-//     await VendorProductServices.getVendorProductsBySubCategoryFromDB(
-//       params.subCategoryId
-//     );
-
-//   return sendResponse({
-//     success: true,
-//     statusCode: StatusCodes.OK,
-//     message: "Sub-category products retrieved successfully!",
-//     data: result,
-//   });
-// };
-
 // filter for sub category product
 const getVendorProductsBySubCategory = async (
   req: NextRequest,
@@ -254,26 +220,6 @@ const getVendorProductsBySubCategory = async (
     data: result,
   });
 };
-
-
-// const getVendorProductsByChildCategory = async (
-//   req: NextRequest,
-//   { params }: { params: { childCategoryId: string } }
-// ) => {
-//   await dbConnect();
-//   const result =
-//     await VendorProductServices.getVendorProductsByChildCategoryFromDB(
-//       params.childCategoryId
-//     );
-
-//   return sendResponse({
-//     success: true,
-//     statusCode: StatusCodes.OK,
-//     message: "Child-category products retrieved successfully!",
-//     data: result,
-//   });
-// };
-
 
 // filter for child category product
 const getVendorProductsByChildCategory = async (
@@ -499,32 +445,6 @@ const getLandingPageProducts = async () => {
     data: result,
   });
 };
-
-// const searchVendorProducts = async (req: NextRequest) => {
-//   await dbConnect();
-//   const { searchParams } = new URL(req.url);
-//   const searchTerm = searchParams.get("q") || "";
-
-//   if (!searchTerm) {
-//     return sendResponse({
-//       success: false,
-//       statusCode: StatusCodes.BAD_REQUEST,
-//       message: "Search term is required!",
-//       data: null,
-//     });
-//   }
-
-//   const result = await VendorProductServices.searchVendorProductsFromDB(
-//     searchTerm
-//   );
-
-//   return sendResponse({
-//     success: true,
-//     statusCode: StatusCodes.OK,
-//     message: "Search results retrieved successfully!",
-//     data: result,
-//   });
-// };
 
 
 const searchVendorProducts = async (req: NextRequest) => {
