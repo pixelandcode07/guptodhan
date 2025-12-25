@@ -51,6 +51,8 @@ const vendorRoutes = [
   '/api/v1/withdrawal',
   '/api/v1/vendors',
   '/api/v1/vendor-store/store-with-product/[id]',
+  '/v1/vendor-store/review',
+  '/api/v1/vendor-store/vendorOrder'
 ];
 
 // ❗️ Protected Routes
