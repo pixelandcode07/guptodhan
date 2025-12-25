@@ -28,6 +28,7 @@ interface DashboardResponse {
 
 export default async function VendorDashboard() {
   const session = await getServerSession(authOptions);
+  console.log("Vendor Dashboard Session:", session);
 
   if (!session?.user) {
     return <div>Please log in to view dashboard.</div>;
@@ -110,7 +111,7 @@ export default async function VendorDashboard() {
             <div className="text-3xl font-bold">
               {totalSell.toLocaleString("en-BD")}
             </div>
-            <Link href={'/withdrawal/request'} className="text-sm text-blue-600 cursor-pointer hover:underline">View Earnings</Link>
+            {/* <Link href={'/withdrawal/request'} className="text-sm text-blue-600 cursor-pointer hover:underline">View Earnings</Link> */}
           </CardContent>
         </Card>
       </div>

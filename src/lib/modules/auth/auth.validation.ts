@@ -72,7 +72,7 @@ export const registerServiceProviderValidationSchema = z.object({
   phoneNumber: z.string(),
   address: z.string(),
   bio: z.string().optional(),
-  skills: z.array(z.string()).min(1),
+  // skills: z.array(z.string()).min(1),
 });
 
 // --- Zod Validation Schema ---

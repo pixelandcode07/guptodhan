@@ -31,6 +31,7 @@ export default function SeoForm({ defaultData }: SeoFormProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
 
+
   const [pageTitle, setPageTitle] = useState(defaultData.pageTitle);
   const [metaTitle, setMetaTitle] = useState(defaultData.metaTitle);
   const [metaKeywords, setMetaKeywords] = useState(defaultData.metaKeywords);
@@ -118,6 +119,7 @@ export default function SeoForm({ defaultData }: SeoFormProps) {
   const handleUpdate = async () => {
     if (!pageTitle.trim()) return toast.error('Page Title is required');
     if (!metaTitle.trim()) return toast.error('Meta Title is required');
+    console.log('Page Content being sent:', pageContent);
 
     setLoading(true);
     const formData = new FormData();
@@ -132,10 +134,21 @@ export default function SeoForm({ defaultData }: SeoFormProps) {
     if (image) formData.append('ogImage', image);
 
     try {
-      await axios.post('/api/v1/seo-settings', formData, {
+      const { data } = await axios.post('/api/v1/seo-settings', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      toast.success('Page created successfully!');
+      console.log('Created SEO page:', data);
+      toast.success('Page created successfully! Ready for the next one.');
+      setPageTitle('');
+      setMetaTitle('');
+      setMetaKeywords([]);
+      setKeywordInput('');
+      setMetaDescription('');
+      setPageContent('');
+      setShowInHeader(false);
+      setShowInFooter(false);
+      setImage(null);
+      setPreview(null);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to save');
     } finally {
@@ -143,7 +156,6 @@ export default function SeoForm({ defaultData }: SeoFormProps) {
     }
   };
 
-  // Main Render
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto p-6">
       {/* Left: SEO */}
@@ -244,8 +256,11 @@ export default function SeoForm({ defaultData }: SeoFormProps) {
           <Button variant="outline" onClick={() => router.back()}>
             Cancel
           </Button>
-          <Button onClick={handleUpdate} disabled={loading || !pageTitle.trim() || !metaTitle.trim()}>
+          {/* <Button onClick={handleUpdate} disabled={loading || !pageTitle.trim() || !metaTitle.trim()}>
             {loading ? 'Saving...' : 'Create Page & SEO'}
+          </Button> */}
+          <Button onClick={handleUpdate} disabled={loading || !pageTitle.trim() || !metaTitle.trim()}>
+            {loading ? 'Creating...' : 'Create Page'}
           </Button>
         </div>
       </div>

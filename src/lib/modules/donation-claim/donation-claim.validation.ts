@@ -1,25 +1,27 @@
-import { z } from "zod";
+// ✅ src/lib/modules/donation-claim/donation-claim.validation.ts
+
+import { z } from 'zod'
 
 export const createDonationClaimSchema = z.object({
-  itemId: z.string().min(1, { message: "Item ID is required" }),
+  itemId: z.string()
+    .min(1, 'Item ID is required')
+    .refine((val) => /^[a-f\d]{24}$/i.test(val), {
+      message: 'Invalid item ID format'
+    }),
+  name: z.string()
+    .min(3, 'Name must be at least 3 characters')
+    .max(100, 'Name must be less than 100 characters'),
+  phone: z.string()
+    .min(10, 'Phone must be at least 10 digits')
+    .max(15, 'Phone must be less than 15 characters')
+    .regex(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/, {
+      message: 'Invalid phone number format'
+    }),
+  email: z.string()
+    .email('Invalid email address'),
+  reason: z.string()
+    .min(10, 'Reason must be at least 10 characters')
+    .max(1000, 'Reason must be less than 1000 characters'),
+})
 
-  name: z
-    .string()
-    .min(1, { message: "Name is required" })
-    .min(2, { message: "Name is too short" }),
-
-  phone: z
-    .string()
-    .min(1, { message: "Phone number is required" })
-    .min(11, { message: "Invalid phone number" }),
-
-  email: z
-    .string()
-    .min(1, { message: "Email is required" })
-    .email({ message: "Invalid email address" }),
-
-  reason: z
-    .string()
-    .min(1, { message: "Reason is required" })
-    .min(10, { message: "Reason must be at least 10 characters" }),
-});
+export type CreateDonationClaimInput = z.infer<typeof createDonationClaimSchema>

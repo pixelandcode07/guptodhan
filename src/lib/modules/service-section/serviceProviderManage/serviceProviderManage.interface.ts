@@ -6,15 +6,12 @@ export interface IBooking extends Document {
 
   // Customer Info
   customer_id: Types.ObjectId;
-  customer_name: string;
 
   // Provider Info
   provider_id: Types.ObjectId;
-  provider_name?: string;
 
   // Service Info
   service_id: Types.ObjectId;
-  service_name: string;
 
   // Booking Schedule
   booking_date: Date;

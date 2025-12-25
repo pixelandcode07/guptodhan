@@ -19,7 +19,7 @@ const userSchema = new Schema<TUserDoc, UserModel>(
 
     serviceProviderInfo: {
       serviceCategory: { type: Schema.Types.ObjectId, ref: 'ServiceCategory' },
-      subCategories: [{ type: Schema.Types.ObjectId, ref: 'ServiceSubCategory' }],
+      // subCategories: [{ type: Schema.Types.ObjectId, ref: 'ServiceSubCategory' }],
       cvUrl: String,
       bio: String,
     },

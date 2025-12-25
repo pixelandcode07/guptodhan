@@ -7,6 +7,7 @@ import { connectRedis, redisClient } from '@/lib/redis';
 import { sendEmail } from '@/lib/utils/email';
 import mongoose from 'mongoose';
 import { ServiceProvider } from '../service-provider/serviceProvider.model';
+import bcrypt from 'bcrypt';
 import { User } from '../user/user.model';
 import { verifyGoogleToken } from '@/lib/utils/verifyGoogleToken';
 import { Vendor } from '../vendors/vendor.model';
@@ -68,7 +69,14 @@ const loginUser = async (payload: TLoginUser) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password, ...userWithoutPassword } = user.toObject();
 
-  return { accessToken, refreshToken, user: userWithoutPassword };
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      ...userWithoutPassword,
+      hasPassword: !!password, // ← এটা যোগ করো
+    },
+  };
 };
 
 
@@ -77,7 +85,7 @@ const vendorLogin = async (payload: TLoginUser) => {
   const { identifier, password: plainPassword } = payload;
 
   const isEmail = identifier.includes('@');
-  
+
   // 🔥 ১. এখানে populate('vendorInfo') যোগ করতে হবে যাতে ভেন্ডর আইডি পাওয়া যায়
   const user = isEmail
     ? await User.findOne({ email: identifier }).select('+password').populate('vendorInfo')
@@ -120,7 +128,8 @@ const vendorLogin = async (payload: TLoginUser) => {
       address: userWithoutPassword.address,
       isActive: userWithoutPassword.isActive,
       // vendorId: (userWithoutPassword.vendorInfo as any)?._id || null, 
-      vendorId:userWithoutPassword.vendorInfo?._id || null, 
+      vendorId: userWithoutPassword.vendorInfo?._id || null,
+      hasPassword: !!password,
     }
   };
 };
@@ -346,86 +355,33 @@ const resetPasswordWithToken = async (token: string, newPassword: string) => {
 
   try {
     decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
-    // console.log("Decoded JWT:", decoded); 
   } catch (error) {
     throw new Error('Invalid or expired reset token');
   }
 
-  // ✅ FIX: এখানে লজিক ঠিক করা হয়েছে যাতে Vendor এবং User উভয়েই পাসওয়ার্ড রিসেট করতে পারে
-
-  // ১. যদি Vendor Token হয়
   if (decoded.type === 'vendor_password_reset') {
     const user = await User.findById(decoded.userId);
     if (!user) throw new Error('User not found');
     if (user.role !== 'vendor') throw new Error('This token is not valid for vendor accounts');
-    
+
     user.password = newPassword;
     await user.save();
     return null;
   }
 
-  // ২. যদি Normal User Token হয় (যেখানে purpose: 'password-reset' থাকে)
   else if (decoded.purpose === 'password-reset') {
     const user = await User.findById(decoded.userId);
     if (!user) throw new Error('User not found');
-    
+
     user.password = newPassword;
     await user.save();
     return null;
   }
 
-  // ৩. যদি কোনোটাই না হয়
   else {
     throw new Error('Invalid or unauthorized token payload');
   }
 };
-
-
-
-
-
-
-// const registerVendor = async (payload: any) => {
-//   const { name, email, password, phoneNumber, address, ...vendorData } = payload;
-
-//   // 👇 --- এখানে পরিবর্তন --- 👇
-//   const userData = {
-//     name,
-//     email,
-//     password,
-//     phoneNumber,
-//     address,
-//     role: 'user',     // <-- 'vendor' থেকে 'user' করা হয়েছে
-//     isActive: false   // <-- এটি যোগ করা হয়েছে
-//   };
-//   // 👆 --- পরিবর্তন শেষ --- 👆
-
-//   const session = await mongoose.startSession();
-//   try {
-//     session.startTransaction();
-
-//     // User.create ব্যবহার করলে pre-save হুক (পাসওয়ার্ড হ্যশিং) কাজ করবে
-//     const newUser = (await User.create([userData], { session }))[0];
-//     if (!newUser) { throw new Error('Failed to create user'); }
-
-//     vendorData.user = newUser._id;
-//     const newVendor = (await Vendor.create([vendorData], { session }))[0];
-//     if (!newVendor) { throw new Error('Failed to create vendor profile'); }
-
-//     newUser.vendorInfo = newVendor._id;
-//     await newUser.save({ session });
-
-//     await session.commitTransaction();
-//     return newUser;
-//   } catch (error) {
-//     await session.abortTransaction();
-//     throw error;
-//   } finally {
-//     session.endSession();
-//   }
-// };
-
-// auth.service.ts → registerVendor
 
 const registerVendor = async (payload: any) => {
   const { name, email, password, phoneNumber, address, businessCategory, ...vendorData } = payload;
@@ -480,11 +436,9 @@ const registerServiceProvider = async (payload: any) => {
     password,
     phoneNumber,
     address,
-    // The rest of the payload contains the service provider info
     ...providerData
   } = payload;
 
-  // ✅ FIX: Add the providerData directly to the user object
   const userData = {
     name,
     email,
@@ -492,7 +446,7 @@ const registerServiceProvider = async (payload: any) => {
     phoneNumber,
     address,
     role: 'service-provider',
-    serviceProviderInfo: providerData // Embed the service data directly as defined in your schema
+    serviceProviderInfo: providerData,
   };
 
   const session = await mongoose.startSession();
@@ -502,9 +456,6 @@ const registerServiceProvider = async (payload: any) => {
     // Create the user with the embedded info
     const newUser = (await User.create([userData], { session }))[0];
     if (!newUser) { throw new Error('Failed to create user'); }
-
-    // ❗ REMOVED: No need to create a separate ServiceProvider document
-    // ❗ REMOVED: The line that was causing the error (newUser.serviceProviderInfo = newProvider._id;)
 
     await session.commitTransaction();
     return newUser;
@@ -553,8 +504,98 @@ const loginWithGoogle = async (idToken: string) => {
   );
 
   const { password, ...userWithoutPassword } = user.toObject();
-  return { accessToken, refreshToken, user: userWithoutPassword };
+  return {
+    accessToken,
+    refreshToken,
+    // user: userWithoutPassword
+    user: {
+      ...userWithoutPassword,
+      hasPassword: !!password,
+    },
+
+  };
 };
+
+
+// ------------------------------------
+// --- SERVICE PROVIDER LOGIN ---
+// ------------------------------------
+const serviceProviderLogin = async (payload: TLoginUser) => {
+  const { identifier, password: plainPassword } = payload;
+
+  const isEmail = identifier.includes('@');
+
+  const user = isEmail
+    ? await User.isUserExistsByEmail(identifier)
+    : await User.isUserExistsByPhone(identifier);
+
+  if (!user) {
+    throw new Error('Invalid credentials.');
+  }
+
+
+  // ✅ Role check
+  if (user.role !== 'service-provider') {
+    throw new Error('Access denied. Service provider account required.');
+  }
+
+  // ✅ Account status check
+  if (!user.isActive) {
+    throw new Error('Your account is inactive. Please contact support.');
+  }
+
+  if (!user.password) {
+    throw new Error('Password not set. Please use social login.');
+  }
+
+  const isPasswordMatched = await user.isPasswordMatched(
+    plainPassword,
+    user.password
+  );
+
+  console.log('🟢 PASSWORD MATCHED:', isPasswordMatched);
+
+  if (!isPasswordMatched) {
+    throw new Error('Incorrect password!');
+  }
+
+  // 🔐 JWT Payload
+  const jwtPayload = {
+    userId: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  };
+
+  const accessToken = generateToken(
+    jwtPayload,
+    process.env.JWT_ACCESS_SECRET!,
+    process.env.JWT_ACCESS_EXPIRES_IN!
+  );
+
+  const refreshToken = generateToken(
+    jwtPayload,
+    process.env.JWT_REFRESH_SECRET!,
+    process.env.JWT_REFRESH_EXPIRES_IN!
+  );
+
+  const { password, ...userWithoutPassword } = user.toObject();
+
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      _id: userWithoutPassword._id,
+      name: userWithoutPassword.name,
+      email: userWithoutPassword.email,
+      phoneNumber: userWithoutPassword.phoneNumber,
+      role: userWithoutPassword.role,
+      profilePicture: userWithoutPassword.profilePicture,
+      address: userWithoutPassword.address,
+      serviceProviderInfo: userWithoutPassword.serviceProviderInfo || null,
+    },
+  };
+};
+
 
 export const AuthServices = {
   loginUser,
@@ -567,6 +608,7 @@ export const AuthServices = {
   resetPasswordWithToken,
   registerVendor,
   registerServiceProvider,
+  serviceProviderLogin,
   loginWithGoogle,
   vendorLogin,
   vendorChangePassword,

@@ -12,6 +12,7 @@ type WishlistContextType = {
   addToWishlist: (productId: string) => Promise<boolean>
   removeFromWishlist: (wishlistId: string) => Promise<void>
   isInWishlist: (productId: string) => Promise<boolean>
+  getWishlistItemId: (productId: string) => Promise<string | null>
   isLoading: boolean
 }
 
@@ -97,6 +98,29 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({ children }) 
     return false
   }, [session])
 
+  // Get wishlist item ID by productId
+  const getWishlistItemId = useCallback(async (productId: string): Promise<string | null> => {
+    const userId = getUserId()
+    if (!userId) return null
+
+    try {
+      const response = await axios.get(`/api/v1/wishlist?userId=${userId}`)
+      if (response.data.success) {
+        const items = response.data.data || []
+        const item = items.find((item: { productID: string | { _id: string }; _id: string }) => {
+          const pid = typeof item.productID === 'object' && item.productID !== null
+            ? item.productID._id
+            : item.productID
+          return pid === productId
+        })
+        return item?._id || null
+      }
+    } catch (error) {
+      console.error('Error getting wishlist item ID:', error)
+    }
+    return null
+  }, [session])
+
   // Add to wishlist
   const addToWishlist = useCallback(async (productId: string): Promise<boolean> => {
     const userId = getUserId()
@@ -178,6 +202,7 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({ children }) 
     addToWishlist,
     removeFromWishlist,
     isInWishlist,
+    getWishlistItemId,
     isLoading,
   }
 

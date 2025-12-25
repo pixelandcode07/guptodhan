@@ -30,6 +30,20 @@ export type EntityRef<T extends object = Record<string, unknown>> =
   | null
   | undefined;
 
+// ✅ FIXED: Product Option interface
+export interface ProductOption {
+  productImage?: string;
+  unit?: string[];
+  simType?: string[];
+  condition?: string[];
+  warranty?: string;
+  stock?: number;
+  price?: number;
+  discountPrice?: number;
+  color?: string | string[];  // ✅ Can be string OR array
+  size?: string | string[];   // ✅ Can be string OR array
+}
+
 export interface Product {
   _id: string;
   productTitle: string;
@@ -47,11 +61,7 @@ export interface Product {
   category?: EntityRef<{ name?: string; slug?: string }>;
   brand?: EntityRef<{ name?: string }>;
   createdAt: string;
-  productOptions?: Array<{
-    productImage?: string;
-    color?: string;
-    size?: string;
-  }>;
+  productOptions?: ProductOption[];  // ✅ Use proper interface
   reviews?: Review[];
   qna?: QA[];
 }
@@ -86,4 +96,3 @@ export interface ProductData {
 export interface ProductDetailsClientProps {
   productData: ProductData;
 }
-

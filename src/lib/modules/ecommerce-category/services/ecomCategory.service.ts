@@ -10,6 +10,7 @@ import { ChildCategoryModel } from '../models/ecomChildCategory.model';
 import { VendorProductModel } from '../../product/vendorProduct.model';
 import { BrandModel } from '../../product-config/models/brandName.model';
 import { ProductSize } from '../../product-config/models/productSize.model';
+import { create } from 'domain';
 
 // Create category
 const createCategoryInDB = async (payload: Partial<ICategory>) => {
@@ -89,7 +90,7 @@ export const getAllSubCategoriesWithChildren = async () => {
       // Get all subcategories for this main category
       const subCategories: ISubCategory[] = await SubCategoryModel.find({
         category: new Types.ObjectId(main._id),
-      }).sort({ name: 1 });
+      }).sort({ orderCount: 1 });
 
       // Map each subcategory to include its children
       const subWithChildren = await Promise.all(

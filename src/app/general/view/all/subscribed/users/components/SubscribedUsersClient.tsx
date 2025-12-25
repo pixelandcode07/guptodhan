@@ -3,44 +3,22 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { DataTable } from '@/components/TableHelper/data-table'
 import { SubscribedUserRow, getSubscribedUsersColumns } from '@/components/TableHelper/subscribed_users_columns'
-import api from '@/lib/axios'
+import axios from 'axios'
 import { toast } from 'sonner'
 
-interface ApiSubscriber {
-  _id: string
-  userEmail: string
-  subscribedOn: string
+interface SubscribedUsersClientProps {
+  initialRows: SubscribedUserRow[];
 }
 
-export default function SubscribedUsersClient() {
-  const [rows, setRows] = useState<SubscribedUserRow[]>([])
-  const [loading, setLoading] = useState<boolean>(true)
+export default function SubscribedUsersClient({ initialRows }: SubscribedUsersClientProps) {
+  const [rows, setRows] = useState<SubscribedUserRow[]>(initialRows || [])
+  const [loading, setLoading] = useState<boolean>(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  const fetchSubscribers = async () => {
-    try {
-      setLoading(true)
-      const res = await api.get('/crm-modules/subscribed-users')
-      const data: ApiSubscriber[] = res.data?.data || []
-      const mapped = data.map((it, idx) => ({
-        id: it._id,
-        sl: idx + 1,
-        email: it.userEmail,
-        subscribedOn: new Date(it.subscribedOn).toLocaleString(),
-      }))
-      setRows(mapped)
-    } catch (err) {
-      console.error('Failed to fetch subscribed users:', err)
-      toast.error('Failed to fetch subscribed users')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
-    fetchSubscribers()
-  }, [])
+    setRows(initialRows || [])
+  }, [initialRows])
 
   const escapeCsv = (value: string) => {
     const needsQuotes = /[",\n]/.test(value)
@@ -83,12 +61,17 @@ export default function SubscribedUsersClient() {
   const handleDelete = async () => {
     if (!deletingId) return
     try {
-      await api.delete(`/crm-modules/subscribed-users/${deletingId}`)
+      await toast.promise(
+        axios.delete(`/api/v1/users/${deletingId}`),
+        {
+          loading: 'Deleting...',
+          success: 'User deleted successfully!',
+          error: (err) => err.response?.data?.message || 'Failed to delete user',
+        }
+      )
       setRows(prev => prev.filter(r => r.id !== deletingId))
-      toast.success('Subscriber deleted')
     } catch (err) {
-      console.error('Failed to delete subscriber:', err)
-      toast.error('Failed to delete subscriber')
+      console.error('Failed to delete user:', err)
     } finally {
       setShowDeleteModal(false)
       setDeletingId(null)

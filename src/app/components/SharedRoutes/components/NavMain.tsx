@@ -12,12 +12,14 @@ import { useState } from 'react';
 import CartIcon from '@/components/CartIcon';
 import WishlistIcon from '@/components/WishlistIcon';
 import { motion, AnimatePresence } from 'framer-motion';
+import MessageIcon from '../../MessageIcon';
 
 export default function NavMain() {
   const { data: session } = useSession();
   const user = session?.user;
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   // Helper: Get initials from name
   const getInitials = (name: string | null | undefined) => {
@@ -52,10 +54,14 @@ export default function NavMain() {
               <Image src="/white-logo.png" width={120} height={40} alt="logo" />
             </Link>
           </div>
-
-          {/* Mobile Search */}
-          <div className="search flex md:hidden max-w-1/2 items-center justify-center w-full my-2 md:my-5 relative">
-            <SearchBar />
+          {/* Mobile Search Trigger */}
+          <div className="flex md:hidden flex-1 justify-end px-2">
+            <button
+              onClick={() => setMobileSearchOpen(true)}
+              className="w-full bg-white rounded-lg px-4 py-2 flex items-center gap-2"
+            >
+              <SearchBarTrigger />
+            </button>
           </div>
         </div>
 
@@ -69,6 +75,7 @@ export default function NavMain() {
           <Dialog>
             <ul className="flex gap-4 text-base items-center">
               <li><WishlistIcon className="text-[#00005E]" /></li>
+              <li><MessageIcon /></li>
               <li><CartIcon /></li>
 
               {session ? (
@@ -196,7 +203,10 @@ export default function NavMain() {
                       <Truck size={16} />
                       <span>Track Order</span>
                     </Link>
-                    <Link href="/contact" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
+                    <Link href="https://wa.me/8801816500600?text=Hello!%20Hope%20you're%20having%20a%20great%20day!%20I%20need%20assistance%20with...%20Thank%20you!"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
                       <Phone size={16} />
                       <span>Contact Us</span>
                     </Link>
@@ -244,6 +254,50 @@ export default function NavMain() {
           </motion.div>
         )}
       </AnimatePresence>
+      <AnimatePresence>
+        {mobileSearchOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/50 md:hidden"
+          >
+            <motion.div
+              initial={{ y: -50 }}
+              animate={{ y: 0 }}
+              exit={{ y: -50 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 25 }}
+              className="bg-white p-3"
+            >
+              <div className="flex items-center gap-2">
+                {/* Back Button */}
+                <button
+                  onClick={() => setMobileSearchOpen(false)}
+                  className="p-2 rounded-lg hover:bg-gray-100"
+                >
+                  <X size={20} />
+                </button>
+
+                {/* FULL WIDTH SEARCH */}
+                <div className="flex-1">
+                  <SearchBar />
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
+  );
+}
+
+
+
+function SearchBarTrigger() {
+  return (
+    <>
+      <span className="text-gray-500 text-sm">Search products...</span>
+    </>
   );
 }

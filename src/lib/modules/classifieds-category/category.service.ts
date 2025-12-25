@@ -109,7 +109,7 @@ const getCategoryByIdFromDB = async (id: string) => {
 // ✅ getPublicCategoriesWithCountsFromDB
 const getPublicCategoriesWithCountsFromDB = async (categoryId?: string) => {
   try {
-    const matchStage: any = { status: 'active' };
+    const matchStage: any = { status: 'active', orderCount: 1 };
 
     if (categoryId) {
       matchStage._id = new Types.ObjectId(categoryId);
