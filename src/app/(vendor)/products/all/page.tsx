@@ -1,6 +1,4 @@
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { DataTable } from '@/components/TableHelper/data-table';
-import { vendor_product_columns } from '@/components/TableHelper/vendor_product_columns';
 import { fetchSingleVendorAds } from '@/lib/VendorApis/fetchSingleVendorAds';
 import { getServerSession } from 'next-auth';
 import ClientDataTable from './components/ClientDataTable';
@@ -11,7 +9,6 @@ export default async function VendorProductPage() {
   const session = await getServerSession(authOptions);
   const vendorId = session?.user?.vendorId;
   const vendorData = await fetchSingleVendorAds(vendorId);
-  // console.log("Products===", vendorData)
 
 
 

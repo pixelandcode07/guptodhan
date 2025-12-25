@@ -15,7 +15,7 @@ export type Customer = {
 
 export const customer_data_columns: ColumnDef<Customer>[] = [
   {
-    accessorKey: 'name', // name key ব্যবহার করা হলো
+    accessorKey: 'name',
     header: 'Customer',
     cell: ({ row }) => {
       const customer = row.original;
