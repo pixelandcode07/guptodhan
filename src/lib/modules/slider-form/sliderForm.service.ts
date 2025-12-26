@@ -1,11 +1,36 @@
 import { IPKSlider } from './sliderForm.interface';
 import { PKSliderModel } from './sliderForm.model';
 
-// Create PK Slider
-const createPKSliderInDB = async (payload: Partial<IPKSlider>) => {
-  const result = await PKSliderModel.create(payload);
+// Create PK Slider with auto orderCount
+const createPKSliderInDB = async (
+  payload: Partial<IPKSlider>
+) => {
+  // Find highest orderCount
+  const maxOrderSlider = await PKSliderModel
+    .findOne()
+    .sort({ orderCount: -1 })
+    .select('orderCount -_id')
+    .lean<{ orderCount: number }>();
+
+  console.log('max order slider is:', maxOrderSlider);
+
+  // Set next orderCount
+  const nextOrder =
+    maxOrderSlider && typeof maxOrderSlider.orderCount === 'number'
+      ? maxOrderSlider.orderCount + 1
+      : 0;
+
+  console.log('next order is:', nextOrder);
+
+  // Create slider with orderCount
+  const result = await PKSliderModel.create({
+    ...payload,
+    orderCount: nextOrder,
+  });
+
   return result;
 };
+
 
 // Get all active sliders (sorted by created time descending)
 const getAllSlidersFromDB = async () => {
