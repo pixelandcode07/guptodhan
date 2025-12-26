@@ -1,10 +1,31 @@
-import { IProductSize } from '../interfaces/productSize.interface';
-import { ProductSize } from '../models/productSize.model';
-import { ClassifiedAd } from '../../classifieds/ad.model'; // dependency check
+import { IProductSize } from "../interfaces/productSize.interface";
+import { ProductSize } from "../models/productSize.model";
+import { ClassifiedAd } from "../../classifieds/ad.model"; // dependency check
 
-// Create new product size
+// Create new product size with auto orderCount
 const createProductSizeInDB = async (payload: Partial<IProductSize>) => {
-  const result = await ProductSize.create(payload);
+  // Find highest orderCount
+  const maxOrderSize = await ProductSize.findOne()
+    .sort({ orderCount: -1 })
+    .select("orderCount -_id")
+    .lean<{ orderCount: number }>();
+
+  console.log("max order size is:", maxOrderSize);
+
+  // Set next orderCount
+  const nextOrder =
+    maxOrderSize && typeof maxOrderSize.orderCount === "number"
+      ? maxOrderSize.orderCount + 1
+      : 0;
+
+  console.log("next order is:", nextOrder);
+
+  // Create product size with orderCount
+  const result = await ProductSize.create({
+    ...payload,
+    orderCount: nextOrder,
+  });
+
   return result;
 };
 
@@ -16,24 +37,31 @@ const getAllProductSizesFromDB = async () => {
 
 // Get all active product sizes
 const getAllActiveProductSizesFromDB = async () => {
-  const result = await ProductSize.find({ status: 'active' }).sort({ orderCount: 1 });
+  const result = await ProductSize.find({ status: "active" }).sort({
+    orderCount: 1,
+  });
   return result;
-}
+};
 
 // Get single product size by ID
 const getProductSizeByIdFromDB = async (id: string) => {
   const result = await ProductSize.findById(id);
   if (!result) {
-    throw new Error('Product size not found.');
+    throw new Error("Product size not found.");
   }
   return result;
 };
 
 // Update product size
-const updateProductSizeInDB = async (id: string, payload: Partial<IProductSize>) => {
-  const result = await ProductSize.findByIdAndUpdate(id, payload, { new: true });
+const updateProductSizeInDB = async (
+  id: string,
+  payload: Partial<IProductSize>
+) => {
+  const result = await ProductSize.findByIdAndUpdate(id, payload, {
+    new: true,
+  });
   if (!result) {
-    throw new Error('Product size not found to update.');
+    throw new Error("Product size not found to update.");
   }
   return result;
 };
@@ -42,20 +70,22 @@ const updateProductSizeInDB = async (id: string, payload: Partial<IProductSize>)
 const deleteProductSizeFromDB = async (id: string) => {
   const existingModel = await ClassifiedAd.findOne({ size: id });
   if (existingModel) {
-    throw new Error('Cannot delete this size as it is used in a product model.');
+    throw new Error(
+      "Cannot delete this size as it is used in a product model."
+    );
   }
 
   const result = await ProductSize.findByIdAndDelete(id);
   if (!result) {
-    throw new Error('Product size not found to delete.');
+    throw new Error("Product size not found to delete.");
   }
   return null;
 };
 
-// rearrange product sizes 
+// rearrange product sizes
 export const reorderProductSizesService = async (orderedIds: string[]) => {
   if (!orderedIds || orderedIds.length === 0) {
-    throw new Error('orderedIds array is empty');
+    throw new Error("orderedIds array is empty");
   }
 
   // Loop and update orderCount = index
@@ -65,7 +95,7 @@ export const reorderProductSizesService = async (orderedIds: string[]) => {
 
   await Promise.all(updatePromises);
 
-  return { message: 'Product sizes reordered successfully!' };
+  return { message: "Product sizes reordered successfully!" };
 };
 
 export const ProductSizeServices = {
@@ -76,5 +106,5 @@ export const ProductSizeServices = {
   updateProductSizeInDB,
   deleteProductSizeFromDB,
 
-  reorderProductSizesService
+  reorderProductSizesService,
 };
