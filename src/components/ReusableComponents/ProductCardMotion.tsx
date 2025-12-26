@@ -35,75 +35,69 @@ export default function ProductCardMotion({ product, index = 0 }: ProductCardMot
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.08 }}
-            whileHover={{ y: -8, transition: { duration: 0.2 } }}
+            transition={{ duration: 0.3, delay: index * 0.04 }}
+            whileHover={{ y: -3 }}
             className="h-full"
         >
-            <Card className="group relative overflow-hidden border rounded-xl hover:shadow-2xl transition-all duration-300 h-full flex flex-col">
-                {/* Flag Badge */}
+            <Card className="group relative overflow-hidden rounded border hover:shadow transition-shadow h-full flex flex-col">
+                {/* Tiny Badges */}
                 {product.flag && (
-                    <Badge className="absolute top-3 left-3 z-10 bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0">
+                    <Badge className="absolute top-1 left-1 z-10 text-[10px] px-1 py-0 bg-gradient-to-r from-purple-600 to-pink-600">
                         {product.flag.name}
                     </Badge>
                 )}
 
-                {/* Discount Badge */}
                 {discountPercent > 0 && (
-                    <Badge className="absolute top-3 right-3 z-10 bg-red-600 text-white border-0 animate-pulse">
-                        -{discountPercent}% OFF
+                    <Badge className="absolute top-1 right-1 z-10 text-[10px] px-1 py-0 bg-red-600">
+                        -{discountPercent}%
                     </Badge>
                 )}
 
                 {/* Image */}
-                <div className="relative aspect-square overflow-hidden bg-gray-100">
+                <div className="relative aspect-[1/1] overflow-hidden bg-gray-50">
                     <Image
                         src={product.thumbnailImage}
                         alt={product.productTitle}
                         fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        className="object-cover transition-transform duration-400 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
                 </div>
 
-                {/* Content */}
-                <div className="p-5 flex flex-col flex-grow">
-                    <h3 className="font-bold text-lg line-clamp-2 text-gray-900 group-hover:text-primary transition-colors">
+                {/* Ultra-minimal Content */}
+                <div className="p-2 flex flex-col space-y-1">
+                    {/* Tiny Title */}
+                    <h3 className="text-xs font-medium line-clamp-2 leading-tight text-gray-800">
                         {product.productTitle}
                     </h3>
 
-                    {/* Short Specs */}
-                    <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                        {product.shortDescription}
-                    </p>
-
-                    {/* Price Section */}
-                    <div className="mt-4 flex items-end gap-2">
+                    {/* Price */}
+                    <div className="flex items-end gap-1">
                         {product.discountPrice ? (
                             <>
-                                <span className="text-3xl font-bold text-primary">
+                                <span className="text-lg font-bold text-primary">
                                     ৳{product.discountPrice.toLocaleString()}
                                 </span>
-                                <span className="text-lg text-muted-foreground line-through">
+                                <span className="text-[10px] text-muted-foreground line-through">
                                     ৳{product.productPrice.toLocaleString()}
                                 </span>
                             </>
                         ) : (
-                            <span className="text-3xl font-bold text-primary">
+                            <span className="text-lg font-bold text-primary">
                                 ৳{product.productPrice.toLocaleString()}
                             </span>
                         )}
                     </div>
 
-                    {/* Features Row */}
-                    <div className="mt-4 flex flex-wrap gap-3 text-xs">
+                    {/* Minimal Features */}
+                    <div className="flex items-center gap-2 text-[10px]">
                         {product.warranty && (
                             <TooltipProvider>
                                 <Tooltip>
-                                    <TooltipTrigger>
-                                        <div className="flex items-center gap-1 text-green-600">
-                                            <Shield className="w-4 h-4" />
+                                    <TooltipTrigger asChild>
+                                        <div className="flex items-center gap-0.5 text-green-600">
+                                            <Shield className="w-2.5 h-2.5" />
                                             <span>{product.warranty.warrantyName}</span>
                                         </div>
                                     </TooltipTrigger>
@@ -113,30 +107,30 @@ export default function ProductCardMotion({ product, index = 0 }: ProductCardMot
                         )}
 
                         {product.rewardPoints && product.rewardPoints > 0 && (
-                            <div className="flex items-center gap-1 text-amber-600">
-                                <Star className="star w-4 h-4 fill-current" />
-                                <span>+{product.rewardPoints} Points</span>
+                            <div className="flex items-center gap-0.5 text-amber-600">
+                                <Star className="w-2.5 h-2.5 fill-current" />
+                                <span>+{product.rewardPoints}</span>
                             </div>
                         )}
 
                         {product.stock > 0 ? (
-                            <div className="flex items-center gap-1 text-blue-600">
-                                <Package className="w-4 h-4" />
-                                <span>In Stock</span>
+                            <div className="flex items-center gap-0.5 text-blue-600">
+                                <Package className="w-2.5 h-2.5" />
                             </div>
                         ) : (
-                            <span className="text-red-500 text-xs font-medium">Out of Stock</span>
+                            <span className="text-red-500">Out</span>
                         )}
                     </div>
 
-                    {/* Action Button */}
+                    {/* Tiny Button */}
                     <Button
                         asChild
-                        className="mt-5 w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
+                        size="sm"
+                        className="mt-1 w-full text-xs h-7"
                     >
                         <Link href={`/products/${product._id}`}>
-                            View Details
-                            <Zap className="ml-2 w-4 h-4" />
+                            View
+                            <Zap className="ml-1 w-2.5 h-2.5" />
                         </Link>
                     </Button>
                 </div>

@@ -17,12 +17,14 @@ export default async function VisitStore({ params }: { params: { id: string } })
     const { store, productsWithReviews } = data;
 
     return (
-        <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pt-10">
-            {/* Server-rendered header */}
-            <StoreHeader store={store} />
+        <div className='container mx-auto '>
+            <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pt-10 ">
+                {/* Server-rendered header */}
+                <StoreHeader store={store} />
 
-            {/* Client-side interactive grid + filters */}
-            <ProductGridWithFilters initialProducts={productsWithReviews} storeId={id} />
+                {/* Client-side interactive grid + filters */}
+                <ProductGridWithFilters initialProducts={productsWithReviews} storeId={id} />
+            </div>
         </div>
     );
 }
