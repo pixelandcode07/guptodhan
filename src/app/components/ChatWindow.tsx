@@ -114,7 +114,7 @@ export default function ChatWindow({
         )}
 
         <Avatar className="h-10 w-10 flex-shrink-0">
-          <AvatarFallback className="bg-green-100 text-green-700 text-lg">
+          <AvatarFallback className="bg-blue-100 text-blue-500 text-lg">
             {userName[0].toUpperCase()}
           </AvatarFallback>
         </Avatar>
@@ -155,7 +155,7 @@ export default function ChatWindow({
                 <div
                   className={`max-w-[70%] px-4 py-3 rounded-2xl shadow-md relative ${
                     isMe
-                      ? 'bg-green-600 text-white rounded-br-none'
+                      ? 'bg-blue-500 text-white rounded-br-none'
                       : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none'
                   }`}
                 >
@@ -193,7 +193,7 @@ export default function ChatWindow({
           <Button
             onClick={handleSend}
             disabled={!isConnected || isSending || !inputValue.trim()}
-            className="rounded-full bg-green-600 hover:bg-green-700 w-12 h-12 p-0 shadow-lg transition-all active:scale-95"
+            className="rounded-full bg-blue-500 hover:bg-blue-500 w-12 h-12 p-0 shadow-lg transition-all active:scale-95"
           >
             {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
           </Button>

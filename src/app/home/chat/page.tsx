@@ -92,7 +92,7 @@ export default function ChatPage() {
           </div>
           <div className="p-4 ">
             <h1 className="text-xl font-bold flex items-center gap-2">
-              <MessageCircle className="text-green-600" /> Chats
+              <MessageCircle className="text-blue-500" /> Chats
             </h1>
           </div>
         </div>
@@ -101,7 +101,7 @@ export default function ChatPage() {
           {conversations.length === 0 ? (
             <Card className="m-4 p-8 text-center text-gray-500">
               <p>No conversations yet.</p>
-              <Link href="/home/buyandsell" className="text-green-600 font-medium mt-2 block">
+              <Link href="/home/buyandsell" className="text-blue-500 font-medium mt-2 block">
                 Browse ads to start chatting
               </Link>
             </Card>
@@ -128,7 +128,7 @@ export default function ChatPage() {
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-900 truncate">{otherUser.name}</h3>
-                      <p className="text-sm text-green-600 flex items-center gap-1">
+                      <p className="text-sm text-blue-500 flex items-center gap-1">
                         <ShoppingBag size={14} /> {conv.ad.title}
                       </p>
                       {conv.lastMessage && (
@@ -227,13 +227,13 @@ export default function ChatPage() {
 //   return (
 //     <div className="max-w-4xl mx-auto p-4 min-h-screen">
 //       <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-//         <MessageCircle className="text-green-600" /> My Chats
+//         <MessageCircle className="text-blue-500" /> My Chats
 //       </h1>
 
 //       {conversations.length === 0 ? (
 //         <Card className="p-10 text-center text-gray-500">
 //           <p>No conversations found.</p>
-//           <Link href="/home/buyandsell" className="text-green-600 font-medium mt-2 block">
+//           <Link href="/home/buyandsell" className="text-blue-500 font-medium mt-2 block">
 //             Browse ads to start chatting
 //           </Link>
 //         </Card>
@@ -251,7 +251,7 @@ export default function ChatPage() {
 //                     </Avatar>
 //                     <div>
 //                       <h3 className="font-bold text-gray-900">{otherUser?.name}</h3>
-//                       <p className="text-sm text-green-600 flex items-center gap-1 font-medium">
+//                       <p className="text-sm text-blue-500 flex items-center gap-1 font-medium">
 //                         <ShoppingBag size={14} /> {conv.ad?.title}
 //                       </p>
 //                       {conv.lastMessage && (
