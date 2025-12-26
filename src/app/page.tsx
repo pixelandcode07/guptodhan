@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic';
 
 export default function MainHomePage() {
   return (
-    <div className="bg-gray-100 min-h-screen">
+    <div className="container mx-auto bg-gray-100 ">
       <div className='flex flex-col-reverse lg:flex-col'>
         <div className="heroandfeature">
           {/* Hero */}
@@ -39,7 +39,6 @@ export default function MainHomePage() {
         <div className="story">
           {/* Story */}
           <Suspense fallback={<SkeletonSectionHeader />}>
-            {/* <StoryFeed /> */}
             <StoryFeedWrapper />
           </Suspense>
         </div>

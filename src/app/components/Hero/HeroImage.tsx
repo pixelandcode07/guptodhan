@@ -33,7 +33,8 @@ export default async function HeroImage({
         {rightBanners[0] ? (
           <Link
             href={rightBanners[0].bannerLink || '#'}
-            className="block w-full h-[190px] md:h-[250px] lg:h-[200px] 2xl:h-80 relative rounded-lg overflow-hidden group"
+            // className="block w-full h-[190px] md:h-[250px] lg:h-[200px] 2xl:h-80 relative rounded-lg overflow-hidden group"
+            className="block w-full h-[220px] relative rounded-lg overflow-hidden group"
           >
             <Image
               src={rightBanners[0].bannerImage}
@@ -51,7 +52,8 @@ export default async function HeroImage({
         {bottomBanners[0] ? (
           <Link
             href={bottomBanners[0].bannerLink || '#'}
-            className="block w-full h-[190px] md:h-[250px] lg:h-[200px] 2xl:h-80 relative rounded-lg overflow-hidden group"
+            // className="block w-full h-[190px] md:h-[250px] lg:h-[200px] 2xl:h-80 relative rounded-lg overflow-hidden group"
+            className="block w-full h-[220px] relative rounded-lg overflow-hidden group"
           >
             <Image
               src={bottomBanners[0].bannerImage}

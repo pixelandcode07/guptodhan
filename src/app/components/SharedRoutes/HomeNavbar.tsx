@@ -22,7 +22,7 @@ export default function HomeNavbar() {
     if (!mounted) return null;
 
     return (
-        <div>
+        <div className='container mx-auto'>
             <NavHead />
             {isBuyAndSell ? <BuySellNavMain /> : isDonation ? <DonationNavMain /> : <NavMain />}
         </div>
