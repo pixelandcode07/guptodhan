@@ -118,7 +118,7 @@ export default function ProductGridWithFilters({
 
 
     return (
-        <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto pt-10">
+        <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto  pt-10">
             {/* Mobile: Search + Filter Button */}
             <div className="flex gap-3 mb-6 lg:hidden">
                 <Input
@@ -448,7 +448,7 @@ export default function ProductGridWithFilters({
                             </CardContent>
                         </Card>
                     ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <div className=" grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {products.map((p, i) => (
                                 <ProductCardMotion key={p._id} product={p} index={i} />
                             ))}
