@@ -23,99 +23,100 @@ const generateSlug = (name: string) => {
 };
 
 // Create a new service category
-const createServiceCategory = async (req: NextRequest) => {
-    await dbConnect();
-    try {
-        const formData = await req.formData();
-
-        const name = formData.get('name') as string;
-        const description = formData.get('description') as string;
-        const iconFile = formData.get('icon_url') as File | null;
-
-        const validatedData = createServiceCategoryValidationSchema.parse({ name, description, icon_url: iconFile ? 'dummy' : '' });
-
-        const slug = generateSlug(name);
-
-        let iconUrl = '';
-        if (iconFile) {
-            const iconBuffer = await fileToBuffer(iconFile);
-            const uploadedIcon = await uploadToCloudinary(iconBuffer, 'service-categories/icons');
-            iconUrl = uploadedIcon.secure_url;
-        }
-
-        const payload: Partial<IServiceCategory> = {
-            name: validatedData.name,
-            description: validatedData.description,
-            slug,
-            icon_url: iconUrl,
-        };
-
-        const result = await ServiceCategoryServices.createServiceCategoryInDB(payload);
-
-        return sendResponse({
-            success: true,
-            statusCode: StatusCodes.CREATED,
-            message: 'Service category created successfully!',
-            data: result,
-        });
-    } catch (error) {
-        console.error('Error creating service category:', error);
-        return sendResponse({
-            success: false,
-            statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-            message: 'Failed to create service category',
-            data: null,
-        });
-    }
-};
-
-
-// // Basic demo controller
-// export const createServiceCategory = async (req: NextRequest) => {
+// const createServiceCategory = async (req: NextRequest) => {
 //     await dbConnect();
-
 //     try {
-//         const body = await req.json();
+//         const formData = await req.formData();
 
-//         const { name, description, icon_url } = body;
+//         const name = formData.get('name') as string;
+//         const description = formData.get('description') as string;
+//         const iconFile = formData.get('icon_url') as File | null;
 
-//         console.log('Received data:', body);
-
-//         if (!name || !description || !icon_url) {
-//             return sendResponse({
-//                 success: false,
-//                 statusCode: StatusCodes.BAD_REQUEST,
-//                 message: 'name, description, and icon_url are required.',
-//                 data: null,
-//             });
-//         }
+//         const validatedData = createServiceCategoryValidationSchema.parse({ name, description, icon_url: iconFile ? 'dummy' : '' });
 
 //         const slug = generateSlug(name);
 
-//         // Save in database
-//         const newCategory = await ServiceCategoryServices.createServiceCategoryInDB({
-//             name,
-//             description,
+//         let iconUrl = '';
+//         if (iconFile) {
+//             const iconBuffer = await fileToBuffer(iconFile);
+//             const uploadedIcon = await uploadToCloudinary(iconBuffer, 'service-categories/icons');
+//             iconUrl = uploadedIcon.secure_url;
+//         }
+
+//         const payload: Partial<IServiceCategory> = {
+//             name: validatedData.name,
+//             description: validatedData.description,
 //             slug,
-//             icon_url,
-//         });
+//             icon_url: iconUrl,
+//         };
+
+//         const result = await ServiceCategoryServices.createServiceCategoryInDB(payload);
 
 //         return sendResponse({
 //             success: true,
 //             statusCode: StatusCodes.CREATED,
-//             message: 'Service category created (basic demo) successfully!',
-//             data: newCategory,
+//             message: 'Service category created successfully!',
+//             data: result,
 //         });
 //     } catch (error) {
-//         console.error('Error creating basic demo service category:', error);
+//         console.error('Error creating service category:', error);
 //         return sendResponse({
 //             success: false,
 //             statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-//             message: 'Failed to create basic demo service category',
+//             message: 'Failed to create service category',
 //             data: null,
 //         });
 //     }
 // };
+
+
+// Basic demo controller
+export const createServiceCategory = async (req: NextRequest) => {
+    await dbConnect();
+
+    try {
+        const body = await req.json();
+        console.log('Request body:', body);
+
+        const { name, description, icon_url } = body;
+
+        console.log('Received data:', body);
+
+        if (!name || !description || !icon_url) {
+            return sendResponse({
+                success: false,
+                statusCode: StatusCodes.BAD_REQUEST,
+                message: 'name, description, and icon_url are required.',
+                data: null,
+            });
+        }
+
+        const slug = generateSlug(name);
+
+        // Save in database
+        const newCategory = await ServiceCategoryServices.createServiceCategoryInDB({
+            name,
+            description,
+            slug,
+            icon_url,
+        });
+
+        return sendResponse({
+            success: true,
+            statusCode: StatusCodes.CREATED,
+            message: 'Service category created (basic demo) successfully!',
+            data: newCategory,
+        });
+    } catch (error) {
+        console.error('Error creating basic demo service category:', error);
+        return sendResponse({
+            success: false,
+            statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+            message: 'Failed to create basic demo service category',
+            data: null,
+        });
+    }
+};
 
 
 // Get all service categories
@@ -216,7 +217,7 @@ const updateServiceCategory = async (req: NextRequest, { params }: { params: Pro
 };
 
 
-// // demo update controller code 
+// demo update controller code 
 // export const updateServiceCategory = async (
 //     req: NextRequest,
 //     { params }: { params: Promise<{ id: string }> }
