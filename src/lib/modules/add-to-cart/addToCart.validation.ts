@@ -11,6 +11,7 @@ export const createCartValidationSchema = z.object({
   productImage: z.string().optional(),
   color: z.string().optional(),
   size: z.string().optional(),
+  warranty: z.string().optional(),
   storeName: z.string().min(1, { message: "Store name is required." }),
   quantity: z
     .number({ required_error: "Quantity is required." })
@@ -31,6 +32,7 @@ export const updateCartValidationSchema = z.object({
   productImage: z.string().optional(),
   color: z.string().optional(),
   size: z.string().optional(),
+  warranty: z.string().optional(),
   storeName: z.string().optional(),
   quantity: z.number().min(1).optional(),
   unitPrice: z.number().min(0).optional(),

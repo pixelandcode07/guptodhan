@@ -32,6 +32,7 @@ const addToCartInDB = async (payload: Partial<ICart>) => {
     storeName: payload.storeName,
     color: payload.color,
     size: payload.size,
+    warranty: payload.warranty,
     productName: payload.productName,
     productImage: payload.productImage,
     quantity: payload.quantity || 1,
