@@ -2,6 +2,7 @@ import { CollapsibleMenuGroup } from '@/components/ReusableComponents/Collapsibl
 import { BadgePlus } from 'lucide-react';
 const category = [
     { title: "Add Category", url: "/general/create-service-category" },
+    { title: "View Categories", url: "/general/all-service-category" },
     // { title: "Business Categories", url: "/general/view/vendor/categories" },
     // { title: "Create New Vendor", url: "/general/create/new/vendor" },
     // { title: "Vendor Requests", url: "/general/view/vendor/requests" },
