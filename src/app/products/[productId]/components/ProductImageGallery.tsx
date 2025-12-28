@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { imageFade } from './constants';
 import { Product } from './types';
-import { ZoomIn, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ZoomIn } from 'lucide-react';
 
 export default function ProductImageGallery({ product, selectedColor = '', selectedSize = '' }: any) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -22,6 +22,7 @@ export default function ProductImageGallery({ product, selectedColor = '', selec
         const optionSize = Array.isArray(option.size) ? option.size[0] : option.size;
         return optionColor === selectedColor && (selectedSize ? optionSize === selectedSize : true);
       });
+
       if (matchedVariant?.productImage) {
         newImages = [matchedVariant.productImage, ...defaultImages];
       } else {
@@ -30,6 +31,7 @@ export default function ProductImageGallery({ product, selectedColor = '', selec
     } else {
       newImages = defaultImages;
     }
+
     setCurrentImages(Array.from(new Set(newImages)));
     setSelectedImageIndex(0);
   }, [selectedColor, selectedSize, product]);
@@ -41,21 +43,26 @@ export default function ProductImageGallery({ product, selectedColor = '', selec
       <div className="relative bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-100 group">
         <div className="relative aspect-square">
           <AnimatePresence mode="wait">
-            <motion.div key={mainImage} variants={imageFade} initial="initial" animate="animate" exit="exit" className="relative w-full h-full">
-              <Image 
-                src={mainImage} alt={product.productTitle} fill 
-                className={`object-contain transition-transform duration-700 ${isZoomed ? 'scale-150' : 'group-hover:scale-105'}`} 
-                priority 
-              />
+            <motion.div key={mainImage} variants={imageFade} initial="initial" animate="animate" exit="exit" className="relative w-full h-full flex items-center justify-center">
+              {mainImage ? (
+                <Image 
+                  src={mainImage} alt={product.productTitle} fill 
+                  className={`object-contain transition-transform duration-700 ${isZoomed ? 'scale-150 cursor-zoom-out' : 'group-hover:scale-105 cursor-zoom-in'}`} 
+                  priority 
+                  onClick={() => setIsZoomed(!isZoomed)}
+                />
+              ) : (
+                <div className="text-gray-400">No image available</div>
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
       </div>
-      <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
+      <div className="mt-4 flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300">
         {currentImages.map((img, idx) => (
           <div 
             key={idx} onClick={() => setSelectedImageIndex(idx)}
-            className={`relative w-16 h-16 rounded-lg cursor-pointer border-2 ${selectedImageIndex === idx ? 'border-blue-500' : 'border-gray-200'}`}
+            className={`relative w-16 h-16 rounded-lg cursor-pointer flex-shrink-0 border-2 transition-all ${selectedImageIndex === idx ? 'border-blue-500 shadow-md' : 'border-gray-200'}`}
           >
             <Image src={img} alt="thumb" fill className="object-cover rounded-lg" />
           </div>
