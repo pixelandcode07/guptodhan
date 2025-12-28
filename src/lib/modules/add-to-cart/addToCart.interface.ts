@@ -11,6 +11,7 @@ export interface ICart extends Document {
   storeName: string;
   color?: string; 
   size?: string;   
+  warranty?: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
