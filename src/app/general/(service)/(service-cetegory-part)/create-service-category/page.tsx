@@ -20,14 +20,11 @@ import {
 } from '@/components/ui/form';
 import { useSession } from 'next-auth/react';
 import UploadImageBtn from '@/components/ReusableComponents/UploadImageBtn';
-import { generateSlug } from '@/lib/utils';
 
-// Use the SAME schema as backend (important for consistency)
 const createServiceCategoryValidationSchema = z.object({
     name: z.string().min(1, { message: 'Service category name is required.' }),
     description: z.string().min(1, { message: 'Description is required.' }),
-    slug: z.string().min(1, { message: 'Slug is required.' }),
-    icon_url: z.string().min(1, { message: 'Icon URL is required.' }),
+    icon_url: z.string().min(1, { message: 'Please upload an icon image.' }), // preview URL থাকলে pass হবে
 });
 
 type FormData = z.infer<typeof createServiceCategoryValidationSchema>;
@@ -36,95 +33,43 @@ export default function CreateServiceCategory() {
     const { data: session, status } = useSession();
     const [uploadedFile, setUploadedFile] = React.useState<File | null>(null);
     const [isLoading, setIsLoading] = React.useState(false);
+    const [previewUrl, setPreviewUrl] = React.useState<string>('');
 
     const form = useForm<FormData>({
         resolver: zodResolver(createServiceCategoryValidationSchema),
         defaultValues: {
             name: '',
             description: '',
-            slug: '',
             icon_url: '',
         },
     });
 
+    // Generate slug preview when name changes
+    const generatedSlug = form.watch('name')
+        ? form.watch('name')
+              .trim()
+              .toLowerCase()
+              .replace(/\s+/g, '-')
+              .replace(/[^\w-]/g, '')
+        : '';
+
     const handleImageChange = (file: File | null) => {
         setUploadedFile(file);
 
+        // Revoke previous URL to prevent memory leak
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+        }
+
         if (file) {
-            const previewUrl = URL.createObjectURL(file);
-            form.setValue('icon_url', previewUrl, { shouldValidate: true });
+            const newPreviewUrl = URL.createObjectURL(file);
+            setPreviewUrl(newPreviewUrl);
+            form.setValue('icon_url', newPreviewUrl, { shouldValidate: true });
         } else {
+            setPreviewUrl('');
             form.setValue('icon_url', '');
         }
     };
-
-    // Auto-generate slug when name changes
-    React.useEffect(() => {
-        const subscription = form.watch((value, { name: changedField }) => {
-            if (changedField === 'name' && value.name) {
-                const generatedSlug = value.name
-                    .trim()
-                    .toLowerCase()
-                    .replace(/\s+/g, '-')
-                    .replace(/[^\w-]/g, '');
-                form.setValue('slug', generatedSlug, { shouldValidate: true });
-            }
-        });
-        return () => subscription.unsubscribe();
-    }, [form]);
-
-    //   const onSubmit = async (data: FormData) => {
-    //     if (!uploadedFile) {
-    //       toast.error('Please upload an icon image.');
-    //       return;
-    //     }
-
-    //     if (status === 'loading') return;
-    //     if (!session) {
-    //       toast.error('You must be logged in.');
-    //       return;
-    //     }
-
-    //     setIsLoading(true);
-
-    //     const formData = new FormData();
-    //     formData.append('name', data.name);
-    //     formData.append('description', data.description);
-    //     formData.append('slug', data.slug); // backend ignores it, but safe to send
-    //     formData.append('icon_url', uploadedFile); // ← Critical: key must be 'icon_url'
-
-    //     try {
-    //       const token = (session as any)?.accessToken || (session?.user as any)?.token;
-
-    //       if (!token) {
-    //         throw new Error('Authentication token missing');
-    //       }
-
-    //       await axios.post('/api/v1/service-section/service-category', formData, {
-    //         headers: {
-    //           Authorization: `Bearer ${token}`,
-    //           // Let axios set Content-Type with boundary automatically
-    //         },
-    //       });
-
-    //       toast.success('Service category created successfully!');
-    //       form.reset();
-    //       setUploadedFile(null);
-    //       handleImageChange(null);
-
-    //     } catch (error: any) {
-    //       console.error('Submission error:', error);
-    //       const message =
-    //         error.response?.data?.message ||
-    //         error.message ||
-    //         'Failed to create service category';
-
-    //       toast.error(message);
-    //     } finally {
-    //       setIsLoading(false);
-    //     }
-    //   };
-
 
     const onSubmit = async (data: FormData) => {
         if (!uploadedFile) {
@@ -143,8 +88,7 @@ export default function CreateServiceCategory() {
         const formData = new FormData();
         formData.append('name', data.name);
         formData.append('description', data.description);
-        formData.append('slug', data.slug || generateSlug(data.name)); // ← Ensure slug is always sent
-        formData.append('icon_url', uploadedFile); // File sent as 'icon_url'
+        formData.append('icon_url', uploadedFile); // File পাঠাচ্ছি
 
         try {
             const token = (session as any)?.accessToken || (session?.user as any)?.token;
@@ -156,13 +100,13 @@ export default function CreateServiceCategory() {
             await axios.post('/api/v1/service-section/service-category', formData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data',
                 },
             });
 
             toast.success('Service category created successfully!');
             form.reset();
-            setUploadedFile(null);
-            handleImageChange(null);
+            handleImageChange(null); // cleanup preview
 
         } catch (error: any) {
             console.error('Submission error:', error);
@@ -170,12 +114,18 @@ export default function CreateServiceCategory() {
                 error.response?.data?.message ||
                 error.message ||
                 'Failed to create service category';
-
             toast.error(message);
         } finally {
             setIsLoading(false);
         }
     };
+
+    // Cleanup preview URL on unmount
+    React.useEffect(() => {
+        return () => {
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+        };
+    }, [previewUrl]);
 
     if (status === 'loading') {
         return <div className="p-6">Loading...</div>;
@@ -201,6 +151,14 @@ export default function CreateServiceCategory() {
                         )}
                     />
 
+                    {/* Slug Preview - Read only */}
+                    {generatedSlug ? (
+                        <div className="text-sm text-muted-foreground">
+                            <span className="font-medium">Slug (auto-generated):</span>{' '}
+                            <code className="bg-muted px-2 py-1 rounded">{generatedSlug}</code>
+                        </div>
+                    ) : null}
+
                     <FormField
                         control={form.control}
                         name="description"
@@ -217,27 +175,13 @@ export default function CreateServiceCategory() {
 
                     <FormField
                         control={form.control}
-                        name="slug"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Slug (auto-generated)</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="web-development" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={form.control}
                         name="icon_url"
                         render={() => (
                             <FormItem>
                                 <FormLabel>Category Icon</FormLabel>
                                 <FormControl>
                                     <UploadImageBtn
-                                        value={uploadedFile || form.watch('icon_url')}
+                                        value={uploadedFile || previewUrl}
                                         onChange={handleImageChange}
                                         onRemove={() => handleImageChange(null)}
                                         fieldName="icon_url"
