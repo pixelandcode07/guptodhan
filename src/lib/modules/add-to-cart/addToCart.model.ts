@@ -17,6 +17,7 @@ const cartSchema = new Schema<ICart>(
     storeName: { type: String, required: true },
     color: { type: String },
     size: { type: String },
+    warranty: { type: String },
     quantity: { type: Number, required: true },
     unitPrice: { type: Number, required: true },
     totalPrice: { type: Number, required: true },
