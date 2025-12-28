@@ -6,6 +6,7 @@ import NavMain from './components/NavMain'
 import { usePathname } from "next/navigation";
 import BuySellNavMain from './components/BuySellNavMain';
 import DonationNavMain from './components/DonationNavMain';
+import ServiceNavMain from '@/app/home/(service)/components/ServiceNavMain';
 
 export default function HomeNavbar() {
     const pathname = usePathname();
@@ -17,14 +18,14 @@ export default function HomeNavbar() {
 
     const isBuyAndSell = pathname?.startsWith("/home/buyandsell");
     const isDonation = pathname?.startsWith("/home/donation");
+    const isService = pathname?.startsWith("/home/service");
 
-    // যদি মাউন্ট না হয় তবে কিছুই রেন্ডার করবে না (হাইড্রেসন এরর থেকে বাঁচতে)
     if (!mounted) return null;
 
     return (
         <div className='container mx-auto'>
             <NavHead />
-            {isBuyAndSell ? <BuySellNavMain /> : isDonation ? <DonationNavMain /> : <NavMain />}
+            {isBuyAndSell ? <BuySellNavMain /> : isDonation ? <DonationNavMain /> : isService ? <ServiceNavMain /> : <NavMain />}
         </div>
     )
 }
