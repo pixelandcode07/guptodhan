@@ -36,7 +36,8 @@ const adminRoutes = [
   '/api/v1/social_links',
   '/api/v1/vendors/[id]',
   '/api/v1/shipping-policy',
-  '/api/v1/service-section/service-provider'
+  '/api/v1/service-section/service-provider',
+  '/api/v1/service-section/service-category',
 ];
 
 // 🔥 Vendor Routes
