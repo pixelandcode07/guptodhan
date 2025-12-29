@@ -3,10 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { 
-  Star, Heart, BadgeCheck, Minus, Plus, 
-  ShoppingCart, Zap, Store 
-} from 'lucide-react';
+import { Star, Heart, BadgeCheck, Minus, Plus, ShoppingCart, Zap, Store } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useCart } from '@/hooks/useCart';
@@ -26,12 +23,10 @@ export default function ProductInfo({
 }: any) {
   const router = useRouter();
   const { addToCart, isLoading: cartLoading, isAddingToCart } = useCart();
-  const { isInWishlist, getWishlistItemId } = useWishlist();
-
   const [quantity, setQuantity] = useState(1);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
 
-  // Logic for Colors and Sizes
+  // কালার এবং সাইজ লিস্ট ফিল্টারিং
   const availableColors = useMemo(() => {
     if (!product.productOptions) return [];
     const colors = product.productOptions.map((opt: any) => Array.isArray(opt.color) ? opt.color[0] : opt.color);
@@ -57,6 +52,7 @@ export default function ProductInfo({
     });
   }, [selectedColor, selectedSize, product.productOptions]);
 
+  // প্রাইস এবং স্টক লজিক (ভ্যারিয়েন্ট না থাকলে মেইন প্রোডাক্ট থেকে নিবে)
   const variantStock = selectedVariant?.stock ?? product.stock ?? 0;
   const variantPrice = selectedVariant?.price ?? product.productPrice ?? 0;
   const variantDiscountPrice = selectedVariant?.discountPrice ?? product.discountPrice;
@@ -64,8 +60,13 @@ export default function ProductInfo({
   const discountPercent = calculateDiscountPercent(variantPrice, variantDiscountPrice);
 
   const handleBuyNow = async () => {
-    if (!selectedColor || (availableSizes.length > 0 && !selectedSize)) {
-      toast.error('Please select both color and size');
+    // কালার বা সাইজ কেবল তখনই চাবে যদি সেগুলো প্রোডাক্টে ডিফাইন করা থাকে
+    if (availableColors.length > 0 && !selectedColor) {
+      toast.error('Please select a color');
+      return;
+    }
+    if (availableSizes.length > 0 && !selectedSize) {
+      toast.error('Please select a size');
       return;
     }
     setIsBuyingNow(true);
@@ -80,85 +81,70 @@ export default function ProductInfo({
     }
   };
 
+  const handleAddToCart = async () => {
+    if (availableColors.length > 0 && !selectedColor) {
+      toast.error('Please select a color');
+      return;
+    }
+    if (availableSizes.length > 0 && !selectedSize) {
+      toast.error('Please select a size');
+      return;
+    }
+    await addToCart(product._id, quantity);
+  };
+
   return (
-    <motion.div 
-      className="p-5 md:p-8 space-y-7 bg-white" 
-      variants={fadeInUp} initial="hidden" animate="visible"
-    >
-      {/* Brand & Category */}
+    <motion.div className="p-5 md:p-8 space-y-7 bg-white" variants={fadeInUp} initial="hidden" animate="visible">
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold uppercase tracking-widest text-blue-600 px-2 py-1 bg-blue-50 rounded">
             {getBrandName(product, relatedData?.brands)}
           </span>
-          <div className="flex gap-2">
-            <button className="p-2 rounded-full border border-gray-100 hover:bg-red-50 hover:text-red-500 transition-colors">
-              <Heart size={18} />
-            </button>
-          </div>
+          <button className="p-2 rounded-full border border-gray-100 hover:bg-red-50 hover:text-red-500 transition-colors">
+            <Heart size={18} />
+          </button>
         </div>
-        <h1 className="text-xl md:text-2xl font-semibold text-slate-900 leading-tight">
-          {product.productTitle}
-        </h1>
-        
+        <h1 className="text-xl md:text-2xl font-semibold text-slate-900 leading-tight">{product.productTitle}</h1>
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-1 text-amber-500">
             <Star size={16} className="fill-current" />
-            <span className="font-semibold text-slate-700">{averageRating || '4.5'}</span>
+            <span className="font-semibold text-slate-700">{averageRating || '0'}</span>
             <span className="text-slate-400">({reviews.length} Reviews)</span>
           </div>
           <span className="h-4 w-[1px] bg-slate-200"></span>
           <div className="flex items-center gap-1.5 text-emerald-600 font-medium italic">
             <BadgeCheck size={16} />
-            {variantStock > 0 ? `${variantStock} Items Left` : 'Out of Stock'}
+            {variantStock > 0 ? `${variantStock} Items Available` : 'Out of Stock'}
           </div>
         </div>
       </div>
 
-      {/* Pricing Section */}
       <div className="py-5 border-y border-slate-50 flex items-center justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
             <span className="text-3xl font-bold text-slate-900">{formatPrice(finalPrice)}</span>
-            {discountPercent > 0 && (
-              <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
-                -{discountPercent}%
-              </span>
-            )}
+            {discountPercent > 0 && <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">-{discountPercent}%</span>}
           </div>
-          {variantDiscountPrice && (
-            <span className="text-sm text-slate-400 line-through">
-              {formatPrice(variantPrice)}
-            </span>
-          )}
+          {variantDiscountPrice && <span className="text-sm text-slate-400 line-through">{formatPrice(variantPrice)}</span>}
         </div>
-        
-        {/* Vendor/Store Name (Multi-vendor focus) */}
         <div className="text-right">
           <p className="text-[11px] text-slate-400 uppercase tracking-tighter">Sold by</p>
           <div className="flex items-center gap-1 justify-end text-slate-700 font-semibold hover:text-blue-600 cursor-pointer transition-colors">
             <Store size={14} />
-            <span className="text-sm">Guptodhan Official</span>
+            <span className="text-sm">Guptodhan Store</span>
           </div>
         </div>
       </div>
 
-      {/* Color Selection */}
+      {/* Color UI (Only shows if colors exist) */}
       {availableColors.length > 0 && (
         <div className="space-y-3">
-          <div className="flex justify-between">
-            <label className="text-sm font-semibold text-slate-900">Color: <span className="font-normal text-slate-500">{selectedColor}</span></label>
-          </div>
+          <label className="text-sm font-semibold text-slate-900">Color: <span className="font-normal text-slate-500">{selectedColor}</span></label>
           <div className="flex gap-3 flex-wrap">
             {availableColors.map((color) => (
               <button
-                key={color}
-                onClick={() => onColorChange?.(color)}
-                className={`px-4 py-2 rounded-md text-xs font-medium border-2 transition-all ${
-                  selectedColor === color 
-                  ? 'border-slate-900 bg-slate-900 text-white shadow-lg shadow-slate-200' 
-                  : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-300'
-                }`}
+                key={color} onClick={() => onColorChange?.(color)}
+                className={`px-4 py-2 rounded-md text-xs font-medium border-2 transition-all ${selectedColor === color ? 'border-slate-900 bg-slate-900 text-white shadow-lg' : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-300'}`}
               >
                 {color}
               </button>
@@ -167,22 +153,15 @@ export default function ProductInfo({
         </div>
       )}
 
-      {/* Size Selection */}
+      {/* Size UI (Only shows if sizes exist) */}
       {availableSizes.length > 0 && (
         <div className="space-y-3">
-          <div className="flex justify-between">
-            <label className="text-sm font-semibold text-slate-900">Size: <span className="font-normal text-slate-500">{selectedSize}</span></label>
-          </div>
+          <label className="text-sm font-semibold text-slate-900">Size: <span className="font-normal text-slate-500">{selectedSize}</span></label>
           <div className="flex gap-2 flex-wrap">
             {availableSizes.map((size) => (
               <button
-                key={size}
-                onClick={() => onSizeChange?.(size)}
-                className={`min-w-[48px] h-10 flex items-center justify-center rounded-md border-2 text-xs font-bold transition-all ${
-                  selectedSize === size 
-                  ? 'border-slate-900 bg-white text-slate-900 ring-1 ring-slate-900' 
-                  : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200 hover:text-slate-600'
-                }`}
+                key={size} onClick={() => onSizeChange?.(size)}
+                className={`min-w-[48px] h-10 flex items-center justify-center rounded-md border-2 text-xs font-bold transition-all ${selectedSize === size ? 'border-slate-900 bg-white text-slate-900 ring-1 ring-slate-900' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}
               >
                 {size}
               </button>
@@ -191,45 +170,21 @@ export default function ProductInfo({
         </div>
       )}
 
-      {/* Quantity & Actions */}
       <div className="space-y-5 pt-2">
         <div className="flex items-center gap-6">
           <label className="text-sm font-semibold text-slate-900">Quantity</label>
           <div className="flex items-center bg-slate-100 rounded-lg p-1">
-            <button 
-              onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-600"
-            >
-              <Minus size={16} />
-            </button>
-            <span className="w-10 text-center text-sm font-bold text-slate-800">{quantity}</span>
-            <button 
-              onClick={() => setQuantity(quantity + 1)}
-              disabled={quantity >= variantStock}
-              className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-600"
-            >
-              <Plus size={16} />
-            </button>
+            <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-md transition-all"><Minus size={16}/></button>
+            <span className="w-10 text-center text-sm font-bold">{quantity}</span>
+            <button onClick={() => setQuantity(quantity + 1)} disabled={quantity >= variantStock} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-md transition-all"><Plus size={16}/></button>
           </div>
         </div>
-
         <div className="flex flex-col sm:flex-row gap-3">
-          <Button 
-            onClick={handleBuyNow} 
-            disabled={isBuyingNow || variantStock === 0} 
-            className="flex-[1.5] h-14 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-xl shadow-slate-200 transition-all active:scale-95"
-          >
-            <Zap size={18} className="mr-2 fill-current text-amber-400" /> 
-            <span className="uppercase tracking-wider font-bold">Buy Now</span>
+          <Button onClick={handleBuyNow} disabled={isBuyingNow || variantStock === 0} className="flex-[1.5] h-14 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-xl active:scale-95 transition-all">
+            <Zap size={18} className="mr-2 fill-current text-amber-400" /> <span className="uppercase tracking-wider font-bold">Buy Now</span>
           </Button>
-          <Button 
-            onClick={async () => await addToCart(product._id, quantity)} 
-            disabled={cartLoading || variantStock === 0} 
-            variant="outline"
-            className="flex-1 h-14 border-2 border-slate-900 text-slate-900 rounded-xl font-bold uppercase tracking-wider hover:bg-slate-50 transition-all active:scale-95"
-          >
-            <ShoppingCart size={18} className="mr-2" /> 
-            Add to Cart
+          <Button onClick={handleAddToCart} disabled={cartLoading || variantStock === 0} variant="outline" className="flex-1 h-14 border-2 border-slate-900 text-slate-900 rounded-xl font-bold uppercase active:scale-95 transition-all">
+            <ShoppingCart size={18} className="mr-2" /> Add to Cart
           </Button>
         </div>
       </div>
