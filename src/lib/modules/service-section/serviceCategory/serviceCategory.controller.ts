@@ -73,55 +73,6 @@ const createServiceCategory = async (req: NextRequest) => {
 };
 
 
-// Basic demo controller
-// export const createServiceCategory = async (req: NextRequest) => {
-//     await dbConnect();
-
-//     try {
-//         const body = await req.json();
-//         console.log('Request body:', body);
-
-//         const { name, description, icon_url } = body;
-
-//         console.log('Received data:', body);
-
-//         if (!name || !description || !icon_url) {
-//             return sendResponse({
-//                 success: false,
-//                 statusCode: StatusCodes.BAD_REQUEST,
-//                 message: 'name, description, and icon_url are required.',
-//                 data: null,
-//             });
-//         }
-
-//         const slug = generateSlug(name);
-
-//         // Save in database
-//         const newCategory = await ServiceCategoryServices.createServiceCategoryInDB({
-//             name,
-//             description,
-//             slug,
-//             icon_url,
-//         });
-
-//         return sendResponse({
-//             success: true,
-//             statusCode: StatusCodes.CREATED,
-//             message: 'Service category created (basic demo) successfully!',
-//             data: newCategory,
-//         });
-//     } catch (error) {
-//         console.error('Error creating basic demo service category:', error);
-//         return sendResponse({
-//             success: false,
-//             statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-//             message: 'Failed to create basic demo service category',
-//             data: null,
-//         });
-//     }
-// };
-
-
 // Get all service categories
 const getAllServiceCategories = async () => {
     await dbConnect();
