@@ -35,9 +35,9 @@ export default function ServiceNavMain() {
 
     const handlePostAdClick = () => {
         if (isLoggedIn) {
-            router.push("/home/buyandsell/select/category");
+            router.push("/home/service");
         } else {
-            localStorage.setItem("redirectAfterLogin", "/home/buyandsell/select/category");
+            localStorage.setItem("redirectAfterLogin", "/home/service");
             setOpenLoginDialog(true);
         }
     };
