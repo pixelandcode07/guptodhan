@@ -36,8 +36,6 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
 
   const handleColorChange = (color: string) => {
     setSelectedColor(color);
-    
-    // ওই কালারের আন্ডারে প্রথম অ্যাভেইলঅ্যাবল সাইজটি ডিফল্ট সেট করা
     const variant = product.productOptions?.find((option) => {
       const optionColor = Array.isArray(option.color) ? option.color[0] : option.color;
       return optionColor === color;
