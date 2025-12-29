@@ -2,5 +2,5 @@ import { ServiceCategoryController } from "@/lib/modules/service-section/service
 import { catchAsync } from "@/lib/middlewares/catchAsync";
 import { checkRole } from "@/lib/middlewares/checkRole";
 
-// export const POST = catchAsync(checkRole(["admin"])(ServiceCategoryController.createServiceCategory));
-export const POST = catchAsync(ServiceCategoryController.createServiceCategory);
+export const POST = catchAsync(checkRole(["admin"])(ServiceCategoryController.createServiceCategory));
+// export const POST = catchAsync(ServiceCategoryController.createServiceCategory);

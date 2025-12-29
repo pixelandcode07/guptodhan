@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 import { sendResponse } from '@/lib/utils/sendResponse';
 import { createServiceCategoryValidationSchema, updateServiceCategoryValidationSchema } from './serviceCategory.validation';
-import { ServiceCategoryServices } from './serviceCategory.service';
+import { ServiceCategoryServices, reorderServiceCategoryService } from './serviceCategory.service';
 import { IServiceCategory } from './serviceCategory.interface';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 import dbConnect from '@/lib/db';
@@ -170,67 +170,6 @@ const updateServiceCategory = async (req: NextRequest, { params }: { params: Pro
     });
 };
 
-
-// demo update controller code 
-// export const updateServiceCategory = async (
-//     req: NextRequest,
-//     { params }: { params: Promise<{ id: string }> }
-// ) => {
-//     await dbConnect();
-
-//     try {
-//         const { id } = await params;
-//         const body = await req.json();
-//         const { name, description, icon_url } = body;
-
-//         console.log('Update data received:', body);
-
-//         if (!id) {
-//             return sendResponse({
-//                 success: false,
-//                 statusCode: StatusCodes.BAD_REQUEST,
-//                 message: 'Category ID is required.',
-//                 data: null,
-//             });
-//         }
-
-//         const payload: any = {};
-
-//         if (name) {
-//             payload.name = name;
-//             payload.slug = generateSlug(name); // regenerate slug if name changes
-//         }
-//         if (description) payload.description = description;
-//         if (icon_url) payload.icon_url = icon_url;
-
-//         const updatedCategory = await ServiceCategoryServices.updateServiceCategoryInDB(id, payload);
-
-//         if (!updatedCategory) {
-//             return sendResponse({
-//                 success: false,
-//                 statusCode: StatusCodes.NOT_FOUND,
-//                 message: 'Service category not found.',
-//                 data: null,
-//             });
-//         }
-
-//         return sendResponse({
-//             success: true,
-//             statusCode: StatusCodes.OK,
-//             message: 'Service category updated successfully!',
-//             data: updatedCategory,
-//         });
-//     } catch (error) {
-//         console.error('Error updating service category:', error);
-//         return sendResponse({
-//             success: false,
-//             statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-//             message: 'Failed to update service category',
-//             data: null,
-//         });
-//     }
-// };
-
 // Delete service category
 const deleteServiceCategory = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
@@ -246,6 +185,33 @@ const deleteServiceCategory = async (req: NextRequest, { params }: { params: Pro
     });
 };
 
+// Reorder service category (drag-and-drop)
+const reorderServiceCategory = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  const { orderedIds } = body;
+
+  // Validate input
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.BAD_REQUEST,
+      message: 'Invalid request: "orderedIds" must be a non-empty array.',
+      data: null,
+    });
+  }
+
+  // Call the reorder service
+  const result = await reorderServiceCategoryService(orderedIds);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: result.message || 'Service category reordered successfully!',
+    data: null,
+  });
+};
+
 export const ServiceCategoryController = {
     createServiceCategory,
     getAllServiceCategories,
@@ -253,4 +219,6 @@ export const ServiceCategoryController = {
     getServiceCategoryBySlug,
     updateServiceCategory,
     deleteServiceCategory,
+
+    reorderServiceCategory
 };
