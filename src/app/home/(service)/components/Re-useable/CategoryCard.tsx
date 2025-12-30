@@ -6,7 +6,7 @@ export default function CategoryCard({ item }: { item: IServiceCategory }) {
     return (
         <Link
             href={`/services/${item.slug}`}
-            className="group relative flex items-center bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:scale-[1.04]"
+            className="group relative flex flex-col md:flex-row items-center bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:scale-[1.04]"
         >
             <div className="flex-shrink-0 w-20 h-20 flex items-center justify-center bg-gray-50 transition-all duration-300 group-hover:bg-blue-50 group-hover:scale-110">
                 <Image

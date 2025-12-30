@@ -104,7 +104,6 @@ export default async function ServiceCategory() {
         console.error('Failed to load service categories:', error);
     }
 
-    // Limit to 12 categories
     const displayedCategories = categories.slice(0, 12);
 
     return (
@@ -118,7 +117,7 @@ export default async function ServiceCategory() {
                         <PageHeader
                             title="All Category"
                             buttonLabel="See All"
-                            buttonHref="/all/services"
+                            buttonHref="/home/all/services"
                         />
                     </div>
 
@@ -126,8 +125,8 @@ export default async function ServiceCategory() {
                     <div className="hidden md:block">
                         <PageHeader
                             title="All Service Category"
-                            buttonLabel="Shop All Category"
-                            buttonHref="/all/services"
+                            buttonLabel="View All Category"
+                            buttonHref="/home/all/services"
                         />
                     </div>
 
@@ -141,12 +140,7 @@ export default async function ServiceCategory() {
                         {displayedCategories.map((item) => (
                             <CategoryCard key={item._id} item={item} />
                         ))}
-
                     </div>
-                    {/* See All Services Card - Desktop */}
-                    {/* <Link href="/home/service" className="">
-                        <SeeAllCard />
-                    </Link> */}
                 </>
             )}
         </div>

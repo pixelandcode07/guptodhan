@@ -1,13 +1,12 @@
 import { CollapsibleMenuGroup } from '@/components/ReusableComponents/CollapsibleMenuGroup'
-import { BadgePlus } from 'lucide-react';
+import { BadgePlus, BookImage } from 'lucide-react';
 const category = [
     { title: "Add Category", url: "/general/create-service-category" },
     { title: "View Categories", url: "/general/all-service-category" },
-    // { title: "Business Categories", url: "/general/view/vendor/categories" },
-    // { title: "Create New Vendor", url: "/general/create/new/vendor" },
-    // { title: "Vendor Requests", url: "/general/view/vendor/requests" },
-    // { title: "Approved Vendors", url: "/general/view/all/vendors" },
-    // { title: "Inactive Vendors", url: "/general/view/inactive/vendors" },
+];
+const banner = [
+    { title: "Create Banner", url: "/general/create-service-banner" },
+    { title: "All Banners", url: "/general/all-service-banner" },
 ];
 
 export default function ServiceModule() {
@@ -20,6 +19,11 @@ export default function ServiceModule() {
                         title: "Category Part",
                         icon: BadgePlus,
                         items: category,
+                    },
+                    {
+                        title: "Banner Part",
+                        icon: BookImage,
+                        items: banner,
                     },
                 ]}
             />
