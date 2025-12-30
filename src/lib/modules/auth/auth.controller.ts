@@ -339,11 +339,53 @@ const registerVendor = async (req: NextRequest) => {
 };
 
 // --- Service Provider Registration ---
+// OTP পাঠানোর কন্ট্রোলার
+const serviceProviderSendRegistrationOtp = async (req: NextRequest) => {
+  await dbConnect();
+  const { email } = await req.json();
+  if (!email) throw new Error("Email is required");
+  await AuthServices.serviceProviderSendRegistrationOtp(email);
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'Registration OTP sent to your email.', 
+    data: null 
+  });
+};
+
+// রেজিস্ট্রেশন কন্ট্রোলার (FormData ব্যবহার করে)
 const registerServiceProvider = async (req: NextRequest) => {
   await dbConnect();
-  const body = await req.json();
-  const validatedData = registerServiceProviderValidationSchema.parse(body);
-  const result = await AuthServices.registerServiceProvider(validatedData);
+  const formData = await req.formData();
+
+  const otp = formData.get('otp') as string;
+  if (!otp) throw new Error('OTP is required for registration.');
+
+  // যদি সার্ভিস প্রোভাইডারের ছবি বা NID থাকে তবে এখানে আপলোড লজিক বসাতে পারেন
+  const profilePictureFile = formData.get('profilePicture') as File | null;
+  let profilePictureUrl = '';
+  
+  if (profilePictureFile) {
+    const uploadRes = await uploadToCloudinary(
+      Buffer.from(await profilePictureFile.arrayBuffer()), 
+      'service-provider-docs'
+    );
+    profilePictureUrl = uploadRes.secure_url;
+  }
+
+  const payload: any = {
+    name: formData.get('name') as string,
+    email: formData.get('email') as string,
+    password: formData.get('password') as string,
+    phoneNumber: formData.get('phoneNumber') as string,
+    address: formData.get('address') as string || '',
+    profilePicture: profilePictureUrl,
+    // অন্যান্য তথ্য যা সার্ভিস প্রোভাইডারের জন্য প্রয়োজন
+    category: formData.get('category') as string,
+    experience: formData.get('experience') as string,
+  };
+
+  const result = await AuthServices.registerServiceProvider(payload, otp);
 
   return sendResponse({
     success: true,
@@ -452,6 +494,7 @@ export const AuthController = {
   resetPasswordWithToken,
   registerVendor,
   vendorSendRegistrationOtp,
+  serviceProviderSendRegistrationOtp,
   registerServiceProvider,
   serviceProviderLogin,
   googleLoginHandler,
