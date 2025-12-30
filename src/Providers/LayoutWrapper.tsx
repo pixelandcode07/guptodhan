@@ -23,7 +23,10 @@ function LayoutContent({ children }: { children: ReactNode }) {
     pathname.startsWith('/vendor-singin') ||
     pathname.startsWith('/vendor/forgot-password') ||
     pathname.startsWith('/vendor-singup') ||
-    pathname.startsWith('/home/chat');
+    pathname.startsWith('/home/chat') ||
+    pathname.startsWith('/service/register') ||
+    pathname.startsWith('/service/login');
+
 
   return (
     <>

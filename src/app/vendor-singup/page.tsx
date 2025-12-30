@@ -1,7 +1,6 @@
 import { VendorCategory } from '@/types/VendorCategoryType';
 import VendorFormUserEnd from './components/VendorFormUserEnd';
 import { fetchPublicVendorCategories } from '@/lib/MultiVendorApis/fetchVendorCategories';
-import VendorSignupWizardOld from './components/VendorSignupWizardOld';
 
 export default async function CreateNewVendor() {
 
@@ -9,8 +8,7 @@ export default async function CreateNewVendor() {
 
   return (
     <div>
-      {/* <VendorFormUserEnd vendorCategories={vendorCategories} /> */}
-      <VendorSignupWizardOld vendorCategories={vendorCategories} />
+      <VendorFormUserEnd vendorCategories={vendorCategories} />
     </div>
   );
 }
