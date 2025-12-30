@@ -1,10 +1,7 @@
-// src/lib/ServiceBannerApis/fetchServiceBanner.ts
+
 import axios from 'axios';
 import { ApiResponse, IServiceBanner } from '@/types/ServiceBannerType';
 
-/**
- * Fetch all service banners (Public – no token required)
- */
 export const fetchAllPublicServiceBanners = async (): Promise<IServiceBanner[]> => {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
