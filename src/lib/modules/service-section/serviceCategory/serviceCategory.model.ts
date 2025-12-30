@@ -7,6 +7,8 @@ const serviceCategorySchema = new Schema<IServiceCategory>(
     description: { type: String, required: true },
     slug: { type: String, required: true, unique: true, trim: true },
     icon_url: { type: String, required: true },
+    orderCount: { type: Number, default: 0 },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

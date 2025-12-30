@@ -2,14 +2,30 @@ import { IServiceCategory } from "./serviceCategory.interface";
 import { ServiceCategoryModel } from "./serviceCategory.model";
 
 // Create service category
-const createServiceCategoryInDB = async (payload: Partial<IServiceCategory>) => {
-  const result = await ServiceCategoryModel.create(payload);
+const createServiceCategoryInDB = async (
+  payload: Partial<IServiceCategory>
+) => {
+  const maxOrderCategory = await ServiceCategoryModel.findOne()
+    .sort({ orderCount: -1 })
+    .select('orderCount -_id')
+    .lean<{ orderCount: number }>();
+
+  const nextOrder =
+    maxOrderCategory && typeof maxOrderCategory.orderCount === 'number'
+      ? maxOrderCategory.orderCount + 1
+      : 0;
+
+  const result = await ServiceCategoryModel.create({
+    ...payload,
+    orderCount: nextOrder,
+  });
+
   return result;
 };
 
 // Get all service categories
 const getAllServiceCategoriesFromDB = async () => {
-  const result = await ServiceCategoryModel.find({}).sort({ name: 1 });
+  const result = await ServiceCategoryModel.find({}).sort({ orderCount: -1 });
   return result;
 };
 
@@ -47,6 +63,22 @@ const deleteServiceCategoryFromDB = async (id: string) => {
   return null;
 };
 
+// rearrange service categories
+export const reorderServiceCategoryService = async (orderedIds: string[]) => {
+  if (!orderedIds || orderedIds.length === 0) {
+    throw new Error("orderedIds array is empty");
+  }
+
+  // Loop and update orderCount = index
+  const updatePromises = orderedIds.map((id, index) =>
+    ServiceCategoryModel.findByIdAndUpdate(id, { orderCount: index }, { new: true })
+  );
+
+  await Promise.all(updatePromises);
+
+  return { message: "service category reordered successfully!" };
+};
+
 export const ServiceCategoryServices = {
   createServiceCategoryInDB,
   getAllServiceCategoriesFromDB,
@@ -54,4 +86,6 @@ export const ServiceCategoryServices = {
   getServiceCategoryBySlugFromDB,
   updateServiceCategoryInDB,
   deleteServiceCategoryFromDB,
+
+  reorderServiceCategoryService
 };
