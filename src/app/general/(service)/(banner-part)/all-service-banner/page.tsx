@@ -7,10 +7,10 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 export default async function AllServiceBanner() {
     const session = await getServerSession(authOptions)
     const token = (session as any)?.accessToken;
-    // const allBanner = await fetchAllProtectedServiceBanners(token)
-    const allBanners = token
-        ? await fetchAllProtectedServiceBanners(token)
-        : [];
+    const allBanners = await fetchAllProtectedServiceBanners(token)
+    // const allBanners = token
+    //     ? await fetchAllProtectedServiceBanners(token)
+    //     : [];
     console.log('allBanner', allBanners)
     return (
         <div>
@@ -21,7 +21,7 @@ export default async function AllServiceBanner() {
             </div>
 
             <main>
-                {/* <ClientDataTable allBanners={allBanners} /> */}
+                <ClientDataTable allBanners={allBanners} />
             </main>
         </div>
     )
