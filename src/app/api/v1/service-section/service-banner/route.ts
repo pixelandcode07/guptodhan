@@ -4,4 +4,5 @@ import { checkRole } from "@/lib/middlewares/checkRole";
 
 
 export const GET = catchAsync(checkRole(['admin'])(ServiceBannerController.getAllServiceBanners));
-export const POST = catchAsync(checkRole(['admin'])(ServiceBannerController.updateServiceBanner));
+// export const POST = catchAsync(checkRole(['admin'])(ServiceBannerController.updateServiceBanner));
+export const POST = catchAsync(checkRole(['admin'])(ServiceBannerController.createServiceBanner));

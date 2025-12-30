@@ -17,6 +17,7 @@ import MessageIcon from '../../MessageIcon';
 export default function NavMain() {
   const { data: session } = useSession();
   const user = session?.user;
+  console.log('User Session:', session);
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);

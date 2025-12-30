@@ -128,11 +128,11 @@ const vendorSendForgotPasswordOtp = async (req: NextRequest) => {
   const body = await req.json();
   const validatedData = sendForgotPasswordOtpToEmailSchema.parse(body);
   await AuthServices.vendorSendForgotPasswordOtpToEmail(validatedData.email);
-  return sendResponse({ 
-    success: true, 
-    statusCode: StatusCodes.OK, 
-    message: 'A password reset OTP has been sent to your vendor email.', 
-    data: null 
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'A password reset OTP has been sent to your vendor email.',
+    data: null
   });
 };
 
@@ -141,11 +141,11 @@ const vendorVerifyForgotPasswordOtp = async (req: NextRequest) => {
   const body = await req.json();
   const validatedData = verifyForgotPasswordOtpFromEmailSchema.parse(body);
   const result = await AuthServices.vendorVerifyForgotPasswordOtpFromEmail(validatedData.email, validatedData.otp);
-  return sendResponse({ 
-    success: true, 
-    statusCode: StatusCodes.OK, 
-    message: 'OTP verified successfully. Use the token to reset your password.', 
-    data: result 
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'OTP verified successfully. Use the token to reset your password.',
+    data: result
   });
 };
 
@@ -155,11 +155,11 @@ const vendorResetPassword = async (req: NextRequest) => {
   const validatedData = resetPasswordWithTokenSchema.parse(body);
   // Reusing the unified reset service logic
   await AuthServices.resetPasswordWithToken(validatedData.token, validatedData.newPassword);
-  return sendResponse({ 
-    success: true, 
-    statusCode: StatusCodes.OK, 
-    message: 'Vendor password has been reset successfully!', 
-    data: null 
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Vendor password has been reset successfully!',
+    data: null
   });
 };
 
@@ -345,11 +345,11 @@ const serviceProviderSendRegistrationOtp = async (req: NextRequest) => {
   const { email } = await req.json();
   if (!email) throw new Error("Email is required");
   await AuthServices.serviceProviderSendRegistrationOtp(email);
-  return sendResponse({ 
-    success: true, 
-    statusCode: StatusCodes.OK, 
-    message: 'Registration OTP sent to your email.', 
-    data: null 
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Registration OTP sent to your email.',
+    data: null
   });
 };
 
@@ -362,12 +362,12 @@ const registerServiceProvider = async (req: NextRequest) => {
   if (!otp) throw new Error('OTP is required for registration.');
 
   // যদি সার্ভিস প্রোভাইডারের ছবি বা NID থাকে তবে এখানে আপলোড লজিক বসাতে পারেন
-  const profilePictureFile = formData.get('profilePicture') as File | null;
+  const profilePictureFile = formData.get('cvUrl') as File | null;
   let profilePictureUrl = '';
-  
+
   if (profilePictureFile) {
     const uploadRes = await uploadToCloudinary(
-      Buffer.from(await profilePictureFile.arrayBuffer()), 
+      Buffer.from(await profilePictureFile.arrayBuffer()),
       'service-provider-docs'
     );
     profilePictureUrl = uploadRes.secure_url;
@@ -381,8 +381,9 @@ const registerServiceProvider = async (req: NextRequest) => {
     address: formData.get('address') as string || '',
     profilePicture: profilePictureUrl,
     // অন্যান্য তথ্য যা সার্ভিস প্রোভাইডারের জন্য প্রয়োজন
-    category: formData.get('category') as string,
-    experience: formData.get('experience') as string,
+    category: formData.get('serviceCategory') as string,
+    // experience: formData.get('experience') as string,
+    bio: formData.get('bio') as string || '',
   };
 
   const result = await AuthServices.registerServiceProvider(payload, otp);
@@ -400,11 +401,11 @@ const googleLoginHandler = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
   const validated = googleLoginValidationSchema.parse(body);
-  
+
   const result = await AuthServices.loginWithGoogle(validated.idToken);
 
   const { refreshToken, accessToken, ...data } = result;
-  
+
   const response = sendResponse({
     success: true,
     statusCode: StatusCodes.OK,

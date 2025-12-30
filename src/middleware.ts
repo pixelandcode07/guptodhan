@@ -38,6 +38,7 @@ const adminRoutes = [
   '/api/v1/shipping-policy',
   '/api/v1/service-section/service-provider',
   '/api/v1/service-section/service-category',
+  '/api/v1/service-section/service-banner',
 ];
 
 // 🔥 Vendor Routes
@@ -97,7 +98,7 @@ const protectedApiRoutes = [
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
-  
+
   const isAdminRoute = adminRoutes.some((route) => path.startsWith(route));
   const isVendorRoute = vendorRoutes.some((route) => path.startsWith(route));
   const isProtectedApi = protectedApiRoutes.some((route) => path.startsWith(route));
@@ -114,8 +115,8 @@ export async function middleware(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     token = authHeader.split(' ')[1];
-  } 
-  
+  }
+
   // ২. যদি হেডার না থাকে, তাহলে Cookie চেক করুন ✅ (এটি আপনার মিসিং ছিল)
   else {
     token = req.cookies.get('accessToken')?.value || req.cookies.get('refreshToken')?.value;
@@ -128,9 +129,9 @@ export async function middleware(req: NextRequest) {
       const { payload } = await jwtVerify(token, secret);
       tokenPayload = payload;
     } catch (err: any) {
-       // যদি Access Token ফেইল করে এবং এটি রিফ্রেশ টোকেন হয়, তবে Refresh Secret দিয়ে ট্রাই করতে পারেন
-       // কিন্তু নিরাপত্তার জন্য সাধারণত মিডলওয়্যারে Access Token ব্যবহার করা ভালো।
-       console.warn(`[Middleware] Token verification failed: ${err.message}`);
+      // যদি Access Token ফেইল করে এবং এটি রিফ্রেশ টোকেন হয়, তবে Refresh Secret দিয়ে ট্রাই করতে পারেন
+      // কিন্তু নিরাপত্তার জন্য সাধারণত মিডলওয়্যারে Access Token ব্যবহার করা ভালো।
+      console.warn(`[Middleware] Token verification failed: ${err.message}`);
     }
   }
 
@@ -169,9 +170,9 @@ export async function middleware(req: NextRequest) {
   }
 
   // 🔥 Vendor Check
-  if (isVendorRoute && tokenPayload.role !== 'vendor' && !isAdminRoute ) {
+  if (isVendorRoute && tokenPayload.role !== 'vendor' && !isAdminRoute) {
     if (path.startsWith('/dashboard')) {
-       return NextResponse.redirect(new URL('/', req.url));
+      return NextResponse.redirect(new URL('/', req.url));
     }
     return NextResponse.json(
       { success: false, message: 'Forbidden: You do not have permission (Vendor only).' },
