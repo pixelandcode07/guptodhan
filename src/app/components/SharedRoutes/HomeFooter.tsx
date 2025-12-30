@@ -19,7 +19,7 @@ export default function HomeFooter() {
       </div>
 
       {/* Desktop Footer */}
-      <div className="hidden md:block">
+      <div className="container mx-auto hidden md:block">
         <Footerbanner />
         <FooterLinks />
         <FooterFoot />

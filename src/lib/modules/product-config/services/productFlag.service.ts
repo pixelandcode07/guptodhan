@@ -1,16 +1,25 @@
-import { IProductFlag } from '../interfaces/productFlag.interface';
-import { ProductFlag } from '../models/productFlag.model';
-import { ClassifiedAd } from '../../classifieds/ad.model'; // dependency check
+import { IProductFlag } from "../interfaces/productFlag.interface";
+import { ProductFlag } from "../models/productFlag.model";
+import { ClassifiedAd } from "../../classifieds/ad.model"; // dependency check
 
 // Create new product flag
 const createProductFlagInDB = async (payload: Partial<IProductFlag>) => {
-  const maxOrderFlag = await ProductFlag.findOne().sort({ orderCount: -1 }).select('orderCount -_id').lean<{ orderCount: number }>();
-  console.log("max order flag is :",maxOrderFlag);
+  const maxOrderFlag = await ProductFlag.findOne()
+    .sort({ orderCount: -1 })
+    .select("orderCount -_id")
+    .lean<{ orderCount: number }>();
+  console.log("max order flag is :", maxOrderFlag);
 
-  const nextOrder = maxOrderFlag && typeof maxOrderFlag.orderCount === 'number'? maxOrderFlag.orderCount + 1 : 0;
-  console.log("next order is :",nextOrder);
+  const nextOrder =
+    maxOrderFlag && typeof maxOrderFlag.orderCount === "number"
+      ? maxOrderFlag.orderCount + 1
+      : 0;
+  console.log("next order is :", nextOrder);
 
-  const result = await ProductFlag.create({...payload,orderCount: nextOrder});
+  const result = await ProductFlag.create({
+    ...payload,
+    orderCount: nextOrder,
+  });
   return result;
 };
 
@@ -22,7 +31,9 @@ const getAllProductFlagsFromDB = async () => {
 
 // Get all active product flags
 const getAllActiveProductFlagsFromDB = async () => {
-  const result = await ProductFlag.find({ status: 'active' }).sort({ orderCount: 1 });
+  const result = await ProductFlag.find({ status: "active" }).sort({
+    orderCount: 1,
+  });
   return result;
 };
 
@@ -30,16 +41,21 @@ const getAllActiveProductFlagsFromDB = async () => {
 const getProductFlagByIdFromDB = async (id: string) => {
   const result = await ProductFlag.findById(id);
   if (!result) {
-    throw new Error('Product flag not found.');
+    throw new Error("Product flag not found.");
   }
   return result;
 };
 
 // Update product flag
-const updateProductFlagInDB = async (id: string, payload: Partial<IProductFlag>) => {
-  const result = await ProductFlag.findByIdAndUpdate(id, payload, { new: true });
+const updateProductFlagInDB = async (
+  id: string,
+  payload: Partial<IProductFlag>
+) => {
+  const result = await ProductFlag.findByIdAndUpdate(id, payload, {
+    new: true,
+  });
   if (!result) {
-    throw new Error('Product flag not found to update.');
+    throw new Error("Product flag not found to update.");
   }
   return result;
 };
@@ -48,20 +64,22 @@ const updateProductFlagInDB = async (id: string, payload: Partial<IProductFlag>)
 const deleteProductFlagFromDB = async (id: string) => {
   const existingModel = await ClassifiedAd.findOne({ flag: id });
   if (existingModel) {
-    throw new Error('Cannot delete this product flag as it is used in a product model.');
+    throw new Error(
+      "Cannot delete this product flag as it is used in a product model."
+    );
   }
 
   const result = await ProductFlag.findByIdAndDelete(id);
   if (!result) {
-    throw new Error('Product flag not found to delete.');
+    throw new Error("Product flag not found to delete.");
   }
   return null;
 };
 
-// rearrange product flags  
+// rearrange product flags
 export const reorderProductFlagsService = async (orderedIds: string[]) => {
   if (!orderedIds || orderedIds.length === 0) {
-    throw new Error('orderedIds array is empty');
+    throw new Error("orderedIds array is empty");
   }
 
   // Loop and update orderCount = index
@@ -71,7 +89,7 @@ export const reorderProductFlagsService = async (orderedIds: string[]) => {
 
   await Promise.all(updatePromises);
 
-  return { message: 'Product flags reordered successfully!' };
+  return { message: "Product flags reordered successfully!" };
 };
 
 export const ProductFlagServices = {
@@ -82,5 +100,5 @@ export const ProductFlagServices = {
   updateProductFlagInDB,
   deleteProductFlagFromDB,
 
-  reorderProductFlagsService
+  reorderProductFlagsService,
 };

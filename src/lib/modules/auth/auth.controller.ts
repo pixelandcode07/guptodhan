@@ -258,33 +258,64 @@ const resetPasswordWithToken = async (req: NextRequest) => {
 };
 
 // --- Vendor Registration ---
+const vendorSendRegistrationOtp = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+
+  // ইমেইল চেক করা
+  if (!body.email) {
+    throw new Error("Email is required to send OTP");
+  }
+
+  // সার্ভিস কল করে OTP পাঠানো (এটি Redis-এ জমা থাকবে ৫ মিনিট)
+  await AuthServices.vendorSendRegistrationOtp(body.email);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'A 6-digit OTP has been sent to your email for registration.',
+    data: null,
+  });
+};
+
+// --- ২. ভেন্ডর রেজিস্ট্রেশন (OTP ভেরিফিকেশনসহ) ---
 const registerVendor = async (req: NextRequest) => {
   await dbConnect();
 
   const formData = await req.formData();
 
+  // ১. OTP এবং ইমেইল চেক করা
+  const otp = formData.get('otp') as string;
+  const email = formData.get('email') as string;
+
+  if (!otp || otp.length !== 6) {
+    throw new Error('Valid 6-digit OTP is required to complete registration.');
+  }
+
+  // ২. ফাইল রিসিভ করা
   const ownerNidFile = formData.get('ownerNid') as File | null;
   const tradeLicenseFile = formData.get('tradeLicense') as File | null;
 
   if (!ownerNidFile) throw new Error('Owner NID image is required.');
   if (!tradeLicenseFile) throw new Error('Trade License image is required.');
 
-  // Upload to Cloudinary
+  // ৩. ক্লাউডিনারিতে আপলোড (একসাথে দুটি ফাইল আপলোড হচ্ছে)
   const [ownerNidUploadResult, tradeLicenseUploadResult] = await Promise.all([
     uploadToCloudinary(Buffer.from(await ownerNidFile.arrayBuffer()), 'vendor-documents'),
     uploadToCloudinary(Buffer.from(await tradeLicenseFile.arrayBuffer()), 'vendor-documents'),
   ]);
 
+  // ৪. সার্ভিসকে পাঠানোর জন্য পেলোড তৈরি
   const payload: any = {
     name: formData.get('name') as string,
-    email: formData.get('email') as string,
+    email: email,
     password: formData.get('password') as string,
     phoneNumber: formData.get('phoneNumber') as string,
-    address: formData.get('address') as string || '',
+    address: (formData.get('address') as string) || '',
 
     businessName: formData.get('businessName') as string,
-    businessAddress: formData.get('businessAddress') as string || '', 
-    tradeLicenseNumber: formData.get('tradeLicenseNumber') as string || '',
+    businessAddress: (formData.get('businessAddress') as string) || '',
+    tradeLicenseNumber: (formData.get('tradeLicenseNumber') as string) || '',
     ownerName: formData.get('ownerName') as string,
 
     businessCategory: JSON.parse((formData.get('businessCategory') as string) || '[]'),
@@ -295,23 +326,66 @@ const registerVendor = async (req: NextRequest) => {
     status: 'pending',
   };
 
-  const validatedData = registerVendorValidationSchema.parse(payload);
-  const result = await AuthServices.registerVendor(validatedData);
+  // ৫. সার্ভিস কল (এখানে OTP পাঠিয়ে ভেরিফাই করানো হবে)
+  // registerVendor(payload, otp) - সার্ভিস ফাংশনটি এভাবে আপডেট থাকতে হবে
+  const result = await AuthServices.registerVendor(payload, otp);
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.CREATED,
-    message: 'Vendor registered successfully! Please wait for admin approval.',
+    message: 'Vendor registered successfully! Admin will review your profile.',
     data: result,
   });
 };
 
 // --- Service Provider Registration ---
+// OTP পাঠানোর কন্ট্রোলার
+const serviceProviderSendRegistrationOtp = async (req: NextRequest) => {
+  await dbConnect();
+  const { email } = await req.json();
+  if (!email) throw new Error("Email is required");
+  await AuthServices.serviceProviderSendRegistrationOtp(email);
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'Registration OTP sent to your email.', 
+    data: null 
+  });
+};
+
+// রেজিস্ট্রেশন কন্ট্রোলার (FormData ব্যবহার করে)
 const registerServiceProvider = async (req: NextRequest) => {
   await dbConnect();
-  const body = await req.json();
-  const validatedData = registerServiceProviderValidationSchema.parse(body);
-  const result = await AuthServices.registerServiceProvider(validatedData);
+  const formData = await req.formData();
+
+  const otp = formData.get('otp') as string;
+  if (!otp) throw new Error('OTP is required for registration.');
+
+  // যদি সার্ভিস প্রোভাইডারের ছবি বা NID থাকে তবে এখানে আপলোড লজিক বসাতে পারেন
+  const profilePictureFile = formData.get('profilePicture') as File | null;
+  let profilePictureUrl = '';
+  
+  if (profilePictureFile) {
+    const uploadRes = await uploadToCloudinary(
+      Buffer.from(await profilePictureFile.arrayBuffer()), 
+      'service-provider-docs'
+    );
+    profilePictureUrl = uploadRes.secure_url;
+  }
+
+  const payload: any = {
+    name: formData.get('name') as string,
+    email: formData.get('email') as string,
+    password: formData.get('password') as string,
+    phoneNumber: formData.get('phoneNumber') as string,
+    address: formData.get('address') as string || '',
+    profilePicture: profilePictureUrl,
+    // অন্যান্য তথ্য যা সার্ভিস প্রোভাইডারের জন্য প্রয়োজন
+    category: formData.get('category') as string,
+    experience: formData.get('experience') as string,
+  };
+
+  const result = await AuthServices.registerServiceProvider(payload, otp);
 
   return sendResponse({
     success: true,
@@ -419,6 +493,8 @@ export const AuthController = {
   getResetTokenWithFirebase,
   resetPasswordWithToken,
   registerVendor,
+  vendorSendRegistrationOtp,
+  serviceProviderSendRegistrationOtp,
   registerServiceProvider,
   serviceProviderLogin,
   googleLoginHandler,

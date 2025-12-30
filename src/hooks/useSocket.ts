@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+// D:\yeamin student\Guptodhan Project\guptodhan\src\hooks\useSocket.ts
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 
 export const useSocket = () => {
@@ -6,26 +7,18 @@ export const useSocket = () => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // ✅ আপনার Render.com এর সঠিক লিঙ্কটি এখানে দিন
-    const RENDER_SOCKET_URL = "https://guptodhan-socket-server.onrender.com";
+    const SOCKET_URL = "https://guptodhan-socket-server.onrender.com";
 
     if (!socketRef.current) {
-      // সরাসরি Render URL এ কানেক্ট হবে, কোনো রিলেটিভ পাথ (/api/socket) নয়
-      socketRef.current = io(RENDER_SOCKET_URL, {
-        transports: ['websocket'], 
+      socketRef.current = io(SOCKET_URL, {
+        transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionAttempts: 10,
-        reconnectionDelay: 2000,
       });
 
       socketRef.current.on('connect', () => {
-        console.log('✅ Connected to Render Socket Server');
+        console.log('✅ Socket Connected:', socketRef.current?.id);
         setIsConnected(true);
-      });
-
-      socketRef.current.on('connect_error', (err) => {
-        console.log('⚠️ Socket Connection Error:', err.message);
-        setIsConnected(false);
       });
 
       socketRef.current.on('disconnect', () => {
@@ -35,25 +28,48 @@ export const useSocket = () => {
     }
 
     return () => {
-      // Component unmount হলে cleanup (অপশনাল)
+      // অপশনাল: কম্পোনেন্ট আনমাউন্ট হলে সকেট অফ করতে পারেন
       // socketRef.current?.disconnect();
     };
   }, []);
 
-  const sendMessage = (data: any, onAck: (res: any) => void) => {
+  const sendMessage = useCallback((data: any, onAck: (res: any) => void) => {
     if (socketRef.current?.connected) {
       socketRef.current.emit('send_message', data, onAck);
     } else {
-      onAck({ success: false, error: 'Chat server is starting or disconnected. Please wait.' });
+      onAck({ success: false, error: 'Socket not connected' });
     }
-  };
+  }, []);
+
+  const authenticate = useCallback((userId: string) => {
+    socketRef.current?.emit('authenticate', userId);
+  }, []);
+
+  const joinConversation = useCallback((conversationId: string) => {
+    socketRef.current?.emit('join_conversation', conversationId);
+  }, []);
+
+  const checkUserStatus = useCallback((userId: string) => {
+    socketRef.current?.emit('check_user_status', userId, (status: any) => {
+      // handle status logic
+    });
+  }, []);
+
+  const on = useCallback((event: string, callback: any) => {
+    socketRef.current?.on(event, callback);
+  }, []);
+
+  const off = useCallback((event: string, callback?: any) => {
+    socketRef.current?.off(event, callback);
+  }, []);
 
   return {
     isConnected,
-    authenticate: (uid: string) => socketRef.current?.emit('authenticate', uid),
-    joinConversation: (cid: string) => socketRef.current?.emit('join_conversation', cid),
     sendMessage,
-    on: (ev: string, cb: any) => { socketRef.current?.on(ev, cb); },
-    off: (ev: string) => { socketRef.current?.off(ev); },
+    authenticate,
+    joinConversation,
+    checkUserStatus,
+    on,
+    off,
   };
 };

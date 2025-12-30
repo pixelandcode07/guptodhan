@@ -28,13 +28,16 @@ const createServiceCategory = async (req: NextRequest) => {
     try {
         const formData = await req.formData();
 
+        console.log('Received form data:', formData);
+
         const name = formData.get('name') as string;
         const description = formData.get('description') as string;
         const iconFile = formData.get('icon_url') as File | null;
-
-        const validatedData = createServiceCategoryValidationSchema.parse({ name, description, icon_url: iconFile ? 'dummy' : '' });
-
         const slug = generateSlug(name);
+
+
+        const validatedData = createServiceCategoryValidationSchema.parse({ name, description,slug, icon_url: iconFile ? 'dummy' : '' });
+
 
         let iconUrl = '';
         if (iconFile) {
@@ -70,12 +73,13 @@ const createServiceCategory = async (req: NextRequest) => {
 };
 
 
-// // Basic demo controller
+// Basic demo controller
 // export const createServiceCategory = async (req: NextRequest) => {
 //     await dbConnect();
 
 //     try {
 //         const body = await req.json();
+//         console.log('Request body:', body);
 
 //         const { name, description, icon_url } = body;
 
@@ -216,7 +220,7 @@ const updateServiceCategory = async (req: NextRequest, { params }: { params: Pro
 };
 
 
-// // demo update controller code 
+// demo update controller code 
 // export const updateServiceCategory = async (
 //     req: NextRequest,
 //     { params }: { params: Promise<{ id: string }> }

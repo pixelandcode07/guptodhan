@@ -30,8 +30,12 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
 
   // Fetch all colors and sizes at once
   const [colors, sizes] = await Promise.all([
-    colorIds.size ? ProductColor.find({ _id: { $in: Array.from(colorIds) } }).lean() : [],
-    sizeIds.size ? ProductSize.find({ _id: { $in: Array.from(sizeIds) } }).lean() : [],
+    colorIds.size
+      ? ProductColor.find({ _id: { $in: Array.from(colorIds) } }).lean()
+      : [],
+    sizeIds.size
+      ? ProductSize.find({ _id: { $in: Array.from(sizeIds) } }).lean()
+      : [],
   ]);
 
   // Create maps for quick lookup
@@ -86,7 +90,7 @@ const getAllVendorProductsFromDB = async () => {
     .populate("vendorStoreId", "storeName")
     .sort({ createdAt: -1 })
     .lean();
-  
+
   return await populateColorAndSizeNamesForProducts(result);
 };
 
@@ -101,7 +105,7 @@ const getActiveVendorProductsFromDB = async () => {
     .populate("vendorStoreId", "storeName")
     .sort({ createdAt: -1 })
     .lean();
-  
+
   return await populateColorAndSizeNamesForProducts(result);
 };
 
@@ -397,7 +401,7 @@ const getVendorProductsByBrandFromDB = async (brandId: string) => {
     .populate("vendorStoreId", "storeName")
     .sort({ createdAt: -1 })
     .lean();
-  
+
   return await populateColorAndSizeNamesForProducts(result);
 };
 
@@ -503,7 +507,11 @@ const getLandingPageProductsFromDB = async () => {
       .lean(),
   ]);
 
-  const [populatedRunningOffers, populatedBestSelling, populatedRandomProducts] = await Promise.all([
+  const [
+    populatedRunningOffers,
+    populatedBestSelling,
+    populatedRandomProducts,
+  ] = await Promise.all([
     populateColorAndSizeNamesForProducts(runningOffers),
     populateColorAndSizeNamesForProducts(bestSelling),
     populateColorAndSizeNamesForProducts(randomProducts),
@@ -786,7 +794,9 @@ const getVendorStoreAndProductsFromDB = async (
     })
   );
 
-  const populatedProducts = await populateColorAndSizeNamesForProducts(productsWithReviews);
+  const populatedProducts = await populateColorAndSizeNamesForProducts(
+    productsWithReviews
+  );
 
   return {
     store,
@@ -817,6 +827,51 @@ const getVendorStoreAndProductsFromDBVendorDashboard = async (vendorId: string) 
   };
 };
 
+const getVendorStoreProductsWithReviewsFromDB = async (vendorId: string) => {
+  const store = await StoreModel.findOne({ vendorId });
+
+  if (!store) {
+    throw new Error("Store not found for this vendor");
+  }
+
+  const products = await VendorProductModel.find({
+    vendorStoreId: store._id,
+  });
+
+  const productsWithReviews = await Promise.all(
+    products.map(async (product) => {
+      const reviews = await ReviewModel.find({
+        productId: product._id,
+      })
+        // .select('rating comment userId createdAt')
+        // .populate('userId', 'name photo');
+
+      const totalReviews = reviews.length;
+      const averageRating =
+        totalReviews > 0
+          ? Number(
+              (
+                reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+              ).toFixed(1)
+            )
+          : 0;
+
+      return {
+        ...product.toObject(),
+        reviews,
+        totalReviews,
+        averageRating,
+      };
+    })
+  );
+
+  return {
+    store,
+    products: productsWithReviews,
+  };
+};
+
+
 export const VendorProductServices = {
   createVendorProductInDB,
   getAllVendorProductsFromDB,
@@ -838,5 +893,6 @@ export const VendorProductServices = {
   getBestSellingProductsFromDB,
   getForYouProductsFromDB,
   getVendorStoreAndProductsFromDB,
-  getVendorStoreAndProductsFromDBVendorDashboard
+  getVendorStoreAndProductsFromDBVendorDashboard,
+  getVendorStoreProductsWithReviewsFromDB
 };

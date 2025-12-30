@@ -1,17 +1,4 @@
-// import { UserController } from '@/lib/modules/user/user.controller';
-// import { catchAsync } from '@/lib/middlewares/catchAsync';
-
-// /**
-//  * @description Registers a new service provider using the centralized User module.
-//  * @method POST
-//  */
-// export const POST = catchAsync(UserController.registerServiceProvider);
-
 import { AuthController } from '@/lib/modules/auth/auth.controller';
 import { catchAsync } from '@/lib/middlewares/catchAsync';
 
-/**
- * @description Service Provider Login
- * @method POST
- */
 export const POST = catchAsync(AuthController.registerServiceProvider);

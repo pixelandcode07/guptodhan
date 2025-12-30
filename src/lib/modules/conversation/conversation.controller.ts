@@ -1,4 +1,3 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\conversation\conversation.controller.ts
 import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 import { sendResponse } from '@/lib/utils/sendResponse';
@@ -8,9 +7,7 @@ import { ClassifiedAd } from '../classifieds/ad.model';
 import dbConnect from '@/lib/db';
 import { verifyToken } from '@/lib/utils/jwt';
 
-// ==========================================
-// 🔐 HELPER: Get User ID from Token
-// ==========================================
+// ✅ Token থেকে userId পাওয়া
 const getUserIdFromToken = (req: NextRequest): string => {
   const authHeader = req.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {
@@ -20,52 +17,72 @@ const getUserIdFromToken = (req: NextRequest): string => {
   const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as {
     userId: string;
   };
+  console.log('✅ Token decoded, userId:', decoded.userId);
   return decoded.userId;
 };
 
-// ==========================================
-// 1. GET MY CONVERSATIONS
-// ==========================================
+// ✅ সমস্ত চ্যাট পাওয়া (FIXED)
 const getMyConversations = async (req: NextRequest) => {
-  await dbConnect();
-  const userId = getUserIdFromToken(req);
+  try {
+    await dbConnect();
+    const userId = getUserIdFromToken(req);
 
-  const result = await ConversationServices.getMyConversationsFromDB(userId);
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Conversations retrieved',
-    data: result,
-  });
+    console.log('📡 getMyConversations called for user:', userId);
+
+    const result = await ConversationServices.getMyConversationsFromDB(userId);
+
+    console.log('📊 Conversations result:', {
+      count: result.length,
+      conversations: result.map((c: any) => ({
+        id: c._id,
+        ad: c.ad?.title,
+        participants: c.participants?.length,
+        lastMessage: c.lastMessage?._id,
+      })),
+    });
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: 'Conversations retrieved',
+      data: result,
+    });
+  } catch (error) {
+    console.error('❌ Error in getMyConversations:', error);
+    throw error;
+  }
 };
 
-// ==========================================
-// 2. GET SINGLE CONVERSATION (for chat page)
-// ==========================================
+// ✅ একটা চ্যাট পাওয়া
 const getConversation = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) => {
-  console.log('📍 Controller: getConversation called');
-  await dbConnect();
-
-  const userId = getUserIdFromToken(req);
-  const { id: conversationId } = params;
-
-  console.log('👤 User ID:', userId);
-  console.log('💬 Conversation ID:', conversationId);
-
-  if (!conversationId) {
-    throw new Error('Conversation ID is required');
-  }
-
   try {
+    await dbConnect();
+
+    const userId = getUserIdFromToken(req);
+    const { id: conversationId } = await context.params;
+
+    console.log('📡 getConversation called:', {
+      userId,
+      conversationId,
+    });
+
+    if (!conversationId) {
+      throw new Error('Conversation ID is required');
+    }
+
     const result = await ConversationServices.getConversationFromDB(
       conversationId,
       userId
     );
 
-    console.log('✅ Controller: Conversation retrieved successfully');
+    console.log('✅ Conversation retrieved:', {
+      id: result._id,
+      ad: result.ad?.title,
+      participants: result.participants?.map((p: any) => p.name),
+    });
 
     return sendResponse({
       success: true,
@@ -74,159 +91,196 @@ const getConversation = async (
       data: result,
     });
   } catch (error) {
-    console.error('❌ Controller: Error fetching conversation:', error);
+    console.error('❌ Error in getConversation:', error);
     throw error;
   }
 };
 
-// ==========================================
-// 3. GET MESSAGES OF A CONVERSATION
-// ==========================================
+// ✅ মেসেজ পাওয়া
 const getMessages = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) => {
-  await dbConnect();
-  const userId = getUserIdFromToken(req);
-  const { id: conversationId } = params;
+  try {
+    await dbConnect();
+    const userId = getUserIdFromToken(req);
+    const { id: conversationId } = await context.params;
 
-  // ✅ Validate conversationId
-  if (!conversationId) {
-    throw new Error('Conversation ID is required');
+    console.log('📡 getMessages called:', {
+      userId,
+      conversationId,
+    });
+
+    if (!conversationId) {
+      throw new Error('Conversation ID is required');
+    }
+
+    const result = await MessageServices.getMessagesFromDB(
+      conversationId,
+      userId
+    );
+
+    console.log('✅ Messages retrieved:', result.length);
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: 'Messages retrieved',
+      data: result,
+    });
+  } catch (error) {
+    console.error('❌ Error in getMessages:', error);
+    throw error;
   }
-
-  const result = await MessageServices.getMessagesFromDB(
-    conversationId,
-    userId
-  );
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Messages retrieved',
-    data: result,
-  });
 };
 
-// ==========================================
-// 4. START NEW CONVERSATION
-// ==========================================
+// ✅ নতুন চ্যাট শুরু করা
 const startConversation = async (req: NextRequest) => {
-  await dbConnect();
-  const userId = getUserIdFromToken(req);
+  try {
+    await dbConnect();
+    const userId = getUserIdFromToken(req);
 
-  const { adId } = await req.json();
+    const { adId } = await req.json();
 
-  // ✅ Validate adId
-  if (!adId) {
-    throw new Error('Ad ID is required');
+    console.log('📡 startConversation called:', {
+      userId,
+      adId,
+    });
+
+    if (!adId) {
+      throw new Error('Ad ID is required');
+    }
+
+    const ad = await ClassifiedAd.findById(adId);
+    if (!ad) {
+      throw new Error('Ad not found');
+    }
+
+    console.log('✅ Ad found:', {
+      id: ad._id,
+      title: ad.title,
+      seller: ad.user,
+    });
+
+    if (ad.user.toString() === userId) {
+      throw new Error('You cannot start conversation with yourself');
+    }
+
+    const result = await ConversationServices.startConversationInDB(
+      adId,
+      userId,
+      ad.user.toString()
+    );
+
+    console.log('✅ Conversation started/found:', result._id);
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.CREATED,
+      message: 'Conversation started',
+      data: result,
+    });
+  } catch (error) {
+    console.error('❌ Error in startConversation:', error);
+    throw error;
   }
-
-  // Ad exist করে কিনা check করুন
-  const ad = await ClassifiedAd.findById(adId);
-  if (!ad) {
-    throw new Error('Ad not found');
-  }
-
-  // Buyer এবং seller same কিনা check করুন
-  if (ad.user.toString() === userId) {
-    throw new Error('You cannot start conversation with yourself');
-  }
-
-  const result = await ConversationServices.startConversationInDB(
-    adId,
-    userId, // current user = buyer
-    ad.user.toString() // ad owner = seller
-  );
-
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.CREATED,
-    message: 'Conversation started',
-    data: result,
-  });
 };
 
-// ==========================================
-// 5. SEND MESSAGE (REST API method)
-// ==========================================
+// ✅ মেসেজ পাঠানো (REST API)
 const sendMessage = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) => {
-  await dbConnect();
-  const senderId = getUserIdFromToken(req);
+  try {
+    await dbConnect();
+    const senderId = getUserIdFromToken(req);
 
-  const { id: conversationId } = params;
-  const { receiverId, content } = await req.json();
+    const { id: conversationId } = await context.params;
+    const { receiverId, content } = await req.json();
 
-  // ✅ Validate all required fields
-  if (!conversationId || !receiverId || !content) {
-    throw new Error(
-      'conversationId, receiverId, and content are required'
+    console.log('📡 sendMessage called:', {
+      conversationId,
+      senderId,
+      receiverId,
+      content: content?.substring(0, 50),
+    });
+
+    if (!conversationId || !receiverId || !content) {
+      throw new Error('conversationId, receiverId, and content are required');
+    }
+
+    const result = await MessageServices.createMessageInDB(
+      conversationId,
+      senderId,
+      receiverId,
+      content
     );
+
+    console.log('✅ Message created:', result._id);
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.CREATED,
+      message: 'Message sent successfully',
+      data: result,
+    });
+  } catch (error) {
+    console.error('❌ Error in sendMessage:', error);
+    throw error;
   }
-
-  const result = await MessageServices.createMessageInDB(
-    conversationId,
-    senderId,
-    receiverId,
-    content
-  );
-
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.CREATED,
-    message: 'Message sent successfully',
-    data: result,
-  });
 };
 
-// ==========================================
-// 6. MARK MESSAGE AS READ
-// ==========================================
+// ✅ মেসেজ পড়া হিসেবে মার্ক করা
 const markMessageAsRead = async (req: NextRequest) => {
-  await dbConnect();
-  const userId = getUserIdFromToken(req);
+  try {
+    await dbConnect();
+    const userId = getUserIdFromToken(req);
 
-  const { messageId } = await req.json();
+    const { messageId } = await req.json();
 
-  if (!messageId) {
-    throw new Error('messageId is required');
+    if (!messageId) {
+      throw new Error('messageId is required');
+    }
+
+    const result = await MessageServices.markAsReadInDB(messageId, userId);
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: 'Message marked as read',
+      data: result,
+    });
+  } catch (error) {
+    console.error('❌ Error in markMessageAsRead:', error);
+    throw error;
   }
-
-  const result = await MessageServices.markAsReadInDB(messageId, userId);
-
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Message marked as read',
-    data: result,
-  });
 };
 
-// ==========================================
-// 7. GET UNREAD MESSAGE COUNT
-// ==========================================
+// ✅ অপঠিত মেসেজ সংখ্যা
 const getUnreadCount = async (req: NextRequest) => {
-  await dbConnect();
-  const userId = getUserIdFromToken(req);
+  try {
+    await dbConnect();
+    const userId = getUserIdFromToken(req);
 
-  const count = await MessageServices.getUnreadCountInDB(userId);
+    const count = await MessageServices.getUnreadCountInDB(userId);
 
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Unread message count retrieved',
-    data: { unreadCount: count },
-  });
+    console.log('📬 Unread count for', userId, ':', count);
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: 'Unread message count retrieved',
+      data: { unreadCount: count },
+    });
+  } catch (error) {
+    console.error('❌ Error in getUnreadCount:', error);
+    throw error;
+  }
 };
 
-// ==========================================
-// EXPORT ALL CONTROLLERS
-// ==========================================
 export const ConversationController = {
   getMyConversations,
-  getConversation, // ✅ ADD THIS
+  getConversation,
   getMessages,
   startConversation,
   sendMessage,

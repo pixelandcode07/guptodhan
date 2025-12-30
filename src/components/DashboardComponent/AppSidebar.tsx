@@ -26,6 +26,7 @@ import Multivendor from './MotherRoutes/Multivendor';
 import DemoProducts from './MotherRoutes/DemoProducts';
 import Logout from './MotherRoutes/Logout';
 import UserRolePermision from './MotherRoutes/UserRolePermision';
+import ServiceModule from './MotherRoutes/ServiceModule';
 
 const data = {
   user: {
@@ -71,7 +72,7 @@ export default function AppSidebar() {
     const timer = setTimeout(() => {
       const sidebarContent = document.querySelector('[data-sidebar="content"]') as HTMLElement;
       const activeElement = document.querySelector('[data-active="true"]') as HTMLElement;
-      
+
       if (activeElement && sidebarContent) {
         const container = sidebarContent;
         const elementTop = activeElement.offsetTop;
@@ -121,6 +122,7 @@ export default function AppSidebar() {
       <SidebarContent>
         <WebsiteConfig />
         <BuySell />
+        <ServiceModule />
         <Donation />
         <Multivendor />
         <EcommerceModules items={data.ecommerceModules} />
