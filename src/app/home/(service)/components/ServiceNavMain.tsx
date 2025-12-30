@@ -35,9 +35,9 @@ export default function ServiceNavMain() {
 
     const handlePostAdClick = () => {
         if (isLoggedIn) {
-            router.push("/home/service");
+            router.push("/home/post-service");
         } else {
-            localStorage.setItem("redirectAfterLogin", "/home/service");
+            localStorage.setItem("redirectAfterLogin", "/home/post-service");
             setOpenLoginDialog(true);
         }
     };
@@ -131,7 +131,7 @@ export default function ServiceNavMain() {
 
                         {/* Post Ad Button */}
                         <Button onClick={handlePostAdClick} variant="BlueBtn" size="lg" className="font-bold px-6">
-                            <Plus size={20} /> Post a Free Ad
+                            <Plus size={20} /> Post Service
                         </Button>
                     </div>
 
