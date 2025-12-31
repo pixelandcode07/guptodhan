@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 
 interface DonationCategory {
@@ -33,7 +33,13 @@ export default function DonationModal({ categories = [], onSuccess }: DonationMo
     const search = useSearchParams()
     const { data: session } = useSession()
     
-    const open = (search?.get('donate') ?? '') === '1'
+    // 🔥 Local state logic for instant closing
+    const [isOpen, setIsOpen] = useState(false)
+
+    // URL এর প্যারামিটার চেঞ্জ হলে ওপেন স্টেট আপডেট হবে
+    useEffect(() => {
+        setIsOpen(search?.get('donate') === '1')
+    }, [search])
     
     const [imageUrls, setImageUrls] = useState<string[]>([])
     const [imageFiles, setImageFiles] = useState<File[]>([])
@@ -42,16 +48,24 @@ export default function DonationModal({ categories = [], onSuccess }: DonationMo
     const [goalAmount, setGoalAmount] = useState<string>('')
     const [isSubmitting, setIsSubmitting] = useState(false)
 
+    // 🔥 Improved close function
     const close = () => {
-        const params = new URLSearchParams(search?.toString() ?? '')
-        params.delete('donate')
-        router.replace(`/home/donation?${params.toString()}`, { scroll: false })
+        setIsOpen(false); // UI সাথে সাথে বন্ধ হবে
         
-        setSelectedCategory('')
-        setItemType('other')
-        setGoalAmount('')
-        setImageUrls([])
-        setImageFiles([])
+        // কিছু সময় পর URL পরিবর্তন হবে যাতে এনিমেশন স্মুথ থাকে
+        setTimeout(() => {
+            const params = new URLSearchParams(search?.toString() ?? '')
+            params.delete('donate')
+            const queryString = params.toString()
+            router.replace(`/home/donation${queryString ? `?${queryString}` : ''}`, { scroll: false })
+            
+            // স্টেট রিসেট
+            setSelectedCategory('')
+            setItemType('other')
+            setGoalAmount('')
+            setImageUrls([])
+            setImageFiles([])
+        }, 100)
     }
 
     const handleSubmit = async () => {
@@ -63,19 +77,16 @@ export default function DonationModal({ categories = [], onSuccess }: DonationMo
         const title = (document.getElementById('donation-title') as HTMLInputElement)?.value
         const description = (document.getElementById('donation-description') as HTMLTextAreaElement)?.value
 
-        // 🔥 Frontend Validation Logic
         if (!selectedCategory) {
             toast.error('Please select a category')
             return
         }
 
-        // ✅ Title Length Check
         if (!title || title.length < 10) {
             toast.error('Title is too short. It must be at least 10 characters.')
             return
         }
 
-        // ✅ Description Length Check
         if (!description || description.length < 50) {
             toast.error('Description is too short. Please provide at least 50 characters.')
             return
@@ -117,7 +128,6 @@ export default function DonationModal({ categories = [], onSuccess }: DonationMo
                 onSuccess?.() 
                 close()
             } else {
-                // Show server-side validation error if any
                 toast.error(result.message || 'Failed to create campaign')
             }
         } catch (error) {
@@ -146,7 +156,7 @@ export default function DonationModal({ categories = [], onSuccess }: DonationMo
     }
 
     return (
-        <Dialog open={open} onOpenChange={(v) => !v && close()}>
+        <Dialog open={isOpen} onOpenChange={(v) => !v && close()}>
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Create Donation Campaign</DialogTitle>

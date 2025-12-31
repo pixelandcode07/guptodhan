@@ -483,6 +483,89 @@ const serviceProviderLogin = async (req: NextRequest) => {
   return response;
 };
 
+const adminLogin = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  
+  // আমরা আগের loginValidationSchema ব্যবহার করতে পারি (যেখানে identifier এবং password থাকে)
+  const validatedData = loginValidationSchema.parse(body);
+  
+  const result = await AuthServices.adminLogin(validatedData);
+
+  const { refreshToken, accessToken, user } = result;
+
+  const response = sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Admin logged in successfully!',
+    data: {
+      accessToken,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profilePicture: user.profilePicture,
+      },
+    },
+  });
+
+  // সিকিউরিটির জন্য কুকিতে রিফ্রেশ টোকেন সেট করা
+  response.cookies.set('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 30 * 24 * 60 * 60,
+    path: '/',
+  });
+
+  // মিডলওয়্যারের জন্য এক্সেস টোকেন কুকিতে সেট করা
+  response.cookies.set('accessToken', accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60,
+    path: '/',
+  });
+
+  return response;
+};
+
+
+const serviceProviderSendForgotPasswordOtp = async (req: NextRequest) => {
+  await dbConnect();
+  const { email } = await req.json();
+  await AuthServices.serviceProviderSendForgotPasswordOtp(email);
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'পাসওয়ার্ড রিসেট ওটিপি ইমেইলে পাঠানো হয়েছে।', 
+    data: null 
+  });
+};
+
+const serviceProviderVerifyForgotPasswordOtp = async (req: NextRequest) => {
+  await dbConnect();
+  const { email, otp } = await req.json();
+  const result = await AuthServices.serviceProviderVerifyForgotPasswordOtp(email, otp);
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'OTP ভেরিফাইড! এখন পাসওয়ার্ড রিসেট করুন।', 
+    data: result 
+  });
+};
+
+const serviceProviderResetPassword = async (req: NextRequest) => {
+  await dbConnect();
+  const { token, newPassword } = await req.json();
+  // এখানে ভেন্ডর বা ইউজারের রিসেট সার্ভিসটিই ব্যবহার করা যাবে
+  await AuthServices.resetPasswordWithToken(token, newPassword);
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'সার্ভিস প্রোভাইডার পাসওয়ার্ড সফলভাবে রিসেট হয়েছে।', 
+    data: null 
+  });
+};
 
 export const AuthController = {
   loginUser,
@@ -504,4 +587,8 @@ export const AuthController = {
   vendorSendForgotPasswordOtp,
   vendorVerifyForgotPasswordOtp,
   vendorResetPassword,
+  serviceProviderSendForgotPasswordOtp,
+  serviceProviderVerifyForgotPasswordOtp,
+  serviceProviderResetPassword,
+  adminLogin,
 };
