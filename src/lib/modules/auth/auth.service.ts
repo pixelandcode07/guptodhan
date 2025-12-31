@@ -658,6 +658,120 @@ const serviceProviderLogin = async (payload: TLoginUser) => {
 };
 
 
+const adminLogin = async (payload: TLoginUser) => {
+  const { identifier, password: plainPassword } = payload;
+
+  const isEmail = identifier.includes('@');
+
+  // ১. ইউজার খুঁজে বের করা (ইমেইল বা ফোন দিয়ে)
+  const user = isEmail
+    ? await User.findOne({ email: identifier }).select('+password')
+    : await User.findOne({ phoneNumber: identifier }).select('+password');
+
+  if (!user) {
+    throw new Error('Invalid credentials.');
+  }
+
+  // 🔥 ২. এডমিন রোল চেক করা (সবথেকে গুরুত্বপূর্ণ)
+  if (user.role !== 'admin') {
+    throw new Error('Access denied. Admin privileges required.');
+  }
+
+  // ৩. অ্যাকাউন্ট অ্যাক্টিভ কিনা চেক করা
+  if (!user.isActive) {
+    throw new Error('Your admin account is inactive. Please contact system owner.');
+  }
+
+  // ৪. পাসওয়ার্ড চেক করা
+  const isPasswordMatched = await user.isPasswordMatched(plainPassword, user.password!);
+  if (!isPasswordMatched) {
+    throw new Error('Invalid credentials.');
+  }
+
+  // ৫. টোকেন জেনারেট করা
+  const jwtPayload = {
+    userId: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  };
+
+  const accessToken = generateToken(
+    jwtPayload,
+    process.env.JWT_ACCESS_SECRET!,
+    process.env.JWT_ACCESS_EXPIRES_IN!
+  );
+
+  const refreshToken = generateToken(
+    jwtPayload,
+    process.env.JWT_REFRESH_SECRET!,
+    process.env.JWT_REFRESH_EXPIRES_IN!
+  );
+
+  const { password, ...userWithoutPassword } = user.toObject();
+
+  return {
+    accessToken,
+    refreshToken,
+    user: userWithoutPassword,
+  };
+};
+
+
+
+const serviceProviderSendForgotPasswordOtp = async (email: string) => {
+  await connectRedis();
+
+  const user = await User.findOne({ email });
+  if (!user) throw new Error('এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট পাওয়া যায়নি।');
+
+  // রোল চেক
+  if (user.role !== 'service-provider') {
+    throw new Error('এই ইমেইলটি সার্ভিস প্রোভাইডার অ্যাকাউন্টের সাথে যুক্ত নয়।');
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const redisKey = `sp-reset-otp:email:${email}`;
+  await redisClient.set(redisKey, otp, { EX: 300 }); // ৫ মিনিট মেয়াদ
+
+  await sendEmail({
+    to: email,
+    subject: 'Service Provider Password Reset Code',
+    template: 'otp.ejs',
+    data: { name: user.name, otp: otp },
+  });
+
+  return null;
+};
+
+// --- ২. ওটিপি ভেরিফাই করে রিসেট টোকেন দেওয়া ---
+const serviceProviderVerifyForgotPasswordOtp = async (email: string, otp: string) => {
+  await connectRedis();
+  const redisKey = `sp-reset-otp:email:${email}`;
+  const storedOtp = await redisClient.get(redisKey);
+
+  if (!storedOtp || storedOtp !== otp) {
+    throw new Error('OTP সঠিক নয় অথবা মেয়াদ শেষ হয়ে গেছে।');
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) throw new Error('ইউজার পাওয়া যায়নি।');
+
+  // একটি সিকিউর রিসেট টোকেন জেনারেট করা
+  const resetToken = generateToken(
+    { 
+      userId: user._id.toString(), 
+      type: 'sp_password_reset' 
+    },
+    process.env.JWT_ACCESS_SECRET!,
+    '10m' // ১০ মিনিট মেয়াদ
+  );
+
+  await redisClient.del(redisKey);
+  return { resetToken };
+};
+
+
+
 export const AuthServices = {
   loginUser,
   refreshToken,
@@ -677,4 +791,7 @@ export const AuthServices = {
   vendorSendForgotPasswordOtpToEmail,
   vendorVerifyForgotPasswordOtpFromEmail,
   vendorSendRegistrationOtp,
+  serviceProviderSendForgotPasswordOtp,
+  serviceProviderVerifyForgotPasswordOtp,
+  adminLogin,
 };
