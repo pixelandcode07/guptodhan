@@ -15,6 +15,7 @@ export default async function GeneralInfoPage() {
           JSON.parse(JSON.stringify(...)) is used to convert the Mongoose document
           to a plain object, which is safe to pass from Server to Client Components.
         */}
+
         <GeneralInfoForm data={JSON.parse(JSON.stringify(settingsData))} />
       </div>
     </div>

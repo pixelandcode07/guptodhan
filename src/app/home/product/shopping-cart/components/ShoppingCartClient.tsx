@@ -31,11 +31,11 @@ export type CartItem = {
 export default function ShoppingCartClient() {
   const [loading, setLoading] = useState(true);
   const { cartItems, updateQuantity, removeFromCart } = useCart();
-
+  console.log(cartItems);
   // Cart management functions
   const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
     updateQuantity(itemId, newQuantity);
-    
+
     // Show toast for quantity update
     const item = cartItems.find(item => item.id === itemId);
     if (item) {
