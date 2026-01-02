@@ -70,52 +70,110 @@ const getUserDetailsFromToken = (req: NextRequest) => {
 //   });
 // };
 
+// const createService = async (req: NextRequest) => {
+//   await dbConnect();
+
+//   // 🔐 Get userId (provider) from token
+//   const { userId } = getUserDetailsFromToken(req);
+
+//   // Use FormData instead of JSON
+//   const formData = await req.formData();
+//   const images = formData.getAll('service_images') as File[]; // multiple images
+
+//   if (!images.length) throw new Error('At least one service image is required.');
+
+//   // Upload images to Cloudinary (or your cloud storage)
+//   const uploadResults = await Promise.all(
+//     images.map(async (file) => uploadToCloudinary(Buffer.from(await file.arrayBuffer()), 'service-images'))
+//   );
+//   const imageUrls = uploadResults.map(r => r.secure_url);
+
+//   // Prepare payload
+//   const payload: any = { provider_id: userId, service_images: imageUrls };
+
+//   // Append other form fields
+//   for (const [key, value] of formData.entries()) {
+//     if (key !== 'service_images' && typeof value === 'string') {
+//       // Nested fields example: service_area.city
+//       if (key.includes('.')) {
+//         const [parentKey, childKey] = key.split('.');
+//         if (!payload[parentKey]) payload[parentKey] = {};
+//         payload[parentKey][childKey] = value;
+//       } else {
+//         payload[key] = value;
+//       }
+//     }
+//   }
+
+//   // Type conversions
+//   if (payload.base_price) payload.base_price = Number(payload.base_price);
+//   if (payload.minimum_charge) payload.minimum_charge = Number(payload.minimum_charge);
+//   if (payload.estimated_duration_hours) payload.estimated_duration_hours = Number(payload.estimated_duration_hours);
+//   if (payload.tools_provided) payload.tools_provided = payload.tools_provided === 'true';
+//   if (payload.is_visible_to_customers) payload.is_visible_to_customers = payload.is_visible_to_customers === 'true';
+
+//   // Validation
+//   const validatedData = createServiceValidationSchema.parse(payload);
+
+//   // Save to DB
+//   const result = await ServiceServices.createServiceInDB(validatedData);
+
+//   return sendResponse({
+//     success: true,
+//     statusCode: StatusCodes.CREATED,
+//     message: "Service created successfully!",
+//     data: result,
+//   });
+// };
+
 const createService = async (req: NextRequest) => {
   await dbConnect();
-
-  // 🔐 Get userId (provider) from token
   const { userId } = getUserDetailsFromToken(req);
-
-  // Use FormData instead of JSON
   const formData = await req.formData();
-  const images = formData.getAll('service_images') as File[]; // multiple images
 
-  if (!images.length) throw new Error('At least one service image is required.');
+  // 1. Image handling
+  const images = formData.getAll('service_images') as File[];
+  let imageUrls: string[] = [];
+  if (images.length > 0 && images[0] instanceof File) {
+    const uploadResults = await Promise.all(
+      images.map(async (file) => uploadToCloudinary(Buffer.from(await file.arrayBuffer()), 'service-images'))
+    );
+    imageUrls = uploadResults.map(r => r.secure_url);
+  }
 
-  // Upload images to Cloudinary (or your cloud storage)
-  const uploadResults = await Promise.all(
-    images.map(async (file) => uploadToCloudinary(Buffer.from(await file.arrayBuffer()), 'service-images'))
-  );
-  const imageUrls = uploadResults.map(r => r.secure_url);
+  // 2. Prepare Payload
+  const payload: any = {
+    provider_id: userId,
+    service_images: imageUrls
+  };
 
-  // Prepare payload
-  const payload: any = { provider_id: userId, service_images: imageUrls };
+  // 3. Extracting all keys properly
+  const allKeys = Array.from(new Set(formData.keys()));
 
-  // Append other form fields
-  for (const [key, value] of formData.entries()) {
-    if (key !== 'service_images' && typeof value === 'string') {
-      // Nested fields example: service_area.city
-      if (key.includes('.')) {
-        const [parentKey, childKey] = key.split('.');
-        if (!payload[parentKey]) payload[parentKey] = {};
-        payload[parentKey][childKey] = value;
-      } else {
-        payload[key] = value;
-      }
+  for (const key of allKeys) {
+    if (key === 'service_images') continue;
+
+    const values = formData.getAll(key);
+
+    // Check for nested fields like service_area.city
+    if (key.includes('.')) {
+      const [parentKey, childKey] = key.split('.');
+      if (!payload[parentKey]) payload[parentKey] = {};
+      payload[parentKey][childKey] = values[0];
+    }
+    // Handle Arrays (available_time_slots, working_days)
+    else if (key === 'available_time_slots' || key === 'working_days') {
+      payload[key] = values;
+    }
+    // Handle Single values
+    else {
+      payload[key] = values[0];
     }
   }
 
-  // Type conversions
-  if (payload.base_price) payload.base_price = Number(payload.base_price);
-  if (payload.minimum_charge) payload.minimum_charge = Number(payload.minimum_charge);
-  if (payload.estimated_duration_hours) payload.estimated_duration_hours = Number(payload.estimated_duration_hours);
-  if (payload.tools_provided) payload.tools_provided = payload.tools_provided === 'true';
-  if (payload.is_visible_to_customers) payload.is_visible_to_customers = payload.is_visible_to_customers === 'true';
-
-  // Validation
+  // 4. Validation (Zod will handle type conversion now)
   const validatedData = createServiceValidationSchema.parse(payload);
 
-  // Save to DB
   const result = await ServiceServices.createServiceInDB(validatedData);
 
   return sendResponse({
@@ -125,6 +183,8 @@ const createService = async (req: NextRequest) => {
     data: result,
   });
 };
+
+
 
 
 // Provider: Get all services for a provider

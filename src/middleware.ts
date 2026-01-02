@@ -94,6 +94,7 @@ const protectedApiRoutes = [
   '/api/v1/crm-modules/support-ticket',
   '/home/UserProfile/support-tickets',
   '/api/v1/vendor-category',
+  '/api/v1/service-section/provide-service',
 ];
 
 export async function middleware(req: NextRequest) {
