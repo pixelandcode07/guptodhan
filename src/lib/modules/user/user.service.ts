@@ -114,8 +114,8 @@ const getUserByIdFromDB = async (id: string): Promise<Partial<TUser> | null> => 
   // মডেলগুলো উপরে ইম্পোর্ট করায় এখন populate কাজ করবে
   const user = await User.findById(id)
     .select('-password')
-    .populate('serviceProviderInfo.serviceCategory')
-    .populate('serviceProviderInfo.subCategories');
+    // .populate('serviceProviderInfo.serviceCategory')
+    // .populate('serviceProviderInfo.subCategories');
   
   return user;
 };
