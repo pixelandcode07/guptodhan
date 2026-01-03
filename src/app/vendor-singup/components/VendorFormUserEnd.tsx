@@ -144,44 +144,6 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
     }
   };
 
-  //   if (otp.length !== 6) return toast.error("Invalid OTP");
-
-  //   setIsOtpLoading(true);
-  //   try {
-  //     const data = getValues();
-  //     const formData = new FormData();
-
-  //     formData.append("ownerName", data.owner_name);
-  //     formData.append("email", data.owner_email);
-  //     formData.append("password", data.owner_email_password);
-  //     formData.append("phoneNumber", data.owner_number);
-
-  //     formData.append("businessName", data.business_name);
-  //     formData.append("businessAddress", data.business_address || "");
-  //     formData.append("tradeLicenseNumber", data.trade_license_number || "");
-
-  //     formData.append(
-  //       "businessCategory",
-  //       JSON.stringify(data.business_category.map((c) => c.value))
-  //     );
-
-  //     formData.append("ownerNid", ownerNidFile!);
-  //     formData.append("tradeLicense", tradeLicenseFile!);
-  //     formData.append("otp", otp);
-  //     formData.append("status", "pending");
-
-  //     await axios.post("/api/v1/auth/register-vendor", formData, {
-  //       headers: { "Content-Type": "multipart/form-data" },
-  //     });
-
-  //     toast.success("Vendor request submitted");
-  //     setIsSuccessDialogOpen(true);
-  //   } catch (err: any) {
-  //     toast.error(err?.response?.data?.message || "Submission failed");
-  //   } finally {
-  //     setIsOtpLoading(false);
-  //   }
-  // };
 
   const verifyOtpAndSubmit = async () => {
     if (otp.length !== 6) return toast.error("Invalid OTP");

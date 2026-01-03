@@ -13,6 +13,7 @@ import CartIcon from '@/components/CartIcon';
 import WishlistIcon from '@/components/WishlistIcon';
 import { motion, AnimatePresence } from 'framer-motion';
 import MessageIcon from '../../MessageIcon';
+import { toast } from 'sonner';
 
 export default function NavMain() {
   const { data: session } = useSession();
@@ -21,6 +22,7 @@ export default function NavMain() {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   // Helper: Get initials from name
   const getInitials = (name: string | null | undefined) => {
@@ -96,14 +98,19 @@ export default function NavMain() {
                       <span className="text-[#00005E] text-[12px]">Profile</span>
                     </Link>
                   </li>
-
-                  {/* Logout */}
                   <li
-                    onClick={() => signOut()}
-                    className="flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer"
+                    onClick={async () => {
+                      if (isLoggingOut) return;
+
+                      setIsLoggingOut(true);
+                      toast.loading("Logging out...");
+                      await signOut({ callbackUrl: "/" });
+                    }}
+                    className={`flex flex-col justify-center items-center text-[#00005E] font-medium 
+    ${isLoggingOut ? "opacity-50 cursor-not-allowed pointer-events-none" : "cursor-pointer"}`}
                   >
                     <LogOut size={20} />
-                    <span className="text-[#00005E] text-[12px]">Log out</span>
+                    <span className="text-[#00005E] text-[12px]">{isLoggingOut ? "Logging out..." : "Log out"}</span>
                   </li>
                 </>
               ) : (
