@@ -1,3 +1,5 @@
+
+export const dynamic = 'force-dynamic';
 import dbConnect from '@/lib/db';
 import ProductForm from './Components/ProductForm';
 import { StoreServices } from '@/lib/modules/vendor-store/vendorStore.service';
