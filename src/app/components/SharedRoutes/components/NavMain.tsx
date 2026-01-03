@@ -1,6 +1,6 @@
 'use client';
 
-import { Heart, LogOut, Menu, User, X, ShoppingBag, Gift, UserPlus, Truck, Phone, LogIn } from 'lucide-react';
+import { Heart, LogOut, Menu, User, X, ShoppingBag, Gift, UserPlus, Truck, Phone, LogIn, Workflow } from 'lucide-react';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -171,6 +171,14 @@ export default function NavMain() {
                       <Gift size={24} />
                       <span className="text-xs mt-1">Donation</span>
                     </Link>
+                    <Link href="/home/service" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-400 to-blue-800 rounded-lg hover:from-blue-400 hover:to-blue-800 transition">
+                      <Workflow size={24} />
+                      <span className="text-xs mt-1">Service</span>
+                    </Link>
+                    <Link href="/home/vendor-shops" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-green-400 to-green-800 rounded-lg hover:from-green-400 hover:to-green-800 transition">
+                      <Workflow size={24} />
+                      <span className="text-xs mt-1">Vendor Shops</span>
+                    </Link>
                   </div>
 
                   <hr className="border-gray-600 my-2" />
@@ -193,11 +201,11 @@ export default function NavMain() {
                   {/* Service Provider */}
                   <div className="space-y-1">
                     <h3 className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Service Provider</h3>
-                    <Link href="/service-provider/register" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
+                    <Link href="/service/register" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
                       <UserPlus size={16} />
                       <span>Register</span>
                     </Link>
-                    <Link href="/service-provider/login" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
+                    <Link href="/service/login" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
                       <LogIn size={16} />
                       <span>Login</span>
                     </Link>
