@@ -104,167 +104,172 @@ const StoryFeed = ({ stories }: StoryFeedProps) => {
 
   return (
     <>
-      <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 py-2 md:py-10 relative">
-        <div className="hidden lg:flex justify-center mb-6">
-          <PageHeader title="Stories" />
-        </div>
+      {/* <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 py-2 md:py-10 relative"> */}
+      <div className="bg-gray-100 px-4 py-2 md:py-2 relative ">
+        <div className='container mx-auto'>
+          <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto">
+            <div className="hidden lg:flex justify-center mb-1">
+              <PageHeader title="Stories" />
+            </div>
 
-        <Carousel opts={{ loop: false }}>
-          <CarouselContent className="-ml-4">
-            {activeStories.map((story, index) => (
-              <CarouselItem
-                key={String(story._id)}
-                className="pl-4 basis-1/3 md:basis-1/4 xl:basis-1/6"
+            <Carousel opts={{ loop: false }}>
+              <CarouselContent className="-ml-4">
+                {activeStories.map((story, index) => (
+                  <CarouselItem
+                    key={String(story._id)}
+                    className="pl-4 basis-1/3 md:basis-1/4 xl:basis-1/6"
+                  >
+                    {/* Story Preview Card */}
+                    <div
+                      onClick={() => openStory(index)}
+                      className="relative aspect-[12/18] rounded-xl overflow-hidden cursor-pointer transition-transform duration-300 ease-in-out hover:scale-105 group border-2 border-transparent hover:border-yellow-400"
+                    >
+                      <Image
+                        src={story.imageUrl}
+                        alt={story.title || 'Story image'}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-3">
+                        <h3 className="text-white font-bold text-sm line-clamp-2 leading-tight">
+                          {story.title || 'Untitled'}
+                        </h3>
+
+                        <div className="flex justify-between items-center mt-2">
+                          {story.productId && (
+                            <button
+                              onClick={(e) => handleNavigateToProduct(e, story)}
+                              className="text-yellow-400 text-xs font-semibold flex items-center gap-1 hover:underline"
+                            >
+                              ORDER NOW <ChevronRight size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 z-20 cursor-pointer text-white bg-black/40 border-none hover:bg-yellow-500 hover:text-black transition-all">
+                <ChevronLeft size={24} />
+              </CarouselPrevious>
+              <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 z-20 cursor-pointer text-white bg-black/40 border-none hover:bg-yellow-500 hover:text-black transition-all">
+                <ChevronRight size={24} />
+              </CarouselNext>
+            </Carousel>
+          </div>
+
+          {/* Fullscreen Story Modal */}
+          {currentStory && (
+            <div
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm"
+              onClick={closeStory}
+            >
+              <div
+                className="relative w-full max-w-md h-full sm:h-[90vh] sm:rounded-2xl overflow-hidden flex flex-col bg-gray-900 shadow-2xl border border-gray-800"
+                onClick={(e) => e.stopPropagation()}
               >
-                {/* Story Preview Card */}
-                <div
-                  onClick={() => openStory(index)}
-                  className="relative aspect-[12/18] rounded-xl overflow-hidden cursor-pointer transition-transform duration-300 ease-in-out hover:scale-105 group border-2 border-transparent hover:border-yellow-400"
-                >
-                  <Image
-                    src={story.imageUrl}
-                    alt={story.title || 'Story image'}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-3">
-                    <h3 className="text-white font-bold text-sm line-clamp-2 leading-tight">
-                      {story.title || 'Untitled'}
-                    </h3>
+                {/* Progress Bar */}
+                <div className="absolute top-4 left-2 right-2 flex gap-1 z-30">
+                  {activeStories.map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 h-1 bg-white/30 rounded-full overflow-hidden"
+                    >
+                      {i < currentStoryIndex! && (
+                        <div className="h-full bg-white w-full rounded-full"></div>
+                      )}
+                      {i === currentStoryIndex! && (
+                        <div
+                          className="h-full bg-white rounded-full transition-all duration-100 ease-linear"
+                          style={{ width: `${progress}%` }}
+                        ></div>
+                      )}
+                    </div>
+                  ))}
+                </div>
 
-                    <div className="flex justify-between items-center mt-2">
-                      {story.productId && (
-                        <button
-                          onClick={(e) => handleNavigateToProduct(e, story)}
-                          className="text-yellow-400 text-xs font-semibold flex items-center gap-1 hover:underline"
-                        >
-                          ORDER NOW <ChevronRight size={14} />
-                        </button>
+                {/* Top Controls */}
+                <div className="absolute top-8 left-4 right-4 z-30 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full border border-white/50 overflow-hidden relative">
+                      <Image src={currentStory.imageUrl} alt="avt" fill className="object-cover" />
+                    </div>
+                    <div>
+                      <p className="text-white font-semibold text-sm drop-shadow-md">{currentStory.title}</p>
+                      {/* Show Linked Badge */}
+                      {currentStory.productId && (
+                        <p className="text-yellow-400 text-xs flex items-center gap-1">
+                          <ShoppingBag size={10} /> Product Linked
+                        </p>
                       )}
                     </div>
                   </div>
-                </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 z-20 cursor-pointer text-white bg-black/40 border-none hover:bg-yellow-500 hover:text-black transition-all">
-            <ChevronLeft size={24} />
-          </CarouselPrevious>
-          <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 z-20 cursor-pointer text-white bg-black/40 border-none hover:bg-yellow-500 hover:text-black transition-all">
-            <ChevronRight size={24} />
-          </CarouselNext>
-        </Carousel>
-      </div>
 
-      {/* Fullscreen Story Modal */}
-      {currentStory && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm"
-          onClick={closeStory}
-        >
-          <div
-            className="relative w-full max-w-md h-full sm:h-[90vh] sm:rounded-2xl overflow-hidden flex flex-col bg-gray-900 shadow-2xl border border-gray-800"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Progress Bar */}
-            <div className="absolute top-4 left-2 right-2 flex gap-1 z-30">
-              {activeStories.map((_, i) => (
-                <div
-                  key={i}
-                  className="flex-1 h-1 bg-white/30 rounded-full overflow-hidden"
-                >
-                  {i < currentStoryIndex! && (
-                    <div className="h-full bg-white w-full rounded-full"></div>
-                  )}
-                  {i === currentStoryIndex! && (
-                    <div
-                      className="h-full bg-white rounded-full transition-all duration-100 ease-linear"
-                      style={{ width: `${progress}%` }}
-                    ></div>
-                  )}
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => setIsPlaying(!isPlaying)}
+                      className="text-white hover:text-yellow-400 transition-colors"
+                    >
+                      {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                    </button>
+                    <button
+                      onClick={closeStory}
+                      className="text-white hover:text-red-500 transition-colors"
+                    >
+                      <X size={28} />
+                    </button>
+                  </div>
                 </div>
-              ))}
-            </div>
 
-            {/* Top Controls */}
-            <div className="absolute top-8 left-4 right-4 z-30 flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full border border-white/50 overflow-hidden relative">
-                  <Image src={currentStory.imageUrl} alt="avt" fill className="object-cover" />
+                {/* Main Image */}
+                <div className="relative flex-grow bg-black">
+                  <Image
+                    src={currentStory.imageUrl}
+                    alt={currentStory.title || 'Story detail'}
+                    fill
+                    priority
+                    className="object-contain"
+                  />
                 </div>
-                <div>
-                  <p className="text-white font-semibold text-sm drop-shadow-md">{currentStory.title}</p>
-                  {/* Show Linked Badge */}
-                  {currentStory.productId && (
-                    <p className="text-yellow-400 text-xs flex items-center gap-1">
-                      <ShoppingBag size={10} /> Product Linked
+
+                {/* Bottom Actions */}
+                <div className="absolute bottom-0 w-full p-6 bg-gradient-to-t from-black via-black/60 to-transparent z-20">
+                  {currentStory.description && (
+                    <p className="text-white/90 text-sm mb-6 line-clamp-3 text-center">
+                      {currentStory.description}
                     </p>
                   )}
+
+                  <div className="flex flex-col gap-3">
+                    {currentStory.productId ? (
+                      <button
+                        onClick={(e) => handleNavigateToProduct(e, currentStory)}
+                        className="w-full bg-yellow-500 text-black font-bold py-3.5 px-6 rounded-full transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-yellow-500/20 flex items-center justify-center gap-2"
+                      >
+                        ORDER NOW <ShoppingBag size={18} />
+                      </button>
+                    ) : (
+                      <button
+                        className="w-full bg-gray-700/50 text-white font-semibold py-3.5 px-6 rounded-full cursor-default"
+                      >
+                        Enjoy the Story
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tap Navigation Areas */}
+                <div className="absolute inset-0 flex z-10">
+                  <div className="w-1/3 h-full" onClick={(e) => { e.stopPropagation(); goToPreviousStory(); }}></div>
+                  <div className="w-1/3 h-full" onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying) }}></div>
+                  <div className="w-1/3 h-full" onClick={(e) => { e.stopPropagation(); goToNextStory(); }}></div>
                 </div>
               </div>
-
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  className="text-white hover:text-yellow-400 transition-colors"
-                >
-                  {isPlaying ? <Pause size={24} /> : <Play size={24} />}
-                </button>
-                <button
-                  onClick={closeStory}
-                  className="text-white hover:text-red-500 transition-colors"
-                >
-                  <X size={28} />
-                </button>
-              </div>
             </div>
-
-            {/* Main Image */}
-            <div className="relative flex-grow bg-black">
-              <Image
-                src={currentStory.imageUrl}
-                alt={currentStory.title || 'Story detail'}
-                fill
-                priority
-                className="object-contain"
-              />
-            </div>
-
-            {/* Bottom Actions */}
-            <div className="absolute bottom-0 w-full p-6 bg-gradient-to-t from-black via-black/60 to-transparent z-20">
-              {currentStory.description && (
-                <p className="text-white/90 text-sm mb-6 line-clamp-3 text-center">
-                  {currentStory.description}
-                </p>
-              )}
-
-              <div className="flex flex-col gap-3">
-                {currentStory.productId ? (
-                  <button
-                    onClick={(e) => handleNavigateToProduct(e, currentStory)}
-                    className="w-full bg-yellow-500 text-black font-bold py-3.5 px-6 rounded-full transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-yellow-500/20 flex items-center justify-center gap-2"
-                  >
-                    ORDER NOW <ShoppingBag size={18} />
-                  </button>
-                ) : (
-                  <button
-                    className="w-full bg-gray-700/50 text-white font-semibold py-3.5 px-6 rounded-full cursor-default"
-                  >
-                    Enjoy the Story
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Tap Navigation Areas */}
-            <div className="absolute inset-0 flex z-10">
-              <div className="w-1/3 h-full" onClick={(e) => { e.stopPropagation(); goToPreviousStory(); }}></div>
-              <div className="w-1/3 h-full" onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying) }}></div>
-              <div className="w-1/3 h-full" onClick={(e) => { e.stopPropagation(); goToNextStory(); }}></div>
-            </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </>
   );
 };

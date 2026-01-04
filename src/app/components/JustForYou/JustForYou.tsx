@@ -70,7 +70,8 @@ export function JustForYou({ initialProducts }: Props) {
   }, [page, loading, hasMore]);
 
   return (
-    <section className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 bg-gradient-to-b from-purple-50 to-white py-10">
+    <section className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 py-4">
+      {/* bg-gradient-to-b from-purple-50 to-white */}
       <PageHeader title="Just For You" />
 
       {/* Product Grid */}
