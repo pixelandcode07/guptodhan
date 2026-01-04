@@ -2,6 +2,7 @@
 import PaymentCard from "./components/PaymentCard";
 
 
+export const dynamic = 'force-dynamic'
 
 
 export type PaymentFormValues = {

@@ -1,6 +1,7 @@
 import React from 'react';
 import SeoOptimizationForm from './Components/SeoOptimizationForm';
 import OpenGraphForm from './Components/OpenGraphForm';
+export const dynamic = 'force-dynamic'
 
 export default function page() {
   return (

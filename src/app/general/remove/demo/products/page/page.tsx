@@ -1,5 +1,5 @@
+export const dynamic = 'force-dynamic'
 import Image from 'next/image'
-import React from 'react'
 
 import demo_products_img from '../../../../../../../public/img/demo_products_img.png'
 import { Button } from '@/components/ui/button'
