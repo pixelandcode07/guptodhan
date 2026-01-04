@@ -13,7 +13,7 @@ export default async function BestSell() {
   const { topShoppage } = ecommerceBanners;
 
   return (
-    <section className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 py-4">
+    <section className="max-w-[95vw] xl:container mx-auto px-10 py-4">
       {/* bg-gradient-to-b from-amber-50 to-white py-10 */}
       <PageHeader
         title="Best Selling"

@@ -105,9 +105,9 @@ const StoryFeed = ({ stories }: StoryFeedProps) => {
   return (
     <>
       {/* <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 py-2 md:py-10 relative"> */}
-      <div className="bg-gray-100 px-4 py-2 md:py-2 relative ">
+      <div className="bg-gray-100 py-2 md:py-2 relative ">
         <div className='container mx-auto'>
-          <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto">
+          <div className="max-w-[95vw] xl:container px-10 mx-auto">
             <div className="hidden lg:flex justify-center mb-1">
               <PageHeader title="Stories" />
             </div>

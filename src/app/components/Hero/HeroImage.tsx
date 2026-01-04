@@ -17,8 +17,8 @@ export default async function HeroImage({
   bottomBanners,
 }: HeroImageProps) {
   return (
-    <div className="w-full bg-gray-50 py-2 sm:py-3 md:py-4 lg:py-6">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+    <div className="w-full">
+      {/* <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8"> */}
         {/* Main Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 md:gap-4 lg:gap-6">
           {/* LEFT SIDE – Slider (col-span-2 on md+) */}
@@ -113,7 +113,7 @@ export default async function HeroImage({
             </Link>
           ) : null}
         </div>
-      </div>
+      {/* </div> */}
     </div>
   );
 }
