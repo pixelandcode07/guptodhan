@@ -1,5 +1,6 @@
 import React from 'react'
 import { Send } from 'lucide-react'
+export const dynamic = 'force-dynamic'
 
 function Label({ children }: { children: React.ReactNode }) {
   return <label className='mb-1 block text-sm'>{children}</label>

@@ -7,36 +7,84 @@ import dbConnect from '@/lib/db';
 import { uploadToCloudinary, deleteFromCloudinary } from '@/lib/utils/cloudinary';
 
 // Create a new story
-const createStory = async (req: NextRequest) => {
+export const createStory = async (req: NextRequest) => {
   await dbConnect();
   const formData = await req.formData();
 
   const payload: any = {
-    title: formData.get('title'),
-    description: formData.get('description'),
-    duration: Number(formData.get('duration')),
+    title: formData.get('title') || undefined,
+    description: formData.get('description') || undefined,
+    duration: formData.get('duration') ? Number(formData.get('duration')) : 10,
     expiryDate: formData.get('expiryDate'),
-    status: formData.get('status'),
-    productId: formData.get('productId'),
+    status: formData.get('status') || "active",
+    productId: formData.get('productId') || undefined,
   };
 
   const imageFile = formData.get('imageUrl') as File | null;
-  if (!imageFile) {
-    throw new Error('Image file is required.');
-  }
+  if (!imageFile) throw new Error('Image file is required.');
 
   const buffer = Buffer.from(await imageFile.arrayBuffer());
   const uploadResult = await uploadToCloudinary(buffer, 'stories');
   payload.imageUrl = uploadResult.secure_url;
 
-  // Validate entire payload
+  // Zod ভ্যালিডেশন
   const validatedData = createStoryValidationSchema.parse(payload);
-  const result = await StoryServices.createStoryInDB(validatedData);
+
+  // String Date কে Actual Date Object এ কনভার্ট করা (TS Error fix)
+  const finalPayload = {
+    ...validatedData,
+    expiryDate: new Date(validatedData.expiryDate),
+    productId: (validatedData.productId === "null" || !validatedData.productId) ? undefined : validatedData.productId
+  };
+
+  const result = await StoryServices.createStoryInDB(finalPayload as any);
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.CREATED,
     message: 'Story created successfully!',
+    data: result,
+  });
+};
+
+// UPDATE STORY
+export const updateStory = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+  await dbConnect();
+  const { id } = await params;
+  const formData = await req.formData();
+
+  const payload: any = {
+    title: formData.get('title') || undefined,
+    description: formData.get('description') || undefined,
+    duration: formData.get('duration') ? Number(formData.get('duration')) : undefined,
+    expiryDate: formData.get('expiryDate') || undefined,
+    status: formData.get('status') || undefined,
+    productId: formData.get('productId') || undefined,
+  };
+
+  const imageFile = formData.get('imageUrl') as File | null;
+  if (imageFile && imageFile.size > 0) {
+    const oldStory = await StoryServices.getSingleStoryFromDB(id);
+    if (oldStory.imageUrl) await deleteFromCloudinary(oldStory.imageUrl);
+    const buffer = Buffer.from(await imageFile.arrayBuffer());
+    const uploadResult = await uploadToCloudinary(buffer, 'stories');
+    payload.imageUrl = uploadResult.secure_url;
+  }
+
+  const validatedData = updateStoryValidationSchema.parse(payload);
+  
+  // Date কনভার্ট করা যদি ডেট থাকে
+  const finalPayload: any = { ...validatedData };
+  if (validatedData.expiryDate) {
+    finalPayload.expiryDate = new Date(validatedData.expiryDate);
+  }
+
+  const result = await StoryServices.updateStoryInDB(id, finalPayload);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Story updated successfully!',
     data: result,
   });
 };
@@ -79,48 +127,7 @@ const getSingleStory = async (_req: NextRequest, { params }: { params: { id: str
   });
 };
 
-// Update story
-const updateStory = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-  await dbConnect();
-  const { id } = await params;
-  const formData = await req.formData();
 
-  const payload: any = {
-    title: formData.get('title'),
-    description: formData.get('description'),
-    duration: Number(formData.get('duration')),
-    expiryDate: formData.get('expiryDate'),
-    status: formData.get('status'),
-    productId: formData.get('productId'),
-  };
-
-  const imageFile = formData.get('imageUrl') as File | null;
-
-  // If user uploads a new image
-  if (imageFile && imageFile.size > 0) {
-    const oldStory = await StoryServices.getSingleStoryFromDB(id);
-
-    // Delete old Cloudinary file
-    if (oldStory.imageUrl) {
-      await deleteFromCloudinary(oldStory.imageUrl);
-    }
-
-    // Upload new image
-    const buffer = Buffer.from(await imageFile.arrayBuffer());
-    const uploadResult = await uploadToCloudinary(buffer, 'stories');
-    payload.imageUrl = uploadResult.secure_url;
-  }
-
-  const validatedData = updateStoryValidationSchema.parse(payload);
-  const result = await StoryServices.updateStoryInDB(id, validatedData);
-
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Story updated successfully!',
-    data: result,
-  });
-};
 
 // Delete story
 const deleteStory = async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {

@@ -8,7 +8,7 @@ export default function NavHead() {
     const { data } = useSession()
     const role = (data?.user as any)?.role as string;
     return (
-        <div className='bg-[#0084CB] text-[#FFFFFF] hidden md:flex justify-between items-center py-3 px-5 lg:px-15'>
+        <div className='bg-[#0084CB] w-full text-[#FFFFFF] hidden md:flex justify-between items-center py-3 px-5 lg:px-15'>
             <h1 className=' flex items-center gap-2'>
                 <span className='hidden lg:block'><Phone /></span> <span className='text-sm lg:text-sm font-semibold'>Call us Now : 01816500600</span>
             </h1>

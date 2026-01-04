@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState } from "react";
-import { X, Eye, Edit2, Trash2, Plus, Calendar, Clock, Loader2, UploadCloud, Link as LinkIcon, Check, ChevronsUpDown } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { 
+  Eye, Edit2, Trash2, Plus, Calendar, Clock, Loader2, 
+  UploadCloud, Link as LinkIcon, Check, ChevronsUpDown 
+} from "lucide-react";
 import { IStory } from "@/lib/modules/story/story.interface";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
@@ -19,33 +21,64 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 
 interface StoryClientProps {
-  initialStories: IStory[];
-  productList: any[];
+  initialStories?: IStory[];
+  productList?: any[];
 }
 
-export default function StoryClient({ initialStories, productList }: StoryClientProps) {
-  // ... (আপনার আগের সব স্টেট এবং লজিক অপরিবর্তিত থাকবে)
-  // শুধুমাত্র StoryFormFields এ পরিবর্তন আসবে, তাই আমি উপরের লজিকগুলো রিপিট করছি না।
-  // নিচের অংশটুকু আগের মতোই রাখুন:
-  
+export default function StoryClient({ initialStories = [], productList: initialProducts = [] }: StoryClientProps) {
   const [stories, setStories] = useState<IStory[]>(initialStories);
+  const [products, setProducts] = useState<any[]>(initialProducts);
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  
   const [selectedStory, setSelectedStory] = useState<IStory | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
-  const router = useRouter();
 
-  const refreshData = () => {
-    router.refresh();
-    toast.success("Stories re-fetched!");
-  };
+  // --- API Data Fetching (Fixed Logic) ---
+  const fetchData = useCallback(async () => {
+    try {
+      setIsLoadingData(true);
+      
+      // Story fetching
+      const storyRes = await axios.get('/api/v1/story').catch(() => null);
+      if (storyRes?.data?.success) {
+        setStories(storyRes.data.data || []);
+      }
 
+      // Product fetching (Separated to handle 403/Forbidden without breaking stories)
+      try {
+        const productRes = await axios.get('/api/v1/product'); 
+        if (productRes?.data?.success) {
+          setProducts(productRes.data.data || []);
+        }
+      } catch (pErr) {
+        console.error("Product access restricted or failed");
+        setProducts([]); 
+      }
+
+    } catch (err: any) {
+      toast.error("Failed to sync story data");
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const refreshData = () => fetchData();
+
+  // --- Handlers ---
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -71,7 +104,7 @@ export default function StoryClient({ initialStories, productList }: StoryClient
       setIsCreateModalOpen(false);
       refreshData();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to create story');
+      toast.error(err.response?.data?.message || 'Failed to create');
     } finally {
       setIsLoading(false);
     }
@@ -79,184 +112,168 @@ export default function StoryClient({ initialStories, productList }: StoryClient
 
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!token || !selectedStory) return toast.error("Authentication required.");
-    
+    if (!token || !selectedStory) return toast.error("Auth error.");
     setIsLoading(true);
     const formData = new FormData(e.currentTarget);
-    if (imageFile) {
-      formData.append('imageUrl', imageFile);
-    }
+    if (imageFile) formData.append('imageUrl', imageFile);
     
     try {
       await axios.patch(`/api/v1/story/${selectedStory._id}`, formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success("Story updated successfully!");
+      toast.success("Story updated!");
       setIsEditModalOpen(false);
       refreshData();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to update story');
+      toast.error("Update failed");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!token || !selectedStory) return toast.error("Authentication required.");
+    if (!token || !selectedStory) return;
     setIsLoading(true);
     try {
       await axios.delete(`/api/v1/story/${selectedStory._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success("Story deleted successfully!");
+      toast.success("Deleted!");
       setIsDeleteModalOpen(false);
       refreshData();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to delete story');
+      toast.error("Delete failed");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const openCreateModal = () => {
-    setImageFile(null);
-    setImagePreview(null);
-    setIsCreateModalOpen(true);
-  };
-  const openEditModal = (story: IStory) => {
-    setSelectedStory(story);
-    setImageFile(null);
-    setImagePreview(story.imageUrl);
-    setIsEditModalOpen(true);
-  };
-  const openViewModal = (story: IStory) => {
-    setSelectedStory(story);
-    setIsViewModalOpen(true);
-  };
-  const openDeleteModal = (story: IStory) => {
-    setSelectedStory(story);
-    setIsDeleteModalOpen(true);
-  };
+  if (isLoadingData) {
+    return <div className="flex justify-center py-20"><Loader2 className="animate-spin h-10 w-10 text-blue-600" /></div>;
+  }
 
   return (
-    <div>
-      <div className="mb-8 flex justify-end">
-        <Button
-          onClick={openCreateModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold text-md shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
-        >
-          <Plus size={20} />
-          Add New Story
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="p-4 border-b flex justify-between items-center bg-gray-50/50">
+        <h2 className="font-semibold text-gray-700">All Stories ({stories.length})</h2>
+        <Button onClick={() => { setImagePreview(null); setImageFile(null); setIsCreateModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 h-9">
+          <Plus className="w-4 h-4 mr-2" /> Add Story
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {stories.map((story) => (
-          <div key={String(story._id)} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
-            <div className="relative h-56 group">
-              <Image src={story.imageUrl} alt={story.title || 'Story Image'} layout="fill" objectFit="cover" className="group-hover:scale-105 transition-transform duration-300" />
-              <div className="absolute top-3 right-3">
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${story.status === "active" ? "bg-green-500 text-white" : "bg-gray-400 text-white"}`}>
-                  {story.status}
-                </span>
-              </div>
-            </div>
-            <div className="p-5">
-              <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-1">{story.title || "Untitled Story"}</h3>
-              {story.productId && (
-                 <div className="flex items-center gap-1 text-blue-600 text-xs font-medium mb-2 bg-blue-50 w-fit px-2 py-1 rounded">
-                    <LinkIcon size={12} />
-                    <span>Linked to Product</span>
-                 </div>
-              )}
-              <p className="text-gray-600 text-sm mb-4 line-clamp-2">{story.description || "No description."}</p>
-              <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
-                <div className="flex items-center gap-1"><Clock size={14} /><span>{story.duration}s</span></div>
-                <div className="flex items-center gap-1"><Calendar size={14} /><span>Expires: {new Date(story.expiryDate).toLocaleDateString()}</span></div>
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={() => openViewModal(story)} variant="outline" size="sm" className="flex-1"><Eye size={16} className="mr-1"/> View</Button>
-                <Button onClick={() => openEditModal(story)} variant="outline" size="sm" className="flex-1"><Edit2 size={16} className="mr-1"/> Edit</Button>
-                <Button onClick={() => openDeleteModal(story)} variant="destructive" size="sm" className="flex-1"><Trash2 size={16} className="mr-1"/> Delete</Button>
-              </div>
-            </div>
-          </div>
-        ))}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="border-b bg-gray-50 text-gray-600 text-sm uppercase font-medium">
+              <th className="px-6 py-4">Image</th>
+              <th className="px-6 py-4">Title & Description</th>
+              <th className="px-6 py-4">Linked Product</th>
+              <th className="px-6 py-4">Duration</th>
+              <th className="px-6 py-4">Status</th>
+              <th className="px-6 py-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {stories.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="text-center py-10 text-gray-400">No stories found.</td>
+              </tr>
+            ) : (
+              stories.map((story) => (
+                <tr key={String(story._id)} className="hover:bg-blue-50/30 transition-colors group">
+                  <td className="px-6 py-4">
+                    <div className="relative w-12 h-16 rounded-md overflow-hidden border bg-gray-100 shadow-sm">
+                      <Image src={story.imageUrl} alt="thumb" fill className="object-cover" />
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="max-w-[200px]">
+                      <p className="font-semibold text-gray-800 truncate">{story.title || "Untitled"}</p>
+                      <p className="text-xs text-gray-500 line-clamp-1">{story.description || "No description provided."}</p>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    {story.productId ? (
+                      <div className="flex items-center gap-2 px-2 py-1 bg-blue-50 border border-blue-100 rounded-md w-fit">
+                        <div className="w-6 h-6 relative rounded overflow-hidden flex-shrink-0">
+                          <Image src={(story.productId as any).thumbnailImage || '/placeholder.png'} alt="p" fill className="object-cover" />
+                        </div>
+                        <span className="text-[11px] font-medium text-blue-700 truncate max-w-[100px]">
+                          {(story.productId as any).productTitle}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-400">Not linked</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col text-xs text-gray-600">
+                      <span className="flex items-center gap-1"><Clock size={12}/> {story.duration}s</span>
+                      <span className="flex items-center gap-1 mt-1"><Calendar size={12}/> {new Date(story.expiryDate).toLocaleDateString()}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={cn(
+                      "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                      story.status === 'active' ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+                    )}>
+                      {story.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button onClick={() => { setSelectedStory(story); setIsViewModalOpen(true); }} variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-100"><Eye size={16} /></Button>
+                      <Button onClick={() => { setSelectedStory(story); setImagePreview(story.imageUrl); setIsEditModalOpen(true); }} variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:bg-amber-100"><Edit2 size={16} /></Button>
+                      <Button onClick={() => { setSelectedStory(story); setIsDeleteModalOpen(true); }} variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:bg-red-100"><Trash2 size={16} /></Button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
-      {/* --- Modals --- */}
+      {/* --- CREATE MODAL (Sizing Fixed) --- */}
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-        <DialogContent className="overflow-y-auto max-h-[90vh]">
+        <DialogContent className="sm:max-w-[600px] lg:max-w-[800px] w-[95vw] overflow-y-auto max-h-[90vh]">
           <DialogHeader><DialogTitle>Create New Story</DialogTitle></DialogHeader>
-          <form onSubmit={handleCreate} className="space-y-4">
-            <StoryFormFields isEdit={false} formData={null} onImageChange={handleImageChange} imagePreview={imagePreview} productList={productList} />
-            <DialogFooter>
+          <form onSubmit={handleCreate} className="space-y-4 pt-4">
+            <StoryFormFields isEdit={false} productList={products} onImageChange={handleImageChange} imagePreview={imagePreview} />
+            <DialogFooter className="mt-6">
               <Button type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : "Create Story"}</Button>
+              <Button type="submit" disabled={isLoading} className="bg-blue-600">
+                {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : "Save Story"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
-      
+
+      {/* --- EDIT MODAL (Sizing Fixed) --- */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="overflow-y-auto max-h-[90vh]">
-          <DialogHeader><DialogTitle>Update Story</DialogTitle></DialogHeader>
-          <form onSubmit={handleUpdate} className="space-y-4">
-            <StoryFormFields isEdit={true} formData={selectedStory} onImageChange={handleImageChange} imagePreview={imagePreview} productList={productList} />
-            <DialogFooter>
+        <DialogContent className="sm:max-w-[600px] lg:max-w-[800px] w-[95vw] overflow-y-auto max-h-[90vh]">
+          <DialogHeader><DialogTitle>Edit Story</DialogTitle></DialogHeader>
+          <form onSubmit={handleUpdate} className="space-y-4 pt-4">
+            <StoryFormFields isEdit={true} formData={selectedStory} productList={products} onImageChange={handleImageChange} imagePreview={imagePreview} />
+            <DialogFooter className="mt-6">
               <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : "Update Story"}</Button>
+              <Button type="submit" disabled={isLoading} className="bg-amber-600">
+                {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : "Update Story"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
-      
-      {/* View Modal, Delete Modal... (আপনার আগের কোডই থাকবে) */}
-      <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader><DialogTitle>Story Details</DialogTitle></DialogHeader>
-          {selectedStory && (
-            <div className="space-y-4">
-              <div className="relative w-full h-80 rounded-lg overflow-hidden bg-gray-100">
-                <Image src={selectedStory.imageUrl} alt={selectedStory.title || ''} layout="fill" objectFit="cover" />
-              </div>
-              <h2 className="text-2xl font-bold">{selectedStory.title}</h2>
-              
-              {selectedStory.productId && (typeof selectedStory.productId === 'object') && (
-                  <div className="bg-blue-50 p-3 rounded-md border border-blue-100 text-sm flex gap-3 items-center">
-                      <div className="w-10 h-10 relative rounded overflow-hidden">
-                        <Image 
-                            src={(selectedStory.productId as any).thumbnailImage || '/placeholder.png'} 
-                            alt="product" 
-                            fill 
-                            className="object-cover"
-                        />
-                      </div>
-                      <div>
-                        <span className="font-semibold text-blue-700">Linked Product: </span> 
-                        {(selectedStory.productId as any).productTitle || 'Product Info Unavailable'}
-                      </div>
-                  </div>
-              )}
 
-              <p>{selectedStory.description}</p>
-              <div className="flex gap-4 text-sm">
-                <span>Duration: <strong>{selectedStory.duration}s</strong></span>
-                <span>Status: <strong>{selectedStory.status}</strong></span>
-                <span>Expires: <strong>{new Date(selectedStory.expiryDate).toLocaleDateString()}</strong></span>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
+      {/* Delete Confirmation */}
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Delete Story?</DialogTitle></DialogHeader>
-          <p>Are you sure you want to delete this story?</p>
+          <DialogHeader><DialogTitle>Confirm Delete</DialogTitle></DialogHeader>
+          <p className="text-gray-500 py-4">Are you sure you want to delete this story? This action cannot be undone.</p>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsDeleteModalOpen(false)}>Cancel</Button>
-            <Button type="button" variant="destructive" onClick={handleDelete} disabled={isLoading}>{isLoading ? <Loader2 className="animate-spin" /> : "Delete"}</Button>
+            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>Delete Now</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -264,166 +281,63 @@ export default function StoryClient({ initialStories, productList }: StoryClient
   );
 }
 
-// --- NEW COMPONENT: Product Combobox ---
-// এটি সার্চ এবং ছবি সাপোর্ট করে
-const ProductCombobox = ({ productList, value, onChange }: { productList: any[], value: string, onChange: (val: string) => void }) => {
-  const [open, setOpen] = useState(false);
-  
-  // Find selected product to show in the trigger button
-  const selectedProduct = productList.find((p) => p._id === value);
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between h-auto py-2" // h-auto allows image to fit
-        >
-          {selectedProduct ? (
-            <div className="flex items-center gap-2 text-left">
-               <div className="w-8 h-8 relative rounded overflow-hidden border border-gray-200 shrink-0">
-                  <Image 
-                    src={selectedProduct.thumbnailImage || '/placeholder.png'} 
-                    alt={selectedProduct.productTitle} 
-                    fill 
-                    className="object-cover"
-                  />
-               </div>
-               <span className="truncate max-w-[200px]">{selectedProduct.productTitle}</span>
-            </div>
-          ) : (
-            "Select product..."
-          )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0" align="start">
-        <Command>
-          <CommandInput placeholder="Search product by name..." />
-          <CommandList>
-             <CommandEmpty>No product found.</CommandEmpty>
-             <CommandGroup>
-                <CommandItem
-                  value="null"
-                  onSelect={() => {
-                    onChange(""); // Clear selection
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === "" ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  -- No Product Linked --
-                </CommandItem>
-                
-                {productList.map((product) => (
-                  <CommandItem
-                    key={product._id}
-                    value={product.productTitle} // This is what is searched
-                    onSelect={() => {
-                      onChange(product._id);
-                      setOpen(false);
-                    }}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === product._id ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <div className="w-8 h-8 relative rounded overflow-hidden border border-gray-200 shrink-0">
-                        <Image 
-                          src={product.thumbnailImage || '/placeholder.png'} 
-                          alt={product.productTitle} 
-                          fill 
-                          className="object-cover"
-                        />
-                    </div>
-                    <span className="line-clamp-1">{product.productTitle}</span>
-                  </CommandItem>
-                ))}
-             </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-};
-
-// --- UPDATED Form Fields Component ---
 const StoryFormFields = ({ isEdit, formData, onImageChange, imagePreview, productList }: any) => {
-  // Initial Product ID logic
-  const initialProductId = formData?.productId 
-      ? (typeof formData.productId === 'object' ? formData.productId._id : formData.productId) 
-      : "";
-  
-  const [selectedProductId, setSelectedProductId] = useState<string>(initialProductId);
+  const [selectedPid, setSelectedPid] = useState(formData?.productId?._id || formData?.productId || "");
 
   return (
     <div className="space-y-4">
-      <div>
+      <div className="grid gap-2">
         <Label htmlFor="title">Title</Label>
-        <Input id="title" name="title" defaultValue={formData?.title} placeholder="Story title (optional)" />
-      </div>
-      
-      {/* ✅ NEW: Product Combobox with Search & Image */}
-      <div>
-        <Label className="mb-2 block">Link Product (Optional)</Label>
-        
-        {/* Combobox UI */}
-        <ProductCombobox 
-            productList={productList || []} 
-            value={selectedProductId} 
-            onChange={(val) => setSelectedProductId(val)} 
-        />
-        
-        {/* ⚠️ IMPORTANT: Hidden input to pass value to FormData in handleCreate/Update */}
-        <input type="hidden" name="productId" value={selectedProductId} />
-        
-        <p className="text-xs text-gray-500 mt-1">Search and select a product. Users will see a link to this product.</p>
+        <Input name="title" id="title" defaultValue={formData?.title} placeholder="e.g. Summer Sale" />
       </div>
 
-      <div>
-        <Label htmlFor="description">Description</Label>
-        <Textarea id="description" name="description" defaultValue={formData?.description} placeholder="Story description (optional)" />
+      <div className="grid gap-2">
+        <Label>Link Product (Optional)</Label>
+        <ProductCombobox productList={productList} value={selectedPid} onChange={setSelectedPid} />
+        <input type="hidden" name="productId" value={selectedPid} />
       </div>
-      <div>
-        <Label htmlFor="imageUrl">Story Image *</Label>
-        <label htmlFor="imageUpload" className="mt-1 flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:border-blue-400 bg-gray-50">
+
+      <div className="grid gap-2">
+        <Label htmlFor="description">Description</Label>
+        <Textarea name="description" id="description" defaultValue={formData?.description} className="h-20" />
+      </div>
+
+      <div className="grid gap-2">
+        <Label>Story Media (Vertical Image Recommended)</Label>
+        <div className="relative group border-2 border-dashed rounded-xl p-4 transition-colors hover:border-blue-400 flex flex-col items-center justify-center bg-gray-50 h-40 overflow-hidden">
           {imagePreview ? (
-            <div className="relative w-full h-full">
-                <Image src={imagePreview} alt="Preview" layout="fill" objectFit="contain" />
+            <div className="absolute inset-0">
+               <Image src={imagePreview} alt="p" fill className="object-contain" />
+               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <p className="text-white text-xs">Change Image</p>
+               </div>
             </div>
           ) : (
-            <div className="text-center text-gray-500">
-              <UploadCloud className="mx-auto h-8 w-8" />
-              <p>Click to upload or drag & drop</p>
+            <div className="text-gray-400 flex flex-col items-center">
+              <UploadCloud className="w-8 h-8 mb-1" />
+              <p className="text-[10px]">Click to upload story media</p>
             </div>
           )}
-        </label>
-        <Input id="imageUpload" name="imageUrl" type="file" className="hidden" onChange={onImageChange} accept="image/*" required={!isEdit} />
+          <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={onImageChange} accept="image/*" />
+        </div>
       </div>
+
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="duration">Duration (seconds)</Label>
-          <Input id="duration" name="duration" type="number" defaultValue={formData?.duration || 10} />
+        <div className="grid gap-2">
+          <Label>Duration (s)</Label>
+          <Input name="duration" type="number" defaultValue={formData?.duration || 10} />
         </div>
-        <div>
-          <Label htmlFor="expiryDate">Expiry Date *</Label>
-          <Input id="expiryDate" name="expiryDate" type="date" defaultValue={formData?.expiryDate ? new Date(formData.expiryDate).toISOString().split('T')[0] : ''} required />
+        <div className="grid gap-2">
+          <Label>Expiry Date</Label>
+          <Input name="expiryDate" type="date" required defaultValue={formData?.expiryDate ? new Date(formData.expiryDate).toISOString().split('T')[0] : ""} />
         </div>
       </div>
+
       {isEdit && (
-        <div>
-          <Label htmlFor="status">Status</Label>
-          <Select name="status" defaultValue={formData?.status}>
-            <SelectTrigger id="status"><SelectValue /></SelectTrigger>
+        <div className="grid gap-2">
+          <Label>Status</Label>
+          <Select name="status" defaultValue={formData?.status || "active"}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="inactive">Inactive</SelectItem>
@@ -432,5 +346,53 @@ const StoryFormFields = ({ isEdit, formData, onImageChange, imagePreview, produc
         </div>
       )}
     </div>
+  );
+};
+
+const ProductCombobox = ({ productList, value, onChange }: any) => {
+  const [open, setOpen] = useState(false);
+  const selectedProduct = productList?.find((p: any) => p._id === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className="w-full justify-between h-10 font-normal">
+          {selectedProduct ? (
+            <div className="flex items-center gap-2 truncate text-sm">
+              <div className="w-5 h-5 relative rounded-sm overflow-hidden border flex-shrink-0">
+                <Image src={selectedProduct.thumbnailImage || '/placeholder.png'} alt="p" fill className="object-cover" />
+              </div>
+              <span className="truncate">{selectedProduct.productTitle}</span>
+            </div>
+          ) : <span className="text-gray-400">Select product to link...</span>}
+          <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50 flex-shrink-0" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[300px] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search product..." />
+          <CommandList>
+            <CommandEmpty>No product found.</CommandEmpty>
+            <CommandGroup>
+              <CommandItem onSelect={() => { onChange(""); setOpen(false); }} className="text-xs">
+                <Check className={cn("mr-2 h-3 w-3", !value ? "opacity-100" : "opacity-0")} />
+                None (Remove Link)
+              </CommandItem>
+              {productList?.map((product: any) => (
+                <CommandItem key={product._id} onSelect={() => { onChange(product._id); setOpen(false); }} className="text-xs">
+                  <Check className={cn("mr-2 h-3 w-3", value === product._id ? "opacity-100" : "opacity-0")} />
+                  <div className="flex items-center gap-2">
+                     <div className="w-6 h-6 relative rounded overflow-hidden border">
+                        <Image src={product.thumbnailImage || '/placeholder.png'} alt="p" fill className="object-cover" />
+                     </div>
+                     <span className="truncate">{product.productTitle}</span>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 };
