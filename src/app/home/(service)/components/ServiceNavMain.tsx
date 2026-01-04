@@ -15,9 +15,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
-// import LogInRegister from "../../LogInAndRegister/LogIn_Register";
-// import SearchBar from "./SearchBar";
-
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -31,6 +28,7 @@ export default function ServiceNavMain() {
     const [openLoginDialog, setOpenLoginDialog] = useState(false);
 
     const user = session?.user;
+    console.log('Service NavMain session user:', session);
     const isLoggedIn = !!(session as any)?.accessToken
 
     const handlePostAdClick = () => {

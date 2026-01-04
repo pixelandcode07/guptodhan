@@ -14,7 +14,7 @@ export default async function Hero() {
 
   return (
     <div>
-      <nav className="hidden lg:block">
+      <nav className="hidden lg:block ">
         <HeroNav categories={categories} />
       </nav>
 

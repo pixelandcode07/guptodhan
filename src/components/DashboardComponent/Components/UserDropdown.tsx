@@ -8,15 +8,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, Key } from 'lucide-react';
-import { useSession } from 'next-auth/react';
-import LogoutBtn from './LogoutBtn';
+import { ChevronDown, Key, LogOut } from 'lucide-react';
+import { signOut, useSession } from 'next-auth/react';
+import { useState } from 'react';
+import { toast } from 'sonner';
+// import LogoutBtn from './LogoutBtn';
 
 export default function UserDropdown() {
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const { data: session, status } = useSession();
-  const token = session?.accessToken;
-  console.log("TOKEN:", token)
+  const token = (session as any)?.accessToken;
   const user = session?.user;
+  console.log("TOKEN:", token)
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
@@ -41,8 +44,17 @@ export default function UserDropdown() {
         <DropdownMenuItem>
           <Key /> Change Password
         </DropdownMenuItem>
-        <DropdownMenuItem>
-          <LogoutBtn />
+        <DropdownMenuItem
+          disabled={isLoggingOut}
+          className="text-red-500 hover:bg-red-500/10 w-full"
+          onClick={async () => {
+            setIsLoggingOut(true);
+            toast.loading("Logging out...");
+            await signOut({ callbackUrl: "/" });
+          }}>
+          <LogOut className="w-5 h-5" />
+          <span>{isLoggingOut ? "Logging out..." : "Logout"}</span>
+          {/* <LogoutBtn /> */}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -39,7 +39,7 @@ const items = [
   { title: 'Support Tickets', url: '/home/UserProfile/support-tickets', icon: Headset },
   { title: 'Saved Address', url: '/home/UserProfile/addresses', icon: MapPin },
   { title: 'Change Password', url: '/home/UserProfile/change-password', icon: KeyRound },
-  { title: 'Logout', url: '/logout', icon: LogOut },
+  // { title: 'Logout', url: '/logout', icon: LogOut },
 ]
 
 export default function UserSidebar() {

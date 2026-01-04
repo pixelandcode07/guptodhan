@@ -11,7 +11,7 @@ export default async function AllServiceBanner() {
     // const allBanners = token
     //     ? await fetchAllProtectedServiceBanners(token)
     //     : [];
-    console.log('allBanner', allBanners)
+    // console.log('allBanner', allBanners)
     return (
         <div>
             <div className='py-5'>

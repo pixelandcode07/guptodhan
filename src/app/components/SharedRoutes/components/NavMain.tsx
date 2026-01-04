@@ -1,6 +1,6 @@
 'use client';
 
-import { Heart, LogOut, Menu, User, X, ShoppingBag, Gift, UserPlus, Truck, Phone, LogIn } from 'lucide-react';
+import { Heart, LogOut, Menu, User, X, ShoppingBag, Gift, UserPlus, Truck, Phone, LogIn, Workflow } from 'lucide-react';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,6 +13,7 @@ import CartIcon from '@/components/CartIcon';
 import WishlistIcon from '@/components/WishlistIcon';
 import { motion, AnimatePresence } from 'framer-motion';
 import MessageIcon from '../../MessageIcon';
+import { toast } from 'sonner';
 
 export default function NavMain() {
   const { data: session } = useSession();
@@ -21,6 +22,7 @@ export default function NavMain() {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   // Helper: Get initials from name
   const getInitials = (name: string | null | undefined) => {
@@ -96,14 +98,19 @@ export default function NavMain() {
                       <span className="text-[#00005E] text-[12px]">Profile</span>
                     </Link>
                   </li>
-
-                  {/* Logout */}
                   <li
-                    onClick={() => signOut()}
-                    className="flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer"
+                    onClick={async () => {
+                      if (isLoggingOut) return;
+
+                      setIsLoggingOut(true);
+                      toast.loading("Logging out...");
+                      await signOut({ callbackUrl: "/" });
+                    }}
+                    className={`flex flex-col justify-center items-center text-[#00005E] font-medium 
+    ${isLoggingOut ? "opacity-50 cursor-not-allowed pointer-events-none" : "cursor-pointer"}`}
                   >
                     <LogOut size={20} />
-                    <span className="text-[#00005E] text-[12px]">Log out</span>
+                    <span className="text-[#00005E] text-[12px]">{isLoggingOut ? "Logging out..." : "Log out"}</span>
                   </li>
                 </>
               ) : (
@@ -164,6 +171,14 @@ export default function NavMain() {
                       <Gift size={24} />
                       <span className="text-xs mt-1">Donation</span>
                     </Link>
+                    <Link href="/home/service" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-400 to-blue-800 rounded-lg hover:from-blue-400 hover:to-blue-800 transition">
+                      <Workflow size={24} />
+                      <span className="text-xs mt-1">Service</span>
+                    </Link>
+                    <Link href="/home/vendor-shops" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-green-400 to-green-800 rounded-lg hover:from-green-400 hover:to-green-800 transition">
+                      <Workflow size={24} />
+                      <span className="text-xs mt-1">Vendor Shops</span>
+                    </Link>
                   </div>
 
                   <hr className="border-gray-600 my-2" />
@@ -186,11 +201,11 @@ export default function NavMain() {
                   {/* Service Provider */}
                   <div className="space-y-1">
                     <h3 className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Service Provider</h3>
-                    <Link href="/service-provider/register" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
+                    <Link href="/service/register" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
                       <UserPlus size={16} />
                       <span>Register</span>
                     </Link>
-                    <Link href="/service-provider/login" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
+                    <Link href="/service/login" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
                       <LogIn size={16} />
                       <span>Login</span>
                     </Link>
