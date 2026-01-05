@@ -23,11 +23,8 @@ export default function ProductInfo({
 }: any) {
   const router = useRouter();
   const { addToCart, isLoading: cartLoading, isAddingToCart } = useCart();
-  const { addToWishlist, removeFromWishlist, isInWishlist, getWishlistItemId } = useWishlist();
   const [quantity, setQuantity] = useState(1);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
-  const [isProductInWishlist, setIsProductInWishlist] = useState(false);
-  const [isWishlistLoading, setIsWishlistLoading] = useState(false);
 
   // কালার এবং সাইজ লিস্ট ফিল্টারিং
   const availableColors = useMemo(() => {
@@ -96,40 +93,6 @@ export default function ProductInfo({
     await addToCart(product._id, quantity);
   };
 
-  useEffect(() => {
-    const checkWishlistStatus = async () => {
-      if (product?._id) {
-        const inWishlist = await isInWishlist(product._id);
-        setIsProductInWishlist(inWishlist);
-      }
-    };
-    checkWishlistStatus();
-  }, [product?._id, isInWishlist]);
-
-  const handleWishlist = async () => {
-    if (!product?._id) return;
-    
-    setIsWishlistLoading(true);
-    try {
-      if (isProductInWishlist) {
-        const wishlistItemId = await getWishlistItemId(product._id);
-        if (wishlistItemId) {
-          await removeFromWishlist(wishlistItemId);
-          setIsProductInWishlist(false);
-        }
-      } else {
-        const success = await addToWishlist(product._id);
-        if (success) {
-          setIsProductInWishlist(true);
-        }
-      }
-    } catch (error) {
-      console.error('Wishlist error:', error);
-    } finally {
-      setIsWishlistLoading(false);
-    }
-  };
-
   return (
     <motion.div className="p-5 md:p-8 space-y-7 bg-white" variants={fadeInUp} initial="hidden" animate="visible">
       <div className="space-y-2">
@@ -137,16 +100,8 @@ export default function ProductInfo({
           <span className="text-xs font-bold uppercase tracking-widest text-blue-600 px-2 py-1 bg-blue-50 rounded">
             {getBrandName(product, relatedData?.brands)}
           </span>
-          <button 
-            onClick={handleWishlist}
-            disabled={isWishlistLoading}
-            className={`p-2 rounded-full border border-gray-100 transition-colors ${
-              isProductInWishlist 
-                ? 'bg-red-50 text-red-500 border-red-200' 
-                : 'hover:bg-red-50 hover:text-red-500'
-            }`}
-          >
-            <Heart size={18} fill={isProductInWishlist ? 'currentColor' : 'none'} />
+          <button className="p-2 rounded-full border border-gray-100 hover:bg-red-50 hover:text-red-500 transition-colors">
+            <Heart size={18} />
           </button>
         </div>
         <h1 className="text-xl md:text-2xl font-semibold text-slate-900 leading-tight">{product.productTitle}</h1>

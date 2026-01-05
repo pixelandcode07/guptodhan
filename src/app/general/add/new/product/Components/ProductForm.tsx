@@ -432,7 +432,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 brand: brand || undefined,
                 productModel: model || undefined,
                 flag: flag || undefined,
-                warranty: warranty,
+                warranty: warranty || undefined,
                 weightUnit: unit || undefined,
                 offerDeadline: offerEndTime ? new Date(offerEndTime) : undefined,
                 metaTitle: metaTitle || undefined,
@@ -871,13 +871,14 @@ export default function ProductForm({ initialData, productId: propProductId }: a
 
                                 <div className="space-y-2">
                                     <Label htmlFor="warranty" className="text-sm font-medium text-gray-700">
-                                        Warranty
+                                        Warranty <span className="text-xs text-gray-500 font-normal">(Optional)</span>
                                     </Label>
-                                    <Select value={warranty} onValueChange={setWarranty}>
+                                    <Select value={warranty || undefined} onValueChange={(value) => setWarranty(value || '')}>
                                         <SelectTrigger id="warranty" className="h-11 w-full">
-                                            <SelectValue placeholder="Select warranty" />
+                                            <SelectValue placeholder="Select warranty (optional)" />
                                         </SelectTrigger>
                                         <SelectContent>
+                                            <SelectItem value="">None</SelectItem>
                                             {initialData?.warranties?.map((w: any) => (
                                                 <SelectItem key={w._id} value={w._id}>
                                                     {w.warrantyName}
