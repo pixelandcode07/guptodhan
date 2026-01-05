@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 import AppSidebar from '@/components/DashboardComponent/AppSidebar';
 import DashNavbar from '@/components/DashboardComponent/DashNavbar';
 import { SidebarProvider } from '@/components/ui/sidebar';
