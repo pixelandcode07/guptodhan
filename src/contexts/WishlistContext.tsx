@@ -9,7 +9,7 @@ import api from '@/lib/axios'
 type WishlistContextType = {
   wishlistCount: number
   refreshWishlist: () => Promise<void>
-  addToWishlist: (productId: string) => Promise<boolean>
+  addToWishlist: (productId: string, color?: string, size?: string) => Promise<boolean>
   removeFromWishlist: (wishlistId: string) => Promise<void>
   isInWishlist: (productId: string) => Promise<boolean>
   getWishlistItemId: (productId: string) => Promise<string | null>
@@ -122,7 +122,7 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({ children }) 
   }, [session])
 
   // Add to wishlist
-  const addToWishlist = useCallback(async (productId: string): Promise<boolean> => {
+  const addToWishlist = useCallback(async (productId: string, color?: string, size?: string): Promise<boolean> => {
     const userId = getUserId()
     if (!userId) {
       toast.error('Please login to add items to wishlist')
@@ -145,6 +145,8 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({ children }) 
         productID: productId,
         userName: userInfo.name,
         userEmail: userInfo.email,
+        color: color || undefined,
+        size: size || undefined,
         wishlistID: `WL-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       })
 

@@ -62,6 +62,8 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
                   product={product}
                   selectedColor={selectedColor}
                   selectedSize={selectedSize}
+                  onColorChange={handleColorChange}
+                  onSizeChange={(size: string) => setSelectedSize(size)}
                 />
                 <ProductInfo 
                   product={product} 

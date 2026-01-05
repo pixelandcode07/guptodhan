@@ -5,5 +5,7 @@ export interface IWishlist extends Document {
   userEmail: string;
   userID: Types.ObjectId;
   productID: Types.ObjectId;
+  color?: string;
+  size?: string;
   createdAt: Date;
 }

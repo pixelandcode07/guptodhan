@@ -31,6 +31,8 @@ export type CartItem = {
 type AddToCartOptions = {
   skipModal?: boolean;
   silent?: boolean;
+  color?: string;
+  size?: string;
 };
 
 type FetchCartOptions = {
@@ -137,8 +139,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
               id: productIdStr || '',
               name: item.productName || 'Unknown Product',
               image: item.productImage || '/img/product/p-1.png',
-              size: item.size || 'Standard',
-              color: item.color || 'Default', 
+              size: item.size ?? '—',
+              color: item.color ?? '—', 
               price: item.unitPrice || 0,
               originalPrice: item.unitPrice || 0,
               quantity: item.quantity || 1,
@@ -186,13 +188,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   const normalizeAddToCartOptions = (
     options?: boolean | AddToCartOptions
-  ): Required<AddToCartOptions> => {
+  ): AddToCartOptions & { skipModal: boolean; silent: boolean } => {
     if (typeof options === 'boolean') {
       return { skipModal: options, silent: false };
     }
     return {
       skipModal: options?.skipModal ?? false,
       silent: options?.silent ?? false,
+      color: options?.color,
+      size: options?.size,
     };
   };
 
@@ -201,7 +205,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     quantity: number = 1,
     options?: boolean | AddToCartOptions
   ) => {
-    const { skipModal, silent } = normalizeAddToCartOptions(options);
+    const normalizedOptions = normalizeAddToCartOptions(options);
+    const { skipModal, silent, color, size } = normalizedOptions;
     const userId = getUserId();
     if (!userId) {
       toast.error('Please login to add items to cart');
@@ -234,6 +239,22 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         storeName = productData.vendorName || 'Unknown Store';
       }
       
+      // Find variant price if color/size is selected
+      let unitPrice = productData.discountPrice || productData.productPrice;
+      if (productData.productOptions && (color || size)) {
+        const matchedVariant = productData.productOptions.find((option: any) => {
+          const optionColor = Array.isArray(option.color) ? option.color[0] : option.color;
+          const optionSize = Array.isArray(option.size) ? option.size[0] : option.size;
+          const colorMatch = color ? optionColor === color : true;
+          const sizeMatch = size ? optionSize === size : true;
+          return colorMatch && sizeMatch;
+        });
+        
+        if (matchedVariant) {
+          unitPrice = matchedVariant.discountPrice || matchedVariant.price || unitPrice;
+        }
+      }
+      
       // Backend generates cartID, so we don't need to send it
       const cartPayload = {
         userID: userId,
@@ -243,11 +264,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         productName: productData.productTitle,
         productImage: productData.thumbnailImage,
         storeName: storeName,
-        color: undefined, // Can be added later if product has color options
-        size: undefined, // Can be added later if product has size options
+        color: color || undefined,
+        size: size || undefined,
         quantity: quantity,
-        unitPrice: productData.discountPrice || productData.productPrice,
-        totalPrice: quantity * (productData.discountPrice || productData.productPrice),
+        unitPrice: unitPrice,
+        totalPrice: quantity * unitPrice,
       };
 
       // Add to cart via API

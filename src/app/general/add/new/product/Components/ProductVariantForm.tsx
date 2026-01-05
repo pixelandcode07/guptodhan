@@ -13,6 +13,8 @@ interface VariantOption {
   colorName?: string;
   warrantyName?: string;
   deviceCondition?: string;
+  ram?: string;
+  rom?: string;
 }
 
 export interface IProductOption {
@@ -274,7 +276,7 @@ export default function ProductVariantForm({ variants, setVariants, variantData 
                         {variantData.storageTypes && variantData.storageTypes.length > 0 ? (
                           variantData.storageTypes.map(storage => (
                             <SelectItem key={storage._id} value={storage._id}>
-                              {storage.name || storage._id}
+                              {storage.ram && storage.rom ? `${storage.ram} / ${storage.rom}` : storage.name || storage._id}
                             </SelectItem>
                           ))
                         ) : (
@@ -365,7 +367,7 @@ export default function ProductVariantForm({ variants, setVariants, variantData 
                   <div className="text-xs text-blue-700 space-y-1">
                     <p>Color: <strong>{getColorName(variant.color)}</strong></p>
                     <p>Size: <strong>{getSizeName(variant.size)}</strong></p>
-                    <p>Storage: <strong>{getStorageName(variant.storage)}</strong></p>
+                    <p>Storage: <strong>{getStorageName(variant.storage || '')}</strong></p>
                     <p>Stock: <strong>{variant.stock}</strong> | Price: <strong>৳{variant.price}</strong></p>
                   </div>
                 </div>
