@@ -6,14 +6,18 @@ const userSchema = new Schema<TUserDoc, UserModel>(
   {
     name: { type: String, required: true },
     email: { type: String, sparse: true, unique: true, index: true },
-    password: { type: String, select: false },
+    password: { type: String, select: false }, // default query তে আসবে না
     phoneNumber: { type: String, unique: true, sparse: true, index: true },
     profilePicture: { type: String },
     address: { type: String },
     isDeleted: { type: Boolean, default: false },
     isVerified: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
-    role: { type: String, enum: ['user', 'vendor', 'service-provider', 'admin'], default: 'user' },
+    role: { 
+      type: String, 
+      enum: ['user', 'vendor', 'service-provider', 'admin'], 
+      default: 'user' 
+    },
     rewardPoints: { type: Number, default: 0 },
     passwordChangedAt: { type: Date },
 
@@ -34,19 +38,22 @@ const userSchema = new Schema<TUserDoc, UserModel>(
 // ===========================
 
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
+  const user = this as TUserDoc;
+
+  // যদি পাসওয়ার্ড ফিল্ডটি পরিবর্তন না হয়, তবে হ্যাশ করার দরকার নেই
+  if (!user.isModified('password')) {
     return next();
   }
 
-  if (!this.password) {
-    return next(new Error('Password is required'));
+  try {
+    const saltRounds = 10;
+    // পাসওয়ার্ড হ্যাশ করা হচ্ছে
+    const hashedPassword = await bcrypt.hash(user.password as string, saltRounds);
+    user.password = hashedPassword;
+    next();
+  } catch (error: any) {
+    next(error);
   }
-
-  const saltRounds = 10;
-  const hashedPassword = await bcrypt.hash(this.password, saltRounds);
-
-  this.password = hashedPassword;
-  next();
 });
 
 // ===========================
@@ -69,8 +76,7 @@ userSchema.methods.isPasswordMatched = async function (
   plainPassword: string,
   hashedPassword: string
 ) {
-  if (!hashedPassword) return false;
-  return bcrypt.compare(plainPassword, hashedPassword);
+  return await bcrypt.compare(plainPassword, hashedPassword);
 };
 
 // ===========================
