@@ -873,12 +873,11 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                                     <Label htmlFor="warranty" className="text-sm font-medium text-gray-700">
                                         Warranty <span className="text-xs text-gray-500 font-normal">(Optional)</span>
                                     </Label>
-                                    <Select value={warranty || undefined} onValueChange={(value) => setWarranty(value || '')}>
+                                    <Select value={warranty || undefined} onValueChange={setWarranty}>
                                         <SelectTrigger id="warranty" className="h-11 w-full">
                                             <SelectValue placeholder="Select warranty (optional)" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="">None</SelectItem>
                                             {initialData?.warranties?.map((w: any) => (
                                                 <SelectItem key={w._id} value={w._id}>
                                                     {w.warrantyName}
