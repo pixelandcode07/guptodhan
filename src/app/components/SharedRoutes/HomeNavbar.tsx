@@ -18,14 +18,13 @@ export default function HomeNavbar() {
 
     const isBuyAndSell = pathname?.startsWith("/home/buyandsell");
     const isDonation = pathname?.startsWith("/home/donation");
-    const isService = pathname?.startsWith("/home/service"); // ||
-    // pathname?.startsWith("/home/post-service") ||
-    // pathname?.startsWith("/home/post-service") ;
+    const isService = pathname?.startsWith("/home/service");
 
     if (!mounted) return null;
 
     return (
-        <div className='container mx-auto'>
+        // <div className='container mx-auto'>
+        <div className=''>
             <NavHead />
             {isBuyAndSell ? <BuySellNavMain /> : isDonation ? <DonationNavMain /> : isService ? <ServiceNavMain /> : <NavMain />}
         </div>

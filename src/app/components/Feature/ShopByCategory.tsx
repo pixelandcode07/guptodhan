@@ -37,7 +37,7 @@ export function ShopByCategory({ featuredData }: FeatureProps) {
   }, [api]);
 
   return (
-    <section className="w-full py-10">
+    <section className="w-full py-3">
       <Carousel
         setApi={setApi}
         opts={{
@@ -54,7 +54,7 @@ export function ShopByCategory({ featuredData }: FeatureProps) {
             >
               <Link href={`/feature/${category.slug}`} className="group block">
                 <div className="flex flex-col items-center gap-3 rounded-xl border bg-white p-4 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-                  <div className="flex items-center justify-center w-20 h-20 rounded-lg bg-gray-50 border group-hover:bg-[#f0f9ff] transition-colors">
+                  <div className="flex items-center justify-center w-20 h-20 rounded-lg  hover:border group-hover:bg-[#f0f9ff] transition-colors">
                     <Image
                       src={category.categoryIcon}
                       alt={category.name}

@@ -87,7 +87,7 @@ export function HeroNav({ categories }: HeroNavProps) {
         animate={{ y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
-        <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4">
+        <div className="max-w-[80vw] xl:container mx-auto px-8">
           <div className="flex justify-between items-center">
             {/* ---------- MAIN MENU ---------- */}
             <div className="flex items-center space-x-1 md:space-x-2 lg:space-x-4 xl:space-x-6">

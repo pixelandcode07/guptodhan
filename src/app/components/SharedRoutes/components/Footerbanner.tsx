@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button';
 
 export default function Footerbanner() {
   return (
-    <div className=" bg-gray-100">
-      <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 bg-linear-to-r from-[#0084CB] to-[#00005E] flex justify-between items-center p-10">
+    <div className="">
+      <div className="max-w-[95vw] xl:container mx-auto px-4 bg-linear-to-r from-[#0084CB] to-[#00005E] flex justify-between items-center p-10">
+        {/* <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 bg-linear-to-r from-[#0084CB] to-[#00005E] flex justify-between items-center p-10"> */}
         <div className="image">
           <Image
             src={FooterImage}

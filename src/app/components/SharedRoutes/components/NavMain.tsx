@@ -38,7 +38,8 @@ export default function NavMain() {
   return (
     <div>
       {/* Main Top Bar */}
-      <div className="bg-[#0097E9] md:bg-[#FFFFFF] text-black md:max-w-[95vw] xl:max-w-[90vw] mx-auto flex justify-between items-center py-2 md:py-5 px-1 md:px-1 lg:px-10">
+      <div className="bg-[#0097E9] md:bg-[#FFFFFF] text-black  flex justify-between items-center md:max-w-[95vw] xl:container px-8 mx-auto py-2">
+      {/* <div className="bg-[#0097E9] md:bg-[#FFFFFF] text-black md:max-w-[95vw] xl:max-w-[90vw] mx-auto flex justify-between items-center py-2 md:py-5 px-1 md:px-1 lg:px-10"> */}
         <div className="flex justify-between items-center gap-2">
           <div className="flex lg:block items-center">
             {/* Mobile Menu Toggle */}

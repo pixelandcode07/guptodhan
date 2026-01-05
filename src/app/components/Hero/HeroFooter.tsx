@@ -17,7 +17,7 @@ export default async function HeroFooter() {
   return (
     <>
       {/* Desktop Version */}
-      <div className="max-w-[90vw] mx-auto mt-5 px-4 hidden lg:flex justify-center items-center gap-6 py-4 rounded-md overflow-x-auto bg-gray-100">
+      <div className="max-w-[90vw] mx-auto mt-5 px-4 hidden lg:flex justify-center items-center gap-6 py-0 rounded-md overflow-x-auto">
         {categories.length === 0 ? (
           <p className="py-8 text-gray-600">No service categories available</p>
         ) : (
