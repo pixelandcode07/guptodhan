@@ -30,7 +30,7 @@ export default function NavHead() {
                             <Link href={'/join-as-provider'} className='text-sm hover:transition-all duration-500 font-medium hover:font-semibold hover:text-gray-900 hover:underline hover:underline-offset-8 cursor-pointer'>Join As Service Provider</Link>
                             <li className='text-sm'>|</li>
                         </> : null}
-                        <li className='text-sm hover:transition-all duration-500 font-medium hover:font-semibold hover:text-gray-900 hover:underline hover:underline-offset-8 cursor-pointer'>Track Order</li>
+                        <Link href={'/track-order'} className='text-sm hover:transition-all duration-500 font-medium hover:font-semibold hover:text-gray-900 hover:underline hover:underline-offset-8 cursor-pointer'>Track Order</Link>
                         <li className='text-sm'>|</li>
                         <li className='text-sm hover:transition-all duration-500 font-medium hover:font-semibold hover:text-gray-900 hover:underline hover:underline-offset-8 cursor-pointer'>
                             <Link
