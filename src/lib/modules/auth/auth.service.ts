@@ -262,22 +262,22 @@ const changePassword = async (userId: string, payload: TChangePassword) => {
 };
 
 const setPasswordForSocialLogin = async (userId: string, newPassword: string) => {
-
-  const user = await User.findById(userId);
+  // এখানে .select('+password') যোগ করা হয়েছে
+  const user = await User.findById(userId).select('+password');
 
   if (!user) {
     throw new Error('User not found!');
   }
 
-
+  // এখন এই চেকটি কাজ করবে
   if (user.password) {
     throw new Error('This account already has a password. Please use the "Change Password" feature instead.');
   }
 
-
+  // নতুন পাসওয়ার্ড সেট করা
   user.password = newPassword;
 
-
+  // সেভ করার সময় এখন pre-save হুকটি ট্রিগার হবে
   await user.save();
 
   return null;
