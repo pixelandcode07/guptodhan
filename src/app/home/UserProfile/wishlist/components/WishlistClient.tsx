@@ -86,7 +86,7 @@ export default function WishlistClient({ initialWishlistItems = [] }: WishlistCl
     }
   }
 
-  const handleAddToCart = async (productId: string | { _id: string }, wishlistItemId: string) => {
+  const handleAddToCart = async (productId: string | { _id: string }, wishlistItemId: string, color?: string, size?: string) => {
     // Extract product ID
     const id = typeof productId === 'object' ? productId._id : productId
     
@@ -97,7 +97,10 @@ export default function WishlistClient({ initialWishlistItems = [] }: WishlistCl
     
     try {
       // Step 1: Add to cart (handles API, DB update, localStorage, UI update)
-      await addToCartContext(id, 1)
+      await addToCartContext(id, 1, {
+        color: color || undefined,
+        size: size || undefined
+      })
       
       // Step 2: Remove from wishlist after successful cart addition
       try {
@@ -277,7 +280,7 @@ function WishlistGrid({
 interface WishlistItemProps {
   item: WishlistProduct
   onRemove: (wishlistId: string) => void
-  onAddToCart: (productId: string | { _id: string }, wishlistItemId: string) => void
+  onAddToCart: (productId: string | { _id: string }, wishlistItemId: string, color?: string, size?: string) => void
   isSelected: boolean
   onToggleSelect: (wishlistItemId: string) => void
 }
@@ -290,8 +293,8 @@ function WishlistItem({ item, onRemove, onAddToCart, isSelected, onToggleSelect 
     e.stopPropagation()
     setIsAddingToCart(true)
     try {
-      // Pass both productId and wishlist item _id so it can be removed after adding to cart
-      await onAddToCart(item.productID, item._id)
+      // Pass both productId, wishlist item _id, color, and size so it can be added to cart with variant info
+      await onAddToCart(item.productID, item._id, item.color, item.size)
     } finally {
       setIsAddingToCart(false)
     }

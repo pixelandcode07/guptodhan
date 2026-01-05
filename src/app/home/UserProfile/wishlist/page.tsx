@@ -41,6 +41,8 @@ async function getUserWishlist(userId: string): Promise<WishlistProduct[]> {
           productPrice?: number
           discountPrice?: number
         } | string
+        color?: string
+        size?: string
         createdAt?: Date | string
       }
       
@@ -95,6 +97,8 @@ async function getUserWishlist(userId: string): Promise<WishlistProduct[]> {
         _id: id,
         wishlistID: String(wishlistItem.wishlistID || ''),
         productID: productID,
+        color: wishlistItem.color,
+        size: wishlistItem.size,
         createdAt: createdAt
       } as WishlistProduct
     })

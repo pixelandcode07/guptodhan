@@ -51,7 +51,7 @@ export default function ProductInfo({
           setIsProductInWishlist(false);
         }
       } else {
-        const success = await addToWishlist(product._id);
+        const success = await addToWishlist(product._id, selectedColor || undefined, selectedSize || undefined);
         if (success) {
           setIsProductInWishlist(true);
         }
@@ -109,7 +109,12 @@ export default function ProductInfo({
     setIsBuyingNow(true);
     try {
       sessionStorage.setItem('buyNowProductId', product._id);
-      await addToCart(product._id, quantity, { skipModal: true, silent: true });
+      await addToCart(product._id, quantity, { 
+        skipModal: true, 
+        silent: true,
+        color: selectedColor || undefined,
+        size: selectedSize || undefined
+      });
       router.push('/home/product/shoppinginfo?buyNow=true');
     } catch {
       toast.error('Failed to proceed');
@@ -127,7 +132,10 @@ export default function ProductInfo({
       toast.error('Please select a size');
       return;
     }
-    await addToCart(product._id, quantity);
+    await addToCart(product._id, quantity, {
+      color: selectedColor || undefined,
+      size: selectedSize || undefined
+    });
   };
 
   return (

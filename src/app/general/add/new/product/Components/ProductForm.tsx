@@ -264,6 +264,12 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                     const sizeNameToIdMap = new Map<string, string>(
                         initialData?.variantOptions?.sizes?.map((s: any) => [s.name, s._id]) || []
                     );
+                    const storageNameToIdMap = new Map<string, string>(
+                        initialData?.variantOptions?.storageTypes?.map((s: any) => {
+                            const storageName = s.ram && s.rom ? `${s.ram} / ${s.rom}` : s.name || s._id;
+                            return [storageName, s._id];
+                        }) || []
+                    );
 
                     const getFirstValue = (val: any) => Array.isArray(val) ? val[0] : val;
                     const getNameToId = (name: string, map: Map<string, string>) => map.get(name) || name;
@@ -274,7 +280,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                         imageUrl: opt.productImage || '',
                         color: opt.color ? getNameToId(getFirstValue(opt.color), colorNameToIdMap) : '',
                         size: opt.size ? getNameToId(getFirstValue(opt.size), sizeNameToIdMap) : '',
-                        storage: opt.storage || '',
+                        storage: opt.storage ? getNameToId(opt.storage, storageNameToIdMap) : '',
                         simType: opt.simType || '',
                         condition: opt.condition || '',
                         warranty: opt.warranty || '',

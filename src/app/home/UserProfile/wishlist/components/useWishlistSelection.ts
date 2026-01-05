@@ -69,7 +69,12 @@ export function useWishlistSelection({ wishlistItems, addToCart, refreshWishlist
             continue
           }
 
-          await addToCart(productId, 1, { skipModal: true, silent: true })
+          await addToCart(productId, 1, { 
+            skipModal: true, 
+            silent: true,
+            color: item.color || undefined,
+            size: item.size || undefined
+          })
 
           try {
             const res = await axios.delete(`/api/v1/wishlist/${wishlistItemId}`)
