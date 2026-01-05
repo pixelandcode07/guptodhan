@@ -4,17 +4,30 @@ import { sendResponse } from '@/lib/utils/sendResponse';
 import dbConnect from '@/lib/db';
 import { verifyToken } from '@/lib/utils/jwt';
 import { DonationProfileServices } from './donation-profile.service';
+import { User } from '../user/user.model';
 
 // ১. ড্যাশবোর্ড স্ট্যাটাস (Card Data)
 const getDonationDashboardStats = async (req: NextRequest) => {
   await dbConnect();
   
-  // টোকেন থেকে ইউজার ইনফো বের করা
   const token = req.headers.get('authorization')?.split(' ')[1];
   if (!token) throw new Error('Unauthorized');
-  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
+  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as any;
   
-  const result = await DonationProfileServices.getUserStatsFromDB(decoded.userId, decoded.email);
+  let userEmail = decoded.email;
+  const userId = decoded.userId;
+
+  // 🛠 যদি টোকেনে ইমেইল না থাকে, ডাটাবেস থেকে বের করো
+  if (!userEmail) {
+    const user = await User.findById(userId).select('email');
+    userEmail = user?.email;
+  }
+
+  if (!userEmail) {
+    throw new Error('User email not found. Please log in again.');
+  }
+
+  const result = await DonationProfileServices.getUserStatsFromDB(userId, userEmail);
 
   return sendResponse({
     success: true,
@@ -45,13 +58,22 @@ const getMyCampaigns = async (req: NextRequest) => {
 // ৩. আমার ক্লেইম বা আবেদন (My Claims)
 const getMyClaims = async (req: NextRequest) => {
   await dbConnect();
-  
   const token = req.headers.get('authorization')?.split(' ')[1];
   if (!token) throw new Error('Unauthorized');
-  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
+  
+  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as any;
 
-  // ক্লেইম মডেলে userId নেই, তাই আমরা ইমেইল দিয়ে খুঁজব
-  const result = await DonationProfileServices.getUserClaimsFromDB(decoded.email);
+  // লগ দিয়ে চেক করুন ইমেইল আসছে কি না
+  console.log("Decoded Token:", decoded);
+
+  // যদি ইমেইল না থাকে, তবে ইউজার আইডি দিয়ে ইউজার ডাটাবেস থেকে ইমেইল বের করে নিতে পারেন
+  let userEmail = decoded.email;
+  if (!userEmail) {
+      const user = await User.findById(decoded.userId);
+      userEmail = user?.email;
+  }
+
+  const result = await DonationProfileServices.getUserClaimsFromDB(userEmail);
 
   return sendResponse({
     success: true,
