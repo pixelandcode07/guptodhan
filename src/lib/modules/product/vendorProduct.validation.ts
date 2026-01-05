@@ -51,7 +51,7 @@ export const createVendorProductValidationSchema = z.object({
   brand: z.string().optional(),
   productModel: z.string().optional(),
   flag: z.string().optional(),
-  warranty: z.string().min(1, { message: "Warranty is required." }),
+  warranty: z.string().optional(),
   weightUnit: z.string().optional(),
   offerDeadline: z
     .union([z.date(), z.string().transform((str) => new Date(str))])
