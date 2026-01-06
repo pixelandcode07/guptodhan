@@ -134,8 +134,8 @@ const opts: mongoose.ConnectOptions = {
     // ================================================================
     // Queue Management
     // ================================================================
-    waitQueueTimeoutMS: 5000, // ৩০ সেকেন্ড অনেক বেশি, ৫ সেকেন্ড করুন।
-    maxIdleTimeMS: 30000,     // কানেকশন অলস থাকলে ৩০ সেকেন্ড পর বন্ধ হবে।
+    waitQueueTimeoutMS: 5000, 
+    maxIdleTimeMS: 30000,
   };
 
   cached.promise = mongoose
