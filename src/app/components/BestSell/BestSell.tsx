@@ -13,7 +13,7 @@ export default async function BestSell() {
   const { topShoppage } = ecommerceBanners;
 
   return (
-    <section className="max-w-[95vw] xl:container mx-auto px-10 py-4">
+    <section className="max-w-[95vw] xl:container mx-auto px-2 md:px-8 py-4">
       {/* bg-gradient-to-b from-amber-50 to-white py-10 */}
       <PageHeader
         title="Best Selling"
@@ -31,7 +31,7 @@ export default async function BestSell() {
                 alt={topShoppage[0].bannerTitle || 'Flash Sale Banner'}
                 width={1400}
                 height={320}
-                className="w-full h-[300px] rounded-2xl object-cover"
+                className="w-full md:h-[200px] lg:h-[300px] rounded-2xl object-cover"
               />
             </div>
           </Link>

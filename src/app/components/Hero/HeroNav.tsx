@@ -47,8 +47,8 @@ export function HeroNav({ categories }: HeroNavProps) {
   const getVisibleCount = () => {
     if (screenWidth < 768) return 0;
     if (screenWidth < 1024) return 7;
-    if (screenWidth < 1440) return 3;
-    return 5;
+    if (screenWidth < 1440) return 2;
+    return 4;
   };
   const visibleCount = getVisibleCount();
   const visibleCategories = categories.slice(0, visibleCount);
@@ -87,7 +87,7 @@ export function HeroNav({ categories }: HeroNavProps) {
         animate={{ y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
-        <div className="max-w-[80vw] xl:container mx-auto px-8">
+        <div className="max-w-[90vw] xl:container mx-auto xl:px-8">
           <div className="flex justify-between items-center">
             {/* ---------- MAIN MENU ---------- */}
             <div className="flex items-center space-x-1 md:space-x-2 lg:space-x-4 xl:space-x-6">
@@ -194,8 +194,7 @@ export function HeroNav({ categories }: HeroNavProps) {
                     </AnimatePresence>
                   </div>
                 ))}
-
-              {/* ---------- MORE BUTTON ---------- */}
+              {/* ---------- MORE BUTTON ----------  */}
               {moreCategories.length > 0 && !isMobile && (
                 <div
                   className="relative hidden md:block"
@@ -231,15 +230,68 @@ export function HeroNav({ categories }: HeroNavProps) {
                         onMouseLeave={handleMouseLeave}
                       >
                         <div className="py-2">
-                          {moreCategories.map((main) => (
-                            <Link
-                              key={main.mainCategoryId}
-                              href={`/category/${main.slug}`}
-                              className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 hover:text-black font-medium transition-colors"
-                            >
-                              {main.name}
-                            </Link>
-                          ))}
+                          {moreCategories.map((main) => {
+                            // Check if main category has subcategories
+                            const hasSubs = main.subCategories && main.subCategories.length > 0;
+
+                            return (
+                              <div
+                                key={main.mainCategoryId}
+                                className="relative flex items-center group"
+                                onMouseEnter={() => hasSubs && handleSubEnter(main.mainCategoryId)}
+                                onMouseLeave={handleSubLeave}
+                              >
+                                <Link
+                                  href={`/category/${main.slug}`}
+                                  className="flex-1 block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 hover:text-black font-medium transition-colors"
+                                >
+                                  {main.name}
+                                </Link>
+
+                                {hasSubs && <ChevronRight className="mr-2 w-4 h-4 text-gray-600" />}
+
+                                {/* ---- Subcategories for 'More' items ---- */}
+                                <AnimatePresence>
+                                  {hasSubs && openSubDropdown === main.mainCategoryId && (
+                                    <motion.div
+                                      initial={{ opacity: 0, x: -10 }}
+                                      animate={{ opacity: 1, x: 0 }}
+                                      exit={{ opacity: 0, x: -10 }}
+                                      className="absolute left-full top-0 ml-1 w-56 bg-white rounded-md shadow-lg border z-50"
+                                    >
+                                      <div className="py-2">
+                                        {main.subCategories.map((sub) => (
+                                          <div key={sub.subCategoryId} className="group/child relative">
+                                            <Link
+                                              href={`/subcategory/${sub.slug}`}
+                                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 font-semibold"
+                                            >
+                                              {sub.name}
+                                            </Link>
+
+                                            {/* Children items (Third Level) */}
+                                            {sub.children && sub.children.length > 0 && (
+                                              <div className="pl-4 pb-2">
+                                                {sub.children.map((child) => (
+                                                  <Link
+                                                    key={child.childCategoryId}
+                                                    href={`/childcategory/${child.slug}`}
+                                                    className="block px-4 py-1 text-xs text-gray-500 hover:text-blue-600 transition-colors"
+                                                  >
+                                                    • {child.name}
+                                                  </Link>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            );
+                          })}
                         </div>
                       </motion.div>
                     )}
