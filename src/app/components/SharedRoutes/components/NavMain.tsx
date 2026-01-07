@@ -40,7 +40,7 @@ export default function NavMain() {
   return (
     <div>
       {/* Main Top Bar */}
-      <div className="bg-[#0097E9] md:bg-[#FFFFFF] text-black  flex justify-between items-center md:max-w-[95vw] xl:container sm:px-8 mx-auto py-4">
+      <div className="bg-[#0097E9] md:bg-[#FFFFFF] text-black  flex justify-between items-center md:max-w-[95vw] xl:container sm:px-8 mx-auto py-4" id="navbar">
         <div className="flex justify-between items-center gap-2">
           <div className="flex lg:block items-center">
             {/* Mobile Menu Toggle */}
@@ -277,7 +277,7 @@ export default function NavMain() {
 
                     {/* Contact Links */}
                     <DropdownMenuItem asChild>
-                      <Link href="tel:+88018XXXXXXXX" className="cursor-pointer flex items-center gap-3 py-2 text-blue-600">
+                      <Link href="tel:+8801816500600" className="cursor-pointer flex items-center gap-3 py-2 text-blue-600">
                         <PhoneCall size={18} />
                         <span className="font-bold">Call Us</span>
                       </Link>
@@ -285,7 +285,7 @@ export default function NavMain() {
 
                     <DropdownMenuItem asChild>
                       <Link
-                        href="https://wa.me/8801816500600"
+                        href="https://wa.me/8801816500600?text=Welcome%20,%20How%20can%20we%20help%20you?"
                         target="_blank"
                         className="cursor-pointer flex items-center gap-3 py-2 text-green-600"
                       >
