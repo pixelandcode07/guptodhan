@@ -18,7 +18,6 @@ function SkeletonSectionHeader() {
   );
 }
 
-export const dynamic = 'force-dynamic';
 
 export default function MainHomePage() {
   return (
