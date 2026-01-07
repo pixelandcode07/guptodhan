@@ -1,10 +1,5 @@
-// 'use client';
 
-
-import Footerbanner from "./components/Footerbanner";
 import FooterComplete from "./components/FooterComplete";
-import FooterFoot from "./components/FooterFoot";
-import FooterLinks from "./components/FooterLinks";
 import MobileFooter from "./components/MobileFooter";
 
 
@@ -21,10 +16,6 @@ export default function HomeFooter() {
 
       {/* Desktop Footer */}
       <div className=" hidden md:block ">
-        {/* container mx-auto */}
-        {/* <Footerbanner />
-        <FooterLinks />
-        <FooterFoot /> */}
         <FooterComplete />
       </div>
     </>

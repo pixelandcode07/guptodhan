@@ -39,14 +39,6 @@ export default function FooterComplete() {
                     </div>
 
                     <div className="flex w-full xl:w-auto justify-center">
-                        {/* <Input
-                            type="email"
-                            placeholder="Your E-mail Address"
-                            className="w-full px-4 py-3 text-sm border border-gray-200 rounded-l-md focus:outline-none focus:ring-1 focus:ring-[#00005E]"
-                        />
-                        <Button className="bg-[#00005E] text-white px-5 md:px-8 py-3 rounded-r-md font-bold flex items-center gap-2 hover:bg-blue-900 transition-colors uppercase text-xs md:text-sm whitespace-nowrap">
-                            Subscribe <SendHorizontal size={16} className="hidden sm:block" />
-                        </Button> */}
                         <div className="flex w-full max-w-sm items-center gap-2">
                             <Input type="email" placeholder="Email" />
                             <Button type="submit" variant="FooterSubscribeBtn">
