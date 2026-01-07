@@ -13,12 +13,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, ShieldCheck, BarChart3, Lock, Settings } from 'lucide-react';
-import Image from 'next/image';
 import { toast } from 'sonner';
 
 // Form validation schema
 const adminLoginSchema = z.object({
-    email: z.string().email('Please enter a valid admin email'),
+    identifier: z.string().email('Please enter a valid admin email'),
     password: z.string().min(1, 'Password is required'),
 });
 
@@ -41,19 +40,16 @@ export default function AdminLoginPage() {
         setIsLoading(true);
 
         try {
-            // Admin Login API Call
             const res = await axios.post('/api/v1/auth/admin-login', {
-                email: values.email.trim(),
+                identifier: values.identifier.trim(),
                 password: values.password,
             });
 
             const { accessToken, user } = res.data.data;
-
-            // NextAuth Credentials Provider e login kora
             const result = await signIn('credentials', {
                 redirect: false,
                 userId: user.id || user._id,
-                role: 'admin', // Explicitly setting role as admin
+                role: 'admin',
                 accessToken: accessToken,
                 name: user.name,
                 email: user.email,
@@ -70,10 +66,10 @@ export default function AdminLoginPage() {
             toast.success('Access Granted', {
                 description: 'Welcome to the Admin Control Center.',
             });
-            
+
             // Admin Dashboard e redirect kora
             router.push('/general/home');
-            
+
         } catch (err: any) {
             const message = err.response?.data?.message || 'Unauthorized access attempt.';
             toast.error('Login Failed', { description: message });
@@ -143,12 +139,12 @@ export default function AdminLoginPage() {
                                             id="email"
                                             type="email"
                                             placeholder="admin@platform.com"
-                                            {...register('email')}
+                                            {...register('identifier')}
                                             disabled={isLoading || isSubmitting}
                                             className="h-11 border-slate-200 focus:ring-red-500"
                                         />
-                                        {errors.email && (
-                                            <p className="text-red-500 text-xs font-medium">{errors.email.message}</p>
+                                        {errors.identifier && (
+                                            <p className="text-red-500 text-xs font-medium">{errors.identifier.message}</p>
                                         )}
                                     </div>
 
