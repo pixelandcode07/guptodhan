@@ -96,43 +96,46 @@ async function dbConnect(): Promise<mongoose.Connection> {
   // ✅ Step 3: নতুন connection তৈরি করো
   console.log('⏳ [DB] Initiating new MongoDB connection...');
 
-  const opts: mongoose.ConnectOptions = {
+const opts: mongoose.ConnectOptions = {
     // ================================================================
-    // Connection Pool Settings
+    // Serverless & Free Tier Optimization (Vercel + Atlas M0)
     // ================================================================
-    maxPoolSize: NODE_ENV === 'production' ? 10 : 5,
-    minPoolSize: NODE_ENV === 'production' ? 2 : 1,
+    
+    // ❌ ১০ কমিয়ে ১ করুন। সার্ভারলেস ফাংশনে প্রতিটি ইনস্ট্যান্স ১টি কানেকশন নিলেই যথেষ্ট। 
+    // এটি আপনার ৫০০ কানেকশন লিমিট শেষ হওয়া আটকাবে।
+    maxPoolSize: 1, 
+    
+    // ❌ ২ কমিয়ে ০ করুন। কাজ শেষ হলে কানেকশন যেন পুরোপুরি বন্ধ হতে পারে।
+    minPoolSize: 0, 
+
+    // ❌ Serverless এ এটি false রাখা বাধ্যতামূলক। 
+    // ট্রু থাকলে কানেকশন না পেলেও কুয়েরি জমে থাকে এবং Vercel CPU বার্ন করে।
+    bufferCommands: false, 
+
+    // ================================================================
+    // Timeout Settings (Vercel এর ১০ সেকেন্ড লিমিট মাথায় রেখে)
+    // ================================================================
+    
+    // ৫ সেকেন্ডের মধ্যে কানেকশন না পেলে এরর দেবে, এতে ফাংশন ঝুলে থাকবে না।
+    serverSelectionTimeoutMS: 5000, 
+    connectTimeoutMS: 10000, 
+    socketTimeoutMS: 45000, 
+    family: 4, // IPv4 prefer করা ভালো
     
     // ================================================================
-    // Socket/Timeout Settings (Free tier MongoDB Atlas এর জন্য)
-    // ================================================================
-    socketTimeoutMS: 60000, // 60 seconds - Free tier slow connection handle করবে
-    serverSelectionTimeoutMS: 15000, // 15 seconds
-    connectTimeoutMS: 45000, // 45 seconds
-    family: 4, // IPv4 prefer করো
-    
-    // ================================================================
-    // Buffer Commands
-    // ================================================================
-    bufferCommands: true, // Serverless environment এর জন্য
-    
-    // ================================================================
-    // Retry Settings (TLS handshake fail হলে auto retry করবে)
+    // Retry & Security Settings
     // ================================================================
     retryWrites: true,
     retryReads: true,
     
-    // ================================================================
-    // SSL/TLS Settings - এটাই CRITICAL for free tier!
-    // ================================================================
     tls: true,
-    tlsAllowInvalidCertificates: true, // Free tier এর জন্য
+    tlsAllowInvalidCertificates: true, // Free tier হ্যান্ডশেক এরর এড়াতে সাহায্য করে
     
     // ================================================================
-    // Pool Configuration
+    // Queue Management
     // ================================================================
-    waitQueueTimeoutMS: 30000,
-    maxIdleTimeMS: 60000,
+    waitQueueTimeoutMS: 5000, 
+    maxIdleTimeMS: 30000,
   };
 
   cached.promise = mongoose

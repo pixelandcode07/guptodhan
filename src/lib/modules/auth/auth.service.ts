@@ -262,22 +262,22 @@ const changePassword = async (userId: string, payload: TChangePassword) => {
 };
 
 const setPasswordForSocialLogin = async (userId: string, newPassword: string) => {
-
-  const user = await User.findById(userId);
+  // এখানে .select('+password') যোগ করা হয়েছে
+  const user = await User.findById(userId).select('+password');
 
   if (!user) {
     throw new Error('User not found!');
   }
 
-
+  // এখন এই চেকটি কাজ করবে
   if (user.password) {
     throw new Error('This account already has a password. Please use the "Change Password" feature instead.');
   }
 
-
+  // নতুন পাসওয়ার্ড সেট করা
   user.password = newPassword;
 
-
+  // সেভ করার সময় এখন pre-save হুকটি ট্রিগার হবে
   await user.save();
 
   return null;
@@ -411,19 +411,20 @@ const vendorSendRegistrationOtp = async (email: string) => {
 };
 
 // registerVendor ফাংশনটি আপডেট করুন (OTP ভেরিফিকেশন সহ)
-const registerVendor = async (payload: any, otp: string) => {
+const registerVendor = async (payload: any, otp: string, isByAdmin = false) => {
   await connectRedis();
   const { email, name, password, phoneNumber, address, businessCategory, ...vendorData } = payload;
 
-  // ১. OTP চেক করা
-  const redisKey = `registration-otp:${email}`;
-  const storedOtp = await redisClient.get(redisKey);
+  // ১. OTP চেক করা (যদি অ্যাডমিন না হয় তবেই চেক করবে)
+  if (!isByAdmin) {
+    const redisKey = `registration-otp:${email}`;
+    const storedOtp = await redisClient.get(redisKey);
 
-  if (!storedOtp || storedOtp !== otp) {
-    throw new Error('Invalid or expired OTP.');
+    if (!storedOtp || storedOtp !== otp) {
+      throw new Error('Invalid or expired OTP.');
+    }
   }
 
-  // ২. ট্রানজেকশন শুরু করা
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
@@ -434,8 +435,9 @@ const registerVendor = async (payload: any, otp: string) => {
       password,
       phoneNumber,
       address,
-      role: 'vendor', // সরাসরি ভেন্ডর রোল
-      isActive: false, // এডমিন এপ্রুভাল এর জন্য পেন্ডিং থাকবে
+      role: 'vendor',
+      // অ্যাডমিন ক্রিয়েট করলে সরাসরি active করে দিতে পারেন, নতুবা false রাখতে পারেন
+      isActive: isByAdmin ? true : false, 
     }], { session }))[0];
 
     const newVendor = (await Vendor.create([{
@@ -449,8 +451,11 @@ const registerVendor = async (payload: any, otp: string) => {
 
     await session.commitTransaction();
     
-    // রেজিস্ট্রেশন সফল হলে OTP ডিলিট করে দেয়া
-    await redisClient.del(redisKey);
+    // OTP ডিলিট করা (যদি ইউজার নিজে করে)
+    if (!isByAdmin) {
+      const redisKey = `registration-otp:${email}`;
+      await redisClient.del(redisKey);
+    }
     
     return newUser;
   } catch (error) {
@@ -459,7 +464,7 @@ const registerVendor = async (payload: any, otp: string) => {
   } finally {
     session.endSession();
   }
-};
+}
 
 
 

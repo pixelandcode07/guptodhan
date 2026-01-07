@@ -7,14 +7,39 @@ import { imageFade } from './constants';
 import { Product } from './types';
 import { ZoomIn } from 'lucide-react';
 
-export default function ProductImageGallery({ product, selectedColor = '', selectedSize = '' }: any) {
+interface ProductImageGalleryProps {
+  product: any;
+  selectedColor?: string;
+  selectedSize?: string;
+  onColorChange?: (color: string) => void;
+  onSizeChange?: (size: string) => void;
+}
+
+export default function ProductImageGallery({ product, selectedColor = '', selectedSize = '', onColorChange, onSizeChange }: ProductImageGalleryProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [currentImages, setCurrentImages] = useState<string[]>([]);
+  const [imageVariantMap, setImageVariantMap] = useState<Map<string, { color: string; size: string }>>(new Map());
   const [isZoomed, setIsZoomed] = useState(false);
 
   useEffect(() => {
     let newImages: string[] = [];
+    const variantMap = new Map<string, { color: string; size: string }>();
     const defaultImages = [product.thumbnailImage, ...(product.photoGallery || [])].filter(Boolean);
+
+    if (product.productOptions && product.productOptions.length > 0) {
+      product.productOptions.forEach((option: any) => {
+        if (option.productImage) {
+          const optionColor = Array.isArray(option.color) ? option.color[0] : option.color;
+          const optionSize = Array.isArray(option.size) ? option.size[0] : option.size;
+          variantMap.set(option.productImage, {
+            color: optionColor || '',
+            size: optionSize || ''
+          });
+        }
+      });
+    }
+
+    setImageVariantMap(variantMap);
 
     if (selectedColor && product.productOptions) {
       const matchedVariant = product.productOptions.find((option: any) => {
@@ -35,6 +60,20 @@ export default function ProductImageGallery({ product, selectedColor = '', selec
     setCurrentImages(Array.from(new Set(newImages)));
     setSelectedImageIndex(0);
   }, [selectedColor, selectedSize, product]);
+
+  const handleImageClick = (img: string, index: number) => {
+    setSelectedImageIndex(index);
+    
+    const variant = imageVariantMap.get(img);
+    if (variant && (variant.color || variant.size)) {
+      if (variant.color && onColorChange) {
+        onColorChange(variant.color);
+      }
+      if (variant.size && onSizeChange) {
+        onSizeChange(variant.size);
+      }
+    }
+  };
 
   const mainImage = currentImages[selectedImageIndex] || product.thumbnailImage;
 
@@ -61,7 +100,7 @@ export default function ProductImageGallery({ product, selectedColor = '', selec
       <div className="mt-4 flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300">
         {currentImages.map((img, idx) => (
           <div 
-            key={idx} onClick={() => setSelectedImageIndex(idx)}
+            key={idx} onClick={() => handleImageClick(img, idx)}
             className={`relative w-16 h-16 rounded-lg cursor-pointer flex-shrink-0 border-2 transition-all ${selectedImageIndex === idx ? 'border-blue-500 shadow-md' : 'border-gray-200'}`}
           >
             <Image src={img} alt="thumb" fill className="object-cover rounded-lg" />

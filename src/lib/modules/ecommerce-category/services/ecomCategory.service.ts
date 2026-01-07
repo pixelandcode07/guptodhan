@@ -110,49 +110,65 @@ const deleteCategoryFromDB = async (id: string) => {
 };
 
 export const getAllSubCategoriesWithChildren = async () => {
-  // Get all main categories
-  const mainCategories = await CategoryModel.find({ isNavbar: true }).sort({
-    orderCount: 1,
-  });
+  // ১. সব মডেল একবার টাচ করা যাতে রেজিস্টার হয়
+  const _ensureModels = [CategoryModel, SubCategoryModel, ChildCategoryModel];
 
-  // Map each main category
-  const result = await Promise.all(
-    mainCategories.map(async (main) => {
-      // Get all subcategories for this main category
-      const subCategories: ISubCategory[] = await SubCategoryModel.find({
-        category: new Types.ObjectId(main._id),
-      }).sort({ orderCount: 1 });
+  // ২. শুধুমাত্র navbar-এ দেখানোর জন্য মেইন ক্যাটাগরিগুলো একবারে আনুন
+  const mainCategories = await CategoryModel.find({ isNavbar: true })
+    .sort({ orderCount: 1 })
+    .lean();
 
-      // Map each subcategory to include its children
-      const subWithChildren = await Promise.all(
-        subCategories.map(async (sub) => {
-          const childCategories: IChildCategory[] =
-            await ChildCategoryModel.find({
-              subCategory: sub._id,
-            }).sort({ name: 1 });
+  if (!mainCategories || mainCategories.length === 0) return [];
 
-          return {
-            subCategoryId: sub.subCategoryId,
-            name: sub.name,
-            slug: sub.slug, // ✅ Added slug
-            children: childCategories.map((child) => ({
-              childCategoryId: child.childCategoryId,
-              name: child.name,
-              slug: child.slug, // ✅ Added slug
-            })),
-          };
-        })
+  const mainIds = mainCategories.map(cat => cat._id);
+
+  // ৩. এই সব মেইন ক্যাটাগরির আন্ডারে যত সাব-ক্যাটাগরি আছে সব একবারে নিয়ে আসুন (১টি কুয়েরি)
+  const allSubCategories = await SubCategoryModel.find({
+    category: { $in: mainIds },
+    status: 'active'
+  }).lean();
+
+  const subIds = allSubCategories.map(sub => sub._id);
+
+  // ৪. এই সব সাব-ক্যাটাগরির আন্ডারে যত চাইল্ড ক্যাটাগরি আছে সব একবারে নিয়ে আসুন (১টি কুয়েরি)
+  const allChildCategories = await ChildCategoryModel.find({
+    subCategory: { $in: subIds },
+    status: 'active'
+  }).lean();
+
+  // ৫. এখন জাভাস্ক্রিপ্ট দিয়ে ডাটাগুলো ফরম্যাট করুন (এতে ডাটাবেসের ওপর চাপ পড়বে না)
+  const result = mainCategories.map((main: any) => {
+    // এই মেইনের সাবগুলো ফিল্টার করুন
+    const subCategoriesOfThisMain = allSubCategories.filter(
+      (sub: any) => sub.category.toString() === main._id.toString()
+    );
+
+    const subWithChildren = subCategoriesOfThisMain.map((sub: any) => {
+      // এই সাবের চাইল্ডগুলো ফিল্টার করুন
+      const childrenOfThisSub = allChildCategories.filter(
+        (child: any) => child.subCategory.toString() === sub._id.toString()
       );
 
       return {
-        mainCategoryId: main._id,
-        name: main.name,
-        categoryIcon: main.categoryIcon,
-        slug: main.slug, // ✅ Added slug
-        subCategories: subWithChildren,
+        subCategoryId: sub.subCategoryId,
+        name: sub.name,
+        slug: sub.slug,
+        children: childrenOfThisSub.map((child: any) => ({
+          childCategoryId: child.childCategoryId,
+          name: child.name,
+          slug: child.slug,
+        })),
       };
-    })
-  );
+    });
+
+    return {
+      mainCategoryId: main._id.toString(),
+      name: main.name,
+      categoryIcon: main.categoryIcon,
+      slug: main.slug,
+      subCategories: subWithChildren,
+    };
+  });
 
   return result;
 };

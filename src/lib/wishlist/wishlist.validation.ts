@@ -6,6 +6,8 @@ export const createWishlistValidationSchema = z.object({
   userEmail: z.string().email({ message: 'Valid email is required.' }),
   userID: z.string({ required_error: 'User ID is required.' }),
   productID: z.string({ required_error: 'Product ID is required.' }),
+  color: z.string().optional(),
+  size: z.string().optional(),
 });
 
 // Update wishlist validation

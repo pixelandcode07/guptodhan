@@ -264,6 +264,12 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                     const sizeNameToIdMap = new Map<string, string>(
                         initialData?.variantOptions?.sizes?.map((s: any) => [s.name, s._id]) || []
                     );
+                    const storageNameToIdMap = new Map<string, string>(
+                        initialData?.variantOptions?.storageTypes?.map((s: any) => {
+                            const storageName = s.ram && s.rom ? `${s.ram} / ${s.rom}` : s.name || s._id;
+                            return [storageName, s._id];
+                        }) || []
+                    );
 
                     const getFirstValue = (val: any) => Array.isArray(val) ? val[0] : val;
                     const getNameToId = (name: string, map: Map<string, string>) => map.get(name) || name;
@@ -274,7 +280,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                         imageUrl: opt.productImage || '',
                         color: opt.color ? getNameToId(getFirstValue(opt.color), colorNameToIdMap) : '',
                         size: opt.size ? getNameToId(getFirstValue(opt.size), sizeNameToIdMap) : '',
-                        storage: opt.storage || '',
+                        storage: opt.storage ? getNameToId(opt.storage, storageNameToIdMap) : '',
                         simType: opt.simType || '',
                         condition: opt.condition || '',
                         warranty: opt.warranty || '',
@@ -432,7 +438,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 brand: brand || undefined,
                 productModel: model || undefined,
                 flag: flag || undefined,
-                warranty: warranty,
+                warranty: warranty || undefined,
                 weightUnit: unit || undefined,
                 offerDeadline: offerEndTime ? new Date(offerEndTime) : undefined,
                 metaTitle: metaTitle || undefined,
@@ -871,11 +877,11 @@ export default function ProductForm({ initialData, productId: propProductId }: a
 
                                 <div className="space-y-2">
                                     <Label htmlFor="warranty" className="text-sm font-medium text-gray-700">
-                                        Warranty
+                                        Warranty <span className="text-xs text-gray-500 font-normal">(Optional)</span>
                                     </Label>
-                                    <Select value={warranty} onValueChange={setWarranty}>
+                                    <Select value={warranty || undefined} onValueChange={setWarranty}>
                                         <SelectTrigger id="warranty" className="h-11 w-full">
-                                            <SelectValue placeholder="Select warranty" />
+                                            <SelectValue placeholder="Select warranty (optional)" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {initialData?.warranties?.map((w: any) => (

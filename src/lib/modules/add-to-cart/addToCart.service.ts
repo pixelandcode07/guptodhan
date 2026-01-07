@@ -1,18 +1,30 @@
 import { ICart } from "./addToCart.interface";
 import { CartModel } from "./addToCart.model";
 import { Types } from "mongoose";
-import { v4 as uuidv4 } from "uuid";
 
 const addToCartInDB = async (payload: Partial<ICart>) => {
-  // Check if product already exists
-  const existingItem = await CartModel.findOne({
+  // Build query to check if exact same product variant already exists
+  // Different variants (different color/size) should be separate cart items
+  const query: Record<string, unknown> = {
     userID: new Types.ObjectId(payload.userID),
     productID: new Types.ObjectId(payload.productID),
-  });
+  };
+  
+  // Include color and size in the query to differentiate variants
+  // This ensures different variants are treated as separate cart items
+  if (payload.color !== undefined) {
+    query.color = payload.color || null;
+  }
+  if (payload.size !== undefined) {
+    query.size = payload.size || null;
+  }
+
+  // Check if exact same product variant already exists
+  const existingItem = await CartModel.findOne(query);
 
   if (existingItem) {
     existingItem.quantity += payload.quantity || 1;
-    existingItem.totalPrice = existingItem.quantity * existingItem.unitPrice;
+    existingItem.totalPrice = existingItem.quantity * (existingItem.unitPrice || 0);
     return await existingItem.save();
   }
 
@@ -36,8 +48,8 @@ const addToCartInDB = async (payload: Partial<ICart>) => {
     productName: payload.productName,
     productImage: payload.productImage,
     quantity: payload.quantity || 1,
-    unitPrice: payload.unitPrice,
-    totalPrice: (payload.quantity || 1) * payload.unitPrice,
+    unitPrice: payload.unitPrice || 0,
+    totalPrice: (payload.quantity || 1) * (payload.unitPrice || 0),
   });
 
   return newItem;
