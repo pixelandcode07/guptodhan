@@ -25,7 +25,7 @@ export default function HomeNavbar() {
     return (
         // <div className='container mx-auto'>
         <div className=''>
-            <NavHead />
+            {/* <NavHead /> */}
             {isBuyAndSell ? <BuySellNavMain /> : isDonation ? <DonationNavMain /> : isService ? <ServiceNavMain /> : <NavMain />}
         </div>
     )

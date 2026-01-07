@@ -104,19 +104,19 @@ export default async function HeroFooter() {
       {/* Mobile Version - unchanged */}
       <div className="lg:hidden flex justify-center items-center gap-3 py-3 px-4 bg-white rounded-md overflow-x-auto">
         <Link href={'/home/buyandsell'}>
-          <Button variant={'HomeBuy'} size={'lg'} className="rounded-lg min-w-[120px]">
+          <Button variant={'HomeBuy'} size={'lg'} className="rounded-lg md:min-w-[120px]">
             <House size={28} className="hidden md:block" />
             <span className="text-sm font-medium">Buy & Sale</span>
           </Button>
         </Link>
         <Link href={'/home/donation'}>
-          <Button variant={'HomeDoante'} size={'lg'} className="rounded-lg min-w-[120px]">
+          <Button variant={'HomeDoante'} size={'lg'} className="rounded-lg md:min-w-[120px]">
             <HandCoins size={28} className="hidden md:block" />
             <span className="text-sm font-medium">Donation</span>
           </Button>
         </Link>
         <Link href={'/home/service'}>
-          <Button variant={'HomeServices'} size={'lg'} className="rounded-lg min-w-[120px]">
+          <Button variant={'HomeServices'} size={'lg'} className="rounded-lg md:min-w-[120px]">
             <HeartHandshake size={28} className="hidden md:block" />
             <span className="text-sm font-medium">Services</span>
           </Button>
