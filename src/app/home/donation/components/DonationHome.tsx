@@ -46,37 +46,27 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
     const [selectedItem, setSelectedItem] = useState<{ id: string, title: string, image: string, type: string } | undefined>(undefined)
     const [loading, setLoading] = useState(false)
 
-    // ✅ Fetch শুধুমাত্র approved AND active campaigns
+    // ✅ Fetch only approved AND active campaigns
     const refreshCampaigns = async () => {
         try {
             setLoading(true)
             const response = await fetch('/api/v1/public/donation-campaigns');
             const result = await response.json();
             
-            console.log('📊 API Response:', result);
-            
             if (result.success && result.data) {
-                // ✅ Filter: শুধু approved AND active campaigns
+                // Filter: শুধু approved AND active campaigns
                 const activeCampaigns = result.data.filter((camp: DonationCampaign) => 
                     camp.moderationStatus === 'approved' && camp.status === 'active'
                 );
-                
-                console.log('✅ Active Campaigns Count:', activeCampaigns.length);
-                console.log('📋 Filtered Campaigns:', activeCampaigns);
-                
                 setCampaigns(activeCampaigns);
                 
                 if (activeCampaigns.length === 0) {
-                    toast.info('এই মুহূর্তে কোনো সক্রিয় দান ক্যাম্পেইন নেই');
+                    toast.info('No active donation campaigns available at the moment');
                 }
-            } else {
-                toast.error('ক্যাম্পেইন লোড করতে ব্যর্থ');
-                setCampaigns([]);
             }
         } catch (err) {
             console.error('Failed to refresh campaigns:', err);
-            toast.error('ক্যাম্পেইন লোড করতে ব্যর্থ হয়েছে');
-            setCampaigns([]);
+            toast.error('Failed to load campaigns');
         } finally {
             setLoading(false)
         }
@@ -100,18 +90,18 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
             <section id='browse-items' className='mt-6 px-4'>
                 <div className='flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-white p-4 rounded-lg shadow-sm border'>
                     <div>
-                        <h2 className='text-2xl font-bold text-gray-800'>সক্রিয় দান ব্রাউজ করুন</h2>
+                        <h2 className='text-2xl font-bold text-gray-800'>Browse Active Donations</h2>
                         <p className='text-sm text-gray-500 mt-1'>
-                            {campaigns.length} সক্রিয় {campaigns.length === 1 ? 'ক্যাম্পেইন' : 'ক্যাম্পেইন'} উপলব্ধ
+                            {campaigns.length} active {campaigns.length === 1 ? 'campaign' : 'campaigns'} available
                         </p>
                     </div>
                     <div className='flex items-center gap-3 w-full sm:w-auto'>
                         <Select value={category} onValueChange={setCategory}>
                             <SelectTrigger className="w-full sm:w-[200px]">
-                                <SelectValue placeholder="ক্যাটাগরি দ্বারা ফিল্টার করুন" />
+                                <SelectValue placeholder="Filter by Category" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value='all'>সব ক্যাটাগরি</SelectItem>
+                                <SelectItem value='all'>All Categories</SelectItem>
                                 {initialCategories.map(cat => (
                                     <SelectItem key={cat._id} value={cat._id}>
                                         {cat.name}
@@ -124,7 +114,7 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                             size="icon"
                             onClick={refreshCampaigns}
                             disabled={loading}
-                            title="ক্যাম্পেইন রিফ্রেশ করুন"
+                            title="Refresh campaigns"
                         >
                             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
                         </Button>
@@ -134,18 +124,18 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                 {loading ? (
                     <div className='flex flex-col justify-center items-center py-20 bg-white rounded-xl border border-dashed border-gray-300'>
                         <RefreshCw className="animate-spin text-blue-600 mb-3" size={48} />
-                        <p className='text-lg font-medium text-gray-600'>ক্যাম্পেইন লোড করছি...</p>
+                        <p className='text-lg font-medium text-gray-600'>Loading campaigns...</p>
                     </div>
                 ) : filteredItems.length === 0 ? (
                     <div className='flex flex-col justify-center items-center py-20 bg-white rounded-xl border border-dashed border-gray-300'>
                         <div className="bg-gray-100 p-4 rounded-full mb-3">
                             <Package className="text-gray-400" size={48} />
                         </div>
-                        <p className='text-lg font-medium text-gray-600 mb-1'>কোনো সক্রিয় দান ক্যাম্পেইন পাওয়া যায়নি</p>
+                        <p className='text-lg font-medium text-gray-600 mb-1'>No active donation campaigns found</p>
                         <p className='text-sm text-gray-500'>
                             {category !== 'all' 
-                                ? 'একটি ভিন্ন ক্যাটাগরি নির্বাচন করার চেষ্টা করুন' 
-                                : 'অনুমোদনের পর নতুন ক্যাম্পেইন এখানে প্রদর্শিত হবে'}
+                                ? 'Try selecting a different category' 
+                                : 'New campaigns will appear here once approved'}
                         </p>
                     </div>
                 ) : (
@@ -177,7 +167,7 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                             )}
                                             {isOwner && (
                                                 <div className="absolute top-3 left-3 z-10">
-                                                    <Badge className="bg-blue-600 text-white shadow-sm">আমার পোস্ট</Badge>
+                                                    <Badge className="bg-blue-600 text-white shadow-sm">My Post</Badge>
                                                 </div>
                                             )}
                                             
@@ -185,7 +175,7 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                             {camp.goalAmount && camp.goalAmount > 0 && (
                                                 <div className="absolute bottom-3 left-3 z-10">
                                                     <Badge className={`${progress >= 100 ? 'bg-green-600' : 'bg-blue-600'} text-white shadow-sm font-bold`}>
-                                                        {progress}% সংগৃহীত
+                                                        {progress}% Raised
                                                     </Badge>
                                                 </div>
                                             )}
@@ -201,15 +191,15 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                             
                                             {/* Description */}
                                             <p className='text-sm text-gray-500 line-clamp-2 mb-3 flex-grow'>
-                                                {camp.description?.replace(/<[^>]*>/g, '') || 'কোনো বর্ণনা পাওয়া যায়নি।'}
+                                                {camp.description?.replace(/<[^>]*>/g, '') || 'No description available.'}
                                             </p>
                                             
                                             {/* Progress bar (if money campaign) */}
                                             {camp.item === 'money' && camp.goalAmount && camp.goalAmount > 0 && (
                                                 <div className="mb-3">
                                                     <div className="flex justify-between text-xs text-gray-600 mb-1">
-                                                        <span>৳{(camp.raisedAmount || 0).toLocaleString('bn-BD')}</span>
-                                                        <span>৳{camp.goalAmount.toLocaleString('bn-BD')}</span>
+                                                        <span>৳{(camp.raisedAmount || 0).toLocaleString()}</span>
+                                                        <span>৳{camp.goalAmount.toLocaleString()}</span>
                                                     </div>
                                                     <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                                                         <div 
@@ -226,7 +216,7 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                                     className='w-full bg-gray-100 text-gray-400 cursor-not-allowed hover:bg-gray-100 mt-auto'
                                                     disabled
                                                 >
-                                                    আপনি দাতা
+                                                    You are the donor
                                                 </Button>
                                             ) : (
                                                 <Button
@@ -241,7 +231,7 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                                         setClaimOpen(true); 
                                                     }}
                                                 >
-                                                    {camp.item === 'money' ? 'তহবিল অনুরোধ করুন' : 'আইটেম অনুরোধ করুন'}
+                                                    {camp.item === 'money' ? 'Request Fund' : 'Request Item'}
                                                 </Button>
                                             )}
                                         </div>
@@ -256,7 +246,7 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                     onClick={() => setDisplayCount(prev => prev + 8)} 
                                     className='px-8'
                                 >
-                                    আরও লোড করুন ({filteredItems.length - displayCount} অবশিষ্ট)
+                                    Load More ({filteredItems.length - displayCount} remaining)
                                 </Button>
                             </div>
                         )}

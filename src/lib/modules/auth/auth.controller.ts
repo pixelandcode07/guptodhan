@@ -19,6 +19,8 @@ import {
   registerServiceProviderValidationSchema,
   googleLoginValidationSchema,
 } from './auth.validation';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 // --- User Login ---
 const loginUser = async (req: NextRequest) => {
@@ -282,30 +284,39 @@ const vendorSendRegistrationOtp = async (req: NextRequest) => {
 const registerVendor = async (req: NextRequest) => {
   await dbConnect();
 
+  // ১. সেশন থেকে চেক করা ইউজার অ্যাডমিন কি না
+  const session = await getServerSession(authOptions);
+  
+  // সেশন না থাকলে বা ইউজার অ্যাডমিন না হলে এটি false হবে
+  const isByAdmin = session?.user?.role === 'admin';
+
   const formData = await req.formData();
 
-  // ১. OTP এবং ইমেইল চেক করা
+  // ২. OTP এবং ইমেইল রিসিভ করা
   const otp = formData.get('otp') as string;
   const email = formData.get('email') as string;
 
-  if (!otp || otp.length !== 6) {
-    throw new Error('Valid 6-digit OTP is required to complete registration.');
+  // ৩. অ্যাডমিন না হলে এবং OTP না থাকলে এরর থ্রো করবে
+  if (!isByAdmin) {
+    if (!otp || otp.length !== 6) {
+      throw new Error('Valid 6-digit OTP is required for manual registration.');
+    }
   }
 
-  // ২. ফাইল রিসিভ করা
+  // ৪. ফাইল রিসিভ করা
   const ownerNidFile = formData.get('ownerNid') as File | null;
   const tradeLicenseFile = formData.get('tradeLicense') as File | null;
 
   if (!ownerNidFile) throw new Error('Owner NID image is required.');
   if (!tradeLicenseFile) throw new Error('Trade License image is required.');
 
-  // ৩. ক্লাউডিনারিতে আপলোড (একসাথে দুটি ফাইল আপলোড হচ্ছে)
+  // ৫. ক্লাউডিনারিতে আপলোড
   const [ownerNidUploadResult, tradeLicenseUploadResult] = await Promise.all([
     uploadToCloudinary(Buffer.from(await ownerNidFile.arrayBuffer()), 'vendor-documents'),
     uploadToCloudinary(Buffer.from(await tradeLicenseFile.arrayBuffer()), 'vendor-documents'),
   ]);
 
-  // ৪. সার্ভিসকে পাঠানোর জন্য পেলোড তৈরি
+  // ৬. সার্ভিস পেলোড তৈরি
   const payload: any = {
     name: formData.get('name') as string,
     email: email,
@@ -323,17 +334,19 @@ const registerVendor = async (req: NextRequest) => {
     ownerNidUrl: ownerNidUploadResult.secure_url,
     tradeLicenseUrl: tradeLicenseUploadResult.secure_url,
 
-    status: 'pending',
+    // অ্যাডমিন করলে সরাসরি approved, ইউজার করলে pending
+    status: isByAdmin ? 'approved' : 'pending',
   };
 
-  // ৫. সার্ভিস কল (এখানে OTP পাঠিয়ে ভেরিফাই করানো হবে)
-  // registerVendor(payload, otp) - সার্ভিস ফাংশনটি এভাবে আপডেট থাকতে হবে
-  const result = await AuthServices.registerVendor(payload, otp);
+  // ৭. সার্ভিস কল (৩টি প্যারামিটার: payload, otp, isByAdmin)
+  const result = await AuthServices.registerVendor(payload, otp, isByAdmin);
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.CREATED,
-    message: 'Vendor registered successfully! Admin will review your profile.',
+    message: isByAdmin 
+      ? 'Vendor account created successfully by Admin!' 
+      : 'Registration successful! Waiting for approval.',
     data: result,
   });
 };
