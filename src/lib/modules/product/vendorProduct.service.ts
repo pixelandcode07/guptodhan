@@ -6,6 +6,8 @@ import { ProductQAModel } from "../product-qna/productQNA.model";
 import { StoreModel } from "../vendor-store/vendorStore.model";
 import { ProductColor } from "../product-config/models/productColor.model";
 import { ProductSize } from "../product-config/models/productSize.model";
+import { UserModel } from "@/lib/models-index"; // Import UserModel from
+import { Types } from 'mongoose';
 
 // ✅ SINGLE DEFINITION - No duplicate functions
 const populateColorAndSizeNamesForProducts = async (products: any[]) => {
@@ -705,6 +707,7 @@ const getVendorStoreAndProductsFromDB = async (
   const store = await StoreModel.findOne({
     _id: id,
   });
+  console.log("User found:", user);
 
   if (!store) {
     throw new Error("Store not found for this vendor.");

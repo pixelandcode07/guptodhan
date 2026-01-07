@@ -24,6 +24,7 @@ const getUserDetailsFromToken = (req: NextRequest) => {
   const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as {
     userId: string;
     role: string;
+    profilePicture:string;
   };
   return { userId: decoded.userId, role: decoded.role };
 };
