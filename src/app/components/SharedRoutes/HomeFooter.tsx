@@ -14,7 +14,7 @@ export default function HomeFooter() {
         <MobileFooter />
       </div>
 
-      {/* Desktop Footer */}
+      {/* Desktop Foot */}
       <div className=" hidden md:block ">
         <FooterComplete />
       </div>
