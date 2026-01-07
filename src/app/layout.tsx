@@ -8,6 +8,7 @@ import { Toaster } from '@/components/ui/sonner';
 import Script from 'next/script';
 import PathnameDetector from '@/Providers/PathnameDetector';
 import { AuthProvider } from '@/contexts/AuthContext';
+import MessageIcon from './components/MessageIcon';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({
@@ -360,6 +361,9 @@ fbq('track', 'PageView');`,
           {/* ✅ AuthProvider wraps children - ADD THIS */}
           <AuthProvider>
             <PathnameDetector>
+              <div className="fixed bottom-6 right-6 z-9999">
+                <MessageIcon />
+              </div>
               {children}
               <Script
                 src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
