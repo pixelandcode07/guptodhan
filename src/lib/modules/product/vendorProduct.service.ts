@@ -707,7 +707,6 @@ const getVendorStoreAndProductsFromDB = async (
   const store = await StoreModel.findOne({
     _id: id,
   });
-  console.log("User found:", user);
 
   if (!store) {
     throw new Error("Store not found for this vendor.");
