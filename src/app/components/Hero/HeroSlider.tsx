@@ -67,7 +67,7 @@ export default function HeroSlider({ sliders }: HeroSliderProps) {
 
   // Aspect ratio: 1226/632 ≈ 1.94 (nearly 2:1)
   return (
-    <div className="relative w-full aspect-[1226/632] overflow-hidden rounded-lg group bg-gray-100">
+    <div className="relative w-full h-[400px] aspect-[1226/632] overflow-hidden rounded-lg group bg-gray-100">
       {/* ---- Slider Image ---- */}
       <AnimatePresence initial={false} custom={direction}>
         <motion.div
@@ -93,7 +93,7 @@ export default function HeroSlider({ sliders }: HeroSliderProps) {
         >
           <Link
             href={current.buttonLink || '#'}
-            className="block w-full h-full relative"
+            className="block w-full h-[400px] relative"
           >
             <Image
               src={current.image}
