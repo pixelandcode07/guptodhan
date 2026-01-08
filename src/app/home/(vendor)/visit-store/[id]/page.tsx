@@ -18,7 +18,7 @@ export default async function VisitStore({ params }: { params: { id: string } })
 
     return (
         <div className='container mx-auto '>
-            <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pt-10 ">
+            <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 py-10 ">
                 {/* Server-rendered header */}
                 <StoreHeader store={store} />
 

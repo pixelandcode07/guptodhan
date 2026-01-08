@@ -178,7 +178,7 @@ export default function StoreHeader({ store }: { store: Store }) {
 
         {/* Store Name & Meta */}
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mt-8">
             <h1 className="text-lg font-semibold">{store.storeName}</h1>
             <CheckCircle className="w-4 h-4 text-blue-500" />
           </div>
