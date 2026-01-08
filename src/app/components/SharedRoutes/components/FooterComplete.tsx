@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 
 export default function FooterComplete() {
     return (
-        <footer className=" bg-white border-t border-gray-100 font-sans">
+        <footer className=" bg-gray-100 border-t border-gray-100 font-sans">
             {/* --- Newsletter Section --- */}
             <div className="md:max-w-[95vw] xl:container sm:px-8 mx-auto py-4 md:py-10 border-b border-gray-100">
                 <div className="flex flex-col xl:flex-row items-center justify-center xl:justify-between gap-6">
