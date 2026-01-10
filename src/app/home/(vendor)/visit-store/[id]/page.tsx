@@ -14,16 +14,14 @@ export default async function VisitStore({ params }: { params: { id: string } })
     }
 
     const { data } = await res.json();
-    const { store, productsWithReviews } = data;
 
     return (
         <div className='container mx-auto '>
-            <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 py-10 ">
-                {/* Server-rendered header */}
-                <StoreHeader store={store} />
+            <div className="md:max-w-[95vw] xl:max-w-[90vw] mx-auto px-0.5 md:px-4 py-10 ">
 
-                {/* Client-side interactive grid + filters */}
-                <ProductGridWithFilters initialProducts={productsWithReviews} storeId={id} />
+                <StoreHeader store={data.store} />
+
+                <ProductGridWithFilters initialData={data} storeId={id} />
             </div>
         </div>
     );
