@@ -120,14 +120,14 @@ export default function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <WebsiteConfig />
+        <EcommerceModules items={data.ecommerceModules} />
+        <ContentManagement />
+        <Multivendor />
         <BuySell />
         <ServiceModule />
         <Donation />
-        <Multivendor />
-        <EcommerceModules items={data.ecommerceModules} />
+        <WebsiteConfig />
         <CRMModules />
-        <ContentManagement />
         <UserRolePermision />
         <DemoProducts />
         <Logout />

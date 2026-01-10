@@ -140,7 +140,7 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
           >
             <TableIcon size={16} />
           </ToolbarButton>
-          <ToolbarButton
+          {/* <ToolbarButton
             onClick={() => editor.chain().focus().setLink({ href: 'https://example.com' }).run()}
             label="Insert Link"
           >
@@ -151,7 +151,7 @@ export default function RichTextEditor({ value, onChange }: RichTextEditorProps)
             label="Insert Image"
           >
             <ImageIcon size={16} />
-          </ToolbarButton>
+          </ToolbarButton> */}
           <ToolbarButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} label="Code Block">
             <Code size={16} />
           </ToolbarButton>

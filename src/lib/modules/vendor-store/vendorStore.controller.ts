@@ -226,6 +226,7 @@ const updateStore = async (req: NextRequest, { params }: { params: { id: string 
     storeAddress: formData.get("storeAddress") || existingStore.storeAddress,
     storePhone: formData.get("storePhone") || existingStore.storePhone,
     storeEmail: formData.get("storeEmail") || existingStore.storeEmail,
+    status: formData.get("status") || existingStore.status,
     vendorShortDescription:
       formData.get("vendorShortDescription") || existingStore.vendorShortDescription,
     fullDescription: formData.get("fullDescription") || existingStore.fullDescription,
@@ -315,12 +316,12 @@ const deleteStore = async (_req: NextRequest, { params }: { params: { id: string
 };
 
 // vendor dashboard data
-const getVendorDashboard = async(_req: NextRequest, { params }: { params: { id: string } }) =>{
+const getVendorDashboard = async (_req: NextRequest, { params }: { params: { id: string } }) => {
   await dbConnect();
 
-  const {id} = await params;
-  const result = await StoreServices.vendorDashboard(id); 
-  
+  const { id } = await params;
+  const result = await StoreServices.vendorDashboard(id);
+
 
   return sendResponse({
     success: true,
