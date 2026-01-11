@@ -21,7 +21,6 @@
     if (!socialLink) {
       throw new Error("Social link not found");
     }
-    // Cloudinary থেকে আইকনটি ডিলিট করা হচ্ছে
     await deleteFromCloudinary(socialLink.icon);
     await SocialLink.findByIdAndDelete(id);
     return null;
