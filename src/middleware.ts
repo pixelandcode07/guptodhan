@@ -7,6 +7,7 @@ import { jwtVerify } from 'jose';
 const adminRoutes = [
   '/general',
   '/api/v1/users',
+  '/api/v1/job',
   '/api/v1/donation-users',
   '/api/v1/donation-stats/dashboard',
   '/api/v1/classifieds-banners',
@@ -63,6 +64,7 @@ const vendorRoutes = [
 
 // ❗️ Protected Routes
 const protectedApiRoutes = [
+  '/api/v1/job',
   '/api/v1/auth/change-password',
   '/api/v1/auth/vendor-change-password',
   '/api/otp/send-email',
@@ -189,7 +191,7 @@ export async function middleware(req: NextRequest) {
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set('x-user-id', tokenPayload.userId || tokenPayload.id);
   requestHeaders.set('x-user-role', tokenPayload.role);
-
+console.log("Path:", path, "Role:", tokenPayload?.role, "IsAdminRoute:", isAdminRoute);
   return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
