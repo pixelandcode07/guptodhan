@@ -155,7 +155,7 @@ export default function FooterComplete() {
                     <div className="text-sm text-center lg:text-left space-y-1">
                         <p className="opacity-90">Copyright © 2026 GuptoDhan. All Rights Reserved.</p>
                         <p className="text-blue-300 text-xs mt-1 tracking-wide">
-                            Powered by <span className="text-white font-bold">Pixel&Code</span>
+                            Powered by <Link href="http://pixelandcode.agency/" target="_blank" className="text-blue-600 hover:underline">Pixel & Code</Link>
                         </p>
                     </div>
 
