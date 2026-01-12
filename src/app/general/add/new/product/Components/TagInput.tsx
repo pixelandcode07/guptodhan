@@ -10,11 +10,8 @@ interface TagInputProps {
   className?: string;
 }
 
-const normalizeTag = (tag: string) =>
-  tag
-    .replace(/,/g, ' ')
-    .trim()
-    .replace(/\s+/g, ' ');
+// শুধু বাড়তি স্পেস ক্লিন করার জন্য
+const normalizeTag = (tag: string) => tag.trim().replace(/\s+/g, ' ');
 
 const TagInput: React.FC<TagInputProps> = ({
   id,
@@ -27,9 +24,29 @@ const TagInput: React.FC<TagInputProps> = ({
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  const addTag = useCallback(
-    (rawTag: string) => {
-      const tag = normalizeTag(rawTag);
+  // একাধিক ট্যাগ একসাথে হ্যান্ডেল করার জন্য নতুন ফাংশন
+  const addTags = useCallback(
+    (rawInput: string) => {
+      // কমা দিয়ে স্প্লিট করা হচ্ছে
+      const newTags = rawInput
+        .split(',')
+        .map(normalizeTag)
+        .filter((tag) => tag !== ''); // খালি ট্যাগ বাদ দেওয়া
+
+      if (newTags.length === 0) return;
+
+      const updatedTags = [...value];
+
+      newTags.forEach((tag) => {
+        const exists = updatedTags.some(
+          (existing) => existing.toLowerCase() === tag.toLowerCase()
+        );
+        if (!exists) {
+          updatedTags.push(tag);
+        }
+      });
+
+      onChange(updatedTags);
       setInputValue('');
       if (!tag) return false;
 
@@ -131,7 +148,10 @@ const TagInput: React.FC<TagInputProps> = ({
           {!disabled && (
             <button
               type="button"
-              onClick={() => handleRemove(index)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRemove(index);
+              }}
               className="text-blue-600 hover:text-blue-800 focus-visible:outline-none"
               aria-label={`Remove ${tag}`}
             >
@@ -160,4 +180,3 @@ const TagInput: React.FC<TagInputProps> = ({
 };
 
 export default TagInput;
-
