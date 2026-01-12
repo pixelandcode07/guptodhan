@@ -1,7 +1,6 @@
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import SessionProviderWrapper from '@/Providers/SessionProviderWrapper';
 import { Toaster } from '@/components/ui/sonner';
@@ -10,16 +9,26 @@ import PathnameDetector from '@/Providers/PathnameDetector';
 import { AuthProvider } from '@/contexts/AuthContext';
 import MessageIcon from './components/MessageIcon';
 
-const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
+/**
+ * ✅ SYSTEM FONTS - No Google Fonts warning
+ * Using system fonts for better performance and instant load
+ */
+const systemFonts = `
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 
+              'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 
+              'Helvetica Neue', 'Hind Siliguri', 'Kalpurush', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+`;
 
-const baseUrl =
-  process.env.NEXT_PUBLIC_BASE_URL || 'https://www.guptodhandigital.com';
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.guptodhan.com';
+const appName = 'Guptodhan';
+const appDescription =
+  'Guptodhan is Bangladesh\'s most trusted multi-vendor marketplace. Buy, sell, donate products, and access professional services all in one platform. Secure transactions, fast delivery, and quality assurance guaranteed.';
 
-// Fetch integrations from PUBLIC API
+/**
+ * Fetch integrations from public API
+ */
 async function getIntegrations() {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
@@ -39,66 +48,141 @@ async function getIntegrations() {
   }
 }
 
-// Helper function to extract verification code
+/**
+ * Extract Google Search Console verification code
+ */
 function extractVerificationCode(fullCode: string): string {
   if (!fullCode) return '';
-  // If it contains "google-site-verification=", extract only the code part
   if (fullCode.includes('google-site-verification=')) {
     return fullCode.replace('google-site-verification=', '').trim();
   }
   return fullCode.trim();
 }
 
+/**
+ * Generate comprehensive metadata for SEO
+ */
 export async function generateMetadata(): Promise<Metadata> {
   const integrations = await getIntegrations();
-  const verificationCode = integrations?.googleSearchConsoleEnabled && integrations?.googleSearchConsoleId
-    ? extractVerificationCode(integrations.googleSearchConsoleId)
-    : 'your-google-site-verification-code';
+  const verificationCode =
+    integrations?.googleSearchConsoleEnabled &&
+    integrations?.googleSearchConsoleId
+      ? extractVerificationCode(integrations.googleSearchConsoleId)
+      : 'your-google-site-verification-code';
+
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: appName,
+    url: baseUrl,
+    description: appDescription,
+    image: `${baseUrl}/og-image.png`,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${baseUrl}/search?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  };
+
+  const organizationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: appName,
+    url: baseUrl,
+    logo: `${baseUrl}/logo.png`,
+    description: appDescription,
+    sameAs: [
+      'https://www.facebook.com/guptodhan',
+      'https://www.instagram.com/guptodhan',
+      'https://www.youtube.com/guptodhan',
+      'https://www.twitter.com/guptodhan',
+    ],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'Customer Service',
+      telephone: '+880-1234-567890',
+      email: 'support@guptodhan.com',
+    },
+    address: {
+      '@type': 'PostalAddress',
+      addressCountry: 'BD',
+      addressRegion: 'Bangladesh',
+    },
+  };
 
   return {
     metadataBase: new URL(baseUrl),
     title: {
-      default: 'Guptodhan - Buy, Sell & Donate Products Online in Bangladesh',
-      template: '%s | Guptodhan',
+      default: `${appName} - Multi-Vendor Marketplace | Buy, Sell, Donate & Services in Bangladesh`,
+      template: `%s | ${appName} - Online Marketplace`,
     },
-    description:
-      'Guptodhan is a trusted marketplace to buy, sell, and donate products online in Bangladesh. Secure transactions, quality products, and fast delivery.',
+    description: appDescription,
     keywords: [
-      'marketplace',
-      'buy sell',
+      'multi-vendor marketplace',
+      'buy sell online',
       'donate products',
-      'Bangladesh',
-      'ecommerce',
+      'professional services',
+      'ecommerce Bangladesh',
       'online shopping',
+      'digital marketplace',
+      'online services',
+      'buy online Bangladesh',
+      'sell online Bangladesh',
     ],
+    authors: [{ name: appName }],
+    creator: appName,
+    publisher: appName,
 
+    /**
+     * Open Graph - Social Media Optimization
+     */
     openGraph: {
-      title: 'Guptodhan - Your Trusted Marketplace',
-      description: 'Buy, sell, and donate products securely on Guptodhan.',
+      title: `${appName} - Your Trusted Multi-Vendor Marketplace`,
+      description: appDescription,
       url: baseUrl,
-      siteName: 'Guptodhan',
+      siteName: appName,
       images: [
         {
           url: `${baseUrl}/og-image.png`,
           width: 1200,
           height: 630,
-          alt: 'Guptodhan Marketplace',
+          alt: `${appName} - Multi-Vendor Marketplace`,
+          type: 'image/png',
+        },
+        {
+          url: `${baseUrl}/og-image-square.png`,
+          width: 800,
+          height: 800,
+          alt: `${appName} Logo`,
+          type: 'image/png',
         },
       ],
       locale: 'en_US',
       type: 'website',
     },
 
+    /**
+     * Twitter Card - Twitter Optimization
+     */
     twitter: {
       card: 'summary_large_image',
-      title: 'Guptodhan - Your Trusted Marketplace',
-      description: 'Buy, sell, and donate products securely.',
+      title: `${appName} - Multi-Vendor Marketplace`,
+      description: appDescription,
       images: [`${baseUrl}/og-image.png`],
+      creator: '@guptodhan',
+      site: '@guptodhan',
     },
 
+    /**
+     * Robots - Search Engine Indexing
+     */
     robots: {
       index: true,
       follow: true,
+      nocache: false,
       googleBot: {
         index: true,
         follow: true,
@@ -108,20 +192,63 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     },
 
+    /**
+     * Search Engine Verification
+     */
     verification: {
       google: verificationCode,
+      other: {
+        'msvalidate.01': 'your-bing-verification-code',
+        'p:domain_verify': 'your-pinterest-verification-code',
+      },
     },
 
+    /**
+     * Alternate Language Links
+     */
     alternates: {
       canonical: baseUrl,
       languages: {
-        'en-US': `${baseUrl}/en`,
-        'bn-BD': `${baseUrl}/bn`,
+        'en': `${baseUrl}/en`,
+        'bn': `${baseUrl}/bn`,
+        'x-default': baseUrl,
       },
+    },
+
+    /**
+     * Icons and App Configuration
+     */
+    icons: {
+      icon: [
+        { url: '/favicon.ico' },
+        { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+        { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      ],
+      apple: [
+        { url: '/apple-touch-icon.png' },
+      ],
+    },
+
+    /**
+     * App Links and Web App Configuration
+     */
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'black-translucent',
+      title: appName,
+    },
+
+    formatDetection: {
+      telephone: true,
+      email: true,
+      address: true,
     },
   };
 }
 
+/**
+ * Root Layout Component
+ */
 export default async function RootLayout({
   children,
 }: {
@@ -130,8 +257,34 @@ export default async function RootLayout({
   const integrations = await getIntegrations();
 
   return (
-    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
+    <html
+      lang="en"
+      className="scroll-smooth"
+      suppressHydrationWarning
+      style={{
+        fontSize: '16px',
+        scrollBehavior: 'smooth',
+      }}
+    >
       <head>
+        {/* ========================
+            CHARACTER & LANGUAGE
+            ======================== */}
+        <meta charSet="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="language" content="English, Bangla" />
+
+        {/* ========================
+            SYSTEM FONTS - Hind Siliguri & Kalpurush for Bangla
+            ======================== */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Kalpurush&family=Roboto:wght@300;400;500;700&display=swap"
+          rel="stylesheet"
+        />
+
         {/* ========================
             GOOGLE ANALYTICS
             ======================== */}
@@ -151,6 +304,7 @@ export default async function RootLayout({
                   gtag('js', new Date());
                   gtag('config', '${integrations.googleAnalyticsId}', {
                     page_path: window.location.pathname,
+                    page_title: document.title,
                   });
                 `,
               }}
@@ -211,33 +365,31 @@ fbq('track', 'PageView');`,
         {/* ========================
             MICROSOFT CLARITY
             ======================== */}
-        {integrations?.microsoftClarityEnabled &&
-          integrations?.microsoftClarityId && (
-            <Script
-              id="microsoft-clarity"
-              strategy="afterInteractive"
-              dangerouslySetInnerHTML={{
-                __html: `
-                (function(c,l,a,r,i,t,y){
-                  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-                })(window, document, "clarity", "script", "${integrations.microsoftClarityId}");
-              `,
-              }}
-            />
-          )}
+        {integrations?.microsoftClarityEnabled && integrations?.microsoftClarityId && (
+          <Script
+            id="microsoft-clarity"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+              (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+              })(window, document, "clarity", "script", "${integrations.microsoftClarityId}");
+            `,
+            }}
+          />
+        )}
 
         {/* ========================
             GOOGLE RECAPTCHA
             ======================== */}
-        {integrations?.googleRecaptchaEnabled &&
-          integrations?.recaptchaSiteKey && (
-            <Script
-              src={`https://www.google.com/recaptcha/api.js?render=${integrations.recaptchaSiteKey}`}
-              strategy="beforeInteractive"
-            />
-          )}
+        {integrations?.googleRecaptchaEnabled && integrations?.recaptchaSiteKey && (
+          <Script
+            src={`https://www.google.com/recaptcha/api.js?render=${integrations.recaptchaSiteKey}`}
+            strategy="beforeInteractive"
+          />
+        )}
 
         {/* ========================
             CRISP CHAT
@@ -289,53 +441,134 @@ fbq('track', 'PageView');`,
             FACEBOOK MESSENGER CHAT
             ======================== */}
         {integrations?.messengerChatEnabled && integrations?.messengerLink && (
-          <>
-            <Script
-              id="facebook-messenger-sdk"
-              strategy="afterInteractive"
-              dangerouslySetInnerHTML={{
-                __html: `
-                  window.fbAsyncInit = function() {
-                    FB.init({
-                      xfbml: true,
-                      version: 'v12.0'
-                    });
-                  };
-                  (function(d, s, id) {
-                    var js, fjs = d.getElementsByTagName(s)[0];
-                    if (d.getElementById(id)) return;
-                    js = d.createElement(s); js.id = id;
-                    js.src = 'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js';
-                    fjs.parentNode.insertBefore(js, fjs);
-                  }(document, 'script', 'facebook-jssdk'));
-                `,
-              }}
-            />
-          </>
+          <Script
+            id="facebook-messenger-sdk"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                window.fbAsyncInit = function() {
+                  FB.init({
+                    xfbml: true,
+                    version: 'v18.0'
+                  });
+                };
+                (function(d, s, id) {
+                  var js, fjs = d.getElementsByTagName(s)[0];
+                  if (d.getElementById(id)) return;
+                  js = d.createElement(s); js.id = id;
+                  js.src = 'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js';
+                  fjs.parentNode.insertBefore(js, fjs);
+                }(document, 'script', 'facebook-jssdk'));
+              `,
+            }}
+          />
         )}
 
-        {/* Mobile App Meta Tags */}
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta
-          name="apple-mobile-web-app-status-bar-style"
-          content="black-translucent"
+        {/* ========================
+            STRUCTURED DATA (JSON-LD)
+            ======================== */}
+        <Script
+          id="website-schema"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'Guptodhan',
+              url: baseUrl,
+              description: appDescription,
+              image: `${baseUrl}/og-image.png`,
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: {
+                  '@type': 'EntryPoint',
+                  urlTemplate: `${baseUrl}/search?q={search_term_string}`,
+                },
+                'query-input': 'required name=search_term_string',
+              },
+            }),
+          }}
         />
-        <meta name="theme-color" content="#3B82F6" />
 
-        {/* Additional SEO */}
-        <meta name="author" content="Guptodhan" />
-        <meta
-          name="copyright"
-          content="© 2024 Guptodhan. All rights reserved."
+        <Script
+          id="organization-schema"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'Guptodhan',
+              url: baseUrl,
+              logo: `${baseUrl}/logo.png`,
+              description: appDescription,
+              sameAs: [
+                'https://www.facebook.com/guptodhan',
+                'https://www.instagram.com/guptodhan',
+                'https://www.youtube.com/guptodhan',
+                'https://www.twitter.com/guptodhan',
+              ],
+              contactPoint: {
+                '@type': 'ContactPoint',
+                contactType: 'Customer Service',
+                telephone: '+880-1234-567890',
+                email: 'support@guptodhan.com',
+              },
+              address: {
+                '@type': 'PostalAddress',
+                addressCountry: 'BD',
+                addressRegion: 'Bangladesh',
+              },
+            }),
+          }}
         />
-        <meta name="language" content="English" />
+
+        {/* ========================
+            META TAGS - Mobile & App
+            ======================== */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Guptodhan" />
+        <meta name="theme-color" content="#3B82F6" />
+        <meta name="msapplication-TileColor" content="#3B82F6" />
+        <meta name="msapplication-navbutton-color" content="#3B82F6" />
+
+        {/* ========================
+            SEO & BRAND
+            ======================== */}
+        <meta name="author" content="Guptodhan" />
+        <meta name="copyright" content="© 2024 Guptodhan. All rights reserved." />
+        <meta name="description" content={appDescription} />
         <meta name="revisit-after" content="7 days" />
+        <meta name="rating" content="general" />
+        <meta name="distribution" content="global" />
+
+        {/* ========================
+            PRELOAD CRITICAL ASSETS
+            ======================== */}
+        <link rel="preload" as="image" href="/logo.png" />
+        <link rel="preload" as="image" href="/og-image.png" />
+
+        {/* ========================
+            DNS PREFETCH
+            ======================== */}
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+        <link rel="dns-prefetch" href="https://connect.facebook.net" />
+        <link rel="dns-prefetch" href="https://www.clarity.ms" />
       </head>
 
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        style={{
+          fontFamily:
+            '"Hind Siliguri", "Kalpurush", "Roboto", "Segoe UI", sans-serif',
+          WebkitFontSmoothing: 'antialiased',
+          MozOsxFontSmoothing: 'grayscale',
+        }}
+        className="antialiased bg-white text-slate-900"
       >
-        {/* Google Tag Manager (noscript) */}
+        {/* ========================
+            GOOGLE TAG MANAGER (NOSCRIPT)
+            ======================== */}
         {integrations?.googleTagManagerEnabled && integrations?.gtmId && (
           <noscript>
             <iframe
@@ -347,32 +580,53 @@ fbq('track', 'PageView');`,
           </noscript>
         )}
 
-        {/* Facebook Messenger Chat Plugin */}
+        {/* ========================
+            FACEBOOK MESSENGER CHAT PLUGIN
+            ======================== */}
         {integrations?.messengerChatEnabled && integrations?.messengerLink && (
           <div
+            id="fb-root"
             className="fb-customerchat"
             data-page-id={integrations.messengerLink}
             data-attribution="setup_tool"
           />
         )}
 
-        {/* ✅ SessionProviderWrapper wraps everything */}
+        {/* ========================
+            APP PROVIDERS & LAYOUT
+            ======================== */}
         <SessionProviderWrapper>
-          {/* ✅ AuthProvider wraps children - ADD THIS */}
           <AuthProvider>
             <PathnameDetector>
-              <div className="fixed bottom-6 right-6 z-9999">
+              {/* Floating Message Icon */}
+              <div className="fixed bottom-6 right-6 z-50">
                 <MessageIcon />
               </div>
+
+              {/* Main Content */}
               {children}
+
+              {/* Google Maps API */}
               <Script
                 src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
                 strategy="beforeInteractive"
               />
-              <Toaster position="top-center" />
+
+              {/* Toast Notifications */}
+              <Toaster position="top-center" richColors />
             </PathnameDetector>
           </AuthProvider>
         </SessionProviderWrapper>
+
+        {/* ========================
+            PERFORMANCE & OPTIMIZATION
+            ======================== */}
+        <noscript>
+          <p>
+            This application requires JavaScript to be enabled to function properly.
+            Please enable JavaScript in your browser settings.
+          </p>
+        </noscript>
       </body>
     </html>
   );
