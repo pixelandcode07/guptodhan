@@ -48,40 +48,6 @@ const TagInput: React.FC<TagInputProps> = ({
 
       onChange(updatedTags);
       setInputValue('');
-      if (!tag) return false;
-
-      const exists = value.some(
-        (existing) => existing.toLowerCase() === tag.toLowerCase()
-      );
-      if (exists) return false;
-
-      onChange([...value, tag]);
-      return true;
-    },
-    [onChange, value]
-  );
-
-  const addMultipleTags = useCallback(
-    (text: string) => {
-      const tags = text
-        .split(',')
-        .map(normalizeTag)
-        .filter(Boolean);
-      
-      const newTags: string[] = [];
-      tags.forEach((tag) => {
-        const exists = value.some(
-          (existing) => existing.toLowerCase() === tag.toLowerCase()
-        );
-        if (!exists) {
-          newTags.push(tag);
-        }
-      });
-
-      if (newTags.length > 0) {
-        onChange([...value, ...newTags]);
-      }
-      setInputValue('');
     },
     [onChange, value]
   );
@@ -96,12 +62,7 @@ const TagInput: React.FC<TagInputProps> = ({
 
     if (event.key === 'Enter' || event.key === ',') {
       event.preventDefault();
-      // If input contains commas, split and add all tags
-      if (inputValue.includes(',')) {
-        addMultipleTags(inputValue);
-      } else {
-        addTag(inputValue);
-      }
+      addTags(inputValue);
     } else if (event.key === 'Backspace' && inputValue === '' && value.length) {
       event.preventDefault();
       onChange(value.slice(0, -1));
@@ -110,23 +71,16 @@ const TagInput: React.FC<TagInputProps> = ({
 
   const handleBlur = () => {
     if (disabled) return;
-    // If input contains commas, split and add all tags
-    if (inputValue.includes(',')) {
-      addMultipleTags(inputValue);
-    } else {
-      addTag(inputValue);
-    }
+    if (inputValue) addTags(inputValue);
   };
 
   const handlePaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
     if (disabled) return;
-    const text = event.clipboardData.getData('text');
     
-    // Always process pasted text if it contains commas
-    if (text.includes(',')) {
-      event.preventDefault();
-      addMultipleTags(text);
-    }
+    event.preventDefault();
+    const text = event.clipboardData.getData('text');
+    // পেস্ট করা টেক্সট সরাসরি addTags এ পাঠিয়ে দেওয়া হচ্ছে
+    addTags(text);
   };
 
   return (

@@ -351,8 +351,6 @@ const registerVendor = async (req: NextRequest) => {
   });
 };
 
-// --- Service Provider Registration ---
-// OTP পাঠানোর কন্ট্রোলার
 const serviceProviderSendRegistrationOtp = async (req: NextRequest) => {
   await dbConnect();
   const { email } = await req.json();
@@ -366,7 +364,6 @@ const serviceProviderSendRegistrationOtp = async (req: NextRequest) => {
   });
 };
 
-// রেজিস্ট্রেশন কন্ট্রোলার (FormData ব্যবহার করে)
 const registerServiceProvider = async (req: NextRequest) => {
   await dbConnect();
   const formData = await req.formData();
@@ -426,7 +423,6 @@ const googleLoginHandler = async (req: NextRequest) => {
     data: { ...data, accessToken },
   });
 
-  // ✅ 1. Refresh Token Cookie
   response.cookies.set('refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -434,7 +430,6 @@ const googleLoginHandler = async (req: NextRequest) => {
     path: '/',
   });
 
-  // ✅ 2. Access Token Cookie
   response.cookies.set('accessToken', accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -445,9 +440,7 @@ const googleLoginHandler = async (req: NextRequest) => {
   return response;
 };
 
-// ------------------------------------
-// --- SERVICE PROVIDER LOGIN ---
-// ------------------------------------
+
 const serviceProviderLogin = async (req: NextRequest) => {
   await dbConnect();
 
