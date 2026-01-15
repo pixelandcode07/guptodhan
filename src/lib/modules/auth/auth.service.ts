@@ -410,12 +410,10 @@ const vendorSendRegistrationOtp = async (email: string) => {
   return null;
 };
 
-// registerVendor ফাংশনটি আপডেট করুন (OTP ভেরিফিকেশন সহ)
 const registerVendor = async (payload: any, otp: string, isByAdmin = false) => {
   await connectRedis();
   const { email, name, password, phoneNumber, address, businessCategory, ...vendorData } = payload;
 
-  // ১. OTP চেক করা (যদি অ্যাডমিন না হয় তবেই চেক করবে)
   if (!isByAdmin) {
     const redisKey = `registration-otp:${email}`;
     const storedOtp = await redisClient.get(redisKey);
@@ -436,7 +434,6 @@ const registerVendor = async (payload: any, otp: string, isByAdmin = false) => {
       phoneNumber,
       address,
       role: 'vendor',
-      // অ্যাডমিন ক্রিয়েট করলে সরাসরি active করে দিতে পারেন, নতুবা false রাখতে পারেন
       isActive: isByAdmin ? true : false, 
     }], { session }))[0];
 
@@ -451,7 +448,6 @@ const registerVendor = async (payload: any, otp: string, isByAdmin = false) => {
 
     await session.commitTransaction();
     
-    // OTP ডিলিট করা (যদি ইউজার নিজে করে)
     if (!isByAdmin) {
       const redisKey = `registration-otp:${email}`;
       await redisClient.del(redisKey);
@@ -470,7 +466,6 @@ const registerVendor = async (payload: any, otp: string, isByAdmin = false) => {
 
 
 
-// --- ১. সার্ভিস প্রোভাইডার রেজিস্ট্রেশন OTP পাঠানো ---
 const serviceProviderSendRegistrationOtp = async (email: string) => {
   await connectRedis();
 
@@ -478,9 +473,9 @@ const serviceProviderSendRegistrationOtp = async (email: string) => {
   if (existingUser) throw new Error('এই ইমেইলটি ইতিমধ্যে ব্যবহার করা হয়েছে।');
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const redisKey = `sp-registration-otp:${email}`; // সার্ভিস প্রোভাইডারের জন্য আলাদা কী
+  const redisKey = `sp-registration-otp:${email}`; 
   
-  await redisClient.set(redisKey, otp, { EX: 300 }); // ৫ মিনিট মেয়াদ
+  await redisClient.set(redisKey, otp, { EX: 300 });
 
   await sendEmail({
     to: email,
@@ -491,17 +486,15 @@ const serviceProviderSendRegistrationOtp = async (email: string) => {
   return null;
 };
 
-// --- ২. সার্ভিস প্রোভাইডার রেজিস্ট্রেশন (OTP ভেরিফাইসহ) ---
 const registerServiceProvider = async (payload: any, otp: string) => {
   await connectRedis();
   const { email, name, password, phoneNumber, address, ...providerData } = payload;
 
-  // OTP চেক
   const redisKey = `sp-registration-otp:${email}`;
   const storedOtp = await redisClient.get(redisKey);
 
   if (!storedOtp || storedOtp !== otp) {
-    throw new Error('OTP সঠিক নয় অথবা মেয়াদ শেষ হয়ে গেছে।');
+    throw new Error('OTP সঠিক নয় অথবা মেয়াদ শেষ হয়ে গেছে।');
   }
 
   const session = await mongoose.startSession();
@@ -515,12 +508,13 @@ const registerServiceProvider = async (payload: any, otp: string) => {
       phoneNumber,
       address,
       role: 'service-provider',
-      isActive: true, // আপনি চাইলে এটি false রাখতে পারেন এডমিন এপ্রুভাল এর জন্য
+      isActive: false,
+      status: 'pending',
       serviceProviderInfo: providerData,
     };
 
     const newUser = (await User.create([userData], { session }))[0];
-    if (!newUser) throw new Error('ইউজার তৈরি করা সম্ভব হয়নি।');
+    if (!newUser) throw new Error('ইউজার তৈরি করা সম্ভব হয়নি।');
 
     await session.commitTransaction();
     await redisClient.del(redisKey);

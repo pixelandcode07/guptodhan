@@ -1,4 +1,5 @@
-// D:\yeamin student\Guptodhan Project\guptodhan\src\hooks\useSocket.ts
+'use client';
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 
@@ -25,10 +26,13 @@ export const useSocket = () => {
         console.log('❌ Socket Disconnected');
         setIsConnected(false);
       });
+
+      socketRef.current.on('authenticated', (data) => {
+        console.log('✅ Socket authenticated:', data);
+      });
     }
 
     return () => {
-      // অপশনাল: কম্পোনেন্ট আনমাউন্ট হলে সকেট অফ করতে পারেন
       // socketRef.current?.disconnect();
     };
   }, []);
@@ -46,12 +50,17 @@ export const useSocket = () => {
   }, []);
 
   const joinConversation = useCallback((conversationId: string) => {
-    socketRef.current?.emit('join_conversation', conversationId);
+    socketRef.current?.emit('join_conversation', {
+      conversationId: conversationId
+    });
   }, []);
 
-  const checkUserStatus = useCallback((userId: string) => {
+  const checkUserStatus = useCallback((userId: string, callback?: (status: any) => void) => {
     socketRef.current?.emit('check_user_status', userId, (status: any) => {
-      // handle status logic
+      console.log('📊 User status:', status);
+      if (callback) {
+        callback(status);
+      }
     });
   }, []);
 
@@ -60,7 +69,11 @@ export const useSocket = () => {
   }, []);
 
   const off = useCallback((event: string, callback?: any) => {
-    socketRef.current?.off(event, callback);
+    if (callback) {
+      socketRef.current?.off(event, callback);
+    } else {
+      socketRef.current?.off(event);
+    }
   }, []);
 
   return {

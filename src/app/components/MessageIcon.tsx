@@ -17,7 +17,6 @@ export default function MessageIcon() {
   const token = (session?.user as any)?.accessToken;
   const userId = (session?.user as any)?.id;
 
-  // ✅ Database থেকে unread count fetch করা
   useEffect(() => {
     const fetchCount = async () => {
       if (!token || !userId) {
@@ -34,7 +33,7 @@ export default function MessageIcon() {
         const data = await res.json();
 
         if (data.success) {
-          console.log('✅ Unread count:', data.data.unreadCount);
+          console.log('Unread count:', data.data.unreadCount);
           setUnreadCount(data.data.unreadCount);
         }
       } catch (err) {
