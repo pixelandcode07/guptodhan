@@ -2,17 +2,14 @@ import { Conversation } from './conversation.model';
 import { Message } from '../message/message.model';
 import { Types } from 'mongoose';
 
-// ✅ সমস্ত চ্যাট পাওয়া (যেখানে মেসেজ আছে) - FIXED
 const getMyConversationsFromDB = async (userId: string) => {
   console.log('🔍 Searching conversations for userId:', userId);
   
-  // ✅ FIX: userId কে ObjectId তে convert করা (ছিল না)
   const objectId = new Types.ObjectId(userId);
   
   const result = await Conversation.find({ 
     participants: objectId,
-    // ❌ REMOVED: lastMessage condition (কারণ নতুন conversation এ lastMessage থাকবে না)
-    // lastMessage: { $exists: true, $ne: null }
+
   })
     .populate('participants', 'name profilePicture')
     .populate('ad', 'title images')
@@ -30,7 +27,6 @@ const getMyConversationsFromDB = async (userId: string) => {
   return result;
 };
 
-// ✅ একটা specific চ্যাট পাওয়া
 const getConversationFromDB = async (conversationId: string, userId: string) => {
   console.log('🔍 Getting conversation:', conversationId, 'for user:', userId);
   
@@ -56,7 +52,6 @@ const getConversationFromDB = async (conversationId: string, userId: string) => 
   return conversation;
 };
 
-// ✅ একটা চ্যাটের মেসেজ পাওয়া
 const getMessagesFromDB = async (conversationId: string, userId: string) => {
   console.log('📥 Getting messages for conversation:', conversationId);
   
@@ -81,7 +76,6 @@ const getMessagesFromDB = async (conversationId: string, userId: string) => {
   return messages;
 };
 
-// ✅ নতুন চ্যাট শুরু করা
 const startConversationInDB = async (
   adId: string,
   buyerId: string,
@@ -93,7 +87,6 @@ const startConversationInDB = async (
     sellerId,
   });
 
-  // চেক করা: আগে থেকেই চ্যাট আছে কিনা
   let conversation = await Conversation.findOne({
     ad: new Types.ObjectId(adId),
     participants: { $all: [new Types.ObjectId(buyerId), new Types.ObjectId(sellerId)] },
@@ -104,13 +97,12 @@ const startConversationInDB = async (
     return conversation;
   }
 
-  // না থাকলে নতুন করে তৈরি করা
   conversation = await Conversation.create({
     ad: new Types.ObjectId(adId),
     participants: [new Types.ObjectId(buyerId), new Types.ObjectId(sellerId)],
   });
 
-  console.log('✅ Conversation created:', conversation._id);
+  console.log('Conversation created:', conversation._id);
   return conversation;
 };
 

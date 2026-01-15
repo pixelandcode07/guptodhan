@@ -1,4 +1,3 @@
-  // ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\conversation\conversation.model.ts
   import { Schema, model, models } from 'mongoose';
   import { IConversation } from './conversation.interface';
 
