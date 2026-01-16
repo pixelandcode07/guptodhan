@@ -8,6 +8,7 @@ import { verifyToken } from "@/lib/utils/jwt";
 import { createBookingValidationSchema } from "./serviceProviderManage.validation";
 import { BookingModel } from "./serviceProviderManage.model";
 import { ServiceModel } from "../provideService/provideService.model";
+import { NextResponse } from "next/server";
 
 
 // ==========================================
@@ -87,7 +88,9 @@ const createBooking = async (req: NextRequest) => {
 
   const service = await ServiceModel.findById(body.service_id);
   console.log('🟢 Fetched service for booking:', service);
-  if (!service) { return "not found"; }
+  if (!service) {
+    return new NextResponse("Service not found", { status: 404 });
+  }
 
   // Prepare payload
   const payload = {
@@ -96,10 +99,9 @@ const createBooking = async (req: NextRequest) => {
     provider_id: service.provider_id,
   };
   console.log('🟢 Booking payload prepared:', payload);
+
   const validatedData = createBookingValidationSchema.parse(payload);
-
   console.log('🟢 Booking data validated:', validatedData);
-
 
   // Save booking
   const booking = await BookingServices.createBookingInDB(validatedData);
@@ -112,6 +114,7 @@ const createBooking = async (req: NextRequest) => {
     data: booking,
   });
 };
+
 
 // Get all bookings (Admin)
 const getAllBookings = async () => {
