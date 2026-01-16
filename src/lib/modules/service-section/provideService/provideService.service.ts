@@ -25,19 +25,19 @@ const getAllServicesFromDB = async (filters?: Partial<IService>) => {
 };
 
 // --- Get a single service by ID ---
-const getServiceByIdFromDB = async (service_id: string) => {
-  const service = await ServiceModel.findOne({ service_id });
+const getServiceByIdFromDB = async (id: string) => {
+  const service = await ServiceModel.findOne({ id });
   if (!service) throw new Error("Service not found.");
   return service;
 };
 
 // --- Update a service ---
 const updateServiceInDB = async (
-  service_id: string,
+  id: string,
   payload: Partial<IService>
 ) => {
   const service = await ServiceModel.findOneAndUpdate(
-    { service_id },
+    { id },
     payload,
     { new: true }
   );
@@ -73,10 +73,10 @@ const getVisibleServicesFromDB = async (filters?: Partial<IService>) => {
 };
 
 // --- Delete a service (Provider) ---
-const deleteServiceInDB = async (service_id: string, provider_id: string) => {
+const deleteServiceInDB = async (id: string, provider_id: string) => {
   // Optional: soft delete by status
   const service = await ServiceModel.findOneAndUpdate(
-    { service_id, provider_id },
+    { id, provider_id },
     { service_status: "Disabled", is_visible_to_customers: false },
     { new: true }
   );
