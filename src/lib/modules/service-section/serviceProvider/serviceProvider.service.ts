@@ -22,9 +22,9 @@ const getUserByIdFromDB = async (id: string): Promise<TUser | null> => {
 };
 
 
-const promoteToServiceProviderInDB = async (userId: string): Promise<TUser | null> => {
+const promoteToServiceProviderInDB = async (id: string): Promise<TUser | null> => {
   const result =  User.findByIdAndUpdate(
-    userId,
+    id,
     { role: 'service-provider', isActive: true },
     { new: true }
   ).select('-password');
@@ -33,10 +33,10 @@ const promoteToServiceProviderInDB = async (userId: string): Promise<TUser | nul
 };
 
 
-const demoteToServiceProviderInDB = async (userId: string): Promise<TUser | null> => {
+const demoteToServiceProviderInDB = async (id: string): Promise<TUser | null> => {
   const result =  User.findByIdAndUpdate(
-    userId,
-    { role: 'user', isActive: false },
+    id,
+    { isActive: false },
     { new: true }
   ).select('-password');
 
