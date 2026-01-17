@@ -61,7 +61,6 @@ export default function ClientServiceRegister({ categories }: ClientServiceRegis
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Common Toast Style for White Background
   const toastStyle = {
     style: {
       background: '#ffffff',
