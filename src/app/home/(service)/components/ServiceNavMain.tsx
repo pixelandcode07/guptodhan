@@ -52,7 +52,7 @@ export default function ServiceNavMain() {
     };
 
     return (
-        <div className="bg-white text-black flex w-full justify-between items-center py-5 px-4 lg:px-15 border-b-2 border-gray-200">
+        <div className="bg-white text-black flex w-full justify-between items-center md:max-w-[95vw] xl:container sm:px-8 mx-auto py-4">
             {/* Logo */}
             <Link href="/">
                 <img src="/img/logo.png" alt="Logo" className="h-11 w-auto" />
@@ -67,11 +67,11 @@ export default function ServiceNavMain() {
             <div className="flex items-center gap-6">
                 <Dialog open={openLoginDialog} onOpenChange={setOpenLoginDialog}>
                     {/* Profile / Login Area */}
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-6 ">
                         {isLoggedIn ? (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <button className="flex items-center gap-3 hover:opacity-80 transition">
+                                    <button className="flex items-center gap-3 hover:opacity-80 transition cursor-pointer">
                                         <Avatar className="relative">
                                             <Avatar className="h-10 w-10 ring-2 ring-[#0097E9] ring-offset-2">
                                                 <AvatarImage
@@ -99,14 +99,14 @@ export default function ServiceNavMain() {
 
                                 <DropdownMenuContent align="end" className="w-56">
                                     <DropdownMenuItem asChild>
-                                        <Link href="/home/UserProfile" className="flex items-center gap-2">
+                                        <Link href="/home/UserProfile" className="flex items-center gap-2 cursor-pointer">
                                             <Settings size={16} />
                                             Profile Settings
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onClick={() => signOut({ callbackUrl: "/" })}
-                                        className="text-red-600 focus:text-red-600 flex items-center gap-2"
+                                        className="text-red-600 focus:text-red-600 flex items-center gap-2 cursor-pointer"
                                     >
                                         <LogOut size={16} />
                                         Logout
@@ -116,9 +116,6 @@ export default function ServiceNavMain() {
                         ) : (
                             <DialogTrigger asChild>
                                 <button
-                                    // onClick={() => {
-                                    //     localStorage.setItem("redirectAfterLogin", window.location.pathname + window.location.search);
-                                    // }}
                                     className="flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer"
                                 >
                                     <User size={20} />

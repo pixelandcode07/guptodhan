@@ -29,6 +29,14 @@ export default function ServiceLoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
+    const toastStyle = {
+        style: {
+            background: '#ffffff',
+            color: '#000000',
+            border: '1px solid #e2e8f0'
+        }
+    };
+
     const {
         register,
         handleSubmit,
@@ -62,12 +70,14 @@ export default function ServiceLoginPage() {
 
             if (result?.error) {
                 toast.error('Authentication failed', {
+                    ...toastStyle,
                     description: 'Please check your credentials and try again.',
                 });
                 return;
             }
 
             toast.success('Signed in successfully!', {
+                ...toastStyle,
                 description: 'Welcome back, Service Provider!',
             });
             router.push('/home/service');
@@ -77,6 +87,7 @@ export default function ServiceLoginPage() {
                 'Failed to sign in. Please try again later.';
 
             toast.error('Login Failed', {
+                ...toastStyle,
                 description: message,
             });
         } finally {
@@ -116,31 +127,7 @@ export default function ServiceLoginPage() {
                             priority
                         />
                     </motion.div>
-
-                    {/* Floating Badges */}
-                    {/* <div className="absolute inset-0 pointer-events-none">
-                        {[
-                            { icon: Zap, text: 'Get Hired Fast', top: '15%', left: '10%' },
-                            { icon: Star, text: 'Build Reputation', top: '20%', right: '10%' },
-                            { icon: Users, text: 'Join Community', bottom: '25%', left: '15%' },
-                            { icon: Briefcase, text: 'Flexible Work', bottom: '20%', right: '15%' },
-                        ].map((item, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, y: 30 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.6 + i * 0.2, duration: 0.8 }}
-                                className={`absolute flex items-center gap-3 bg-white/20 backdrop-blur-sm px-5 py-3 rounded-full border border-white/30 ${item.top} ${item.left || ''} ${item.right || ''} ${item.bottom || ''}`}
-                            >
-                                <item.icon className="w-6 h-6" />
-                                <span className="font-medium">{item.text}</span>
-                            </motion.div>
-                        ))}
-                    </div> */}
-
-
                 </div>
-
                 {/* Right Side - Login Form */}
                 <div className="p-8 lg:p-16 flex flex-col justify-center">
                     <motion.div

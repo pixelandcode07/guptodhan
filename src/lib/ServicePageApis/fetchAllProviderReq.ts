@@ -1,10 +1,9 @@
-import { AllServicesResponse, ApiResponse, ServiceData } from "@/types/ServiceDataType";
+import { IApiResponse, IProvider } from "@/types/ProviderType";
 import axios from "axios";
-// import axios from "../axios";
 
-export const fetchAllServiceAds = async (
+export const fetchAllProviderReq = async (
     token: string
-): Promise<ServiceData[]> => {
+): Promise<IProvider[]> => {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
     if (!baseUrl) {
@@ -17,24 +16,23 @@ export const fetchAllServiceAds = async (
     }
 
     try {
-        const response = await axios.get<AllServicesResponse>(
-            `${baseUrl}/api/v1/service-section/provide-service`,
+        const response = await axios.get<IApiResponse>(
+            `${baseUrl}/api/v1/service-section/service-provider`,
             {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             }
         );
-
-        return response.data.data?.services || [];
+        return response.data.data || [];
     } catch (error: any) {
         console.error(
-            'Axios Error: Failed to fetch protected service ads',
+            'Axios Error: Failed to fetch protected providers',
             error.message || error
         );
         const errorMessage =
             error.response?.data?.message ||
-            'Failed to fetch ads. Authentication may have expired.';
+            'Failed to fetch service users. Authentication may have expired.';
 
         throw new Error(errorMessage);
     }
