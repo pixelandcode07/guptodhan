@@ -51,12 +51,12 @@ const getUserById = async (req: NextRequest, { params }: { params: { id: string 
 };
 
 const promoteToServiceProvider = async (req: NextRequest) => {
-  const { userId } = await req.json();
-  console.log("Promote Request for User ID:", userId);
+  const { id } = await req.json();
+  console.log("Promote Request for User ID:", id);
 
-  if (!userId) throw new Error('User ID is required');
+  if (!id) throw new Error('User ID is required');
 
-  const result = await ServiceProviderServices.promoteToServiceProviderInDB(userId);
+  const result = await ServiceProviderServices.promoteToServiceProviderInDB(id);
 
   return sendResponse({
     success: true,
@@ -68,12 +68,12 @@ const promoteToServiceProvider = async (req: NextRequest) => {
 
 
 const demoteToServiceProvider = async (req: NextRequest) => {
-  const { userId } = await req.json();
-  console.log("Promote Request for User ID:", userId);
+  const { id } = await req.json();
+  console.log("Promote Request for User ID:", id);
 
-  if (!userId) throw new Error('User ID is required');
+  if (!id) throw new Error('User ID is required');
 
-  const result = await ServiceProviderServices.demoteToServiceProviderInDB(userId);
+  const result = await ServiceProviderServices.demoteToServiceProviderInDB(id);
 
   return sendResponse({
     success: true,
