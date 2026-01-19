@@ -5,8 +5,10 @@ import { TUserDoc, UserModel } from './user.interface';
 const userSchema = new Schema<TUserDoc, UserModel>(
   {
     name: { type: String, required: true },
+    // ✅ unique: true থাকার কারণে অটোমেটিক ইনডেক্স তৈরি হয়ে গেছে
     email: { type: String, sparse: true, unique: true },
     password: { type: String, select: false },
+    // ✅ unique: true থাকার কারণে অটোমেটিক ইনডেক্স তৈরি হয়ে গেছে
     phoneNumber: { type: String, unique: true, sparse: true },
     profilePicture: { type: String },
     address: { type: String },
@@ -37,35 +39,31 @@ const userSchema = new Schema<TUserDoc, UserModel>(
 // 🔥 CRITICAL INDEXES (Performance Optimization)
 // ===================================
 
-// 1️⃣ Email Index - Login এর জন্য সবচেয়ে important
-userSchema.index({ email: 1 }); // Already has unique, but explicit index
+// ❌ REMOVED: Single email/phone indexes removed because 'unique: true' already handles them.
 
-// 2️⃣ Phone Index - Phone login/OTP verification
-userSchema.index({ phoneNumber: 1 }); // Already has unique
-
-// 3️⃣ Role Index - Admin/Vendor panel query অপ্টিমাইজ
+// 1️⃣ Role Index - Admin/Vendor panel query অপ্টিমাইজ
 userSchema.index({ role: 1 });
 
-// 4️⃣ Active Status Index - শুধু active users filter
+// 2️⃣ Active Status Index - শুধু active users filter
 userSchema.index({ isActive: 1 });
 
-// 5️⃣ Deleted Status Index - isDeleted:false queries জন্য
+// 3️⃣ Deleted Status Index - isDeleted:false queries জন্য
 userSchema.index({ isDeleted: 1 });
 
-// 6️⃣ Compound Index - Login query perfect match (ESR Rule অনুসরণ)
+// 4️⃣ Compound Index - Login query perfect match (ESR Rule অনুসরণ)
 // E (Equality) = email, S (Sort) = none, R (Range) = none
 userSchema.index({ email: 1, isActive: 1, isDeleted: 1 });
 
-// 7️⃣ Compound Index - Phone login
+// 5️⃣ Compound Index - Phone login
 userSchema.index({ phoneNumber: 1, isActive: 1, isDeleted: 1 });
 
-// 8️⃣ Compound Index - Role-based filtering with active status
+// 6️⃣ Compound Index - Role-based filtering with active status
 userSchema.index({ role: 1, isActive: 1 });
 
-// 9️⃣ Service Provider Queries Optimization
+// 7️⃣ Service Provider Queries Optimization
 userSchema.index({ 'serviceProviderInfo.serviceCategory': 1 });
 
-// 🔟 Timestamp Index - Recently created users (if needed)
+// 8️⃣ Timestamp Index - Recently created users (if needed)
 userSchema.index({ createdAt: -1 });
 
 // ===========================
