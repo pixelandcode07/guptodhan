@@ -5,9 +5,9 @@ import { TUserDoc, UserModel } from './user.interface';
 const userSchema = new Schema<TUserDoc, UserModel>(
   {
     name: { type: String, required: true },
-    email: { type: String, sparse: true, unique: true, index: true },
-    password: { type: String, select: false }, // default query তে আসবে না
-    phoneNumber: { type: String, unique: true, sparse: true, index: true },
+    email: { type: String, sparse: true, unique: true },
+    password: { type: String, select: false },
+    phoneNumber: { type: String, unique: true, sparse: true },
     profilePicture: { type: String },
     address: { type: String },
     isDeleted: { type: Boolean, default: false },
@@ -33,21 +33,50 @@ const userSchema = new Schema<TUserDoc, UserModel>(
   { timestamps: true }
 );
 
+// ===================================
+// 🔥 CRITICAL INDEXES (Performance Optimization)
+// ===================================
+
+// 1️⃣ Email Index - Login এর জন্য সবচেয়ে important
+userSchema.index({ email: 1 }); // Already has unique, but explicit index
+
+// 2️⃣ Phone Index - Phone login/OTP verification
+userSchema.index({ phoneNumber: 1 }); // Already has unique
+
+// 3️⃣ Role Index - Admin/Vendor panel query অপ্টিমাইজ
+userSchema.index({ role: 1 });
+
+// 4️⃣ Active Status Index - শুধু active users filter
+userSchema.index({ isActive: 1 });
+
+// 5️⃣ Deleted Status Index - isDeleted:false queries জন্য
+userSchema.index({ isDeleted: 1 });
+
+// 6️⃣ Compound Index - Login query perfect match (ESR Rule অনুসরণ)
+// E (Equality) = email, S (Sort) = none, R (Range) = none
+userSchema.index({ email: 1, isActive: 1, isDeleted: 1 });
+
+// 7️⃣ Compound Index - Phone login
+userSchema.index({ phoneNumber: 1, isActive: 1, isDeleted: 1 });
+
+// 8️⃣ Compound Index - Role-based filtering with active status
+userSchema.index({ role: 1, isActive: 1 });
+
+// 9️⃣ Service Provider Queries Optimization
+userSchema.index({ 'serviceProviderInfo.serviceCategory': 1 });
+
+// 🔟 Timestamp Index - Recently created users (if needed)
+userSchema.index({ createdAt: -1 });
+
 // ===========================
 // 🔐 PASSWORD HASH MIDDLEWARE
 // ===========================
-
 userSchema.pre('save', async function (next) {
   const user = this as TUserDoc;
-
-  // যদি পাসওয়ার্ড ফিল্ডটি পরিবর্তন না হয়, তবে হ্যাশ করার দরকার নেই
-  if (!user.isModified('password')) {
-    return next();
-  }
+  if (!user.isModified('password')) return next();
 
   try {
     const saltRounds = 10;
-    // পাসওয়ার্ড হ্যাশ করা হচ্ছে
     const hashedPassword = await bcrypt.hash(user.password as string, saltRounds);
     user.password = hashedPassword;
     next();
@@ -57,30 +86,24 @@ userSchema.pre('save', async function (next) {
 });
 
 // ===========================
-// 🔎 USER EXIST CHECKERS
+// 🔎 STATIC METHODS
 // ===========================
-
 userSchema.statics.isUserExistsByEmail = async function (email: string) {
-  return this.findOne({ email }).select('+password');
+  return this.findOne({ email, isDeleted: false }).select('+password');
 };
 
 userSchema.statics.isUserExistsByPhone = async function (phone: string) {
-  return this.findOne({ phoneNumber: phone }).select('+password');
+  return this.findOne({ phoneNumber: phone, isDeleted: false }).select('+password');
 };
 
 // ===========================
-// 🔑 PASSWORD MATCH METHOD
+// 🔑 INSTANCE METHODS
 // ===========================
-
 userSchema.methods.isPasswordMatched = async function (
   plainPassword: string,
   hashedPassword: string
 ) {
   return await bcrypt.compare(plainPassword, hashedPassword);
 };
-
-// ===========================
-// EXPORT USER MODEL
-// ===========================
 
 export const User: UserModel = (models.User || model<TUserDoc, UserModel>('User', userSchema)) as UserModel;

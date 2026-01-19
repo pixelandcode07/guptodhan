@@ -3,17 +3,23 @@ import { Types } from 'mongoose';
 import { TUserInput, TUser } from './user.interface';
 import { User } from './user.model';
 import { deleteFromCloudinary } from '@/lib/utils/cloudinary';
-import bcrypt from 'bcrypt'; 
-import '@/lib/modules/service-category/serviceCategory.model'; 
+import bcrypt from 'bcrypt';
+import { getCachedData, deleteCacheKey, deleteCachePattern } from '@/lib/redis/cache-helpers';
+import { CacheKeys, CacheTTL } from '@/lib/redis/cache-keys';
+import '@/lib/modules/service-category/serviceCategory.model';
 import '@/lib/modules/service-subcategory/serviceSubCategory.model';
 
+/**
+ * 🆕 User Registration with Email/Phone Check Optimization
+ */
 const createUserIntoDB = async (payload: TUserInput): Promise<Partial<TUser> | null> => {
   const query = [];
   if (payload.email) query.push({ email: payload.email });
   if (payload.phoneNumber) query.push({ phoneNumber: payload.phoneNumber });
 
   if (query.length > 0) {
-    const isUserExist = await User.findOne({ $or: query });
+    // ✅ .lean() যোগ করা - 30% faster query
+    const isUserExist = await User.findOne({ $or: query }).lean();
     if (isUserExist) {
       throw new Error('A user with this email or phone number already exists!');
     }
@@ -23,35 +29,105 @@ const createUserIntoDB = async (payload: TUserInput): Promise<Partial<TUser> | n
   const payloadWithHashedPassword = { ...payload, password: hashedPassword };
 
   const newUser = await User.create(payloadWithHashedPassword);
-  return User.findById(newUser._id).select('-password');
-};
+  
+  // ✅ .lean() + শুধু প্রয়োজনীয় fields
+  const result = await User.findById(newUser._id)
+    .select('-password')
+    .lean();
 
-const getMyProfileFromDB = async (userId: string): Promise<Partial<TUser> | null> => {
-  const result = await User.findById(userId).select('-password');
   return result;
 };
 
-const updateMyProfileInDB = async (userId: string, payload: Partial<TUser>): Promise<Partial<TUser> | null> => {
-  const user = await User.findById(userId);
+/**
+ * 👤 Get User Profile with Redis Caching
+ * Cache Strategy: 30 minutes TTL
+ */
+const getMyProfileFromDB = async (userId: string): Promise<Partial<TUser> | null> => {
+  const cacheKey = CacheKeys.USER.PROFILE(userId);
+
+  return getCachedData(
+    cacheKey,
+    async () => {
+      // Database query with lean() for better performance
+      const user = await User.findById(userId)
+        .select('-password')
+        .lean();
+      
+      return user;
+    },
+    CacheTTL.USER_PROFILE // 30 minutes
+  );
+};
+
+/**
+ * ✏️ Update Profile with Cache Invalidation
+ */
+const updateMyProfileInDB = async (
+  userId: string,
+  payload: Partial<TUser>
+): Promise<Partial<TUser> | null> => {
+  const user = await User.findById(userId).lean();
   if (!user) throw new Error('User not found!');
-  if (payload.profilePicture && user.profilePicture) await deleteFromCloudinary(user.profilePicture);
 
-  return User.findByIdAndUpdate(userId, payload, { new: true, runValidators: true }).select('-password');
+  // Delete old profile picture if updating
+  if (payload.profilePicture && user.profilePicture) {
+    await deleteFromCloudinary(user.profilePicture);
+  }
+
+  const result = await User.findByIdAndUpdate(userId, payload, {
+    new: true,
+    runValidators: true,
+  })
+    .select('-password')
+    .lean();
+
+  // 🗑️ CRITICAL: Cache invalidation
+  await deleteCacheKey(CacheKeys.USER.PROFILE(userId));
+  
+  // If email/phone changed, invalidate those caches too
+  if (payload.email) {
+    await deleteCacheKey(CacheKeys.USER.BY_EMAIL(payload.email));
+  }
+  if (payload.phoneNumber) {
+    await deleteCacheKey(CacheKeys.USER.BY_PHONE(payload.phoneNumber));
+  }
+
+  return result;
 };
 
+/**
+ * 📋 Get All Users (Admin) - No Caching (Real-time data needed)
+ * But optimized with lean() and select()
+ */
 const getAllUsersFromDB = async (): Promise<TUser[]> => {
-  return User.find({ isDeleted: false }).select('-password');
+  return User.find({ isDeleted: false })
+    .select('-password')
+    .sort({ createdAt: -1 }) // Latest first
+    .lean();
 };
 
+/**
+ * 🗑️ Delete User with Cache Invalidation
+ */
 const deleteUserFromDB = async (id: string): Promise<Partial<TUser> | null> => {
-  return User.findByIdAndUpdate(
+  const result = await User.findByIdAndUpdate(
     id,
     { isDeleted: true, isActive: false },
     { new: true }
-  ).select('-password');
+  )
+    .select('-password')
+    .lean();
+
+  // 🗑️ Clear all user-related caches
+  await deleteCacheKey(CacheKeys.USER.PROFILE(id));
+  await deleteCachePattern(CacheKeys.PATTERNS.USERS_LIST);
+
+  return result;
 };
 
-// Service Provider Create
+/**
+ * 🛠️ Service Provider Registration
+ */
 const createServiceProviderIntoDB = async (payload: any) => {
   const hashedPassword = await bcrypt.hash(payload.password, 12);
 
@@ -64,8 +140,12 @@ const createServiceProviderIntoDB = async (payload: any) => {
     role: 'service-provider',
   };
 
-  // serviceProviderInfo 
-  if (payload.serviceCategory || (Array.isArray(payload.subCategories) && payload.subCategories.length > 0) || payload.cvUrl || payload.bio) {
+  if (
+    payload.serviceCategory ||
+    (Array.isArray(payload.subCategories) && payload.subCategories.length > 0) ||
+    payload.cvUrl ||
+    payload.bio
+  ) {
     const serviceProviderInfo: any = {};
 
     if (payload.serviceCategory) {
@@ -73,7 +153,9 @@ const createServiceProviderIntoDB = async (payload: any) => {
     }
 
     if (Array.isArray(payload.subCategories) && payload.subCategories.length > 0) {
-      serviceProviderInfo.subCategories = payload.subCategories.map((id: string) => new Types.ObjectId(id));
+      serviceProviderInfo.subCategories = payload.subCategories.map(
+        (id: string) => new Types.ObjectId(id)
+      );
     }
 
     if (payload.cvUrl) serviceProviderInfo.cvUrl = payload.cvUrl;
@@ -85,42 +167,52 @@ const createServiceProviderIntoDB = async (payload: any) => {
   }
 
   const newUser = await User.create(userPayload);
-  return User.findById(newUser._id).select('-password');
+  
+  return User.findById(newUser._id)
+    .select('-password')
+    .lean();
 };
 
-
-
-
+/**
+ * 👨‍💼 Admin Update User
+ */
 const updateUserByAdminInDB = async (
-  id: string, 
+  id: string,
   payload: Partial<TUser>
 ): Promise<Partial<TUser> | null> => {
-  const user = await User.findById(id);
+  const user = await User.findById(id).lean();
   if (!user) throw new Error('User not found!');
 
-  // Password update না করলে ভালো (security)
+  // Security: Don't allow password update from this endpoint
   if (payload.password) {
     delete payload.password;
   }
 
-  return User.findByIdAndUpdate(
-    id, 
-    payload, 
-    { new: true, runValidators: true }
-  ).select('-password');
+  const result = await User.findByIdAndUpdate(id, payload, {
+    new: true,
+    runValidators: true,
+  })
+    .select('-password')
+    .lean();
+
+  // 🗑️ Cache invalidation
+  await deleteCacheKey(CacheKeys.USER.PROFILE(id));
+
+  return result;
 };
 
+/**
+ * 🔍 Get User by ID (No populate - direct data only)
+ */
 const getUserByIdFromDB = async (id: string): Promise<Partial<TUser> | null> => {
-  // মডেলগুলো উপরে ইম্পোর্ট করায় এখন populate কাজ করবে
+  // ✅ No populate - direct user data only
+  // If serviceCategory needed, create separate endpoint
   const user = await User.findById(id)
     .select('-password')
-    // .populate('serviceProviderInfo.serviceCategory')
-    // .populate('serviceProviderInfo.subCategories');
-  
+    .lean();
+
   return user;
 };
-
-
 
 export const UserServices = {
   createUserIntoDB,
@@ -128,7 +220,7 @@ export const UserServices = {
   getMyProfileFromDB,
   updateMyProfileInDB,
   deleteUserFromDB,
-  createServiceProviderIntoDB, 
+  createServiceProviderIntoDB,
   updateUserByAdminInDB,
   getUserByIdFromDB,
 };
