@@ -15,4 +15,17 @@ const bannerSchema = new Schema<IEcommerceBanner>({
   orderCount: { type: Number, default: 0 }
 }, { timestamps: true });
 
-export const EcommerceBanner = models.EcommerceBanner || model<IEcommerceBanner>('EcommerceBanner', bannerSchema); 
+// ===================================
+// 🔥 INDEXING FOR SPEED
+// ===================================
+
+// 1️⃣ Public Query Optimization:
+// আমরা কুয়েরি করি: find({ bannerPosition: '...', status: 'active' }).sort({ orderCount: 1 })
+// তাই এই ৩টি ফিল্ড মিলে Compound Index বানালে কুয়েরি সুপার ফাস্ট হবে।
+bannerSchema.index({ bannerPosition: 1, status: 1, orderCount: 1 });
+
+// 2️⃣ Admin Panel Optimization:
+// এডমিন প্যানেলে সব ব্যানার সর্ট করে দেখানোর জন্য
+bannerSchema.index({ orderCount: 1 });
+
+export const EcommerceBanner = models.EcommerceBanner || model<IEcommerceBanner>('EcommerceBanner', bannerSchema);
