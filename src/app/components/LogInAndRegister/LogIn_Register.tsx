@@ -18,8 +18,8 @@ import { useRedirectAfterLogin } from '@/hooks/useRedirectAfterLogin'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
-// ✅ Import signIn from next-auth
 import { signIn } from 'next-auth/react'
+import { useSession } from 'next-auth/react' // ✅ Added for session management
 
 export interface LoginFormData {
   identifier: string
@@ -51,6 +51,7 @@ export type FormStep =
 export default function LogInRegister() {
   useRedirectAfterLogin()
   const router = useRouter()
+  const { update } = useSession() // ✅ For session updates without full reload
 
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -64,13 +65,13 @@ export default function LogInRegister() {
     container.id = 'recaptcha-container'
     document.body.appendChild(container)
     return () => {
-        if(document.body.contains(container)){
-            document.body.removeChild(container)
-        }
+      if (document.body.contains(container)) {
+        document.body.removeChild(container)
+      }
     }
   }, [])
 
-  const loginForm = useForm<LoginFormData>({ 
+  const loginForm = useForm<LoginFormData>({
     mode: 'onChange',
     defaultValues: {
       identifier: '',
@@ -85,99 +86,144 @@ export default function LogInRegister() {
 
   const [showPin, setShowPin] = useState<boolean>(false)
 
-  // ✅ Updated: Login Submit Handler with NextAuth signIn
+  // ✅ OPTIMIZED: Login Submit Handler
   const onSubmitLogin = async (data: LoginFormData) => {
     try {
       setLoading(true)
-      
-      // 1. Call Backend API to get Token & User Data
+      toast.loading('Logging in...', { id: 'login-toast' })
+
+      // 1. Call Backend API - Single request
       const res = await axios.post('/api/v1/auth/login', {
-        identifier: data.identifier, 
-        password: data.pin 
+        identifier: data.identifier,
+        password: data.pin,
       })
 
       if (res.data.success) {
-        const { user, accessToken } = res.data.data;
+        const { user, accessToken } = res.data.data
 
-        // 2. 🔥 Tell NextAuth to create a session using these credentials
-        // এই অংশটিই আপনার মিসিং ছিল
+        // 2. ✅ Create NextAuth session
         const result = await signIn('credentials', {
-            redirect: false, // Page reload avoid korar jonno false rakhun
-            userId: user._id,
-            role: user.role,
-            accessToken: accessToken,
-            vendorId: user.vendorId, // Vendor ID pass
-            name: user.name,
-            email: user.email,
-            phoneNumber: user.phoneNumber,
-            profilePicture: user.profilePicture,
-            address: user.address
-        });
+          redirect: false,
+          userId: user._id,
+          role: user.role,
+          accessToken: accessToken,
+          vendorId: user.vendorId || '',
+          name: user.name || '',
+          email: user.email || '',
+          phoneNumber: user.phoneNumber || '',
+          profilePicture: user.profilePicture || '',
+          address: user.address || '',
+        })
+
+        toast.dismiss('login-toast')
 
         if (result?.error) {
-            toast.error(result.error);
-        } else {
-            toast.success('Logged in successfully!');
-            closeButtonRef.current?.click();
-            window.location.reload(); // Refresh to reflect session state
+          toast.error('Session creation failed', {
+            description: 'Please try again',
+          })
+          return
         }
+
+        // 3. ✅ Success handling
+        toast.success('Welcome back!', {
+          description: 'Login successful',
+          duration: 3000,
+        })
+
+        closeButtonRef.current?.click()
+
+        // 4. ✅ Update session without full reload (faster)
+        await update()
+        
+        // 5. ✅ Soft navigation instead of hard reload
+        const redirectPath = localStorage.getItem('redirectAfterLogin') || '/'
+        localStorage.removeItem('redirectAfterLogin')
+        router.push(redirectPath)
+        router.refresh() // Soft refresh
       }
     } catch (error: any) {
+      toast.dismiss('login-toast')
       console.error('Login Error:', error)
-      toast.error(error.response?.data?.message || 'Login failed')
+
+      // ✅ Better error messages
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        'Login failed. Please check your credentials.'
+
+      toast.error('Login Failed', {
+        description: errorMessage,
+        duration: 5000,
+      })
     } finally {
       setLoading(false)
     }
   }
 
-  // ✅ Updated: Handle Account Created (Auto Login)
+  // ✅ OPTIMIZED: Handle Account Created (Auto Login)
   const handleAccountCreated = async (phone: string, pin: string) => {
     try {
+      toast.loading('Setting up your account...', { id: 'setup-toast' })
+
       const cleanPhone = phone.startsWith('0')
         ? phone
         : '0' + phone.replace('+88', '')
 
-      // 1. Call Backend
+      // 1. Backend login
       const loginRes = await axios.post('/api/v1/auth/login', {
         identifier: cleanPhone,
         password: pin,
       })
 
       if (loginRes.data.success) {
-        const { user, accessToken } = loginRes.data.data;
+        const { user, accessToken } = loginRes.data.data
 
-        // 2. 🔥 Sync with NextAuth
-        await signIn('credentials', {
-            redirect: false,
-            userId: user._id,
-            role: user.role,
-            accessToken: accessToken,
-            vendorId: user.vendorId,
-            name: user.name,
-            email: user.email,
-            phoneNumber: user.phoneNumber,
-            profilePicture: user.profilePicture,
-            address: user.address
-        });
+        // 2. ✅ Create NextAuth session
+        const result = await signIn('credentials', {
+          redirect: false,
+          userId: user._id,
+          role: user.role,
+          accessToken: accessToken,
+          vendorId: user.vendorId || '',
+          name: user.name || '',
+          email: user.email || '',
+          phoneNumber: user.phoneNumber || '',
+          profilePicture: user.profilePicture || '',
+          address: user.address || '',
+        })
 
-        toast.success('Welcome to Guptodhan!', {
-          description: 'Your account is ready and you are now logged in.',
+        toast.dismiss('setup-toast')
+
+        if (result?.error) {
+          toast.error('Account created but login failed', {
+            description: 'Please log in manually',
+          })
+          setStep('login')
+          return
+        }
+
+        // 3. ✅ Success
+        toast.success('Welcome to Guptodhan! 🎉', {
+          description: 'Your account is ready',
           duration: 6000,
         })
-      } else {
-        toast.success('Account created successfully!', {
-          description: 'You can now log in.',
-        })
+
+        closeButtonRef.current?.click()
+
+        // 4. ✅ Update session and navigate
+        await update()
+        router.push('/')
+        router.refresh()
       }
     } catch (err: any) {
+      toast.dismiss('setup-toast')
       console.error('Auto-login failed:', err)
-      toast.success('Account created!', {
-        description: 'Please log in to continue.',
+
+      toast.success('Account created successfully! 🎉', {
+        description: 'Please log in to continue',
+        duration: 5000,
       })
       setStep('login')
-    } finally {
-      closeButtonRef.current?.click()
-      router.refresh()
     }
   }
 
@@ -218,6 +264,7 @@ export default function LogInRegister() {
               showPin={showPin}
               setShowPin={setShowPin}
               setStep={setStep}
+              loading={loading} // ✅ Pass loading state
             />
           )}
 
