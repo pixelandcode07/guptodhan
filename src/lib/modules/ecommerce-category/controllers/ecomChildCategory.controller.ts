@@ -10,10 +10,10 @@ import { IChildCategory } from '../interfaces/ecomChildCategory.interface';
 import dbConnect from '@/lib/db';
 import { Types } from 'mongoose';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
-import { VendorProductModel } from '../../product/vendorProduct.model';
 
-// Create a new child category
-// Create a new child category
+// ================================================================
+// 📝 CREATE CHILD CATEGORY
+// ================================================================
 const createChildCategory = async (req: NextRequest) => {
   try {
     await dbConnect();
@@ -24,11 +24,11 @@ const createChildCategory = async (req: NextRequest) => {
     const name = (form.get('name') as string) || '';
     const category = (form.get('category') as string) || '';
     const subCategory = (form.get('subCategory') as string) || '';
-    let slug = (form.get('slug') as string) || ''; // User can provide slug
+    let slug = (form.get('slug') as string) || '';
     const status = (form.get('status') as string) || 'active';
     const iconFile = form.get('childCategoryIcon') as File | null;
 
-    // ✅ Auto-generate slug if not provided
+    // ✅ Auto-generate slug
     if (!slug) {
       slug = name
         .toLowerCase()
@@ -40,12 +40,12 @@ const createChildCategory = async (req: NextRequest) => {
         .replace(/-+$/, '');
     }
     
-    // Validate category and subcategory ID formats
+    // Validate IDs
     if (!category || !Types.ObjectId.isValid(category)) {
-      throw new Error(`Invalid category ID: ${category}. Must be a valid MongoDB ObjectId.`);
+      throw new Error(`Invalid category ID: ${category}`);
     }
     if (!subCategory || !Types.ObjectId.isValid(subCategory)) {
-      throw new Error(`Invalid subcategory ID: ${subCategory}. Must be a valid MongoDB ObjectId.`);
+      throw new Error(`Invalid subcategory ID: ${subCategory}`);
     }
 
     let iconUrl = '';
@@ -60,7 +60,7 @@ const createChildCategory = async (req: NextRequest) => {
       category, 
       subCategory,
       icon: iconUrl, 
-      slug, // ✅ Auto-generated slug
+      slug,
       status 
     };
     
@@ -92,20 +92,19 @@ const createChildCategory = async (req: NextRequest) => {
   }
 };
 
-// Get all child categories
+// ================================================================
+// 📋 GET ALL CHILD CATEGORIES
+// ================================================================
 const getAllChildCategories = async (req: NextRequest) => {
   await dbConnect();
   
-  // Check if subCategoryId query parameter is provided
   const { searchParams } = new URL(req.url);
   const subCategoryId = searchParams.get('subCategoryId');
   
   let result;
   if (subCategoryId) {
-    // Filter by subcategory if subCategoryId is provided
     result = await ChildCategoryServices.getChildCategoriesBySubCategoryFromDB(subCategoryId);
   } else {
-    // Get all child categories if no filter
     result = await ChildCategoryServices.getAllChildCategoriesFromDB();
   }
 
@@ -117,8 +116,13 @@ const getAllChildCategories = async (req: NextRequest) => {
   });
 };
 
-// Get child categories by subcategory
-const getChildCategoriesBySubCategory = async (req: NextRequest, { params }: { params: Promise<{ subCategoryId: string }> }) => {
+// ================================================================
+// 🔍 GET CHILD CATEGORIES BY SUBCATEGORY
+// ================================================================
+const getChildCategoriesBySubCategory = async (
+  req: NextRequest, 
+  { params }: { params: Promise<{ subCategoryId: string }> }
+) => {
   await dbConnect();
   const { subCategoryId } = await params;
   const result = await ChildCategoryServices.getChildCategoriesBySubCategoryFromDB(subCategoryId);
@@ -131,31 +135,31 @@ const getChildCategoriesBySubCategory = async (req: NextRequest, { params }: { p
   });
 };
 
-// Update child category (await params; accept multipart form-data like create)
-const updateChildCategory = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+// ================================================================
+// ✏️ UPDATE CHILD CATEGORY
+// ================================================================
+const updateChildCategory = async (
+  req: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) => {
   try {
     await dbConnect();
     
     const { id } = await params;
-
-    // Accept multipart form-data to support icon updates
     const form = await req.formData();
 
     const name = (form.get('name') as string) ?? undefined;
     const slug = (form.get('slug') as string) ?? undefined;
-    const status = (form.get('status') as string) ?? undefined; // 'active' | 'inactive'
-    const categoryId = (form.get('category') as string) ?? undefined; // optional category ObjectId
-    const subCategoryId = (form.get('subCategory') as string) ?? undefined; // optional subcategory ObjectId
-
+    const status = (form.get('status') as string) ?? undefined;
+    const categoryId = (form.get('category') as string) ?? undefined;
+    const subCategoryId = (form.get('subCategory') as string) ?? undefined;
     const iconFile = form.get('childCategoryIcon') as File | null;
-
 
     const updatePayload: Record<string, unknown> = {};
     if (name !== undefined) updatePayload.name = name;
     if (slug !== undefined) updatePayload.slug = slug;
     if (status !== undefined) updatePayload.status = status;
     
-    // Keep as strings for validation, convert to ObjectId later
     if (categoryId !== undefined && categoryId.trim() !== '') {
       updatePayload.category = categoryId;
     }
@@ -169,21 +173,16 @@ const updateChildCategory = async (req: NextRequest, { params }: { params: Promi
       updatePayload.icon = (await uploadToCloudinary(b, 'ecommerce-childcategory/icons')).secure_url;
     }
 
-
-    // Validate using schema (fields optional)
     const validatedData = updateChildCategoryValidationSchema.parse(updatePayload);
 
-    // Convert string IDs -> ObjectId for DB
     const dbPayload: Partial<IChildCategory> = {};
     
-    // Copy non-ObjectId fields
     if (validatedData.childCategoryId) dbPayload.childCategoryId = validatedData.childCategoryId;
     if (validatedData.name) dbPayload.name = validatedData.name;
     if (validatedData.icon) dbPayload.icon = validatedData.icon;
     if (validatedData.slug) dbPayload.slug = validatedData.slug;
     if (validatedData.status) dbPayload.status = validatedData.status;
     
-    // Convert string IDs to ObjectIds
     if (validatedData.category && typeof validatedData.category === 'string') {
       dbPayload.category = new Types.ObjectId(validatedData.category);
     }
@@ -211,8 +210,13 @@ const updateChildCategory = async (req: NextRequest, { params }: { params: Promi
   }
 };
 
-// Delete child category
-const deleteChildCategory = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+// ================================================================
+// 🗑️ DELETE CHILD CATEGORY
+// ================================================================
+const deleteChildCategory = async (
+  req: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) => {
   await dbConnect();
   const { id } = await params;
   await ChildCategoryServices.deleteChildCategoryFromDB(id);
@@ -225,8 +229,9 @@ const deleteChildCategory = async (req: NextRequest, { params }: { params: Promi
   });
 };
 
-
-// ✅ Get products by child-category slug with filters (Brand Name, Size Name)
+// ================================================================
+// 🔍 GET PRODUCTS BY CHILD CATEGORY SLUG WITH FILTERS
+// ================================================================
 const getProductsByChildCategorySlug = async (
   req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -238,11 +243,8 @@ const getProductsByChildCategorySlug = async (
   
   const filters = {
     search: searchParams.get("search") || undefined,
-    // নাম যাচ্ছে (যেমন: "Samsung")
     brand: searchParams.get("brand") || undefined,
-    // নাম যাচ্ছে (যেমন: "XL")
     size: searchParams.get("size") || undefined,
-    
     priceMin: searchParams.get("priceMin") ? Number(searchParams.get("priceMin")) : undefined,
     priceMax: searchParams.get("priceMax") ? Number(searchParams.get("priceMax")) : undefined,
     sort: searchParams.get("sort") || undefined,
@@ -262,23 +264,29 @@ const getProductsByChildCategorySlug = async (
     });
   }
 
+  // ✅ Type-safe access
+  const childCategory = result.childCategory as any;
+
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: `Products for child category "${result.childCategory.name}" retrieved successfully!`,
+    message: `Products for child category "${childCategory.name}" retrieved successfully!`,
     data: {
       childCategory: {
-        name: result.childCategory.name,
-        slug: result.childCategory.slug,
-        childCategoryId: result.childCategory.childCategoryId,
-        icon: result.childCategory.icon
+        name: childCategory.name,
+        slug: childCategory.slug,
+        childCategoryId: childCategory.childCategoryId,
+        icon: childCategory.icon
       },
       products: result.products,
-      totalProducts: result.products.length,
+      totalProducts: result.totalProducts,
     },
   });
 };
 
+// ================================================================
+// 📤 EXPORTS
+// ================================================================
 export const ChildCategoryController = {
   createChildCategory,
   getAllChildCategories,
