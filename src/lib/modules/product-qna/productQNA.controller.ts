@@ -6,17 +6,47 @@ import { ProductQAService } from './productQNA.service';
 import dbConnect from '@/lib/db';
 import { Types } from 'mongoose';
 
-//Create a new question
+// ================================================================
+// 📝 CREATE PRODUCT Q&A
+// ================================================================
 const createProductQA = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
   const validatedData = createProductQAValidationSchema.parse(body);
 
-  const payload = {
-    ...validatedData,
+  // ✅ FIX: Handle date conversion properly
+  const payload: any = {
+    qaId: validatedData.qaId,
     productId: new Types.ObjectId(validatedData.productId),
     userId: new Types.ObjectId(validatedData.userId),
+    userName: validatedData.userName,
+    userEmail: validatedData.userEmail,
+    question: validatedData.question,
+    status: validatedData.status || 'active',
   };
+
+  // Optional fields
+  if (validatedData.userImage) {
+    payload.userImage = validatedData.userImage;
+  }
+
+  // ✅ Convert createdAt string to Date if provided
+  if (validatedData.createdAt) {
+    payload.createdAt = new Date(validatedData.createdAt);
+  }
+
+  // ✅ Handle answer object with date conversion
+  if (validatedData.answer) {
+    payload.answer = {
+      answeredByName: validatedData.answer.answeredByName,
+      answeredByEmail: validatedData.answer.answeredByEmail,
+      answerText: validatedData.answer.answerText,
+      // Convert answer createdAt to Date
+      ...(validatedData.answer.createdAt && { 
+        createdAt: new Date(validatedData.answer.createdAt) 
+      }),
+    };
+  }
 
   const result = await ProductQAService.createProductQAInDB(payload);
 
@@ -28,7 +58,9 @@ const createProductQA = async (req: NextRequest) => {
   });
 };
 
-//Get all product Q&A
+// ================================================================
+// 📋 GET ALL PRODUCT Q&A
+// ================================================================
 const getAllProductQA = async () => {
   await dbConnect();
   const result = await ProductQAService.getAllProductQAFromDB();
@@ -41,7 +73,9 @@ const getAllProductQA = async () => {
   });
 };
 
-//Get Q&A by product
+// ================================================================
+// 🔍 GET Q&A BY PRODUCT
+// ================================================================
 const getProductQAByProduct = async (
   req: NextRequest,
   { params }: { params: Promise<{ productId: string }> }
@@ -58,7 +92,9 @@ const getProductQAByProduct = async (
   });
 };
 
-//Get questions by user
+// ================================================================
+// 🔍 GET Q&A BY USER
+// ================================================================
 const getProductQAByUser = async (
   req: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
@@ -75,19 +111,62 @@ const getProductQAByUser = async (
   });
 };
 
-//Admin updates question with answer
-const updateProductQA = async (req: NextRequest, { params }: { params: { id: string } }) => {
+// ================================================================
+// ✏️ UPDATE PRODUCT Q&A (ADMIN ADDS ANSWER)
+// ================================================================
+const updateProductQA = async (
+  req: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) => {
   await dbConnect();
-  const { id } =await params;
+  const { id } = await params;
   console.log(id);
+  
   const body = await req.json();
   const validatedData = updateProductQAValidationSchema.parse(body);
 
-  const payload = {
-    ...validatedData,
-    ...(validatedData.productId && { productId: new Types.ObjectId(validatedData.productId) }),
-    ...(validatedData.userId && { userId: new Types.ObjectId(validatedData.userId) }),
-  };
+  // ✅ FIX: Build payload with proper type handling
+  const payload: any = {};
+
+  // Optional ObjectId conversions
+  if (validatedData.productId) {
+    payload.productId = new Types.ObjectId(validatedData.productId);
+  }
+  if (validatedData.userId) {
+    payload.userId = new Types.ObjectId(validatedData.userId);
+  }
+
+  // Simple fields
+  if (validatedData.qaId) payload.qaId = validatedData.qaId;
+  if (validatedData.userName) payload.userName = validatedData.userName;
+  if (validatedData.userEmail) payload.userEmail = validatedData.userEmail;
+  if (validatedData.userImage) payload.userImage = validatedData.userImage;
+  if (validatedData.question) payload.question = validatedData.question;
+  if (validatedData.status) payload.status = validatedData.status;
+
+  // ✅ Convert createdAt string to Date if provided
+  if (validatedData.createdAt) {
+    payload.createdAt = new Date(validatedData.createdAt);
+  }
+
+  // ✅ Handle answer object with date conversion
+  if (validatedData.answer) {
+    payload.answer = {
+      ...(validatedData.answer.answeredByName && { 
+        answeredByName: validatedData.answer.answeredByName 
+      }),
+      ...(validatedData.answer.answeredByEmail && { 
+        answeredByEmail: validatedData.answer.answeredByEmail 
+      }),
+      ...(validatedData.answer.answerText && { 
+        answerText: validatedData.answer.answerText 
+      }),
+      // Convert answer createdAt to Date
+      ...(validatedData.answer.createdAt && { 
+        createdAt: new Date(validatedData.answer.createdAt) 
+      }),
+    };
+  }
 
   const result = await ProductQAService.updateProductQAWithAnswerInDB(id, payload);
 
@@ -99,7 +178,9 @@ const updateProductQA = async (req: NextRequest, { params }: { params: { id: str
   });
 };
 
-//Delete a question (and answer if exists)
+// ================================================================
+// 🗑️ DELETE PRODUCT Q&A
+// ================================================================
 const deleteProductQA = async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -116,6 +197,9 @@ const deleteProductQA = async (
   });
 };
 
+// ================================================================
+// 📤 EXPORTS
+// ================================================================
 export const ProductQAController = {
   createProductQA,
   getAllProductQA,
