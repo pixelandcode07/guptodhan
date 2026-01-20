@@ -3,108 +3,321 @@ import { OrderModel } from './order.model';
 import { Types } from 'mongoose';
 import { StoreModel } from '../../vendor-store/vendorStore.model';
 
-// ✅ Import Models explicitly to prevent MissingSchemaError
+// ✅ Import Models explicitly
 import '@/lib/modules/product/vendorProduct.model';
 import '@/lib/modules/vendor-store/vendorStore.model'; 
 import '@/lib/modules/promo-code/promoCode.model';
 
+// ✅ Redis Cache Imports
+import { getCachedData, deleteCacheKey, deleteCachePattern } from '@/lib/redis/cache-helpers';
+import { CacheKeys, CacheTTL } from '@/lib/redis/cache-keys';
+
+// ================================================================
+// 📝 CREATE ORDER
+// ================================================================
 const createOrderInDB = async (payload: Partial<IOrder>) => {
   const result = await OrderModel.create(payload);
+
+  // 🗑️ Clear user's order cache
+  if (payload.userId) {
+    await deleteCachePattern(`orders:user:${payload.userId}*`);
+  }
+  
+  // Clear all orders cache
+  await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
+
   return result;
 };
 
+// ================================================================
+// 📋 GET ALL ORDERS (WITH CACHE + AGGREGATION)
+// ================================================================
 const getAllOrdersFromDB = async (status?: string) => {
-  try {
-    const filter: Record<string, unknown> = {};
-    if (status) {
-      filter.orderStatus = status;
-    }
-    const result = await OrderModel.find(filter)
-      .populate('userId', 'name email phoneNumber')
-      .populate('storeId', 'storeName')
-      .populate({
-        path: 'orderDetails',
-        model: 'OrderDetails',
-        populate: {
-          path: 'productId',
-          select: 'productTitle thumbnailImage productPrice discountPrice photoGallery',
-          model: 'VendorProductModel',
-        },
-      })
-      .populate({
-        path: 'couponId',
-        select: 'code value type title minimumOrderAmount',
-        model: 'PromoCodeModel',
-      })
-      .sort({ orderDate: -1 })
-      .lean();
-    return result;
-  } catch (error) {
-    console.error('Error in getAllOrdersFromDB:', error);
-    throw error;
-  }
+  const cacheKey = status ? `orders:all:status:${status}` : CacheKeys.ORDER.ALL;
+
+  return getCachedData(
+    cacheKey,
+    async () => {
+      try {
+        const filter: Record<string, unknown> = {};
+        if (status) {
+          filter.orderStatus = status;
+        }
+
+        // ✅ Use aggregation instead of populate
+        const result = await OrderModel.aggregate([
+          { $match: filter },
+          { $sort: { orderDate: -1 } },
+
+          // Lookup user
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'userId',
+              foreignField: '_id',
+              as: 'userId',
+            },
+          },
+          { $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } },
+
+          // Lookup store
+          {
+            $lookup: {
+              from: 'storemodels',
+              localField: 'storeId',
+              foreignField: '_id',
+              as: 'storeId',
+            },
+          },
+          { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
+
+          // Lookup order details
+          {
+            $lookup: {
+              from: 'orderdetails',
+              localField: 'orderDetails',
+              foreignField: '_id',
+              as: 'orderDetails',
+            },
+          },
+
+          // Lookup products in order details
+          {
+            $lookup: {
+              from: 'vendorproductmodels',
+              localField: 'orderDetails.productId',
+              foreignField: '_id',
+              as: 'products',
+            },
+          },
+
+          // Lookup coupon
+          {
+            $lookup: {
+              from: 'promocodemodels',
+              localField: 'couponId',
+              foreignField: '_id',
+              as: 'couponId',
+            },
+          },
+          { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
+
+          // Project needed fields
+          {
+            $project: {
+              orderId: 1,
+              'userId.name': 1,
+              'userId.email': 1,
+              'userId.phoneNumber': 1,
+              'storeId.storeName': 1,
+              orderStatus: 1,
+              paymentStatus: 1,
+              paymentMethod: 1,
+              totalAmount: 1,
+              orderDate: 1,
+              deliveryDate: 1,
+              orderDetails: 1,
+              'couponId.code': 1,
+              'couponId.value': 1,
+              shippingName: 1,
+              shippingPhone: 1,
+              shippingCity: 1,
+              createdAt: 1,
+            },
+          },
+        ]);
+
+        return result;
+      } catch (error) {
+        console.error('Error in getAllOrdersFromDB:', error);
+        throw error;
+      }
+    },
+    CacheTTL.ORDER_LIST
+  );
 };
 
+// ================================================================
+// 🔍 GET ORDERS BY USER (WITH CACHE + AGGREGATION)
+// ================================================================
 const getOrdersByUserFromDB = async (userId: string) => {
-  try {
-    const result = await OrderModel.find({ userId: new Types.ObjectId(userId) })
-      .populate({
-        path: 'orderDetails',
-        model: 'OrderDetails',
-        populate: {
-          path: 'productId',
-          select: 'productTitle thumbnailImage productPrice discountPrice photoGallery',
-          model: 'VendorProductModel',
-        },
-      })
-      .populate('storeId', 'storeName')
-      .sort({ orderDate: -1 })
-      .lean();
-    return result;
-  } catch (error) {
-    console.error('Error in getOrdersByUserFromDB:', error);
-    throw error;
-  }
+  const cacheKey = CacheKeys.ORDER.BY_USER(userId);
+
+  return getCachedData(
+    cacheKey,
+    async () => {
+      try {
+        const result = await OrderModel.aggregate([
+          { $match: { userId: new Types.ObjectId(userId) } },
+          { $sort: { orderDate: -1 } },
+
+          // Lookup order details
+          {
+            $lookup: {
+              from: 'orderdetails',
+              localField: 'orderDetails',
+              foreignField: '_id',
+              as: 'orderDetails',
+            },
+          },
+
+          // Lookup products
+          {
+            $lookup: {
+              from: 'vendorproductmodels',
+              localField: 'orderDetails.productId',
+              foreignField: '_id',
+              as: 'products',
+            },
+          },
+
+          // Lookup store
+          {
+            $lookup: {
+              from: 'storemodels',
+              localField: 'storeId',
+              foreignField: '_id',
+              as: 'storeId',
+            },
+          },
+          { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
+
+          // Project
+          {
+            $project: {
+              orderId: 1,
+              orderStatus: 1,
+              paymentStatus: 1,
+              totalAmount: 1,
+              orderDate: 1,
+              orderDetails: 1,
+              'storeId.storeName': 1,
+              createdAt: 1,
+            },
+          },
+        ]);
+
+        return result;
+      } catch (error) {
+        console.error('Error in getOrdersByUserFromDB:', error);
+        throw error;
+      }
+    },
+    CacheTTL.ORDER_USER
+  );
 };
 
+// ================================================================
+// ✏️ UPDATE ORDER
+// ================================================================
 const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
   const result = await OrderModel.findByIdAndUpdate(id, payload, { new: true });
+  
   if (!result) {
     throw new Error('Order not found to update.');
   }
+
+  // 🗑️ Clear caches
+  await deleteCacheKey(CacheKeys.ORDER.BY_ID(id));
+  if (result.userId) {
+    await deleteCachePattern(`orders:user:${result.userId}*`);
+  }
+  await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
+
   return result;
 };
 
+// ================================================================
+// 🗑️ DELETE ORDER
+// ================================================================
 const deleteOrderFromDB = async (id: string) => {
   const result = await OrderModel.findByIdAndDelete(id);
+  
   if (!result) {
     throw new Error('Order not found to delete.');
   }
+
+  // 🗑️ Clear caches
+  await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
+
   return null;
 };
 
+// ================================================================
+// 🔍 GET ORDER BY ID (WITH CACHE + AGGREGATION)
+// ================================================================
 const getOrderByIdFromDB = async (id: string) => {
-  const result = await OrderModel.findById(id)
-    .populate('userId', 'name email phoneNumber')
-    .populate('storeId', 'storeName')
-    .populate({
-      path: 'orderDetails',
-      model: 'OrderDetails',
-      populate: {
-        path: 'productId',
-        select: 'productTitle thumbnailImage productPrice discountPrice photoGallery',
-        model: 'VendorProductModel',
-      },
-    })
-    .populate({
-      path: 'couponId',
-      select: 'code value type title minimumOrderAmount',
-      model: 'PromoCodeModel',
-    })
-    .lean();
-  return result;
+  const cacheKey = CacheKeys.ORDER.BY_ID(id);
+
+  return getCachedData(
+    cacheKey,
+    async () => {
+      const result = await OrderModel.aggregate([
+        { $match: { _id: new Types.ObjectId(id) } },
+
+        // Lookup user
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'userId',
+          },
+        },
+        { $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } },
+
+        // Lookup store
+        {
+          $lookup: {
+            from: 'storemodels',
+            localField: 'storeId',
+            foreignField: '_id',
+            as: 'storeId',
+          },
+        },
+        { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
+
+        // Lookup order details
+        {
+          $lookup: {
+            from: 'orderdetails',
+            localField: 'orderDetails',
+            foreignField: '_id',
+            as: 'orderDetails',
+          },
+        },
+
+        // Lookup products
+        {
+          $lookup: {
+            from: 'vendorproductmodels',
+            localField: 'orderDetails.productId',
+            foreignField: '_id',
+            as: 'products',
+          },
+        },
+
+        // Lookup coupon
+        {
+          $lookup: {
+            from: 'promocodemodels',
+            localField: 'couponId',
+            foreignField: '_id',
+            as: 'couponId',
+          },
+        },
+        { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
+      ]);
+
+      return result[0] || null;
+    },
+    CacheTTL.ORDER_DETAIL
+  );
 };
 
+// ================================================================
+// 📊 GET SALES REPORT (WITH CACHE + AGGREGATION)
+// ================================================================
 const getSalesReportFromDB = async (filters: {
   startDate?: string;
   endDate?: string;
@@ -112,174 +325,314 @@ const getSalesReportFromDB = async (filters: {
   paymentStatus?: string;
   paymentMethod?: string;
 }) => {
-  try {
-    const query: Record<string, any> = {};
+  const cacheKey = `orders:sales-report:${JSON.stringify(filters)}`;
 
-    if (filters.startDate || filters.endDate) {
-      query.orderDate = {};
-      if (filters.startDate) {
-        query.orderDate.$gte = new Date(filters.startDate);
+  return getCachedData(
+    cacheKey,
+    async () => {
+      try {
+        const match: Record<string, any> = {};
+
+        if (filters.startDate || filters.endDate) {
+          match.orderDate = {};
+          if (filters.startDate) {
+            match.orderDate.$gte = new Date(filters.startDate);
+          }
+          if (filters.endDate) {
+            const endDate = new Date(filters.endDate);
+            endDate.setHours(23, 59, 59, 999);
+            match.orderDate.$lte = endDate;
+          }
+        }
+
+        if (filters.orderStatus?.trim()) match.orderStatus = filters.orderStatus.trim();
+        if (filters.paymentStatus?.trim()) match.paymentStatus = filters.paymentStatus.trim();
+        if (filters.paymentMethod?.trim()) {
+          match.paymentMethod = { $regex: filters.paymentMethod.trim(), $options: 'i' };
+        }
+
+        const result = await OrderModel.aggregate([
+          { $match: match },
+          { $sort: { orderDate: -1 } },
+
+          // Lookups (same as getAllOrders)
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'userId',
+              foreignField: '_id',
+              as: 'userId',
+            },
+          },
+          { $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } },
+
+          {
+            $lookup: {
+              from: 'storemodels',
+              localField: 'storeId',
+              foreignField: '_id',
+              as: 'storeId',
+            },
+          },
+          { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
+
+          {
+            $lookup: {
+              from: 'orderdetails',
+              localField: 'orderDetails',
+              foreignField: '_id',
+              as: 'orderDetails',
+            },
+          },
+
+          {
+            $lookup: {
+              from: 'promocodemodels',
+              localField: 'couponId',
+              foreignField: '_id',
+              as: 'couponId',
+            },
+          },
+          { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
+        ]);
+
+        return result;
+      } catch (error) {
+        console.error('Error in getSalesReportFromDB:', error);
+        throw error;
       }
-      if (filters.endDate) {
-        const endDate = new Date(filters.endDate);
-        endDate.setHours(23, 59, 59, 999);
-        query.orderDate.$lte = endDate;
-      }
-    }
-
-    if (filters.orderStatus?.trim()) query.orderStatus = filters.orderStatus.trim();
-    if (filters.paymentStatus?.trim()) query.paymentStatus = filters.paymentStatus.trim();
-    if (filters.paymentMethod?.trim()) {
-      query.paymentMethod = { $regex: filters.paymentMethod.trim(), $options: 'i' };
-    }
-
-    const result = await OrderModel.find(query)
-      .populate('userId', 'name email phoneNumber')
-      .populate('storeId', 'storeName')
-      .populate({
-        path: 'orderDetails',
-        model: 'OrderDetails',
-        populate: {
-          path: 'productId',
-          select: 'productTitle thumbnailImage productPrice discountPrice',
-          model: 'VendorProductModel',
-        },
-      })
-      .populate({
-        path: 'couponId',
-        select: 'code value type title minimumOrderAmount',
-        model: 'PromoCodeModel',
-      })
-      .sort({ orderDate: -1 })
-      .lean();
-
-    return result;
-  } catch (error) {
-    console.error('Error in getSalesReportFromDB:', error);
-    throw error;
-  }
+    },
+    CacheTTL.ORDER_REPORT
+  );
 };
 
+// ================================================================
+// 🔄 GET RETURNED ORDERS (WITH CACHE + AGGREGATION)
+// ================================================================
 const getReturnedOrdersByUserFromDB = async (userId: string) => {
-  try {
-    const result = await OrderModel.find({
-      userId: new Types.ObjectId(userId),
-      // Check both Returned and Return Request status
-      orderStatus: { $in: ['Returned', 'Return Request'] }, 
-    })
-      .populate({
-        path: 'orderDetails',
-        model: 'OrderDetails',
-        populate: {
-          path: 'productId',
-          select: 'productTitle thumbnailImage productPrice discountPrice',
-          model: 'VendorProductModel',
-        },
-      })
-      .populate('storeId', 'storeName')
-      .sort({ updatedAt: -1 })
-      .lean();
+  const cacheKey = `orders:user:${userId}:returned`;
 
-    return result;
-  } catch (error) {
-    console.error('Error in getReturnedOrdersByUserFromDB:', error);
-    throw error;
-  }
+  return getCachedData(
+    cacheKey,
+    async () => {
+      try {
+        const result = await OrderModel.aggregate([
+          {
+            $match: {
+              userId: new Types.ObjectId(userId),
+              orderStatus: { $in: ['Returned', 'Return Request'] },
+            },
+          },
+          { $sort: { updatedAt: -1 } },
+
+          // Lookup order details
+          {
+            $lookup: {
+              from: 'orderdetails',
+              localField: 'orderDetails',
+              foreignField: '_id',
+              as: 'orderDetails',
+            },
+          },
+
+          // Lookup products
+          {
+            $lookup: {
+              from: 'vendorproductmodels',
+              localField: 'orderDetails.productId',
+              foreignField: '_id',
+              as: 'products',
+            },
+          },
+
+          // Lookup store
+          {
+            $lookup: {
+              from: 'storemodels',
+              localField: 'storeId',
+              foreignField: '_id',
+              as: 'storeId',
+            },
+          },
+          { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
+        ]);
+
+        return result;
+      } catch (error) {
+        console.error('Error in getReturnedOrdersByUserFromDB:', error);
+        throw error;
+      }
+    },
+    CacheTTL.ORDER_USER
+  );
 };
 
+// ================================================================
+// 🔍 GET FILTERED ORDERS (NO CACHE - DYNAMIC FILTERS)
+// ================================================================
 const getFilteredOrdersFromDB = async (filters: any) => {
-  const query: any = {};
+  const match: any = {};
 
-  if (filters.orderId?.trim()) query.orderId = filters.orderId.trim();
-  if (filters.orderForm) query.orderForm = filters.orderForm;
-  if (filters.paymentStatus) query.paymentStatus = filters.paymentStatus;
-  if (filters.orderStatus) query.orderStatus = filters.orderStatus;
+  if (filters.orderId?.trim()) match.orderId = filters.orderId.trim();
+  if (filters.orderForm) match.orderForm = filters.orderForm;
+  if (filters.paymentStatus) match.paymentStatus = filters.paymentStatus;
+  if (filters.orderStatus) match.orderStatus = filters.orderStatus;
 
-  if (filters.customerName) query.shippingName = { $regex: filters.customerName, $options: 'i' };
-  if (filters.customerPhone) query.shippingPhone = { $regex: filters.customerPhone, $options: 'i' };
-  if (filters.deliveryMethod) query.deliveryMethodId = filters.deliveryMethod;
+  if (filters.customerName) match.shippingName = { $regex: filters.customerName, $options: 'i' };
+  if (filters.customerPhone) match.shippingPhone = { $regex: filters.customerPhone, $options: 'i' };
+  if (filters.deliveryMethod) match.deliveryMethodId = filters.deliveryMethod;
 
   if (filters.orderedProduct && Types.ObjectId.isValid(filters.orderedProduct)) {
-    query.orderDetails = { $in: [filters.orderedProduct] };
+    match.orderDetails = { $in: [filters.orderedProduct] };
   }
 
   if (filters.couponCode) {
-    query['coupon.code'] = filters.couponCode.toUpperCase();
+    match['coupon.code'] = filters.couponCode.toUpperCase();
   }
 
   if (filters.startDate && filters.endDate) {
-    query.orderDate = {
+    match.orderDate = {
       $gte: new Date(filters.startDate),
       $lte: new Date(filters.endDate),
     };
   }
 
-  const orders = await OrderModel.find(query)
-    .populate('userId', 'name email phoneNumber')
-    .populate('storeId', 'storeName')
-    .populate({
-      path: 'orderDetails',
-      model: 'OrderDetails',
-      populate: {
-        path: 'productId',
-        select: 'productTitle thumbnailImage productPrice discountPrice photoGallery',
-        model: 'VendorProductModel',
+  // ✅ Use aggregation
+  const orders = await OrderModel.aggregate([
+    { $match: match },
+    { $sort: { orderDate: -1 } },
+
+    // Lookups
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'userId',
+        foreignField: '_id',
+        as: 'userId',
       },
-    })
-    .populate({
-      path: 'couponId',
-      select: 'code value type title minimumOrderAmount',
-      model: 'PromoCodeModel',
-    })
-    .sort({ orderDate: -1 })
-    .lean();
+    },
+    { $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } },
+
+    {
+      $lookup: {
+        from: 'storemodels',
+        localField: 'storeId',
+        foreignField: '_id',
+        as: 'storeId',
+      },
+    },
+    { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
+
+    {
+      $lookup: {
+        from: 'orderdetails',
+        localField: 'orderDetails',
+        foreignField: '_id',
+        as: 'orderDetails',
+      },
+    },
+
+    {
+      $lookup: {
+        from: 'promocodemodels',
+        localField: 'couponId',
+        foreignField: '_id',
+        as: 'couponId',
+      },
+    },
+    { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
+  ]);
 
   return orders;
 };
 
-// ✅ Request Return Logic
+// ================================================================
+// 🔄 REQUEST RETURN
+// ================================================================
 const requestReturnInDB = async (orderId: string, reason: string) => {
-  // Find by _id (ObjectId)
   const order = await OrderModel.findById(orderId);
+  
   if (!order) throw new Error('Order not found');
 
   if (order.orderStatus !== 'Delivered') {
     throw new Error('Only delivered orders can be returned');
   }
 
-  // Update status and reason
   order.orderStatus = 'Return Request';
   order.returnReason = reason;
   
   await order.save();
+
+  // 🗑️ Clear caches
+  await deleteCacheKey(CacheKeys.ORDER.BY_ID(orderId));
+  if (order.userId) {
+    await deleteCachePattern(`orders:user:${order.userId}*`);
+  }
+
   return order;
 };
 
-const getVendorStoreAndOrdersFromDBVendor = async (
-  vendorId: string
-) => {
-  // 1️⃣ Find store by vendorId
+// ================================================================
+// 🏪 GET VENDOR STORE AND ORDERS
+// ================================================================
+const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
   const store = await StoreModel.findOne({ vendorId });
 
   if (!store) {
     throw new Error('Store not found for this vendor');
   }
 
-  // 2️⃣ Find all orders for this store
-  const orders = await OrderModel.find({
-    storeId: store._id,
-  })
-    .populate('userId', 'name email')
-    .populate('orderDetails')
-    .sort({ createdAt: -1 });
+  // Use aggregation
+  const orders = await OrderModel.aggregate([
+    { $match: { storeId: store._id } },
+    { $sort: { createdAt: -1 } },
 
-  // 3️⃣ Return data
+    // Lookup user
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'userId',
+        foreignField: '_id',
+        as: 'userId',
+      },
+    },
+    { $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } },
+
+    // Lookup order details
+    {
+      $lookup: {
+        from: 'orderdetails',
+        localField: 'orderDetails',
+        foreignField: '_id',
+        as: 'orderDetails',
+      },
+    },
+
+    // Project
+    {
+      $project: {
+        orderId: 1,
+        'userId.name': 1,
+        'userId.email': 1,
+        orderStatus: 1,
+        paymentStatus: 1,
+        totalAmount: 1,
+        orderDate: 1,
+        orderDetails: 1,
+        createdAt: 1,
+      },
+    },
+  ]);
+
   return {
     store,
     orders,
   };
 };
 
+// ================================================================
+// 📤 EXPORTS
+// ================================================================
 export const OrderServices = {
   createOrderInDB,
   getAllOrdersFromDB,
@@ -290,6 +643,6 @@ export const OrderServices = {
   getSalesReportFromDB,
   getReturnedOrdersByUserFromDB,
   getFilteredOrdersFromDB,
-  requestReturnInDB, // ✅ Exported
+  requestReturnInDB,
   getVendorStoreAndOrdersFromDBVendor
 };
