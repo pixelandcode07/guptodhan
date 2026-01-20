@@ -4,15 +4,19 @@ import mongoose, { Types } from "mongoose";
 import { ClassifiedAd } from "../../classifieds/ad.model";
 import { ISubCategory } from "../interfaces/ecomSubCategory.interface";
 import { IChildCategory } from "../interfaces/ecomChildCategory.interface";
-import {} from "../models/ecomCategory.model";
 import { SubCategoryModel } from "../models/ecomSubCategory.model";
 import { ChildCategoryModel } from "../models/ecomChildCategory.model";
 import { VendorProductModel } from "../../product/vendorProduct.model";
 import { BrandModel } from "../../product-config/models/brandName.model";
 import { ProductSize } from "../../product-config/models/productSize.model";
-import { create } from "domain";
 
-// Create category
+// ✅ Redis Cache Imports
+import { getCachedData, deleteCacheKey, deleteCachePattern } from '@/lib/redis/cache-helpers';
+import { CacheKeys, CacheTTL } from '@/lib/redis/cache-keys';
+
+// ================================================================
+// 📝 CREATE CATEGORY
+// ================================================================
 const createCategoryInDB = async (payload: Partial<ICategory>) => {
   // Find highest orderCount
   const maxOrderCategory = await CategoryModel.findOne()
@@ -20,15 +24,11 @@ const createCategoryInDB = async (payload: Partial<ICategory>) => {
     .select("orderCount -_id")
     .lean<{ orderCount: number }>();
 
-  console.log("max order category is:", maxOrderCategory);
-
   // Set next orderCount
   const nextOrder =
     maxOrderCategory && typeof maxOrderCategory.orderCount === "number"
       ? maxOrderCategory.orderCount + 1
       : 0;
-
-  console.log("next order is:", nextOrder);
 
   // Create category with orderCount
   const result = await CategoryModel.create({
@@ -36,66 +36,121 @@ const createCategoryInDB = async (payload: Partial<ICategory>) => {
     orderCount: nextOrder,
   });
 
+  // 🗑️ Clear category caches
+  await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+
   return result;
 };
 
-// Get all categories (sorted by name)
+// ================================================================
+// 📋 GET ALL CATEGORIES (WITH CACHE)
+// ================================================================
 const getAllCategoriesFromDB = async () => {
-  const result = await CategoryModel.find({}).sort({ orderCount: 1 });
-  return result;
+  const cacheKey = CacheKeys.CATEGORY.ALL;
+
+  return getCachedData(
+    cacheKey,
+    async () => {
+      const result = await CategoryModel.find({})
+        .sort({ orderCount: 1 })
+        .lean();
+      return result;
+    },
+    CacheTTL.CATEGORY_LIST
+  );
 };
 
-// Get only featured categories (optimized for landing page)
+// ================================================================
+// ⭐ GET FEATURED CATEGORIES (WITH CACHE)
+// ================================================================
 const getFeaturedCategoriesFromDB = async () => {
-  const result = await CategoryModel.find({
-    isFeatured: true,
-    status: "active",
-  })
-    .select("name categoryIcon isFeatured status slug categoryId")
-    .sort({ name: 1 })
-    .lean();
-  return result;
+  const cacheKey = CacheKeys.CATEGORY.FEATURED;
+
+  return getCachedData(
+    cacheKey,
+    async () => {
+      const result = await CategoryModel.find({
+        isFeatured: true,
+        status: "active",
+      })
+        .select("name categoryIcon isFeatured status slug categoryId")
+        .sort({ name: 1 })
+        .lean();
+      return result;
+    },
+    CacheTTL.CATEGORY_FEATURED
+  );
 };
 
-// Get all main category products
+// ================================================================
+// 🔍 GET PRODUCT IDS BY CATEGORY (WITH CACHE) - FIXED
+// ================================================================
 export const getProductIdsByCategoryFromDB = async (categoryId: string) => {
-  const products = await VendorProductModel.find({
-    category: categoryId,
-    status: "active",
-  })
-    .select("_id")
-    .lean();
+  const cacheKey = `category:${categoryId}:product-ids`;
 
-  console.log("Products found for category:", categoryId, products);
-  // Return array of _id strings only
-  return products.map((p) => p._id.toString());
+  return getCachedData(
+    cacheKey,
+    async () => {
+      const products = await VendorProductModel.find({
+        category: categoryId,
+        status: "active",
+      })
+        .select("_id")
+        .lean();
+
+      // ✅ FIX: Type assertion to handle unknown _id type
+      return products.map((p: any) => p._id.toString());
+    },
+    CacheTTL.CATEGORY_PRODUCTS
+  );
 };
 
-// Get category by ID
+// ================================================================
+// 🔍 GET CATEGORY BY ID (WITH CACHE)
+// ================================================================
 const getCategoryByIdFromDB = async (categoryId: string) => {
-  const result = await CategoryModel.findOne({
-    categoryId,
-    status: "active",
-  });
-  return result;
+  const cacheKey = CacheKeys.CATEGORY.BY_ID(categoryId);
+
+  return getCachedData(
+    cacheKey,
+    async () => {
+      const result = await CategoryModel.findOne({
+        categoryId,
+        status: "active",
+      }).lean();
+      return result;
+    },
+    CacheTTL.CATEGORY_LIST
+  );
 };
 
-// Update category
+// ================================================================
+// ✏️ UPDATE CATEGORY
+// ================================================================
 const updateCategoryInDB = async (id: string, payload: Partial<ICategory>) => {
   const result = await CategoryModel.findByIdAndUpdate(id, payload, {
     new: true,
   });
+
   if (!result) {
     throw new Error("Category not found to update.");
   }
+
+  // 🗑️ Clear caches
+  await deleteCacheKey(CacheKeys.CATEGORY.BY_ID(result.categoryId));
+  await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+
   return result;
 };
 
-// Delete category (only if no products exist under it)
+// ================================================================
+// 🗑️ DELETE CATEGORY
+// ================================================================
 const deleteCategoryFromDB = async (id: string) => {
   const existingModel = await ClassifiedAd.findOne({
     category: new Types.ObjectId(id),
   });
+
   if (existingModel) {
     throw new Error(
       "Cannot delete this category as it is used in a product model."
@@ -103,101 +158,118 @@ const deleteCategoryFromDB = async (id: string) => {
   }
 
   const result = await CategoryModel.findByIdAndDelete(id);
+
   if (!result) {
     throw new Error("Category not found to delete.");
   }
+
+  // 🗑️ Clear caches
+  await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+
   return null;
 };
 
+// ================================================================
+// 🌳 GET ALL CATEGORIES WITH HIERARCHY (OPTIMIZED - WITH CACHE)
+// ================================================================
 export const getAllSubCategoriesWithChildren = async () => {
-  // ১. সব মডেল একবার টাচ করা যাতে রেজিস্টার হয়
-  const _ensureModels = [CategoryModel, SubCategoryModel, ChildCategoryModel];
+  const cacheKey = CacheKeys.CATEGORY.WITH_HIERARCHY;
 
-  // ২. শুধুমাত্র navbar-এ দেখানোর জন্য মেইন ক্যাটাগরিগুলো একবারে আনুন
-  const mainCategories = await CategoryModel.find({ isNavbar: true })
-    .sort({ orderCount: 1 })
-    .lean();
+  return getCachedData(
+    cacheKey,
+    async () => {
+      // ✅ Step 1: Get all navbar main categories
+      const mainCategories = await CategoryModel.find({ isNavbar: true })
+        .sort({ orderCount: 1 })
+        .lean();
 
-  if (!mainCategories || mainCategories.length === 0) return [];
+      if (!mainCategories || mainCategories.length === 0) return [];
 
-  const mainIds = mainCategories.map(cat => cat._id);
+      // ✅ Type-safe: Extract IDs
+      const mainIds = mainCategories.map((cat: any) => cat._id);
 
-  // ৩. এই সব মেইন ক্যাটাগরির আন্ডারে যত সাব-ক্যাটাগরি আছে সব একবারে নিয়ে আসুন (১টি কুয়েরি)
-  const allSubCategories = await SubCategoryModel.find({
-    category: { $in: mainIds },
-    status: 'active'
-  }).lean();
+      // ✅ Step 2: Get all subcategories in ONE query
+      const allSubCategories = await SubCategoryModel.find({
+        category: { $in: mainIds },
+        status: 'active'
+      }).lean();
 
-  const subIds = allSubCategories.map(sub => sub._id);
+      // ✅ Type-safe: Extract sub IDs
+      const subIds = allSubCategories.map((sub: any) => sub._id);
 
-  // ৪. এই সব সাব-ক্যাটাগরির আন্ডারে যত চাইল্ড ক্যাটাগরি আছে সব একবারে নিয়ে আসুন (১টি কুয়েরি)
-  const allChildCategories = await ChildCategoryModel.find({
-    subCategory: { $in: subIds },
-    status: 'active'
-  }).lean();
+      // ✅ Step 3: Get all child categories in ONE query
+      const allChildCategories = await ChildCategoryModel.find({
+        subCategory: { $in: subIds },
+        status: 'active'
+      }).lean();
 
-  // ৫. এখন জাভাস্ক্রিপ্ট দিয়ে ডাটাগুলো ফরম্যাট করুন (এতে ডাটাবেসের ওপর চাপ পড়বে না)
-  const result = mainCategories.map((main: any) => {
-    // এই মেইনের সাবগুলো ফিল্টার করুন
-    const subCategoriesOfThisMain = allSubCategories.filter(
-      (sub: any) => sub.category.toString() === main._id.toString()
-    );
+      // ✅ Step 4: Build hierarchy in JavaScript (Type-safe)
+      const result = mainCategories.map((main: any) => {
+        const subCategoriesOfThisMain = allSubCategories.filter(
+          (sub: any) => sub.category?.toString() === main._id?.toString()
+        );
 
-    const subWithChildren = subCategoriesOfThisMain.map((sub: any) => {
-      // এই সাবের চাইল্ডগুলো ফিল্টার করুন
-      const childrenOfThisSub = allChildCategories.filter(
-        (child: any) => child.subCategory.toString() === sub._id.toString()
-      );
+        const subWithChildren = subCategoriesOfThisMain.map((sub: any) => {
+          const childrenOfThisSub = allChildCategories.filter(
+            (child: any) => child.subCategory?.toString() === sub._id?.toString()
+          );
 
-      return {
-        subCategoryId: sub.subCategoryId,
-        name: sub.name,
-        slug: sub.slug,
-        children: childrenOfThisSub.map((child: any) => ({
-          childCategoryId: child.childCategoryId,
-          name: child.name,
-          slug: child.slug,
-        })),
-      };
-    });
+          return {
+            subCategoryId: sub.subCategoryId,
+            name: sub.name,
+            slug: sub.slug,
+            children: childrenOfThisSub.map((child: any) => ({
+              childCategoryId: child.childCategoryId,
+              name: child.name,
+              slug: child.slug,
+            })),
+          };
+        });
 
-    return {
-      mainCategoryId: main._id.toString(),
-      name: main.name,
-      categoryIcon: main.categoryIcon,
-      slug: main.slug,
-      subCategories: subWithChildren,
-    };
-  });
+        return {
+          mainCategoryId: main._id?.toString(),
+          name: main.name,
+          categoryIcon: main.categoryIcon,
+          slug: main.slug,
+          subCategories: subWithChildren,
+        };
+      });
 
-  return result;
+      return result;
+    },
+    CacheTTL.CATEGORY_HIERARCHY
+  );
 };
 
-// rearrange ecommerce main categories
+// ================================================================
+// 🔄 REORDER CATEGORIES
+// ================================================================
 export const reorderMainCategoriesService = async (orderedIds: string[]) => {
   if (!orderedIds || orderedIds.length === 0) {
     throw new Error("orderedIds array is empty");
   }
 
-  // Loop and update orderCount = index
+  // Update orderCount in parallel
   const updatePromises = orderedIds.map((id, index) =>
     CategoryModel.findByIdAndUpdate(id, { orderCount: index }, { new: true })
   );
 
   await Promise.all(updatePromises);
 
+  // 🗑️ Clear all category caches
+  await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+
   return { message: "Main categories reordered successfully!" };
 };
 
-// ✅ Helper Function: স্মার্টলি নাম খোঁজার জন্য (Quote এবং Special Character হ্যান্ডেল করবে)
+// ================================================================
+// 🔍 GET PRODUCTS BY CATEGORY SLUG WITH FILTERS (OPTIMIZED)
+// ================================================================
+
+// ✅ Helper: Create flexible regex for search
 const createFlexibleRegex = (text: string) => {
-  // ১. স্পেশাল ক্যারেক্টারগুলো (যেমন +, *, ?) যাতে এরর না দেয়, তাই Escape করা হচ্ছে
   let escaped = text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-  // ২. সোজা Quote (') এবং বাঁকানো Quote (’) দুটোই যাতে ম্যাচ করে
-  escaped = escaped.replace(/['’]/g, "['’]");
-
-  // ৩. Regex রিটার্ন করা (Case Insensitive)
+  escaped = escaped.replace(/['']/g, "['']");
   return new RegExp(`^${escaped.trim()}$`, "i");
 };
 
@@ -214,120 +286,214 @@ const getProductsByCategorySlugWithFiltersFromDB = async (
     sort?: string;
   }
 ) => {
-  const category = await CategoryModel.findOne({ slug, status: "active" });
-  if (!category) return null;
+  // ✅ Create cache key based on slug and filters
+  const filterHash = JSON.stringify(filters);
+  const cacheKey = CacheKeys.CATEGORY.PRODUCTS_BY_SLUG(slug, filterHash);
 
-  // ✅ ১. সব শর্ত $and এর মধ্যে রাখবো যাতে একটার সাথে আরেকটা সংঘর্ষ না করে
-  const andConditions: any[] = [
-    { category: category._id },
-    { status: "active" },
-  ];
+  return getCachedData(
+    cacheKey,
+    async () => {
+      // ✅ Get category (Type-safe)
+      const category = await CategoryModel.findOne({ slug, status: "active" }).lean();
+      
+      if (!category) return null;
 
-  // --- Filter: Sub-Category ---
-  if (filters.subCategory) {
-    const regex = createFlexibleRegex(filters.subCategory);
-    const subCatDoc = await SubCategoryModel.findOne({
-      name: { $regex: regex },
-    });
-    if (subCatDoc) {
-      andConditions.push({ subCategory: subCatDoc._id });
-    } else {
-      return { category, products: [], totalProducts: 0 };
-    }
-  }
+      // ✅ Type assertion for safety
+      const categoryData = category as any;
 
-  // --- Filter: Child-Category ---
-  if (filters.childCategory) {
-    const regex = createFlexibleRegex(filters.childCategory);
-    const childCatDoc = await ChildCategoryModel.findOne({
-      name: { $regex: regex },
-    });
-    if (childCatDoc) {
-      andConditions.push({ childCategory: childCatDoc._id });
-    } else {
-      return { category, products: [], totalProducts: 0 };
-    }
-  }
+      // ✅ Build aggregation pipeline
+      const matchStage: any = {
+        category: categoryData._id,
+        status: "active",
+      };
 
-  // --- Filter: Brand ---
-  if (filters.brand) {
-    const regex = createFlexibleRegex(filters.brand);
-    const brandDoc = await BrandModel.findOne({ name: { $regex: regex } });
-    if (brandDoc) {
-      andConditions.push({ brand: brandDoc._id });
-    } else {
-      return { category, products: [], totalProducts: 0 };
-    }
-  }
+      // Filter: Sub-Category
+      if (filters.subCategory) {
+        const regex = createFlexibleRegex(filters.subCategory);
+        const subCatDoc = await SubCategoryModel.findOne({
+          name: { $regex: regex },
+        }).lean();
 
-  // --- Filter: Size ---
-  if (filters.size) {
-    const regex = createFlexibleRegex(filters.size);
-    const sizeDoc = await ProductSize.findOne({ name: { $regex: regex } });
-    if (sizeDoc) {
-      andConditions.push({ "productOptions.size": sizeDoc._id });
-    } else {
-      return { category, products: [], totalProducts: 0 };
-    }
-  }
+        if (!subCatDoc) {
+          return { category: categoryData, products: [], totalProducts: 0 };
+        }
+        matchStage.subCategory = (subCatDoc as any)._id;
+      }
 
-  // --- Filter: Search ---
-  if (filters.search) {
-    const searchRegex = { $regex: filters.search, $options: "i" };
-    andConditions.push({
-      $or: [
-        { productTitle: searchRegex },
-        { productTag: { $in: [searchRegex] } },
-      ],
-    });
-  }
+      // Filter: Child-Category
+      if (filters.childCategory) {
+        const regex = createFlexibleRegex(filters.childCategory);
+        const childCatDoc = await ChildCategoryModel.findOne({
+          name: { $regex: regex },
+        }).lean();
 
-  // 🔥 Filter: Price (Advanced Logic) 🔥
-  // এটি এখন productPrice, discountPrice এবং productOptions.price সব জায়গায় চেক করবে
-  if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
-    const priceCondition: any = {};
-    if (filters.priceMin !== undefined) priceCondition.$gte = filters.priceMin;
-    if (filters.priceMax !== undefined) priceCondition.$lte = filters.priceMax;
+        if (!childCatDoc) {
+          return { category: categoryData, products: [], totalProducts: 0 };
+        }
+        matchStage.childCategory = (childCatDoc as any)._id;
+      }
 
-    andConditions.push({
-      $or: [
-        { productPrice: priceCondition }, // Simple Product Price
-        { discountPrice: priceCondition }, // Simple Product Discount Price
-        { "productOptions.price": priceCondition }, // Variable Product Price
-        { "productOptions.discountPrice": priceCondition }, // Variable Discount
-      ],
-    });
-  }
+      // Filter: Brand
+      if (filters.brand) {
+        const regex = createFlexibleRegex(filters.brand);
+        const brandDoc = await BrandModel.findOne({ name: { $regex: regex } }).lean();
 
-  // --- Final Query ---
-  const query = { $and: andConditions };
+        if (!brandDoc) {
+          return { category: categoryData, products: [], totalProducts: 0 };
+        }
+        matchStage.brand = (brandDoc as any)._id;
+      }
 
-  // --- Sorting ---
-  let sortQuery: any = { createdAt: -1 };
-  if (filters.sort === "priceLowHigh") sortQuery = { productPrice: 1 }; // Note: Sorting complex price structures is tricky in Mongo, basic sort here
-  if (filters.sort === "priceHighLow") sortQuery = { productPrice: -1 };
+      // Filter: Size
+      if (filters.size) {
+        const regex = createFlexibleRegex(filters.size);
+        const sizeDoc = await ProductSize.findOne({ name: { $regex: regex } }).lean();
 
-  const products = await VendorProductModel.find(query)
-    .populate("category", "name slug")
-    .populate("subCategory", "name slug")
-    .populate("childCategory", "name slug")
-    .populate("brand", "name brandLogo")
-    .populate("vendorStoreId", "storeName")
-    .populate("productModel", "name")
-    .populate({
-      path: "productOptions.size",
-      model: "ProductSize",
-      select: "name",
-    })
-    .sort(sortQuery);
+        if (!sizeDoc) {
+          return { category: categoryData, products: [], totalProducts: 0 };
+        }
+        matchStage["productOptions.size"] = (sizeDoc as any)._id;
+      }
 
-  return {
-    category,
-    products,
-    totalProducts: products.length,
-  };
+      // Filter: Search
+      if (filters.search) {
+        const searchRegex = { $regex: filters.search, $options: "i" };
+        matchStage.$or = [
+          { productTitle: searchRegex },
+          { productTag: { $in: [searchRegex] } },
+        ];
+      }
+
+      // Filter: Price
+      if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
+        const priceCondition: any = {};
+        if (filters.priceMin !== undefined) priceCondition.$gte = filters.priceMin;
+        if (filters.priceMax !== undefined) priceCondition.$lte = filters.priceMax;
+
+        if (!matchStage.$or) matchStage.$or = [];
+        
+        matchStage.$or.push(
+          { productPrice: priceCondition },
+          { discountPrice: priceCondition },
+          { "productOptions.price": priceCondition },
+          { "productOptions.discountPrice": priceCondition }
+        );
+      }
+
+      // ✅ Sorting
+      let sortStage: any = { createdAt: -1 };
+      if (filters.sort === "priceLowHigh") sortStage = { productPrice: 1 };
+      if (filters.sort === "priceHighLow") sortStage = { productPrice: -1 };
+
+      // ✅ Use aggregation instead of populate (MUCH FASTER!)
+      const products = await VendorProductModel.aggregate([
+        { $match: matchStage },
+        { $sort: sortStage },
+
+        // Lookup category
+        {
+          $lookup: {
+            from: 'categorymodels',
+            localField: 'category',
+            foreignField: '_id',
+            as: 'category',
+          },
+        },
+        { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
+
+        // Lookup subcategory
+        {
+          $lookup: {
+            from: 'subcategorymodels',
+            localField: 'subCategory',
+            foreignField: '_id',
+            as: 'subCategory',
+          },
+        },
+        { $unwind: { path: '$subCategory', preserveNullAndEmptyArrays: true } },
+
+        // Lookup child category
+        {
+          $lookup: {
+            from: 'childcategorymodels',
+            localField: 'childCategory',
+            foreignField: '_id',
+            as: 'childCategory',
+          },
+        },
+        { $unwind: { path: '$childCategory', preserveNullAndEmptyArrays: true } },
+
+        // Lookup brand
+        {
+          $lookup: {
+            from: 'brandmodels',
+            localField: 'brand',
+            foreignField: '_id',
+            as: 'brand',
+          },
+        },
+        { $unwind: { path: '$brand', preserveNullAndEmptyArrays: true } },
+
+        // Lookup vendor store
+        {
+          $lookup: {
+            from: 'storemodels',
+            localField: 'vendorStoreId',
+            foreignField: '_id',
+            as: 'vendorStoreId',
+          },
+        },
+        { $unwind: { path: '$vendorStoreId', preserveNullAndEmptyArrays: true } },
+
+        // Lookup product model
+        {
+          $lookup: {
+            from: 'productmodels',
+            localField: 'productModel',
+            foreignField: '_id',
+            as: 'productModel',
+          },
+        },
+        { $unwind: { path: '$productModel', preserveNullAndEmptyArrays: true } },
+
+        // Project only needed fields
+        {
+          $project: {
+            'category.name': 1,
+            'category.slug': 1,
+            'subCategory.name': 1,
+            'subCategory.slug': 1,
+            'childCategory.name': 1,
+            'childCategory.slug': 1,
+            'brand.name': 1,
+            'brand.brandLogo': 1,
+            'vendorStoreId.storeName': 1,
+            'productModel.name': 1,
+            productTitle: 1,
+            thumbnailImage: 1,
+            productPrice: 1,
+            discountPrice: 1,
+            stock: 1,
+            status: 1,
+            productOptions: 1,
+            createdAt: 1,
+          },
+        },
+      ]);
+
+      return {
+        category: categoryData,
+        products,
+        totalProducts: products.length,
+      };
+    },
+    CacheTTL.CATEGORY_PRODUCTS
+  );
 };
 
+// ================================================================
+// 📤 EXPORTS
+// ================================================================
 export const CategoryServices = {
   createCategoryInDB,
   getAllCategoriesFromDB,
@@ -336,7 +502,6 @@ export const CategoryServices = {
   updateCategoryInDB,
   deleteCategoryFromDB,
   getProductsByCategorySlugWithFiltersFromDB,
-
   getAllSubCategoriesWithChildren,
   reorderMainCategoriesService,
   getProductIdsByCategoryFromDB,
