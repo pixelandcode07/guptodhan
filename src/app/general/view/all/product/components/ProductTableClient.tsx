@@ -12,6 +12,7 @@ import FiltersBar from "./FiltersBar";
 import { downloadProductsCSV } from "./csv";
 import Dialogs from "./Dialogs";
 
+// Types
 type ApiProduct = {
   _id: string;
   productId: string;
@@ -31,9 +32,9 @@ type ApiProduct = {
   thumbnailImage?: string;
 };
 
-type ApiCategory = { _id: string; name: string; status: 'active' | 'inactive' };
-type ApiStore = { _id: string; storeName: string; status: 'active' | 'inactive' };
-type ApiFlag = { _id: string; name: string; status: 'active' | 'inactive' };
+type ApiCategory = { _id: string; name: string; status: 'active' | 'inactive'; };
+type ApiStore = { _id: string; storeName: string; status: 'active' | 'inactive'; };
+type ApiFlag = { _id: string; name: string; status: 'active' | 'inactive'; };
 
 interface ProductTableClientProps {
   initialData: {
@@ -41,25 +42,20 @@ interface ProductTableClientProps {
     categories: ApiCategory[];
     stores: ApiStore[];
     flags: ApiFlag[];
-    totalCount: number;
   };
 }
 
-type AugmentedSession = Session & { 
-  accessToken?: string; 
-  user?: Session["user"] & { role?: string } 
-};
-
 export default function ProductTableClient({ initialData }: ProductTableClientProps) {
-  const [products, setProducts] = useState<ApiProduct[]>(
-    Array.isArray(initialData?.products) ? initialData.products : []
-  );
+  // ✅ Initialize state directly with Server Data (Fastest)
+  const [products, setProducts] = useState<ApiProduct[]>(initialData.products || []);
   const [rows, setRows] = useState<Product[]>([]);
   
+  // Maps
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [storeMap, setStoreMap] = useState<Record<string, string>>({});
   const [flagMap, setFlagMap] = useState<Record<string, string>>({});
 
+  // UI State
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -67,140 +63,100 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   const [productToToggle, setProductToToggle] = useState<Product | null>(null);
   const [isToggling, setIsToggling] = useState(false);
   const [search, setSearch] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-  
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = Infinity; // No limit - show all
   
   const router = useRouter();
   const { data: session } = useSession();
+  type AugmentedSession = Session & { accessToken?: string; user?: Session["user"] & { role?: string } };
   const s = session as AugmentedSession | null;
   const token = s?.accessToken;
   const userRole = s?.user?.role;
 
+  // 1. Setup Maps
   useEffect(() => {
-    console.log(`Total products loaded: ${products.length}`);
-  }, [products]);
-
-  useEffect(() => {
+    const activeCategories = initialData.categories.filter(c => c.status === 'active');
     const cMap: Record<string, string> = {};
-    const activeCategories = Array.isArray(initialData?.categories)
-      ? initialData.categories
-      : [];
-    activeCategories.forEach(c => {
-      if (c._id && c.name) cMap[c._id] = c.name;
-    });
+    for (const c of activeCategories) cMap[c._id] = c.name;
     setCategoryMap(cMap);
 
+    const activeStores = initialData.stores.filter(s => s.status === 'active');
     const sMap: Record<string, string> = {};
-    const activeStores = Array.isArray(initialData?.stores)
-      ? initialData.stores
-      : [];
-    activeStores.forEach(st => {
-      if (st._id && st.storeName) sMap[st._id] = st.storeName;
-    });
+    for (const st of activeStores) sMap[st._id] = st.storeName;
     setStoreMap(sMap);
 
+    const activeFlags = initialData.flags.filter(f => f.status === 'active');
     const fMap: Record<string, string> = {};
-    const activeFlags = Array.isArray(initialData?.flags)
-      ? initialData.flags
-      : [];
-    activeFlags.forEach(f => {
-      if (f._id && f.name) fMap[f._id] = f.name;
-    });
+    for (const f of activeFlags) fMap[f._id] = f.name;
     setFlagMap(fMap);
   }, [initialData]);
 
+  // 2. Map Products to Table Rows
   useEffect(() => {
+    // Safety check to prevent .map crash
     if (!Array.isArray(products)) {
-      setRows([]);
-      return;
+        console.error("Products is not an array:", products);
+        setRows([]);
+        return;
     }
 
     const mapped: Product[] = products.map((p, idx) => {
-      let categoryName = 'N/A';
+      // Logic to resolve Category Name
+      let categoryName = '';
       if (typeof p.category === 'string') {
-        categoryName = categoryMap[p.category] || p.category || 'N/A';
-      } else if (p.category && typeof p.category === 'object') {
-        categoryName = p.category.name || 'N/A';
+        categoryName = categoryMap[p.category] || p.category;
+      } else if (p.category && typeof p.category === 'object' && 'name' in p.category) {
+        categoryName = p.category.name || '';
       }
+      categoryName = categoryName || 'N/A';
       
-      let storeName = 'N/A';
+      // Logic to resolve Store Name
+      let storeName = '';
       if (p.vendorName) {
         storeName = p.vendorName;
       } else if (typeof p.vendorStoreId === 'string') {
-        storeName = storeMap[p.vendorStoreId] || p.vendorStoreId || 'N/A';
-      } else if (p.vendorStoreId && typeof p.vendorStoreId === 'object') {
-        storeName = p.vendorStoreId.storeName || 'N/A';
+        storeName = storeMap[p.vendorStoreId] || p.vendorStoreId;
+      } else if (p.vendorStoreId && typeof p.vendorStoreId === 'object' && 'storeName' in p.vendorStoreId) {
+        storeName = p.vendorStoreId.storeName || '';
       }
+      storeName = storeName || 'N/A';
       
+      // Logic to resolve Flag Name
       let flagName = "";
       if (typeof p.flag === "string") {
-        flagName = flagMap[p.flag] || p.flag || "";
+        flagName = flagMap[p.flag] || p.flag;
       } else if (p.flag && typeof p.flag === "object") {
-        flagName = p.flag.name || "";
+        const flagId = "_id" in p.flag ? p.flag._id : undefined;
+        const flagLabel = "name" in p.flag ? p.flag.name : undefined;
+        flagName = flagLabel || (flagId ? flagMap[flagId] : "") || "";
       }
       
       return {
         id: idx + 1,
-        _id: p._id || '',
+        _id: p._id,
         image: p.thumbnailImage || "",
         category: categoryName,
-        name: p.productTitle || "Untitled Product",
+        name: p.productTitle || "",
         store: storeName,
-        price: p.productPrice != null ? String(p.productPrice) : "0",
+        price: p.productPrice != null ? String(p.productPrice) : "",
         offer_price: p.discountPrice != null ? String(p.discountPrice) : "",
-        stock: p.stock != null ? String(p.stock) : "0",
+        stock: p.stock != null ? String(p.stock) : "",
         flag: flagName,
         status: p.status === 'active' ? 'Active' : 'Inactive',
-        created_at: p.createdAt 
-          ? new Date(p.createdAt).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-            })
-          : "N/A",
+        created_at: p.createdAt ? new Date(p.createdAt).toLocaleString() : "",
       };
     });
-
     setRows(mapped);
   }, [products, categoryMap, storeMap, flagMap]);
 
+  // REMOVED: The initial useEffect that calls fetchProductsInitial().
+  // Reason: We already have data from SSR. Fetching again causes flickering and lag.
+
   const filteredRows = useMemo(() => {
-    let filtered = rows;
+    const q = search.trim().toLowerCase()
+    if (!q) return rows
+    return rows.filter(r => r.name.toLowerCase().includes(q))
+  }, [rows, search])
 
-    // Status filter
-    if (statusFilter === 'active') {
-      filtered = filtered.filter(row => row.status === 'Active');
-    } else if (statusFilter === 'inactive') {
-      filtered = filtered.filter(row => row.status === 'Inactive');
-    }
-
-    // Search filter
-    const query = search.trim().toLowerCase();
-    if (query) {
-      filtered = filtered.filter(row => 
-        row.name.toLowerCase().includes(query) ||
-        row.category.toLowerCase().includes(query) ||
-        row.store.toLowerCase().includes(query) ||
-        row.flag.toLowerCase().includes(query)
-      );
-    }
-
-    return filtered;
-  }, [rows, search, statusFilter]);
-
-  const paginatedRows = useMemo(() => {
-    const startIdx = (currentPage - 1) * itemsPerPage;
-    const endIdx = startIdx + itemsPerPage;
-    return filteredRows.slice(startIdx, endIdx);
-  }, [filteredRows, currentPage]);
-
-  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, statusFilter]);
+  // --- Handlers ---
 
   const onView = useCallback((product: Product) => {
     if (product._id) {
@@ -214,7 +170,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     if (product._id) {
       router.push(`/general/edit/product/${product._id}`);
     } else {
-      toast.error('Product ID not found');
+      toast.error('Product ID not found. Cannot edit product.');
     }
   }, [router]);
 
@@ -229,18 +185,18 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   }, []);
 
   const confirmStatusToggle = useCallback(async () => {
-    if (!productToToggle?._id) {
+    if (!productToToggle) return;
+    const productId = productToToggle._id; 
+    
+    if (!productId) {
       toast.error("Product ID not found");
       return;
     }
 
-    const productId = productToToggle._id;
     const newStatus = productToToggle.status === "Active" ? "inactive" : "active";
-    
     setIsToggling(true);
     try {
-      await axios.patch(
-        `/api/v1/product/${productId}`, 
+      await axios.patch(`/api/v1/product/${productId}`, 
         { status: newStatus },
         { 
           headers: {
@@ -249,26 +205,17 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
           }
         }
       );
-
-      toast.success(
-        `Product ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully!`
-      );
-      
+      toast.success(`Product ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully!`);
       setStatusToggleOpen(false);
       setProductToToggle(null);
       
-      setProducts(prev => 
-        prev.map(p => 
-          p._id === productId 
-            ? { ...p, status: newStatus as 'active' | 'inactive' } 
-            : p
-        )
-      );
+      // Optimistic Update (No need to refetch everything)
+      setProducts(prev => prev.map(p => p._id === productId ? { ...p, status: newStatus as 'active' | 'inactive' } : p));
       
-      router.refresh();
+      router.refresh(); // Tells Server Components to refresh data in background
     } catch (error: any) {
-      console.error("Error toggling status:", error);
-      const msg = error.response?.data?.message || "Failed to update status";
+      console.error("Error toggling product status:", error);
+      const msg = error.response?.data?.message || "Failed to update product status";
       toast.error(msg);
     } finally {
       setIsToggling(false);
@@ -276,15 +223,12 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   }, [productToToggle, token, userRole, router]);
 
   const confirmDelete = useCallback(async () => {
-    if (!productToDelete?._id) {
-      toast.error("Product ID not found");
-      return;
-    }
-
-    const productId = productToDelete._id;
+    if (!productToDelete) return;
     setIsDeleting(true);
-
     try {
+      const productId = productToDelete._id;
+      if (!productId) throw new Error("Product ID not found");
+
       await axios.delete(`/api/v1/product/${productId}`, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -296,9 +240,10 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       setDeleteOpen(false);
       setProductToDelete(null);
 
+      // Optimistic Update
       setProducts(prev => prev.filter(p => p._id !== productId));
       
-      router.refresh();
+      router.refresh(); // Refresh server data
     } catch (error: any) {
       console.error("Error deleting product:", error);
       const msg = error.response?.data?.message || "Failed to delete product";
@@ -308,24 +253,15 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     }
   }, [productToDelete, token, userRole, router]);
 
-  const columns = useMemo(
-    () => getProductColumns({ onView, onEdit, onDelete, onToggleStatus }), 
-    [onView, onEdit, onDelete, onToggleStatus]
-  );
+  const columns = useMemo(() => getProductColumns({ onView, onEdit, onDelete, onToggleStatus }), [onView, onEdit, onDelete, onToggleStatus]);
 
   const onDownloadCSV = useCallback(() => {
-    if (!rows || rows.length === 0) {
-      toast.error('No products data available to export');
-      return;
-    }
-
-    const success = downloadProductsCSV(rows);
-    if (success) {
-      toast.success(`Exported ${rows.length} product(s) successfully`);
+    if (!downloadProductsCSV(rows)) {
+      toast.error('No products data available to export')
     } else {
-      toast.error('Failed to export products');
+      toast.success(`Exported ${rows.length} product(s) successfully`)
     }
-  }, [rows]);
+  }, [rows])
 
   return (
     <>
@@ -336,71 +272,10 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         onDownloadCSV={onDownloadCSV}
       />
 
-      {/* Status Filter Buttons */}
-      <div className="mb-4 flex gap-2 flex-wrap">
-        <button
-          onClick={() => setStatusFilter('all')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            statusFilter === 'all'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          All ({rows.length})
-        </button>
-        <button
-          onClick={() => setStatusFilter('active')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            statusFilter === 'active'
-              ? 'bg-green-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          Active ({rows.filter(p => p.status === 'Active').length})
-        </button>
-        <button
-          onClick={() => setStatusFilter('inactive')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            statusFilter === 'inactive'
-              ? 'bg-red-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          Inactive ({rows.filter(p => p.status === 'Inactive').length})
-        </button>
-      </div>
-
       <div className="mb-4 sm:mb-6">
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          <div className="bg-gray-50 border-b px-4 py-3 sm:px-6">
-            <p className="text-sm text-gray-600">
-              Showing {filteredRows.length} product{filteredRows.length !== 1 ? 's' : ''}
-              {search && ` matching "${search}"`}
-            </p>
-          </div>
-
-          <div className="overflow-x-auto">
-            <div className="min-w-[840px]">
-              {paginatedRows.length > 0 ? (
-                <>
-                  <DataTable columns={columns} data={paginatedRows} />
-                </>
-              ) : (
-                <div className="py-12 text-center">
-                  <p className="text-gray-500 text-lg">
-                    {search ? 'No products match your search' : 'No products available'}
-                  </p>
-                  {search && (
-                    <button
-                      onClick={() => setSearch('')}
-                      className="mt-4 text-blue-600 hover:underline font-medium"
-                    >
-                      Clear search
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
+          <div className="min-w-[840px]">
+            <DataTable columns={columns} data={filteredRows} />
           </div>
         </div>
       </div>
