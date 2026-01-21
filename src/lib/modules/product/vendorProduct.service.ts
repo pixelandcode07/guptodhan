@@ -1342,6 +1342,33 @@ const getVendorStoreProductsWithReviewsFromDB = async (vendorId: string) => {
   };
 };
 
+
+const getAllProductsNoLimitForAdmin = async () => {
+  const cacheKey = 'products:admin:all:nolimit';
+  
+  return getCachedData(
+    cacheKey,
+    async () => {
+      // ❌ NO LIMIT - সব প্রোডাক্ট আনুন (active + inactive)
+      const products = await VendorProductModel.aggregate([
+        // ❌ NO status filter - সব দেখাবে
+        { $sort: { createdAt: -1 } },
+        ...getProductLookupPipeline(),
+      ]);
+
+      const total = await VendorProductModel.countDocuments(); // সব গণনা করুন
+      const populatedProducts = await populateColorAndSizeNamesForProducts(products);
+
+      return {
+        products: populatedProducts,
+        total,
+      };
+    },
+    CacheTTL.PRODUCT_LIST || 3600
+  );
+};
+
+
 // ===================================
 // 📤 EXPORTS
 // ===================================
@@ -1369,4 +1396,5 @@ export const VendorProductServices = {
   getVendorStoreAndProductsFromDB,
   getVendorStoreAndProductsFromDBVendorDashboard,
   getVendorStoreProductsWithReviewsFromDB,
+  getAllProductsNoLimitForAdmin,
 };
