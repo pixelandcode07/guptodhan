@@ -1344,26 +1344,29 @@ const getVendorStoreProductsWithReviewsFromDB = async (vendorId: string) => {
 
 
 const getAllProductsNoLimitForAdmin = async () => {
-  const cacheKey = 'products:admin:all:nolimit';
-  
-  return getCachedData(
-    cacheKey,
-    async () => {
-      const products = await VendorProductModel.aggregate([
-        { $sort: { createdAt: -1 } },
-        ...getProductLookupPipeline(),
-      ]);
+  try {
+    // NO CACHE - Always fresh data
+    const products = await VendorProductModel.aggregate([
+      { $sort: { createdAt: -1 } },
+      ...getProductLookupPipeline(),
+    ]).allowDiskUse(true);
 
-      const total = await VendorProductModel.countDocuments();
-      const populatedProducts = await populateColorAndSizeNamesForProducts(products);
+    const total = await VendorProductModel.countDocuments();
+    const populatedProducts = await populateColorAndSizeNamesForProducts(products);
 
-      return {
-        products: populatedProducts,
-        total,
-      };
-    },
-    CacheTTL.PRODUCT_LIST || 3600
-  );
+    console.log(`Loaded ${populatedProducts.length} total products`);
+
+    return {
+      products: populatedProducts,
+      total,
+    };
+  } catch (error) {
+    console.error('Error loading all products:', error);
+    return {
+      products: [],
+      total: 0,
+    };
+  }
 };
 
 
