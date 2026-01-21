@@ -70,7 +70,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 50;
+  const itemsPerPage = Infinity; // No limit - show all
   
   const router = useRouter();
   const { data: session } = useSession();
@@ -384,33 +384,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
               {paginatedRows.length > 0 ? (
                 <>
                   <DataTable columns={columns} data={paginatedRows} />
-                  
-                  <div className="flex items-center justify-between p-4 border-t bg-gray-50">
-                    <div className="text-sm text-gray-600 font-medium">
-                      Page <span className="font-bold text-gray-900">{currentPage}</span> / <span className="font-bold text-gray-900">{totalPages}</span>
-                      {filteredRows.length > 0 && (
-                        <span className="ml-2">
-                          ({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredRows.length)} of {filteredRows.length})
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                        disabled={currentPage === 1}
-                        className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        ← Previous
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                        disabled={currentPage === totalPages}
-                        className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        Next →
-                      </button>
-                    </div>
-                  </div>
                 </>
               ) : (
                 <div className="py-12 text-center">
