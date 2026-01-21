@@ -1349,14 +1349,12 @@ const getAllProductsNoLimitForAdmin = async () => {
   return getCachedData(
     cacheKey,
     async () => {
-      // ❌ NO LIMIT - সব প্রোডাক্ট আনুন (active + inactive)
       const products = await VendorProductModel.aggregate([
-        // ❌ NO status filter - সব দেখাবে
         { $sort: { createdAt: -1 } },
         ...getProductLookupPipeline(),
       ]);
 
-      const total = await VendorProductModel.countDocuments(); // সব গণনা করুন
+      const total = await VendorProductModel.countDocuments();
       const populatedProducts = await populateColorAndSizeNamesForProducts(products);
 
       return {
