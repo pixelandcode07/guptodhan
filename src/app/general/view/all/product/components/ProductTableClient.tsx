@@ -12,7 +12,7 @@ import FiltersBar from "./FiltersBar";
 import { downloadProductsCSV } from "./csv";
 import Dialogs from "./Dialogs";
 
-// Types
+// ✅ Types
 type ApiProduct = {
   _id: string;
   productId: string;
@@ -32,9 +32,9 @@ type ApiProduct = {
   thumbnailImage?: string;
 };
 
-type ApiCategory = { _id: string; name: string; status: 'active' | 'inactive'; };
-type ApiStore = { _id: string; storeName: string; status: 'active' | 'inactive'; };
-type ApiFlag = { _id: string; name: string; status: 'active' | 'inactive'; };
+type ApiCategory = { _id: string; name: string; status: 'active' | 'inactive' };
+type ApiStore = { _id: string; storeName: string; status: 'active' | 'inactive' };
+type ApiFlag = { _id: string; name: string; status: 'active' | 'inactive' };
 
 interface ProductTableClientProps {
   initialData: {
@@ -45,12 +45,19 @@ interface ProductTableClientProps {
   };
 }
 
+type AugmentedSession = Session & { 
+  accessToken?: string; 
+  user?: Session["user"] & { role?: string } 
+};
+
 export default function ProductTableClient({ initialData }: ProductTableClientProps) {
-  // ✅ Initialize state directly with Server Data (Fastest)
-  const [products, setProducts] = useState<ApiProduct[]>(initialData.products || []);
+  // ✅ State Management
+  const [products, setProducts] = useState<ApiProduct[]>(
+    Array.isArray(initialData?.products) ? initialData.products : []
+  );
   const [rows, setRows] = useState<Product[]>([]);
   
-  // Maps
+  // Maps for lookups
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [storeMap, setStoreMap] = useState<Record<string, string>>({});
   const [flagMap, setFlagMap] = useState<Record<string, string>>({});
@@ -66,98 +73,128 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   
   const router = useRouter();
   const { data: session } = useSession();
-  type AugmentedSession = Session & { accessToken?: string; user?: Session["user"] & { role?: string } };
   const s = session as AugmentedSession | null;
   const token = s?.accessToken;
   const userRole = s?.user?.role;
 
-  // 1. Setup Maps
+  // ✅ Debug log
   useEffect(() => {
-    const activeCategories = initialData.categories.filter(c => c.status === 'active');
+    console.log(`📊 Products loaded in client: ${products.length}`);
+  }, [products]);
+
+  // ✅ 1. Setup Maps from initialData
+  useEffect(() => {
+    // Category Map
+    const activeCategories = Array.isArray(initialData?.categories)
+      ? initialData.categories.filter(c => c.status === 'active')
+      : [];
     const cMap: Record<string, string> = {};
-    for (const c of activeCategories) cMap[c._id] = c.name;
+    activeCategories.forEach(c => {
+      if (c._id && c.name) cMap[c._id] = c.name;
+    });
     setCategoryMap(cMap);
 
-    const activeStores = initialData.stores.filter(s => s.status === 'active');
+    // Store Map
+    const activeStores = Array.isArray(initialData?.stores)
+      ? initialData.stores.filter(s => s.status === 'active')
+      : [];
     const sMap: Record<string, string> = {};
-    for (const st of activeStores) sMap[st._id] = st.storeName;
+    activeStores.forEach(st => {
+      if (st._id && st.storeName) sMap[st._id] = st.storeName;
+    });
     setStoreMap(sMap);
 
-    const activeFlags = initialData.flags.filter(f => f.status === 'active');
+    // Flag Map
+    const activeFlags = Array.isArray(initialData?.flags)
+      ? initialData.flags.filter(f => f.status === 'active')
+      : [];
     const fMap: Record<string, string> = {};
-    for (const f of activeFlags) fMap[f._id] = f.name;
+    activeFlags.forEach(f => {
+      if (f._id && f.name) fMap[f._id] = f.name;
+    });
     setFlagMap(fMap);
   }, [initialData]);
 
-  // 2. Map Products to Table Rows
+  // ✅ 2. Transform Products to Table Rows
   useEffect(() => {
-    // Safety check to prevent .map crash
     if (!Array.isArray(products)) {
-        console.error("Products is not an array:", products);
-        setRows([]);
-        return;
+      console.error("❌ Products is not an array:", products);
+      setRows([]);
+      return;
     }
 
+    console.log(`🔄 Transforming ${products.length} products to table rows...`);
+
     const mapped: Product[] = products.map((p, idx) => {
-      // Logic to resolve Category Name
-      let categoryName = '';
+      // Resolve Category Name
+      let categoryName = 'N/A';
       if (typeof p.category === 'string') {
-        categoryName = categoryMap[p.category] || p.category;
-      } else if (p.category && typeof p.category === 'object' && 'name' in p.category) {
-        categoryName = p.category.name || '';
+        categoryName = categoryMap[p.category] || p.category || 'N/A';
+      } else if (p.category && typeof p.category === 'object') {
+        categoryName = p.category.name || 'N/A';
       }
-      categoryName = categoryName || 'N/A';
       
-      // Logic to resolve Store Name
-      let storeName = '';
+      // Resolve Store Name
+      let storeName = 'N/A';
       if (p.vendorName) {
         storeName = p.vendorName;
       } else if (typeof p.vendorStoreId === 'string') {
-        storeName = storeMap[p.vendorStoreId] || p.vendorStoreId;
-      } else if (p.vendorStoreId && typeof p.vendorStoreId === 'object' && 'storeName' in p.vendorStoreId) {
-        storeName = p.vendorStoreId.storeName || '';
+        storeName = storeMap[p.vendorStoreId] || p.vendorStoreId || 'N/A';
+      } else if (p.vendorStoreId && typeof p.vendorStoreId === 'object') {
+        storeName = p.vendorStoreId.storeName || 'N/A';
       }
-      storeName = storeName || 'N/A';
       
-      // Logic to resolve Flag Name
+      // Resolve Flag Name
       let flagName = "";
       if (typeof p.flag === "string") {
-        flagName = flagMap[p.flag] || p.flag;
+        flagName = flagMap[p.flag] || p.flag || "";
       } else if (p.flag && typeof p.flag === "object") {
-        const flagId = "_id" in p.flag ? p.flag._id : undefined;
-        const flagLabel = "name" in p.flag ? p.flag.name : undefined;
-        flagName = flagLabel || (flagId ? flagMap[flagId] : "") || "";
+        flagName = p.flag.name || "";
       }
       
       return {
         id: idx + 1,
-        _id: p._id,
+        _id: p._id || '',
         image: p.thumbnailImage || "",
         category: categoryName,
-        name: p.productTitle || "",
+        name: p.productTitle || "Untitled Product",
         store: storeName,
-        price: p.productPrice != null ? String(p.productPrice) : "",
+        price: p.productPrice != null ? String(p.productPrice) : "0",
         offer_price: p.discountPrice != null ? String(p.discountPrice) : "",
-        stock: p.stock != null ? String(p.stock) : "",
+        stock: p.stock != null ? String(p.stock) : "0",
         flag: flagName,
         status: p.status === 'active' ? 'Active' : 'Inactive',
-        created_at: p.createdAt ? new Date(p.createdAt).toLocaleString() : "",
+        created_at: p.createdAt 
+          ? new Date(p.createdAt).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })
+          : "N/A",
       };
     });
+
+    console.log(`✅ Transformed ${mapped.length} rows`);
     setRows(mapped);
   }, [products, categoryMap, storeMap, flagMap]);
 
-  // REMOVED: The initial useEffect that calls fetchProductsInitial().
-  // Reason: We already have data from SSR. Fetching again causes flickering and lag.
-
+  // ✅ 3. Filtered Rows (Search)
   const filteredRows = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return rows
-    return rows.filter(r => r.name.toLowerCase().includes(q))
-  }, [rows, search])
+    const query = search.trim().toLowerCase();
+    if (!query) return rows;
+    
+    const filtered = rows.filter(row => 
+      row.name.toLowerCase().includes(query) ||
+      row.category.toLowerCase().includes(query) ||
+      row.store.toLowerCase().includes(query) ||
+      row.flag.toLowerCase().includes(query)
+    );
 
-  // --- Handlers ---
+    console.log(`🔍 Search "${query}" found ${filtered.length} results`);
+    return filtered;
+  }, [rows, search]);
 
+  // ✅ 4. Handlers
   const onView = useCallback((product: Product) => {
     if (product._id) {
       router.push(`/products/${product._id}`);
@@ -170,7 +207,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     if (product._id) {
       router.push(`/general/edit/product/${product._id}`);
     } else {
-      toast.error('Product ID not found. Cannot edit product.');
+      toast.error('Product ID not found');
     }
   }, [router]);
 
@@ -185,18 +222,18 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   }, []);
 
   const confirmStatusToggle = useCallback(async () => {
-    if (!productToToggle) return;
-    const productId = productToToggle._id; 
-    
-    if (!productId) {
+    if (!productToToggle?._id) {
       toast.error("Product ID not found");
       return;
     }
 
+    const productId = productToToggle._id;
     const newStatus = productToToggle.status === "Active" ? "inactive" : "active";
+    
     setIsToggling(true);
     try {
-      await axios.patch(`/api/v1/product/${productId}`, 
+      await axios.patch(
+        `/api/v1/product/${productId}`, 
         { status: newStatus },
         { 
           headers: {
@@ -205,17 +242,27 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
           }
         }
       );
-      toast.success(`Product ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully!`);
+
+      toast.success(
+        `Product ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully!`
+      );
+      
       setStatusToggleOpen(false);
       setProductToToggle(null);
       
-      // Optimistic Update (No need to refetch everything)
-      setProducts(prev => prev.map(p => p._id === productId ? { ...p, status: newStatus as 'active' | 'inactive' } : p));
+      // ✅ Optimistic Update
+      setProducts(prev => 
+        prev.map(p => 
+          p._id === productId 
+            ? { ...p, status: newStatus as 'active' | 'inactive' } 
+            : p
+        )
+      );
       
-      router.refresh(); // Tells Server Components to refresh data in background
+      router.refresh();
     } catch (error: any) {
-      console.error("Error toggling product status:", error);
-      const msg = error.response?.data?.message || "Failed to update product status";
+      console.error("❌ Error toggling status:", error);
+      const msg = error.response?.data?.message || "Failed to update status";
       toast.error(msg);
     } finally {
       setIsToggling(false);
@@ -223,12 +270,15 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   }, [productToToggle, token, userRole, router]);
 
   const confirmDelete = useCallback(async () => {
-    if (!productToDelete) return;
-    setIsDeleting(true);
-    try {
-      const productId = productToDelete._id;
-      if (!productId) throw new Error("Product ID not found");
+    if (!productToDelete?._id) {
+      toast.error("Product ID not found");
+      return;
+    }
 
+    const productId = productToDelete._id;
+    setIsDeleting(true);
+
+    try {
       await axios.delete(`/api/v1/product/${productId}`, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -240,12 +290,12 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       setDeleteOpen(false);
       setProductToDelete(null);
 
-      // Optimistic Update
+      // ✅ Optimistic Update
       setProducts(prev => prev.filter(p => p._id !== productId));
       
-      router.refresh(); // Refresh server data
+      router.refresh();
     } catch (error: any) {
-      console.error("Error deleting product:", error);
+      console.error("❌ Error deleting product:", error);
       const msg = error.response?.data?.message || "Failed to delete product";
       toast.error(msg);
     } finally {
@@ -253,18 +303,28 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     }
   }, [productToDelete, token, userRole, router]);
 
-  const columns = useMemo(() => getProductColumns({ onView, onEdit, onDelete, onToggleStatus }), [onView, onEdit, onDelete, onToggleStatus]);
+  const columns = useMemo(
+    () => getProductColumns({ onView, onEdit, onDelete, onToggleStatus }), 
+    [onView, onEdit, onDelete, onToggleStatus]
+  );
 
   const onDownloadCSV = useCallback(() => {
-    if (!downloadProductsCSV(rows)) {
-      toast.error('No products data available to export')
-    } else {
-      toast.success(`Exported ${rows.length} product(s) successfully`)
+    if (!rows || rows.length === 0) {
+      toast.error('No products data available to export');
+      return;
     }
-  }, [rows])
+
+    const success = downloadProductsCSV(rows);
+    if (success) {
+      toast.success(`Exported ${rows.length} product(s) successfully`);
+    } else {
+      toast.error('Failed to export products');
+    }
+  }, [rows]);
 
   return (
     <>
+      {/* Filters Bar */}
       <FiltersBar
         search={search}
         onSearchChange={setSearch}
@@ -272,14 +332,34 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         onDownloadCSV={onDownloadCSV}
       />
 
+      {/* Data Table */}
       <div className="mb-4 sm:mb-6">
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
-          <div className="min-w-[840px]">
-            <DataTable columns={columns} data={filteredRows} />
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <div className="min-w-[840px]">
+              {filteredRows.length > 0 ? (
+                <DataTable columns={columns} data={filteredRows} />
+              ) : (
+                <div className="py-12 text-center">
+                  <p className="text-gray-500 text-lg">
+                    {search ? 'No products match your search' : 'No products available'}
+                  </p>
+                  {search && (
+                    <button
+                      onClick={() => setSearch('')}
+                      className="mt-4 text-blue-600 hover:underline"
+                    >
+                      Clear search
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Dialogs */}
       <Dialogs
         deleteOpen={deleteOpen}
         onDeleteOpenChange={(open) => {
