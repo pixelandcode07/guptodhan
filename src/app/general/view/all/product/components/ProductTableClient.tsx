@@ -56,12 +56,10 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   );
   const [rows, setRows] = useState<Product[]>([]);
   
-  // Maps
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [storeMap, setStoreMap] = useState<Record<string, string>>({});
   const [flagMap, setFlagMap] = useState<Record<string, string>>({});
 
-  // UI State
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -69,10 +67,10 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   const [productToToggle, setProductToToggle] = useState<Product | null>(null);
   const [isToggling, setIsToggling] = useState(false);
   const [search, setSearch] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   
-  // ✅ ক্লায়েন্ট সাইড Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 50; // প্রতি পেজে 50 আইটেম
+  const itemsPerPage = 50;
   
   const router = useRouter();
   const { data: session } = useSession();
@@ -81,40 +79,38 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   const userRole = s?.user?.role;
 
   useEffect(() => {
-    console.log(`📊 সর্বমোট প্রোডাক্ট লোড: ${products.length}`);
+    console.log(`Total products loaded: ${products.length}`);
   }, [products]);
 
-  // ✅ মেপ সেটআপ
   useEffect(() => {
+    const cMap: Record<string, string> = {};
     const activeCategories = Array.isArray(initialData?.categories)
       ? initialData.categories
       : [];
-    const cMap: Record<string, string> = {};
     activeCategories.forEach(c => {
       if (c._id && c.name) cMap[c._id] = c.name;
     });
     setCategoryMap(cMap);
 
+    const sMap: Record<string, string> = {};
     const activeStores = Array.isArray(initialData?.stores)
       ? initialData.stores
       : [];
-    const sMap: Record<string, string> = {};
     activeStores.forEach(st => {
       if (st._id && st.storeName) sMap[st._id] = st.storeName;
     });
     setStoreMap(sMap);
 
+    const fMap: Record<string, string> = {};
     const activeFlags = Array.isArray(initialData?.flags)
       ? initialData.flags
       : [];
-    const fMap: Record<string, string> = {};
     activeFlags.forEach(f => {
       if (f._id && f.name) fMap[f._id] = f.name;
     });
     setFlagMap(fMap);
   }, [initialData]);
 
-  // ✅ প্রোডাক্ট ট্রান্সফর্ম করুন
   useEffect(() => {
     if (!Array.isArray(products)) {
       setRows([]);
@@ -150,15 +146,15 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         _id: p._id || '',
         image: p.thumbnailImage || "",
         category: categoryName,
-        name: p.productTitle || "নামহীন প্রোডাক্ট",
+        name: p.productTitle || "Untitled Product",
         store: storeName,
         price: p.productPrice != null ? String(p.productPrice) : "0",
         offer_price: p.discountPrice != null ? String(p.discountPrice) : "",
         stock: p.stock != null ? String(p.stock) : "0",
         flag: flagName,
-        status: p.status === 'active' ? 'সক্রিয়' : 'নিষ্ক্রিয়',
+        status: p.status === 'active' ? 'Active' : 'Inactive',
         created_at: p.createdAt 
-          ? new Date(p.createdAt).toLocaleDateString('bn-BD', {
+          ? new Date(p.createdAt).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'short',
               day: 'numeric',
@@ -170,20 +166,30 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     setRows(mapped);
   }, [products, categoryMap, storeMap, flagMap]);
 
-  // ✅ ফিল্টার করা রোজ (সার্চ)
   const filteredRows = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return rows;
-    
-    return rows.filter(row => 
-      row.name.toLowerCase().includes(query) ||
-      row.category.toLowerCase().includes(query) ||
-      row.store.toLowerCase().includes(query) ||
-      row.flag.toLowerCase().includes(query)
-    );
-  }, [rows, search]);
+    let filtered = rows;
 
-  // ✅ পেজিনেটেড রোজ
+    // Status filter
+    if (statusFilter === 'active') {
+      filtered = filtered.filter(row => row.status === 'Active');
+    } else if (statusFilter === 'inactive') {
+      filtered = filtered.filter(row => row.status === 'Inactive');
+    }
+
+    // Search filter
+    const query = search.trim().toLowerCase();
+    if (query) {
+      filtered = filtered.filter(row => 
+        row.name.toLowerCase().includes(query) ||
+        row.category.toLowerCase().includes(query) ||
+        row.store.toLowerCase().includes(query) ||
+        row.flag.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [rows, search, statusFilter]);
+
   const paginatedRows = useMemo(() => {
     const startIdx = (currentPage - 1) * itemsPerPage;
     const endIdx = startIdx + itemsPerPage;
@@ -192,17 +198,15 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
 
   const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
 
-  // ✅ রিসেট পেজ যখন সার্চ চেঞ্জ হয়
   useEffect(() => {
     setCurrentPage(1);
-  }, [search]);
+  }, [search, statusFilter]);
 
-  // ✅ হ্যান্ডলাররা
   const onView = useCallback((product: Product) => {
     if (product._id) {
       router.push(`/products/${product._id}`);
     } else {
-      toast.error('প্রোডাক্ট আইডি পাওয়া যায়নি');
+      toast.error('Product ID not found');
     }
   }, [router]);
 
@@ -210,7 +214,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     if (product._id) {
       router.push(`/general/edit/product/${product._id}`);
     } else {
-      toast.error('প্রোডাক্ট আইডি পাওয়া যায়নি');
+      toast.error('Product ID not found');
     }
   }, [router]);
 
@@ -226,12 +230,12 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
 
   const confirmStatusToggle = useCallback(async () => {
     if (!productToToggle?._id) {
-      toast.error("প্রোডাক্ট আইডি পাওয়া যায়নি");
+      toast.error("Product ID not found");
       return;
     }
 
     const productId = productToToggle._id;
-    const newStatus = productToToggle.status === "সক্রিয়" ? "inactive" : "active";
+    const newStatus = productToToggle.status === "Active" ? "inactive" : "active";
     
     setIsToggling(true);
     try {
@@ -247,7 +251,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       );
 
       toast.success(
-        `প্রোডাক্ট ${newStatus === 'active' ? 'সক্রিয়' : 'নিষ্ক্রিয়'} করা হয়েছে!`
+        `Product ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully!`
       );
       
       setStatusToggleOpen(false);
@@ -263,8 +267,8 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       
       router.refresh();
     } catch (error: any) {
-      console.error("❌ স্ট্যাটাস আপডেট এরর:", error);
-      const msg = error.response?.data?.message || "স্ট্যাটাস আপডেট ব্যর্থ";
+      console.error("Error toggling status:", error);
+      const msg = error.response?.data?.message || "Failed to update status";
       toast.error(msg);
     } finally {
       setIsToggling(false);
@@ -273,7 +277,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
 
   const confirmDelete = useCallback(async () => {
     if (!productToDelete?._id) {
-      toast.error("প্রোডাক্ট আইডি পাওয়া যায়নি");
+      toast.error("Product ID not found");
       return;
     }
 
@@ -288,7 +292,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         },
       });
 
-      toast.success("প্রোডাক্ট ডিলিট করা হয়েছে!");
+      toast.success("Product deleted successfully!");
       setDeleteOpen(false);
       setProductToDelete(null);
 
@@ -296,8 +300,8 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       
       router.refresh();
     } catch (error: any) {
-      console.error("❌ ডিলিট এরর:", error);
-      const msg = error.response?.data?.message || "ডিলিট ব্যর্থ";
+      console.error("Error deleting product:", error);
+      const msg = error.response?.data?.message || "Failed to delete product";
       toast.error(msg);
     } finally {
       setIsDeleting(false);
@@ -311,21 +315,20 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
 
   const onDownloadCSV = useCallback(() => {
     if (!rows || rows.length === 0) {
-      toast.error('এক্সপোর্ট করার জন্য কোন প্রোডাক্ট নেই');
+      toast.error('No products data available to export');
       return;
     }
 
     const success = downloadProductsCSV(rows);
     if (success) {
-      toast.success(`${rows.length} টি প্রোডাক্ট এক্সপোর্ট করা হয়েছে`);
+      toast.success(`Exported ${rows.length} product(s) successfully`);
     } else {
-      toast.error('এক্সপোর্ট ব্যর্থ');
+      toast.error('Failed to export products');
     }
   }, [rows]);
 
   return (
     <>
-      {/* ফিল্টার বার */}
       <FiltersBar
         search={search}
         onSearchChange={setSearch}
@@ -333,14 +336,46 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         onDownloadCSV={onDownloadCSV}
       />
 
-      {/* ডেটা টেবিল */}
+      {/* Status Filter Buttons */}
+      <div className="mb-4 flex gap-2 flex-wrap">
+        <button
+          onClick={() => setStatusFilter('all')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            statusFilter === 'all'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          All ({rows.length})
+        </button>
+        <button
+          onClick={() => setStatusFilter('active')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            statusFilter === 'active'
+              ? 'bg-green-600 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          Active ({rows.filter(p => p.status === 'Active').length})
+        </button>
+        <button
+          onClick={() => setStatusFilter('inactive')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            statusFilter === 'inactive'
+              ? 'bg-red-600 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          Inactive ({rows.filter(p => p.status === 'Inactive').length})
+        </button>
+      </div>
+
       <div className="mb-4 sm:mb-6">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          {/* টেবিল সংক্ষিপ্ত তথ্য */}
           <div className="bg-gray-50 border-b px-4 py-3 sm:px-6">
             <p className="text-sm text-gray-600">
-              মোট {filteredRows.length} টি প্রোডাক্ট দেখাচ্ছে
-              {search && ` "${search}" এর জন্য`}
+              Showing {filteredRows.length} product{filteredRows.length !== 1 ? 's' : ''}
+              {search && ` matching "${search}"`}
             </p>
           </div>
 
@@ -350,13 +385,12 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
                 <>
                   <DataTable columns={columns} data={paginatedRows} />
                   
-                  {/* ✅ Pagination কন্ট্রোল - স্টাইল করা */}
                   <div className="flex items-center justify-between p-4 border-t bg-gray-50">
                     <div className="text-sm text-gray-600 font-medium">
-                      পৃষ্ঠা <span className="font-bold text-gray-900">{currentPage}</span> / <span className="font-bold text-gray-900">{totalPages}</span>
+                      Page <span className="font-bold text-gray-900">{currentPage}</span> / <span className="font-bold text-gray-900">{totalPages}</span>
                       {filteredRows.length > 0 && (
                         <span className="ml-2">
-                          ({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredRows.length)} / {filteredRows.length})
+                          ({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredRows.length)} of {filteredRows.length})
                         </span>
                       )}
                     </div>
@@ -366,14 +400,14 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
                         disabled={currentPage === 1}
                         className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
-                        ← পূর্ববর্তী
+                        ← Previous
                       </button>
                       <button
                         onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                         disabled={currentPage === totalPages}
                         className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
-                        পরবর্তী →
+                        Next →
                       </button>
                     </div>
                   </div>
@@ -381,14 +415,14 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
               ) : (
                 <div className="py-12 text-center">
                   <p className="text-gray-500 text-lg">
-                    {search ? 'কোন প্রোডাক্ট মিলল না' : 'কোন প্রোডাক্ট পাওয়া যায়নি'}
+                    {search ? 'No products match your search' : 'No products available'}
                   </p>
                   {search && (
                     <button
                       onClick={() => setSearch('')}
                       className="mt-4 text-blue-600 hover:underline font-medium"
                     >
-                      সার্চ ক্লিয়ার করুন
+                      Clear search
                     </button>
                   )}
                 </div>
@@ -398,7 +432,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         </div>
       </div>
 
-      {/* ডায়ালগ */}
       <Dialogs
         deleteOpen={deleteOpen}
         onDeleteOpenChange={(open) => {
