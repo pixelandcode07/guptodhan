@@ -1342,34 +1342,6 @@ const getVendorStoreProductsWithReviewsFromDB = async (vendorId: string) => {
   };
 };
 
-
-const getAllProductsNoLimitForAdmin = async () => {
-  try {
-    // NO CACHE - Always fresh data
-    const products = await VendorProductModel.aggregate([
-      { $sort: { createdAt: -1 } },
-      ...getProductLookupPipeline(),
-    ]).allowDiskUse(true);
-
-    const total = await VendorProductModel.countDocuments();
-    const populatedProducts = await populateColorAndSizeNamesForProducts(products);
-
-    console.log(`Loaded ${populatedProducts.length} total products`);
-
-    return {
-      products: populatedProducts,
-      total,
-    };
-  } catch (error) {
-    console.error('Error loading all products:', error);
-    return {
-      products: [],
-      total: 0,
-    };
-  }
-};
-
-
 // ===================================
 // 📤 EXPORTS
 // ===================================
@@ -1397,5 +1369,4 @@ export const VendorProductServices = {
   getVendorStoreAndProductsFromDB,
   getVendorStoreAndProductsFromDBVendorDashboard,
   getVendorStoreProductsWithReviewsFromDB,
-  getAllProductsNoLimitForAdmin,
 };
