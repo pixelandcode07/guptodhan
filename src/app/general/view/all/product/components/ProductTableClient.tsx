@@ -12,7 +12,6 @@ import FiltersBar from "./FiltersBar";
 import { downloadProductsCSV } from "./csv";
 import Dialogs from "./Dialogs";
 
-// ✅ Types
 type ApiProduct = {
   _id: string;
   productId: string;
@@ -42,6 +41,7 @@ interface ProductTableClientProps {
     categories: ApiCategory[];
     stores: ApiStore[];
     flags: ApiFlag[];
+    totalCount: number;
   };
 }
 
@@ -51,13 +51,12 @@ type AugmentedSession = Session & {
 };
 
 export default function ProductTableClient({ initialData }: ProductTableClientProps) {
-  // ✅ State Management
   const [products, setProducts] = useState<ApiProduct[]>(
     Array.isArray(initialData?.products) ? initialData.products : []
   );
   const [rows, setRows] = useState<Product[]>([]);
   
-  // Maps for lookups
+  // Maps
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [storeMap, setStoreMap] = useState<Record<string, string>>({});
   const [flagMap, setFlagMap] = useState<Record<string, string>>({});
@@ -71,22 +70,24 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   const [isToggling, setIsToggling] = useState(false);
   const [search, setSearch] = useState<string>("");
   
+  // ✅ ক্লায়েন্ট সাইড Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50; // প্রতি পেজে 50 আইটেম
+  
   const router = useRouter();
   const { data: session } = useSession();
   const s = session as AugmentedSession | null;
   const token = s?.accessToken;
   const userRole = s?.user?.role;
 
-  // ✅ Debug log
   useEffect(() => {
-    console.log(`📊 Products loaded in client: ${products.length}`);
+    console.log(`📊 সর্বমোট প্রোডাক্ট লোড: ${products.length}`);
   }, [products]);
 
-  // ✅ 1. Setup Maps from initialData
+  // ✅ মেপ সেটআপ
   useEffect(() => {
-    // Category Map
     const activeCategories = Array.isArray(initialData?.categories)
-      ? initialData.categories.filter(c => c.status === 'active')
+      ? initialData.categories
       : [];
     const cMap: Record<string, string> = {};
     activeCategories.forEach(c => {
@@ -94,9 +95,8 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     });
     setCategoryMap(cMap);
 
-    // Store Map
     const activeStores = Array.isArray(initialData?.stores)
-      ? initialData.stores.filter(s => s.status === 'active')
+      ? initialData.stores
       : [];
     const sMap: Record<string, string> = {};
     activeStores.forEach(st => {
@@ -104,9 +104,8 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     });
     setStoreMap(sMap);
 
-    // Flag Map
     const activeFlags = Array.isArray(initialData?.flags)
-      ? initialData.flags.filter(f => f.status === 'active')
+      ? initialData.flags
       : [];
     const fMap: Record<string, string> = {};
     activeFlags.forEach(f => {
@@ -115,18 +114,14 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     setFlagMap(fMap);
   }, [initialData]);
 
-  // ✅ 2. Transform Products to Table Rows
+  // ✅ প্রোডাক্ট ট্রান্সফর্ম করুন
   useEffect(() => {
     if (!Array.isArray(products)) {
-      console.error("❌ Products is not an array:", products);
       setRows([]);
       return;
     }
 
-    console.log(`🔄 Transforming ${products.length} products to table rows...`);
-
     const mapped: Product[] = products.map((p, idx) => {
-      // Resolve Category Name
       let categoryName = 'N/A';
       if (typeof p.category === 'string') {
         categoryName = categoryMap[p.category] || p.category || 'N/A';
@@ -134,7 +129,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         categoryName = p.category.name || 'N/A';
       }
       
-      // Resolve Store Name
       let storeName = 'N/A';
       if (p.vendorName) {
         storeName = p.vendorName;
@@ -144,7 +138,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         storeName = p.vendorStoreId.storeName || 'N/A';
       }
       
-      // Resolve Flag Name
       let flagName = "";
       if (typeof p.flag === "string") {
         flagName = flagMap[p.flag] || p.flag || "";
@@ -157,15 +150,15 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         _id: p._id || '',
         image: p.thumbnailImage || "",
         category: categoryName,
-        name: p.productTitle || "Untitled Product",
+        name: p.productTitle || "নামহীন প্রোডাক্ট",
         store: storeName,
         price: p.productPrice != null ? String(p.productPrice) : "0",
         offer_price: p.discountPrice != null ? String(p.discountPrice) : "",
         stock: p.stock != null ? String(p.stock) : "0",
         flag: flagName,
-        status: p.status === 'active' ? 'Active' : 'Inactive',
+        status: p.status === 'active' ? 'সক্রিয়' : 'নিষ্ক্রিয়',
         created_at: p.createdAt 
-          ? new Date(p.createdAt).toLocaleDateString('en-US', {
+          ? new Date(p.createdAt).toLocaleDateString('bn-BD', {
               year: 'numeric',
               month: 'short',
               day: 'numeric',
@@ -174,32 +167,42 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       };
     });
 
-    console.log(`✅ Transformed ${mapped.length} rows`);
     setRows(mapped);
   }, [products, categoryMap, storeMap, flagMap]);
 
-  // ✅ 3. Filtered Rows (Search)
+  // ✅ ফিল্টার করা রোজ (সার্চ)
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return rows;
     
-    const filtered = rows.filter(row => 
+    return rows.filter(row => 
       row.name.toLowerCase().includes(query) ||
       row.category.toLowerCase().includes(query) ||
       row.store.toLowerCase().includes(query) ||
       row.flag.toLowerCase().includes(query)
     );
-
-    console.log(`🔍 Search "${query}" found ${filtered.length} results`);
-    return filtered;
   }, [rows, search]);
 
-  // ✅ 4. Handlers
+  // ✅ পেজিনেটেড রোজ
+  const paginatedRows = useMemo(() => {
+    const startIdx = (currentPage - 1) * itemsPerPage;
+    const endIdx = startIdx + itemsPerPage;
+    return filteredRows.slice(startIdx, endIdx);
+  }, [filteredRows, currentPage]);
+
+  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+
+  // ✅ রিসেট পেজ যখন সার্চ চেঞ্জ হয়
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  // ✅ হ্যান্ডলাররা
   const onView = useCallback((product: Product) => {
     if (product._id) {
       router.push(`/products/${product._id}`);
     } else {
-      toast.error('Product ID not found');
+      toast.error('প্রোডাক্ট আইডি পাওয়া যায়নি');
     }
   }, [router]);
 
@@ -207,7 +210,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     if (product._id) {
       router.push(`/general/edit/product/${product._id}`);
     } else {
-      toast.error('Product ID not found');
+      toast.error('প্রোডাক্ট আইডি পাওয়া যায়নি');
     }
   }, [router]);
 
@@ -223,12 +226,12 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
 
   const confirmStatusToggle = useCallback(async () => {
     if (!productToToggle?._id) {
-      toast.error("Product ID not found");
+      toast.error("প্রোডাক্ট আইডি পাওয়া যায়নি");
       return;
     }
 
     const productId = productToToggle._id;
-    const newStatus = productToToggle.status === "Active" ? "inactive" : "active";
+    const newStatus = productToToggle.status === "সক্রিয়" ? "inactive" : "active";
     
     setIsToggling(true);
     try {
@@ -244,13 +247,12 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       );
 
       toast.success(
-        `Product ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully!`
+        `প্রোডাক্ট ${newStatus === 'active' ? 'সক্রিয়' : 'নিষ্ক্রিয়'} করা হয়েছে!`
       );
       
       setStatusToggleOpen(false);
       setProductToToggle(null);
       
-      // ✅ Optimistic Update
       setProducts(prev => 
         prev.map(p => 
           p._id === productId 
@@ -261,8 +263,8 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       
       router.refresh();
     } catch (error: any) {
-      console.error("❌ Error toggling status:", error);
-      const msg = error.response?.data?.message || "Failed to update status";
+      console.error("❌ স্ট্যাটাস আপডেট এরর:", error);
+      const msg = error.response?.data?.message || "স্ট্যাটাস আপডেট ব্যর্থ";
       toast.error(msg);
     } finally {
       setIsToggling(false);
@@ -271,7 +273,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
 
   const confirmDelete = useCallback(async () => {
     if (!productToDelete?._id) {
-      toast.error("Product ID not found");
+      toast.error("প্রোডাক্ট আইডি পাওয়া যায়নি");
       return;
     }
 
@@ -286,17 +288,16 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         },
       });
 
-      toast.success("Product deleted successfully!");
+      toast.success("প্রোডাক্ট ডিলিট করা হয়েছে!");
       setDeleteOpen(false);
       setProductToDelete(null);
 
-      // ✅ Optimistic Update
       setProducts(prev => prev.filter(p => p._id !== productId));
       
       router.refresh();
     } catch (error: any) {
-      console.error("❌ Error deleting product:", error);
-      const msg = error.response?.data?.message || "Failed to delete product";
+      console.error("❌ ডিলিট এরর:", error);
+      const msg = error.response?.data?.message || "ডিলিট ব্যর্থ";
       toast.error(msg);
     } finally {
       setIsDeleting(false);
@@ -310,21 +311,21 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
 
   const onDownloadCSV = useCallback(() => {
     if (!rows || rows.length === 0) {
-      toast.error('No products data available to export');
+      toast.error('এক্সপোর্ট করার জন্য কোন প্রোডাক্ট নেই');
       return;
     }
 
     const success = downloadProductsCSV(rows);
     if (success) {
-      toast.success(`Exported ${rows.length} product(s) successfully`);
+      toast.success(`${rows.length} টি প্রোডাক্ট এক্সপোর্ট করা হয়েছে`);
     } else {
-      toast.error('Failed to export products');
+      toast.error('এক্সপোর্ট ব্যর্থ');
     }
   }, [rows]);
 
   return (
     <>
-      {/* Filters Bar */}
+      {/* ফিল্টার বার */}
       <FiltersBar
         search={search}
         onSearchChange={setSearch}
@@ -332,24 +333,62 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         onDownloadCSV={onDownloadCSV}
       />
 
-      {/* Data Table */}
+      {/* ডেটা টেবিল */}
       <div className="mb-4 sm:mb-6">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          {/* টেবিল সংক্ষিপ্ত তথ্য */}
+          <div className="bg-gray-50 border-b px-4 py-3 sm:px-6">
+            <p className="text-sm text-gray-600">
+              মোট {filteredRows.length} টি প্রোডাক্ট দেখাচ্ছে
+              {search && ` "${search}" এর জন্য`}
+            </p>
+          </div>
+
           <div className="overflow-x-auto">
             <div className="min-w-[840px]">
-              {filteredRows.length > 0 ? (
-                <DataTable columns={columns} data={filteredRows} />
+              {paginatedRows.length > 0 ? (
+                <>
+                  <DataTable columns={columns} data={paginatedRows} />
+                  
+                  {/* ✅ Pagination কন্ট্রোল - স্টাইল করা */}
+                  <div className="flex items-center justify-between p-4 border-t bg-gray-50">
+                    <div className="text-sm text-gray-600 font-medium">
+                      পৃষ্ঠা <span className="font-bold text-gray-900">{currentPage}</span> / <span className="font-bold text-gray-900">{totalPages}</span>
+                      {filteredRows.length > 0 && (
+                        <span className="ml-2">
+                          ({(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredRows.length)} / {filteredRows.length})
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        ← পূর্ববর্তী
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        পরবর্তী →
+                      </button>
+                    </div>
+                  </div>
+                </>
               ) : (
                 <div className="py-12 text-center">
                   <p className="text-gray-500 text-lg">
-                    {search ? 'No products match your search' : 'No products available'}
+                    {search ? 'কোন প্রোডাক্ট মিলল না' : 'কোন প্রোডাক্ট পাওয়া যায়নি'}
                   </p>
                   {search && (
                     <button
                       onClick={() => setSearch('')}
-                      className="mt-4 text-blue-600 hover:underline"
+                      className="mt-4 text-blue-600 hover:underline font-medium"
                     >
-                      Clear search
+                      সার্চ ক্লিয়ার করুন
                     </button>
                   )}
                 </div>
@@ -359,7 +398,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         </div>
       </div>
 
-      {/* Dialogs */}
+      {/* ডায়ালগ */}
       <Dialogs
         deleteOpen={deleteOpen}
         onDeleteOpenChange={(open) => {
