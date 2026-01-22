@@ -1,5 +1,5 @@
-// File: src/app/products/[productId]/page.tsx
-
+import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import dbConnect from '@/lib/db';
 import { VendorProductServices } from '@/lib/modules/product/vendorProduct.service';
 import { CategoryServices } from '@/lib/modules/ecommerce-category/services/ecomCategory.service';
@@ -10,37 +10,135 @@ import { ChildCategoryServices } from '@/lib/modules/ecommerce-category/services
 import { ModelFormServices } from '@/lib/modules/product-config/services/modelCreate.service';
 import { ProductColorServices } from '@/lib/modules/product-config/services/productColor.service';
 import { ProductSizeServices } from '@/lib/modules/product-config/services/productSize.service';
-import { notFound } from 'next/navigation';
 import ProductDetailsClient from './components/ProductDetailsClient';
 import { HeroNav } from '@/app/components/Hero/HeroNav';
-import Script from 'next/script';
 
 interface ProductPageProps {
   params: Promise<{ productId: string }>;
 }
 
-interface IVendorProduct {
-  _id: string;
-  productTitle: string;
-  shortDescription?: string;
-  fullDescription?: string;
-  productPrice?: number;
-  discountPrice?: number;
-  stock?: number;
-  photoGallery?: string[];
-  thumbnailImage?: string;
-  productTag?: string[];
-  brand?: any;
-  category?: any;
-  createdAt?: Date;
-  updatedAt?: Date;
+// ✅ Helper function to safely convert to ISO string
+function toISOString(date: any): string {
+  if (!date) return new Date().toISOString();
+  if (typeof date === 'string') return date;
+  if (date instanceof Date) return date.toISOString();
+  try {
+    return new Date(date).toISOString();
+  } catch {
+    return new Date().toISOString();
+  }
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
-  await dbConnect();
-  const { productId } = await params;
-
+// ✅ Generate Metadata
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   try {
+    await dbConnect();
+    const { productId } = await params;
+    
+    const product = await VendorProductServices.getVendorProductByIdFromDB(productId);
+
+    if (!product) {
+      return {
+        title: 'Product Not Found | Guptodhan',
+        description: 'The product you are looking for does not exist.',
+      };
+    }
+
+    // Calculate discount percentage
+    const discountPercentage = product.productPrice && product.discountPrice
+      ? Math.round(((product.productPrice - product.discountPrice) / product.productPrice) * 100)
+      : 0;
+
+    // Generate title
+    const titleParts = [product.productTitle];
+    if (product.discountPrice && product.productPrice) {
+      titleParts.push(`৳${product.discountPrice}`);
+      if (discountPercentage > 0) {
+        titleParts.push(`(${discountPercentage}% Off)`);
+      }
+    } else if (product.productPrice) {
+      titleParts.push(`৳${product.productPrice}`);
+    }
+    titleParts.push('| Guptodhan');
+    const title = titleParts.join(' ');
+
+    // Description
+    const description = product.metaDescription || 
+      product.shortDescription || 
+      `Buy ${product.productTitle} online at best price in Bangladesh. Free delivery available.`;
+
+    // Images
+    const images = product.photoGallery && product.photoGallery.length > 0
+      ? [product.photoGallery[0]]
+      : product.thumbnailImage
+        ? [product.thumbnailImage]
+        : [];
+
+    // Keywords
+    const keywords = [
+      product.productTitle,
+      product.brand?.name || product.brand?.brandName,
+      product.category?.name,
+      'Bangladesh',
+      'Guptodhan',
+      ...(product.productTag || []),
+    ]
+      .filter(Boolean)
+      .join(', ');
+
+    const canonicalUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/products/${productId}`;
+
+    return {
+      title,
+      description,
+      keywords,
+      
+      openGraph: {
+        title,
+        description,
+        url: canonicalUrl,
+        siteName: 'Guptodhan',
+        images: images.map(img => ({
+          url: img,
+          width: 1200,
+          height: 630,
+          alt: product.productTitle,
+        })),
+        locale: 'en_BD',
+        type: 'website',
+      },
+
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: images,
+      },
+
+      alternates: {
+        canonical: canonicalUrl,
+      },
+      
+      robots: {
+        index: product.status === 'active',
+        follow: true,
+      },
+    };
+  } catch (error) {
+    console.error('Error generating metadata:', error);
+    return {
+      title: 'Product | Guptodhan',
+      description: 'Shop quality products at Guptodhan',
+    };
+  }
+}
+
+// ✅ Main Component
+export default async function ProductPage({ params }: ProductPageProps) {
+  try {
+    await dbConnect();
+    const { productId } = await params;
+
     const [
       rawProduct,
       categoriesData,
@@ -67,23 +165,28 @@ export default async function ProductPage({ params }: ProductPageProps) {
       notFound();
     }
 
-    const product = rawProduct as unknown as IVendorProduct;
-
+    // ✅ Get related products
     let relatedProducts: any[] = [];
-
-    if (product.category) {
+    if (rawProduct.category) {
       const categoryId =
-        typeof product.category === 'object' && product.category !== null
-          ? (product.category as any)._id?.toString() ||
-            (product.category as any).id
-          : product.category.toString();
+        typeof rawProduct.category === 'object' && rawProduct.category !== null
+          ? (rawProduct.category as any)._id?.toString() || (rawProduct.category as any).id
+          : rawProduct.category.toString();
 
       if (categoryId) {
-        const allCategoryProducts =
-          await VendorProductServices.getVendorProductsByCategoryFromDB(
-            categoryId,
-            {}
-          );
+        const result = await VendorProductServices.getVendorProductsByCategoryFromDB(
+          categoryId,
+          {},
+          1,
+          6
+        );
+        
+        // ✅ FIX: Extract products array from result object
+        const allCategoryProducts = Array.isArray(result?.products) 
+          ? result.products 
+          : Array.isArray(result) 
+            ? result 
+            : [];
 
         relatedProducts = allCategoryProducts
           .filter((p: any) => p._id?.toString() !== productId)
@@ -92,8 +195,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
       }
     }
 
+    // ✅ Prepare product data
     const productData = {
-      product: JSON.parse(JSON.stringify(product)),
+      product: JSON.parse(JSON.stringify(rawProduct)),
       relatedData: {
         categories: JSON.parse(JSON.stringify(categoriesData || [])),
         stores: JSON.parse(JSON.stringify(storesData || [])),
@@ -109,12 +213,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
       relatedProducts: relatedProducts,
     };
 
-    // ✅ FIXED: Clean and validate categories data
+    // ✅ Clean categories data
     const categoriesInfo = JSON.parse(JSON.stringify(categoriesData || []))
-      .filter((cat: any) => cat && cat._id) // Remove null/undefined entries
+      .filter((cat: any) => cat && cat._id)
       .map((cat: any, index: number) => ({
         ...cat,
-        mainCategoryId: cat._id || `temp-cat-${index}`, // Ensure ID exists
+        mainCategoryId: cat._id || `temp-cat-${index}`,
         subCategories: (cat.subCategories || [])
           .filter((sub: any) => sub && sub._id)
           .map((sub: any, subIndex: number) => ({
@@ -129,77 +233,86 @@ export default async function ProductPage({ params }: ProductPageProps) {
           })),
       }));
 
-    // Rich Structured Data - Product Schema
-    const jsonLd = {
+    // ✅ Calculate rating
+    const averageRating = rawProduct.ratingStats?.[0]?.averageRating || 0;
+    const totalReviews = rawProduct.ratingStats?.[0]?.totalReviews || 0;
+
+    // ✅ JSON-LD Schemas
+    const productSchema = {
       '@context': 'https://schema.org/',
       '@type': 'Product',
-      name: product.productTitle,
-      image: product.photoGallery || [product.thumbnailImage],
-      description: product.fullDescription || product.shortDescription,
-      sku: productId,
+      name: rawProduct.productTitle,
+      image: rawProduct.photoGallery || [rawProduct.thumbnailImage],
+      description: rawProduct.fullDescription || rawProduct.shortDescription,
+      sku: rawProduct.sku || productId,
       brand: {
         '@type': 'Brand',
-        name:
-          typeof product.brand === 'object'
-            ? product.brand?.name
-            : 'Guptodhan',
+        name: rawProduct.brand?.name || rawProduct.brand?.brandName || 'Guptodhan',
       },
-      aggregateRating: {
+      aggregateRating: totalReviews > 0 ? {
         '@type': 'AggregateRating',
-        ratingValue: '4.5',
-        ratingCount: '100',
-      },
+        ratingValue: averageRating.toFixed(1),
+        reviewCount: totalReviews,
+        bestRating: '5',
+        worstRating: '1',
+      } : undefined,
       offers: {
         '@type': 'Offer',
-        url: `https://www.guptodhandigital.com/products/${productId}`,
+        url: `${process.env.NEXT_PUBLIC_BASE_URL}/products/${productId}`,
         priceCurrency: 'BDT',
-        price: product.discountPrice || product.productPrice || 0,
-        priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0],
-        availability:
-          (product.stock || 0) > 0
-            ? 'https://schema.org/InStock'
-            : 'https://schema.org/OutOfStock',
+        price: rawProduct.discountPrice || rawProduct.productPrice || 0,
+        priceValidUntil: rawProduct.offerDeadline 
+          ? toISOString(rawProduct.offerDeadline).split('T')[0]
+          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        availability: (rawProduct.stock || 0) > 0
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/OutOfStock',
         seller: {
           '@type': 'Organization',
           name: 'Guptodhan',
         },
       },
-      datePublished: product.createdAt?.toISOString(),
-      dateModified: product.updatedAt?.toISOString(),
+      datePublished: toISOString(rawProduct.createdAt),
+      dateModified: toISOString(rawProduct.updatedAt),
     };
 
-    const organizationSchema = {
+    const breadcrumbSchema = {
       '@context': 'https://schema.org',
-      '@type': 'Organization',
-      name: 'Guptodhan',
-      url: 'https://www.guptodhandigital.com',
-      logo: 'https://www.guptodhandigital.com/logo.png',
-      sameAs: [
-        'https://www.facebook.com/guptodhan',
-        'https://www.instagram.com/guptodhan',
-        'https://www.twitter.com/guptodhan',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Home',
+          item: process.env.NEXT_PUBLIC_BASE_URL,
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: rawProduct.category?.name || 'Products',
+          item: rawProduct.category?.slug 
+            ? `${process.env.NEXT_PUBLIC_BASE_URL}/category/${rawProduct.category.slug}`
+            : `${process.env.NEXT_PUBLIC_BASE_URL}/products`,
+        },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          name: rawProduct.productTitle,
+          item: `${process.env.NEXT_PUBLIC_BASE_URL}/products/${productId}`,
+        },
       ],
-      contactPoint: {
-        '@type': 'ContactPoint',
-        contactType: 'Customer Service',
-        telephone: '+880-XXX-XXXXXX',
-        email: 'support@guptodhan.com',
-      },
     };
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-        <Script
-          id="product-schema"
+        {/* JSON-LD Schemas */}
+        <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
         />
-        <Script
-          id="organization-schema"
+        <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
         />
 
         <HeroNav categories={categoriesInfo} />
@@ -225,7 +338,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </div>
                 <div>
                   <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                    {product.productTitle}
+                    {rawProduct.productTitle}
                   </h1>
                   <p className="text-sm text-gray-600">
                     Product Details & Specifications
@@ -240,68 +353,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
       </div>
     );
   } catch (error) {
-    console.error('Error fetching product:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching product:', error);
+    }
     notFound();
   }
 }
 
-export async function generateMetadata({ params }: ProductPageProps) {
-  await dbConnect();
-  const { productId } = await params;
-
-  try {
-    const rawProduct =
-      await VendorProductServices.getVendorProductByIdFromDB(productId);
-
-    if (!rawProduct) {
-      return {
-        title: 'Product Not Found',
-        description: 'The requested product could not be found.',
-      };
-    }
-
-    const product = rawProduct as unknown as IVendorProduct;
-    const images = product.photoGallery && product.photoGallery.length > 0
-      ? [product.photoGallery[0]]
-      : product.thumbnailImage
-        ? [product.thumbnailImage]
-        : [];
-
-    return {
-      title: `${product.productTitle} - Buy Online at Guptodhan`,
-      description:
-        product.shortDescription || product.fullDescription?.slice(0, 160) ||
-        'High-quality product available on Guptodhan marketplace',
-      keywords: [
-        product.productTitle,
-        ...(product.productTag || []),
-        'buy online',
-        'Bangladesh',
-      ].join(', '),
-      
-      openGraph: {
-        title: product.productTitle,
-        description: product.shortDescription,
-        images: images,
-        type: 'website',
-        url: `https://www.guptodhandigital.com/products/${productId}`,
-      },
-      
-      twitter: {
-        card: 'summary_large_image',
-        title: product.productTitle,
-        description: product.shortDescription,
-        images: images,
-      },
-      
-      alternates: {
-        canonical: `https://www.guptodhandigital.com/products/${productId}`,
-      },
-    };
-  } catch (error) {
-    return {
-      title: 'Product Details | Guptodhan',
-      description: 'View product information and details',
-    };
-  }
-}
+// ✅ Revalidate every hour
+export const revalidate = 3600;

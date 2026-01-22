@@ -167,6 +167,23 @@ const getReviewsByProduct = async (
 };
 
 
+const getReviewStats = async (
+  req: NextRequest,
+  { params }: { params: Promise }
+) => {
+  await dbConnect();
+  const { productId } = await params;
+  const result = await ReviewServices.getReviewStatsByProductFromDB(productId);
+  
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Review statistics retrieved!',
+    data: result,
+  });
+};
+
+
 export const ReviewController = {
     createReview,
     getAllReviews,
@@ -174,4 +191,5 @@ export const ReviewController = {
     getReviewsByProduct,
     updateReview,
     deleteReview,
+    getReviewStats,
 };

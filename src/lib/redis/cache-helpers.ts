@@ -3,9 +3,6 @@ import { getRedisClient } from './client';
 
 /**
  * 🎯 Generic Cache Get/Set Helper
- * @param key - Cache key
- * @param fetchFn - Function to fetch fresh data if cache miss
- * @param ttl - Time to live in seconds
  */
 export async function getCachedData<T>(
   key: string,
@@ -85,5 +82,5 @@ export async function setCacheData<T>(
   }
 }
 
-// ✅ Re-export CacheKeys and CacheTTL from cache-keys.ts
+// ✅ Re-export CacheKeys and CacheTTL
 export { CacheKeys, CacheTTL } from './cache-keys';
