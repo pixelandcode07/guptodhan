@@ -43,6 +43,7 @@ const adminRoutes = [
   '/api/v1/service-section/service-provider',
   '/api/v1/service-section/service-category',
   '/api/v1/service-section/service-banner',
+  '/api/v1/service-section/provide-service/status/[id]',
   // '/api/v1/service-section/provide-service/[id]',
 ];
 
@@ -100,7 +101,7 @@ const protectedApiRoutes = [
   '/api/v1/crm-modules/support-ticket',
   '/home/UserProfile/support-tickets',
   '/api/v1/vendor-category',
-  // '/api/v1/service-section/provide-service',
+  '/api/v1/service-section/provide-service',
 ];
 
 export async function middleware(req: NextRequest) {
@@ -191,7 +192,7 @@ export async function middleware(req: NextRequest) {
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set('x-user-id', tokenPayload.userId || tokenPayload.id);
   requestHeaders.set('x-user-role', tokenPayload.role);
-console.log("Path:", path, "Role:", tokenPayload?.role, "IsAdminRoute:", isAdminRoute);
+  console.log("Path:", path, "Role:", tokenPayload?.role, "IsAdminRoute:", isAdminRoute);
   return NextResponse.next({ request: { headers: requestHeaders } });
 }
 

@@ -24,7 +24,7 @@ const getUserDetailsFromToken = (req: NextRequest) => {
   const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as {
     userId: string;
     role: string;
-    profilePicture:string;
+    profilePicture: string;
   };
   return { userId: decoded.userId, role: decoded.role };
 };
@@ -276,10 +276,31 @@ const changeServiceStatus = async (
   req: NextRequest,
   { params }: { params: { service_id: string } }
 ) => {
-  await dbConnect();
-  const { service_id } = params;
-  const body = await req.json();
-  const { status, is_visible_to_customers } = body;
+  // await dbConnect();
+  // const { service_id } = await params;
+  // const body = await req.json();
+  // const { status, is_visible_to_customers } = body;
+  // const result = await ServiceServices.changeServiceStatusInDB(
+  //   service_id,
+  //   status,
+  //   is_visible_to_customers
+  // );
+  const { service_id } = await params;
+  const { action } = await req.json();
+
+  let status: "Active" | "Disabled";
+  let is_visible_to_customers: boolean;
+
+  if (action === "approve") {
+    status = "Active";
+    is_visible_to_customers = true;
+  } else if (action === "reject") {
+    status = "Disabled";
+    is_visible_to_customers = false;
+  } else {
+    throw new Error("Invalid action");
+  }
+
   const result = await ServiceServices.changeServiceStatusInDB(
     service_id,
     status,

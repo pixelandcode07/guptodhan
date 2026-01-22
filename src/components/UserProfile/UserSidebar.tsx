@@ -5,22 +5,24 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useSession } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
-import { 
-  LayoutDashboard, 
-  User, 
-  ShoppingBag, 
-  RotateCcw, 
-  Star, 
-  MapPin, 
-  KeyRound, 
-  LogOut, 
-  Calendar, 
+import {
+  LayoutDashboard,
+  User,
+  ShoppingBag,
+  RotateCcw,
+  Star,
+  MapPin,
+  KeyRound,
+  LogOut,
+  Calendar,
   Headset,
   HeartHandshake, // ✅ Donation Icon
   Gift,           // ✅ Campaign Icon
-  Hand            // ✅ Claim Icon
+  Hand,            // ✅ Claim Icon
+  LucideWorkflow
 } from 'lucide-react'
 import api from '@/lib/axios'
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 
 const items = [
   // E-commerce Section
@@ -29,6 +31,7 @@ const items = [
   { title: 'My Order', url: '/home/UserProfile/orders', icon: ShoppingBag },
   { title: 'My Return', url: '/home/UserProfile/returns', icon: RotateCcw },
   { title: 'My Review', url: '/home/UserProfile/reviews', icon: Star },
+  { title: 'My Services', url: '/home/UserProfile/services', icon: LucideWorkflow },
 
   // 🔥 Donation Section (New)
   { title: 'Donation Stats', url: '/home/UserProfile/donation-dashboard', icon: HeartHandshake },
@@ -46,7 +49,17 @@ export default function UserSidebar() {
   const { data: session } = useSession()
   const pathname = usePathname()
   const user = session?.user
-  
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   const [profileData, setProfileData] = useState<{
     name: string
     image?: string
@@ -97,7 +110,7 @@ export default function UserSidebar() {
           console.error('Error fetching profile for sidebar:', error)
         }
       }
-      
+
       if (user) {
         fetchProfile()
       }
@@ -118,15 +131,15 @@ export default function UserSidebar() {
   // Format the createdAt date
   const formatCustomerDate = (date: Date | string | undefined) => {
     if (!date) return 'Recent'
-    
+
     const customerDate = new Date(date)
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 
-                    'July', 'August', 'September', 'October', 'November', 'December']
-    
+    const months = ['January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December']
+
     const day = customerDate.getDate().toString().padStart(2, '0')
     const month = months[customerDate.getMonth()]
     const year = customerDate.getFullYear()
-    
+
     return `${month} ${day} ${year}`
   }
 
@@ -136,11 +149,18 @@ export default function UserSidebar() {
     <aside className="bg-transparent">
       <div className="flex flex-col items-center gap-2 p-4 border-b">
         <div className="h-16 w-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-          {displayImage ? (
+          {/* {displayImage ? (
             <Image src={displayImage} alt={displayName} width={64} height={64} className="object-cover" />
           ) : (
             <User className="h-8 w-8 text-gray-400" />
-          )}
+          )} */}
+          {session && <Avatar className="h-10 w-10">
+            <AvatarImage src={user?.image && user.image !== 'undefined' ? user.image : undefined} />
+            <AvatarFallback className="bg-white text-[#000066] font-medium">
+              {getInitials(user?.name)}
+            </AvatarFallback>
+          </Avatar>}
+
         </div>
         <div className="text-sm font-medium">{displayName}</div>
         <div className="text-xs text-black flex items-center gap-1">
