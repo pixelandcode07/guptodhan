@@ -6,13 +6,13 @@ import { DashboardServices } from './dashboard.service';
 import dbConnect from '@/lib/db';
 
 const getDashboardAnalytics = async (_req: NextRequest) => {
-  // ✅ Ensure database connection
+  // Ensure database connection
   await dbConnect();
 
-  // ✅ Call the service function to get the data
+  // Call the service function to get the data
   const result = await DashboardServices.getDashboardAnalyticsFromDB();
 
-  // ✅ Use sendResponse to return a proper NextResponse
+  // Use sendResponse to return a proper NextResponse
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
@@ -21,7 +21,7 @@ const getDashboardAnalytics = async (_req: NextRequest) => {
   });
 };
 
-// ✅ Export the controller object with the correct function
+// Export the controller object with the correct function
 export const DashboardController = {
   getDashboardAnalytics,
 };
