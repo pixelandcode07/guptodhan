@@ -47,6 +47,7 @@ userSchema.index({ role: 1 });
 // 2️⃣ Active Status Index - শুধু active users filter
 userSchema.index({ isActive: 1 });
 
+
 // 3️⃣ Deleted Status Index - isDeleted:false queries জন্য
 userSchema.index({ isDeleted: 1 });
 
