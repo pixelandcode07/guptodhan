@@ -48,6 +48,12 @@ interface UserProfile {
 	rewardPoints: number;
 }
 
+// ✅ Helper function to validate MongoDB ObjectId format
+const isValidObjectId = (id: string | undefined): boolean => {
+	if (!id) return false
+	return /^[0-9a-fA-F]{24}$/.test(id)
+}
+
 export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem[] }) {
 	const [selectedDelivery, setSelectedDelivery] = useState<DeliveryOption>('standard')
 	const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
@@ -161,6 +167,51 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
 		return errors
 	}
 
+	// ✅ Helper function to resolve storeId safely
+	const resolveStoreId = async (): Promise<string | undefined> => {
+		if (cartItems.length === 0) return undefined
+
+		try {
+			const firstProductId = cartItems[0].product.id
+			
+			if (!firstProductId) {
+				console.warn('⚠️ First product ID is missing')
+				return undefined
+			}
+
+			const productResp = await axios.get(`/api/v1/product/${firstProductId}`)
+			const productData = productResp?.data?.data
+
+			if (!productData) {
+				console.warn('⚠️ Product data not found')
+				return undefined
+			}
+
+			// ✅ Validate that storeId is a proper ObjectId
+			if (productData?.vendorStoreId) {
+				if (isValidObjectId(productData.vendorStoreId)) {
+					console.log('✅ Valid storeId found:', productData.vendorStoreId)
+					return productData.vendorStoreId
+				} else {
+					console.warn('⚠️ Invalid storeId format:', productData.vendorStoreId)
+					return undefined
+				}
+			}
+
+			// Fallback: Try to get storeId from vendorId
+			if (productData?.vendorId && isValidObjectId(productData.vendorId)) {
+				console.log('✅ Using vendorId as fallback:', productData.vendorId)
+				return productData.vendorId
+			}
+
+			console.warn('⚠️ No valid store ID found in product data')
+			return undefined
+		} catch (error) {
+			console.error('❌ Error resolving storeId:', error)
+			return undefined
+		}
+	}
+
 	const handlePlaceOrder = async (paymentMethod: 'cod' | 'card') => {
 		try {
 			setLastPaymentMethod(paymentMethod)
@@ -170,21 +221,12 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
 				return
 			}
 
-			let resolvedStoreId: string | undefined = undefined
-			if (cartItems.length > 0) {
-				try {
-					const firstProductId = cartItems[0].product.id
-					const productResp = await axios.get(`/api/v1/product/${firstProductId}`)
-					const productData = productResp?.data?.data
-					if (productData?.vendorStoreId) {
-						resolvedStoreId = productData.vendorStoreId
-					}
-				} catch {
-				}
-			}
+			// ✅ Resolve storeId safely
+			const resolvedStoreId = await resolveStoreId()
 
 			const orderData = {
 				userId: userProfile?._id!,
+				// ✅ Only include storeId if it's valid and properly formatted
 				...(resolvedStoreId ? { storeId: resolvedStoreId } : {}),
 				deliveryMethodId: selectedDelivery,
 				shippingName: formData.name || userProfile?.name || 'Guest User',
