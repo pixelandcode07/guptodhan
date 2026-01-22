@@ -107,7 +107,7 @@ export default async function ServiceCategory() {
     const displayedCategories = categories.slice(0, 12);
 
     return (
-        <div className="max-w-[90vw] mx-auto mt-8 px-4 pb-12">
+        <div className="md:max-w-[95vw] xl:container mx-auto py-4">
             {displayedCategories.length === 0 ? (
                 <p className="text-center py-12 text-gray-600">No service categories available</p>
             ) : (
