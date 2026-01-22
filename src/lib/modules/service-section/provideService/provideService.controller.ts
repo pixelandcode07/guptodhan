@@ -207,10 +207,10 @@ const getProviderServices = async (
 // get a single service by ID
 const getServiceById = async (
   req: NextRequest,
-  { params }: { params: { service_id: string } }
+  { params }: { params: { id: string } }
 ) => {
   await dbConnect();
-  const service = await ServiceServices.getServiceByIdFromDB(params.service_id);
+  const service = await ServiceServices.getServiceByIdFromDB(params.id);
   return sendResponse({
     success: true,
     statusCode: 200,
@@ -222,14 +222,14 @@ const getServiceById = async (
 // Provider: Update a service
 const updateService = async (
   req: NextRequest,
-  { params }: { params: { service_id: string } }
+  { params }: { params: { id: string } }
 ) => {
   await dbConnect();
-  const { service_id } = params;
+  const { id } = params;
   const body = await req.json();
   const validatedData = updateServiceValidationSchema.parse(body);
   const result = await ServiceServices.updateServiceInDB(
-    service_id,
+    id,
     validatedData
   );
   return sendResponse({
@@ -243,12 +243,12 @@ const updateService = async (
 // Provider: Delete a service
 const deleteService = async (
   req: NextRequest,
-  { params }: { params: { service_id: string; provider_id: string } }
+  { params }: { params: { id: string; provider_id: string } }
 ) => {
   await dbConnect();
-  const { service_id, provider_id } = params;
+  const { id, provider_id } = params;
   const result = await ServiceServices.deleteServiceInDB(
-    service_id,
+    id,
     provider_id
   );
   return sendResponse({
