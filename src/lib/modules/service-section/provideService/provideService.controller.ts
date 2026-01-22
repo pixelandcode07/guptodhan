@@ -194,7 +194,7 @@ const getProviderServices = async (
   { params }: { params: { provider_id: string } }
 ) => {
   await dbConnect();
-  const { provider_id } = params;
+  const { provider_id } = await params;
   const result = await ServiceServices.getProviderServicesFromDB(provider_id);
   return sendResponse({
     success: true,
