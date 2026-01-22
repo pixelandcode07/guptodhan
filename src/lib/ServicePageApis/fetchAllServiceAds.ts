@@ -1,6 +1,5 @@
-import { AllServicesResponse, ApiResponse, ServiceData } from "@/types/ServiceDataType";
+import { AllServicesResponse, ServiceData } from "@/types/ServiceDataType";
 import axios from "axios";
-// import axios from "../axios";
 
 export const fetchAllServiceAds = async (
     token: string

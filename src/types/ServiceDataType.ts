@@ -17,7 +17,7 @@ export type DayOfWeek =
     | 'Friday'
     | 'Saturday';
 
-export type ServiceStatus = 'Under Review' | 'Approved' | 'Rejected' | 'Active';
+export type ServiceStatus = "Draft" | "Active" | "Under Review" | "Disabled";
 
 export interface ServiceData {
     _id: string;

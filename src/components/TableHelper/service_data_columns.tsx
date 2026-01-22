@@ -86,9 +86,11 @@ export const service_data_columns: ColumnDef<ServiceData>[] = [
             return (
                 <span className={cn(
                     "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                    status === "Approved" ? "bg-green-100 text-green-700" :
-                        status === "Under Review" ? "bg-amber-100 text-amber-700" :
-                            "bg-red-100 text-red-700"
+                    status === "Active"
+                        ? "bg-green-100 text-green-700"
+                        : status === "Under Review"
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-red-100 text-red-700"
                 )}>
                     {status}
                 </span>
@@ -104,49 +106,53 @@ export const service_data_columns: ColumnDef<ServiceData>[] = [
 
             // Updated Status Logic
             const handleStatusUpdate = async (action: "approve" | "reject") => {
-                const newStatus = action === "approve" ? "Approved" : "Rejected";
-                const apiUrl = `/api/v1/service-section/service-provider/${action}/${service._id}`;
-
                 try {
                     await toast.promise(
-                        axios.patch(apiUrl), // Endpoint ekhon action onujayi dynamic
+                        axios.patch(
+                            `/api/v1/service-section/provide-service/status/${service.service_id}`,
+                            { action }
+                        ),
                         {
                             loading: `${action === "approve" ? "Approving" : "Rejecting"} service...`,
-                            success: `Service ${newStatus} successfully!`,
-                            error: (err) => err.response?.data?.message || `Failed to ${action} service`,
+                            success: `Service ${action === "approve" ? "approved" : "rejected"} successfully`,
+                            error: (err) => err.response?.data?.message || "Operation failed",
                         }
                     );
 
-                    // Local state update (Optimistic UI)
                     if (setData) {
                         setData((prev: ServiceData[]) =>
                             prev.map(item =>
                                 item._id === service._id
-                                    ? { ...item, service_status: newStatus as any }
+                                    ? {
+                                        ...item,
+                                        service_status: action === "approve" ? "Active" : "Disabled",
+                                        is_visible_to_customers: action === "approve",
+                                    }
                                     : item
                             )
                         );
                     }
                 } catch (error) {
-                    console.error(`${action} error:`, error);
+                    console.error(error);
                 }
             };
 
-            const handleDelete = async () => {
-                const confirmed = await confirmDelete(`Delete "${service.service_title}"?`);
-                if (!confirmed) return;
-                try {
-                    await toast.promise(
-                        axios.delete(`/api/v1/service-section/provide-service/${service._id}`),
-                        {
-                            loading: "Deleting...",
-                            success: "Deleted!",
-                            error: "Failed to delete",
-                        }
-                    );
-                    if (setData) setData((prev: ServiceData[]) => prev.filter(item => item._id !== service._id));
-                } catch (error) { console.error(error); }
-            };
+
+            // const handleDelete = async () => {
+            //     const confirmed = await confirmDelete(`Delete "${service.service_title}"?`);
+            //     if (!confirmed) return;
+            //     try {
+            //         await toast.promise(
+            //             axios.delete(`/api/v1/service-section/provide-service/${service._id}`),
+            //             {
+            //                 loading: "Deleting...",
+            //                 success: "Deleted!",
+            //                 error: "Failed to delete",
+            //             }
+            //         );
+            //         if (setData) setData((prev: ServiceData[]) => prev.filter(item => item._id !== service._id));
+            //     } catch (error) { console.error(error); }
+            // };
 
             return (
                 <div className="flex items-center gap-1.5">
@@ -171,20 +177,20 @@ export const service_data_columns: ColumnDef<ServiceData>[] = [
                     </Button>
 
                     {/* Edit Link */}
-                    <Link href={`/dashboard/services/edit/${service._id}`}>
+                    {/* <Link href={`/dashboard/services/edit/${service._id}`}>
                         <Button variant="outline" size="sm" className="h-8 w-8 p-0 border-blue-100 text-blue-600 hover:bg-blue-50">
                             <Edit className="h-4 w-4" />
                         </Button>
-                    </Link>
+                    </Link> */}
 
                     {/* Delete Button */}
-                    <Button
+                    {/* <Button
                         variant="outline" size="sm"
                         className="h-8 w-8 p-0 border-red-100 text-red-600 hover:bg-red-50"
                         onClick={handleDelete}
                     >
                         <Trash className="h-4 w-4" />
-                    </Button>
+                    </Button> */}
                 </div>
             );
         },

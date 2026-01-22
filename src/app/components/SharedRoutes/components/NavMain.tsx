@@ -1,6 +1,6 @@
 'use client';
 
-import { Heart, LogOut, Menu, User, X, ShoppingBag, Gift, UserPlus, Truck, Phone, LogIn, Workflow, UserIcon, LayoutGrid, Info, HelpCircle, Store, PhoneCall, MessageCircle } from 'lucide-react';
+import { Heart, LogOut, Menu, User, X, ShoppingBag, Gift, UserPlus, Truck, Phone, LogIn, Workflow, UserIcon, LayoutGrid, Info, HelpCircle, Store, PhoneCall, MessageCircle, Search } from 'lucide-react';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -41,31 +41,39 @@ export default function NavMain() {
     <div>
       {/* Main Top Bar */}
       <div className="bg-[#0097E9] md:bg-[#FFFFFF] text-black  flex justify-between items-center md:max-w-[95vw] xl:container sm:px-8 mx-auto py-4" id="navbar">
-        <div className="flex justify-between items-center gap-2">
-          <div className="flex lg:block items-center">
+        <div className="w-full md:w-3xs flex justify-between items-center gap-2 px-4">
+          <div className="flex justify-between items-center lg:block ">
             {/* Mobile Menu Toggle */}
-            <button
-              className="block lg:hidden text-white cursor-pointer z-50"
-              onClick={() => setMobileOpen(!mobileOpen)}
-            >
-              {mobileOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+            <div className=" flex justify-between items-center gap-2">
+              <button
+                className="block lg:hidden text-white cursor-pointer z-50"
+                onClick={() => setMobileOpen(!mobileOpen)}
+              >
+                {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+              <div className="w-[50vw] logo md:hidden flex justify-end">
+                <Link href={'/'} >
+                  <Image src="/white-logo.png" width={120} height={40} alt="logo" />
+                </Link>
+              </div>
+            </div>
 
             {/* Logo */}
-            <Link href={'/'} className="logo hidden md:block">
-              <Image src="/img/logo.png" width={130} height={44} alt="logo" />
-            </Link>
-            <Link href={'/'} className="logo md:hidden">
-              <Image src="/white-logo.png" width={120} height={40} alt="logo" />
-            </Link>
+            <div className="logo hidden md:block">
+              <Link href={'/'} >
+                <Image src="/img/logo.png" width={130} height={44} alt="logo" />
+              </Link>
+            </div>
+
           </div>
           {/* Mobile Search Trigger */}
-          <div className="flex md:hidden flex-1 justify-end px-2">
+          <div className="flex md:hidden justify-end px-2">
             <button
               onClick={() => setMobileSearchOpen(true)}
-              className="w-full bg-white rounded-lg px-4 py-2 flex items-center gap-2"
+            // className="w-full bg-white rounded-lg px-4 py-2 flex items-center gap-2"
             >
-              <SearchBarTrigger />
+              {/* <SearchBarTrigger /> */}
+              <Search className='text-white cursor-pointer' />
             </button>
           </div>
         </div>
@@ -75,7 +83,7 @@ export default function NavMain() {
           <SearchBar />
         </div>
 
-        {/* Desktop Links Section Fix  */}
+        {/* Desktop Links Section  */}
         <div className="hidden md:flex  justify-end">
           <Dialog>
             <ul className="flex flex-wrap lg:flex-nowrap gap-2 lg:gap-4 items-center justify-end">
