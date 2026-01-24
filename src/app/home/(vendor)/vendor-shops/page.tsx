@@ -16,25 +16,45 @@ interface VendorShopsPageProps {
 }
 
 export default async function VendorShopsPage({ searchParams }: VendorShopsPageProps) {
-    const { page } = await searchParams;
-    const currentPage = Number(page) || 1;
-    const [allPublicVendors, categories] = await Promise.all([
-        fetchAllPublicStores(),
-        fetchNavigationCategoryData(),
-    ]);
+    // ✅ Safe Parsing of Page Number
+    const resolvedSearchParams = await searchParams;
+    const pageParam = resolvedSearchParams?.page;
+    const currentPage = pageParam ? parseInt(pageParam, 10) : 1;
 
-    const totalPages = Math.ceil(allPublicVendors.length / ITEMS_PER_PAGE);
-    const validPage = Math.max(1, Math.min(currentPage, totalPages || 1));
+    // ✅ Parallel Fetching with Error Handling
+    let allPublicVendors = [];
+    let categories = [];
 
-    const paginatedStores = allPublicVendors.slice(
-        (validPage - 1) * ITEMS_PER_PAGE,
-        validPage * ITEMS_PER_PAGE
-    );
+    try {
+        const [storesData, categoriesData] = await Promise.all([
+            fetchAllPublicStores(),
+            fetchNavigationCategoryData(),
+        ]);
+        allPublicVendors = storesData || [];
+        categories = categoriesData || [];
+    } catch (error) {
+        console.error("Error fetching vendor page data:", error);
+        // Fallback to empty arrays to prevent crash
+        allPublicVendors = [];
+        categories = [];
+    }
+
+    // ✅ Robust Pagination Logic
+    const totalItems = allPublicVendors.length;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    
+    // Ensure current page is within valid range (1 to totalPages)
+    const validPage = totalPages > 0 ? Math.max(1, Math.min(currentPage, totalPages)) : 1;
+
+    const startIndex = (validPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
+    
+    const paginatedStores = allPublicVendors.slice(startIndex, endIndex);
 
     return (
         <>
             <div className="container mx-auto">
-                {/* Hero Banner - Optimized for 1920x600 Image */}
+                {/* Hero Banner */}
                 <section className="relative w-full aspect-[1920/600] min-h-[300px] max-h-[600px] overflow-hidden bg-gray-900">
                     <Image
                         src="https://res.cloudinary.com/donrqkwe5/image/upload/v1766044937/uqm2xd1jbicyjxkriwxl.jpg"
@@ -66,7 +86,6 @@ export default async function VendorShopsPage({ searchParams }: VendorShopsPageP
                         </BreadcrumbList>
                     </Breadcrumb>
 
-                    {/* টাইটেল এখন ব্যানারের নিচে, ক্লিন লুকের জন্য */}
                     <h1 className="text-3xl md:text-4xl font-extrabold text-[#00005E]">
                         Explore Our Trusted Vendor Stores
                     </h1>
@@ -78,9 +97,14 @@ export default async function VendorShopsPage({ searchParams }: VendorShopsPageP
 
                 {/* Stores Grid + Pagination */}
                 <section className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pb-20 bg-gray-50/50">
-                    {allPublicVendors.length === 0 ? (
+                    {paginatedStores.length === 0 ? (
                         <div className="text-center py-32 bg-white rounded-2xl border border-dashed">
-                            <p className="text-xl text-gray-400">No stores available at the moment.</p>
+                            <p className="text-xl text-gray-400">No stores available on this page.</p>
+                            {validPage > 1 && (
+                                <Link href="/home/vendor-shops?page=1" className="text-blue-500 hover:underline mt-2 block">
+                                    Go back to first page
+                                </Link>
+                            )}
                         </div>
                     ) : (
                         <>
@@ -96,8 +120,9 @@ export default async function VendorShopsPage({ searchParams }: VendorShopsPageP
                                     <PaginationContent>
                                         <PaginationItem>
                                             <PaginationPrevious
-                                                href={`?page=${validPage - 1}`}
-                                                className={validPage <= 1 ? "pointer-events-none opacity-40" : "hover:text-[#0097E9] border-none shadow-sm"}
+                                                href={validPage > 1 ? `?page=${validPage - 1}` : '#'}
+                                                className={validPage <= 1 ? "pointer-events-none opacity-40" : "hover:text-[#0097E9] border-none shadow-sm cursor-pointer"}
+                                                aria-disabled={validPage <= 1}
                                             />
                                         </PaginationItem>
 
@@ -121,8 +146,9 @@ export default async function VendorShopsPage({ searchParams }: VendorShopsPageP
 
                                         <PaginationItem>
                                             <PaginationNext
-                                                href={`?page=${validPage + 1}`}
-                                                className={validPage >= totalPages ? "pointer-events-none opacity-40" : "hover:text-[#0097E9] border-none shadow-sm"}
+                                                href={validPage < totalPages ? `?page=${validPage + 1}` : '#'}
+                                                className={validPage >= totalPages ? "pointer-events-none opacity-40" : "hover:text-[#0097E9] border-none shadow-sm cursor-pointer"}
+                                                aria-disabled={validPage >= totalPages}
                                             />
                                         </PaginationItem>
                                     </PaginationContent>
