@@ -9,8 +9,9 @@ import { CategoryServices, getAllSubCategoriesWithChildren, reorderMainCategorie
 import dbConnect from '@/lib/db';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 
-// Create a new category (multipart FormData like Brand)
-// Create a new category (multipart FormData like Brand)
+// ================================================================
+// 📝 CREATE CATEGORY
+// ================================================================
 const createCategory = async (req: NextRequest) => {
   try {
     await dbConnect();
@@ -20,7 +21,7 @@ const createCategory = async (req: NextRequest) => {
     const name = (formData.get('name') as string) || '';
     const isFeaturedStr = (formData.get('isFeatured') as string) || 'false';
     const isNavbarStr = (formData.get('isNavbar') as string) || 'false';
-    let slug = (formData.get('slug') as string) || ''; // User can provide slug
+    let slug = (formData.get('slug') as string) || '';
     const status = (formData.get('status') as string) || 'active';
     const categoryIconFile = formData.get('categoryIcon') as File | null;
     const categoryBannerFile = formData.get('categoryBanner') as File | null;
@@ -58,7 +59,7 @@ const createCategory = async (req: NextRequest) => {
       categoryBanner: bannerUrl,
       isFeatured: isFeaturedStr === 'true',
       isNavbar: isNavbarStr === 'true',
-      slug, // ✅ Auto-generated slug
+      slug,
       status,
     };
 
@@ -81,7 +82,9 @@ const createCategory = async (req: NextRequest) => {
   }
 };
 
-// Get all categories
+// ================================================================
+// 📋 GET ALL CATEGORIES
+// ================================================================
 const getAllCategories = async () => {
   await dbConnect();
   const result = await CategoryServices.getAllCategoriesFromDB();
@@ -94,15 +97,18 @@ const getAllCategories = async () => {
   });
 };
 
-// GET product IDs by category
-export const getProductIdsByCategory = async (req: NextRequest, {  params }: { params: Promise<{ id: string }> }) => {
+// ================================================================
+// 🔍 GET PRODUCT IDS BY CATEGORY
+// ================================================================
+export const getProductIdsByCategory = async (
+  req: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) => {
   const resolvedParams = await params;
   const categoryId = resolvedParams.id;
-  console.log('Params received in controller:', categoryId);
   
   await dbConnect();
   
-  // Use the extracted categoryId
   const productIds = await CategoryServices.getProductIdsByCategoryFromDB(categoryId);
 
   return sendResponse({
@@ -111,11 +117,11 @@ export const getProductIdsByCategory = async (req: NextRequest, {  params }: { p
     message: `Product IDs for category ${categoryId} retrieved successfully!`,
     data: productIds, 
   });
-
 };
 
-
-// Get only featured categories (optimized for landing page)
+// ================================================================
+// ⭐ GET FEATURED CATEGORIES
+// ================================================================
 const getFeaturedCategories = async () => {
   await dbConnect();
   const result = await CategoryServices.getFeaturedCategoriesFromDB();
@@ -128,8 +134,13 @@ const getFeaturedCategories = async () => {
   });
 };
 
-// Update category (await params and accept multipart like Brand)
-const updateCategory = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+// ================================================================
+// ✏️ UPDATE CATEGORY
+// ================================================================
+const updateCategory = async (
+  req: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) => {
   try {
     await dbConnect();
     const { id } = await params;
@@ -182,8 +193,13 @@ const updateCategory = async (req: NextRequest, { params }: { params: Promise<{ 
   }
 };
 
-// Delete category (await params)
-const deleteCategory = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+// ================================================================
+// 🗑️ DELETE CATEGORY
+// ================================================================
+const deleteCategory = async (
+  req: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) => {
   await dbConnect();
   const { id } = await params;
   await CategoryServices.deleteCategoryFromDB(id);
@@ -196,10 +212,9 @@ const deleteCategory = async (req: NextRequest, { params }: { params: Promise<{ 
   });
 };
 
-
-
-
-// ------------------ 
+// ================================================================
+// 🌳 GET ALL CATEGORIES WITH HIERARCHY (NAVBAR)
+// ================================================================
 export const getAllSubCategories = async (req: NextRequest) => {
   await dbConnect();
 
@@ -213,15 +228,14 @@ export const getAllSubCategories = async (req: NextRequest) => {
   });
 };
 
-// ---------------------
-
-// Reorder e-commerce main categories (drag-and-drop)
+// ================================================================
+// 🔄 REORDER MAIN CATEGORIES
+// ================================================================
 const reorderMainCategories = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
   const { orderedIds } = body;
 
-  // Validate input
   if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
     return sendResponse({
       success: false,
@@ -231,7 +245,6 @@ const reorderMainCategories = async (req: NextRequest) => {
     });
   }
 
-  // Call the reorder service
   const result = await reorderMainCategoriesService(orderedIds);
 
   return sendResponse({
@@ -242,35 +255,29 @@ const reorderMainCategories = async (req: NextRequest) => {
   });
 };
 
-// ✅ Get products by category slug with filters (Brand Name, SubCat Name, etc.)
-const getProductsByCategorySlug = async (
+// ================================================================
+// 🔍 GET PRODUCTS BY CATEGORY SLUG WITH FILTERS
+// ================================================================
+const getProductsByCategorySlug = async(
   req: NextRequest, 
   { params }: { params: Promise<{ slug: string }> }
 ) => {
   await dbConnect();
   const { slug } = await params;
   
-  // URL থেকে ফিল্টার প্যারামিটারগুলো নিচ্ছি
   const { searchParams } = new URL(req.url);
   
   const filters = {
     search: searchParams.get("search") || undefined,
-    // এখন আর ID না, সরাসরি নাম যাচ্ছে (যেমন: "Smart Phone")
-    subCategory: searchParams.get("subCategory") || undefined, 
-    // নাম যাচ্ছে (যেমন: "Android")
-    childCategory: searchParams.get("childCategory") || undefined, 
-    // নাম যাচ্ছে (যেমন: "Samsung")
-    brand: searchParams.get("brand") || undefined, 
-    // নাম যাচ্ছে (যেমন: "XL")
-    size: searchParams.get("size") || undefined, 
-    
-    // প্রাইস এবং সর্টিং
+    subCategory: searchParams.get("subCategory") || undefined,
+    childCategory: searchParams.get("childCategory") || undefined,
+    brand: searchParams.get("brand") || undefined,
+    size: searchParams.get("size") || undefined,
     priceMin: searchParams.get("priceMin") ? Number(searchParams.get("priceMin")) : undefined,
     priceMax: searchParams.get("priceMax") ? Number(searchParams.get("priceMax")) : undefined,
     sort: searchParams.get("sort") || undefined,
   };
   
-  // সার্ভিস কল করা হচ্ছে
   const result = await CategoryServices.getProductsByCategorySlugWithFiltersFromDB(
     slug,
     filters
@@ -284,18 +291,21 @@ const getProductsByCategorySlug = async (
       data: null,
     });
   }
+
+  // ✅ FIX: Type-safe category access
+  const category = result.category as any;
   
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: `Products for category "${result.category.name}" retrieved successfully!`,
+    message: `Products for category "${category.name}" retrieved successfully!`,
     data: {
       category: {
-        name: result.category.name,
-        slug: result.category.slug,
-        categoryId: result.category.categoryId,
-        banner: result.category.categoryBanner,
-        icon: result.category.categoryIcon
+        name: category.name,
+        slug: category.slug,
+        categoryId: category.categoryId,
+        banner: category.categoryBanner,
+        icon: category.categoryIcon
       },
       products: result.products,
       totalProducts: result.products.length,
@@ -303,6 +313,9 @@ const getProductsByCategorySlug = async (
   });
 };
 
+// ================================================================
+// 📤 EXPORTS
+// ================================================================
 export const CategoryController = {
   createCategory,
   getAllCategories,

@@ -14,7 +14,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 
-// তোমার ব্যাকএন্ডের সাথে মিল রেখে validation
 const setPasswordSchema = z.object({
   newPassword: z.string().min(8, { message: 'Password must be at least 8 characters long.' }),
   confirmPassword: z.string(),
@@ -43,7 +42,6 @@ export default function ChangePasswordPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ব্যাকএন্ড থেকে hasPassword আসবে (উপরে বলা মতো যোগ করার পর)
   const hasPassword = session?.user?.hasPassword ?? false;
 
   const schema = hasPassword ? changePasswordSchema : setPasswordSchema;

@@ -57,6 +57,13 @@ export default function OrderSummary({
   const total = Math.max(0, subtotal - totalDiscount + shipping)
 
   const handlePlaceOrder = () => {
+    // ✅ Check for login first
+    if (!user) {
+        toast.error('Please login to place an order');
+        return;
+    }
+
+    // ✅ Check for Terms acceptance
     if (!termsAccepted) {
       toast.error('Please accept terms and conditions', {
         description: 'You must agree to the terms and conditions to place your order.',
@@ -66,8 +73,6 @@ export default function OrderSummary({
     }
 
     // Call the parent's place order function
-    // The parent (ShoppingInfoContent) will handle success/error toasts and modals
-    // No need to show toast here as it causes redundancy
     onPlaceOrder(payment);
   }
 
@@ -128,7 +133,7 @@ export default function OrderSummary({
               name="payment" 
               checked={payment === 'cod'} 
               onChange={() => setPayment('cod')}
-              className="w-4 h-4 text-blue-600"
+              className="w-4 h-4 text-blue-600 cursor-pointer"
             />
             <div>
               <span className="text-sm font-medium text-gray-900">Cash on Delivery</span>
@@ -151,7 +156,7 @@ export default function OrderSummary({
               name="payment" 
               checked={payment === 'card'} 
               onChange={() => setPayment('card')}
-              className="w-4 h-4 text-blue-600"
+              className="w-4 h-4 text-blue-600 cursor-pointer"
             />
             <div>
               <span className="text-sm font-medium text-gray-900">Pay Online</span>
@@ -180,7 +185,7 @@ export default function OrderSummary({
                 • Pay with cash when your order arrives<br/>
                 • No advance payment required<br/>
                 • Delivery person will collect the payment<br/>
-               
+                
               </p>
             </div>
           </div>
@@ -249,10 +254,11 @@ export default function OrderSummary({
         <span>৳ {total.toLocaleString()}</span>
       </div>
 
+      {/* ✅ SOLVED: Button is now interactive */}
       <Button 
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors" 
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors" 
         onClick={handlePlaceOrder}
-        disabled={!termsAccepted || !user}
+        disabled={!user} 
       >
         {!user 
           ? 'Login Required to Place Order'
@@ -275,10 +281,10 @@ export default function OrderSummary({
       )}
 
       <div className="mt-4 text-xs text-gray-600">
-        <label className="flex items-start gap-2 cursor-pointer">
+        <label className="flex items-start gap-2 cursor-pointer select-none">
           <input 
             type="checkbox" 
-            className="mt-0.5" 
+            className="mt-0.5 cursor-pointer accent-blue-600" 
             checked={termsAccepted}
             onChange={(e) => setTermsAccepted(e.target.checked)}
           />
@@ -292,6 +298,3 @@ export default function OrderSummary({
     </div>
   )
 }
-
-
-

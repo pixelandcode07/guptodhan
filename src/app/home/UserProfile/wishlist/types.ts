@@ -9,6 +9,8 @@ export interface WishlistProduct {
     productPrice: number
     discountPrice?: number
   } | string
+  color?: string
+  size?: string
   createdAt: string
 }
 

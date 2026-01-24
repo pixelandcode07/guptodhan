@@ -17,7 +17,7 @@ const getUserIdFromToken = (req: NextRequest): string => {
   const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as {
     userId: string;
   };
-  console.log('✅ Token decoded, userId:', decoded.userId);
+  console.log('✅ Token decoded, userId:', decoded);
   return decoded.userId;
 };
 

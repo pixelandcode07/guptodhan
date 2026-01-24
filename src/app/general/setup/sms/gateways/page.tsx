@@ -1,7 +1,7 @@
 import SMSCard from "./components/SMSCard";
 
 
-
+export const dynamic = 'force-dynamic'
 
 export type SMSFormValues = {
   api_endpoint?: string;

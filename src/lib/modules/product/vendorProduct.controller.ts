@@ -8,6 +8,10 @@ import { IVendorProduct } from "./vendorProduct.interface";
 import dbConnect from "@/lib/db";
 import { VendorProductServices } from "./vendorProduct.service";
 
+// ===================================
+// 📝 CREATE VENDOR PRODUCT
+// ===================================
+
 const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
   try {
     await dbConnect();
@@ -39,7 +43,6 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
       weightUnit: validatedData.weightUnit
         ? new Types.ObjectId(validatedData.weightUnit)
         : undefined,
-      // ✅ FIXED: Properly handle productOptions with warranty as optional
       productOptions: (validatedData.productOptions ?? []).map((option: any) => ({
         productImage: option.productImage || undefined,
         unit: Array.isArray(option.unit)
@@ -67,7 +70,6 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
           : option.size
             ? [option.size]
             : [],
-        // ✅ FIXED: warranty is now optional
         warranty: option.warranty || undefined,
         stock: option.stock || undefined,
         price: option.price || undefined,
@@ -112,9 +114,14 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
   }
 };
 
-const getAllVendorProducts = async () => {
+const getAllVendorProducts = async (req: NextRequest) => {
   await dbConnect();
-  const result = await VendorProductServices.getAllVendorProductsFromDB();
+  
+  const { searchParams } = new URL(req.url);
+  const page = Number(searchParams.get("page")) || 1;
+  const limit = Number(searchParams.get("limit")) || 20;
+  
+  const result = await VendorProductServices.getAllVendorProductsFromDB(page, limit);
 
   return sendResponse({
     success: true,
@@ -124,9 +131,14 @@ const getAllVendorProducts = async () => {
   });
 };
 
-const getActiveVendorProducts = async () => {
+const getActiveVendorProducts = async (req: NextRequest) => {
   await dbConnect();
-  const result = await VendorProductServices.getActiveVendorProductsFromDB();
+  
+  const { searchParams } = new URL(req.url);
+  const page = Number(searchParams.get("page")) || 1;
+  const limit = Number(searchParams.get("limit")) || 20;
+  
+  const result = await VendorProductServices.getActiveVendorProductsFromDB(page, limit);
 
   return sendResponse({
     success: true,
@@ -162,20 +174,17 @@ const getVendorProductById = async (
   });
 };
 
-
-
-// filter for main category product
 const getVendorProductsByCategory = async (
   req: NextRequest,
-  context: { params: Promise<{ id: string }> } // Next.js App Router e params Promise
+  context: { params: Promise<{ id: string }> }
 ) => {
   await dbConnect();
 
   const { searchParams } = new URL(req.url);
 
   const filters = {
-    priceMin: searchParams.get("priceMin") || undefined,
-    priceMax: searchParams.get("priceMax") || undefined,
+    priceMin: searchParams.get("priceMin") ? Number(searchParams.get("priceMin")) : undefined,
+    priceMax: searchParams.get("priceMax") ? Number(searchParams.get("priceMax")) : undefined,
     subCategory: searchParams.get("subCategory") || undefined,
     childCategory: searchParams.get("childCategory") || undefined,
     brand: searchParams.get("brand") || undefined,
@@ -183,13 +192,18 @@ const getVendorProductsByCategory = async (
     sort: searchParams.get("sort") || undefined,
   };
 
+  const page = Number(searchParams.get("page")) || 1;
+  const limit = Number(searchParams.get("limit")) || 20;
+
   const resolvedParams = await context.params;
   const categoryId = resolvedParams.id;
 
-  console.log("Category ID:", categoryId);
-
-  // Call service
-  const result = await VendorProductServices.getVendorProductsByCategoryFromDB(categoryId);
+  const result = await VendorProductServices.getVendorProductsByCategoryFromDB(
+    categoryId,
+    filters,
+    page,
+    limit
+  );
 
   return sendResponse({
     success: true,
@@ -199,19 +213,33 @@ const getVendorProductsByCategory = async (
   });
 };
 
-
-
-// filter for sub category product
 const getVendorProductsBySubCategory = async (
   req: NextRequest,
   { params }: { params: Promise<{ subCategoryId: string }> }
 ) => {
   await dbConnect();
   const { subCategoryId } = await params;
-  const result =
-    await VendorProductServices.getVendorProductsBySubCategoryFromDB(
-      subCategoryId
-    );
+  
+  const { searchParams } = new URL(req.url);
+  
+  const filters = {
+    priceMin: searchParams.get("priceMin") ? Number(searchParams.get("priceMin")) : undefined,
+    priceMax: searchParams.get("priceMax") ? Number(searchParams.get("priceMax")) : undefined,
+    brand: searchParams.get("brand") || undefined,
+    childCategory: searchParams.get("childCategory") || undefined,
+    search: searchParams.get("search") || undefined,
+    sort: searchParams.get("sort") || undefined,
+  };
+
+  const page = Number(searchParams.get("page")) || 1;
+  const limit = Number(searchParams.get("limit")) || 20;
+  
+  const result = await VendorProductServices.getVendorProductsBySubCategoryFromDB(
+    subCategoryId,
+    filters,
+    page,
+    limit
+  );
 
   return sendResponse({
     success: true,
@@ -221,17 +249,28 @@ const getVendorProductsBySubCategory = async (
   });
 };
 
-// filter for child category product
 const getVendorProductsByChildCategory = async (
   req: NextRequest,
   { params }: { params: Promise<{ childCategoryId: string }> }
 ) => {
   await dbConnect();
   const { childCategoryId } = await params;
-  const result =
-    await VendorProductServices.getVendorProductsByChildCategoryFromDB(
-      childCategoryId
-    );
+  
+  const { searchParams } = new URL(req.url);
+  
+  const filters = {
+    priceMin: searchParams.get("priceMin") ? Number(searchParams.get("priceMin")) : undefined,
+    priceMax: searchParams.get("priceMax") ? Number(searchParams.get("priceMax")) : undefined,
+    brand: searchParams.get("brand") || undefined,
+    subCategory: searchParams.get("subCategory") || undefined,
+    search: searchParams.get("search") || undefined,
+    sort: searchParams.get("sort") || undefined,
+  };
+  
+  const result = await VendorProductServices.getVendorProductsByChildCategoryFromDB(
+    childCategoryId,
+    filters
+  );
 
   return sendResponse({
     success: true,
@@ -241,15 +280,21 @@ const getVendorProductsByChildCategory = async (
   });
 };
 
-
 const getVendorProductsByBrand = async (
   req: NextRequest,
   { params }: { params: Promise<{ brandId: string }> }
 ) => {
   await dbConnect();
   const { brandId } = await params;
+  
+  const { searchParams } = new URL(req.url);
+  const page = Number(searchParams.get("page")) || 1;
+  const limit = Number(searchParams.get("limit")) || 20;
+  
   const result = await VendorProductServices.getVendorProductsByBrandFromDB(
-    brandId
+    brandId,
+    page,
+    limit
   );
 
   return sendResponse({
@@ -325,9 +370,7 @@ const deleteVendorProduct = async (
 ) => {
   await dbConnect();
   const { id } = await params;
-  const result = await VendorProductServices.deleteVendorProductFromDB(
-    id
-  );
+  const result = await VendorProductServices.deleteVendorProductFromDB(id);
 
   if (!result) {
     return sendResponse({
@@ -355,10 +398,7 @@ const addProductOption = async (
     const { id } = await params;
     const body = await req.json();
 
-    const result = await VendorProductServices.addProductOptionInDB(
-      id,
-      body
-    );
+    const result = await VendorProductServices.addProductOptionInDB(id, body);
 
     if (!result) {
       return sendResponse({
@@ -446,13 +486,12 @@ const getLandingPageProducts = async () => {
   });
 };
 
-
 const searchVendorProducts = async (req: NextRequest) => {
   await dbConnect();
 
   const { searchParams } = new URL(req.url);
   const searchTerm = searchParams.get("q")?.trim() || "";
-  const type = searchParams.get("type") || "results"; // "suggestion" or "results"
+  const type = searchParams.get("type") || "results";
 
   if (!searchTerm) {
     return sendResponse({
@@ -480,7 +519,6 @@ const searchVendorProducts = async (req: NextRequest) => {
     data,
   });
 };
-
 
 const getOfferProducts = async () => {
   await dbConnect();
@@ -524,20 +562,25 @@ const getVendorProductsByVendorId = async (
 ) => {
   await dbConnect();
   const { vendorId } = await params;
+  
+  const { searchParams } = new URL(req.url);
+  const page = Number(searchParams.get("page")) || 1;
+  const limit = Number(searchParams.get("limit")) || 20;
 
-  const products = await VendorProductServices.getVendorProductsByVendorIdFromDB(
-    vendorId
+  const result = await VendorProductServices.getVendorProductsByVendorIdFromDB(
+    vendorId,
+    page,
+    limit
   );
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
     message: "Vendor products retrieved successfully!",
-    data: products,
+    data: result,
   });
 };
 
-// CONTROLLER
 const getVendorStoreAndProducts = async (
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -560,8 +603,6 @@ const getVendorStoreAndProducts = async (
   });
 };
 
-
-// for vendor dashboard to see their products
 const getVendorStoreAndProductsVendorDashboard = async (
   req: NextRequest,
   { params }: { params: { vendorId: string } }
@@ -569,10 +610,8 @@ const getVendorStoreAndProductsVendorDashboard = async (
   await dbConnect();
   const { vendorId } = await params;
 
-  console.log("Controller Vendor ID:", await params);
-
   const result = await VendorProductServices.getVendorStoreAndProductsFromDBVendorDashboard(
-    vendorId,
+    vendorId
   );
 
   return sendResponse({
@@ -583,16 +622,13 @@ const getVendorStoreAndProductsVendorDashboard = async (
   });
 };
 
-
 const getVendorStoreProductsWithReviews = async (
   req: NextRequest,
   { params }: { params: { vendorId: string } }
 ) => {
   await dbConnect();
 
-  const { vendorId } =await params;
-  console.log('🟢 Vendor ID:', await params);
-  console.log('🟢 Vendor ID:', vendorId);
+  const { vendorId } = await params;
 
   const result =
     await VendorProductServices.getVendorStoreProductsWithReviewsFromDB(
@@ -602,7 +638,7 @@ const getVendorStoreProductsWithReviews = async (
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Vendor store products with reviews retrieved successfully!',
+    message: "Vendor store products with reviews retrieved successfully!",
     data: result,
   });
 };
@@ -630,5 +666,5 @@ export const VendorProductController = {
 
   getVendorStoreAndProducts,
   getVendorStoreAndProductsVendorDashboard,
-  getVendorStoreProductsWithReviews
+  getVendorStoreProductsWithReviews,
 };

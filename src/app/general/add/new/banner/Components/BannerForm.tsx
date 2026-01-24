@@ -63,6 +63,16 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
 
   const isEditMode = !!initialData;
 
+  // Helper function to get recommended image size based on banner position
+  const getRecommendedImageSize = (): { width: number; height: number; label: string } => {
+    if (bannerPosition === 'Right (Homepage)' || bannerPosition === 'Left (Homepage)') {
+      return { width: 2250, height: 1125, label: '2250px × 1125px (Small Banner - Sidebar)' };
+    }
+    return { width: 1226, height: 632, label: '1226px × 632px (Large Banner - Full Width)' };
+  };
+
+  const recommendedSize = getRecommendedImageSize();
+
   useEffect(() => {
     if (initialData) {
       setSubTitle(initialData.subTitle || '');
@@ -214,7 +224,25 @@ export default function BannerForm({ initialData, onSuccess, onCancel }: BannerF
             preview={initialData?.bannerImage}
             onChange={(name, file) => setImage(file)}
           />
-          <p className="text-[11px] text-gray-500 mt-2">Recommended: 500px × 262px (or suitable size)</p>
+          
+          {/* Dynamic Image Size Info Box */}
+          <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+            <p className="text-[12px] text-gray-700 font-semibold mb-2">📐 Image Size Guidelines:</p>
+            <div className="space-y-2">
+              <div>
+                <p className="text-[11px] text-gray-600 font-medium">
+                  Current Position: <span className="text-amber-700 font-semibold">{bannerPosition || 'Not selected'}</span>
+                </p>
+              </div>
+              <div className="pt-2 border-t border-amber-200">
+                <p className="text-[11px] text-gray-700">
+                  <span className="font-semibold">Recommended Size:</span>
+                  <br />
+                  <span className="text-amber-600 font-semibold">{recommendedSize.label}</span>
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Right Column - Fields */}

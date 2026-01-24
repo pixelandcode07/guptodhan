@@ -5,6 +5,8 @@ export interface IServiceCategory extends Document {
   description: string;
   slug: string;
   icon_url: string;
+  orderCount: number;
+  isActive: boolean;
 
   createdAt: Date;
   updatedAt: Date;

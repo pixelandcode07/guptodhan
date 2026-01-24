@@ -1,5 +1,3 @@
-// src/lib/modules/donation-campaign/donation-campaign.interface.ts
-
 import { Document, Types } from 'mongoose';
 
 export interface IDonationCampaign extends Document {
@@ -9,16 +7,20 @@ export interface IDonationCampaign extends Document {
   item: 'money' | 'clothes' | 'food' | 'books' | 'other';
   description: string;
   images: string[];
-  status: 'active' | 'inactive' | 'completed';
   
-  // ✅ Amount tracking
-  goalAmount?: number;
-  raisedAmount?: number;
+  moderationStatus: 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string;
   
-  // ✅ Add this field
-  donorsCount?: number;  // Number of people who contributed
+  status: 'active' | 'inactive' | 'completed' | 'archived';
+  goalAmount: number;
+  raisedAmount: number;
+  donorsCount: number;
   
-  // ✅ Timestamps
-  createdAt?: Date;
-  updatedAt?: Date;
+  approvedAt?: Date;
+  approvedBy?: Types.ObjectId;
+  
+  completedAt?: Date;
+  
+  createdAt: Date;
+  updatedAt: Date;
 }

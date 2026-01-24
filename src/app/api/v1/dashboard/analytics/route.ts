@@ -1,13 +1,28 @@
-// src/app/api/v1/dashboard/analytics/route.ts
-import { DashboardController } from '@/lib/modules/dashboard/dashboard.controller';
-import { catchAsync } from '@/lib/middlewares/catchAsync';
-import { checkRole } from '@/lib/middlewares/checkRole';
+import { NextRequest, NextResponse } from 'next/server';
+import { DashboardServices } from '@/lib/modules/dashboard/dashboard.service';
+import dbConnect from '@/lib/db';
 
-/**
- * @description Get all analytics data for the admin dashboard. (Admin Only)
- * @method GET
- * @route GET /api/v1/dashboard/analytics
- */
-export const GET = catchAsync(
-  checkRole(['admin'])(DashboardController.getDashboardAnalytics)
-);
+export async function GET(req: NextRequest) {
+  try {
+    await dbConnect();
+    const data = await DashboardServices.getDashboardAnalyticsFromDB();
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Dashboard data retrieved successfully',
+        data,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('❌ Dashboard API Error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Failed to fetch dashboard data',
+      },
+      { status: 500 }
+    );
+  }
+}

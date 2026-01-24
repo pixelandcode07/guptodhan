@@ -19,6 +19,8 @@ import {
   registerServiceProviderValidationSchema,
   googleLoginValidationSchema,
 } from './auth.validation';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 // --- User Login ---
 const loginUser = async (req: NextRequest) => {
@@ -128,11 +130,11 @@ const vendorSendForgotPasswordOtp = async (req: NextRequest) => {
   const body = await req.json();
   const validatedData = sendForgotPasswordOtpToEmailSchema.parse(body);
   await AuthServices.vendorSendForgotPasswordOtpToEmail(validatedData.email);
-  return sendResponse({ 
-    success: true, 
-    statusCode: StatusCodes.OK, 
-    message: 'A password reset OTP has been sent to your vendor email.', 
-    data: null 
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'A password reset OTP has been sent to your vendor email.',
+    data: null
   });
 };
 
@@ -141,11 +143,11 @@ const vendorVerifyForgotPasswordOtp = async (req: NextRequest) => {
   const body = await req.json();
   const validatedData = verifyForgotPasswordOtpFromEmailSchema.parse(body);
   const result = await AuthServices.vendorVerifyForgotPasswordOtpFromEmail(validatedData.email, validatedData.otp);
-  return sendResponse({ 
-    success: true, 
-    statusCode: StatusCodes.OK, 
-    message: 'OTP verified successfully. Use the token to reset your password.', 
-    data: result 
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'OTP verified successfully. Use the token to reset your password.',
+    data: result
   });
 };
 
@@ -155,11 +157,11 @@ const vendorResetPassword = async (req: NextRequest) => {
   const validatedData = resetPasswordWithTokenSchema.parse(body);
   // Reusing the unified reset service logic
   await AuthServices.resetPasswordWithToken(validatedData.token, validatedData.newPassword);
-  return sendResponse({ 
-    success: true, 
-    statusCode: StatusCodes.OK, 
-    message: 'Vendor password has been reset successfully!', 
-    data: null 
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Vendor password has been reset successfully!',
+    data: null
   });
 };
 
@@ -280,80 +282,169 @@ const vendorSendRegistrationOtp = async (req: NextRequest) => {
 
 // --- ২. ভেন্ডর রেজিস্ট্রেশন (OTP ভেরিফিকেশনসহ) ---
 const registerVendor = async (req: NextRequest) => {
-  await dbConnect();
+  try {
+    // ✅ Step 1: Connect to database
+    await dbConnect();
+    console.log('✅ Database connected');
 
-  const formData = await req.formData();
+    // ✅ Step 2: Check if admin (from session)
+    const session = await getServerSession(authOptions);
+    const isByAdmin = session?.user?.role === 'admin';
+    console.log('👤 Admin request:', isByAdmin);
 
-  // ১. OTP এবং ইমেইল চেক করা
-  const otp = formData.get('otp') as string;
-  const email = formData.get('email') as string;
+    // ✅ Step 3: Extract form data
+    const formData = await req.formData();
+    console.log('📝 Form data received');
 
-  if (!otp || otp.length !== 6) {
-    throw new Error('Valid 6-digit OTP is required to complete registration.');
+    // ✅ Step 4: Get OTP and email
+    const otp = (formData.get('otp') as string) || '';
+    const email = formData.get('email') as string;
+
+    // ✅ Step 5: Validate OTP for non-admin
+    if (!isByAdmin) {
+      if (!otp || otp.length !== 6) {
+        return sendResponse({
+          success: false,
+          statusCode: StatusCodes.BAD_REQUEST,
+          message: 'Valid 6-digit OTP is required for registration',
+          data: null,
+        });
+      }
+      console.log('✅ OTP format valid');
+    }
+
+    // ✅ Step 6: Get files
+    const ownerNidFile = formData.get('ownerNid') as File | null;
+    const tradeLicenseFile = formData.get('tradeLicense') as File | null;
+
+    if (!ownerNidFile) {
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.BAD_REQUEST,
+        message: 'Owner NID image is required',
+        data: null,
+      });
+    }
+
+    if (!tradeLicenseFile) {
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.BAD_REQUEST,
+        message: 'Trade License image is required',
+        data: null,
+      });
+    }
+
+    console.log('✅ Files received:', {
+      ownerNid: ownerNidFile.name,
+      tradeLicense: tradeLicenseFile.name,
+    });
+
+    // ✅ Step 7: Upload files to Cloudinary
+    console.log('📤 Uploading files to Cloudinary...');
+    
+    let ownerNidUrl = '';
+    let tradeLicenseUrl = '';
+
+    try {
+      const [ownerNidResult, tradeLicenseResult] = await Promise.all([
+        uploadToCloudinary(
+          Buffer.from(await ownerNidFile.arrayBuffer()),
+          'vendor-documents/nid'
+        ),
+        uploadToCloudinary(
+          Buffer.from(await tradeLicenseFile.arrayBuffer()),
+          'vendor-documents/license'
+        ),
+      ]);
+
+      ownerNidUrl = ownerNidResult.secure_url;
+      tradeLicenseUrl = tradeLicenseResult.secure_url;
+
+      console.log('✅ Files uploaded to Cloudinary');
+    } catch (uploadError: any) {
+      console.error('❌ Cloudinary upload error:', uploadError);
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        message: 'Failed to upload files to cloud storage',
+        data: null,
+      });
+    }
+
+    // ✅ Step 8: Build payload for service
+    const payload: any = {
+      // User fields
+      name: formData.get('name') as string,
+      email: email,
+      password: formData.get('password') as string,
+      phoneNumber: formData.get('phoneNumber') as string,
+      address: (formData.get('address') as string) || '',
+
+      // Vendor fields
+      businessName: formData.get('businessName') as string,
+      businessAddress: (formData.get('businessAddress') as string) || '',
+      tradeLicenseNumber: (formData.get('tradeLicenseNumber') as string) || '',
+      ownerName: formData.get('ownerName') as string,
+
+      businessCategory: JSON.parse(
+        (formData.get('businessCategory') as string) || '[]'
+      ),
+
+      ownerNidUrl,
+      tradeLicenseUrl,
+
+      status: isByAdmin ? 'approved' : 'pending',
+    };
+ 
+    console.log('📋 Payload built:', {
+      name: payload.name,
+      email: payload.email,
+      businessName: payload.businessName,
+      status: payload.status,
+    });
+
+    // ✅ Step 9: Call service to register vendor
+    const result = await AuthServices.registerVendor(payload, otp, isByAdmin);
+
+    console.log('✅ Vendor registration successful');
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.CREATED,
+      message: isByAdmin
+        ? 'Vendor account created successfully by Admin!'
+        : 'Registration successful! Waiting for admin approval.',
+      data: result,
+    });
+  } catch (error: any) {
+    console.error('❌ Registration error:', {
+      message: error.message,
+      stack: error.stack,
+    });
+
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: error.message || 'Failed to register vendor',
+      data: null,
+    });
   }
-
-  // ২. ফাইল রিসিভ করা
-  const ownerNidFile = formData.get('ownerNid') as File | null;
-  const tradeLicenseFile = formData.get('tradeLicense') as File | null;
-
-  if (!ownerNidFile) throw new Error('Owner NID image is required.');
-  if (!tradeLicenseFile) throw new Error('Trade License image is required.');
-
-  // ৩. ক্লাউডিনারিতে আপলোড (একসাথে দুটি ফাইল আপলোড হচ্ছে)
-  const [ownerNidUploadResult, tradeLicenseUploadResult] = await Promise.all([
-    uploadToCloudinary(Buffer.from(await ownerNidFile.arrayBuffer()), 'vendor-documents'),
-    uploadToCloudinary(Buffer.from(await tradeLicenseFile.arrayBuffer()), 'vendor-documents'),
-  ]);
-
-  // ৪. সার্ভিসকে পাঠানোর জন্য পেলোড তৈরি
-  const payload: any = {
-    name: formData.get('name') as string,
-    email: email,
-    password: formData.get('password') as string,
-    phoneNumber: formData.get('phoneNumber') as string,
-    address: (formData.get('address') as string) || '',
-
-    businessName: formData.get('businessName') as string,
-    businessAddress: (formData.get('businessAddress') as string) || '',
-    tradeLicenseNumber: (formData.get('tradeLicenseNumber') as string) || '',
-    ownerName: formData.get('ownerName') as string,
-
-    businessCategory: JSON.parse((formData.get('businessCategory') as string) || '[]'),
-
-    ownerNidUrl: ownerNidUploadResult.secure_url,
-    tradeLicenseUrl: tradeLicenseUploadResult.secure_url,
-
-    status: 'pending',
-  };
-
-  // ৫. সার্ভিস কল (এখানে OTP পাঠিয়ে ভেরিফাই করানো হবে)
-  // registerVendor(payload, otp) - সার্ভিস ফাংশনটি এভাবে আপডেট থাকতে হবে
-  const result = await AuthServices.registerVendor(payload, otp);
-
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.CREATED,
-    message: 'Vendor registered successfully! Admin will review your profile.',
-    data: result,
-  });
 };
 
-// --- Service Provider Registration ---
-// OTP পাঠানোর কন্ট্রোলার
 const serviceProviderSendRegistrationOtp = async (req: NextRequest) => {
   await dbConnect();
   const { email } = await req.json();
   if (!email) throw new Error("Email is required");
   await AuthServices.serviceProviderSendRegistrationOtp(email);
-  return sendResponse({ 
-    success: true, 
-    statusCode: StatusCodes.OK, 
-    message: 'Registration OTP sent to your email.', 
-    data: null 
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Registration OTP sent to your email.',
+    data: null
   });
 };
 
-// রেজিস্ট্রেশন কন্ট্রোলার (FormData ব্যবহার করে)
 const registerServiceProvider = async (req: NextRequest) => {
   await dbConnect();
   const formData = await req.formData();
@@ -362,12 +453,12 @@ const registerServiceProvider = async (req: NextRequest) => {
   if (!otp) throw new Error('OTP is required for registration.');
 
   // যদি সার্ভিস প্রোভাইডারের ছবি বা NID থাকে তবে এখানে আপলোড লজিক বসাতে পারেন
-  const profilePictureFile = formData.get('profilePicture') as File | null;
+  const profilePictureFile = formData.get('cvUrl') as File | null;
   let profilePictureUrl = '';
-  
+
   if (profilePictureFile) {
     const uploadRes = await uploadToCloudinary(
-      Buffer.from(await profilePictureFile.arrayBuffer()), 
+      Buffer.from(await profilePictureFile.arrayBuffer()),
       'service-provider-docs'
     );
     profilePictureUrl = uploadRes.secure_url;
@@ -381,8 +472,9 @@ const registerServiceProvider = async (req: NextRequest) => {
     address: formData.get('address') as string || '',
     profilePicture: profilePictureUrl,
     // অন্যান্য তথ্য যা সার্ভিস প্রোভাইডারের জন্য প্রয়োজন
-    category: formData.get('category') as string,
-    experience: formData.get('experience') as string,
+    category: formData.get('serviceCategory') as string,
+    // experience: formData.get('experience') as string,
+    bio: formData.get('bio') as string || '',
   };
 
   const result = await AuthServices.registerServiceProvider(payload, otp);
@@ -400,11 +492,11 @@ const googleLoginHandler = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
   const validated = googleLoginValidationSchema.parse(body);
-  
+
   const result = await AuthServices.loginWithGoogle(validated.idToken);
 
   const { refreshToken, accessToken, ...data } = result;
-  
+
   const response = sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
@@ -412,7 +504,6 @@ const googleLoginHandler = async (req: NextRequest) => {
     data: { ...data, accessToken },
   });
 
-  // ✅ 1. Refresh Token Cookie
   response.cookies.set('refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -420,7 +511,6 @@ const googleLoginHandler = async (req: NextRequest) => {
     path: '/',
   });
 
-  // ✅ 2. Access Token Cookie
   response.cookies.set('accessToken', accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -431,9 +521,7 @@ const googleLoginHandler = async (req: NextRequest) => {
   return response;
 };
 
-// ------------------------------------
-// --- SERVICE PROVIDER LOGIN ---
-// ------------------------------------
+
 const serviceProviderLogin = async (req: NextRequest) => {
   await dbConnect();
 
@@ -482,6 +570,89 @@ const serviceProviderLogin = async (req: NextRequest) => {
   return response;
 };
 
+const adminLogin = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  
+  // আমরা আগের loginValidationSchema ব্যবহার করতে পারি (যেখানে identifier এবং password থাকে)
+  const validatedData = loginValidationSchema.parse(body);
+  
+  const result = await AuthServices.adminLogin(validatedData);
+
+  const { refreshToken, accessToken, user } = result;
+
+  const response = sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Admin logged in successfully!',
+    data: {
+      accessToken,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profilePicture: user.profilePicture,
+      },
+    },
+  });
+
+  // সিকিউরিটির জন্য কুকিতে রিফ্রেশ টোকেন সেট করা
+  response.cookies.set('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 30 * 24 * 60 * 60,
+    path: '/',
+  });
+
+  // মিডলওয়্যারের জন্য এক্সেস টোকেন কুকিতে সেট করা
+  response.cookies.set('accessToken', accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60,
+    path: '/',
+  });
+
+  return response;
+};
+
+
+const serviceProviderSendForgotPasswordOtp = async (req: NextRequest) => {
+  await dbConnect();
+  const { email } = await req.json();
+  await AuthServices.serviceProviderSendForgotPasswordOtp(email);
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'পাসওয়ার্ড রিসেট ওটিপি ইমেইলে পাঠানো হয়েছে।', 
+    data: null 
+  });
+};
+
+const serviceProviderVerifyForgotPasswordOtp = async (req: NextRequest) => {
+  await dbConnect();
+  const { email, otp } = await req.json();
+  const result = await AuthServices.serviceProviderVerifyForgotPasswordOtp(email, otp);
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'OTP ভেরিফাইড! এখন পাসওয়ার্ড রিসেট করুন।', 
+    data: result 
+  });
+};
+
+const serviceProviderResetPassword = async (req: NextRequest) => {
+  await dbConnect();
+  const { token, newPassword } = await req.json();
+  // এখানে ভেন্ডর বা ইউজারের রিসেট সার্ভিসটিই ব্যবহার করা যাবে
+  await AuthServices.resetPasswordWithToken(token, newPassword);
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'সার্ভিস প্রোভাইডার পাসওয়ার্ড সফলভাবে রিসেট হয়েছে।', 
+    data: null 
+  });
+};
 
 export const AuthController = {
   loginUser,
@@ -503,4 +674,8 @@ export const AuthController = {
   vendorSendForgotPasswordOtp,
   vendorVerifyForgotPasswordOtp,
   vendorResetPassword,
+  serviceProviderSendForgotPasswordOtp,
+  serviceProviderVerifyForgotPasswordOtp,
+  serviceProviderResetPassword,
+  adminLogin,
 };

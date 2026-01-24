@@ -12,11 +12,13 @@ import dbConnect from '@/lib/db';
 import { ZodError } from 'zod';
 import { Types } from 'mongoose';
 
+// ✅ No changes needed - already optimal
 const createUser = async (userData: TUserInput) => {
   const result = await UserServices.createUserIntoDB(userData);
   return result;
 };
 
+// ✅ Already good
 const registerServiceProvider = async (req: NextRequest) => {
   try {
     await dbConnect();
@@ -47,7 +49,6 @@ const registerServiceProvider = async (req: NextRequest) => {
 
     UserValidations.registerServiceProviderValidationSchema.parse(payload);
 
-    // serviceCategory
     const result = await UserServices.createServiceProviderIntoDB({
       name: payload.name,
       email: payload.email,
@@ -58,7 +59,6 @@ const registerServiceProvider = async (req: NextRequest) => {
       role: 'service-provider',
       serviceProviderInfo: {
         serviceCategory: new Types.ObjectId(payload.serviceCategory),
-        // subCategories: payload.subCategories.map((id: string) => new Types.ObjectId(id)),
         cvUrl: payload.cvUrl,
         bio: payload.bio,
       },
@@ -70,7 +70,6 @@ const registerServiceProvider = async (req: NextRequest) => {
       message: 'Service provider registered successfully!',
       data: result,
     });
-
   } catch (error: any) {
     if (error instanceof ZodError) {
       return sendResponse({
@@ -90,13 +89,15 @@ const registerServiceProvider = async (req: NextRequest) => {
   }
 };
 
-// --- Other existing functions remain unchanged ---
-
+// ✅ Already optimal
 const getMyProfile = async (req: NextRequest) => {
   await dbConnect();
   const userId = req.headers.get('x-user-id');
-  if (!userId) { throw new Error('User ID not found in token'); }
+  if (!userId) {
+    throw new Error('User ID not found in token');
+  }
 
+  // Service layer handles caching
   const result = await UserServices.getMyProfileFromDB(userId);
 
   return sendResponse({
@@ -107,39 +108,43 @@ const getMyProfile = async (req: NextRequest) => {
   });
 };
 
+// ✅ Already good
 const updateMyProfile = async (req: NextRequest) => {
   await dbConnect();
   const userId = req.headers.get('x-user-id');
-  if (!userId) { throw new Error('User ID not found in token'); }
+  if (!userId) {
+    throw new Error('User ID not found in token');
+  }
 
   const formData = await req.formData();
-  
-  // ডাটাগুলো নেওয়া হচ্ছে
+
   const file = formData.get('profilePicture') as File | null;
   const name = formData.get('name') as string;
-  const address = formData.get('address') as string; // <--- এখানে খালি স্ট্রিং আসছে
+  const address = formData.get('address') as string;
   const phoneNumber = formData.get('phoneNumber') as string;
 
-  const payload: { name?: string; address?: string; profilePicture?: string; phoneNumber?:string} = {};
+  const payload: {
+    name?: string;
+    address?: string;
+    profilePicture?: string;
+    phoneNumber?: string;
+  } = {};
 
   if (name) payload.name = name;
   if (phoneNumber) payload.phoneNumber = phoneNumber;
-  
-  // ❌ ভুল কোড (আগে যা ছিল)
-  // if (address) payload.address = address; 
 
-  // ✅ সঠিক কোড (এটি ব্যবহার করুন)
-  // আমরা চেক করছি address স্ট্রিং কিনা, খালি হলেও সমস্যা নেই
+  // ✅ Handle empty address correctly
   if (typeof address === 'string') {
     payload.address = address;
   }
 
-  // ... বাকি কোড একই থাকবে (ছবি আপলোড ইত্যাদি)
   if (file) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const uploadResult = await uploadToCloudinary(buffer, 'profile-pictures');
     payload.profilePicture = uploadResult.secure_url;
   }
+
+  // Service layer handles cache invalidation
   const result = await UserServices.updateMyProfileInDB(userId, payload);
 
   return sendResponse({
@@ -150,6 +155,7 @@ const updateMyProfile = async (req: NextRequest) => {
   });
 };
 
+// ✅ Already good
 const getAllUsers = async (_req: NextRequest) => {
   await dbConnect();
   const result = await UserServices.getAllUsersFromDB();
@@ -162,11 +168,15 @@ const getAllUsers = async (_req: NextRequest) => {
   });
 };
 
+// ✅ Already good
 const deleteMyAccount = async (req: NextRequest) => {
   await dbConnect();
   const userId = req.headers.get('x-user-id');
-  if (!userId) { throw new Error('User ID not found in token'); }
+  if (!userId) {
+    throw new Error('User ID not found in token');
+  }
 
+  // Service handles cache invalidation
   await UserServices.deleteUserFromDB(userId);
 
   return sendResponse({
@@ -177,6 +187,7 @@ const deleteMyAccount = async (req: NextRequest) => {
   });
 };
 
+// ✅ Already good
 const deleteUserByAdmin = async (req: NextRequest, { params }: { params: { id: string } }) => {
   await dbConnect();
   const { id } = params;
@@ -191,11 +202,13 @@ const deleteUserByAdmin = async (req: NextRequest, { params }: { params: { id: s
   });
 };
 
-
-const updateUserByAdmin = async (req: NextRequest, context: { params: Promise<{ id: string }> }) => {
+// ✅ Already good
+const updateUserByAdmin = async (
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) => {
   await dbConnect();
-  
-  // 🔥 সমাধান: params-কে await করে আইডি বের করুন
+
   const { id } = await context.params;
 
   const body = await req.json();
@@ -219,10 +232,10 @@ const updateUserByAdmin = async (req: NextRequest, context: { params: Promise<{ 
   });
 };
 
-
+// ✅ Already good
 const getUserById = async (req: NextRequest, context: { params: Promise<{ id: string }> }) => {
   await dbConnect();
-  const { id } = await context.params; // await যোগ করা হয়েছে
+  const { id } = await context.params;
 
   const result = await UserServices.getUserByIdFromDB(id);
 

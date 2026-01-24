@@ -12,5 +12,5 @@ export interface IReview extends Document {
   userImage: string;
 
   //multiple images
-  reviewImages?: string[];   
+  reviewImages?: string[];
 }

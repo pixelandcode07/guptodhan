@@ -14,17 +14,18 @@ export default async function Hero() {
 
   return (
     <div>
-      <nav className="hidden lg:block">
+      <nav className="hidden lg:block ">
         <HeroNav categories={categories} />
       </nav>
-
-      <main className='max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 md:pt-10'>
-        <HeroImage
-          leftBanners={leftBanners}
-          rightBanners={rightBanners}
-          bottomBanners={bottomBanners}
-        />
-      </main>
+      <section className='container mx-auto'>
+        <main className='max-w-[95vw] xl:container mx-auto sm:px-10 md:pt-3'>
+          <HeroImage
+            leftBanners={leftBanners}
+            rightBanners={rightBanners}
+            bottomBanners={bottomBanners}
+          />
+        </main>
+      </section>
       <footer>
         <HeroFooter />
       </footer>

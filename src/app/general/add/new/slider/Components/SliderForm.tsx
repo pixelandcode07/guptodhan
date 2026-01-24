@@ -172,14 +172,25 @@ export default function SliderForm({ initialData }: SliderFormProps) {
             preview={initialData?.image} 
             onChange={(name, file) => setImage(file)}
           />
-          <p className="text-[11px] text-gray-500 mt-2">
-            Please upload jpg, jpeg, png file of 1000px × 500px
-          </p>
+          <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-[12px] text-gray-700 font-semibold mb-2">📐 Image Size Guidelines:</p>
+            <div className="space-y-1.5">
+              <div className="text-[11px] text-gray-600">
+                <span className="font-semibold">Large Banner (Desktop):</span>
+                <br />
+                <span className="text-blue-600">1226px × 632px</span>
+              </div>
+              <div className="text-[11px] text-gray-600">
+                <span className="font-semibold">Small Banner (Sidebar):</span>
+                <br />
+                <span className="text-blue-600">2250px × 1125px</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Right Column */}
         <div className="lg:col-span-2 space-y-6">
-          {/* 🔥 FIX: TopRow এখন সব প্রপস পাচ্ছে */}
           <TopRow
             textPosition={textPosition}
             setTextPosition={setTextPosition}

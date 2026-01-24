@@ -5,4 +5,4 @@ import { catchAsync } from '@/lib/middlewares/catchAsync';
  * @description Get all active donation campaigns. (Public)
  * @method GET
  */
-export const GET = catchAsync(DonationCampaignController.getAllCampaigns);
+export const GET = catchAsync(DonationCampaignController.getApprovedCampaigns);

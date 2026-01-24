@@ -63,6 +63,7 @@ export default function StoreForm({ store }: EditStoreFormProps) {
 
 
   const onSubmit = async (values: StoreInterface) => {
+    console.log('Edit from------->', values)
     try {
       values._id = store._id;
       // FIX: convert commission → number
@@ -319,7 +320,7 @@ export default function StoreForm({ store }: EditStoreFormProps) {
                   <SelectContent>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
+                    {/* <SelectItem value="pending">Pending</SelectItem> */}
                   </SelectContent>
                 </Select>
               </FormControl>

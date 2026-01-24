@@ -4,7 +4,7 @@ import ClientDataTable from '../components/ClientDataTable'
 
 export default async function AllServiceCategory() {
     const allCategory = await fetchAllPublicServiceCategories()
-    console.log('allCategory', allCategory)
+    // console.log('allCategory', allCategory)
     return (
         <div>
             <div className='py-5'>

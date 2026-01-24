@@ -262,22 +262,22 @@ const changePassword = async (userId: string, payload: TChangePassword) => {
 };
 
 const setPasswordForSocialLogin = async (userId: string, newPassword: string) => {
-
-  const user = await User.findById(userId);
+  // এখানে .select('+password') যোগ করা হয়েছে
+  const user = await User.findById(userId).select('+password');
 
   if (!user) {
     throw new Error('User not found!');
   }
 
-
+  // এখন এই চেকটি কাজ করবে
   if (user.password) {
     throw new Error('This account already has a password. Please use the "Change Password" feature instead.');
   }
 
-
+  // নতুন পাসওয়ার্ড সেট করা
   user.password = newPassword;
 
-
+  // সেভ করার সময় এখন pre-save হুকটি ট্রিগার হবে
   await user.save();
 
   return null;
@@ -410,54 +410,116 @@ const vendorSendRegistrationOtp = async (email: string) => {
   return null;
 };
 
-// registerVendor ফাংশনটি আপডেট করুন (OTP ভেরিফিকেশন সহ)
-const registerVendor = async (payload: any, otp: string) => {
-  await connectRedis();
-  const { email, name, password, phoneNumber, address, businessCategory, ...vendorData } = payload;
-
-  // ১. OTP চেক করা
-  const redisKey = `registration-otp:${email}`;
-  const storedOtp = await redisClient.get(redisKey);
-
-  if (!storedOtp || storedOtp !== otp) {
-    throw new Error('Invalid or expired OTP.');
-  }
-
-  // ২. ট্রানজেকশন শুরু করা
-  const session = await mongoose.startSession();
+const registerVendor = async (payload: any, otp: string = '', isByAdmin = false) => {
   try {
-    session.startTransaction();
+    // ✅ Step 1: Connect to Redis (for OTP verification if not admin)
+    if (!isByAdmin) {
+      await connectRedis();
+    }
 
-    const newUser = (await User.create([{
-      name,
+    // ✅ Step 2: Extract data
+    const {
       email,
+      name,
       password,
       phoneNumber,
       address,
-      role: 'vendor', // সরাসরি ভেন্ডর রোল
-      isActive: false, // এডমিন এপ্রুভাল এর জন্য পেন্ডিং থাকবে
-    }], { session }))[0];
-
-    const newVendor = (await Vendor.create([{
-      ...vendorData,
-      user: newUser._id,
       businessCategory,
-    }], { session }))[0];
+      ...vendorData
+    } = payload;
 
-    newUser.vendorInfo = newVendor._id;
-    await newUser.save({ session });
+    console.log('📝 Registering vendor:', {
+      email,
+      name,
+      isByAdmin,
+      hasOTP: !!otp,
+    });
 
-    await session.commitTransaction();
-    
-    // রেজিস্ট্রেশন সফল হলে OTP ডিলিট করে দেয়া
-    await redisClient.del(redisKey);
-    
-    return newUser;
-  } catch (error) {
-    await session.abortTransaction();
+    // ✅ Step 3: Verify OTP if not admin
+    if (!isByAdmin) {
+      if (!otp) {
+        throw new Error('OTP is required for manual registration');
+      }
+
+      const redisKey = `registration-otp:${email}`;
+      const storedOtp = await redisClient.get(redisKey);
+
+      if (!storedOtp || storedOtp !== otp) {
+        throw new Error('Invalid or expired OTP');
+      }
+
+      console.log('✅ OTP verified');
+    }
+
+    // ✅ Step 4: Check email doesn't exist
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      throw new Error('Email already registered');
+    }
+
+    console.log('✅ Email not duplicate');
+
+    // ✅ Step 5: Create User (WITHOUT SESSION/TRANSACTION)
+    const newUser = await User.create({
+      name,
+      email,
+      password, // Will be hashed by pre-save middleware
+      phoneNumber,
+      address,
+      role: 'vendor',
+      isActive: isByAdmin ? true : false,
+    });
+
+    console.log('✅ User created:', newUser._id);
+
+    // ✅ Step 6: Create Vendor (WITHOUT SESSION/TRANSACTION)
+    try {
+      const newVendor = await Vendor.create({
+        ...vendorData,
+        user: newUser._id,
+        businessCategory,
+      });
+
+      console.log('✅ Vendor created:', newVendor._id);
+
+      // ✅ Step 7: Update User with Vendor reference
+      newUser.vendorInfo = newVendor._id;
+      await newUser.save();
+
+      console.log('✅ User updated with vendorInfo');
+
+      // ✅ Step 8: Delete OTP from Redis if not admin
+      if (!isByAdmin) {
+        const redisKey = `registration-otp:${email}`;
+        await redisClient.del(redisKey);
+        console.log('✅ OTP deleted from Redis');
+      }
+
+      return {
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        phoneNumber: newUser.phoneNumber,
+        role: newUser.role,
+        vendorInfo: newVendor._id,
+        status: newVendor.status,
+      };
+    } catch (vendorError: any) {
+      console.error('❌ Vendor creation error:', vendorError);
+
+      // ✅ Rollback: Delete user if vendor creation fails
+      try {
+        await User.findByIdAndDelete(newUser._id);
+        console.log('✅ Rolled back: User deleted');
+      } catch (deleteError) {
+        console.error('⚠️ Error deleting user during rollback:', deleteError);
+      }
+
+      throw new Error(`Vendor creation failed: ${vendorError.message}`);
+    }
+  } catch (error: any) {
+    console.error('❌ Registration error:', error.message);
     throw error;
-  } finally {
-    session.endSession();
   }
 };
 
@@ -465,7 +527,6 @@ const registerVendor = async (payload: any, otp: string) => {
 
 
 
-// --- ১. সার্ভিস প্রোভাইডার রেজিস্ট্রেশন OTP পাঠানো ---
 const serviceProviderSendRegistrationOtp = async (email: string) => {
   await connectRedis();
 
@@ -473,9 +534,9 @@ const serviceProviderSendRegistrationOtp = async (email: string) => {
   if (existingUser) throw new Error('এই ইমেইলটি ইতিমধ্যে ব্যবহার করা হয়েছে।');
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const redisKey = `sp-registration-otp:${email}`; // সার্ভিস প্রোভাইডারের জন্য আলাদা কী
+  const redisKey = `sp-registration-otp:${email}`; 
   
-  await redisClient.set(redisKey, otp, { EX: 300 }); // ৫ মিনিট মেয়াদ
+  await redisClient.set(redisKey, otp, { EX: 300 });
 
   await sendEmail({
     to: email,
@@ -486,23 +547,19 @@ const serviceProviderSendRegistrationOtp = async (email: string) => {
   return null;
 };
 
-// --- ২. সার্ভিস প্রোভাইডার রেজিস্ট্রেশন (OTP ভেরিফাইসহ) ---
 const registerServiceProvider = async (payload: any, otp: string) => {
   await connectRedis();
   const { email, name, password, phoneNumber, address, ...providerData } = payload;
 
-  // OTP চেক
   const redisKey = `sp-registration-otp:${email}`;
   const storedOtp = await redisClient.get(redisKey);
 
   if (!storedOtp || storedOtp !== otp) {
-    throw new Error('OTP সঠিক নয় অথবা মেয়াদ শেষ হয়ে গেছে।');
+    throw new Error('Invalid OTP or OTP has expired.');
   }
 
-  const session = await mongoose.startSession();
+  // ❌ Transaction Block Removed to fix VPS Error
   try {
-    session.startTransaction();
-
     const userData = {
       name,
       email,
@@ -510,21 +567,26 @@ const registerServiceProvider = async (payload: any, otp: string) => {
       phoneNumber,
       address,
       role: 'service-provider',
-      isActive: true, // আপনি চাইলে এটি false রাখতে পারেন এডমিন এপ্রুভাল এর জন্য
+      isActive: false, // Default inactive until approved
+      status: 'pending',
       serviceProviderInfo: providerData,
     };
 
-    const newUser = (await User.create([userData], { session }))[0];
-    if (!newUser) throw new Error('ইউজার তৈরি করা সম্ভব হয়নি।');
+    // ✅ Direct Database Creation (No Session)
+    const newUser = await User.create(userData);
 
-    await session.commitTransaction();
+    if (!newUser) {
+        throw new Error('Failed to create user.');
+    }
+
+    // Delete OTP after successful registration
     await redisClient.del(redisKey);
+    
     return newUser;
+
   } catch (error) {
-    await session.abortTransaction();
+    // No transaction to abort, just throw the error
     throw error;
-  } finally {
-    session.endSession();
   }
 };
 
@@ -658,6 +720,120 @@ const serviceProviderLogin = async (payload: TLoginUser) => {
 };
 
 
+const adminLogin = async (payload: TLoginUser) => {
+  const { identifier, password: plainPassword } = payload;
+
+  const isEmail = identifier.includes('@');
+
+  // ১. ইউজার খুঁজে বের করা (ইমেইল বা ফোন দিয়ে)
+  const user = isEmail
+    ? await User.findOne({ email: identifier }).select('+password')
+    : await User.findOne({ phoneNumber: identifier }).select('+password');
+
+  if (!user) {
+    throw new Error('Invalid credentials.');
+  }
+
+  // 🔥 ২. এডমিন রোল চেক করা (সবথেকে গুরুত্বপূর্ণ)
+  if (user.role !== 'admin') {
+    throw new Error('Access denied. Admin privileges required.');
+  }
+
+  // ৩. অ্যাকাউন্ট অ্যাক্টিভ কিনা চেক করা
+  if (!user.isActive) {
+    throw new Error('Your admin account is inactive. Please contact system owner.');
+  }
+
+  // ৪. পাসওয়ার্ড চেক করা
+  const isPasswordMatched = await user.isPasswordMatched(plainPassword, user.password!);
+  if (!isPasswordMatched) {
+    throw new Error('Invalid credentials.');
+  }
+
+  // ৫. টোকেন জেনারেট করা
+  const jwtPayload = {
+    userId: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  };
+
+  const accessToken = generateToken(
+    jwtPayload,
+    process.env.JWT_ACCESS_SECRET!,
+    process.env.JWT_ACCESS_EXPIRES_IN!
+  );
+
+  const refreshToken = generateToken(
+    jwtPayload,
+    process.env.JWT_REFRESH_SECRET!,
+    process.env.JWT_REFRESH_EXPIRES_IN!
+  );
+
+  const { password, ...userWithoutPassword } = user.toObject();
+
+  return {
+    accessToken,
+    refreshToken,
+    user: userWithoutPassword,
+  };
+};
+
+
+
+const serviceProviderSendForgotPasswordOtp = async (email: string) => {
+  await connectRedis();
+
+  const user = await User.findOne({ email });
+  if (!user) throw new Error('এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট পাওয়া যায়নি।');
+
+  // রোল চেক
+  if (user.role !== 'service-provider') {
+    throw new Error('এই ইমেইলটি সার্ভিস প্রোভাইডার অ্যাকাউন্টের সাথে যুক্ত নয়।');
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const redisKey = `sp-reset-otp:email:${email}`;
+  await redisClient.set(redisKey, otp, { EX: 300 }); // ৫ মিনিট মেয়াদ
+
+  await sendEmail({
+    to: email,
+    subject: 'Service Provider Password Reset Code',
+    template: 'otp.ejs',
+    data: { name: user.name, otp: otp },
+  });
+
+  return null;
+};
+
+// --- ২. ওটিপি ভেরিফাই করে রিসেট টোকেন দেওয়া ---
+const serviceProviderVerifyForgotPasswordOtp = async (email: string, otp: string) => {
+  await connectRedis();
+  const redisKey = `sp-reset-otp:email:${email}`;
+  const storedOtp = await redisClient.get(redisKey);
+
+  if (!storedOtp || storedOtp !== otp) {
+    throw new Error('OTP সঠিক নয় অথবা মেয়াদ শেষ হয়ে গেছে।');
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) throw new Error('ইউজার পাওয়া যায়নি।');
+
+  // একটি সিকিউর রিসেট টোকেন জেনারেট করা
+  const resetToken = generateToken(
+    { 
+      userId: user._id.toString(), 
+      type: 'sp_password_reset' 
+    },
+    process.env.JWT_ACCESS_SECRET!,
+    '10m' // ১০ মিনিট মেয়াদ
+  );
+
+  await redisClient.del(redisKey);
+  return { resetToken };
+};
+
+
+
 export const AuthServices = {
   loginUser,
   refreshToken,
@@ -677,4 +853,7 @@ export const AuthServices = {
   vendorSendForgotPasswordOtpToEmail,
   vendorVerifyForgotPasswordOtpFromEmail,
   vendorSendRegistrationOtp,
+  serviceProviderSendForgotPasswordOtp,
+  serviceProviderVerifyForgotPasswordOtp,
+  adminLogin,
 };

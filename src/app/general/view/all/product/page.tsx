@@ -5,21 +5,29 @@ import { StoreServices } from '@/lib/modules/vendor-store/vendorStore.service';
 import { ProductFlagServices } from '@/lib/modules/product-config/services/productFlag.service';
 import ProductTableClient from './components/ProductTableClient';
 
-// This is now a Server Component
+// This is a Server Component (SSR)
+// We use dynamic rendering because admin data changes frequently
+export const dynamic = 'force-dynamic'; 
+
 export default async function ViewAllProductsPage() {
   await dbConnect();
 
   // Fetch all necessary data on the server
-  const [productsData, categoriesData, storesData, flagsData] = await Promise.all([
-    VendorProductServices.getAllVendorProductsFromDB(),
+  // Note: getAllVendorProductsFromDB returns { products: [], pagination: {} }
+  const [productsResult, categoriesData, storesData, flagsData] = await Promise.all([
+    VendorProductServices.getAllVendorProductsFromDB(1, 1000), // Fetching more items for the table since pagination is client side currently
     CategoryServices.getAllCategoriesFromDB(),
     StoreServices.getAllStoresFromDB(),
     ProductFlagServices.getAllProductFlagsFromDB(),
   ]);
 
-  // Transform data to plain objects
+  // FIX: Extract the array from the result object
+  // If productsResult is null/undefined, default to empty array
+  const productsArray = productsResult?.products || [];
+
+  // Transform data to plain objects for Client Component
   const initialData = {
-    products: JSON.parse(JSON.stringify(productsData || [])),
+    products: JSON.parse(JSON.stringify(productsArray)), 
     categories: JSON.parse(JSON.stringify(categoriesData || [])),
     stores: JSON.parse(JSON.stringify(storesData || [])),
     flags: JSON.parse(JSON.stringify(flagsData || [])),
@@ -34,8 +42,8 @@ export default async function ViewAllProductsPage() {
             <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">All Products</h1>
           </div>
         </div>
-
-        {/* Client Component for Interactive Table */}
+        
+        {/* Client Component with Instant Data */}
         <ProductTableClient initialData={initialData} />
       </div>
     </div>
