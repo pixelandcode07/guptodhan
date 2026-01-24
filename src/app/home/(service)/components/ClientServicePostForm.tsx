@@ -38,7 +38,7 @@ import FiveUploadImageBtn from '@/components/ReusableComponents/FiveUploadImageB
 import { division_wise_locations } from '@/data/division_wise_locations';
 import Link from 'next/link';
 
-// Types (Ager motoi)
+// Types
 type Division = keyof typeof division_wise_locations;
 type City = keyof (typeof division_wise_locations)[Division];
 type Area = string;
@@ -93,7 +93,20 @@ export default function ClientServicePostForm({ categories }: { categories: any[
     useEffect(() => { setSelectedCity(''); setSelectedArea(''); }, [selectedDivision]);
     useEffect(() => { setSelectedArea(''); }, [selectedCity]);
 
+    // ✅ FIX 1: Image Validation Helper
+    const validateFile = (file: File) => {
+        const maxSize = 2 * 1024 * 1024; // 2MB Limit
+        if (file.size > maxSize) {
+            toast.error(`File ${file.name} is too large. Max size is 2MB.`);
+            return false;
+        }
+        return true;
+    };
+
     const handleImageChange = (index: number) => (file: File | null) => {
+        // ✅ Check size before setting state
+        if (file && !validateFile(file)) return;
+
         setImages(prev => {
             const next = [...prev];
             if (file) next[index] = file; else next.splice(index, 1);
@@ -103,25 +116,54 @@ export default function ClientServicePostForm({ categories }: { categories: any[
 
     const onSubmit: SubmitHandler<FormData> = async (data) => {
         if (!(session as any)?.accessToken) return toast.error("Please login first");
+        
+        // Basic validation
+        if (images.length === 0) return toast.error("Please upload at least one image");
+        if (!selectedDivision || !selectedCity || !selectedArea) return toast.error("Please select full location details");
+
         setLoading(true);
+        const toastId = toast.loading("Publishing service... Please wait.");
+
         const formData = new FormData();
         Object.entries(data).forEach(([key, value]) => {
             if (Array.isArray(value)) value.forEach(v => formData.append(key, v));
             else formData.append(key, String(value));
         });
+        
+        // Location Data
         formData.append('service_area.city', selectedCity);
-        formData.append('service_area.district', selectedCity);
+        formData.append('service_area.district', selectedDivision); // Using Division as District for now based on data structure
         formData.append('service_area.thana', selectedArea);
+        
+        // Append Images
         images.forEach(file => formData.append('service_images', file));
 
         try {
+            // ✅ FIX 2: Increased Timeout to 120 seconds (2 minutes)
             const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/service-section/provide-service`, formData, {
-                headers: { 'Authorization': `Bearer ${(session as any)?.accessToken}`, 'Content-Type': 'multipart/form-data' }
+                headers: { 
+                    'Authorization': `Bearer ${(session as any)?.accessToken}`, 
+                    'Content-Type': 'multipart/form-data' 
+                },
+                timeout: 120000 // 120s timeout to prevent 504 on client side
             });
-            if (res.data.success) setShowSuccessDialog(true);
+
+            if (res.data.success) {
+                toast.success("Service posted successfully!", { id: toastId });
+                setShowSuccessDialog(true);
+            }
         } catch (err: any) {
-            toast.error(err.response?.data?.message || "Failed to post service");
-        } finally { setLoading(false); }
+            console.error(err);
+            const errorMsg = err.response?.data?.message || "Failed to post service";
+            
+            if (err.code === 'ECONNABORTED') {
+                toast.error("Request timed out. Please try uploading smaller images.", { id: toastId });
+            } else {
+                toast.error(errorMsg, { id: toastId });
+            }
+        } finally { 
+            setLoading(false); 
+        }
     };
 
     return (
@@ -146,7 +188,7 @@ export default function ClientServicePostForm({ categories }: { categories: any[
 
             <motion.div initial="initial" animate="animate" variants={fadeInUp} className="max-w-6xl mx-auto px-4">
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-                    {/* <h1 className="text-xl font-bold">Post a New Service</h1> */}
+                    
                     {/* 1. Basic Info Section */}
                     <Card className="border-none shadow-md overflow-hidden">
                         <div className="bg-primary/5 px-6 py-4 border-b flex items-center gap-2">
@@ -279,7 +321,11 @@ export default function ClientServicePostForm({ categories }: { categories: any[
                             <h2 className="font-semibold text-gray-700">Service Portfolio</h2>
                         </div>
                         <CardContent className="p-6">
-                            <p className="text-sm text-gray-500 mb-6">Upload up to 5 high-quality images of your work. This helps customers trust your service.</p>
+                            <div className="flex items-center justify-between mb-6">
+                                <p className="text-sm text-gray-500">Upload up to 5 high-quality images of your work.</p>
+                                <span className="text-xs bg-red-50 text-red-600 px-2 py-1 rounded border border-red-100 font-medium">Max 2MB per image</span>
+                            </div>
+                            
                             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                                 {Array.from({ length: 5 }).map((_, i) => (
                                     <FiveUploadImageBtn key={i} value={images[i] || null} onChange={handleImageChange(i)} />
@@ -296,7 +342,7 @@ export default function ClientServicePostForm({ categories }: { categories: any[
                 </form>
             </motion.div>
 
-            {/* Success Dialog (Already fixed with English text in previous step) */}
+            {/* Success Dialog */}
             <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
                 <DialogContent className="sm:max-w-md text-center py-10 rounded-3xl">
                     <DialogHeader className="flex flex-col items-center justify-center">

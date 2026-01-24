@@ -555,13 +555,11 @@ const registerServiceProvider = async (payload: any, otp: string) => {
   const storedOtp = await redisClient.get(redisKey);
 
   if (!storedOtp || storedOtp !== otp) {
-    throw new Error('OTP সঠিক নয় অথবা মেয়াদ শেষ হয়ে গেছে।');
+    throw new Error('Invalid OTP or OTP has expired.');
   }
 
-  const session = await mongoose.startSession();
+  // ❌ Transaction Block Removed to fix VPS Error
   try {
-    session.startTransaction();
-
     const userData = {
       name,
       email,
@@ -569,22 +567,26 @@ const registerServiceProvider = async (payload: any, otp: string) => {
       phoneNumber,
       address,
       role: 'service-provider',
-      isActive: false,
+      isActive: false, // Default inactive until approved
       status: 'pending',
       serviceProviderInfo: providerData,
     };
 
-    const newUser = (await User.create([userData], { session }))[0];
-    if (!newUser) throw new Error('ইউজার তৈরি করা সম্ভব হয়নি।');
+    // ✅ Direct Database Creation (No Session)
+    const newUser = await User.create(userData);
 
-    await session.commitTransaction();
+    if (!newUser) {
+        throw new Error('Failed to create user.');
+    }
+
+    // Delete OTP after successful registration
     await redisClient.del(redisKey);
+    
     return newUser;
+
   } catch (error) {
-    await session.abortTransaction();
+    // No transaction to abort, just throw the error
     throw error;
-  } finally {
-    session.endSession();
   }
 };
 
