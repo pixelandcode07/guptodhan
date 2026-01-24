@@ -396,7 +396,7 @@ const registerVendor = async (req: NextRequest) => {
 
       status: isByAdmin ? 'approved' : 'pending',
     };
-
+ 
     console.log('📋 Payload built:', {
       name: payload.name,
       email: payload.email,
