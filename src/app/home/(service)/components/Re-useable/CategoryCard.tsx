@@ -6,23 +6,27 @@ export default function CategoryCard({ item }: { item: IServiceCategory }) {
     return (
         <Link
             href={`/services/${item.slug}`}
-            className="group relative flex items-center gap-4 rounded-full border border-sky-900 bg-sky-300 px-2 py-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+            className="group flex w-full items-stretch overflow-hidden rounded-xl border border-sky-400 bg-white transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
         >
-            {/* Icon Circle */}
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white transition-transform duration-300 group-hover:scale-110">
-                <Image
-                    src={item.icon_url}
-                    alt={item.name}
-                    width={28}
-                    height={28}
-                    className="object-contain rounded-full"
-                />
+            {/* Left Side: Icon Container (White Background) */}
+            <div className="flex w-16 shrink-0 items-center justify-center bg-white px-2">
+                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full transition-transform duration-300 group-hover:scale-110">
+                    <Image
+                        src={item.icon_url}
+                        alt={item.name}
+                        width={40}
+                        height={40}
+                        className="h-full w-full object-cover"
+                    />
+                </div>
             </div>
 
-            {/* Text */}
-            <span className="text-sm font-semibold uppercase tracking-wide text-black md:text-base">
-                {item.name}
-            </span>
+            {/* Right Side: Text Container (Blue Background) */}
+            <div className="flex grow items-center justify-center bg-sky-300 px-4 py-3">
+                <span className="text-lg font-semibold uppercase tracking-wide text-white">
+                    {item.name}
+                </span>
+            </div>
         </Link>
     );
 }
