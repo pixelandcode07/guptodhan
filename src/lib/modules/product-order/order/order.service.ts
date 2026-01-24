@@ -13,20 +13,27 @@ import { getCachedData, deleteCacheKey, deleteCachePattern } from '@/lib/redis/c
 import { CacheKeys, CacheTTL } from '@/lib/redis/cache-keys';
 
 // ================================================================
-// 📝 CREATE ORDER
+// 📝 CREATE ORDER (WITHOUT TRANSACTIONS) ✅ FIXED
 // ================================================================
 const createOrderInDB = async (payload: Partial<IOrder>) => {
-  const result = await OrderModel.create(payload);
+  try {
+    // Simple create without transaction - works on any MongoDB setup
+    const result = await OrderModel.create(payload);
 
-  // 🗑️ Clear user's order cache
-  if (payload.userId) {
-    await deleteCachePattern(`orders:user:${payload.userId}*`);
+    // 🗑️ Clear user's order cache
+    if (payload.userId) {
+      await deleteCachePattern(`orders:user:${payload.userId}*`);
+    }
+    
+    // Clear all orders cache
+    await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
+
+    console.log('✅ Order created successfully:', result._id);
+    return result;
+  } catch (error) {
+    console.error('❌ Error creating order:', error);
+    throw new Error(`Failed to create order: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-  
-  // Clear all orders cache
-  await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
-
-  return result;
 };
 
 // ================================================================
@@ -211,36 +218,48 @@ const getOrdersByUserFromDB = async (userId: string) => {
 // ✏️ UPDATE ORDER
 // ================================================================
 const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
-  const result = await OrderModel.findByIdAndUpdate(id, payload, { new: true });
-  
-  if (!result) {
-    throw new Error('Order not found to update.');
-  }
+  try {
+    const result = await OrderModel.findByIdAndUpdate(id, payload, { new: true });
+    
+    if (!result) {
+      throw new Error('Order not found to update.');
+    }
 
-  // 🗑️ Clear caches
-  await deleteCacheKey(CacheKeys.ORDER.BY_ID(id));
-  if (result.userId) {
-    await deleteCachePattern(`orders:user:${result.userId}*`);
-  }
-  await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
+    // 🗑️ Clear caches
+    await deleteCacheKey(CacheKeys.ORDER.BY_ID(id));
+    if (result.userId) {
+      await deleteCachePattern(`orders:user:${result.userId}*`);
+    }
+    await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
 
-  return result;
+    console.log('✅ Order updated successfully:', id);
+    return result;
+  } catch (error) {
+    console.error('❌ Error updating order:', error);
+    throw error;
+  }
 };
 
 // ================================================================
 // 🗑️ DELETE ORDER
 // ================================================================
 const deleteOrderFromDB = async (id: string) => {
-  const result = await OrderModel.findByIdAndDelete(id);
-  
-  if (!result) {
-    throw new Error('Order not found to delete.');
+  try {
+    const result = await OrderModel.findByIdAndDelete(id);
+    
+    if (!result) {
+      throw new Error('Order not found to delete.');
+    }
+
+    // 🗑️ Clear caches
+    await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
+
+    console.log('✅ Order deleted successfully:', id);
+    return null;
+  } catch (error) {
+    console.error('❌ Error deleting order:', error);
+    throw error;
   }
-
-  // 🗑️ Clear caches
-  await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
-
-  return null;
 };
 
 // ================================================================
@@ -252,64 +271,69 @@ const getOrderByIdFromDB = async (id: string) => {
   return getCachedData(
     cacheKey,
     async () => {
-      const result = await OrderModel.aggregate([
-        { $match: { _id: new Types.ObjectId(id) } },
+      try {
+        const result = await OrderModel.aggregate([
+          { $match: { _id: new Types.ObjectId(id) } },
 
-        // Lookup user
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'userId',
-            foreignField: '_id',
-            as: 'userId',
+          // Lookup user
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'userId',
+              foreignField: '_id',
+              as: 'userId',
+            },
           },
-        },
-        { $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } },
+          { $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } },
 
-        // Lookup store
-        {
-          $lookup: {
-            from: 'storemodels',
-            localField: 'storeId',
-            foreignField: '_id',
-            as: 'storeId',
+          // Lookup store
+          {
+            $lookup: {
+              from: 'storemodels',
+              localField: 'storeId',
+              foreignField: '_id',
+              as: 'storeId',
+            },
           },
-        },
-        { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
+          { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
 
-        // Lookup order details
-        {
-          $lookup: {
-            from: 'orderdetails',
-            localField: 'orderDetails',
-            foreignField: '_id',
-            as: 'orderDetails',
+          // Lookup order details
+          {
+            $lookup: {
+              from: 'orderdetails',
+              localField: 'orderDetails',
+              foreignField: '_id',
+              as: 'orderDetails',
+            },
           },
-        },
 
-        // Lookup products
-        {
-          $lookup: {
-            from: 'vendorproductmodels',
-            localField: 'orderDetails.productId',
-            foreignField: '_id',
-            as: 'products',
+          // Lookup products
+          {
+            $lookup: {
+              from: 'vendorproductmodels',
+              localField: 'orderDetails.productId',
+              foreignField: '_id',
+              as: 'products',
+            },
           },
-        },
 
-        // Lookup coupon
-        {
-          $lookup: {
-            from: 'promocodemodels',
-            localField: 'couponId',
-            foreignField: '_id',
-            as: 'couponId',
+          // Lookup coupon
+          {
+            $lookup: {
+              from: 'promocodemodels',
+              localField: 'couponId',
+              foreignField: '_id',
+              as: 'couponId',
+            },
           },
-        },
-        { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
-      ]);
+          { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
+        ]);
 
-      return result[0] || null;
+        return result[0] || null;
+      } catch (error) {
+        console.error('Error in getOrderByIdFromDB:', error);
+        throw error;
+      }
     },
     CacheTTL.ORDER_DETAIL
   );
@@ -498,136 +522,152 @@ const getFilteredOrdersFromDB = async (filters: any) => {
   }
 
   // ✅ Use aggregation
-  const orders = await OrderModel.aggregate([
-    { $match: match },
-    { $sort: { orderDate: -1 } },
+  try {
+    const orders = await OrderModel.aggregate([
+      { $match: match },
+      { $sort: { orderDate: -1 } },
 
-    // Lookups
-    {
-      $lookup: {
-        from: 'users',
-        localField: 'userId',
-        foreignField: '_id',
-        as: 'userId',
+      // Lookups
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userId',
+        },
       },
-    },
-    { $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } },
 
-    {
-      $lookup: {
-        from: 'storemodels',
-        localField: 'storeId',
-        foreignField: '_id',
-        as: 'storeId',
+      {
+        $lookup: {
+          from: 'storemodels',
+          localField: 'storeId',
+          foreignField: '_id',
+          as: 'storeId',
+        },
       },
-    },
-    { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
 
-    {
-      $lookup: {
-        from: 'orderdetails',
-        localField: 'orderDetails',
-        foreignField: '_id',
-        as: 'orderDetails',
+      {
+        $lookup: {
+          from: 'orderdetails',
+          localField: 'orderDetails',
+          foreignField: '_id',
+          as: 'orderDetails',
+        },
       },
-    },
 
-    {
-      $lookup: {
-        from: 'promocodemodels',
-        localField: 'couponId',
-        foreignField: '_id',
-        as: 'couponId',
+      {
+        $lookup: {
+          from: 'promocodemodels',
+          localField: 'couponId',
+          foreignField: '_id',
+          as: 'couponId',
+        },
       },
-    },
-    { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
-  ]);
+      { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
+    ]);
 
-  return orders;
+    return orders;
+  } catch (error) {
+    console.error('Error in getFilteredOrdersFromDB:', error);
+    throw error;
+  }
 };
 
 // ================================================================
 // 🔄 REQUEST RETURN
 // ================================================================
 const requestReturnInDB = async (orderId: string, reason: string) => {
-  const order = await OrderModel.findById(orderId);
-  
-  if (!order) throw new Error('Order not found');
+  try {
+    const order = await OrderModel.findById(orderId);
+    
+    if (!order) throw new Error('Order not found');
 
-  if (order.orderStatus !== 'Delivered') {
-    throw new Error('Only delivered orders can be returned');
+    if (order.orderStatus !== 'Delivered') {
+      throw new Error('Only delivered orders can be returned');
+    }
+
+    order.orderStatus = 'Return Request';
+    order.returnReason = reason;
+    
+    await order.save();
+
+    // 🗑️ Clear caches
+    await deleteCacheKey(CacheKeys.ORDER.BY_ID(orderId));
+    if (order.userId) {
+      await deleteCachePattern(`orders:user:${order.userId}*`);
+    }
+
+    console.log('✅ Return request created for order:', orderId);
+    return order;
+  } catch (error) {
+    console.error('❌ Error requesting return:', error);
+    throw error;
   }
-
-  order.orderStatus = 'Return Request';
-  order.returnReason = reason;
-  
-  await order.save();
-
-  // 🗑️ Clear caches
-  await deleteCacheKey(CacheKeys.ORDER.BY_ID(orderId));
-  if (order.userId) {
-    await deleteCachePattern(`orders:user:${order.userId}*`);
-  }
-
-  return order;
 };
 
 // ================================================================
 // 🏪 GET VENDOR STORE AND ORDERS
 // ================================================================
 const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
-  const store = await StoreModel.findOne({ vendorId });
+  try {
+    const store = await StoreModel.findOne({ vendorId });
 
-  if (!store) {
-    throw new Error('Store not found for this vendor');
+    if (!store) {
+      throw new Error('Store not found for this vendor');
+    }
+
+    // Use aggregation
+    const orders = await OrderModel.aggregate([
+      { $match: { storeId: store._id } },
+      { $sort: { createdAt: -1 } },
+
+      // Lookup user
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userId',
+        },
+      },
+      { $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } },
+
+      // Lookup order details
+      {
+        $lookup: {
+          from: 'orderdetails',
+          localField: 'orderDetails',
+          foreignField: '_id',
+          as: 'orderDetails',
+        },
+      },
+
+      // Project
+      {
+        $project: {
+          orderId: 1,
+          'userId.name': 1,
+          'userId.email': 1,
+          orderStatus: 1,
+          paymentStatus: 1,
+          totalAmount: 1,
+          orderDate: 1,
+          orderDetails: 1,
+          createdAt: 1,
+        },
+      },
+    ]);
+
+    return {
+      store,
+      orders,
+    };
+  } catch (error) {
+    console.error('❌ Error getting vendor store and orders:', error);
+    throw error;
   }
-
-  // Use aggregation
-  const orders = await OrderModel.aggregate([
-    { $match: { storeId: store._id } },
-    { $sort: { createdAt: -1 } },
-
-    // Lookup user
-    {
-      $lookup: {
-        from: 'users',
-        localField: 'userId',
-        foreignField: '_id',
-        as: 'userId',
-      },
-    },
-    { $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } },
-
-    // Lookup order details
-    {
-      $lookup: {
-        from: 'orderdetails',
-        localField: 'orderDetails',
-        foreignField: '_id',
-        as: 'orderDetails',
-      },
-    },
-
-    // Project
-    {
-      $project: {
-        orderId: 1,
-        'userId.name': 1,
-        'userId.email': 1,
-        orderStatus: 1,
-        paymentStatus: 1,
-        totalAmount: 1,
-        orderDate: 1,
-        orderDetails: 1,
-        createdAt: 1,
-      },
-    },
-  ]);
-
-  return {
-    store,
-    orders,
-  };
 };
 
 // ================================================================

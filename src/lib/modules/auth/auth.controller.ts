@@ -282,73 +282,154 @@ const vendorSendRegistrationOtp = async (req: NextRequest) => {
 
 // --- ২. ভেন্ডর রেজিস্ট্রেশন (OTP ভেরিফিকেশনসহ) ---
 const registerVendor = async (req: NextRequest) => {
-  await dbConnect();
+  try {
+    // ✅ Step 1: Connect to database
+    await dbConnect();
+    console.log('✅ Database connected');
 
-  // ১. সেশন থেকে চেক করা ইউজার অ্যাডমিন কি না
-  const session = await getServerSession(authOptions);
-  
-  // সেশন না থাকলে বা ইউজার অ্যাডমিন না হলে এটি false হবে
-  const isByAdmin = session?.user?.role === 'admin';
+    // ✅ Step 2: Check if admin (from session)
+    const session = await getServerSession(authOptions);
+    const isByAdmin = session?.user?.role === 'admin';
+    console.log('👤 Admin request:', isByAdmin);
 
-  const formData = await req.formData();
+    // ✅ Step 3: Extract form data
+    const formData = await req.formData();
+    console.log('📝 Form data received');
 
-  // ২. OTP এবং ইমেইল রিসিভ করা
-  const otp = formData.get('otp') as string;
-  const email = formData.get('email') as string;
+    // ✅ Step 4: Get OTP and email
+    const otp = (formData.get('otp') as string) || '';
+    const email = formData.get('email') as string;
 
-  // ৩. অ্যাডমিন না হলে এবং OTP না থাকলে এরর থ্রো করবে
-  if (!isByAdmin) {
-    if (!otp || otp.length !== 6) {
-      throw new Error('Valid 6-digit OTP is required for manual registration.');
+    // ✅ Step 5: Validate OTP for non-admin
+    if (!isByAdmin) {
+      if (!otp || otp.length !== 6) {
+        return sendResponse({
+          success: false,
+          statusCode: StatusCodes.BAD_REQUEST,
+          message: 'Valid 6-digit OTP is required for registration',
+          data: null,
+        });
+      }
+      console.log('✅ OTP format valid');
     }
+
+    // ✅ Step 6: Get files
+    const ownerNidFile = formData.get('ownerNid') as File | null;
+    const tradeLicenseFile = formData.get('tradeLicense') as File | null;
+
+    if (!ownerNidFile) {
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.BAD_REQUEST,
+        message: 'Owner NID image is required',
+        data: null,
+      });
+    }
+
+    if (!tradeLicenseFile) {
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.BAD_REQUEST,
+        message: 'Trade License image is required',
+        data: null,
+      });
+    }
+
+    console.log('✅ Files received:', {
+      ownerNid: ownerNidFile.name,
+      tradeLicense: tradeLicenseFile.name,
+    });
+
+    // ✅ Step 7: Upload files to Cloudinary
+    console.log('📤 Uploading files to Cloudinary...');
+    
+    let ownerNidUrl = '';
+    let tradeLicenseUrl = '';
+
+    try {
+      const [ownerNidResult, tradeLicenseResult] = await Promise.all([
+        uploadToCloudinary(
+          Buffer.from(await ownerNidFile.arrayBuffer()),
+          'vendor-documents/nid'
+        ),
+        uploadToCloudinary(
+          Buffer.from(await tradeLicenseFile.arrayBuffer()),
+          'vendor-documents/license'
+        ),
+      ]);
+
+      ownerNidUrl = ownerNidResult.secure_url;
+      tradeLicenseUrl = tradeLicenseResult.secure_url;
+
+      console.log('✅ Files uploaded to Cloudinary');
+    } catch (uploadError: any) {
+      console.error('❌ Cloudinary upload error:', uploadError);
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        message: 'Failed to upload files to cloud storage',
+        data: null,
+      });
+    }
+
+    // ✅ Step 8: Build payload for service
+    const payload: any = {
+      // User fields
+      name: formData.get('name') as string,
+      email: email,
+      password: formData.get('password') as string,
+      phoneNumber: formData.get('phoneNumber') as string,
+      address: (formData.get('address') as string) || '',
+
+      // Vendor fields
+      businessName: formData.get('businessName') as string,
+      businessAddress: (formData.get('businessAddress') as string) || '',
+      tradeLicenseNumber: (formData.get('tradeLicenseNumber') as string) || '',
+      ownerName: formData.get('ownerName') as string,
+
+      businessCategory: JSON.parse(
+        (formData.get('businessCategory') as string) || '[]'
+      ),
+
+      ownerNidUrl,
+      tradeLicenseUrl,
+
+      status: isByAdmin ? 'approved' : 'pending',
+    };
+ 
+    console.log('📋 Payload built:', {
+      name: payload.name,
+      email: payload.email,
+      businessName: payload.businessName,
+      status: payload.status,
+    });
+
+    // ✅ Step 9: Call service to register vendor
+    const result = await AuthServices.registerVendor(payload, otp, isByAdmin);
+
+    console.log('✅ Vendor registration successful');
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.CREATED,
+      message: isByAdmin
+        ? 'Vendor account created successfully by Admin!'
+        : 'Registration successful! Waiting for admin approval.',
+      data: result,
+    });
+  } catch (error: any) {
+    console.error('❌ Registration error:', {
+      message: error.message,
+      stack: error.stack,
+    });
+
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: error.message || 'Failed to register vendor',
+      data: null,
+    });
   }
-
-  // ৪. ফাইল রিসিভ করা
-  const ownerNidFile = formData.get('ownerNid') as File | null;
-  const tradeLicenseFile = formData.get('tradeLicense') as File | null;
-
-  if (!ownerNidFile) throw new Error('Owner NID image is required.');
-  if (!tradeLicenseFile) throw new Error('Trade License image is required.');
-
-  // ৫. ক্লাউডিনারিতে আপলোড
-  const [ownerNidUploadResult, tradeLicenseUploadResult] = await Promise.all([
-    uploadToCloudinary(Buffer.from(await ownerNidFile.arrayBuffer()), 'vendor-documents'),
-    uploadToCloudinary(Buffer.from(await tradeLicenseFile.arrayBuffer()), 'vendor-documents'),
-  ]);
-
-  // ৬. সার্ভিস পেলোড তৈরি
-  const payload: any = {
-    name: formData.get('name') as string,
-    email: email,
-    password: formData.get('password') as string,
-    phoneNumber: formData.get('phoneNumber') as string,
-    address: (formData.get('address') as string) || '',
-
-    businessName: formData.get('businessName') as string,
-    businessAddress: (formData.get('businessAddress') as string) || '',
-    tradeLicenseNumber: (formData.get('tradeLicenseNumber') as string) || '',
-    ownerName: formData.get('ownerName') as string,
-
-    businessCategory: JSON.parse((formData.get('businessCategory') as string) || '[]'),
-
-    ownerNidUrl: ownerNidUploadResult.secure_url,
-    tradeLicenseUrl: tradeLicenseUploadResult.secure_url,
-
-    // অ্যাডমিন করলে সরাসরি approved, ইউজার করলে pending
-    status: isByAdmin ? 'approved' : 'pending',
-  };
-
-  // ৭. সার্ভিস কল (৩টি প্যারামিটার: payload, otp, isByAdmin)
-  const result = await AuthServices.registerVendor(payload, otp, isByAdmin);
-
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.CREATED,
-    message: isByAdmin 
-      ? 'Vendor account created successfully by Admin!' 
-      : 'Registration successful! Waiting for approval.',
-    data: result,
-  });
 };
 
 const serviceProviderSendRegistrationOtp = async (req: NextRequest) => {

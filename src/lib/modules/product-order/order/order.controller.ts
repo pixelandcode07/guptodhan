@@ -1,3 +1,6 @@
+// src/app/api/v1/product-order/order/order.controller.ts
+// ✅ FIXED: Remove transactions that cause replica set error
+
 import { NextRequest } from 'next/server';
 import mongoose, { Types } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
@@ -27,11 +30,9 @@ const toObjectId = (id: string | any, label: string, options: { optional?: boole
   throw new Error(`Invalid ${label} format.`);
 };
 
-// --- 1. Create Order ---
+// --- 1. Create Order - WITHOUT TRANSACTIONS ---
 const createOrderWithDetails = async (req: NextRequest) => {
   await dbConnect();
-  const session = await mongoose.startSession();
-  session.startTransaction();
 
   try {
     const body = await req.json();
@@ -106,28 +107,26 @@ const createOrderWithDetails = async (req: NextRequest) => {
       couponId: body.couponId ? toObjectId(body.couponId, 'Coupon ID', { optional: true }) : undefined,
     };
 
-    const orderDoc = await OrderModel.create([orderPayload], { session });
-    if (!orderDoc || orderDoc.length === 0) throw new Error('Failed to create order document.');
+    // ✅ Create order WITHOUT transaction
+    const orderDoc = await OrderModel.create(orderPayload);
+    if (!orderDoc) throw new Error('Failed to create order document.');
 
-    orderDetailsDocs.forEach((item) => { item.orderId = orderDoc[0]._id; });
-    const createdOrderDetails = await OrderDetailsModel.insertMany(orderDetailsDocs, { session });
+    // ✅ Create order details WITHOUT transaction
+    orderDetailsDocs.forEach((item) => { item.orderId = orderDoc._id; });
+    const createdOrderDetails = await OrderDetailsModel.insertMany(orderDetailsDocs);
 
-    orderDoc[0].orderDetails = createdOrderDetails.map((d) => d._id) as any;
-    await orderDoc[0].save({ session });
-
-    await session.commitTransaction();
-    session.endSession();
+    // ✅ Update order with order details
+    orderDoc.orderDetails = createdOrderDetails.map((d) => d._id) as any;
+    await orderDoc.save();
 
     return sendResponse({
       success: true,
       statusCode: StatusCodes.CREATED,
       message: 'Order created successfully!',
-      data: { order: orderDoc[0], orderDetails: createdOrderDetails },
+      data: { order: orderDoc, orderDetails: createdOrderDetails },
     });
 
   } catch (error: any) {
-    await session.abortTransaction();
-    session.endSession();
     console.error('❌ Error creating order:', error);
     return sendResponse({
       success: false,
@@ -139,122 +138,234 @@ const createOrderWithDetails = async (req: NextRequest) => {
 };
 
 // --- 2. Get All Orders (Smart Filter) ---
-// ✅ FIX: এই ফাংশনটি আপডেট করা হয়েছে যাতে এটি সব ধরণের ফিল্টার গ্রহণ করে
 const getAllOrders = async (req: NextRequest) => {
-  await dbConnect();
-  const { searchParams } = new URL(req.url);
-  
-  const userId = searchParams.get('userId');
+  try {
+    await dbConnect();
+    const { searchParams } = new URL(req.url);
+    
+    const userId = searchParams.get('userId');
 
-  // যদি ইউজার আইডি থাকে, তবে শুধু সেই ইউজারের অর্ডার রিটার্ন করবে
-  if (userId) {
-    if (!Types.ObjectId.isValid(userId)) {
-      return sendResponse({ success: false, statusCode: StatusCodes.BAD_REQUEST, message: 'Invalid user ID format', data: null });
+    if (userId) {
+      if (!Types.ObjectId.isValid(userId)) {
+        return sendResponse({ 
+          success: false, 
+          statusCode: StatusCodes.BAD_REQUEST, 
+          message: 'Invalid user ID format', 
+          data: null 
+        });
+      }
+      const result = await OrderServices.getOrdersByUserFromDB(userId);
+      return sendResponse({ 
+        success: true, 
+        statusCode: StatusCodes.OK, 
+        message: 'User orders retrieved!', 
+        data: result 
+      });
     }
-    const result = await OrderServices.getOrdersByUserFromDB(userId);
-    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'User orders retrieved!', data: result });
+
+    const filters = {
+      orderId: searchParams.get('orderId'),
+      orderForm: searchParams.get('source'),
+      paymentStatus: searchParams.get('paymentStatus'),
+      customerName: searchParams.get('customerName'),
+      customerPhone: searchParams.get('customerPhone'),
+      orderStatus: searchParams.get('orderStatus') || searchParams.get('status'),
+      orderedProduct: searchParams.get('orderedProduct'),
+      deliveryMethod: searchParams.get('deliveryMethod'),
+      couponCode: searchParams.get('couponCode'),
+      startDate: searchParams.get('startDate'),
+      endDate: searchParams.get('endDate'),
+    };
+
+    const result = await OrderServices.getFilteredOrdersFromDB(filters);
+    
+    return sendResponse({ 
+      success: true, 
+      statusCode: StatusCodes.OK, 
+      message: 'Orders retrieved successfully!', 
+      data: result 
+    });
+  } catch (error: any) {
+    console.error('Error in getAllOrders:', error);
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: error.message || 'Failed to retrieve orders',
+      data: null,
+    });
   }
-
-  // অন্যথায়, সব ফিল্টার কালেক্ট করবে
-  // Frontend sends 'orderStatus', 'customerName', etc.
-  const filters = {
-    orderId: searchParams.get('orderId'),
-    orderForm: searchParams.get('source'), // Frontend sends 'source', backend expects 'orderForm'
-    paymentStatus: searchParams.get('paymentStatus'),
-    customerName: searchParams.get('customerName'),
-    customerPhone: searchParams.get('customerPhone'),
-    orderStatus: searchParams.get('orderStatus') || searchParams.get('status'), // Handle both keys
-    orderedProduct: searchParams.get('orderedProduct'),
-    deliveryMethod: searchParams.get('deliveryMethod'),
-    couponCode: searchParams.get('couponCode'),
-    startDate: searchParams.get('startDate'),
-    endDate: searchParams.get('endDate'),
-  };
-
-  // স্মার্ট ফিল্টার ফাংশন কল করা হচ্ছে
-  const result = await OrderServices.getFilteredOrdersFromDB(filters);
-  
-  return sendResponse({ 
-    success: true, 
-    statusCode: StatusCodes.OK, 
-    message: 'Orders retrieved successfully!', 
-    data: result 
-  });
 };
 
 // --- 3. Get Orders by User ---
 const getOrdersByUser = async (req: NextRequest, { params }: { params: Promise<{ userId: string }> }) => {
-  await dbConnect();
-  const { userId } = await params;
-  const result = await OrderServices.getOrdersByUserFromDB(userId);
-  return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'User orders retrieved!', data: result });
+  try {
+    await dbConnect();
+    const { userId } = await params;
+    const result = await OrderServices.getOrdersByUserFromDB(userId);
+    return sendResponse({ 
+      success: true, 
+      statusCode: StatusCodes.OK, 
+      message: 'User orders retrieved!', 
+      data: result 
+    });
+  } catch (error: any) {
+    console.error('Error in getOrdersByUser:', error);
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: error.message || 'Failed to retrieve user orders',
+      data: null,
+    });
+  }
 };
 
 // --- 4. Update Order ---
 const updateOrder = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-  await dbConnect();
-  const { id } = await params;
-  const body = await req.json();
-  const result = await OrderServices.updateOrderInDB(id, body);
-  return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Order updated!', data: result });
+  try {
+    await dbConnect();
+    const { id } = await params;
+    const body = await req.json();
+    const result = await OrderServices.updateOrderInDB(id, body);
+    return sendResponse({ 
+      success: true, 
+      statusCode: StatusCodes.OK, 
+      message: 'Order updated!', 
+      data: result 
+    });
+  } catch (error: any) {
+    console.error('Error in updateOrder:', error);
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: error.message || 'Failed to update order',
+      data: null,
+    });
+  }
 };
 
 // --- 5. Delete Order ---
 const deleteOrder = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-  await dbConnect();
-  const { id } = await params;
-  await OrderServices.deleteOrderFromDB(id);
-  return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Order deleted!', data: null });
+  try {
+    await dbConnect();
+    const { id } = await params;
+    await OrderServices.deleteOrderFromDB(id);
+    return sendResponse({ 
+      success: true, 
+      statusCode: StatusCodes.OK, 
+      message: 'Order deleted!', 
+      data: null 
+    });
+  } catch (error: any) {
+    console.error('Error in deleteOrder:', error);
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: error.message || 'Failed to delete order',
+      data: null,
+    });
+  }
 };
 
 // --- 6. Get Single Order ---
 const getOrderById = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
-  await dbConnect();
-  const { id } = await params;
-  const result = await OrderServices.getOrderByIdFromDB(id);
-  if (!result) return sendResponse({ success: false, statusCode: StatusCodes.NOT_FOUND, message: 'Order not found', data: null });
-  return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Order retrieved!', data: result });
+  try {
+    await dbConnect();
+    const { id } = await params;
+    const result = await OrderServices.getOrderByIdFromDB(id);
+    if (!result) {
+      return sendResponse({ 
+        success: false, 
+        statusCode: StatusCodes.NOT_FOUND, 
+        message: 'Order not found', 
+        data: null 
+      });
+    }
+    return sendResponse({ 
+      success: true, 
+      statusCode: StatusCodes.OK, 
+      message: 'Order retrieved!', 
+      data: result 
+    });
+  } catch (error: any) {
+    console.error('Error in getOrderById:', error);
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: error.message || 'Failed to retrieve order',
+      data: null,
+    });
+  }
 };
 
 // --- 7. Sales Report ---
 const getSalesReport = async (req: NextRequest) => {
-  await dbConnect();
-  const { searchParams } = new URL(req.url);
-  const filters = {
-    startDate: searchParams.get('startDate') || undefined,
-    endDate: searchParams.get('endDate') || undefined,
-    orderStatus: searchParams.get('orderStatus') || undefined,
-    paymentStatus: searchParams.get('paymentStatus') || undefined,
-    paymentMethod: searchParams.get('paymentMethod') || undefined,
-  };
-  const result = await OrderServices.getSalesReportFromDB(filters);
-  return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Sales report retrieved!', data: result });
+  try {
+    await dbConnect();
+    const { searchParams } = new URL(req.url);
+    const filters = {
+      startDate: searchParams.get('startDate') || undefined,
+      endDate: searchParams.get('endDate') || undefined,
+      orderStatus: searchParams.get('orderStatus') || undefined,
+      paymentStatus: searchParams.get('paymentStatus') || undefined,
+      paymentMethod: searchParams.get('paymentMethod') || undefined,
+    };
+    const result = await OrderServices.getSalesReportFromDB(filters);
+    return sendResponse({ 
+      success: true, 
+      statusCode: StatusCodes.OK, 
+      message: 'Sales report retrieved!', 
+      data: result 
+    });
+  } catch (error: any) {
+    console.error('Error in getSalesReport:', error);
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: error.message || 'Failed to retrieve sales report',
+      data: null,
+    });
+  }
 };
 
 // --- 8. Returned Orders ---
 const getReturnedOrdersByUser = async (req: NextRequest, { params }: { params: Promise<{ userId: string }> }) => {
-  await dbConnect();
-  const { userId } = await params;
-  const result = await OrderServices.getReturnedOrdersByUserFromDB(userId);
-  return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Returned orders retrieved!', data: result });
+  try {
+    await dbConnect();
+    const { userId } = await params;
+    const result = await OrderServices.getReturnedOrdersByUserFromDB(userId);
+    return sendResponse({ 
+      success: true, 
+      statusCode: StatusCodes.OK, 
+      message: 'Returned orders retrieved!', 
+      data: result 
+    });
+  } catch (error: any) {
+    console.error('Error in getReturnedOrdersByUser:', error);
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: error.message || 'Failed to retrieve returned orders',
+      data: null,
+    });
+  }
 };
 
 // --- 9. Request Return ---
 const requestReturn = async (req: NextRequest) => {
-  await dbConnect();
-  const body = await req.json();
-  const { orderId, reason } = body;
-
-  if (!orderId || !reason) {
-    return sendResponse({
-      success: false,
-      statusCode: StatusCodes.BAD_REQUEST,
-      message: 'Order ID and return reason are required',
-      data: null,
-    });
-  }
-
   try {
+    await dbConnect();
+    const body = await req.json();
+    const { orderId, reason } = body;
+
+    if (!orderId || !reason) {
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.BAD_REQUEST,
+        message: 'Order ID and return reason are required',
+        data: null,
+      });
+    }
+
     const result = await OrderServices.requestReturnInDB(orderId, reason);
     return sendResponse({
       success: true,
@@ -263,35 +374,42 @@ const requestReturn = async (req: NextRequest) => {
       data: result,
     });
   } catch (error: any) {
+    console.error('Error in requestReturn:', error);
     return sendResponse({
       success: false,
       statusCode: StatusCodes.BAD_REQUEST,
-      message: error.message,
+      message: error.message || 'Failed to request return',
       data: null,
     });
   }
 };
 
+// --- 10. Get Vendor Store and Orders ---
 const getVendorStoreAndOrdersVendor = async (
   req: NextRequest,
   { params }: { params: { vendorId: string } }
 ) => {
-  await dbConnect();
+  try {
+    await dbConnect();
+    const { vendorId } = await params;
+    
+    const result = await OrderServices.getVendorStoreAndOrdersFromDBVendor(vendorId);
 
-  const { vendorId } = await params;
-  console.log('🟢 Controller Vendor ID:', await params);
-
-  const result =
-    await OrderServices.getVendorStoreAndOrdersFromDBVendor(
-      vendorId
-    );
-
-  return sendResponse({
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Vendor store & orders retrieved successfully!',
-    data: result,
-  });
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: 'Vendor store & orders retrieved successfully!',
+      data: result,
+    });
+  } catch (error: any) {
+    console.error('Error in getVendorStoreAndOrdersVendor:', error);
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: error.message || 'Failed to retrieve vendor store and orders',
+      data: null,
+    });
+  }
 };
 
 export const OrderController = {
@@ -303,7 +421,6 @@ export const OrderController = {
   deleteOrder,
   getSalesReport,
   getReturnedOrdersByUser,
-  // getFilteredOrders, // এটি এখন getAllOrders এর মধ্যেই হ্যান্ডেল করা হচ্ছে
   requestReturn,
   getVendorStoreAndOrdersVendor
 };

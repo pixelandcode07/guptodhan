@@ -410,57 +410,118 @@ const vendorSendRegistrationOtp = async (email: string) => {
   return null;
 };
 
-const registerVendor = async (payload: any, otp: string, isByAdmin = false) => {
-  await connectRedis();
-  const { email, name, password, phoneNumber, address, businessCategory, ...vendorData } = payload;
-
-  if (!isByAdmin) {
-    const redisKey = `registration-otp:${email}`;
-    const storedOtp = await redisClient.get(redisKey);
-
-    if (!storedOtp || storedOtp !== otp) {
-      throw new Error('Invalid or expired OTP.');
-    }
-  }
-
-  const session = await mongoose.startSession();
+const registerVendor = async (payload: any, otp: string = '', isByAdmin = false) => {
   try {
-    session.startTransaction();
+    // ✅ Step 1: Connect to Redis (for OTP verification if not admin)
+    if (!isByAdmin) {
+      await connectRedis();
+    }
 
-    const newUser = (await User.create([{
-      name,
+    // ✅ Step 2: Extract data
+    const {
       email,
+      name,
       password,
       phoneNumber,
       address,
-      role: 'vendor',
-      isActive: isByAdmin ? true : false, 
-    }], { session }))[0];
-
-    const newVendor = (await Vendor.create([{
-      ...vendorData,
-      user: newUser._id,
       businessCategory,
-    }], { session }))[0];
+      ...vendorData
+    } = payload;
 
-    newUser.vendorInfo = newVendor._id;
-    await newUser.save({ session });
+    console.log('📝 Registering vendor:', {
+      email,
+      name,
+      isByAdmin,
+      hasOTP: !!otp,
+    });
 
-    await session.commitTransaction();
-    
+    // ✅ Step 3: Verify OTP if not admin
     if (!isByAdmin) {
+      if (!otp) {
+        throw new Error('OTP is required for manual registration');
+      }
+
       const redisKey = `registration-otp:${email}`;
-      await redisClient.del(redisKey);
+      const storedOtp = await redisClient.get(redisKey);
+
+      if (!storedOtp || storedOtp !== otp) {
+        throw new Error('Invalid or expired OTP');
+      }
+
+      console.log('✅ OTP verified');
     }
-    
-    return newUser;
-  } catch (error) {
-    await session.abortTransaction();
+
+    // ✅ Step 4: Check email doesn't exist
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      throw new Error('Email already registered');
+    }
+
+    console.log('✅ Email not duplicate');
+
+    // ✅ Step 5: Create User (WITHOUT SESSION/TRANSACTION)
+    const newUser = await User.create({
+      name,
+      email,
+      password, // Will be hashed by pre-save middleware
+      phoneNumber,
+      address,
+      role: 'vendor',
+      isActive: isByAdmin ? true : false,
+    });
+
+    console.log('✅ User created:', newUser._id);
+
+    // ✅ Step 6: Create Vendor (WITHOUT SESSION/TRANSACTION)
+    try {
+      const newVendor = await Vendor.create({
+        ...vendorData,
+        user: newUser._id,
+        businessCategory,
+      });
+
+      console.log('✅ Vendor created:', newVendor._id);
+
+      // ✅ Step 7: Update User with Vendor reference
+      newUser.vendorInfo = newVendor._id;
+      await newUser.save();
+
+      console.log('✅ User updated with vendorInfo');
+
+      // ✅ Step 8: Delete OTP from Redis if not admin
+      if (!isByAdmin) {
+        const redisKey = `registration-otp:${email}`;
+        await redisClient.del(redisKey);
+        console.log('✅ OTP deleted from Redis');
+      }
+
+      return {
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        phoneNumber: newUser.phoneNumber,
+        role: newUser.role,
+        vendorInfo: newVendor._id,
+        status: newVendor.status,
+      };
+    } catch (vendorError: any) {
+      console.error('❌ Vendor creation error:', vendorError);
+
+      // ✅ Rollback: Delete user if vendor creation fails
+      try {
+        await User.findByIdAndDelete(newUser._id);
+        console.log('✅ Rolled back: User deleted');
+      } catch (deleteError) {
+        console.error('⚠️ Error deleting user during rollback:', deleteError);
+      }
+
+      throw new Error(`Vendor creation failed: ${vendorError.message}`);
+    }
+  } catch (error: any) {
+    console.error('❌ Registration error:', error.message);
     throw error;
-  } finally {
-    session.endSession();
   }
-}
+};
 
 
 
