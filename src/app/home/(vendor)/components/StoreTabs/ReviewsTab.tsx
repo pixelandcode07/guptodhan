@@ -23,6 +23,7 @@ import {
   createStoreReviewFormSchema,
   CreateStoreReviewFormValues,
 } from "../validations/store-review-validation";
+import { toast } from "sonner";
 
 type StoreReview = {
   _id: string;
@@ -38,6 +39,14 @@ export default function ReviewsTab({ storeId }: { storeId: string }) {
   const [reviews, setReviews] = useState<StoreReview[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const toastStyle = {
+    style: {
+      background: '#ffffff',
+      color: '#000000',
+      border: '1px solid #e2e8f0'
+    }
+  };
+
   const form = useForm<CreateStoreReviewFormValues>({
     resolver: zodResolver(createStoreReviewFormSchema),
     mode: "onChange",
@@ -50,7 +59,6 @@ export default function ReviewsTab({ storeId }: { storeId: string }) {
     },
   });
 
-  /* ---------- GET REVIEWS ---------- */
   const fetchReviews = async () => {
     try {
       setLoading(true);
@@ -67,7 +75,6 @@ export default function ReviewsTab({ storeId }: { storeId: string }) {
     fetchReviews();
   }, [storeId]);
 
-  /* ---------- POST REVIEW ---------- */
   const onSubmit = async (data: CreateStoreReviewFormValues) => {
     try {
       const res = await axios.post("/api/v1/store-review", data, {
@@ -75,21 +82,24 @@ export default function ReviewsTab({ storeId }: { storeId: string }) {
           Authorization: `Bearer ${(session as any)?.accessToken}`,
         },
       });
-
-      console.log("✅ REVIEW CREATED:", res.data);
+      toast.success('Review Submitted!', {
+        ...toastStyle,
+        description: 'Thank you for your review.',
+      });
       form.reset({ ...data, comment: "" });
       fetchReviews();
     } catch (error) {
-      console.error("❌ REVIEW FAILED:", error);
+      toast.error('Review Failed!', {
+        ...toastStyle,
+        description: 'Something went wrong. Please try again.',
+      });
     }
   };
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
-      {/* ---------------- REVIEW FORM ---------------- */}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* ⭐ STAR RATING */}
           <FormField
             control={form.control}
             name="rating"
@@ -108,7 +118,6 @@ export default function ReviewsTab({ storeId }: { storeId: string }) {
             )}
           />
 
-          {/* COMMENT */}
           <FormField
             control={form.control}
             name="comment"
