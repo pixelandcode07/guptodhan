@@ -119,7 +119,7 @@ const getAllVendorProducts = async (req: NextRequest) => {
   
   const { searchParams } = new URL(req.url);
   const page = Number(searchParams.get("page")) || 1;
-  const limit = Number(searchParams.get("limit"));
+  const limit = Number(searchParams.get("limit")) || 20;
   
   const result = await VendorProductServices.getAllVendorProductsFromDB(page, limit);
 
