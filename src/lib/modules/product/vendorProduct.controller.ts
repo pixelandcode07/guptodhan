@@ -115,93 +115,37 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
 };
 
 const getAllVendorProducts = async (req: NextRequest) => {
-  try {
-    console.log("\n========== 🔵 BACKEND: getAllVendorProducts START ==========");
-    
-    await dbConnect();
-    console.log("✅ [DB] Database connected");
-    
-    const { searchParams } = new URL(req.url);
-    const page = Number(searchParams.get("page")) || 1;
-    
-    // ✅ FIXED: Changed default limit from 20 to 999999
-    const limit = Number(searchParams.get("limit")) || 999999;
-    
-    console.log(`📊 [API PARAMS] Page: ${page}, Limit: ${limit}`);
-    console.log(`🔗 [URL] ${req.url}`);
-    
-    const result = await VendorProductServices.getAllVendorProductsFromDB(page, limit);
-    
-    console.log(`✅ [SERVICE RESPONSE] Got ${result.products.length} products`);
-    console.log(`📈 [PAGINATION] Total: ${result.pagination.total}, Pages: ${result.pagination.pages}`);
-    
-    const response = sendResponse({
-      success: true,
-      statusCode: StatusCodes.OK,
-      message: "All vendor products retrieved successfully!",
-      data: result,
-    });
-    
-    console.log("========== 🟢 BACKEND: getAllVendorProducts END ==========\n");
-    
-    return response;
-  } catch (error: any) {
-    console.error("\n❌ [ERROR] getAllVendorProducts failed:");
-    console.error(`   Message: ${error.message}`);
-    console.error(`   Stack: ${error.stack}`);
-    console.error("========== 🔴 BACKEND: getAllVendorProducts ERROR ==========\n");
-    
-    return sendResponse({
-      success: false,
-      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-      message: error.message || "Failed to fetch products",
-      data: null,
-    });
-  }
+  await dbConnect();
+  
+  const { searchParams } = new URL(req.url);
+  const page = Number(searchParams.get("page")) || 1;
+  const limit = Number(searchParams.get("limit")) || 20;
+  
+  const result = await VendorProductServices.getAllVendorProductsFromDB(page, limit);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "All vendor products retrieved successfully!",
+    data: result,
+  });
 };
 
 const getActiveVendorProducts = async (req: NextRequest) => {
-  try {
-    console.log("\n========== 🔵 BACKEND: getActiveVendorProducts START ==========");
-    
-    await dbConnect();
-    console.log("✅ [DB] Database connected");
-    
-    const { searchParams } = new URL(req.url);
-    const page = Number(searchParams.get("page")) || 1;
-    
-    // ✅ FIXED: Changed default limit from 20 to 999999
-    const limit = Number(searchParams.get("limit")) || 999999;
-    
-    console.log(`📊 [API PARAMS] Page: ${page}, Limit: ${limit}`);
-    
-    const result = await VendorProductServices.getActiveVendorProductsFromDB(page, limit);
-    
-    console.log(`✅ [SERVICE RESPONSE] Got ${result.products.length} active products`);
-    console.log(`📈 [PAGINATION] Total: ${result.pagination.total}, Pages: ${result.pagination.pages}`);
-    
-    const response = sendResponse({
-      success: true,
-      statusCode: StatusCodes.OK,
-      message: "Active vendor products retrieved successfully!",
-      data: result,
-    });
-    
-    console.log("========== 🟢 BACKEND: getActiveVendorProducts END ==========\n");
-    
-    return response;
-  } catch (error: any) {
-    console.error("\n❌ [ERROR] getActiveVendorProducts failed:");
-    console.error(`   Message: ${error.message}`);
-    console.error("========== 🔴 BACKEND: getActiveVendorProducts ERROR ==========\n");
-    
-    return sendResponse({
-      success: false,
-      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-      message: error.message || "Failed to fetch active products",
-      data: null,
-    });
-  }
+  await dbConnect();
+  
+  const { searchParams } = new URL(req.url);
+  const page = Number(searchParams.get("page")) || 1;
+  const limit = Number(searchParams.get("limit")) || 20;
+  
+  const result = await VendorProductServices.getActiveVendorProductsFromDB(page, limit);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Active vendor products retrieved successfully!",
+    data: result,
+  });
 };
 
 const getVendorProductById = async (
