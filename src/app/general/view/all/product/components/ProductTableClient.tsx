@@ -49,6 +49,8 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   // ✅ Initialize state directly with Server Data (Fastest)
   const [products, setProducts] = useState<ApiProduct[]>(initialData.products || []);
   const [rows, setRows] = useState<Product[]>([]);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreProducts, setHasMoreProducts] = useState(true);
   
   // Maps
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
@@ -91,7 +93,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
 
   // 2. Map Products to Table Rows
   useEffect(() => {
-    // Safety check to prevent .map crash
+    // ✅ Safety check to prevent .map crash
     if (!Array.isArray(products)) {
         console.error("Products is not an array:", products);
         setRows([]);
@@ -99,7 +101,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     }
 
     const mapped: Product[] = products.map((p, idx) => {
-      // Logic to resolve Category Name
+      // ✅ Logic to resolve Category Name (Safe)
       let categoryName = '';
       if (typeof p.category === 'string') {
         categoryName = categoryMap[p.category] || p.category;
@@ -108,7 +110,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       }
       categoryName = categoryName || 'N/A';
       
-      // Logic to resolve Store Name
+      // ✅ Logic to resolve Store Name (Safe)
       let storeName = '';
       if (p.vendorName) {
         storeName = p.vendorName;
@@ -119,7 +121,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       }
       storeName = storeName || 'N/A';
       
-      // Logic to resolve Flag Name
+      // ✅ Logic to resolve Flag Name (Safe)
       let flagName = "";
       if (typeof p.flag === "string") {
         flagName = flagMap[p.flag] || p.flag;
@@ -147,8 +149,52 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     setRows(mapped);
   }, [products, categoryMap, storeMap, flagMap]);
 
-  // REMOVED: The initial useEffect that calls fetchProductsInitial().
-  // Reason: We already have data from SSR. Fetching again causes flickering and lag.
+  // ✅ Load all products on mount
+  useEffect(() => {
+    const loadAllProducts = async () => {
+      try {
+        setIsLoadingMore(true);
+        console.log("📥 Loading all products...");
+        
+        // Request ALL products without limit
+        const response = await axios.get('/api/v1/product', {
+          params: {
+            limit: 999999, // Load ALL products
+          },
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(userRole ? { 'x-user-role': userRole } : {}),
+          },
+        });
+
+        if (response.data?.data && Array.isArray(response.data.data)) {
+          console.log(`✅ Loaded ${response.data.data.length} products`);
+          setProducts(response.data.data);
+          
+          // Check if we got all or if there are more
+          if (response.data.data.length >= 999999) {
+            setHasMoreProducts(true);
+          } else {
+            setHasMoreProducts(false);
+          }
+        } else {
+          console.warn("⚠️ Unexpected API response format");
+          setHasMoreProducts(false);
+        }
+      } catch (error: any) {
+        console.error("❌ Error loading products:", error);
+        toast.error("Failed to load all products");
+        setHasMoreProducts(false);
+      } finally {
+        setIsLoadingMore(false);
+      }
+    };
+
+    // Only load if we don't already have products from SSR
+    if (products.length < 30) {
+      loadAllProducts();
+    }
+  }, [token, userRole]);
 
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -209,10 +255,10 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       setStatusToggleOpen(false);
       setProductToToggle(null);
       
-      // Optimistic Update (No need to refetch everything)
+      // ✅ Optimistic Update
       setProducts(prev => prev.map(p => p._id === productId ? { ...p, status: newStatus as 'active' | 'inactive' } : p));
       
-      router.refresh(); // Tells Server Components to refresh data in background
+      router.refresh(); // Refresh server data
     } catch (error: any) {
       console.error("Error toggling product status:", error);
       const msg = error.response?.data?.message || "Failed to update product status";
@@ -240,7 +286,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       setDeleteOpen(false);
       setProductToDelete(null);
 
-      // Optimistic Update
+      // ✅ Optimistic Update
       setProducts(prev => prev.filter(p => p._id !== productId));
       
       router.refresh(); // Refresh server data
@@ -268,9 +314,23 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       <FiltersBar
         search={search}
         onSearchChange={setSearch}
-        isSearching={false}
+        isSearching={isLoadingMore}
         onDownloadCSV={onDownloadCSV}
       />
+
+      {/* ✅ Loading indicator */}
+      {isLoadingMore && (
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-700">📥 Loading all products...</p>
+        </div>
+      )}
+
+      {/* ✅ Product count indicator */}
+      <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+        <p className="text-sm text-green-700">
+          ✅ Total Products: <strong>{products.length}</strong> | Showing: <strong>{filteredRows.length}</strong>
+        </p>
+      </div>
 
       <div className="mb-4 sm:mb-6">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
