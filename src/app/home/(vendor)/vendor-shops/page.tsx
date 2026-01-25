@@ -1,5 +1,5 @@
 // src/app/home/(vendor)/vendor-shops/page.tsx
-// ✅ FULLY FIXED: Complete null safety + error handling + debugging
+// ✅ FULLY FIXED & CLEANED: Production-ready version without debug logs
 
 import VendorStoreCard from "@/components/ReusableComponents/VendorStoreCard";
 import StickyNavTrigger from "../components/StickyNavTrigger";
@@ -38,116 +38,62 @@ export default async function VendorShopsPage({
 }: VendorShopsPageProps) {
   try {
     // ===================================================================
-    // ✅ STEP 1: Extract and validate search params
+    // Extract and validate search params
     // ===================================================================
-    console.log("\n========== 📄 VendorShopsPage START ==========");
-
     const params = await searchParams;
     const pageParam = params?.page;
-    
-    console.log("1️⃣ [searchParams] Raw pageParam:", pageParam);
-    console.log("1️⃣ [searchParams] Type:", typeof pageParam);
-
     const currentPage = pageParam ? Number(pageParam) : 1;
-    console.log("1️⃣ [currentPage] Parsed:", currentPage);
 
     if (isNaN(currentPage) || currentPage < 1) {
-      console.warn("⚠️ Invalid page number, defaulting to 1");
+      // Default to page 1 if invalid
     }
 
     // ===================================================================
-    // ✅ STEP 2: Fetch all data (with error handling)
+    // Fetch all data
     // ===================================================================
-    console.log("\n2️⃣ [DATA FETCH] Starting parallel fetches...");
-
     let allPublicVendors: any[] = [];
     let categories: any[] = [];
 
-    // ✅ Fetch stores with try-catch
     try {
-      console.log("2️⃣ [STORES] Fetching stores...");
       allPublicVendors = await fetchAllPublicStores();
-      console.log("2️⃣ [STORES] Fetch complete");
-      console.log("   - Type:", typeof allPublicVendors);
-      console.log("   - Is Array:", Array.isArray(allPublicVendors));
-      console.log("   - Length:", allPublicVendors?.length || 0);
     } catch (error: any) {
-      console.error("❌ [STORES] Error:", error?.message);
+      console.error("❌ Error fetching stores:", error?.message);
       allPublicVendors = [];
     }
 
-    // ✅ Fetch categories with try-catch
     try {
-      console.log("2️⃣ [CATEGORIES] Fetching categories...");
       categories = await fetchNavigationCategoryData();
-      console.log("2️⃣ [CATEGORIES] Fetch complete");
-      console.log("   - Type:", typeof categories);
-      console.log("   - Is Array:", Array.isArray(categories));
-      console.log("   - Length:", categories?.length || 0);
     } catch (error: any) {
-      console.error("❌ [CATEGORIES] Error:", error?.message);
+      console.error("❌ Error fetching categories:", error?.message);
       categories = [];
     }
 
     // ===================================================================
-    // ✅ STEP 3: Validate and normalize data
+    // Validate and normalize data
     // ===================================================================
-    console.log("\n3️⃣ [VALIDATION] Normalizing data...");
-
-    // ✅ Ensure vendors is always an array
-    const vendorData = Array.isArray(allPublicVendors) 
-      ? allPublicVendors 
-      : [];
-    
-    console.log("3️⃣ [VENDORS] After validation - Length:", vendorData.length);
-
-    // ✅ Ensure categories is always an array
-    const categoryData = Array.isArray(categories) 
-      ? categories 
-      : [];
-    
-    console.log("3️⃣ [CATEGORIES] After validation - Length:", categoryData.length);
+    const vendorData = Array.isArray(allPublicVendors) ? allPublicVendors : [];
+    const categoryData = Array.isArray(categories) ? categories : [];
 
     // ===================================================================
-    // ✅ STEP 4: Calculate pagination
+    // Calculate pagination
     // ===================================================================
-    console.log("\n4️⃣ [PAGINATION] Calculating...");
-
     const totalPages = vendorData.length > 0 
       ? Math.ceil(vendorData.length / ITEMS_PER_PAGE) 
       : 1;
     
-    console.log("4️⃣ [PAGINATION] Total stores:", vendorData.length);
-    console.log("4️⃣ [PAGINATION] Items per page:", ITEMS_PER_PAGE);
-    console.log("4️⃣ [PAGINATION] Total pages:", totalPages);
-
     const validPage = Math.max(1, Math.min(currentPage, totalPages || 1));
-    console.log("4️⃣ [PAGINATION] Current page (requested):", currentPage);
-    console.log("4️⃣ [PAGINATION] Valid page (adjusted):", validPage);
 
     // ===================================================================
-    // ✅ STEP 5: Slice data for current page
+    // Get paginated stores
     // ===================================================================
-    console.log("\n5️⃣ [SLICE] Getting paginated data...");
-
     const startIndex = (validPage - 1) * ITEMS_PER_PAGE;
     const endIndex = validPage * ITEMS_PER_PAGE;
-
-    console.log("5️⃣ [SLICE] Start index:", startIndex);
-    console.log("5️⃣ [SLICE] End index:", endIndex);
-
     const paginatedStores = vendorData.slice(startIndex, endIndex);
-    
-    console.log("5️⃣ [SLICE] Paginated stores count:", paginatedStores.length);
-
-    console.log("\n========== ✅ VendorShopsPage READY ==========\n");
 
     // ===================================================================
-    // ✅ RENDER: Empty state
+    // RENDER: Empty state
     // ===================================================================
     if (vendorData.length === 0) {
-      console.log("📋 [RENDER] No stores - showing empty state");
-      
       return (
         <div className="container mx-auto">
           {/* Hero Banner */}
@@ -206,13 +152,11 @@ export default async function VendorShopsPage({
     }
 
     // ===================================================================
-    // ✅ RENDER: Main page with stores
+    // RENDER: Main page with stores
     // ===================================================================
-    console.log("📋 [RENDER] Showing stores for page", validPage);
-
     return (
       <div className="container mx-auto">
-        {/* Hero Banner - Optimized for 1920x600 Image */}
+        {/* Hero Banner */}
         <section className="relative w-full aspect-[1920/600] min-h-[300px] max-h-[600px] overflow-hidden bg-gray-900">
           <Image
             src="https://res.cloudinary.com/donrqkwe5/image/upload/v1766044937/uqm2xd1jbicyjxkriwxl.jpg"
@@ -256,10 +200,8 @@ export default async function VendorShopsPage({
         </div>
 
         {/* Sticky Nav - Only render if categories exist */}
-        {categoryData && categoryData.length > 0 ? (
+        {categoryData && categoryData.length > 0 && (
           <StickyNavTrigger categories={categoryData} />
-        ) : (
-          console.log("⏭️ [STICKY NAV] Skipping - no categories")
         )}
 
         {/* Stores Grid + Pagination */}
@@ -268,7 +210,6 @@ export default async function VendorShopsPage({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
             {paginatedStores.map((store) => {
               if (!store || !store._id) {
-                console.warn("⚠️ Invalid store object:", store);
                 return null;
               }
               return <VendorStoreCard key={store._id} store={store} />;
@@ -339,15 +280,7 @@ export default async function VendorShopsPage({
       </div>
     );
   } catch (error) {
-    // ===================================================================
-    // ❌ ERROR HANDLING
-    // ===================================================================
-    console.error("\n========== ❌ VendorShopsPage ERROR ==========");
-    console.error("Error type:", typeof error);
-    console.error("Error message:", (error as any)?.message);
-    console.error("Error stack:", (error as any)?.stack);
-    console.error("Full error:", error);
-    console.error("=============================================\n");
+    console.error("❌ VendorShopsPage Error:", error);
 
     return (
       <div className="container mx-auto">
@@ -396,9 +329,7 @@ export default async function VendorShopsPage({
           <section className="pb-20">
             <div className="text-center py-32 bg-white rounded-2xl border border-red-200">
               <div className="text-red-500 text-6xl mb-4">⚠️</div>
-              <p className="text-xl text-red-500 mb-2">
-                Failed to load stores
-              </p>
+              <p className="text-xl text-red-500 mb-2">Failed to load stores</p>
               <p className="text-sm text-gray-400 mb-6">
                 {(error as any)?.message || "An unexpected error occurred"}
               </p>
