@@ -15,7 +15,7 @@ export default async function ViewAllProductsPage() {
   // Fetch all necessary data on the server
   // Note: getAllVendorProductsFromDB returns { products: [], pagination: {} }
   const [productsResult, categoriesData, storesData, flagsData] = await Promise.all([
-    VendorProductServices.getAllVendorProductsFromDB(1, 1000), // Fetching more items for the table since pagination is client side currently
+    VendorProductServices.getAllVendorProductsFromDB(), 
     CategoryServices.getAllCategoriesFromDB(),
     StoreServices.getAllStoresFromDB(),
     ProductFlagServices.getAllProductFlagsFromDB(),
