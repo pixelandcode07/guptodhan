@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useSession } from 'next-auth/react'
+import { signOut, useSession } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import api from '@/lib/axios'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
+// import Logout from '@/app/home/UserProfile/(LogoutFromProfile)/Logout'
 
 const items = [
   // E-commerce Section
@@ -42,7 +43,7 @@ const items = [
   { title: 'Support Tickets', url: '/home/UserProfile/support-tickets', icon: Headset },
   { title: 'Saved Address', url: '/home/UserProfile/addresses', icon: MapPin },
   { title: 'Change Password', url: '/home/UserProfile/change-password', icon: KeyRound },
-  // { title: 'Logout', url: '/logout', icon: LogOut },
+  // { title: 'Logout', url: '/home/UserProfile/logout', icon: LogOut },
 ]
 
 export default function UserSidebar() {
@@ -185,6 +186,13 @@ export default function UserSidebar() {
           })}
         </ul>
       </nav>
+      <button
+        onClick={() => signOut({ callbackUrl: "/" })}
+        className="flex items-center gap-2 px-4 py-2 hover:bg-red-600 bg-red-600 text-white cursor-pointer w-full"
+      >
+        <LogOut size={16} />
+        Logout
+      </button>
     </aside>
   )
 }
