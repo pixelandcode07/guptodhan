@@ -237,38 +237,25 @@ const getAllVendorProductsFromDB = async (page = 1, limit = 20) => {
   return getCachedData(
     cacheKey,
     async () => {
-      // ✅ FIXED: Handle unlimited limit
-      // If limit is very large (999999), load all products
-      let actualLimit = limit;
-      if (limit >= 999999) {
-        actualLimit = 999999; // MongoDB will cap at actual document count
-      }
-
-      const skip = (page - 1) * actualLimit;
+      const skip = (page - 1) * limit;
       
-      // ✅ Aggregation pipeline
       const products = await VendorProductModel.aggregate([
         { $sort: { createdAt: -1 } },
         { $skip: skip },
-        { $limit: actualLimit },
+        { $limit: limit },
         ...getProductLookupPipeline(),
       ]);
       
-      // ✅ Get total count
       const total = await VendorProductModel.countDocuments();
-      
-      // ✅ Populate colors and sizes
       const populatedProducts = await populateColorAndSizeNamesForProducts(products);
-      
-      console.log(`✅ [getAllVendorProductsFromDB] Fetched ${populatedProducts.length} products (Page: ${page}, Limit: ${actualLimit})`);
       
       return {
         products: populatedProducts,
         pagination: {
           page,
-          limit: actualLimit,
+          limit,
           total,
-          pages: Math.ceil(total / actualLimit),
+          pages: Math.ceil(total / limit),
         },
       };
     },
