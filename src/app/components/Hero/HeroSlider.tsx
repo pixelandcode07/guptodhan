@@ -98,7 +98,7 @@ export default function HeroSlider({ sliders }: HeroSliderProps) {
               alt={current.bannerTitleWithColor || 'Slider Banner'}
               fill
               sizes="(max-width: 768px) 100vw, 66vw"
-              className="object-cover"
+              className="object-fit md:object-cover"
               priority={index === 0}
               quality={85}
             />
@@ -133,9 +133,8 @@ export default function HeroSlider({ sliders }: HeroSliderProps) {
                 setDirection(i > index ? 1 : -1);
                 setIndex(i);
               }}
-              className={`w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-2.5 md:h-2.5 rounded-full transition-colors ${
-                i === index ? 'bg-white' : 'bg-white/50 hover:bg-white/70'
-              }`}
+              className={`w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-2.5 md:h-2.5 rounded-full transition-colors ${i === index ? 'bg-white' : 'bg-white/50 hover:bg-white/70'
+                }`}
               aria-label={`Go to slide ${i + 1}`}
             />
           ))}

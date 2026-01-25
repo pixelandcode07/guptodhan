@@ -20,7 +20,7 @@ export default async function HeroImage({
     <div className="w-full">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* LEFT SIDE – Slider */}
-        <div className="md:col-span-2 w-full h-[250px] sm:h-[350px] md:h-[400px]">
+        <div className="md:col-span-2 w-full h-[150px] sm:h-[450px] md:h-[400px]">
           {leftBanners.length > 0 ? (
             <HeroSlider sliders={leftBanners} />
           ) : (
@@ -112,7 +112,6 @@ export default async function HeroImage({
           </Link>
         ) : null}
       </div>
-      {/* </div> */}
     </div>
   );
 }
