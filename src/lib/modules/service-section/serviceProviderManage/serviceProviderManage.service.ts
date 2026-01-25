@@ -58,6 +58,58 @@ const getUserBookingsFromDB = async (user_id: string) => {
   return { total_bookings, bookings };
 };
 
+// Confirm booking
+const confirmBookingInDB = async (booking_id: string) => {
+  const booking = await BookingModel.findByIdAndUpdate(
+    booking_id,
+    {
+      status: "Confirmed",
+    },
+    { new: true }
+  );
+
+  if (!booking) throw new Error("Booking not found.");
+  return booking;
+};
+
+// Complete booking
+const completeBookingInDB = async (
+  booking_id: string,
+  provider_notes?: string
+) => {
+  const booking = await BookingModel.findByIdAndUpdate(
+    booking_id,
+    {
+      status: "Completed",
+      provider_notes,
+      service_end_time: new Date(),
+    },
+    { new: true }
+  );
+
+  if (!booking) throw new Error("Booking not found.");
+  return booking;
+};
+
+// Cancel booking with provider note
+const cancelBookingInDB = async (
+  booking_id: string,
+  provider_rejection_message: string
+) => {
+  const booking = await BookingModel.findByIdAndUpdate(
+    booking_id,
+    {
+      status: "Cancelled",
+      provider_rejection_message,
+    },
+    { new: true }
+  );
+
+  if (!booking) throw new Error("Booking not found.");
+  return booking;
+};
+
+
 export const BookingServices = {
   createBookingInDB,
   getProviderBookingsFromDB,
@@ -65,5 +117,9 @@ export const BookingServices = {
   updateBookingInDB,
   getAllBookingsFromDB,
   getUserBookingsFromDB,
+
+  confirmBookingInDB,
+  completeBookingInDB,
+  cancelBookingInDB,
 
 };
