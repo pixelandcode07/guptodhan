@@ -26,7 +26,7 @@ const getAllServicesFromDB = async (filters?: Partial<IService>) => {
 
 // --- Get a single service by ID ---
 const getServiceByIdFromDB = async (id: string) => {
-  const service = await ServiceModel.findOne({ id });
+  const service = await ServiceModel.findById(id);
   if (!service) throw new Error("Service not found.");
   return service;
 };
@@ -47,12 +47,12 @@ const updateServiceInDB = async (
 
 // --- Change service status (Admin only) ---
 const changeServiceStatusInDB = async (
-  service_id: string,
+  id: string,
   status: "Draft" | "Active" | "Under Review" | "Disabled",
   is_visible_to_customers?: boolean
 ) => {
   const service = await ServiceModel.findOneAndUpdate(
-    { service_id },
+    { id },
     { service_status: status, is_visible_to_customers },
     { new: true }
   );
