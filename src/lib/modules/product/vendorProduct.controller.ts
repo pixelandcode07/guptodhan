@@ -131,6 +131,21 @@ const getAllVendorProducts = async (req: NextRequest) => {
   });
 };
 
+
+const getAllVendorProductsNoPagination = async (req: NextRequest) => {
+  await dbConnect();
+  
+  // Direct Service call (No params needed)
+  const result = await VendorProductServices.getAllVendorProductsNoPaginationFromDB();
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "All vendor products retrieved successfully (No Pagination)!",
+    data: result,
+  });
+};
+
 const getActiveVendorProducts = async (req: NextRequest) => {
   await dbConnect();
   
@@ -664,6 +679,7 @@ export const VendorProductController = {
   getBestSellingProducts,
   getForYouProducts,
 
+  getAllVendorProductsNoPagination,
   getVendorStoreAndProducts,
   getVendorStoreAndProductsVendorDashboard,
   getVendorStoreProductsWithReviews,
