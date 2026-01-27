@@ -1,142 +1,216 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
-import { TUserInput } from './user.interface';
-import { UserServices } from './user.service';
-import { NextRequest } from 'next/server';
-import { StatusCodes } from 'http-status-codes';
-import { sendResponse } from '@/lib/utils/sendResponse';
-import { UserValidations } from './user.validation';
-import { uploadToCloudinary } from '@/lib/utils/cloudinary';
-import dbConnect from '@/lib/db';
+import { NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
+import { StatusCodes } from 'http-status-codes';
+import dbConnect from '@/lib/db';
+import { UserServices } from './user.service';
+import { UserValidations } from './user.validation';
+import { sendResponse } from '@/lib/utils/sendResponse';
+import { uploadToCloudinary } from '@/lib/utils/cloudinary';
+import { OtpServices } from '@/lib/modules/otp/otp.service';
 import { Types } from 'mongoose';
 
-// ✅ No changes needed - already optimal
-const createUser = async (userData: TUserInput) => {
-  const result = await UserServices.createUserIntoDB(userData);
-  return result;
-};
+// ========================================
+// 📝 REGISTER USER (Send OTP)
+// ========================================
+const registerUser = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
 
-// ✅ Already good
-const registerServiceProvider = async (req: NextRequest) => {
-  try {
-    await dbConnect();
+  // Validate input
+  const validatedData = UserValidations.createUserValidationSchema.parse({
+    body: body,
+  });
 
-    const formData = await req.formData();
+  const { email, phoneNumber } = validatedData.body;
 
-    const payload: Record<string, any> = {};
-    for (const [key, value] of formData.entries()) {
-      if (key !== 'cv' && key !== 'profilePicture' && key !== 'subCategories') {
-        payload[key] = value;
-      }
+  // Check if user exists
+  const { User } = await import('./user.model');
+  const query = [];
+  if (email) query.push({ email });
+  if (phoneNumber) query.push({ phoneNumber });
+
+  if (query.length > 0) {
+    const existingUser = await User.findOne({ $or: query }).lean();
+    if (existingUser) {
+      return NextResponse.json(
+        { success: false, message: 'User already exists!' },
+        { status: StatusCodes.CONFLICT }
+      );
     }
-    payload.subCategories = formData.getAll('subCategories');
-
-    const cvFile = formData.get('cv') as File | null;
-    if (cvFile) {
-      const buffer = Buffer.from(await cvFile.arrayBuffer());
-      const uploadResult = await uploadToCloudinary(buffer, 'service-provider-cvs');
-      payload.cvUrl = uploadResult.secure_url;
-    }
-
-    const profilePictureFile = formData.get('profilePicture') as File | null;
-    if (profilePictureFile) {
-      const buffer = Buffer.from(await profilePictureFile.arrayBuffer());
-      const uploadResult = await uploadToCloudinary(buffer, 'profile-pictures');
-      payload.profilePicture = uploadResult.secure_url;
-    }
-
-    UserValidations.registerServiceProviderValidationSchema.parse(payload);
-
-    const result = await UserServices.createServiceProviderIntoDB({
-      name: payload.name,
-      email: payload.email,
-      password: payload.password,
-      phoneNumber: payload.phoneNumber,
-      address: payload.address,
-      profilePicture: payload.profilePicture,
-      role: 'service-provider',
-      serviceProviderInfo: {
-        serviceCategory: new Types.ObjectId(payload.serviceCategory),
-        cvUrl: payload.cvUrl,
-        bio: payload.bio,
-      },
-    });
-
-    return sendResponse({
-      success: true,
-      statusCode: StatusCodes.CREATED,
-      message: 'Service provider registered successfully!',
-      data: result,
-    });
-  } catch (error: any) {
-    if (error instanceof ZodError) {
-      return sendResponse({
-        success: false,
-        statusCode: StatusCodes.BAD_REQUEST,
-        message: 'Validation failed',
-        data: error.issues,
-      });
-    }
-
-    return sendResponse({
-      success: false,
-      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-      message: error.message || 'An error occurred',
-      data: null,
-    });
   }
+
+  // Send OTP
+  let otpResult;
+  let identifier;
+  let verificationType;
+
+  if (email) {
+    otpResult = await OtpServices.sendEmailOtpService(email);
+    identifier = email;
+    verificationType = 'email';
+  } else if (phoneNumber) {
+    otpResult = await OtpServices.sendPhoneOtpService(phoneNumber);
+    identifier = phoneNumber;
+    verificationType = 'phone';
+  }
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: `OTP sent to your ${verificationType}`,
+    data: { identifier, verificationType, otp: otpResult?.otp },
+  });
 };
 
-// ✅ Already optimal
+// ========================================
+// ✅ VERIFY OTP & CREATE ACCOUNT
+// ========================================
+const verifyOtpAndCreateAccount = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  const { identifier, otp, userData } = body;
+
+  if (!identifier || !otp || !userData) {
+    return NextResponse.json(
+      { success: false, message: 'Invalid request data' },
+      { status: StatusCodes.BAD_REQUEST }
+    );
+  }
+
+  // Verify OTP
+  const otpNumber = typeof otp === 'string' ? Number(otp) : otp;
+  const verificationResult = await OtpServices.verifyOtpService(identifier, otpNumber);
+
+  if (!verificationResult.status) {
+    return NextResponse.json(
+      { success: false, message: verificationResult.message },
+      { status: StatusCodes.BAD_REQUEST }
+    );
+  }
+
+  // Create user
+  const result = await UserServices.createUserIntoDB({
+    name: userData.name,
+    email: userData.email,
+    phoneNumber: userData.phoneNumber,
+    password: userData.password,
+    role: userData.role || 'user',
+    address: userData.address,
+    profilePicture: userData.profilePicture,
+  });
+
+  // Mark as verified
+  if (result && result._id) {
+    const { User } = await import('./user.model');
+    await User.findByIdAndUpdate(result._id, { isVerified: true });
+  }
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.CREATED,
+    message: 'Account created successfully!',
+    data: result,
+  });
+};
+
+// ========================================
+// 🛠️ REGISTER SERVICE PROVIDER
+// ========================================
+const registerServiceProvider = async (req: NextRequest) => {
+  await dbConnect();
+
+  const formData = await req.formData();
+  const payload: Record<string, any> = {};
+
+  for (const [key, value] of formData.entries()) {
+    if (key !== 'cv' && key !== 'profilePicture' && key !== 'subCategories') {
+      payload[key] = value;
+    }
+  }
+  payload.subCategories = formData.getAll('subCategories');
+
+  const cvFile = formData.get('cv') as File | null;
+  if (cvFile) {
+    const buffer = Buffer.from(await cvFile.arrayBuffer());
+    const uploadResult = await uploadToCloudinary(buffer, 'service-provider-cvs');
+    payload.cvUrl = uploadResult.secure_url;
+  }
+
+  const profilePictureFile = formData.get('profilePicture') as File | null;
+  if (profilePictureFile) {
+    const buffer = Buffer.from(await profilePictureFile.arrayBuffer());
+    const uploadResult = await uploadToCloudinary(buffer, 'profile-pictures');
+    payload.profilePicture = uploadResult.secure_url;
+  }
+
+  UserValidations.registerServiceProviderValidationSchema.parse(payload);
+
+  const result = await UserServices.createServiceProviderIntoDB({
+    name: payload.name,
+    email: payload.email,
+    password: payload.password,
+    phoneNumber: payload.phoneNumber,
+    address: payload.address,
+    profilePicture: payload.profilePicture,
+    role: 'service-provider',
+    serviceProviderInfo: {
+      serviceCategory: new Types.ObjectId(payload.serviceCategory),
+      cvUrl: payload.cvUrl,
+      bio: payload.bio,
+    },
+  });
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.CREATED,
+    message: 'Service provider registered successfully!',
+    data: result,
+  });
+};
+
+// ========================================
+// 👤 GET MY PROFILE
+// ========================================
 const getMyProfile = async (req: NextRequest) => {
   await dbConnect();
   const userId = req.headers.get('x-user-id');
+  
   if (!userId) {
     throw new Error('User ID not found in token');
   }
 
-  // Service layer handles caching
   const result = await UserServices.getMyProfileFromDB(userId);
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'User profile retrieved successfully!',
+    message: 'Profile retrieved successfully!',
     data: result,
   });
 };
 
-// ✅ Already good
+// ========================================
+// ✏️ UPDATE MY PROFILE
+// ========================================
 const updateMyProfile = async (req: NextRequest) => {
   await dbConnect();
   const userId = req.headers.get('x-user-id');
+  
   if (!userId) {
     throw new Error('User ID not found in token');
   }
 
   const formData = await req.formData();
-
   const file = formData.get('profilePicture') as File | null;
   const name = formData.get('name') as string;
   const address = formData.get('address') as string;
   const phoneNumber = formData.get('phoneNumber') as string;
 
-  const payload: {
-    name?: string;
-    address?: string;
-    profilePicture?: string;
-    phoneNumber?: string;
-  } = {};
-
+  const payload: any = {};
   if (name) payload.name = name;
   if (phoneNumber) payload.phoneNumber = phoneNumber;
-
-  // ✅ Handle empty address correctly
-  if (typeof address === 'string') {
-    payload.address = address;
-  }
+  if (typeof address === 'string') payload.address = address;
 
   if (file) {
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -144,7 +218,6 @@ const updateMyProfile = async (req: NextRequest) => {
     payload.profilePicture = uploadResult.secure_url;
   }
 
-  // Service layer handles cache invalidation
   const result = await UserServices.updateMyProfileInDB(userId, payload);
 
   return sendResponse({
@@ -155,62 +228,71 @@ const updateMyProfile = async (req: NextRequest) => {
   });
 };
 
-// ✅ Already good
-const getAllUsers = async (_req: NextRequest) => {
+// ========================================
+// 📋 GET ALL USERS (Admin Only)
+// ========================================
+const getAllUsers = async () => {
   await dbConnect();
   const result = await UserServices.getAllUsersFromDB();
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'All users retrieved successfully!',
+    message: 'Users retrieved successfully!',
     data: result,
   });
 };
 
-// ✅ Already good
+// ========================================
+// 🗑️ DELETE MY ACCOUNT
+// ========================================
 const deleteMyAccount = async (req: NextRequest) => {
   await dbConnect();
   const userId = req.headers.get('x-user-id');
+  
   if (!userId) {
     throw new Error('User ID not found in token');
   }
 
-  // Service handles cache invalidation
   await UserServices.deleteUserFromDB(userId);
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Your account has been deleted successfully.',
+    message: 'Account deleted successfully.',
     data: null,
   });
 };
 
-// ✅ Already good
-const deleteUserByAdmin = async (req: NextRequest, { params }: { params: { id: string } }) => {
+// ========================================
+// 🗑️ DELETE USER BY ADMIN
+// ========================================
+const deleteUserByAdmin = async (
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) => {
   await dbConnect();
-  const { id } = params;
+  const { id } = await context.params;
 
   await UserServices.deleteUserFromDB(id);
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'User has been deleted successfully by admin.',
+    message: 'User deleted successfully.',
     data: null,
   });
 };
 
-// ✅ Already good
+// ========================================
+// ✏️ UPDATE USER BY ADMIN
+// ========================================
 const updateUserByAdmin = async (
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) => {
   await dbConnect();
-
   const { id } = await context.params;
-
   const body = await req.json();
 
   const allowedFields = ['name', 'email', 'phoneNumber', 'address', 'role', 'isActive', 'isVerified'];
@@ -227,13 +309,18 @@ const updateUserByAdmin = async (
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'User updated successfully by admin.',
+    message: 'User updated successfully.',
     data: result,
   });
 };
 
-// ✅ Already good
-const getUserById = async (req: NextRequest, context: { params: Promise<{ id: string }> }) => {
+// ========================================
+// 🔍 GET USER BY ID (Admin Only)
+// ========================================
+const getUserById = async (
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) => {
   await dbConnect();
   const { id } = await context.params;
 
@@ -257,7 +344,8 @@ const getUserById = async (req: NextRequest, context: { params: Promise<{ id: st
 };
 
 export const UserController = {
-  createUser,
+  registerUser,
+  verifyOtpAndCreateAccount,
   registerServiceProvider,
   getMyProfile,
   updateMyProfile,
