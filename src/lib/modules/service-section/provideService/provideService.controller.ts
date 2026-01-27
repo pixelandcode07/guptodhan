@@ -210,7 +210,9 @@ const getServiceById = async (
   { params }: { params: { id: string } }
 ) => {
   await dbConnect();
-  const service = await ServiceServices.getServiceByIdFromDB(params.id);
+
+  const {id} = await params;
+  const service = await ServiceServices.getServiceByIdFromDB(id);
   return sendResponse({
     success: true,
     statusCode: 200,
@@ -274,7 +276,7 @@ const getAllServices = async () => {
 // Admin: Change service status
 const changeServiceStatus = async (
   req: NextRequest,
-  { params }: { params: { service_id: string } }
+  { params }: { params: { id: string } }
 ) => {
   // await dbConnect();
   // const { service_id } = await params;
@@ -285,7 +287,7 @@ const changeServiceStatus = async (
   //   status,
   //   is_visible_to_customers
   // );
-  const { service_id } = await params;
+  const { id } = await params;
   const { action } = await req.json();
 
   let status: "Active" | "Disabled";
@@ -302,7 +304,7 @@ const changeServiceStatus = async (
   }
 
   const result = await ServiceServices.changeServiceStatusInDB(
-    service_id,
+    id,
     status,
     is_visible_to_customers
   );
