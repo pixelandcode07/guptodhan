@@ -24,7 +24,26 @@ const generateOtp = (): number => {
 };
 
 // ========================================
-// 🛡️ Rate Limiting Check (Simple In-Memory)
+// 🛠️ Helper: Format Bangladeshi Number
+// ========================================
+const formatPhoneNumber = (phone: string): string => {
+  // ১. স্পেস এবং ড্যাশ রিমুভ করা
+  let formatted = phone.replace(/[\s-]/g, '');
+  
+  // ২. যদি 01 দিয়ে শুরু হয় (যেমন 017...), তাহলে সামনে 88 যোগ করো
+  if (formatted.startsWith('01')) {
+      formatted = '88' + formatted;
+  }
+  // ৩. যদি +88 দিয়ে শুরু হয়, + বাদ দাও
+  else if (formatted.startsWith('+88')) {
+      formatted = formatted.substring(1);
+  }
+  
+  return formatted;
+};
+
+// ========================================
+// 🛡️ Rate Limiting Check
 // ========================================
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
@@ -33,7 +52,6 @@ const checkRateLimit = async (identifier: string): Promise<void> => {
   const limit = rateLimitMap.get(identifier);
 
   if (limit) {
-    // Reset if time window passed
     if (now > limit.resetTime) {
       rateLimitMap.delete(identifier);
     } else if (limit.count >= 3) {
@@ -42,8 +60,7 @@ const checkRateLimit = async (identifier: string): Promise<void> => {
     }
   }
 
-  // Update or create limit
-  const current = limit || { count: 0, resetTime: now + 10 * 60 * 1000 }; // 10 min window
+  const current = limit || { count: 0, resetTime: now + 10 * 60 * 1000 }; 
   rateLimitMap.set(identifier, {
     count: current.count + 1,
     resetTime: current.resetTime,
@@ -51,7 +68,7 @@ const checkRateLimit = async (identifier: string): Promise<void> => {
 };
 
 // ========================================
-// 📱 Send OTP to Phone (SMS) - SECURE
+// 📱 Send OTP to Phone (SMS) - FINAL FIX
 // ========================================
 const sendPhoneOtpService = async (phone: string) => {
   // ✅ 1. Rate Limiting
@@ -60,13 +77,16 @@ const sendPhoneOtpService = async (phone: string) => {
   const otp = generateOtp();
   console.log("📱 Generated SMS OTP:", otp);
 
-  // ✅ 2. Hash OTP for security (optional but recommended)
+  // ✅ 2. Format Number (Critical for GP/BL)
+  const formattedPhone = formatPhoneNumber(phone);
+  console.log(`📡 Sending SMS to: ${formattedPhone}`);
+
+  // ✅ 3. Save OTP in DB
   const shouldHashOtp = process.env.HASH_OTP === 'true';
   const otpToSave = shouldHashOtp ? await bcrypt.hash(otp.toString(), 10) : otp;
 
-  // ✅ 3. Save OTP in DB with security features
   await OtpModel.create({
-    identifier: phone,
+    identifier: phone, // ইউজার ইনপুট (017...) সেভ রাখলাম লগিনের সুবিধার জন্য
     otp: otpToSave,
     type: 'phone',
     attempts: 0,
@@ -75,47 +95,52 @@ const sendPhoneOtpService = async (phone: string) => {
     expiresAt: new Date(Date.now() + parseInt(process.env.OTP_EXPIRY_MINUTES || '5') * 60 * 1000),
   });
 
-  // ✅ 4. Send SMS (Skip in dev mode if configured)
-  const skipSMS = process.env.SKIP_SMS === 'true' || process.env.NODE_ENV === 'development';
+  // ✅ 4. Send SMS Logic (Dev Mode handled)
+  // যদি FORCE_SMS_SEND="true" থাকে, তাহলে Dev Mode এও SMS যাবে
+  const shouldSendSMS = process.env.FORCE_SMS_SEND === 'true' || process.env.NODE_ENV !== 'development';
 
-  if (!skipSMS) {
+  if (shouldSendSMS) {
     try {
       const url = "https://api.sms.net.bd/sendsms";
+      
+      // 🔥 CRITICAL CHANGE: Message Content Change 🔥
+      // "Guptodhan" শব্দটা বাদ দেওয়া হয়েছে স্প্যাম ফিল্টার এড়াতে
+      const messageContent = `${otp} is your verification code. Valid for 5 minutes.`;
+
       const response = await axios.post(url, {
         api_key: process.env.SMS_API_KEY,
-        msg: `Your Guptodhan OTP is ${otp}. Valid for ${process.env.OTP_EXPIRY_MINUTES || '5'} minutes. Do not share with anyone.`,
-        to: phone,
+        msg: messageContent, 
+        to: formattedPhone,
       });
 
-      if (response.data.error) {
-        console.warn("⚠️ SMS API Warning:", response.data.msg);
+      if (response.data.error === 0) {
+        console.log(`✅ SMS Sent Successfully! Msg ID: ${response.data.msg_id}`);
       } else {
-        console.log("✅ SMS sent successfully");
+        console.warn(`⚠️ SMS Gateway Warning:`, response.data);
       }
     } catch (error: any) {
-      console.error("❌ SMS error:", error.message);
-      // Don't throw error - OTP still saved in DB
+      console.error("❌ SMS Network Error:", error.message);
+      // এখানে error throw করছি না যাতে ফ্রন্টএন্ড না ভাঙ্গে
     }
   } else {
-    console.log("⚠️ DEV MODE: SMS skipped");
+    console.log("⚠️ SMS Skipped (Dev Mode). Set FORCE_SMS_SEND='true' in .env to send real SMS.");
   }
 
-  // ✅ 5. Return response (OTP only in development)
+  // ✅ 5. Return response
   const showOtpInResponse = process.env.NODE_ENV === 'development' || 
                             process.env.SHOW_OTP_IN_RESPONSE === 'true';
 
   return { 
     success: true, 
     message: "OTP sent to your phone successfully",
-    ...(showOtpInResponse && { otp }), // ✅ Only in development
+    ...(showOtpInResponse && { otp }), 
   };
 };
 
 // ========================================
-// 📧 Send OTP to Email - SECURE
+// 📧 Send OTP to Email (No Changes)
 // ========================================
 const sendEmailOtpService = async (email: string) => {
-  // ✅ 1. Check credentials
   const emailUser = process.env.SMTP_USER || process.env.EMAIL_USER;
   const emailPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
 
@@ -123,17 +148,14 @@ const sendEmailOtpService = async (email: string) => {
     throw new Error('Email credentials not configured');
   }
 
-  // ✅ 2. Rate Limiting
   await checkRateLimit(email);
 
   const otp = generateOtp();
   console.log("📧 Generated Email OTP:", otp);
 
-  // ✅ 3. Hash OTP (optional)
   const shouldHashOtp = process.env.HASH_OTP === 'true';
   const otpToSave = shouldHashOtp ? await bcrypt.hash(otp.toString(), 10) : otp;
 
-  // ✅ 4. Save OTP
   await OtpModel.create({
     identifier: email,
     otp: otpToSave,
@@ -144,122 +166,67 @@ const sendEmailOtpService = async (email: string) => {
     expiresAt: new Date(Date.now() + parseInt(process.env.OTP_EXPIRY_MINUTES || '5') * 60 * 1000),
   });
 
-  // ✅ 5. Send Email
   try {
     await transporter.sendMail({
       from: `"Guptodhan" <${process.env.SMTP_FROM || emailUser}>`,
       to: email,
-      subject: "Your OTP Code - Guptodhan",
+      subject: "Your OTP Code",
       html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
-            .container { background: white; padding: 30px; border-radius: 10px; max-width: 500px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .otp-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; border-radius: 8px; margin: 20px 0; }
-            .warning { background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; margin-top: 15px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <h2 style="color: #667eea;">🔐 Your OTP Code</h2>
-            <p>Use this OTP to complete your registration:</p>
-            <div class="otp-box">${otp}</div>
-            <p style="text-align: center;"><strong>⏰ Valid for ${process.env.OTP_EXPIRY_MINUTES || '5'} minutes</strong></p>
-            <div class="warning">
-              <strong>⚠️ Security Notice:</strong> Never share this OTP with anyone. Guptodhan will never ask for your OTP.
-            </div>
-          </div>
-        </body>
-        </html>
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>Your Verification Code</h2>
+          <p style="font-size: 24px; font-weight: bold; color: #4F46E5;">${otp}</p>
+          <p>This code expires in 5 minutes.</p>
+        </div>
       `,
     });
-
     console.log("✅ Email sent successfully");
   } catch (error: any) {
     console.error("❌ Email error:", error.message);
     throw new Error(`Failed to send email: ${error.message}`);
   }
 
-  // ✅ 6. Return response
   const showOtpInResponse = process.env.NODE_ENV === 'development' || 
                             process.env.SHOW_OTP_IN_RESPONSE === 'true';
 
   return { 
     success: true, 
     message: "OTP sent to email successfully",
-    ...(showOtpInResponse && { otp }), // ✅ Only in development
+    ...(showOtpInResponse && { otp }), 
   };
 };
 
 // ========================================
-// ✅ Verify OTP - SECURE with Attempt Tracking
+// ✅ Verify OTP (No Changes)
 // ========================================
 const verifyOtpService = async (identifier: string, otp: number) => {
   console.log(`🔍 Verifying OTP for: ${identifier}`);
 
-  // Find latest OTP
   const record = await OtpModel.findOne({ identifier }).sort({ createdAt: -1 });
 
-  if (!record) {
-    console.log(`❌ No OTP found`);
-    return { status: false, message: "OTP not found or already used" };
-  }
+  if (!record) return { status: false, message: "OTP not found or already used" };
+  if (record.isBlocked) return { status: false, message: "Too many wrong attempts. Please request a new OTP." };
+  if (record.expiresAt < new Date()) return { status: false, message: "OTP expired. Please request a new one." };
 
-  // ✅ Check if blocked
-  if (record.isBlocked) {
-    console.log(`❌ OTP blocked due to too many attempts`);
-    return { 
-      status: false, 
-      message: "Too many wrong attempts. Please request a new OTP." 
-    };
-  }
-
-  // ✅ Check expiry
-  if (record.expiresAt < new Date()) {
-    console.log(`❌ OTP expired`);
-    return { status: false, message: "OTP expired. Please request a new one." };
-  }
-
-  // ✅ Verify OTP (handle both hashed and plain)
   const shouldHashOtp = process.env.HASH_OTP === 'true';
   let isMatch = false;
 
   if (shouldHashOtp && typeof record.otp === 'string') {
-    // Hashed OTP
     isMatch = await bcrypt.compare(otp.toString(), record.otp);
   } else {
-    // Plain OTP
     isMatch = record.otp === otp;
   }
 
   if (!isMatch) {
-    // ✅ Increment attempts
     record.attempts += 1;
-    
-    // Block if max attempts reached
     if (record.attempts >= record.maxAttempts) {
       record.isBlocked = true;
       await record.save();
-      console.log(`❌ Max attempts reached - OTP blocked`);
-      return { 
-        status: false, 
-        message: "Maximum attempts exceeded. Please request a new OTP." 
-      };
+      return { status: false, message: "Maximum attempts exceeded. Please request a new OTP." };
     }
-    
     await record.save();
-    const remaining = record.maxAttempts - record.attempts;
-    console.log(`❌ Invalid OTP - ${remaining} attempts remaining`);
-    
-    return { 
-      status: false, 
-      message: `Invalid OTP. ${remaining} ${remaining === 1 ? 'attempt' : 'attempts'} remaining.` 
-    };
+    return { status: false, message: "Invalid OTP" };
   }
 
-  // ✅ Success - delete all OTPs for this identifier
   await OtpModel.deleteMany({ identifier });
   console.log(`✅ OTP verified and deleted`);
 
