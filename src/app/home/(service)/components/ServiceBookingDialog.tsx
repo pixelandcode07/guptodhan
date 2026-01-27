@@ -29,6 +29,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ServiceData } from "@/types/ServiceDataType";
 import { CreateBookingFormValues, createBookingValidationSchema } from "./validation/bookingvalidations";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 interface Props {
   service: ServiceData;
@@ -48,7 +49,14 @@ export default function ServiceBookingDialog({
   const [imageIndex, setImageIndex] = React.useState(0);
   const { data: session } = useSession();
   const serviceToken = (session as any)?.accessToken;
-  // const serviceToken = (session?.user as { accessToken?: string })?.accessToken;
+
+  const toastStyle = {
+    style: {
+      background: '#ffffff',
+      color: '#000000',
+      border: '1px solid #e2e8f0'
+    }
+  };
 
   const form = useForm<CreateBookingFormValues>({
     resolver: zodResolver(createBookingValidationSchema),
@@ -66,19 +74,24 @@ export default function ServiceBookingDialog({
 
   const onSubmit = async (data: CreateBookingFormValues) => {
     try {
-      const res = await axios.post(
+      await axios.post(
         "/api/v1/public/service-section/service-provider-manage",
-        data,{
-          headers: {
-            Authorization: `Bearer ${serviceToken}`,
-          },
-        }
+        data, {
+        headers: {
+          Authorization: `Bearer ${serviceToken}`,
+        },
+      }
       );
-
-      console.log("✅ BOOKING SUCCESS:", res.data);
+      toast.success("Booking successful!", {
+        ...toastStyle,
+        description: "Thank you for booking this service.",
+      });
       onOpenChange(false);
     } catch (error) {
-      console.error("❌ BOOKING FAILED:", error);
+      toast.error("Booking Unsuccessful!", {
+        ...toastStyle,
+        description: "Please try again.",
+      });
     }
   };
 
