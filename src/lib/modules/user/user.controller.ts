@@ -17,14 +17,16 @@ const registerUser = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
 
-  // Validate input
+  // ✅ Validate input
   const validatedData = UserValidations.createUserValidationSchema.parse({
     body: body,
   });
 
   const { email, phoneNumber } = validatedData.body;
 
-  // Check if user exists
+  // ========================================
+  // ✅ CRITICAL FIX: Check if user ALREADY EXISTS
+  // ========================================
   const { User } = await import('./user.model');
   const query = [];
   if (email) query.push({ email });
@@ -32,15 +34,42 @@ const registerUser = async (req: NextRequest) => {
 
   if (query.length > 0) {
     const existingUser = await User.findOne({ $or: query }).lean();
+    
+    // ❌ User already exists - REJECT registration
     if (existingUser) {
-      return NextResponse.json(
-        { success: false, message: 'User already exists!' },
-        { status: StatusCodes.CONFLICT }
-      );
+      console.log(`❌ Registration blocked - User already exists:`, {
+        email: existingUser.email,
+        phoneNumber: existingUser.phoneNumber,
+        isVerified: existingUser.isVerified,
+      });
+
+      // ✅ Different messages for verified vs unverified users
+      if (existingUser.isVerified) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: 'This email/phone number is already registered. Please login instead.',
+            action: 'login', // Frontend can redirect to login
+          },
+          { status: StatusCodes.CONFLICT }
+        );
+      } else {
+        // User registered but not verified - allow OTP resend
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: 'This number/email was registered but not verified. Please use "Resend OTP" option.',
+            action: 'resend_otp',
+          },
+          { status: StatusCodes.CONFLICT }
+        );
+      }
     }
   }
 
-  // Send OTP
+  // ========================================
+  // ✅ User doesn't exist - Send OTP
+  // ========================================
   let otpResult;
   let identifier;
   let verificationType;
@@ -55,6 +84,8 @@ const registerUser = async (req: NextRequest) => {
     verificationType = 'phone';
   }
 
+  console.log(`✅ New user registration started:`, { identifier, verificationType });
+
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
@@ -65,6 +96,9 @@ const registerUser = async (req: NextRequest) => {
 
 // ========================================
 // ✅ VERIFY OTP & CREATE ACCOUNT
+// ========================================
+// ========================================
+// ✅ VERIFY OTP & CREATE ACCOUNT - ENHANCED
 // ========================================
 const verifyOtpAndCreateAccount = async (req: NextRequest) => {
   await dbConnect();
@@ -78,7 +112,32 @@ const verifyOtpAndCreateAccount = async (req: NextRequest) => {
     );
   }
 
-  // Verify OTP
+  // ========================================
+  // ✅ DOUBLE CHECK: Verify user doesn't exist
+  // ========================================
+  const { User } = await import('./user.model');
+  const query = [];
+  if (userData.email) query.push({ email: userData.email });
+  if (userData.phoneNumber) query.push({ phoneNumber: userData.phoneNumber });
+
+  if (query.length > 0) {
+    const existingUser = await User.findOne({ $or: query }).lean();
+    
+    if (existingUser) {
+      console.log(`❌ Account creation blocked - User exists during verification`);
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Account already exists. Please login.',
+        },
+        { status: StatusCodes.CONFLICT }
+      );
+    }
+  }
+
+  // ========================================
+  // ✅ Verify OTP
+  // ========================================
   const otpNumber = typeof otp === 'string' ? Number(otp) : otp;
   const verificationResult = await OtpServices.verifyOtpService(identifier, otpNumber);
 
@@ -89,30 +148,114 @@ const verifyOtpAndCreateAccount = async (req: NextRequest) => {
     );
   }
 
-  // Create user
-  const result = await UserServices.createUserIntoDB({
-    name: userData.name,
-    email: userData.email,
-    phoneNumber: userData.phoneNumber,
-    password: userData.password,
-    role: userData.role || 'user',
-    address: userData.address,
-    profilePicture: userData.profilePicture,
-  });
+  // ========================================
+  // ✅ Create user account
+  // ========================================
+  try {
+    const result = await UserServices.createUserIntoDB({
+      name: userData.name,
+      email: userData.email,
+      phoneNumber: userData.phoneNumber,
+      password: userData.password,
+      role: userData.role || 'user',
+      address: userData.address,
+      profilePicture: userData.profilePicture,
+    });
 
-  // Mark as verified
-  if (result && result._id) {
-    const { User } = await import('./user.model');
-    await User.findByIdAndUpdate(result._id, { isVerified: true });
+    // ✅ Mark as verified
+    if (result && result._id) {
+      await User.findByIdAndUpdate(result._id, { isVerified: true });
+    }
+
+    console.log(`✅ Account created successfully:`, { 
+      userId: result?._id,
+      email: userData.email,
+      phoneNumber: userData.phoneNumber,
+    });
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.CREATED,
+      message: 'Account created successfully!',
+      data: result,
+    });
+  } catch (error: any) {
+    // Handle race condition - user created between check and creation
+    if (error.message?.includes('already exists')) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Account already exists. Please login.',
+        },
+        { status: StatusCodes.CONFLICT }
+      );
+    }
+    throw error;
   }
+};
+
+
+// ========================================
+// 🔄 RESEND OTP (For unverified users)
+// ========================================
+const resendOtp = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  const { identifier } = body; // Can be email or phone
+
+  if (!identifier) {
+    return NextResponse.json(
+      { success: false, message: 'Email or phone number required' },
+      { status: StatusCodes.BAD_REQUEST }
+    );
+  }
+
+  // ✅ Check if user exists and is unverified
+  const { User } = await import('./user.model');
+  const user = await User.findOne({
+    $or: [{ email: identifier }, { phoneNumber: identifier }]
+  }).lean();
+
+  if (!user) {
+    return NextResponse.json(
+      { success: false, message: 'No account found with this email/phone number' },
+      { status: StatusCodes.NOT_FOUND }
+    );
+  }
+
+  if (user.isVerified) {
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: 'Account already verified. Please login.',
+        action: 'login',
+      },
+      { status: StatusCodes.CONFLICT }
+    );
+  }
+
+  // ✅ Send OTP
+  let otpResult;
+  let verificationType;
+
+  if (user.email && identifier === user.email) {
+    otpResult = await OtpServices.sendEmailOtpService(user.email);
+    verificationType = 'email';
+  } else if (user.phoneNumber && identifier === user.phoneNumber) {
+    otpResult = await OtpServices.sendPhoneOtpService(user.phoneNumber);
+    verificationType = 'phone';
+  }
+
+  console.log(`✅ OTP resent to unverified user:`, { identifier });
 
   return sendResponse({
     success: true,
-    statusCode: StatusCodes.CREATED,
-    message: 'Account created successfully!',
-    data: result,
+    statusCode: StatusCodes.OK,
+    message: `OTP resent to your ${verificationType}`,
+    data: { identifier, verificationType, otp: otpResult?.otp },
   });
 };
+
 
 // ========================================
 // 🛠️ REGISTER SERVICE PROVIDER
@@ -129,6 +272,26 @@ const registerServiceProvider = async (req: NextRequest) => {
     }
   }
   payload.subCategories = formData.getAll('subCategories');
+
+  // ========================================
+  // ✅ Check if service provider already exists
+  // ========================================
+  const { User } = await import('./user.model');
+  const existingUser = await User.findOne({
+    $or: [
+      { email: payload.email },
+      { phoneNumber: payload.phoneNumber }
+    ]
+  }).lean();
+
+  if (existingUser) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.CONFLICT,
+      message: 'A service provider with this email or phone number already exists!',
+      data: null,
+    });
+  }
 
   const cvFile = formData.get('cv') as File | null;
   if (cvFile) {
@@ -348,6 +511,7 @@ export const UserController = {
   verifyOtpAndCreateAccount,
   registerServiceProvider,
   getMyProfile,
+  resendOtp,
   updateMyProfile,
   getAllUsers,
   deleteMyAccount,
