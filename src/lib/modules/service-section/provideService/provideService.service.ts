@@ -52,7 +52,7 @@ const changeServiceStatusInDB = async (
   is_visible_to_customers?: boolean
 ) => {
   const service = await ServiceModel.findOneAndUpdate(
-    { id },
+    { _id: id },
     { service_status: status, is_visible_to_customers },
     { new: true }
   );

@@ -109,7 +109,7 @@ export const service_data_columns: ColumnDef<ServiceData>[] = [
                 try {
                     await toast.promise(
                         axios.patch(
-                            `/api/v1/service-section/provide-service/status/${service.service_id}`,
+                            `/api/v1/service-section/provide-service/status/${service._id}`,
                             { action }
                         ),
                         {
