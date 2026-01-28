@@ -41,7 +41,7 @@ interface Product {
 }
 
 interface CategoryData {
-    category: { name: string; slug: string; banner?: string; categoryIcon?: string; }; // Updated interface based on controller fix
+    category: { name: string; slug: string; banner?: string; categoryIcon?: string; };
     products: Product[];
     totalProducts: number;
 }
@@ -312,7 +312,6 @@ export default function CategoryClient({ initialData }: { initialData: CategoryD
     const filters = extractFilters(initialData.products);
 
     // ✅ Standard Wrapper Class for Consistent Alignment
-    // এটি Breadcrumb, Banner এবং Main Content সব জায়গায় ব্যবহার করা হয়েছে
     const containerClass = "md:max-w-[95vw] xl:container mx-auto sm:px-8 px-4";
 
     return (
@@ -324,9 +323,10 @@ export default function CategoryClient({ initialData }: { initialData: CategoryD
 
             <div className="min-h-screen bg-gray-50">
                 
-                {/* 1. Breadcrumb Section */}
-                <div className="bg-white border-b">
-                    <div className={`${containerClass} py-4`}>
+                {/* 1. Breadcrumb & Header Section */}
+                <div className="bg-white border-b w-full">
+                    <div className={`${containerClass} py-4 flex flex-col md:flex-row md:items-center justify-between gap-4`}>
+                        {/* Breadcrumb */}
                         <Breadcrumb>
                             <BreadcrumbList>
                                 <BreadcrumbItem><BreadcrumbLink href="/">Home</BreadcrumbLink></BreadcrumbItem>
@@ -334,25 +334,35 @@ export default function CategoryClient({ initialData }: { initialData: CategoryD
                                 <BreadcrumbItem><BreadcrumbPage>{initialData.category.name}</BreadcrumbPage></BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>
+
+                        {/* Category Name & Count */}
+                        <div className='flex items-center gap-3'>
+                            <h1 className="text-lg md:text-xl font-bold text-gray-800">
+                                {initialData.category.name}
+                            </h1>
+                            <span className="hidden md:inline text-gray-300">|</span>
+                            <p className="text-sm md:text-base text-gray-500 font-medium">
+                                {initialData.totalProducts} Products
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                {/* 2. Banner Section (FIXED) */}
-                {/* Background Image বাদ দিয়ে Next.js Image ব্যবহার করা হয়েছে */}
+                {/* 2. Banner Section (SOLVED) */}
                 <div className={`${containerClass} mt-4`}>
                     {initialData.category.banner ? (
-                        <div className="w-full relative rounded-lg overflow-hidden">
+                        // ✅ Height Fixed (Mobile 200px, Desktop 400px)
+                        // ✅ fill + object-cover: ইমেজটি ব্যানারের শেপে ক্রপ হয়ে বসবে, বড় হবে না।
+                        <div className="w-full relative rounded-lg overflow-hidden shadow-sm h-[200px] md:h-[350px] lg:h-[200px]">
                             <Image
                                 src={initialData.category.banner}
                                 alt={initialData.category.name}
-                                width={1920}
-                                height={450}
-                                className="w-full h-[200px] object-cover align-middle"
+                                fill
+                                className="object-cover align-middle"
                                 priority
                             />
                         </div>
                     ) : (
-                         // ব্যানার না থাকলে একটি সুন্দর ডিফল্ট টাইটেল বার
                         <div className="w-full h-40 bg-gradient-to-r from-gray-800 to-gray-900 rounded-lg flex flex-col items-center justify-center text-white">
                             <h1 className="text-3xl font-bold">{initialData.category.name}</h1>
                             <p className="opacity-80">{initialData.totalProducts} Products</p>
