@@ -34,7 +34,7 @@ export function JustForYou({ initialProducts }: Props) {
         if (res.data.success && res.data.data.length > 0) {
           setProducts((prev) => [...prev, ...res.data.data]);
           setPage((prev) => prev + 1);
-          setHasMore(res.data.data.length === 20);
+          setHasMore(res.data.data.length === 100);
         } else {
           setHasMore(false);
         }
