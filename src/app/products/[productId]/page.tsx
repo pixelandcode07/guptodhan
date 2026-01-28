@@ -304,7 +304,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     };
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="min-h-screen bg-[#f2f4f8]">
         {/* JSON-LD Schemas */}
         <script
           type="application/ld+json"
