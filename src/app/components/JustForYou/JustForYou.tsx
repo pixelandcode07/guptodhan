@@ -28,13 +28,13 @@ export function JustForYou({ initialProducts }: Props) {
       try {
         const baseUrl = process.env.NEXT_PUBLIC_API_URL;
         const res = await axios.get<{ success: boolean; data: Product[] }>(
-          `${baseUrl}/api/v1/product/offerProduct?page=${page + 1}&limit=100`
+          `${baseUrl}/api/v1/product/offerProduct?page=${page + 1}&limit=20`
         );
 
         if (res.data.success && res.data.data.length > 0) {
           setProducts((prev) => [...prev, ...res.data.data]);
           setPage((prev) => prev + 1);
-          setHasMore(res.data.data.length === 100);
+          setHasMore(res.data.data.length === 20);
         } else {
           setHasMore(false);
         }
