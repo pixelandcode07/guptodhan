@@ -353,7 +353,7 @@ export default function CategoryClient({ initialData }: { initialData: CategoryD
                     {initialData.category.banner ? (
                         // ✅ Height Fixed (Mobile 200px, Desktop 400px)
                         // ✅ fill + object-cover: ইমেজটি ব্যানারের শেপে ক্রপ হয়ে বসবে, বড় হবে না।
-                        <div className="w-full relative rounded-lg overflow-hidden shadow-sm h-[200px] md:h-[350px] lg:h-[200px]">
+                        <div className="w-full relative rounded-lg overflow-hidden shadow-sm h-[200px] md:h-[350px] lg:h-[220px]">
                             <Image
                                 src={initialData.category.banner}
                                 alt={initialData.category.name}
