@@ -28,7 +28,7 @@ export function JustForYou({ initialProducts }: Props) {
       try {
         const baseUrl = process.env.NEXT_PUBLIC_API_URL;
         const res = await axios.get<{ success: boolean; data: Product[] }>(
-          `${baseUrl}/api/v1/product/offerProduct?page=${page + 1}&limit=20`
+          `${baseUrl}/api/v1/product/offerProduct?page=${page + 1}&limit=100`
         );
 
         if (res.data.success && res.data.data.length > 0) {
