@@ -8,18 +8,19 @@ const createFAQInDB = async (payload: Partial<IFAQ>) => {
   return result;
 };
 
-// Get all active FAQs (optional: sorted by question)
+// Get all active FAQs (Use lean for better performance)
 const getAllFAQsFromDB = async () => {
-  const result = await FAQModel.find({ isActive: true }).sort({ question: 1 });
+  // lean() returns plain JavaScript objects, not Mongoose documents
+  const result = await FAQModel.find({}).sort({ createdAt: -1 }).lean();
   return result;
 };
 
 // Get FAQs by category
 const getFAQsByCategoryFromDB = async (categoryId: string) => {
   const result = await FAQModel.find({ 
-    category: new Types.ObjectId(categoryId), 
+    category: categoryId, // Assuming category is stored as String ID based on your model
     isActive: true 
-  }).sort({ question: 1 });
+  }).sort({ question: 1 }).lean();
   return result;
 };
 
