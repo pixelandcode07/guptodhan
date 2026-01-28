@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
-import { AlertCircle, CheckCircle2, Loader2, Package, DollarSign, Heart, Users, TrendingUp, Phone, Mail, User, ChevronLeft, ChevronRight, Calendar, MapPin } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Loader2, Package, DollarSign, Heart, Users, TrendingUp, Phone, Mail, User, ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
 import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 
@@ -47,7 +47,7 @@ interface DonationDetailsClientProps {
   campaign: IDonationCampaign
 }
 
-// ✅ Modal Component (Separate & Professional)
+// ✅ Modal Component (Same as before, kept for completeness)
 function DonationClaimModal({ open, onOpenChange, item }: DonationClaimModalProps) {
   const { data: session } = useSession()
   const token = (session as any)?.accessToken
@@ -467,7 +467,7 @@ function DonationClaimModal({ open, onOpenChange, item }: DonationClaimModalProp
   )
 }
 
-// ✅ Main Component - Professional & Responsive
+// ✅ Main Component - Professional & Responsive with Correct Alignment
 export default function DonationDetailsClient({ campaign }: DonationDetailsClientProps) {
   const { data: session } = useSession()
   const [claimOpen, setClaimOpen] = useState(false)
@@ -506,7 +506,8 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      {/* ✅ Alignment Fixed Matches JustForYou */}
+      <div className="md:max-w-[95vw] xl:container mx-auto px-4 md:px-8 py-6 sm:py-8">
         <DonationClaimModal open={claimOpen} onOpenChange={setClaimOpen} item={selectedItem} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -533,7 +534,7 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                           className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1.5 sm:p-2.5 rounded-full transition-all z-10 group-hover:bg-black/70"
                           aria-label="Previous image"
                         >
-                          <ChevronLeft size={20} sm-size={24} />
+                          <ChevronLeft size={20} />
                         </button>
 
                         {/* Next Button */}
