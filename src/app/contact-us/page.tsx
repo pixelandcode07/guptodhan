@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import ContactClient from "./component/contactClient";
+import ContactClient from "./component/contactClinet";
 
 export const metadata: Metadata = {
   title: "Contact Us | Guptodhan",
