@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,15 +15,14 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import axios from 'axios';
-import Loadding from '../Components/Loadding';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import Loadding from '../Components/Loadding'; // Using your new Skeleton
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
-
-export default function FAQEditForm() {
+function EditFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const id = searchParams.get('_id'); // ✅ URL থেকে ID নিচ্ছে
+  const id = searchParams.get('_id');
 
   const [categories, setCategories] = useState<any[]>([]);
   const [category, setCategory] = useState('');
@@ -40,21 +39,26 @@ export default function FAQEditForm() {
       if (!id) return;
 
       try {
-        // 🔹 Load all categories
-        const catRes = await axios.get(categoryApi);
+        // Load categories and FAQs in parallel
+        const [catRes, faqRes] = await Promise.all([
+            axios.get(categoryApi),
+            axios.get(faqApi)
+        ]);
+
         setCategories(catRes.data?.data || []);
 
-        // 🔹 Get all FAQs then filter by ID
-        const faqRes = await axios.get(faqApi);
         const allFaqs = faqRes.data?.data || [];
         const singleFaq = allFaqs.find((item: any) => item._id === id);
 
         if (singleFaq) {
           setQuestion(singleFaq.question || '');
           setAnswer(singleFaq.answer || '');
-          setCategory(singleFaq.category?._id || singleFaq.category || '');
+          // Handle population vs string ID
+          const catId = typeof singleFaq.category === 'object' ? singleFaq.category._id : singleFaq.category;
+          setCategory(catId || '');
         } else {
           toast.error('FAQ not found');
+          router.push('/general/view/all/faqs');
         }
       } catch (error) {
         console.error('Fetch error:', error);
@@ -64,9 +68,8 @@ export default function FAQEditForm() {
       }
     };
     fetchData();
-  }, [id]);
+  }, [id, router]);
 
-  // ✅ Update FAQ
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!category || !question || !answer)
@@ -75,12 +78,12 @@ export default function FAQEditForm() {
     setLoading(true);
     try {
       const payload = { category, question, answer };
-
       const res = await axios.patch(`${faqApi}/${id}`, payload);
 
       if (res.data?.success) {
         toast.success('FAQ updated successfully!');
         router.push('/general/view/all/faqs');
+        router.refresh();
       } else {
         toast.error(res.data?.message || 'Update failed');
       }
@@ -97,77 +100,89 @@ export default function FAQEditForm() {
   }
 
   return (
-    <div className="card bg-white shadow rounded p-6">
-      <h4 className="text-xl font-semibold mb-6">Edit FAQ</h4>
-      <form onSubmit={handleUpdate} className="space-y-6">
-        {/* Category */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-          <Label htmlFor="category" className="w-full sm:w-1/5">
-            Category <span className="text-red-500">*</span>
-          </Label>
-          <Select
-            value={category}
-            onValueChange={setCategory}
-            required
-            className="w-full sm:w-4/5">
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select Category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.length > 0 ? (
-                categories.map(cat => (
-                  <SelectItem key={cat._id} value={cat._id}>
-                    {cat.name || cat.categoryName}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem disabled value="">
-                  No categories found
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
+    <div className="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-100">
+        <div className="p-6 border-b bg-gray-50/50">
+            <h4 className="text-xl font-bold text-gray-800">Edit FAQ</h4>
         </div>
+        
+        <div className="p-6 md:p-8">
+            <form onSubmit={handleUpdate} className="space-y-6">
+                
+                {/* Category */}
+                <div className="grid gap-2">
+                    <Label htmlFor="category">Category <span className="text-red-500">*</span></Label>
+                    <Select value={category} onValueChange={setCategory} required>
+                        <SelectTrigger className="w-full bg-gray-50/50 h-11">
+                            <SelectValue placeholder="Select Category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {categories.length > 0 ? (
+                                categories.map(cat => (
+                                    <SelectItem key={cat._id} value={cat._id}>
+                                        {cat.name || cat.categoryName}
+                                    </SelectItem>
+                                ))
+                            ) : (
+                                <SelectItem disabled value="no-cat">No categories found</SelectItem>
+                            )}
+                        </SelectContent>
+                    </Select>
+                </div>
 
-        {/* Question */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-          <Label htmlFor="question" className="w-full sm:w-1/5">
-            Question <span className="text-red-500">*</span>
-          </Label>
-          <Input
-            id="question"
-            type="text"
-            placeholder="Enter question"
-            value={question}
-            onChange={e => setQuestion(e.target.value)}
-            className="w-full sm:w-4/5"
-            required
-          />
-        </div>
+                {/* Question */}
+                <div className="grid gap-2">
+                    <Label htmlFor="question">Question <span className="text-red-500">*</span></Label>
+                    <Input
+                        id="question"
+                        type="text"
+                        value={question}
+                        onChange={e => setQuestion(e.target.value)}
+                        className="w-full bg-gray-50/50 h-11"
+                        required
+                    />
+                </div>
 
-        {/* Answer */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2">
-          <Label htmlFor="answer" className="w-full sm:w-1/5">
-            Answer <span className="text-red-500">*</span>
-          </Label>
-          <Textarea
-            id="answer"
-            rows={8}
-            placeholder="Write the answer..."
-            value={answer}
-            onChange={e => setAnswer(e.target.value)}
-            className="w-full sm:w-4/5"
-            required
-          />
-        </div>
+                {/* Answer */}
+                <div className="grid gap-2">
+                    <Label htmlFor="answer">Answer <span className="text-red-500">*</span></Label>
+                    <Textarea
+                        id="answer"
+                        rows={6}
+                        value={answer}
+                        onChange={e => setAnswer(e.target.value)}
+                        className="w-full bg-gray-50/50 resize-none"
+                        required
+                    />
+                </div>
 
-        {/* Submit */}
-        <div className="flex justify-start">
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Updating...' : 'Update FAQ'}
-          </Button>
+                {/* Submit Button */}
+                <div className="pt-4 flex justify-end">
+                    <Button type="submit" disabled={loading} className="w-full sm:w-auto min-w-[150px]">
+                        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Updating...</> : 'Update FAQ'}
+                    </Button>
+                </div>
+            </form>
         </div>
-      </form>
     </div>
   );
+}
+
+// Wrapper for Suspense
+export default function FAQEditPage() {
+    return (
+        <div className="bg-gray-50 min-h-screen p-4 md:p-8">
+            <div className="max-w-4xl mx-auto">
+                <div className="mb-6">
+                    <Button variant="ghost" asChild>
+                        <Link href="/general/view/all/faqs" className="flex items-center gap-2 text-gray-600">
+                            <ArrowLeft className="w-4 h-4" /> Back to List
+                        </Link>
+                    </Button>
+                </div>
+                <Suspense fallback={<Loadding />}>
+                    <EditFormContent />
+                </Suspense>
+            </div>
+        </div>
+    );
 }

@@ -1,26 +1,37 @@
 import SectionTitle from '@/components/ui/SectionTitle';
 import FAQSTabile from './Components/FAQSTabile';
-import dbConnect from '@/lib/db'; // ✅ ডেটাবেস কানেকশন ইম্পোর্ট করুন
+import dbConnect from '@/lib/db';
 import { FAQServices } from '@/lib/modules/faq/faq.service';
+import { Suspense } from 'react';
+import Loadding from './Components/Loadding';
 
-// এই পেজ কম্পোনেন্টটি এখন async এবং সার্ভারে রান হবে
+// Force dynamic rendering ensures latest data
+export const dynamic = 'force-dynamic';
+
 export default async function FaqsPage() {
-  // সার্ভারেই ডেটাবেস কানেক্ট করে সরাসরি সার্ভিস ফাংশনকে কল করা হচ্ছে
   await dbConnect();
-  // ধরে নিচ্ছি, আপনার সার্ভিসে অ্যাডমিনদের জন্য সব FAQ আনার একটি ফাংশন আছে
-  const faqsData = await FAQServices.getAllFAQsFromDB(); 
+  
+  // Fetch data from DB directly
+  const faqsData = await FAQServices.getAllFAQsFromDB();
 
   return (
-    <div className="bg-white min-h-screen">
-      <div className="flex w-full justify-between items-center pt-5 px-5 flex-wrap">
-        <SectionTitle text="FAQ List" />
-      </div>
+    <div className="bg-gray-50 min-h-screen p-4 md:p-6 lg:p-8">
+      {/* Alignment Container */}
+      <div className="max-w-7xl mx-auto space-y-6">
+        
+        {/* Page Title */}
+        <div className="flex flex-col gap-2">
+            <SectionTitle text="FAQ Management" />
+            <p className="text-sm text-gray-500">Manage your Frequently Asked Questions here.</p>
+        </div>
 
-      {/* ✅ Fetch করা ডেটা props হিসেবে ক্লায়েন্ট কম্পোনেন্টে পাঠানো হচ্ছে।
-        JSON.parse(JSON.stringify(...)) ব্যবহার করা হয়েছে Mongoose ডকুমেন্টকে 
-        সাধারণ অবজেক্টে রূপান্তর করার জন্য, যা Server Component থেকে Client Component-এ পাঠানো নিরাপদ।
-      */}
-      <FAQSTabile initialFaqs={JSON.parse(JSON.stringify(faqsData))} />
+        {/* Content with Suspense/Loading */}
+        <Suspense fallback={<Loadding />}>
+            {/* JSON.parse(JSON.stringify()) is needed to pass Mongoose objects to Client Components */}
+            <FAQSTabile initialFaqs={JSON.parse(JSON.stringify(faqsData))} />
+        </Suspense>
+
+      </div>
     </div>
   );
 }

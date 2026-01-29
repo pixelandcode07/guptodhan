@@ -54,7 +54,6 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
             const result = await response.json();
             
             if (result.success && result.data) {
-                // Filter: শুধু approved AND active campaigns
                 const activeCampaigns = result.data.filter((camp: DonationCampaign) => 
                     camp.moderationStatus === 'approved' && camp.status === 'active'
                 );
@@ -83,11 +82,12 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
     const hasMoreItems = displayCount < filteredItems.length;
 
     return (
-        <div className='max-w-7xl mx-auto'>
+        // ✅ Alignment Fixed Matches JustForYou
+        <div className='md:max-w-[95vw] xl:container mx-auto px-4 md:px-8'>
             <DonationModal categories={initialCategories} onSuccess={refreshCampaigns} />
             <DonationClaimModal open={claimOpen} onOpenChange={setClaimOpen} item={selectedItem} />
 
-            <section id='browse-items' className='mt-6 px-4'>
+            <section id='browse-items' className='mt-6'>
                 <div className='flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-white p-4 rounded-lg shadow-sm border'>
                     <div>
                         <h2 className='text-2xl font-bold text-gray-800'>Browse Active Donations</h2>

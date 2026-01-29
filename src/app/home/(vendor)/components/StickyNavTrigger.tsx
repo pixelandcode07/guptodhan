@@ -4,11 +4,19 @@ import { HeroNav } from "@/app/components/Hero/HeroNav";
 import { useEffect, useState } from "react";
 
 type StickyNavTriggerProps = {
-    categories: any[];
+    categories?: any[] | null;
 };
 
 export default function StickyNavTrigger({ categories }: StickyNavTriggerProps) {
     const [isVisible, setIsVisible] = useState(false);
+
+    // ✅ Guard: Check if categories exists and is array
+    const validCategories = Array.isArray(categories) ? categories : [];
+
+    // ✅ Guard: Don't render if no categories
+    if (validCategories.length === 0) {
+        return null;
+    }
 
     useEffect(() => {
         const handleScroll = () => {
@@ -28,7 +36,8 @@ export default function StickyNavTrigger({ categories }: StickyNavTriggerProps) 
                 }`}
         >
             <div className="bg-white border-b">
-                <HeroNav categories={categories} />
+                {/* ✅ Pass validated categories */}
+                <HeroNav categories={validCategories} />
             </div>
         </div>
     );

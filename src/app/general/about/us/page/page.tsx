@@ -1,22 +1,23 @@
 import SectionTitle from '@/components/ui/SectionTitle';
 import AboutUsForm from './Components/AboutUsForm';
-import { AboutContentServices } from '@/lib/modules/about-content/content.service'; // ✅ সার্ভিস ইম্পোর্ট করুন
-import dbConnect from '@/lib/db'; // ✅ ডেটাবেস কানেকশন ইম্পোর্ট করুন
+import { AboutContentServices } from '@/lib/modules/about-content/content.service';
+import dbConnect from '@/lib/db';
 
-// পেজ কম্পোনেন্টকে async করা হয়েছে
+export const dynamic = 'force-dynamic'; // ডাটা যাতে ক্যাশ না হয়
+
 export default async function AboutUsPage() {
-  // সার্ভারেই ডেটাবেস কানেক্ট করে সরাসরি সার্ভিস ফাংশনকে কল করা হচ্ছে
   await dbConnect();
+  
+  // ডাটা আনবে (status active/inactive যাই হোক)
   const contentData = await AboutContentServices.getContentFromDB();
 
   return (
-    <div className="bg-white pt-5 px-4">
+    <div className="bg-white pt-5 px-4 min-h-screen">
       <SectionTitle text="General Information Form" />
-      {/* ✅ Fetch করা ডেটা props হিসেবে ক্লায়েন্ট কম্পোনেন্টে পাঠানো হচ্ছে।
-        JSON.parse(JSON.stringify(...)) ব্যবহার করা হয়েছে Mongoose ডকুমেন্টকে 
-        সাধারণ অবজেক্টে রূপান্তর করার জন্য, যা Server Component থেকে Client Component-এ পাঠানো নিরাপদ।
-      */}
-      <AboutUsForm aboutData={JSON.parse(JSON.stringify(contentData))} />
+      <div className="max-w-5xl mx-auto">
+        {/* ডাটা থাকলে সেটা যাবে, না থাকলে null যাবে */}
+        <AboutUsForm aboutData={contentData ? JSON.parse(JSON.stringify(contentData)) : null} />
+      </div>
     </div>
   );
 }

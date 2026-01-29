@@ -1,10 +1,10 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\lib\modules\about-content\content.service.ts
 import { IAboutContent } from './content.interface';
 import { AboutContent } from './content.model';
 
-// একটি মাত্র ডকুমেন্ট থাকবে, তাই findOne ব্যবহার করা হচ্ছে
+// ✅ FIX: Admin প্যানেলের জন্য status ফিল্টার সরানো হয়েছে। 
+// যাতে inactive থাকলেও এডিট করা যায়।
 const getContentFromDB = async () => {
-  return await AboutContent.findOne({ status: 'active' });
+  return await AboutContent.findOne({}); 
 };
 
 // যদি কোনো ডকুমেন্ট না থাকে, তাহলে তৈরি করবে, থাকলে আপডেট করবে (Upsert)

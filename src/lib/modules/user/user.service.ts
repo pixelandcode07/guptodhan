@@ -18,7 +18,6 @@ const createUserIntoDB = async (payload: TUserInput): Promise<Partial<TUser> | n
   if (payload.phoneNumber) query.push({ phoneNumber: payload.phoneNumber });
 
   if (query.length > 0) {
-    // ✅ .lean() যোগ করা - 30% faster query
     const isUserExist = await User.findOne({ $or: query }).lean();
     if (isUserExist) {
       throw new Error('A user with this email or phone number already exists!');
@@ -30,7 +29,6 @@ const createUserIntoDB = async (payload: TUserInput): Promise<Partial<TUser> | n
 
   const newUser = await User.create(payloadWithHashedPassword);
   
-  // ✅ .lean() + শুধু প্রয়োজনীয় fields
   const result = await User.findById(newUser._id)
     .select('-password')
     .lean();
