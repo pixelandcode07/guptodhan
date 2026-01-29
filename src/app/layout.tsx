@@ -8,6 +8,8 @@ import Script from 'next/script';
 import PathnameDetector from '@/Providers/PathnameDetector';
 import { AuthProvider } from '@/contexts/AuthContext';
 import MessageIcon from './components/MessageIcon';
+import "@smastrom/react-rating/style.css";
+
 
 /**
  * ✅ SYSTEM FONTS - No Google Fonts warning

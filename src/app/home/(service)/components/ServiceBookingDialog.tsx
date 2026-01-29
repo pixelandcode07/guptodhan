@@ -11,7 +11,7 @@ import { MapPin, Star, Loader2 } from "lucide-react";
 import { ServiceData } from "@/types/ServiceDataType";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
-import { toast } from "sonner"; // অথবা তোমার প্রোজেক্টে যে টোস্ট আছে
+import { toast } from "sonner"; 
 import { useRouter } from "next/navigation";
 
 interface Props {
@@ -20,6 +20,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
+// ✅ Type Definition Fixed Here
 type BookingFormValues = {
   dates: Date[];
   timeSlot: string;
@@ -40,6 +41,7 @@ export default function ServiceBookingDialog({
   const [imageIndex, setImageIndex] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
 
+  // ✅ useForm Hook Cleaned up
   const {
     handleSubmit,
     setValue,
@@ -57,7 +59,7 @@ export default function ServiceBookingDialog({
   const selectedDates = watch("dates");
   const selectedSlot = watch("timeSlot");
 
-  // ✅ FINAL SUBMIT FUNCTION (UPDATED)
+  // ✅ FINAL SUBMIT FUNCTION
   const onSubmit = async (data: BookingFormValues) => {
     // ১. ইউজার লগইন আছে কিনা চেক করা
     // @ts-ignore
@@ -71,19 +73,13 @@ export default function ServiceBookingDialog({
     setLoading(true);
 
     try {
-      // তোমার ক্যালেন্ডারে multiple date সিলেক্ট করা যায়, 
-      // কিন্তু ব্যাকএন্ডে সাধারণত প্রতি বুকিংয়ে ১টি ডেট থাকে।
-      // তাই আমরা লুপ চালিয়ে প্রতিটি ডেটের জন্য আলাদা বুকিং রিকোয়েস্ট পাঠাবো 
-      // অথবা তুমি চাইলে শুধু প্রথম ডেটটা নিতে পারো। এখানে লুপ দেখানো হলো:
-
+      // প্রতিটি সিলেক্ট করা ডেটের জন্য আলাদা বুকিং রিকোয়েস্ট পাঠানো হবে
       const bookingPromises = data.dates.map(async (date) => {
-        // Backend Model এর সাথে নাম মিল রেখে Payload তৈরি
         const payload = {
-          service_id: service._id || service.service_id, // নিশ্চিত করো এখানে সঠিক ID যাচ্ছে
+          service_id: service._id || service.service_id, 
           service_name: service.service_title,
-          booking_date: date, // Single Date
+          booking_date: date,
           time_slot: data.timeSlot,
-          // Location অবজেক্টকে স্ট্রিংয়ে কনভার্ট করে দিচ্ছি কারণ মডেলে String টাইপ
           location_details: `${service.service_area.thana}, ${service.service_area.city}`, 
           estimated_cost: service.base_price,
         };
@@ -92,7 +88,7 @@ export default function ServiceBookingDialog({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`, // টোকেন পাঠানো হচ্ছে
+            "Authorization": `Bearer ${token}`, 
           },
           body: JSON.stringify(payload),
         });

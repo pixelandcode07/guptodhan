@@ -1,5 +1,6 @@
 import { IServiceCategory } from "./serviceCategory.interface";
 import { ServiceCategoryModel } from "./serviceCategory.model";
+import { ServiceModel } from "../provideService/provideService.model";
 
 // Create service category
 const createServiceCategoryInDB = async (
@@ -79,6 +80,55 @@ export const reorderServiceCategoryService = async (orderedIds: string[]) => {
   return { message: "service category reordered successfully!" };
 };
 
+interface FilterOptions {
+  search?: string;
+  location?: string;
+  minPrice?: number;
+  maxPrice?: number;
+}
+
+const getServicesByCategorySlugFromDB = async (
+  slug: string,
+  filters: FilterOptions
+) => {
+  const query: any = {
+    category_slug: slug,
+    is_active: true,
+  };
+
+  // Search by service name
+  if (filters.search) {
+    query.$or = [
+      { name: { $regex: filters.search, $options: "i" } },
+      { description: { $regex: filters.search, $options: "i" } },
+    ];
+  }
+
+  // Location filter
+  if (filters.location) {
+    query.location = { $regex: filters.location, $options: "i" };
+  }
+
+  // Price filtering
+  if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+    query.price = {};
+    if (filters.minPrice !== undefined) {
+      query.price.$gte = filters.minPrice;
+    }
+    if (filters.maxPrice !== undefined) {
+      query.price.$lte = filters.maxPrice;
+    }
+  }
+
+  const services = await ServiceModel.find(query)
+    .sort({ createdAt: -1 });
+
+  return {
+    total: services.length,
+    services,
+  };
+};
+
 export const ServiceCategoryServices = {
   createServiceCategoryInDB,
   getAllServiceCategoriesFromDB,
@@ -87,5 +137,6 @@ export const ServiceCategoryServices = {
   updateServiceCategoryInDB,
   deleteServiceCategoryFromDB,
 
-  reorderServiceCategoryService
+  reorderServiceCategoryService,
+  getServicesByCategorySlugFromDB
 };

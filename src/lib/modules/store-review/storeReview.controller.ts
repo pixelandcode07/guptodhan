@@ -17,7 +17,7 @@ const getUserDetailsFromToken = (req: NextRequest) => {
   const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as {
     userId: string;
     role: string;
-    profilePicture:string;
+    profilePicture: string;
   };
   return { userId: decoded.userId, role: decoded.role };
 };
@@ -25,19 +25,19 @@ const getUserDetailsFromToken = (req: NextRequest) => {
 /* =========================
    CREATE STORE REVIEW
 ========================= */
- const createStoreReview = async (req: NextRequest) => {
-  const {userId} = getUserDetailsFromToken(req);
+const createStoreReview = async (req: NextRequest) => {
+  const { userId } = getUserDetailsFromToken(req);
   const body = await req.json();
 
   const bodyWithUserId = { ...body, userId: userId };
 
   const validatedData =
     createStoreReviewValidationSchema.parse(bodyWithUserId);
-    const result =
-      await StoreReviewServices.createStoreReviewInDB({
-        ...validatedData,
-        userId,
-      });
+  const result =
+    await StoreReviewServices.createStoreReviewInDB({
+      ...validatedData,
+      userId,
+    });
 
 
   return NextResponse.json(
@@ -53,7 +53,7 @@ const getUserDetailsFromToken = (req: NextRequest) => {
 /* =========================
    GET ALL REVIEWS
 ========================= */
- const getAllStoreReviews = async () => {
+const getAllStoreReviews = async () => {
   const result =
     await StoreReviewServices.getAllStoreReviewsFromDB();
 
@@ -66,7 +66,7 @@ const getUserDetailsFromToken = (req: NextRequest) => {
 /* =========================
    GET REVIEW BY ID
 ========================= */
- const getStoreReviewById = async (
+const getStoreReviewById = async (
   req: NextRequest,
   { params }: { params: { id: string } }
 ) => {
@@ -84,7 +84,7 @@ const getUserDetailsFromToken = (req: NextRequest) => {
 /* =========================
    GET REVIEWS BY STORE ID
 ========================= */
- const getStoreReviewsByStoreId = async (
+const getStoreReviewsByStoreId = async (
   req: NextRequest,
   { params }: { params: { storeId: string } }
 ) => {
@@ -102,8 +102,8 @@ const getUserDetailsFromToken = (req: NextRequest) => {
 /* =========================
    GET REVIEWS BY USER (TOKEN)
 ========================= */
- const getMyStoreReviews = async (req: NextRequest) => {
-  const {userId} = getUserDetailsFromToken(req);
+const getMyStoreReviews = async (req: NextRequest) => {
+  const { userId } = getUserDetailsFromToken(req);
 
   const result =
     await StoreReviewServices.getStoreReviewsByUserIdFromDB(
@@ -119,11 +119,11 @@ const getUserDetailsFromToken = (req: NextRequest) => {
 /* =========================
    UPDATE REVIEW (PATCH)
 ========================= */
- const updateStoreReview = async (
+const updateStoreReview = async (
   req: NextRequest,
   { params }: { params: { id: string } }
 ) => {
-  const {userId} = getUserDetailsFromToken(req);
+  const { userId } = getUserDetailsFromToken(req);
   const body = await req.json();
 
   const validatedData =
@@ -160,11 +160,11 @@ const getUserDetailsFromToken = (req: NextRequest) => {
 /* =========================
    DELETE REVIEW
 ========================= */
- const deleteStoreReview = async (
+const deleteStoreReview = async (
   req: NextRequest,
   { params }: { params: { id: string } }
 ) => {
-  const {userId} = getUserDetailsFromToken(req);
+  const { userId } = getUserDetailsFromToken(req);
 
   const review =
     await StoreReviewServices.getStoreReviewByIdFromDB(

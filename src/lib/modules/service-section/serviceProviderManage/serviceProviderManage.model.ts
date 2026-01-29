@@ -105,11 +105,15 @@ const bookingSchema = new Schema<IBooking>(
       type: String,
       trim: true,
     },
+    provider_rejection_message: {
+      type: String,
+      trim: true,
+    }
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const BookingModel =
-mongoose.models.Booking || mongoose.model<IBooking>("Booking", bookingSchema);
+  mongoose.models.Booking || mongoose.model<IBooking>("Booking", bookingSchema);
