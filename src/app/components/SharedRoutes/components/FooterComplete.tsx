@@ -100,7 +100,7 @@ export default function FooterComplete() {
                                 {/* </Link> */}
                             </li>
                             <li><Link href="/about" className="hover:text-blue-600 transition-colors">About Us</Link></li>
-                            <li><Link href="https://wa.me/8801816500600?text=Welcome%20,%20How%20can%20we%20help%20you?"
+                            <li><Link href="/contact-us"
                                 target="_blank"
                                 className="block group hover:text-blue-600 transition-colors">Contact Us</Link></li>
                             <li>
@@ -116,8 +116,6 @@ export default function FooterComplete() {
                             <li><Link href="/home/UserProfile" className="hover:text-blue-600 transition-colors">My Dashboard</Link></li>
                             <li><Link href="/home/UserProfile/orders" className="hover:text-blue-600 transition-colors">My Orders</Link></li>
                             <li><Link href="/home/UserProfile/wishlist" className="hover:text-blue-600 transition-colors">My Wishlist</Link></li>
-                            <li><Link href="#" className="hover:text-blue-600 transition-colors">My Payments</Link></li>
-                            <li><Link href="#" className="hover:text-blue-600 transition-colors">Promo/Coupons</Link></li>
                         </ul>
                     </div>
 
@@ -125,7 +123,7 @@ export default function FooterComplete() {
                     <div>
                         <h4 className="font-bold text-[#00005E] mb-6 uppercase text-sm tracking-widest border-b-2 border-blue-50 pb-2 inline-block">Service</h4>
                         <ul className="space-y-3 text-sm text-gray-600">
-                            <li><Link href="/track" className="hover:text-blue-600 transition-colors">Track My Order</Link></li>
+                            <li><Link href="/track-order" className="hover:text-blue-600 transition-colors">Track My Order</Link></li>
                             <li><Link href="/support" className="hover:text-blue-600 transition-colors">Support Ticket</Link></li>
                             <li><Link href="/privacy" className="hover:text-blue-600 transition-colors">Privacy Policy</Link></li>
                             <li><Link href="/shipping" className="hover:text-blue-600 transition-colors">Shipping Policy</Link></li>
