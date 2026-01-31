@@ -1,3 +1,4 @@
+'use client';
 
 import Image from "next/image";
 import Link from "next/link";
@@ -7,17 +8,69 @@ import {
     Instagram,
     Youtube,
     Linkedin,
-    SendHorizontal,
     Mail,
-    MessageCircle
+    MessageCircle,
+    Smartphone,
+    Send,
+    Film,
+    PhoneCall,
+    MessageSquareHeart
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
+// ডাটা টাইপ ইন্টারফেস
+interface SocialLinksData {
+    facebook?: string;
+    twitter?: string;
+    instagram?: string;
+    linkedin?: string;
+    messenger?: string;
+    whatsapp?: string;
+    telegram?: string;
+    youtube?: string;
+    tiktok?: string;
+    pinterest?: string;
+    viber?: string;
+}
 
 export default function FooterComplete() {
+    const [socialLinks, setSocialLinks] = useState<SocialLinksData>({});
+    
+    // সোশ্যাল মিডিয়া কনফিগারেশন (আইকন এবং কালার ম্যাপিং)
+    const socialMediaConfig = [
+        { key: 'facebook', Icon: Facebook, color: "bg-[#3b5998]" },
+        { key: 'twitter', Icon: Twitter, color: "bg-[#00acee]" },
+        { key: 'instagram', Icon: Instagram, color: "bg-[#d62976]" },
+        { key: 'youtube', Icon: Youtube, color: "bg-[#FF0000]" },
+        { key: 'linkedin', Icon: Linkedin, color: "bg-[#0072b1]" },
+        { key: 'whatsapp', Icon: Smartphone, color: "bg-[#25D366]" },
+        { key: 'telegram', Icon: Send, color: "bg-[#0088cc]" },
+        { key: 'tiktok', Icon: Film, color: "bg-[#000000]" },
+        { key: 'pinterest', Icon: MessageSquareHeart, color: "bg-[#E60023]" },
+        { key: 'viber', Icon: PhoneCall, color: "bg-[#665CAC]" },
+    ];
+
+    useEffect(() => {
+        const fetchSocialLinks = async () => {
+            try {
+                // আপনার পাবলিক API রাউট কল করা হচ্ছে
+                const { data } = await axios.get('/api/v1/public/social_links');
+                if (data.success && data.data) {
+                    setSocialLinks(data.data);
+                }
+            } catch (error) {
+                console.error("Error fetching social links:", error);
+            }
+        };
+
+        fetchSocialLinks();
+    }, []);
+
     return (
-        <footer className=" bg-gray-100 border-t border-gray-100 font-sans">
+        <footer className="bg-gray-100 border-t border-gray-100 font-sans">
             {/* --- Newsletter Section --- */}
             <div className="md:max-w-[95vw] xl:container sm:px-8 mx-auto py-4 md:py-10 border-b border-gray-100">
                 <div className="flex flex-col xl:flex-row items-center justify-center xl:justify-between gap-6">
@@ -41,7 +94,7 @@ export default function FooterComplete() {
                     <div className="flex w-full xl:w-auto justify-center">
                         <div className="flex w-full max-w-sm items-center gap-2">
                             <Input type="email" placeholder="Email" />
-                            <Button type="submit" variant="FooterSubscribeBtn">
+                            <Button type="submit" variant="default" className="bg-[#00005E] hover:bg-blue-900 text-white">
                                 Subscribe
                             </Button>
                         </div>
@@ -58,8 +111,9 @@ export default function FooterComplete() {
 
                         <div className="space-y-1">
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Got Question? Call us 24/7</p>
+                            {/* WhatsApp লিংক ডাইনামিক করা হয়েছে যদি ডাটা থাকে, না থাকলে ডিফল্ট */}
                             <Link
-                                href="https://wa.me/8801816500600?text=Welcome%20,%20How%20can%20we%20help%20you?"
+                                href={socialLinks.whatsapp || "https://wa.me/8801816500600"}
                                 target="_blank"
                                 className="block group"
                             >
@@ -75,18 +129,27 @@ export default function FooterComplete() {
                         <p className="text-sm text-gray-500 leading-relaxed max-w-xs">
                             Guptodhan Bangladesh is online version of Guptodhan situated at Dhaka since 2024
                         </p>
+                        
+                        {/* --- Dynamic Social Media Links --- */}
                         <div className="flex flex-wrap gap-2 pt-2">
-                            {[
-                                { Icon: Facebook, color: "bg-[#3b5998]" },
-                                { Icon: Twitter, color: "bg-[#00acee]" },
-                                { Icon: Instagram, color: "bg-[#d62976]" },
-                                { Icon: Youtube, color: "bg-[#FF0000]" },
-                                { Icon: Linkedin, color: "bg-[#0072b1]" },
-                            ].map((social, i) => (
-                                <Link key={i} href="#" className={`${social.color} text-white p-2.5 rounded-full hover:-translate-y-1 transition-all shadow-sm`}>
-                                    <social.Icon size={16} />
-                                </Link>
-                            ))}
+                            {socialMediaConfig.map((social, i) => {
+                                // চেক করছি এই প্লাটফর্মের লিংক ডাটাবেজে আছে কিনা
+                                const linkUrl = socialLinks[social.key as keyof SocialLinksData];
+                                
+                                // যদি লিংক থাকে, শুধুমাত্র তখনই আইকন রেন্ডার হবে
+                                if (!linkUrl) return null;
+
+                                return (
+                                    <Link 
+                                        key={i} 
+                                        href={linkUrl} 
+                                        target="_blank"
+                                        className={`${social.color} text-white p-2.5 rounded-full hover:-translate-y-1 transition-all shadow-sm`}
+                                    >
+                                        <social.Icon size={16} />
+                                    </Link>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -95,11 +158,9 @@ export default function FooterComplete() {
                         <h4 className="font-bold text-[#00005E] mb-6 uppercase text-sm tracking-widest border-b-2 border-blue-50 pb-2 inline-block">Company</h4>
                         <ul className="space-y-3 text-sm text-gray-600">
                             <li>
-                                {/* <Link href="/" className="hover:text-blue-600 transition-colors"> */}
                                 <a href="#navbar" className="hover:text-blue-600 transition-colors">Home</a>
-                                {/* </Link> */}
                             </li>
-                            <li><Link href="/about" className="hover:text-blue-600 transition-colors">About Us</Link></li>
+                            <li><Link href="/about-us" className="hover:text-blue-600 transition-colors">About Us</Link></li>
                             <li><Link href="/contact-us"
                                 target="_blank"
                                 className="block group hover:text-blue-600 transition-colors">Contact Us</Link></li>
