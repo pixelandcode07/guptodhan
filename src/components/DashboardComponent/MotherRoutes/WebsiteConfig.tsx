@@ -6,11 +6,11 @@ const webConfig = [
     url: '/general/info',
     icon: LayoutDashboard,
   },
-  {
-    title: 'Footer Settings',
-    url: '/general/view/footer/widget/1',
-    icon: Settings,
-  },
+  // {
+  //   title: 'Footer Settings',
+  //   url: '/general/view/footer/widget/1',
+  //   icon: Settings,
+  // },
   {
     title: 'Website Theme Color',
     url: '/general/website/theme/page',
