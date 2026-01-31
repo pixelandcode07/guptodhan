@@ -91,7 +91,6 @@ const getServicesByCategorySlugFromDB = async (
   slug: string,
   filters: FilterOptions
 ) => {
-  // ১. ক্যাটাগরি খোঁজা
   const category = await ServiceCategoryModel.findOne({ slug: slug })
     .select("_id name description") 
     .lean<IServiceCategory>(); 
@@ -104,7 +103,7 @@ const getServicesByCategorySlugFromDB = async (
     };
   }
 
-  const categoryName = category.name; // ID এর বদলে নাম ব্যবহার করা হচ্ছে
+  const categoryName = category.name; 
 
   const query: any = {
     service_category: categoryName, 
@@ -134,11 +133,9 @@ const getServicesByCategorySlugFromDB = async (
     if (filters.maxPrice !== undefined) query.base_price.$lte = filters.maxPrice;
   }
 
-  // ৪. সার্ভিস ফেচ করা (FIXED SELECT QUERY)
   const services = await ServiceModel.find(query)
     .sort({ createdAt: -1 })
     .select(
-      // 👇 এখানে available_time_slots এবং working_days যোগ করা হয়েছে
       "service_id service_title base_price service_images service_area average_rating total_bookings estimated_duration_hours pricing_type available_time_slots working_days service_status service_category"
     ) 
     .lean();
