@@ -144,7 +144,7 @@ const getServicesByCategorySlugFromDB = async (
     .lean();
 
   return {
-    category: {
+    category: { 
         name: category.name,
         description: category.description
     },
