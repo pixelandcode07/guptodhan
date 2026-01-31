@@ -68,7 +68,6 @@ export default async function ServiceCategoryPage({
         <PageHeader
           title={category.name}
           subtitle={category.description}
-          // ব্রেডক্রাম্ব বা অন্য কোনো বাটন চাইলে এখানে দিতে পারেন
         />
       </div>
 
@@ -98,9 +97,7 @@ export default async function ServiceCategoryPage({
             {/* --- Grid Layout for Service Cards --- */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {services.map((service) => (
-                // আপনার তৈরি করা ServiceCard এখানে ব্যবহার করা হলো
                 <ServiceCard 
-                    // _id ব্যবহার করা ভালো, না থাকলে service_id
                     key={service._id || service.service_id} 
                     service={service} 
                 />
