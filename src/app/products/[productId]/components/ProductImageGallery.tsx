@@ -79,7 +79,7 @@ export default function ProductImageGallery({ product, selectedColor = '', selec
 
   return (
     <div className="sticky top-20 p-4 sm:p-6 bg-gradient-to-br from-gray-50 to-white border-r">
-      <div className="relative bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-100 group">
+      <div className="relative rounded-2xl overflow-hidden  border border-gray-100 group">
         <div className="relative aspect-square">
           <AnimatePresence mode="wait">
             <motion.div key={mainImage} variants={imageFade} initial="initial" animate="animate" exit="exit" className="relative w-full h-full flex items-center justify-center">
