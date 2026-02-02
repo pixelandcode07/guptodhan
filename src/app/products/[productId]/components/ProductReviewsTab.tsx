@@ -195,7 +195,7 @@ export default function ProductReviewsTab({ product, reviews, onReviewsUpdate }:
                   />
                   <label htmlFor="review-img-upload" className="cursor-pointer flex flex-col items-center gap-2">
                     <UploadCloud size={24} className="text-gray-400" />
-                    <span className="text-xs font-medium text-[#EF4A23]">Click to upload photos</span>
+                    <span className="text-xs font-medium text-[#00005E]">Click to upload photos</span>
                     <span className="text-[10px] text-gray-400">Max 3 images</span>
                   </label>
                 </div>
@@ -220,7 +220,7 @@ export default function ProductReviewsTab({ product, reviews, onReviewsUpdate }:
                 <Button 
                   onClick={handleSubmitReview} 
                   disabled={isSubmittingReview} 
-                  className="w-full bg-[#EF4A23] hover:bg-[#d43d1a] text-white h-10 rounded-lg"
+                  className="w-full bg-[#00005E] hover:bg-[#d43d1a] text-white h-10 rounded-lg"
                 >
                   {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
                 </Button>

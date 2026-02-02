@@ -17,7 +17,6 @@ interface ProductPageProps {
   params: Promise<{ productId: string }>;
 }
 
-// ✅ Helper function to safely convert to ISO string
 function toISOString(date: any): string {
   if (!date) return new Date().toISOString();
   if (typeof date === 'string') return date;
@@ -29,7 +28,54 @@ function toISOString(date: any): string {
   }
 }
 
-// ✅ Generate Metadata
+// ✅ NEW: Fetch related products via API
+async function getRelatedProducts(categorySlug: string, currentProductId: string) {
+  try {
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/ecommerce-category/ecomCategory/slug/${categorySlug}`;
+    
+    console.log('🔍 Fetching related products from API:', url);
+    
+    const res = await fetch(url, {
+      next: { revalidate: 60 },
+      cache: 'no-store'
+    });
+
+    if (!res.ok) {
+      console.log('❌ API response not OK:', res.status);
+      return [];
+    }
+
+    const json = await res.json();
+    console.log('📊 API Response:', json.success ? 'Success' : 'Failed');
+    
+    if (!json.success || !json.data) {
+      console.log('❌ No data in response');
+      return [];
+    }
+
+    const { products } = json.data;
+    
+    if (!Array.isArray(products)) {
+      console.log('❌ Products is not an array');
+      return [];
+    }
+
+    console.log('📦 Total products in category:', products.length);
+
+    // Filter out current product and limit to 6
+    const relatedProducts = products
+      .filter((p: any) => p._id?.toString() !== currentProductId)
+      .slice(0, 6);
+
+    console.log('✅ Related products after filter:', relatedProducts.length);
+
+    return relatedProducts;
+  } catch (error) {
+    console.error('❌ Error fetching related products:', error);
+    return [];
+  }
+}
+
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   try {
     await dbConnect();
@@ -44,12 +90,10 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
       };
     }
 
-    // Calculate discount percentage
     const discountPercentage = product.productPrice && product.discountPrice
       ? Math.round(((product.productPrice - product.discountPrice) / product.productPrice) * 100)
       : 0;
 
-    // Generate title
     const titleParts = [product.productTitle];
     if (product.discountPrice && product.productPrice) {
       titleParts.push(`৳${product.discountPrice}`);
@@ -62,19 +106,16 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     titleParts.push('| Guptodhan');
     const title = titleParts.join(' ');
 
-    // Description
     const description = product.metaDescription || 
       product.shortDescription || 
       `Buy ${product.productTitle} online at best price in Bangladesh. Free delivery available.`;
 
-    // Images
     const images = product.photoGallery && product.photoGallery.length > 0
       ? [product.photoGallery[0]]
       : product.thumbnailImage
         ? [product.thumbnailImage]
         : [];
 
-    // Keywords
     const keywords = [
       product.productTitle,
       product.brand?.name || product.brand?.brandName,
@@ -133,11 +174,15 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   }
 }
 
-// ✅ Main Component
 export default async function ProductPage({ params }: ProductPageProps) {
   try {
     await dbConnect();
     const { productId } = await params;
+
+    console.log('\n═══════════════════════════════════════════');
+    console.log('🔍 RELATED PRODUCTS - API FETCH METHOD');
+    console.log('═══════════════════════════════════════════');
+    console.log('📦 Product ID:', productId);
 
     const [
       rawProduct,
@@ -162,40 +207,38 @@ export default async function ProductPage({ params }: ProductPageProps) {
     ]);
 
     if (!rawProduct) {
+      console.log('❌ Product not found');
       notFound();
     }
 
-    // ✅ Get related products
+    console.log('✅ Product loaded:', rawProduct.productTitle);
+
+    // ✅ Get related products via API using category slug
     let relatedProducts: any[] = [];
-    if (rawProduct.category) {
-      const categoryId =
-        typeof rawProduct.category === 'object' && rawProduct.category !== null
-          ? (rawProduct.category as any)._id?.toString() || (rawProduct.category as any).id
-          : rawProduct.category.toString();
+    
+    if (rawProduct.category && typeof rawProduct.category === 'object') {
+      const categorySlug = (rawProduct.category as any).slug;
+      const categoryName = (rawProduct.category as any).name;
+      
+      console.log('📂 Category:', categoryName);
+      console.log('🔗 Category Slug:', categorySlug);
 
-      if (categoryId) {
-        const result = await VendorProductServices.getVendorProductsByCategoryFromDB(
-          categoryId,
-          {},
-          1,
-          6
-        );
-        
-        // ✅ FIX: Extract products array from result object
-        const allCategoryProducts = Array.isArray(result?.products) 
-          ? result.products 
-          : Array.isArray(result) 
-            ? result 
-            : [];
-
-        relatedProducts = allCategoryProducts
-          .filter((p: any) => p._id?.toString() !== productId)
-          .slice(0, 5)
-          .map((p: any) => JSON.parse(JSON.stringify(p)));
+      if (categorySlug) {
+        console.log('🌐 Fetching via API...');
+        relatedProducts = await getRelatedProducts(categorySlug, productId);
+        console.log('✅ API fetch complete. Got', relatedProducts.length, 'products');
+      } else {
+        console.log('⚠️ No category slug available');
       }
+    } else {
+      console.log('⚠️ Product has no category or category is not populated');
     }
 
-    // ✅ Prepare product data
+    console.log('═══════════════════════════════════════════');
+    console.log('📊 FINAL: Related Products Count:', relatedProducts.length);
+    console.log('═══════════════════════════════════════════\n');
+
+    // Prepare product data
     const productData = {
       product: JSON.parse(JSON.stringify(rawProduct)),
       relatedData: {
@@ -213,7 +256,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       relatedProducts: relatedProducts,
     };
 
-    // ✅ Clean categories data
+    // Clean categories data
     const categoriesInfo = JSON.parse(JSON.stringify(categoriesData || []))
       .filter((cat: any) => cat && cat._id)
       .map((cat: any, index: number) => ({
@@ -233,11 +276,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
           })),
       }));
 
-    // ✅ Calculate rating
     const averageRating = rawProduct.ratingStats?.[0]?.averageRating || 0;
     const totalReviews = rawProduct.ratingStats?.[0]?.totalReviews || 0;
 
-    // ✅ JSON-LD Schemas
     const productSchema = {
       '@context': 'https://schema.org/',
       '@type': 'Product',
@@ -305,7 +346,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
     return (
       <div className="min-h-screen bg-[#f2f4f8]">
-        {/* JSON-LD Schemas */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
@@ -318,19 +358,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <HeroNav categories={categoriesInfo} />
 
         <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">
-          
-
           <ProductDetailsClient productData={productData} />
         </div>
       </div>
     );
   } catch (error) {
+    console.error('❌ Fatal error in ProductPage:', error);
     if (process.env.NODE_ENV === 'development') {
-      console.error('Error fetching product:', error);
+      console.error('Error details:', error);
     }
     notFound();
   }
 }
 
-// ✅ Revalidate every hour
 export const revalidate = 3600;

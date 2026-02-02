@@ -151,7 +151,7 @@ export const ProductQASection = ({
           disabled={isSubmitting}
         />
         <Button
-          className="h-12 sm:w-40 bg-[#EF4A23] hover:bg-[#d43d1a] text-white"
+          className="h-12 sm:w-40 bg-[#00005E] hover:bg-[#d43d1a] text-white"
           onClick={handleSubmit}
           disabled={isSubmitting || !question.trim()}
         >
