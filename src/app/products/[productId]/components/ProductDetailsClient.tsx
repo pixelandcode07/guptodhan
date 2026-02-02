@@ -75,7 +75,7 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
       <div className="container mx-auto px-4 mt-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-9">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+            <div className=" rounded-lg  border border-gray-100 overflow-hidden">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
                 <ProductImageGallery 
                   product={product}
