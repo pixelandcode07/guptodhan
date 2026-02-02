@@ -60,14 +60,11 @@ async function getRelatedProducts(categorySlug: string, currentProductId: string
       return [];
     }
 
-    console.log('📦 Total products in category:', products.length);
+    
 
     // Filter out current product and limit to 6
     const relatedProducts = products
       .filter((p: any) => p._id?.toString() !== currentProductId);
-
-    console.log('✅ Related products after filter:', relatedProducts.length);
-
     return relatedProducts;
   } catch (error) {
     console.error('❌ Error fetching related products:', error);
