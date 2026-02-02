@@ -64,8 +64,7 @@ async function getRelatedProducts(categorySlug: string, currentProductId: string
 
     // Filter out current product and limit to 6
     const relatedProducts = products
-      .filter((p: any) => p._id?.toString() !== currentProductId)
-      .slice(0, 6);
+      .filter((p: any) => p._id?.toString() !== currentProductId);
 
     console.log('✅ Related products after filter:', relatedProducts.length);
 
