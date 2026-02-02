@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { Star, UploadCloud, X } from 'lucide-react';
+import { Star, UploadCloud, X, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { toast } from 'sonner';
@@ -124,29 +124,37 @@ export default function ProductReviewsTab({ product, reviews, onReviewsUpdate }:
 
   return (
     <motion.div variants={fadeInUp} initial="hidden" animate="visible">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* Review Input */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center">
-            <div className="text-6xl font-bold text-gray-800 mb-2">{averageRating}</div>
-            <div className="flex justify-center gap-1 text-orange-400 mb-2">
-              {[1,2,3,4,5].map(s => (
-                <Star key={s} fill={s <= Math.round(Number(averageRating)) ? "currentColor" : "none"} />
-              ))}
+      {/* Empty State or Reviews List */}
+      {isReviewsLoading ? (
+        <div className="text-center py-12">Loading reviews...</div>
+      ) : reviews.length === 0 ? (
+        <div className="text-center py-16 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+              <FileText size={32} className="text-blue-600" />
             </div>
-            <p className="text-sm text-gray-400">{reviews.length} Verified Reviews</p>
           </div>
-
-          <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-            <h4 className="font-bold text-gray-800 mb-4">Write a Review</h4>
-            {!session?.user ? (
-              <div className="text-center py-6">
-                <p className="text-sm text-gray-500 mb-4">Please sign in to write a review</p>
-                <Button onClick={() => router.push('/auth/login')} variant="outline" className="w-full">
-                  Sign In
-                </Button>
-              </div>
-            ) : (
+          <p className="text-gray-600 font-medium mb-6">
+            This product has no reviews yet, be the first one to write a review.
+          </p>
+          <Button
+            onClick={() => {
+              if (!session?.user) {
+                toast.error('Please login to write a review');
+                router.push('/auth/login');
+              }
+            }}
+            className="bg-[#EF4A23] hover:bg-[#d43d1a] text-white"
+          >
+            Write a Review
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Write Review Section */}
+          {session?.user && (
+            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+              <h4 className="font-bold text-gray-800 mb-4">Write a Review</h4>
               <div className="space-y-4">
                 <div className="flex gap-2 justify-center mb-2">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -167,14 +175,14 @@ export default function ProductReviewsTab({ product, reviews, onReviewsUpdate }:
                 </div>
                 
                 <textarea 
-                  className="w-full p-4 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#0099cc] focus:border-transparent outline-none resize-none bg-white"
+                  className="w-full p-4 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#EF4A23] focus:border-transparent outline-none resize-none bg-white"
                   rows={3}
                   placeholder="Write your experience..."
                   value={newReviewComment}
                   onChange={(e) => setNewReviewComment(e.target.value)}
                 />
 
-                {/* Image Upload Box */}
+                {/* Image Upload */}
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors text-center">
                   <input 
                     type="file" 
@@ -187,7 +195,7 @@ export default function ProductReviewsTab({ product, reviews, onReviewsUpdate }:
                   />
                   <label htmlFor="review-img-upload" className="cursor-pointer flex flex-col items-center gap-2">
                     <UploadCloud size={24} className="text-gray-400" />
-                    <span className="text-xs font-medium text-[#0099cc]">Click to upload photos</span>
+                    <span className="text-xs font-medium text-[#EF4A23]">Click to upload photos</span>
                     <span className="text-[10px] text-gray-400">Max 3 images</span>
                   </label>
                 </div>
@@ -212,79 +220,68 @@ export default function ProductReviewsTab({ product, reviews, onReviewsUpdate }:
                 <Button 
                   onClick={handleSubmitReview} 
                   disabled={isSubmittingReview} 
-                  className="w-full bg-[#0e1133] hover:bg-[#2a2d5c] text-white h-10 rounded-lg"
+                  className="w-full bg-[#EF4A23] hover:bg-[#d43d1a] text-white h-10 rounded-lg"
                 >
                   {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
                 </Button>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Reviews List */}
-        <div className="lg:col-span-8">
-          {isReviewsLoading ? (
-            <div className="text-center py-10">Loading...</div>
-          ) : reviews.length === 0 ? (
-            <div className="text-center py-10 text-gray-400 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-              No reviews yet. Be the first to review!
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {reviews.map((review) => (
-                <div key={review._id} className="border-b border-gray-100 pb-6 last:border-0">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden relative">
-                        {review.userImage?.includes('http') ? (
-                          <Image src={review.userImage} alt={review.userName} fill className="object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center font-bold text-gray-500">
-                            {review.userName.charAt(0)}
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <h5 className="font-bold text-gray-800 text-sm">{review.userName}</h5>
-                        <div className="flex text-orange-400 text-xs mt-0.5">
-                          {[...Array(5)].map((_, i) => (
-                            <Star 
-                              key={i} 
-                              size={12} 
-                              fill={i < review.rating ? "currentColor" : "none"} 
-                              className={i >= review.rating ? "text-gray-300" : ""} 
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <span className="text-xs text-gray-400">
-                      {new Date(review.uploadedTime).toLocaleDateString()}
-                    </span>
-                  </div>
-                  
-                  <p className="text-gray-600 text-sm pl-[52px]">{review.comment}</p>
-
-                  {/* Display Review Images */}
-                  {review.reviewImages && review.reviewImages.length > 0 && (
-                    <div className="flex gap-2 mt-3 pl-[52px]">
-                      {review.reviewImages.map((img, i) => (
-                        <div 
-                          key={i} 
-                          className="relative w-20 h-20 rounded border border-gray-100 overflow-hidden cursor-zoom-in hover:opacity-90 transition-opacity"
-                        >
-                          <Image src={img} alt="Review Image" fill className="object-cover" />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
             </div>
           )}
+
+          {/* Reviews List */}
+          <div className="space-y-4">
+            {reviews.map((review) => (
+              <div key={review._id} className="border border-gray-200 rounded-lg p-5 bg-white">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden relative">
+                      {review.userImage?.includes('http') ? (
+                        <Image src={review.userImage} alt={review.userName} fill className="object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center font-bold text-gray-500">
+                          {review.userName.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-gray-800 text-sm">{review.userName}</h5>
+                      <div className="flex text-orange-400 text-xs mt-0.5">
+                        {[...Array(5)].map((_, i) => (
+                          <Star 
+                            key={i} 
+                            size={12} 
+                            fill={i < review.rating ? "currentColor" : "none"} 
+                            className={i >= review.rating ? "text-gray-300" : ""} 
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-xs text-gray-400">
+                    {new Date(review.uploadedTime).toLocaleDateString()}
+                  </span>
+                </div>
+                
+                <p className="text-gray-600 text-sm">{review.comment}</p>
+
+                {/* Review Images */}
+                {review.reviewImages && review.reviewImages.length > 0 && (
+                  <div className="flex gap-2 mt-3">
+                    {review.reviewImages.map((img, i) => (
+                      <div 
+                        key={i} 
+                        className="relative w-20 h-20 rounded border border-gray-100 overflow-hidden cursor-zoom-in hover:opacity-90 transition-opacity"
+                      >
+                        <Image src={img} alt="Review Image" fill className="object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </motion.div>
   );
 }
-
