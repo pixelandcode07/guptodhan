@@ -148,8 +148,8 @@ export default function NavMain() {
 
               {/* Profile / Auth */}
               {session ? (
-                <li className="flex items-center">
-                  <DropdownMenu>
+                <li className="flex flex-col justify-center items-center text-[#00005E] font-medium">
+                  {/* <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button className="flex flex-col items-center gap-0.5 outline-none group cursor-pointer">
                         <Avatar className="h-6 w-6 lg:h-7 lg:w-7 border-2 border-transparent group-hover:border-blue-400 transition-all">
@@ -196,7 +196,21 @@ export default function NavMain() {
                         <span>{isLoggingOut ? "Logging out..." : "Log out"}</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
-                  </DropdownMenu>
+                  </DropdownMenu> */}
+                  <Link href="/home/UserProfile" className="flex flex-col items-center gap-1">
+                    <button className="flex flex-col items-center gap-0.5 outline-none group cursor-pointer">
+                      <Avatar className="h-6 w-6 lg:h-7 lg:w-7 border-2 border-transparent group-hover:border-blue-400 transition-all">
+                        <AvatarImage
+                          src={user?.image && user.image !== "undefined" ? user.image : undefined}
+                          alt={user?.name ?? "User"}
+                        />
+                        <AvatarFallback className="bg-[#00005E] text-white text-[10px]">
+                          {getInitials(user?.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-[#00005E] text-[10px] lg:text-[11px] font-medium">Account</span>
+                    </button>
+                  </Link>
                 </li>
               ) : (
                 <DialogTrigger asChild>
@@ -210,12 +224,6 @@ export default function NavMain() {
               )}
 
               {/* More*/}
-              {/* <li className="hidden xl:flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer min-w-fit">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 lg:size-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0-3.75-3.75M17.25 21 21 17.25" />
-                </svg>
-                <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">More</span>
-              </li> */}
               <li className="hidden xl:flex items-center">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -237,7 +245,7 @@ export default function NavMain() {
                     </DropdownMenuItem>
 
                     <DropdownMenuItem asChild>
-                      <Link href="/wishlist" className="cursor-pointer flex items-center gap-3 py-2">
+                      <Link href="/home/UserProfile/wishlist" className="cursor-pointer flex items-center gap-3 py-2">
                         <Heart size={18} className="text-pink-500" />
                         <span className="font-medium text-gray-700">Wishlist</span>
                       </Link>

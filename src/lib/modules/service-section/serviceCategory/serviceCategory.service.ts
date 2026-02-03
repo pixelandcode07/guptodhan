@@ -1,5 +1,6 @@
 import { IServiceCategory } from "./serviceCategory.interface";
 import { ServiceCategoryModel } from "./serviceCategory.model";
+import { ServiceModel } from "../provideService/provideService.model";
 
 // Create service category
 const createServiceCategoryInDB = async (
@@ -79,6 +80,76 @@ export const reorderServiceCategoryService = async (orderedIds: string[]) => {
   return { message: "service category reordered successfully!" };
 };
 
+interface FilterOptions {
+  search?: string;
+  location?: string;
+  minPrice?: number;
+  maxPrice?: number;
+}
+
+const getServicesByCategorySlugFromDB = async (
+  slug: string,
+  filters: FilterOptions
+) => {
+  const category = await ServiceCategoryModel.findOne({ slug: slug })
+    .select("_id name description") 
+    .lean<IServiceCategory>(); 
+
+  if (!category) {
+    return {
+      category: null,
+      total: 0,
+      services: [],
+    };
+  }
+
+  const categoryName = category.name; 
+
+  const query: any = {
+    service_category: categoryName, 
+    service_status: "Active", 
+    is_visible_to_customers: true, 
+  };
+
+  // --- Filters ---
+  if (filters.search) {
+    query.$or = [
+      { service_title: { $regex: filters.search, $options: "i" } },
+      { service_description: { $regex: filters.search, $options: "i" } },
+    ];
+  }
+
+  if (filters.location) {
+    query.$or = [
+      { "service_area.city": { $regex: filters.location, $options: "i" } },
+      { "service_area.district": { $regex: filters.location, $options: "i" } },
+      { "service_area.thana": { $regex: filters.location, $options: "i" } },
+    ];
+  }
+
+  if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+    query.base_price = {};
+    if (filters.minPrice !== undefined) query.base_price.$gte = filters.minPrice;
+    if (filters.maxPrice !== undefined) query.base_price.$lte = filters.maxPrice;
+  }
+
+  const services = await ServiceModel.find(query)
+    .sort({ createdAt: -1 })
+    .select(
+      "service_id service_title base_price service_images service_area average_rating total_bookings estimated_duration_hours pricing_type available_time_slots working_days service_status service_category"
+    ) 
+    .lean();
+
+  return {
+    category: { 
+        name: category.name,
+        description: category.description
+    },
+    total: services.length,
+    services,
+  };
+};
+
 export const ServiceCategoryServices = {
   createServiceCategoryInDB,
   getAllServiceCategoriesFromDB,
@@ -87,5 +158,6 @@ export const ServiceCategoryServices = {
   updateServiceCategoryInDB,
   deleteServiceCategoryFromDB,
 
-  reorderServiceCategoryService
+  reorderServiceCategoryService,
+  getServicesByCategorySlugFromDB
 };

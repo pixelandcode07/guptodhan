@@ -235,6 +235,53 @@ const sendForgotPasswordOtpToEmail = async (req: NextRequest) => {
   return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'A password reset OTP has been sent to your email.', data: null });
 };
 
+const sendForgotPasswordOtp = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  
+  // Custom check as zod schema might need update
+  if (!body.identifier) {
+    throw new Error("Identifier (email or phone) is required.");
+  }
+
+  const result = await AuthServices.sendForgotPasswordOtp(body.identifier);
+  
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: `A password reset OTP has been sent to your ${result.type}.`, 
+    data: { type: result.type, otp: result.otp } // otp will be hidden in prod by service logic
+  });
+};
+
+// 2. Verify OTP
+const verifyForgotPasswordOtp = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  
+  if (!body.identifier || !body.otp) {
+    throw new Error("Identifier and OTP are required.");
+  }
+
+  const result = await AuthServices.verifyForgotPasswordOtp(body.identifier, body.otp);
+  
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'OTP verified successfully. Use the token to reset your password.', 
+    data: result 
+  });
+};
+
+// 3. Reset Password (Token Based)
+const resetPasswordWithToken = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+  const validatedData = resetPasswordWithTokenSchema.parse(body);
+  await AuthServices.resetPasswordWithToken(validatedData.token, validatedData.newPassword);
+  return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Password has been reset successfully!', data: null });
+};
+
 const verifyForgotPasswordOtpFromEmail = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
@@ -249,14 +296,6 @@ const getResetTokenWithFirebase = async (req: NextRequest) => {
   const validatedData = getResetTokenWithFirebaseSchema.parse(body);
   const result = await AuthServices.getResetTokenWithFirebase(validatedData.idToken);
   return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Phone verified successfully. Use the token to reset your password.', data: result });
-};
-
-const resetPasswordWithToken = async (req: NextRequest) => {
-  await dbConnect();
-  const body = await req.json();
-  const validatedData = resetPasswordWithTokenSchema.parse(body);
-  await AuthServices.resetPasswordWithToken(validatedData.token, validatedData.newPassword);
-  return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Password has been reset successfully!', data: null });
 };
 
 // --- Vendor Registration ---
@@ -678,4 +717,6 @@ export const AuthController = {
   serviceProviderVerifyForgotPasswordOtp,
   serviceProviderResetPassword,
   adminLogin,
+  sendForgotPasswordOtp,
+  verifyForgotPasswordOtp,
 };

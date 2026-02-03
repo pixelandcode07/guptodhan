@@ -1,4 +1,5 @@
 
+import PageHeader from '@/components/ReusableComponents/PageHeader';
 import ProductGrid from '@/components/ReusableComponents/ProductGrid';
 import { fetchFlashSaleData } from '@/lib/MainHomePage/fetchFlashSaleData';
 import { generateGuptodhanMetadata } from '@/lib/metadata/generateGuptodhanMetadata';
@@ -16,8 +17,15 @@ export async function generateMetadata() {
 export default async function FlashProductsPage() {
     const products = await fetchFlashSaleData();
     return (
-        <section className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 bg-gradient-to-b from-red-50 to-white py-10">
-            <ProductGrid products={products} />
+        <section className="container mx-auto">
+            <div className='flex justify-center items-center mt-5'>
+                <PageHeader
+                title='Flash Sale Products'
+                />
+            </div>
+            <div className='max-w-[80vw] xl:container mx-auto px-2 md:px-10 py-4 h-screen'>
+                <ProductGrid products={products} />
+            </div>
         </section>
     )
 }

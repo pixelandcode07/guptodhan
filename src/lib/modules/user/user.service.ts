@@ -18,19 +18,17 @@ const createUserIntoDB = async (payload: TUserInput): Promise<Partial<TUser> | n
   if (payload.phoneNumber) query.push({ phoneNumber: payload.phoneNumber });
 
   if (query.length > 0) {
-    // ✅ .lean() যোগ করা - 30% faster query
     const isUserExist = await User.findOne({ $or: query }).lean();
     if (isUserExist) {
       throw new Error('A user with this email or phone number already exists!');
     }
   }
 
-  const hashedPassword = await bcrypt.hash(payload.password, 12);
-  const payloadWithHashedPassword = { ...payload, password: hashedPassword };
-
-  const newUser = await User.create(payloadWithHashedPassword);
+  // ❌ REMOVED: const hashedPassword = await bcrypt.hash(payload.password, 12);
+  // ✅ Plain password পাঠাচ্ছি, Model এর pre-save hook এটা হ্যাশ করে নিবে।
   
-  // ✅ .lean() + শুধু প্রয়োজনীয় fields
+  const newUser = await User.create(payload);
+  
   const result = await User.findById(newUser._id)
     .select('-password')
     .lean();

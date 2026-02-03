@@ -6,10 +6,10 @@ import { ProductDetailsClientProps, Review } from './types';
 import { containerVariants } from './constants';
 import ProductBreadcrumb from './ProductBreadcrumb';
 import ProductImageGallery from './ProductImageGallery';
-import ProductInfo from './ProductInfo';
-import ProductSidebar from './ProductSidebar';
+// ✅ Import the new merged component
 import ProductTabs from './ProductTabs';
 import RelatedProducts from './RelatedProducts';
+import ProductMainInfo from './ProductSidebar';
 
 export default function ProductDetailsClient({ productData }: ProductDetailsClientProps) {
   const { product } = productData;
@@ -20,13 +20,8 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
   useEffect(() => {
     if (product.productOptions && product.productOptions.length > 0) {
       const firstOption = product.productOptions[0];
-      const firstColor = Array.isArray(firstOption.color) 
-        ? firstOption.color[0] 
-        : firstOption.color;
-      const firstSize = Array.isArray(firstOption.size) 
-        ? firstOption.size[0] 
-        : firstOption.size;
-
+      const firstColor = Array.isArray(firstOption.color) ? firstOption.color[0] : firstOption.color;
+      const firstSize = Array.isArray(firstOption.size) ? firstOption.size[0] : firstOption.size;
       if (firstColor) setSelectedColor(firstColor);
       if (firstSize) setSelectedSize(firstSize);
     }
@@ -41,80 +36,59 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
   const handleColorChange = (color: string) => {
     setSelectedColor(color);
     const variant = product.productOptions?.find((option) => {
-      const optionColor = Array.isArray(option.color) 
-        ? option.color[0] 
-        : option.color;
+      const optionColor = Array.isArray(option.color) ? option.color[0] : option.color;
       return optionColor === color;
     });
-    
     if (variant && variant.size) {
-      const newSize = Array.isArray(variant.size) 
-        ? variant.size[0] 
-        : variant.size;
+      const newSize = Array.isArray(variant.size) ? variant.size[0] : variant.size;
       setSelectedSize(newSize || '');
     }
   };
 
-  // ✅ FIX: Safely get category name
-  const categoryName = product.category && typeof product.category === 'object' 
-    ? product.category.name 
-    : undefined;
+  const categoryName = product.category && typeof product.category === 'object' ? product.category.name : undefined;
 
   return (
-    <motion.div 
-      initial="hidden" 
-      animate="visible" 
-      variants={containerVariants}
-      className="min-h-screen bg-[#f2f4f8] font-sans text-gray-800 pb-12"
-    >
-      <ProductBreadcrumb 
-        product={product} 
-        relatedData={productData.relatedData} 
-      />
+    <motion.div initial="hidden" animate="visible" variants={containerVariants} className="min-h-screen font-sans text-gray-800 pb-12">
+      <ProductBreadcrumb product={product} relatedData={productData.relatedData} />
       
       <div className="container mx-auto px-4 mt-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-9">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-                <ProductImageGallery 
-                  product={product}
-                  selectedColor={selectedColor}
-                  selectedSize={selectedSize}
-                  onColorChange={handleColorChange}
-                  onSizeChange={(size: string) => setSelectedSize(size)}
-                />
-                
-                <ProductInfo 
-                  product={product} 
-                  reviews={reviews} 
-                  averageRating={averageRating}
-                  relatedData={productData.relatedData}
-                  onColorChange={handleColorChange}
-                  onSizeChange={(size: string) => setSelectedSize(size)}
-                  selectedColor={selectedColor}
-                  selectedSize={selectedSize}
-                />
-              </div>
+          
+          {/* Left: Images */}
+          <div className="lg:col-span-5"> {/* Image Gallery কে আলাদা কলামে রাখা হয়েছে */}
+            <div className="sticky top-24">
+              <ProductImageGallery 
+                product={product}
+                selectedColor={selectedColor}
+                selectedSize={selectedSize}
+                onColorChange={handleColorChange}
+                onSizeChange={(size: string) => setSelectedSize(size)}
+              />
             </div>
           </div>
           
-          <ProductSidebar product={product} />
+          {/* Right: Merged Info & Sidebar */}
+          <div className="lg:col-span-7">
+            <ProductMainInfo 
+              product={product} 
+              reviews={reviews} 
+              averageRating={averageRating}
+              relatedData={productData.relatedData}
+              onColorChange={handleColorChange}
+              onSizeChange={(size: string) => setSelectedSize(size)}
+              selectedColor={selectedColor}
+              selectedSize={selectedSize}
+            />
+          </div>
+
         </div>
       </div>
       
-      <ProductTabs 
-        product={product} 
-        reviews={reviews} 
-        onReviewsUpdate={setReviews} 
-      />
+      <ProductTabs product={product} reviews={reviews} onReviewsUpdate={setReviews} />
       
       {productData.relatedProducts && productData.relatedProducts.length > 0 && (
         <div className="container mx-auto px-3 sm:px-4 md:px-6 mt-4 sm:mt-6 md:mt-8">
-          <RelatedProducts 
-            products={productData.relatedProducts}
-            categoryName={categoryName}
-          />
+          <RelatedProducts products={productData.relatedProducts} categoryName={categoryName} />
         </div>
       )}
     </motion.div>

@@ -7,9 +7,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
-import { MapPin, Star } from "lucide-react";
+import { MapPin, Star, Loader2 } from "lucide-react";
 import { ServiceData } from "@/types/ServiceDataType";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner"; 
+import { useRouter } from "next/navigation";
 
 interface Props {
   service: ServiceData;
@@ -17,6 +20,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
+// ✅ Type Definition Fixed Here
 type BookingFormValues = {
   dates: Date[];
   timeSlot: string;
@@ -27,17 +31,23 @@ export default function ServiceBookingDialog({
   open,
   onOpenChange,
 }: Props) {
+  const { data: session } = useSession();
+  const router = useRouter();
+  
   const images = service.service_images?.length
     ? service.service_images
     : ["/placeholder-service.png"];
 
   const [imageIndex, setImageIndex] = React.useState(0);
+  const [loading, setLoading] = React.useState(false);
 
+  // ✅ useForm Hook Cleaned up
   const {
     handleSubmit,
     setValue,
     watch,
     formState: { isValid },
+    reset
   } = useForm<BookingFormValues>({
     defaultValues: {
       dates: [],
@@ -49,24 +59,60 @@ export default function ServiceBookingDialog({
   const selectedDates = watch("dates");
   const selectedSlot = watch("timeSlot");
 
-  // ✅ LOG LIVE CHANGES (optional but helpful)
-  // React.useEffect(() => {
-  //   // console.log("Selected Slot:", selectedSlot);
-  //   // console.log("Selected Dates:", selectedDates);
-  // }, [selectedSlot, selectedDates]);
+  // ✅ FINAL SUBMIT FUNCTION
+  const onSubmit = async (data: BookingFormValues) => {
+    // ১. ইউজার লগইন আছে কিনা চেক করা
+    // @ts-ignore
+    const token = session?.accessToken; 
 
-  // ✅ FINAL SUBMIT
-  const onSubmit = (data: BookingFormValues) => {
-    const payload = {
-      service_id: service.service_id,
-      service_title: service.service_title,
-      price: service.base_price,
-      location: service.service_area,
-      rating: service.average_rating,
-      ...data,
-    };
+    if (!token) {
+      toast.error("Please login to book a service");
+      return;
+    }
 
-    console.log("✅ BOOKING DATA:", payload);
+    setLoading(true);
+
+    try {
+      // প্রতিটি সিলেক্ট করা ডেটের জন্য আলাদা বুকিং রিকোয়েস্ট পাঠানো হবে
+      const bookingPromises = data.dates.map(async (date) => {
+        const payload = {
+          service_id: service._id || service.service_id, 
+          service_name: service.service_title,
+          booking_date: date,
+          time_slot: data.timeSlot,
+          location_details: `${service.service_area.thana}, ${service.service_area.city}`, 
+          estimated_cost: service.base_price,
+        };
+
+        const res = await fetch("/api/v1/public/service-section/service-provider-manage", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`, 
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+           const errorData = await res.json();
+           throw new Error(errorData.message || "Booking failed");
+        }
+        return res.json();
+      });
+
+      await Promise.all(bookingPromises);
+
+      toast.success("Booking confirmed successfully!");
+      onOpenChange(false);
+      reset(); // ফর্ম রিসেট
+      router.refresh();
+
+    } catch (error: any) {
+      console.error("Booking Error:", error);
+      toast.error(error.message || "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -89,7 +135,7 @@ export default function ServiceBookingDialog({
           </DialogHeader>
 
           {/* Image Slider */}
-          <div className="relative h-56 w-full">
+          <div className="relative h-56 w-full bg-gray-100">
             <AnimatePresence mode="wait">
               <motion.div
                 key={imageIndex}
@@ -110,9 +156,9 @@ export default function ServiceBookingDialog({
 
           {/* Content */}
           <div className="grid gap-6 p-6 md:grid-cols-2">
-            {/* Left */}
+            {/* Left - Info & Time */}
             <div className="space-y-4">
-              <div className="flex justify-between">
+              <div className="flex justify-between border-b pb-4">
                 <div>
                   <p className="text-lg font-bold text-primary">
                     ৳{service.base_price}
@@ -124,7 +170,7 @@ export default function ServiceBookingDialog({
 
                 <div className="flex items-center gap-1">
                   <Star className="h-4 w-4 text-yellow-400" />
-                  {service.average_rating.toFixed(1)}
+                  {service.average_rating ? service.average_rating.toFixed(1) : "New"}
                 </div>
               </div>
 
@@ -132,11 +178,11 @@ export default function ServiceBookingDialog({
               <div>
                 <p className="mb-2 font-medium text-sm">Select Time Slot</p>
                 <div className="flex flex-wrap gap-2">
-                  {service.available_time_slots.map((slot) => (
+                  {service.available_time_slots?.map((slot) => (
                     <Badge
                       key={slot}
                       variant={selectedSlot === slot ? "default" : "outline"}
-                      className="cursor-pointer"
+                      className="cursor-pointer hover:bg-primary/90"
                       onClick={() =>
                         setValue("timeSlot", slot, {
                           shouldDirty: true,
@@ -151,32 +197,40 @@ export default function ServiceBookingDialog({
               </div>
             </div>
 
-            {/* Right */}
+            {/* Right - Calendar */}
             <div>
               <p className="mb-2 font-medium text-sm">Select Date(s)</p>
-              <Calendar
-                mode="multiple"
-                selected={selectedDates}
-                onSelect={(dates) =>
-                  setValue("dates", dates ?? [], {
-                    shouldDirty: true,
-                    shouldValidate: true,
-                  })
-                }
-                // disabled={(date) =>
-                //   !service.working_days.includes(
-                //     date.toLocaleDateString("en-US", { weekday: "long" })
-                //   )
-                // }
-                className="rounded-md border"
-              />
+              <div className="flex justify-center border rounded-md p-2">
+                <Calendar
+                  mode="multiple"
+                  selected={selectedDates}
+                  onSelect={(dates) =>
+                    setValue("dates", dates ?? [], {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
+                  className="rounded-md"
+                />
+              </div>
             </div>
           </div>
 
           {/* Footer */}
           <div className="sticky bottom-0 border-t bg-background p-6">
-            <Button type="submit" className="w-full" disabled={!isValid}>
-              Confirm Booking
+            <Button 
+                type="submit" 
+                className="w-full bg-[#00005E] hover:bg-[#000045]" 
+                disabled={!isValid || loading}
+            >
+              {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+              ) : (
+                  "Confirm Booking"
+              )}
             </Button>
           </div>
         </form>

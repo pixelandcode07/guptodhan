@@ -9,9 +9,11 @@ import { FormStep } from '../LogIn_Register'
 import axios from 'axios'
 import { toast } from 'sonner'
 
+// ✅ Updated Interface: Added 'name' and kept 'pin' as password
 interface SetPinFormData {
-    pin: string
+    pin: string 
     confirmPin: string
+    name: string 
 }
 
 interface SetPinProps {
@@ -23,7 +25,7 @@ interface SetPinProps {
     loading: boolean
     setLoading: Dispatch<SetStateAction<boolean>>
     registeredPhone: string
-    onSuccess?: (pin: string) => void
+    onSuccess?: (password: string) => void
 }
 
 export default function SetPin({
@@ -38,16 +40,13 @@ export default function SetPin({
     onSuccess
 }: SetPinProps) {
 
-    const [showPin, setShowPin] = useState(false)
-    const [showConfirmPin, setShowConfirmPin] = useState(false)
+    const [showPassword, setShowPassword] = useState(false)
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-
-
-
-    const onSubmitPin: SubmitHandler<SetPinFormData> = async (data) => {
+    const onSubmitPassword: SubmitHandler<SetPinFormData> = async (data) => {
         if (data.pin !== data.confirmPin) {
-            toast.error('PINs do not match!', {
-                description: 'Please make sure both PINs are the same.',
+            toast.error('Passwords do not match!', {
+                description: 'Please make sure both passwords are the same.',
             })
             return
         }
@@ -56,15 +55,44 @@ export default function SetPin({
         toast.loading('Creating your account...')
 
         try {
-            const cleanPhone = registeredPhone.startsWith('0')
-                ? registeredPhone
-                : registeredPhone.startsWith('+880')
-                    ? registeredPhone.slice(4)
-                    : '0' + registeredPhone.replace('+88', '')
+            // 1. Prepare Identifier (Exactly same logic as VerifyOTP)
+            let identifier = registeredPhone.trim();
+            const isEmail = identifier.includes('@');
 
-            const res = await axios.post('/api/v1/user/register', {
-                phone: cleanPhone,
-                pin: data.pin,
+            if (!isEmail) {
+                // Normalize phone for BD
+                if (identifier.startsWith('01')) identifier = '+880' + identifier.slice(1);
+                else if (identifier.startsWith('8801')) identifier = '+' + identifier;
+            }
+
+            // 2. Prepare User Data Payload
+            let userData: any = {
+                name: data.name,
+                password: data.pin, // Using 'pin' field as password
+                role: 'user'
+            };
+
+            if (isEmail) userData.email = identifier;
+            else userData.phoneNumber = identifier;
+
+            // 3. ✅ Retrieve Valid OTP from LocalStorage
+            const storedOtp = localStorage.getItem(`otp_${identifier}`);
+            
+            if (!storedOtp) {
+                toast.dismiss();
+                toast.error("Session expired or OTP missing.", {
+                    description: "Please verify your phone number again."
+                });
+                setStep('verifyOtp'); // Send back to verify step
+                setLoading(false);
+                return;
+            }
+
+            // 4. Final API Call to Create Account
+            const res = await axios.post('/api/v1/user/verify-otp', {
+                identifier: identifier,
+                otp: storedOtp, // Sending the real OTP
+                userData: userData
             })
 
             if (res.data.success) {
@@ -73,31 +101,23 @@ export default function SetPin({
                     description: 'Welcome to Guptodhan! You are now logged in.',
                     duration: 6000,
                 })
-
-                // Pass the PIN to parent for auto-login
+                
+                // Cleanup
+                localStorage.removeItem(`otp_${identifier}`);
+                
+                // Trigger auto-login
                 onSuccess?.(data.pin)
             }
         } catch (error: any) {
             toast.dismiss()
-
             const message = error.response?.data?.message || 'Failed to create account'
-
-            if (message.includes('token') || message.includes('Unauthorized')) {
-                toast.error('Session expired', {
-                    description: 'Please start again.',
-                })
-                setStep('createAccount')
-            } else if (message.includes('already exists')) {
-                toast.error('Account already exists', {
-                    description: 'Try logging in instead.',
-                })
+            
+            if (message.includes('already exists')) {
+                toast.error('Account already exists', { description: 'Please log in instead.' })
                 setStep('login')
             } else {
-                toast.error('Registration failed', {
-                    description: message,
-                })
+                toast.error('Registration failed', { description: message })
             }
-
             console.error('Registration error:', error)
         } finally {
             setLoading(false)
@@ -109,39 +129,54 @@ export default function SetPin({
     return (
         <div className="space-y-6">
             <div className="text-center">
-                <h3 className="text-lg font-semibold">Set Your 4-Digit PIN</h3>
+                <h3 className="text-lg font-semibold">Set Password</h3>
                 <p className="text-sm text-gray-600 mt-1">
-                    This will be used to log in securely
+                    Set a name and password to finish signup.
                 </p>
             </div>
 
-            <form onSubmit={handleSubmitPin(onSubmitPin)} className="space-y-5">
-
-                {/* PIN Field */}
+            <form onSubmit={handleSubmitPin(onSubmitPassword)} className="space-y-5">
+                
+                {/* Name Input */}
                 <div className="space-y-2">
                     <label className="flex items-center text-[12px] font-medium text-gray-900">
-                        Enter 4-digit PIN <Asterisk className="h-3 w-3 text-red-500 ml-1" />
+                        Full Name <Asterisk className="h-3 w-3 text-red-500 ml-1" />
+                    </label>
+                    <Input
+                        type="text"
+                        placeholder="Enter your full name"
+                        {...registerPin('name', { required: 'Name is required' })}
+                        className={pinErrors.name ? 'border-red-500' : ''}
+                    />
+                    {pinErrors.name && (
+                        <p className="text-sm text-red-500">{pinErrors.name.message}</p>
+                    )}
+                </div>
+
+                {/* Password Field */}
+                <div className="space-y-2">
+                    <label className="flex items-center text-[12px] font-medium text-gray-900">
+                        Password <Asterisk className="h-3 w-3 text-red-500 ml-1" />
                     </label>
                     <div className="relative">
                         <Input
-                            type={showPin ? "text" : "password"}
-                            placeholder="••••"
-                            maxLength={4}
-                            className={`text-center text-2xl tracking-widest font-mono ${pinErrors.pin ? 'border-red-500' : ''}`}
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Min 6 characters"
                             {...registerPin('pin', {
-                                required: 'PIN is required',
-                                pattern: {
-                                    value: /^\d{4}$/,
-                                    message: 'PIN must be exactly 4 digits'
+                                required: 'Password is required',
+                                minLength: {
+                                    value: 6,
+                                    message: 'Password must be at least 6 characters'
                                 }
                             })}
+                            className={pinErrors.pin ? 'border-red-500' : ''}
                         />
                         <button
                             type="button"
-                            onClick={() => setShowPin(!showPin)}
+                            onClick={() => setShowPassword(!showPassword)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                         >
-                            {showPin ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                         </button>
                     </div>
                     {pinErrors.pin && (
@@ -149,28 +184,27 @@ export default function SetPin({
                     )}
                 </div>
 
-                {/* Confirm PIN Field */}
+                {/* Confirm Password Field */}
                 <div className="space-y-2">
                     <label className="flex items-center text-[12px] font-medium text-gray-900">
-                        Confirm PIN <Asterisk className="h-3 w-3 text-red-500 ml-1" />
+                        Confirm Password <Asterisk className="h-3 w-3 text-red-500 ml-1" />
                     </label>
                     <div className="relative">
                         <Input
-                            type={showConfirmPin ? "text" : "password"}
-                            placeholder="••••"
-                            maxLength={4}
-                            className={`text-center text-2xl tracking-widest font-mono ${pinErrors.confirmPin ? 'border-red-500' : ''}`}
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="Re-enter password"
                             {...registerPin('confirmPin', {
-                                required: 'Please confirm your PIN',
-                                validate: (value, formValues) => value === formValues.pin || 'PINs do not match'
+                                required: 'Please confirm your password',
+                                validate: (value, formValues) => value === formValues.pin || 'Passwords do not match'
                             })}
+                            className={pinErrors.confirmPin ? 'border-red-500' : ''}
                         />
                         <button
                             type="button"
-                            onClick={() => setShowConfirmPin(!showConfirmPin)}
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                         >
-                            {showConfirmPin ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                            {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                         </button>
                     </div>
                     {pinErrors.confirmPin && (
@@ -178,7 +212,6 @@ export default function SetPin({
                     )}
                 </div>
 
-                {/* Submit Button */}
                 <Button
                     type="submit"
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
@@ -190,7 +223,7 @@ export default function SetPin({
                             Creating Account...
                         </>
                     ) : (
-                        'Create Account'
+                        'Complete Registration'
                     )}
                 </Button>
             </form>

@@ -212,6 +212,39 @@ const reorderServiceCategory = async (req: NextRequest) => {
   });
 };
 
+const getServicesByCategorySlug = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) => {
+  await dbConnect();
+
+  const { slug } = await params;
+  const { searchParams } = new URL(req.url);
+
+  const filters = {
+    search: searchParams.get("search") || "",
+    location: searchParams.get("location") || "",
+    minPrice: searchParams.get("minPrice")
+      ? Number(searchParams.get("minPrice"))
+      : undefined,
+    maxPrice: searchParams.get("maxPrice")
+      ? Number(searchParams.get("maxPrice"))
+      : undefined,
+  };
+
+  const result = await ServiceCategoryServices.getServicesByCategorySlugFromDB(
+    slug,
+    filters
+  );
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Filtered services retrieved successfully!",
+    data: result,
+  });
+};
+
 export const ServiceCategoryController = {
     createServiceCategory,
     getAllServiceCategories,
@@ -220,5 +253,6 @@ export const ServiceCategoryController = {
     updateServiceCategory,
     deleteServiceCategory,
 
-    reorderServiceCategory
+    reorderServiceCategory,
+    getServicesByCategorySlug
 };

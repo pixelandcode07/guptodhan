@@ -1,92 +1,122 @@
 import { Conversation } from './conversation.model';
-import { Message } from '../message/message.model';
 import { Types } from 'mongoose';
 
+// ✅ কমন লুকআপ স্টেজ (Code Reusability)
+const commonPipeline = [
+  // ১. Ad Details আনো (classifiedads কালেকশন থেকে)
+  {
+    $lookup: {
+      from: 'classifiedads', // DB collection name (lowercase & plural)
+      localField: 'ad',
+      foreignField: '_id',
+      as: 'ad',
+      pipeline: [
+        { $project: { title: 1, images: 1, user: 1 } } // শুধু টাইটেল আর ছবি
+      ]
+    }
+  },
+  { $unwind: { path: '$ad', preserveNullAndEmptyArrays: true } },
+
+  // ২. Participants Details আনো (users কালেকশন থেকে)
+  {
+    $lookup: {
+      from: 'users',
+      localField: 'participants',
+      foreignField: '_id',
+      as: 'participants',
+      pipeline: [
+        { $project: { name: 1, profilePicture: 1, email: 1 } }
+      ]
+    }
+  },
+
+  // ৩. Last Message Details আনো (messages কালেকশন থেকে)
+  {
+    $lookup: {
+      from: 'messages',
+      localField: 'lastMessage',
+      foreignField: '_id',
+      as: 'lastMessage',
+      pipeline: [
+        {
+          $lookup: { // Last Message এর Sender এর নাম জানা দরকার
+            from: 'users',
+            localField: 'sender',
+            foreignField: '_id',
+            as: 'sender',
+            pipeline: [{ $project: { name: 1 } }]
+          }
+        },
+        { $unwind: { path: '$sender', preserveNullAndEmptyArrays: true } },
+        { $project: { content: 1, createdAt: 1, isRead: 1, sender: 1 } }
+      ]
+    }
+  },
+  { $unwind: { path: '$lastMessage', preserveNullAndEmptyArrays: true } }
+];
+
+// ✅ আমার সব চ্যাট লিস্ট (Aggregation দিয়ে)
 const getMyConversationsFromDB = async (userId: string) => {
   console.log('🔍 Searching conversations for userId:', userId);
   
-  const objectId = new Types.ObjectId(userId);
-  
-  const result = await Conversation.find({ 
-    participants: objectId,
+  const result = await Conversation.aggregate([
+    // ১. Match: যেখানে আমি পার্টিসিপেন্ট হিসেবে আছি
+    { $match: { participants: new Types.ObjectId(userId) } },
+    
+    // ২. Sort: লেটেস্ট মেসেজ সবার উপরে
+    { $sort: { updatedAt: -1 } },
 
-  })
-    .populate('participants', 'name profilePicture')
-    .populate('ad', 'title images')
-    .populate('lastMessage')
-    .populate({
-      path: 'lastMessage',
-      populate: {
-        path: 'sender',
-        select: 'name'
+    // ৩. Join Data (Common Logic)
+    ...commonPipeline,
+
+    // ৪. Final Projection (Optional cleanup)
+    {
+      $project: {
+        _id: 1,
+        ad: 1,
+        participants: 1,
+        lastMessage: 1,
+        updatedAt: 1
       }
-    })
-    .sort({ updatedAt: -1 });
+    }
+  ]);
 
   console.log('📊 Found conversations:', result.length);
   return result;
 };
 
+// ✅ নির্দিষ্ট একটি চ্যাট (Aggregation দিয়ে)
 const getConversationFromDB = async (conversationId: string, userId: string) => {
-  console.log('🔍 Getting conversation:', conversationId, 'for user:', userId);
-  
-  const conversation = await Conversation.findOne({
-    _id: new Types.ObjectId(conversationId),
-    participants: new Types.ObjectId(userId),
-  })
-    .populate('participants', 'name profilePicture')
-    .populate('ad', 'title images')
-    .populate('lastMessage');
+  console.log('🔍 Getting conversation:', conversationId);
 
-  if (!conversation) {
-    console.error('❌ Conversation not found');
+  const result = await Conversation.aggregate([
+    { 
+      $match: { 
+        _id: new Types.ObjectId(conversationId),
+        participants: new Types.ObjectId(userId) // সিকিউরিটি চেক: ইউজার অবশ্যই পার্টিসিপেন্ট হতে হবে
+      } 
+    },
+    ...commonPipeline
+  ]);
+
+  if (!result.length) {
+    console.error('❌ Conversation not found or access denied');
     throw new Error('Conversation not found or access denied.');
   }
 
-  console.log('✅ Conversation found:', {
-    id: conversation._id,
-    ad: conversation.ad,
-    participants: conversation.participants,
-  });
-
-  return conversation;
+  console.log('✅ Conversation found');
+  return result[0]; // Array থেকে Object রিটার্ন
 };
 
-const getMessagesFromDB = async (conversationId: string, userId: string) => {
-  console.log('📥 Getting messages for conversation:', conversationId);
-  
-  const conversation = await Conversation.findOne({
-    _id: new Types.ObjectId(conversationId),
-    participants: new Types.ObjectId(userId),
-  });
-
-  if (!conversation) {
-    console.error('❌ Conversation not found or user not participant');
-    throw new Error('Conversation not found or you are not a participant.');
-  }
-
-  const messages = await Message.find({ 
-    conversation: new Types.ObjectId(conversationId) 
-  })
-    .populate('sender', 'name profilePicture')
-    .populate('receiver', 'name profilePicture')
-    .sort({ createdAt: 1 });
-
-  console.log('✅ Messages retrieved:', messages.length);
-  return messages;
-};
-
+// ✅ নতুন চ্যাট শুরু করা
 const startConversationInDB = async (
   adId: string,
   buyerId: string,
   sellerId: string
 ) => {
-  console.log('🆕 Starting conversation:', {
-    adId,
-    buyerId,
-    sellerId,
-  });
+  console.log('🆕 Starting conversation check...');
 
+  // এখানে findOne ব্যবহার করাই ভালো কারণ এটি শুধু অস্তিত্ব চেক করছে
   let conversation = await Conversation.findOne({
     ad: new Types.ObjectId(adId),
     participants: { $all: [new Types.ObjectId(buyerId), new Types.ObjectId(sellerId)] },
@@ -97,18 +127,23 @@ const startConversationInDB = async (
     return conversation;
   }
 
+  // Create new
   conversation = await Conversation.create({
     ad: new Types.ObjectId(adId),
     participants: [new Types.ObjectId(buyerId), new Types.ObjectId(sellerId)],
   });
 
-  console.log('Conversation created:', conversation._id);
-  return conversation;
+  console.log('✅ New Conversation created:', conversation._id);
+  
+  // রিটার্ন করার সময় একটু ডাটা পপুলেট করে দিই যাতে ফ্রন্টএন্ড এরর না খায় (এখানে সাধারণ populate যথেষ্ট)
+  return await Conversation.findById(conversation._id)
+    .populate('ad', 'title images')
+    .populate('participants', 'name profilePicture');
 };
 
 export const ConversationServices = {
   getMyConversationsFromDB,
   getConversationFromDB,
-  getMessagesFromDB,
+  // getMessagesFromDB, // এটি এখন MessageService হ্যান্ডেল করছে, তাই এখানে দরকার নেই
   startConversationInDB,
 };

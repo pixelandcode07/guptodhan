@@ -18,7 +18,7 @@ export default function ProductBreadcrumb({ product, relatedData }: ProductBread
   const categoryHref = categorySlug ? `/category/${categorySlug}` : null;
 
   return (
-    <div className="bg-white shadow-sm sticky top-0 z-20 border-b border-gray-100">
+    <div className="sticky top-0 z-20 border-b border-gray-100">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center flex-wrap gap-2 text-xs sm:text-sm text-gray-500">
           <Link href="/" className="hover:text-[#0099cc] flex items-center gap-1 transition-colors">

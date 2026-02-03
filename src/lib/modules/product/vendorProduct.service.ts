@@ -263,6 +263,29 @@ const getAllVendorProductsFromDB = async (page = 1, limit = 20) => {
   );
 };
 
+
+const getAllVendorProductsNoPaginationFromDB = async () => {
+  // Unique Cache Key (Jate pagination er sathe mix na hoy)
+  const cacheKey = "product:all:no-pagination"; 
+
+  return getCachedData(
+    cacheKey,
+    async () => {
+      const products = await VendorProductModel.aggregate([
+        { $sort: { createdAt: -1 } },
+        // Ekhane kono $skip ba $limit nai
+        ...getProductLookupPipeline(),
+      ]);
+
+      const populatedProducts = await populateColorAndSizeNamesForProducts(products);
+      
+      // Direct array return korchi, kono meta data chara
+      return populatedProducts;
+    },
+    CacheTTL.PRODUCT_LIST
+  );
+};
+
 // ===================================
 // ✅ GET ACTIVE PRODUCTS (WITH PAGINATION)
 // ===================================
@@ -1369,4 +1392,5 @@ export const VendorProductServices = {
   getVendorStoreAndProductsFromDB,
   getVendorStoreAndProductsFromDBVendorDashboard,
   getVendorStoreProductsWithReviewsFromDB,
+  getAllVendorProductsNoPaginationFromDB,
 };

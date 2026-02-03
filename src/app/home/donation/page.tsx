@@ -3,7 +3,7 @@ import DonationHome from './components/DonationHome'
 import DonationBanner from './components/DonationBanner'
 import { Metadata } from 'next'
 
-// 🔥 ডাটা যাতে ক্যাশ না হয় এবং সবসময় লেটেস্ট থাকে
+// 🔥 ডাটা যাতে ক্যাশ না হয় এবং সবসময় লেটেস্ট থাকে
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,27 +15,18 @@ export async function generateMetadata(): Promise<Metadata> {
 
 // Data Fetching Function
 async function getDonationData() {
-    // 🔥 URL ফিক্স: লোকালহোস্ট বা লাইভ লিংক নিশ্চিত করা
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
     
-    console.log("🔍 Fetching Donation Data from:", baseUrl);
+    // console.log("🔍 Fetching Donation Data from:", baseUrl);
 
     try {
-        // দুটি API একসাথে কল করা হচ্ছে
         const [campaignsRes, categoriesRes] = await Promise.all([
             fetch(`${baseUrl}/api/v1/public/donation-campaigns`, { cache: 'no-store' }), 
             fetch(`${baseUrl}/api/v1/public/donation-categories`, { cache: 'no-store' })
         ]);
 
-        if (!campaignsRes.ok) console.error("❌ Campaign API Failed:", campaignsRes.status);
-        if (!categoriesRes.ok) console.error("❌ Category API Failed:", categoriesRes.status);
-
         const campaignsData = await campaignsRes.json();
         const categoriesData = await categoriesRes.json();
-
-        // টার্মিনালে ডাটা প্রিন্ট হবে (Debug)
-        console.log(`✅ Campaigns: ${campaignsData.data?.length || 0}`);
-        console.log(`✅ Categories: ${categoriesData.data?.length || 0}`);
 
         return {
             campaigns: campaignsData.success ? campaignsData.data : [],
@@ -54,9 +45,9 @@ const LoadingSpinner = () => (
     </div>
 );
 
-// Skeleton for Banner
+// ✅ Skeleton Alignment Fixed
 const BannerSkeleton = () => (
-    <div className="py-6 container mx-auto px-4">
+    <div className="py-6 md:max-w-[95vw] xl:container mx-auto px-4 md:px-8">
         <div className="w-full h-[300px] md:h-[450px] bg-gray-200 animate-pulse rounded-2xl"></div>
     </div>
 );

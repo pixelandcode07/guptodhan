@@ -18,6 +18,7 @@ export default function SlidersClient({ initialRows }: { initialRows: any[] }) {
     setRows(initialRows || [])
   }, [initialRows])
 
+  // Listen for delete events
   useEffect(() => {
     const handler = (e: any) => {
       const id = e?.detail?._id
@@ -28,6 +29,7 @@ export default function SlidersClient({ initialRows }: { initialRows: any[] }) {
     return () => window.removeEventListener('slider-deleted', handler as EventListener)
   }, [])
 
+  // Listen for update events
   useEffect(() => {
     const handler = (e: any) => {
       const id = e?.detail?._id
@@ -49,7 +51,6 @@ export default function SlidersClient({ initialRows }: { initialRows: any[] }) {
       button_link: u.buttonLink ?? undefined,
       status: u.status ? (u.status === 'active' ? 'Active' : 'Inactive') : undefined,
       
-      // 🔥 NEW: লাইভ আপডেটের জন্য অ্যাপ ডাটা হ্যান্ডলিং
       app_type: u.appRedirectType ?? undefined,
       app_target: u.appRedirectId ?? undefined,
     }

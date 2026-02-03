@@ -221,75 +221,6 @@ export default function StoreFront({
                 </aside>
 
                 <main className="lg:col-span-3">
-                    {/* <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                        <TabsList className="bg-muted/20 p-1 rounded-xl h-auto">
-                            <TabsTrigger value="products" className="px-6 py-2 rounded-lg data-[state=active]:bg-white shadow-none gap-2">
-                                <Package className="w-4 h-4" /> Products ({pagination.total})
-                            </TabsTrigger>
-                            <TabsTrigger value="about" className="px-6 py-2 rounded-lg data-[state=active]:bg-white shadow-none gap-2">
-                                <Info className="w-4 h-4" /> Store Info
-                            </TabsTrigger>
-                        </TabsList>
-
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={activeTab}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.3 }}
-                            >
-                                <TabsContent value="products" className="m-0 focus-visible:ring-0">
-                                    {isLoading ? (
-                                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                                            {[...Array(8)].map((_, i) => <div key={i} className="h-64 bg-muted animate-pulse rounded-2xl" />)}
-                                        </div>
-                                    ) : products.length === 0 ? (
-                                        <div className="text-center py-20 text-muted-foreground border-2 border-dashed rounded-3xl">
-                                            No products found matching these filters.
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                                                {products.map((p, i) => <ProductCardMotion key={p._id} product={p} index={i} />)}
-                                            </div>
-                                            {pagination.pages > 1 && (
-                                                <div className="mt-12 flex justify-center">
-                                                    <Pagination>
-                                                        <PaginationContent>
-                                                            <PaginationItem>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    disabled={pagination.page <= 1}
-                                                                    onClick={() => fetchFilteredProducts({ page: pagination.page - 1 })}
-                                                                >Previous</Button>
-                                                            </PaginationItem>
-                                                            <PaginationItem><PaginationLink isActive>{pagination.page}</PaginationLink></PaginationItem>
-                                                            <PaginationItem>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    disabled={pagination.page >= pagination.pages}
-                                                                    onClick={() => fetchFilteredProducts({ page: pagination.page + 1 })}
-                                                                >Next</Button>
-                                                            </PaginationItem>
-                                                        </PaginationContent>
-                                                    </Pagination>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                </TabsContent>
-
-                                <TabsContent value="about">
-                                    <Card className="rounded-3xl border-none shadow-sm bg-muted/5 p-10">
-                                        <h2 className="text-2xl font-bold mb-6">{initialData.store.storeName}</h2>
-                                        <div className="prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: initialData?.store?.fullDescription }} />
-                                    </Card>
-                                </TabsContent>
-                            </motion.div>
-                        </AnimatePresence>
-                    </Tabs> */}
-
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                         <TabsList className="bg-muted/20 p-1 rounded-xl h-auto flex flex-wrap justify-start gap-1">
                             <TabsTrigger value="products" className="px-6 py-2 rounded-lg data-[state=active]:bg-white shadow-none gap-2">
@@ -298,9 +229,9 @@ export default function StoreFront({
                             <TabsTrigger value="about" className="px-6 py-2 rounded-lg data-[state=active]:bg-white shadow-none gap-2">
                                 <Info className="w-4 h-4" /> About
                             </TabsTrigger>
-                            <TabsTrigger value="policies" className="px-6 py-2 rounded-lg data-[state=active]:bg-white shadow-none gap-2">
+                            {/* <TabsTrigger value="policies" className="px-6 py-2 rounded-lg data-[state=active]:bg-white shadow-none gap-2">
                                 <ShieldCheck className="w-4 h-4" /> Policies
-                            </TabsTrigger>
+                            </TabsTrigger> */}
                             <TabsTrigger value="reviews" className="px-6 py-2 rounded-lg data-[state=active]:bg-white shadow-none gap-2">
                                 <Star className="w-4 h-4" /> Reviews
                             </TabsTrigger>

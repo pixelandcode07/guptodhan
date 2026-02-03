@@ -3,14 +3,42 @@ import { Message } from './message.model';
 import { Conversation } from '../conversation/conversation.model';
 import { IMessage } from './message.interface';
 
-// ✅ নতুন মেসেজ তৈরি করা (REST API থেকে)
+// ✅ কমন লুকআপ স্টেজ (রিপিটেশন কমানোর জন্য)
+const commonLookups = [
+  {
+    $lookup: {
+      from: 'users', // collection name in DB
+      localField: 'sender',
+      foreignField: '_id',
+      as: 'sender',
+      pipeline: [
+        { $project: { name: 1, profilePicture: 1 } } // শুধু নাম আর ছবি নিবো
+      ]
+    }
+  },
+  { $unwind: '$sender' },
+  {
+    $lookup: {
+      from: 'users',
+      localField: 'receiver',
+      foreignField: '_id',
+      as: 'receiver',
+      pipeline: [
+        { $project: { name: 1, profilePicture: 1 } }
+      ]
+    }
+  },
+  { $unwind: '$receiver' }
+];
+
+// ✅ নতুন মেসেজ তৈরি করা
 const createMessageInDB = async (
   conversationId: string,
   senderId: string,
   receiverId: string,
   content: string
 ): Promise<IMessage> => {
-  // ✅ Conversation verify করা
+  // ১. Conversation verify
   const conversation = await Conversation.findOne({
     _id: new Types.ObjectId(conversationId),
     participants: { $in: [senderId, receiverId] },
@@ -20,8 +48,8 @@ const createMessageInDB = async (
     throw new Error('Conversation not found or you are not a participant.');
   }
 
-  // ✅ Message তৈরি করা
-  const message = await Message.create({
+  // ২. Message তৈরি
+  const newMessage = await Message.create({
     conversation: new Types.ObjectId(conversationId),
     sender: new Types.ObjectId(senderId),
     receiver: new Types.ObjectId(receiverId),
@@ -29,18 +57,21 @@ const createMessageInDB = async (
     isRead: false,
   });
 
-  // ✅ Populate করে রিটার্ন করা
-  return await Message.findById(message._id)
-    .populate('sender', 'name profilePicture')
-    .populate('receiver', 'name profilePicture') as IMessage;
+  // ৩. Aggregation দিয়ে ডাটা আনা (Populate এর বদলে)
+  const result = await Message.aggregate([
+    { $match: { _id: newMessage._id } },
+    ...commonLookups
+  ]);
+
+  return result[0] as IMessage;
 };
 
-// ✅ একটা চ্যাটের সমস্ত মেসেজ পাওয়া
+// ✅ একটা চ্যাটের সমস্ত মেসেজ পাওয়া (Lookup দিয়ে)
 const getMessagesFromDB = async (
   conversationId: string,
   userId: string
 ): Promise<IMessage[]> => {
-  // ✅ User verify করা
+  // ১. User verify
   const conversation = await Conversation.findOne({
     _id: new Types.ObjectId(conversationId),
     participants: new Types.ObjectId(userId),
@@ -50,13 +81,25 @@ const getMessagesFromDB = async (
     throw new Error('Conversation not found or you are not a participant.');
   }
 
-  // ✅ মেসেজ পাওয়া
-  const messages = await Message.find({ 
-    conversation: new Types.ObjectId(conversationId) 
-  })
-    .populate('sender', 'name profilePicture')
-    .populate('receiver', 'name profilePicture')
-    .sort({ createdAt: 1 });
+  // ২. Aggregation Pipeline
+  const messages = await Message.aggregate([
+    { 
+      $match: { conversation: new Types.ObjectId(conversationId) } 
+    },
+    { $sort: { createdAt: 1 } }, // সময় অনুযায়ী সাজানো
+    ...commonLookups,
+    {
+      $project: {
+        _id: 1,
+        content: 1,
+        isRead: 1,
+        createdAt: 1,
+        sender: 1,   // populated sender object
+        receiver: 1, // populated receiver object
+        conversation: 1
+      }
+    }
+  ]);
 
   return messages;
 };
@@ -72,20 +115,28 @@ const markAsReadInDB = async (
     throw new Error('Message not found.');
   }
 
-  // ✅ শুধুমাত্র receiver মার্ক করতে পারবে
   if (message.receiver.toString() !== userId) {
     throw new Error('Only receiver can mark message as read.');
   }
 
-  return await Message.findByIdAndUpdate(
-    messageId,
-    { isRead: true },
-    { new: true }
-  ).populate('sender', 'name profilePicture') as IMessage;
+  // Update
+  await Message.updateOne(
+    { _id: new Types.ObjectId(messageId) },
+    { $set: { isRead: true } }
+  );
+
+  // Fetch Updated Data with Lookup
+  const updatedMessage = await Message.aggregate([
+    { $match: { _id: new Types.ObjectId(messageId) } },
+    ...commonLookups
+  ]);
+
+  return updatedMessage[0] || null;
 };
 
-// ✅ অপঠিত মেসেজ সংখ্যা পাওয়া
+// ✅ অপঠিত মেসেজ সংখ্যা পাওয়া (Fast Count)
 const getUnreadCountInDB = async (userId: string): Promise<number> => {
+  // Indexing { receiver: 1, isRead: 1 } থাকার কারণে এটি সুপার ফাস্ট হবে
   const count = await Message.countDocuments({
     receiver: new Types.ObjectId(userId),
     isRead: false,
@@ -98,13 +149,60 @@ const getUnreadCountInDB = async (userId: string): Promise<number> => {
 const getUnreadMessagesFromDB = async (
   userId: string
 ): Promise<IMessage[]> => {
-  const unreadMessages = await Message.find({
-    receiver: new Types.ObjectId(userId),
-    isRead: false,
-  })
-    .populate('sender', 'name profilePicture')
-    .populate('conversation', 'ad')
-    .sort({ createdAt: -1 });
+  const unreadMessages = await Message.aggregate([
+    { 
+      $match: { 
+        receiver: new Types.ObjectId(userId), 
+        isRead: false 
+      } 
+    },
+    { $sort: { createdAt: -1 } },
+    // Sender Lookup
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'sender',
+        foreignField: '_id',
+        as: 'sender',
+        pipeline: [{ $project: { name: 1, profilePicture: 1 } }]
+      }
+    },
+    { $unwind: '$sender' },
+    // Conversation Lookup (with Ad details)
+    {
+      $lookup: {
+        from: 'conversations',
+        localField: 'conversation',
+        foreignField: '_id',
+        as: 'conversationData',
+        pipeline: [
+          {
+            $lookup: {
+              from: 'classifiedads', // Ad collection name check করে নিবেন
+              localField: 'ad',
+              foreignField: '_id',
+              as: 'ad',
+              pipeline: [{ $project: { title: 1, images: 1 } }]
+            }
+          },
+          { $unwind: { path: '$ad', preserveNullAndEmptyArrays: true } }
+        ]
+      }
+    },
+    { $unwind: '$conversationData' },
+    {
+      $project: {
+        content: 1,
+        isRead: 1,
+        createdAt: 1,
+        sender: 1,
+        conversation: {
+          _id: '$conversationData._id',
+          ad: '$conversationData.ad'
+        }
+      }
+    }
+  ]);
 
   return unreadMessages;
 };

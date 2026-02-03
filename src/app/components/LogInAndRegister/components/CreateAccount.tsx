@@ -2,167 +2,194 @@
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Asterisk, Loader2 } from 'lucide-react'
+import { Asterisk, Loader2, Mail, Phone } from 'lucide-react'
 import React, { Dispatch, SetStateAction, useState } from 'react'
 import { FieldErrors, UseFormHandleSubmit, UseFormRegister } from 'react-hook-form'
 import { CreateAccountFormData, FormStep } from '../LogIn_Register'
 import axios from 'axios'
 import { toast } from 'sonner'
 
+// ✅ Updated Type to support email OR phone
 interface CreateAccountProps {
-    step: string
-    handleSubmitCreate: UseFormHandleSubmit<CreateAccountFormData>
-    registerCreate: UseFormRegister<CreateAccountFormData>
-    createErrors: FieldErrors<CreateAccountFormData>
-    setStep: Dispatch<SetStateAction<FormStep>>
-    setSubmittedPhone: Dispatch<SetStateAction<string>>
-    setRegisteredPhone: Dispatch<SetStateAction<string>>
+  step: string
+  handleSubmitCreate: UseFormHandleSubmit<any> // Changed to any to allow flexible fields
+  registerCreate: UseFormRegister<any>
+  createErrors: FieldErrors<any>
+  setStep: Dispatch<SetStateAction<FormStep>>
+  setSubmittedPhone: Dispatch<SetStateAction<string>>
+  setRegisteredPhone: Dispatch<SetStateAction<string>>
 }
 
-const SMS_API_KEY = 'P6w4PCMlXhDd6929Ly0eBJViTfvWxjmo5H5H5vEI'
-// Optional: Only if you have approved sender ID
-// const SENDER_ID = 'Guptodhan'
+// ⚠️ IMPORTANT: SMS API Key should be in .env, not hardcoded!
+// const SMS_API_KEY = process.env.NEXT_PUBLIC_SMS_API_KEY;
 
 export default function CreateAccount({
-    step,
-    handleSubmitCreate,
-    registerCreate,
-    createErrors,
-    setStep,
-    setSubmittedPhone,
-    setRegisteredPhone
+  step,
+  handleSubmitCreate,
+  registerCreate,
+  createErrors,
+  setStep,
+  setSubmittedPhone,
+  setRegisteredPhone
 }: CreateAccountProps) {
 
-    const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [method, setMethod] = useState<'phone' | 'email'>('phone') // Toggle state
 
-    const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString()
+  const onSubmitLocal = async (data: any) => {
+    setLoading(true)
+    try {
+      let payload = {};
 
-    const sendOTP = async (phone: string) => {
-        const otp = generateOTP()
-        const message = `Your Guptodhan verification code is ${otp}. Valid for 3 minutes.`
-
-        const params = new URLSearchParams({
-            api_key: SMS_API_KEY,
-            msg: message,
-            to: phone,
-            // sender_id: SENDER_ID || undefined  // Only send if defined
-        })
-
-        try {
-            const response = await axios.get('https://api.sms.net.bd/sendsms?' + params.toString(), {
-                timeout: 15000,
-                headers: {
-                    'Accept': 'application/json',
-                }
-            })
-
-            console.log('SMS Response:', response.data)
-
-            // sms.net.bd returns JSON like: { error: 0, msg: "success|12345" } or { error: 101, msg: "..." }
-            const data = response.data
-
-            // Correct way: Check if success (error === 0 or message contains success)
-            const isSuccess =
-                data.error === 0 ||
-                (typeof data.msg === 'string' && (data.msg.includes('success') || data.msg.includes('delivered')))
-
-            if (isSuccess) {
-                localStorage.setItem(`otp_${phone}`, otp)
-                localStorage.setItem(`otp_time_${phone}`, Date.now().toString())
-                return { success: true, otp }
-            } else {
-                throw new Error(data.msg || 'Failed to send SMS')
-            }
-        } catch (error: any) {
-            console.error('SMS API Error:', error)
-            throw new Error(error.response?.data?.msg || error.message || 'Network error. Try again.')
+      if (method === 'phone') {
+        let phone = data.phoneNumber.trim().replace(/\s/g, '')
+        
+        // Normalize BD Phone Number
+        if (phone.startsWith('01')) {
+          phone = '+880' + phone.slice(1)
+        } else if (phone.startsWith('8801')) {
+          phone = '+' + phone
+        } else if (!phone.startsWith('+8801')) {
+          toast.error('Please enter a valid Bangladeshi number')
+          setLoading(false)
+          return
         }
+        payload = { phoneNumber: phone }
+        setSubmittedPhone(phone) // Save for verification
+        setRegisteredPhone(phone)
+      } else {
+        payload = { email: data.email.trim() }
+        setSubmittedPhone(data.email) // Save email for verification
+        setRegisteredPhone(data.email)
+      }
+
+      toast.loading('Sending OTP...', { id: 'otp-toast' })
+
+      // ✅ Call Backend API to Send OTP (Handles both Email & SMS)
+      const response = await axios.post('/api/v1/user/register', payload);
+
+      if (response.data.success) {
+        toast.dismiss('otp-toast');
+        toast.success(`OTP sent to your ${method}!`);
+        setStep('verifyOtp');
+      }
+
+    } catch (error: any) {
+      toast.dismiss('otp-toast');
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to send OTP';
+      toast.error(errorMsg);
+      
+      // If user exists, redirect to login
+      if (error.response?.data?.action === 'login') {
+        setTimeout(() => setStep('login'), 2000);
+      }
+    } finally {
+      setLoading(false)
     }
+  }
 
-    const onSubmitLocal = async (data: CreateAccountFormData) => {
-        setLoading(true)
-        try {
-            let phone = data.phoneNumber.trim().replace(/\s/g, '')
+  if (step !== 'createAccount') return null
 
-            // Normalize to +880 format
-            if (phone.startsWith('01')) {
-                phone = '+880' + phone.slice(1)
-            } else if (phone.startsWith('8801')) {
-                phone = '+' + phone
-            } else if (!phone.startsWith('+8801')) {
-                toast.error('Please enter a valid Bangladeshi number')
-                return
-            }
+  return (
+    <form onSubmit={handleSubmitCreate(onSubmitLocal)} className="space-y-5">
+      
+      {/* Toggle Buttons */}
+      <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
+        <button
+          type="button"
+          onClick={() => setMethod('phone')}
+          className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+            method === 'phone' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <Phone size={16} /> Phone
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMethod('email')}
+          className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+            method === 'email' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <Mail size={16} /> Email
+          </div>
+        </button>
+      </div>
 
-            toast.loading('Sending OTP...', { duration: 0 })
+      {/* Input Fields based on Method */}
+      <div className="space-y-2">
+        <label className="flex items-center text-sm font-medium text-gray-900">
+          {method === 'phone' ? 'Phone Number' : 'Email Address'} <Asterisk className="h-3 w-3 text-red-500 ml-1" />
+        </label>
+        
+        {method === 'phone' ? (
+          <>
+            <Input
+              type="tel"
+              placeholder="017XXXXXXXX"
+              {...registerCreate('phoneNumber', {
+                required: method === 'phone' ? 'Phone number is required' : false,
+                pattern: {
+                  value: /^(\+880|0)1[3-9]\d{8}$/,
+                  message: 'Enter valid BD number (01XXXXXXXXX)',
+                },
+              })}
+              className={createErrors.phoneNumber ? 'border-red-500' : ''}
+            />
+            {createErrors.phoneNumber && (
+              <p className="text-sm text-red-500">{createErrors.phoneNumber.message as string}</p>
+            )}
+          </>
+        ) : (
+          <>
+            <Input
+              type="email"
+              placeholder="example@mail.com"
+              {...registerCreate('email', {
+                required: method === 'email' ? 'Email is required' : false,
+                pattern: {
+                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                  message: 'Enter a valid email address',
+                },
+              })}
+              className={createErrors.email ? 'border-red-500' : ''}
+            />
+            {createErrors.email && (
+              <p className="text-sm text-red-500">{createErrors.email.message as string}</p>
+            )}
+          </>
+        )}
+      </div>
 
-            await sendOTP(phone)
+      <Button
+        type="submit"
+        className="w-full bg-blue-600 hover:bg-blue-700 h-11"
+        disabled={loading}
+      >
+        {loading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Sending OTP...
+          </>
+        ) : (
+          'Send OTP'
+        )}
+      </Button>
 
-            const displayPhone = phone.replace('+880', '0')
-            setSubmittedPhone(displayPhone)
-            setRegisteredPhone(displayPhone)
-
-            toast.dismiss()
-            toast.success('OTP sent successfully!')
-            setStep('verifyOtp')
-
-        } catch (error: any) {
-            toast.dismiss()
-            toast.error(error.message || 'Failed to send OTP')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    if (step !== 'createAccount') return null
-
-    return (
-        <form onSubmit={handleSubmitCreate(onSubmitLocal)} className="space-y-5">
-            <div className="space-y-2">
-                <label className="flex items-center text-sm font-medium text-gray-900">
-                    Phone Number <Asterisk className="h-3 w-3 text-red-500 ml-1" />
-                </label>
-                <Input
-                    type="tel"
-                    placeholder="017XXXXXXXX"
-                    {...registerCreate('phoneNumber', {
-                        required: 'Phone number is required',
-                        pattern: {
-                            value: /^(\+880|0)1[3-9]\d{8}$/,
-                            message: 'Enter valid BD number (01XXXXXXXXX)',
-                        },
-                    })}
-                    className={createErrors.phoneNumber ? 'border-red-500' : ''}
-                />
-                {createErrors.phoneNumber && (
-                    <p className="text-sm text-red-500">{createErrors.phoneNumber.message}</p>
-                )}
-            </div>
-
-            <Button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700"
-                disabled={loading}
-            >
-                {loading ? (
-                    <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Sending OTP...
-                    </>
-                ) : (
-                    'Send OTP'
-                )}
-            </Button>
-
-            <Button
-                type="button"
-                variant="ghost"
-                className=" w-full"
-                onClick={() => setStep('login')}
-                disabled={loading}
-            >
-                Back to Login
-            </Button>
-        </form>
-    )
+      <div className="text-center">
+        <span className="text-sm text-gray-500">Already have an account? </span>
+        <button
+          type="button"
+          className="text-sm font-semibold text-blue-600 hover:underline"
+          onClick={() => setStep('login')}
+          disabled={loading}
+        >
+          Login here
+        </button>
+      </div>
+    </form>
+  )
 }

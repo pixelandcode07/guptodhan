@@ -232,6 +232,71 @@ const getUserBookings = async (
   }
 };
 
+// Confirm booking (Provider)
+const confirmBooking = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ booking_id: string }> }
+) => {
+  await dbConnect();
+  const { booking_id } = await params;
+
+  const result = await BookingServices.confirmBookingInDB(booking_id);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Booking confirmed successfully!",
+    data: result,
+  });
+};
+
+// Complete booking (Provider)
+const completeBooking = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ booking_id: string }> }
+) => {
+  await dbConnect();
+  const { booking_id } = await params;
+
+  const body = await req.json();
+
+  const result = await BookingServices.completeBookingInDB(
+    booking_id,
+    body.provider_notes
+  );
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Booking completed successfully!",
+    data: result,
+  });
+};
+
+// Cancel booking with note (Provider)
+const cancelBooking = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ booking_id: string }> }
+) => {
+  await dbConnect();
+  const { booking_id } = await params;
+
+  const body = await req.json();
+
+  const result = await BookingServices.cancelBookingInDB(
+    booking_id,
+    body.provider_rejection_message
+  );
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Booking cancelled successfully!",
+    data: result,
+  });
+};
+
+
 
 export const BookingController = {
   createBooking,
@@ -239,5 +304,9 @@ export const BookingController = {
   getProviderBookings,
   getBookingByOrderId,
   updateBooking,
-  getUserBookings
+  getUserBookings,
+
+  cancelBooking,
+  completeBooking,
+  confirmBooking,
 };

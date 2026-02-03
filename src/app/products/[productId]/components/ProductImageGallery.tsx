@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { imageFade } from './constants';
-import { Product } from './types';
 import { ZoomIn } from 'lucide-react';
 
 interface ProductImageGalleryProps {
@@ -15,12 +14,20 @@ interface ProductImageGalleryProps {
   onSizeChange?: (size: string) => void;
 }
 
-export default function ProductImageGallery({ product, selectedColor = '', selectedSize = '', onColorChange, onSizeChange }: ProductImageGalleryProps) {
+export default function ProductImageGallery({ 
+  product, 
+  selectedColor = '', 
+  selectedSize = '', 
+  onColorChange, 
+  onSizeChange 
+}: ProductImageGalleryProps) {
+  
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [currentImages, setCurrentImages] = useState<string[]>([]);
   const [imageVariantMap, setImageVariantMap] = useState<Map<string, { color: string; size: string }>>(new Map());
   const [isZoomed, setIsZoomed] = useState(false);
 
+  // 1. Variant Logic (অপরিবর্তিত রাখা হয়েছে)
   useEffect(() => {
     let newImages: string[] = [];
     const variantMap = new Map<string, { color: string; size: string }>();
@@ -61,52 +68,91 @@ export default function ProductImageGallery({ product, selectedColor = '', selec
     setSelectedImageIndex(0);
   }, [selectedColor, selectedSize, product]);
 
-  const handleImageClick = (img: string, index: number) => {
+  // 2. Click/Hover Handler
+  const handleImageSelect = (img: string, index: number) => {
     setSelectedImageIndex(index);
-    
     const variant = imageVariantMap.get(img);
     if (variant && (variant.color || variant.size)) {
-      if (variant.color && onColorChange) {
-        onColorChange(variant.color);
-      }
-      if (variant.size && onSizeChange) {
-        onSizeChange(variant.size);
-      }
+      if (variant.color && onColorChange) onColorChange(variant.color);
+      if (variant.size && onSizeChange) onSizeChange(variant.size);
     }
   };
 
   const mainImage = currentImages[selectedImageIndex] || product.thumbnailImage;
 
+  // 3. Merged Layout Render
   return (
-    <div className="sticky top-20 p-4 sm:p-6 bg-gradient-to-br from-gray-50 to-white border-r">
-      <div className="relative bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-100 group">
-        <div className="relative aspect-square">
+    <div className="flex flex-col-reverse md:flex-row gap-4 w-full sticky top-24">
+      
+      {/* --- Thumbnails Section ---
+          Desktop: Vertical Left Sidebar
+          Mobile: Horizontal Bottom Scroll
+      */}
+      <div className="flex md:flex-col gap-3 overflow-x-auto md:overflow-y-auto md:max-h-[500px] scrollbar-hide py-1 px-1 shrink-0">
+        {currentImages.map((img, idx) => (
+          <div 
+            key={idx} 
+            onMouseEnter={() => handleImageSelect(img, idx)} // Desktop Hover
+            onClick={() => handleImageSelect(img, idx)}      // Mobile Click
+            className={`
+              relative w-16 h-16 md:w-20 md:h-20 shrink-0 cursor-pointer overflow-hidden rounded-md border-2 transition-all duration-200 bg-white
+              ${selectedImageIndex === idx 
+                ? 'border-[#00005E] shadow-sm ring-1 ring-[#00005E]/20' // Active Style
+                : 'border-gray-100 hover:border-gray-300' // Inactive Style
+              }
+            `}
+          >
+            <Image 
+              src={img} 
+              alt={`View ${idx}`} 
+              fill 
+              className="object-cover" 
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* --- Main Image Section --- */}
+      <div className="relative flex-1 bg-white border border-gray-100 rounded-xl overflow-hidden aspect-square md:aspect-auto md:h-[500px] group shadow-sm">
+        
+        {/* Zoom Hint Icon */}
+        <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <div className="bg-white/90 p-2 rounded-full shadow-sm backdrop-blur-sm">
+                <ZoomIn className="w-5 h-5 text-gray-600" />
+            </div>
+        </div>
+
+        <div 
+          className="relative w-full h-full cursor-zoom-in" 
+          onClick={() => setIsZoomed(!isZoomed)}
+        >
           <AnimatePresence mode="wait">
-            <motion.div key={mainImage} variants={imageFade} initial="initial" animate="animate" exit="exit" className="relative w-full h-full flex items-center justify-center">
+            <motion.div 
+              key={mainImage} 
+              variants={imageFade} 
+              initial="initial" 
+              animate="animate" 
+              exit="exit" 
+              className="relative w-full h-full p-2"
+            >
               {mainImage ? (
                 <Image 
-                  src={mainImage} alt={product.productTitle} fill 
-                  className={`object-contain transition-transform duration-700 ${isZoomed ? 'scale-150 cursor-zoom-out' : 'group-hover:scale-105 cursor-zoom-in'}`} 
+                  src={mainImage} 
+                  alt={product.productTitle} 
+                  fill 
+                  className={`object-contain transition-transform duration-500 ease-in-out ${isZoomed ? 'scale-150 cursor-zoom-out' : 'scale-100'}`} 
                   priority 
-                  onClick={() => setIsZoomed(!isZoomed)}
                 />
               ) : (
-                <div className="text-gray-400">No image available</div>
+                <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                  No image available
+                </div>
               )}
             </motion.div>
           </AnimatePresence>
         </div>
       </div>
-      <div className="mt-4 flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300">
-        {currentImages.map((img, idx) => (
-          <div 
-            key={idx} onClick={() => handleImageClick(img, idx)}
-            className={`relative w-16 h-16 rounded-lg cursor-pointer flex-shrink-0 border-2 transition-all ${selectedImageIndex === idx ? 'border-blue-500 shadow-md' : 'border-gray-200'}`}
-          >
-            <Image src={img} alt="thumb" fill className="object-cover rounded-lg" />
-          </div>
-        ))}
-      </div>
+
     </div>
   );
 }
