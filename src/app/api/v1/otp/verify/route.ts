@@ -1,12 +1,7 @@
-// ========================================
-// ✅ Verify OTP Route (Standalone)
-// ========================================
-// Path: src/app/api/v1/otp/verify/route.ts
-
 import { NextRequest } from 'next/server';
-import { OtpController } from '@/lib/modules/otp/otp.controller';
 import { catchAsync } from '@/lib/middlewares/catchAsync';
+import { OtpController } from '@/lib/modules/otp/otp.controller';
 
-export const POST = catchAsync(
-  async (req: NextRequest) => await OtpController.verifyOtp(req)
-);
+export const POST = catchAsync(async (req: NextRequest) => {
+  return await OtpController.verifyOtp(req);
+});

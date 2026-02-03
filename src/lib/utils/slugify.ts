@@ -1,15 +1,34 @@
+// utils/slugify.ts
+
 /**
- * Generate URL-friendly slug from text
- * @param text - Input text to convert to slug
- * @returns URL-friendly slug
+ * Convert text to URL-friendly slug
+ * Example: "Men's Fashion" -> "mens-fashion"
  */
-export function slugify(text: string): string {
+export function createSlug(text: string): string {
+  if (!text) return '';
+  
   return text
+    .toString()
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, '-')           // spaces to hyphens
-    .replace(/[^\w\-]+/g, '')       // remove special chars
-    .replace(/\-\-+/g, '-')         // multiple hyphens to single
-    .replace(/^-+/, '')             // trim hyphens from start
-    .replace(/-+$/, '');            // trim hyphens from end
+    // Remove apostrophes
+    .replace(/'/g, '')
+    .replace(/'/g, '')
+    // Replace spaces with hyphens
+    .replace(/\s+/g, '-')
+    // Remove special characters
+    .replace(/[^\w\-]+/g, '')
+    // Replace multiple hyphens with single hyphen
+    .replace(/\-\-+/g, '-')
+    // Remove leading/trailing hyphens
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
 }
+
+/**
+ * Examples:
+ * "Men's Fashion" -> "mens-fashion"
+ * "Women & Girls" -> "women-girls"
+ * "Electronics & Gadgets" -> "electronics-gadgets"
+ * "Kids' Toys" -> "kids-toys"
+ */

@@ -24,10 +24,10 @@ const createUserIntoDB = async (payload: TUserInput): Promise<Partial<TUser> | n
     }
   }
 
-  const hashedPassword = await bcrypt.hash(payload.password, 12);
-  const payloadWithHashedPassword = { ...payload, password: hashedPassword };
-
-  const newUser = await User.create(payloadWithHashedPassword);
+  // ❌ REMOVED: const hashedPassword = await bcrypt.hash(payload.password, 12);
+  // ✅ Plain password পাঠাচ্ছি, Model এর pre-save hook এটা হ্যাশ করে নিবে।
+  
+  const newUser = await User.create(payload);
   
   const result = await User.findById(newUser._id)
     .select('-password')

@@ -1,52 +1,47 @@
-'use client';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TextPosition } from "../SliderForm";
 
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TextPosition } from '../SliderForm';
-
-// ✅ Props টাইপ সঠিকভাবে সংজ্ঞায়িত
-type Props = {
+interface TopRowProps {
   textPosition: TextPosition | '';
-  setTextPosition: (v: TextPosition | '') => void;
+  setTextPosition: (val: TextPosition | '') => void;
   sliderLink: string;
-  setSliderLink: (v: string) => void;
-};
+  setSliderLink: (val: string) => void;
+}
 
-export default function TopRow({ 
-  textPosition, 
-  setTextPosition, 
-  sliderLink, 
-  setSliderLink 
-}: Props) {
+export default function TopRow({
+  textPosition,
+  setTextPosition,
+  sliderLink,
+  setSliderLink,
+}: TopRowProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {/* Text Position Selector */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg bg-gray-50">
+      
       <div className="space-y-2">
-        <Label className="font-semibold">Text Position</Label>
+        <Label>Text Position <span className="text-red-500">*</span></Label>
+        {/* 🔥 FIX: value={textPosition} যোগ করা হয়েছে */}
         <Select 
-          value={textPosition || undefined} 
-          onValueChange={(v) => setTextPosition(v as TextPosition)}
+          value={textPosition} 
+          onValueChange={(val) => setTextPosition(val as TextPosition)}
         >
-          <SelectTrigger className="h-10 w-full bg-white border-2">
-            <SelectValue placeholder="Select Position" />
+          <SelectTrigger>
+            <SelectValue placeholder="Select text position" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Left">⬅️ Left</SelectItem>
-            <SelectItem value="Right">➡️ Right</SelectItem>
+            <SelectItem value="Left">Left</SelectItem>
+            <SelectItem value="Right">Right</SelectItem>
           </SelectContent>
         </Select>
       </div>
-      
-      {/* Slider Link Input */}
+
       <div className="space-y-2">
-        <Label className="font-semibold">Slider Link (Web)</Label>
+        <Label>Slider Link (Optional)</Label>
         <Input 
-          type="url" 
-          className="h-10 w-full bg-white border-2" 
-          value={sliderLink || ''} 
+          value={sliderLink} 
           onChange={(e) => setSliderLink(e.target.value)} 
-          placeholder="https://example.com" 
+          placeholder="https://..."
         />
       </div>
     </div>

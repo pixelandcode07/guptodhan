@@ -9,24 +9,19 @@ import { sendResponse } from '@/lib/utils/sendResponse';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 import { OtpServices } from '@/lib/modules/otp/otp.service';
 import { Types } from 'mongoose';
+import { OtpModel } from '../otp/otp.model';
 
-// ========================================
-// 📝 REGISTER USER (Send OTP)
-// ========================================
 const registerUser = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
 
-  // ✅ Validate input
+  // Validate only email/phone for initial step
   const validatedData = UserValidations.createUserValidationSchema.parse({
     body: body,
   });
 
   const { email, phoneNumber } = validatedData.body;
 
-  // ========================================
-  // ✅ CRITICAL FIX: Check if user ALREADY EXISTS
-  // ========================================
   const { User } = await import('./user.model');
   const query = [];
   if (email) query.push({ email });
@@ -35,30 +30,21 @@ const registerUser = async (req: NextRequest) => {
   if (query.length > 0) {
     const existingUser = await User.findOne({ $or: query }).lean();
     
-    // ❌ User already exists - REJECT registration
     if (existingUser) {
-      console.log(`❌ Registration blocked - User already exists:`, {
-        email: existingUser.email,
-        phoneNumber: existingUser.phoneNumber,
-        isVerified: existingUser.isVerified,
-      });
-
-      // ✅ Different messages for verified vs unverified users
       if (existingUser.isVerified) {
         return NextResponse.json(
           { 
             success: false, 
             message: 'This email/phone number is already registered. Please login instead.',
-            action: 'login', // Frontend can redirect to login
+            action: 'login',
           },
           { status: StatusCodes.CONFLICT }
         );
       } else {
-        // User registered but not verified - allow OTP resend
         return NextResponse.json(
           { 
             success: false, 
-            message: 'This number/email was registered but not verified. Please use "Resend OTP" option.',
+            message: 'Account registered but not verified. Resending OTP...',
             action: 'resend_otp',
           },
           { status: StatusCodes.CONFLICT }
@@ -67,9 +53,6 @@ const registerUser = async (req: NextRequest) => {
     }
   }
 
-  // ========================================
-  // ✅ User doesn't exist - Send OTP
-  // ========================================
   let otpResult;
   let identifier;
   let verificationType;
@@ -84,8 +67,6 @@ const registerUser = async (req: NextRequest) => {
     verificationType = 'phone';
   }
 
-  console.log(`✅ New user registration started:`, { identifier, verificationType });
-
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
@@ -95,10 +76,7 @@ const registerUser = async (req: NextRequest) => {
 };
 
 // ========================================
-// ✅ VERIFY OTP & CREATE ACCOUNT
-// ========================================
-// ========================================
-// ✅ VERIFY OTP & CREATE ACCOUNT - ENHANCED
+// ✅ VERIFY OTP & CREATE ACCOUNT - FINAL STEP
 // ========================================
 const verifyOtpAndCreateAccount = async (req: NextRequest) => {
   await dbConnect();
@@ -112,9 +90,7 @@ const verifyOtpAndCreateAccount = async (req: NextRequest) => {
     );
   }
 
-  // ========================================
-  // ✅ DOUBLE CHECK: Verify user doesn't exist
-  // ========================================
+  // 1. Double check if user exists
   const { User } = await import('./user.model');
   const query = [];
   if (userData.email) query.push({ email: userData.email });
@@ -122,24 +98,17 @@ const verifyOtpAndCreateAccount = async (req: NextRequest) => {
 
   if (query.length > 0) {
     const existingUser = await User.findOne({ $or: query }).lean();
-    
     if (existingUser) {
-      console.log(`❌ Account creation blocked - User exists during verification`);
       return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Account already exists. Please login.',
-        },
+        { success: false, message: 'Account already exists. Please login.' },
         { status: StatusCodes.CONFLICT }
       );
     }
   }
 
-  // ========================================
-  // ✅ Verify OTP
-  // ========================================
+  // 2. Verify OTP (shouldDelete = false here to be safe, we delete manually after success)
   const otpNumber = typeof otp === 'string' ? Number(otp) : otp;
-  const verificationResult = await OtpServices.verifyOtpService(identifier, otpNumber);
+  const verificationResult = await OtpServices.verifyOtpService(identifier, otpNumber, false);
 
   if (!verificationResult.status) {
     return NextResponse.json(
@@ -148,9 +117,7 @@ const verifyOtpAndCreateAccount = async (req: NextRequest) => {
     );
   }
 
-  // ========================================
-  // ✅ Create user account
-  // ========================================
+  // 3. Create Account
   try {
     const result = await UserServices.createUserIntoDB({
       name: userData.name,
@@ -162,16 +129,13 @@ const verifyOtpAndCreateAccount = async (req: NextRequest) => {
       profilePicture: userData.profilePicture,
     });
 
-    // ✅ Mark as verified
     if (result && result._id) {
       await User.findByIdAndUpdate(result._id, { isVerified: true });
+      
+      // ✅ SUCCESS: Now manually delete the OTP so it can't be reused
+      await OtpModel.deleteMany({ identifier });
+      console.log("✅ Account created & OTP deleted for:", identifier);
     }
-
-    console.log(`✅ Account created successfully:`, { 
-      userId: result?._id,
-      email: userData.email,
-      phoneNumber: userData.phoneNumber,
-    });
 
     return sendResponse({
       success: true,
@@ -180,13 +144,9 @@ const verifyOtpAndCreateAccount = async (req: NextRequest) => {
       data: result,
     });
   } catch (error: any) {
-    // Handle race condition - user created between check and creation
     if (error.message?.includes('already exists')) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Account already exists. Please login.',
-        },
+        { success: false, message: 'Account already exists. Please login.' },
         { status: StatusCodes.CONFLICT }
       );
     }

@@ -15,7 +15,7 @@ export default function LogIn({
   onSubmitLogin,
   showPin,
   setShowPin,
-  loading, // ✅ Added loading prop
+  loading,
 }: {
   step: string
   setStep: Dispatch<SetStateAction<FormStep>>
@@ -25,7 +25,7 @@ export default function LogIn({
   onSubmitLogin: SubmitHandler<LoginFormData>
   showPin: boolean
   setShowPin: Dispatch<SetStateAction<boolean>>
-  loading?: boolean // ✅ Optional loading state
+  loading?: boolean
 }) {
   return (
     <div>
@@ -40,17 +40,14 @@ export default function LogIn({
               id="identifier"
               type="text"
               placeholder="Enter phone or email"
-              disabled={loading} // ✅ Disable during loading
+              disabled={loading}
               {...registerLogin('identifier', {
                 required: 'Phone number or Email is required',
                 validate: (value) => {
-                  // Check if input is Email
                   if (value.includes('@')) {
                     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
                     return emailRegex.test(value) || 'Invalid email format'
-                  }
-                  // Otherwise Check if input is Phone
-                  else {
+                  } else {
                     const phoneRegex = /^\+?[\d\s-]{10,15}$/
                     return phoneRegex.test(value) || 'Invalid phone number format'
                   }
@@ -64,20 +61,22 @@ export default function LogIn({
           </div>
 
           <div className="space-y-2">
+            {/* ✅ Updated Label to Password */}
             <label htmlFor="pin" className="flex items-center text-[12px] font-medium text-gray-900">
-              Enter your PIN number<Asterisk className="h-3 w-3 text-red-500" />
+              Enter your Password <Asterisk className="h-3 w-3 text-red-500" />
             </label>
             <div className="relative">
               <Input
                 id="pin"
                 type={showPin ? 'text' : 'password'}
-                placeholder="Enter your PIN"
-                disabled={loading} // ✅ Disable during loading
+                placeholder="Enter your password"
+                disabled={loading}
+                // ✅ Updated Validation: Min 6 chars, removed maxLength
                 {...registerLogin('pin', {
-                  required: 'PIN is required',
+                  required: 'Password is required',
                   minLength: {
-                    value: 4,
-                    message: 'PIN must be at least 4 digits',
+                    value: 6,
+                    message: 'Password must be at least 6 characters',
                   },
                 })}
                 className={loginErrors.pin ? 'border-red-500' : ''}
@@ -88,7 +87,7 @@ export default function LogIn({
                 size="icon"
                 className="absolute right-2 top-1/2 -translate-y-1/2"
                 onClick={() => setShowPin(!showPin)}
-                disabled={loading} // ✅ Disable during loading
+                disabled={loading}
               >
                 {showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
@@ -104,21 +103,20 @@ export default function LogIn({
                 {...registerLogin('rememberMe')}
                 className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 defaultChecked={false}
-                disabled={loading} // ✅ Disable during loading
+                disabled={loading}
               />
               <label htmlFor="rememberMe" className="text-sm text-gray-700">
                 Remember me
               </label>
             </div>
             <a
-              onClick={() => !loading && setStep('forgetPin')} // ✅ Prevent during loading
+              onClick={() => !loading && setStep('forgetPin')}
               className={`text-sm text-blue-600 hover:underline ${loading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
             >
-              Forgot PIN?
+              Forgot Password?
             </a>
           </div>
 
-          {/* ✅ Updated Login Button with Loading State */}
           <Button
             type="submit"
             className="w-full bg-blue-600 text-white hover:bg-blue-700"
@@ -139,7 +137,7 @@ export default function LogIn({
             className="w-full"
             onClick={() => setStep('createAccount')}
             type="button"
-            disabled={loading} // ✅ Disable during loading
+            disabled={loading}
           >
             Create Account
           </Button>
