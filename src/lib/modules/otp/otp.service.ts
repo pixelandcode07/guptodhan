@@ -85,6 +85,7 @@ const sendPhoneOtpService = async (phone: string) => {
     expiresAt: new Date(Date.now() + parseInt(process.env.OTP_EXPIRY_MINUTES || '5') * 60 * 1000),
   });
 
+  // SMS Sending Logic
   const shouldSendSMS = process.env.FORCE_SMS_SEND === 'true' || process.env.NODE_ENV !== 'development';
 
   if (shouldSendSMS) {
@@ -179,9 +180,10 @@ const sendEmailOtpService = async (email: string) => {
 };
 
 // ========================================
-// ✅ Verify OTP (MODIFIED)
+// ✅ Verify OTP (CRITICAL FIX applied here)
 // ========================================
-const verifyOtpService = async (identifier: string, otp: number, shouldDelete = true) => {
+// shouldDelete ডিফল্ট false করে দেওয়া হয়েছে যাতে প্রথমবার চেক করলে ডিলিট না হয়
+const verifyOtpService = async (identifier: string, otp: number, shouldDelete = false) => {
   console.log(`🔍 Verifying OTP for: ${identifier}, shouldDelete: ${shouldDelete}`);
 
   const record = await OtpModel.findOne({ identifier }).sort({ createdAt: -1 });
@@ -210,7 +212,7 @@ const verifyOtpService = async (identifier: string, otp: number, shouldDelete = 
     return { status: false, message: "Invalid OTP" };
   }
 
-  // 🔥 IMPORTANT: Only delete if verify step allows it
+  // ✅ Only delete if explicitly requested (e.g., after account creation)
   if (shouldDelete) {
       await OtpModel.deleteMany({ identifier });
       console.log(`✅ OTP verified and DELETED from DB`);
