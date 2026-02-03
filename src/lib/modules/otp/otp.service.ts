@@ -97,7 +97,7 @@ const sendPhoneOtpService = async (phone: string) => {
 
   // ✅ 4. Send SMS Logic (Dev Mode handled)
   // যদি FORCE_SMS_SEND="true" থাকে, তাহলে Dev Mode এও SMS যাবে
-  const shouldSendSMS = process.env.FORCE_SMS_SEND === 'true' || process.env.NODE_ENV !== 'development';
+  const shouldSendSMS = process.env.FORCE_SMS_SEND === 'false' || process.env.NODE_ENV !== 'development';
 
   if (shouldSendSMS) {
     try {
