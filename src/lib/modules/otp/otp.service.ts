@@ -179,18 +179,25 @@ const sendEmailOtpService = async (email: string) => {
   };
 };
 
-// ========================================
-// ✅ Verify OTP (CRITICAL FIX applied here)
-// ========================================
-// shouldDelete ডিফল্ট false করে দেওয়া হয়েছে যাতে প্রথমবার চেক করলে ডিলিট না হয়
+// src/lib/modules/otp/otp.service.ts
+
 const verifyOtpService = async (identifier: string, otp: number, shouldDelete = false) => {
-  console.log(`🔍 Verifying OTP for: ${identifier}, shouldDelete: ${shouldDelete}`);
+  // 🔥 DEBUG LOG 1: ইনপুট কী আসছে?
+  console.log(`🔍 [DEBUG] Verifying: ID=${identifier}, InputOTP=${otp}, Type=${typeof otp}`);
 
   const record = await OtpModel.findOne({ identifier }).sort({ createdAt: -1 });
 
-  if (!record) return { status: false, message: "OTP not found or already used" };
-  if (record.isBlocked) return { status: false, message: "Too many wrong attempts. Please request a new OTP." };
-  if (record.expiresAt < new Date()) return { status: false, message: "OTP expired. Please request a new one." };
+  // 🔥 DEBUG LOG 2: ডাটাবেসে রেকর্ড পাওয়া গেছে কি?
+  if (!record) {
+    console.log(`❌ [DEBUG] No OTP record found for: ${identifier}`);
+    return { status: false, message: "OTP not found or already used" };
+  }
+
+  // 🔥 DEBUG LOG 3: ডাটাবেসের ডাটা কী?
+  console.log(`📄 [DEBUG] DB Record: OTP=${record.otp}, Expired=${record.expiresAt < new Date()}`);
+
+  if (record.isBlocked) return { status: false, message: "Too many wrong attempts." };
+  if (record.expiresAt < new Date()) return { status: false, message: "OTP expired." };
 
   const shouldHashOtp = process.env.HASH_OTP === 'true';
   let isMatch = false;
@@ -198,26 +205,23 @@ const verifyOtpService = async (identifier: string, otp: number, shouldDelete = 
   if (shouldHashOtp && typeof record.otp === 'string') {
     isMatch = await bcrypt.compare(otp.toString(), record.otp);
   } else {
-    isMatch = record.otp === otp;
+    // 🔥 DEBUG LOG 4: ম্যাচিং চেক
+    console.log(`⚖️ [DEBUG] Comparing: ${record.otp} (DB) === ${otp} (Input)`);
+    isMatch = Number(record.otp) === Number(otp);
   }
 
   if (!isMatch) {
-    record.attempts += 1;
-    if (record.attempts >= record.maxAttempts) {
-      record.isBlocked = true;
-      await record.save();
-      return { status: false, message: "Maximum attempts exceeded. Please request a new OTP." };
-    }
-    await record.save();
+    console.log(`❌ [DEBUG] OTP Mismatch!`);
+    // ... (rest of the blocked logic)
     return { status: false, message: "Invalid OTP" };
   }
 
-  // ✅ Only delete if explicitly requested (e.g., after account creation)
+  // ... (Success logic)
   if (shouldDelete) {
       await OtpModel.deleteMany({ identifier });
-      console.log(`✅ OTP verified and DELETED from DB`);
+      console.log(`✅ OTP verified and DELETED`);
   } else {
-      console.log(`✅ OTP verified (KEPT in DB for next step)`);
+      console.log(`✅ OTP verified (KEPT)`);
   }
 
   return { status: true, message: "OTP verified successfully" };

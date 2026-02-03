@@ -12,7 +12,7 @@ import { toast } from 'sonner'
 interface VerifyOTPProps {
     step: string
     setStep: Dispatch<SetStateAction<FormStep>>
-    submittedPhone: string // This can be email or phone
+    submittedPhone: string
     handleSubmitOtp: UseFormHandleSubmit<VerifyOtpFormData>
     registerOtp: UseFormRegister<VerifyOtpFormData>
     otpErrors: FieldErrors<VerifyOtpFormData>
@@ -29,8 +29,7 @@ export default function VerifyOTP({
 
     const [loading, setLoading] = useState(false)
 
-    const handleResend = async () => {
-        // Optional: Call resend API here if needed
+    const handleResend = () => {
         setStep('createAccount')
     }
 
@@ -42,10 +41,8 @@ export default function VerifyOTP({
 
         setLoading(true)
 
-        // Determine if it's email or phone and format accordingly if needed
-        let identifier = submittedPhone;
-        
-        // If it looks like a phone number (digits), format it
+        // 1. Format Identifier correctly (Must match backend format)
+        let identifier = submittedPhone.trim();
         if (/^\d+$/.test(identifier) || identifier.startsWith('+')) {
              if (identifier.startsWith('01')) {
                 identifier = '+880' + identifier.slice(1)
@@ -55,7 +52,7 @@ export default function VerifyOTP({
         }
 
         try {
-            // ✅ Server-side Verification Call
+            // 2. Server-side Verification Call
             const res = await axios.post('/api/v1/otp/verify', {
                 identifier: identifier,
                 otp: data.otp
@@ -63,6 +60,11 @@ export default function VerifyOTP({
 
             if (res.data.success) {
                 toast.success("OTP Verified Successfully!")
+                
+                // ✅ CRITICAL FIX: Save Valid OTP to LocalStorage for next step
+                // 'SetPin' page will read this to create the account
+                localStorage.setItem(`otp_${identifier}`, data.otp);
+
                 setStep('setPin')
             } else {
                 toast.error(res.data.message || "Invalid OTP")

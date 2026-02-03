@@ -9,7 +9,7 @@ import { FormStep } from '../LogIn_Register'
 import axios from 'axios'
 import { toast } from 'sonner'
 
-// ✅ Interface Update: Added 'name'
+// ✅ Updated Interface: Added 'name' and kept 'pin' as password
 interface SetPinFormData {
     pin: string 
     confirmPin: string
@@ -44,7 +44,6 @@ export default function SetPin({
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
     const onSubmitPassword: SubmitHandler<SetPinFormData> = async (data) => {
-        // Password Match Check
         if (data.pin !== data.confirmPin) {
             toast.error('Passwords do not match!', {
                 description: 'Please make sure both passwords are the same.',
@@ -56,33 +55,43 @@ export default function SetPin({
         toast.loading('Creating your account...')
 
         try {
-            // 1. Prepare User Data
-            const isEmail = registeredPhone.includes('@');
-            let identifier = registeredPhone;
+            // 1. Prepare Identifier (Exactly same logic as VerifyOTP)
+            let identifier = registeredPhone.trim();
+            const isEmail = identifier.includes('@');
+
+            if (!isEmail) {
+                // Normalize phone for BD
+                if (identifier.startsWith('01')) identifier = '+880' + identifier.slice(1);
+                else if (identifier.startsWith('8801')) identifier = '+' + identifier;
+            }
+
+            // 2. Prepare User Data Payload
             let userData: any = {
                 name: data.name,
-                password: data.pin, // 'pin' field acts as password here
+                password: data.pin, // Using 'pin' field as password
                 role: 'user'
             };
 
-            // Format Phone/Email
-            if (isEmail) {
-                userData.email = identifier;
-            } else {
-                if (identifier.startsWith('01')) identifier = '+880' + identifier.slice(1);
-                else if (identifier.startsWith('8801')) identifier = '+' + identifier;
-                else if (!identifier.startsWith('+880')) identifier = '+880' + identifier;
-                userData.phoneNumber = identifier;
+            if (isEmail) userData.email = identifier;
+            else userData.phoneNumber = identifier;
+
+            // 3. ✅ Retrieve Valid OTP from LocalStorage
+            const storedOtp = localStorage.getItem(`otp_${identifier}`);
+            
+            if (!storedOtp) {
+                toast.dismiss();
+                toast.error("Session expired or OTP missing.", {
+                    description: "Please verify your phone number again."
+                });
+                setStep('verifyOtp'); // Send back to verify step
+                setLoading(false);
+                return;
             }
 
-            // 2. Call Verify OTP API (Which creates the account)
-            // Note: We send '000000' as OTP because real verification happened in previous step.
-            // Ensure your backend allows this or handle OTP state persistence if strictly required.
-            const otpForRequest = localStorage.getItem(`otp_${registeredPhone}`) || '000000';
-
+            // 4. Final API Call to Create Account
             const res = await axios.post('/api/v1/user/verify-otp', {
                 identifier: identifier,
-                otp: otpForRequest, 
+                otp: storedOtp, // Sending the real OTP
                 userData: userData
             })
 
@@ -93,10 +102,10 @@ export default function SetPin({
                     duration: 6000,
                 })
                 
-                // Clean up
-                localStorage.removeItem(`otp_${registeredPhone}`);
+                // Cleanup
+                localStorage.removeItem(`otp_${identifier}`);
                 
-                // Trigger auto-login in parent
+                // Trigger auto-login
                 onSuccess?.(data.pin)
             }
         } catch (error: any) {
@@ -128,7 +137,7 @@ export default function SetPin({
 
             <form onSubmit={handleSubmitPin(onSubmitPassword)} className="space-y-5">
                 
-                {/* ✅ Name Input (Required for Account Creation) */}
+                {/* Name Input */}
                 <div className="space-y-2">
                     <label className="flex items-center text-[12px] font-medium text-gray-900">
                         Full Name <Asterisk className="h-3 w-3 text-red-500 ml-1" />
@@ -144,7 +153,7 @@ export default function SetPin({
                     )}
                 </div>
 
-                {/* ✅ Password Field (Fixed Validation) */}
+                {/* Password Field */}
                 <div className="space-y-2">
                     <label className="flex items-center text-[12px] font-medium text-gray-900">
                         Password <Asterisk className="h-3 w-3 text-red-500 ml-1" />
@@ -152,9 +161,7 @@ export default function SetPin({
                     <div className="relative">
                         <Input
                             type={showPassword ? "text" : "password"}
-                            placeholder="Min 6 chars"
-                            // ❌ Removed maxLength={4}
-                            // ❌ Removed pattern: /^\d{4}$/
+                            placeholder="Min 6 characters"
                             {...registerPin('pin', {
                                 required: 'Password is required',
                                 minLength: {
@@ -177,7 +184,7 @@ export default function SetPin({
                     )}
                 </div>
 
-                {/* ✅ Confirm Password Field */}
+                {/* Confirm Password Field */}
                 <div className="space-y-2">
                     <label className="flex items-center text-[12px] font-medium text-gray-900">
                         Confirm Password <Asterisk className="h-3 w-3 text-red-500 ml-1" />
