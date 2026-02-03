@@ -1,11 +1,15 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { Star, Heart, BadgeCheck, Minus, Plus, ShoppingCart, Zap, Store, MapPin, Truck, Banknote, RotateCcw, ShieldCheck } from 'lucide-react';
+import { 
+  Star, Heart, BadgeCheck, Minus, Plus, ShoppingCart, Zap, Store, 
+  MapPin, Truck, Banknote, RotateCcw, ShieldCheck 
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useCart } from '@/hooks/useCart';
@@ -17,13 +21,14 @@ export default function ProductMainInfo({
   product,
   reviews,
   averageRating,
-  relatedData,
+  relatedData, // এখানেই সব স্টোরের লিস্ট আছে
   onColorChange,
   onSizeChange,
   selectedColor = '',
   selectedSize = '',
 }: any) {
   const router = useRouter();
+  const { data: session } = useSession();
   const { addToCart, isLoading: cartLoading } = useCart();
   const { isInWishlist, addToWishlist, removeFromWishlist, getWishlistItemId, isLoading: wishlistLoading } = useWishlist();
   
@@ -33,34 +38,96 @@ export default function ProductMainInfo({
   const [isWishlistToggling, setIsWishlistToggling] = useState(false);
   const [locationType, setLocationType] = useState<'dhaka' | 'outside'>('dhaka');
 
-  // ✅ Store Logic: Store খুঁজে বের করার উন্নত পদ্ধতি
+  // ✅ FIXED: Store Finding Logic (ID না থাকলে Name দিয়ে খোঁজার ব্যবস্থা)
   const storeInfo = useMemo(() => {
-    // ১. যদি প্রোডাক্টের ভেতরেই স্টোর অবজেক্ট থাকে
-    if (product.vendorStoreId && typeof product.vendorStoreId === 'object') {
-      return {
-        id: product.vendorStoreId._id || product.vendorStoreId.id,
-        name: product.vendorStoreId.storeName,
-        logo: product.vendorStoreId.storeLogo
-      };
+    const vendor = product.vendorStoreId;
+    
+    let id = null;
+    let name = 'Unknown Store';
+    let logo = null;
+
+    // ১. প্রথমে প্রোডাক্টের ভেতরের ডাটা চেক করি
+    if (vendor && typeof vendor === 'object') {
+      name = vendor.storeName || name;
+      logo = vendor.storeLogo || logo;
+      id = vendor._id || vendor.id || null; // আপনার জেসনে এখানে আইডি নেই, তাই নাল আসবে
     }
-    // ২. যদি প্রোডাক্টে শুধু ID থাকে, তাহলে relatedData.stores থেকে খুঁজবে
-    if (product.vendorStoreId && typeof product.vendorStoreId === 'string' && relatedData?.stores) {
-      const foundStore = relatedData.stores.find((s: any) => s._id === product.vendorStoreId || s.id === product.vendorStoreId);
-      if (foundStore) {
-        return {
-          id: foundStore._id || foundStore.id,
-          name: foundStore.storeName,
-          logo: foundStore.storeLogo
-        };
+
+    // ২. যদি প্রোডাক্টে আইডি না পাওয়া যায়, কিন্তু নাম আছে -> তাহলে relatedData থেকে খুঁজি
+    if (!id && relatedData?.stores?.length > 0) {
+      
+      // নাম দিয়ে স্টোর খোঁজা (Fallback Logic)
+      if (name !== 'Unknown Store') {
+        const foundByName = relatedData.stores.find((s: any) => s.storeName === name);
+        if (foundByName) {
+          id = foundByName._id || foundByName.id;
+          if (!logo) logo = foundByName.storeLogo;
+        }
+      }
+
+      // অথবা যদি vendor শুধু স্ট্রিং আইডি হয়
+      if (!id && vendor && typeof vendor === 'string') {
+        const foundById = relatedData.stores.find((s: any) => s._id === vendor || s.id === vendor);
+        if (foundById) {
+          id = foundById._id || foundById.id;
+          name = foundById.storeName;
+          logo = foundById.storeLogo;
+        }
       }
     }
+
+    // যদি আইডি পাওয়া যায় তবেই রিটার্ন করবে
+    if (id) {
+      return { id, name, logo };
+    }
+    
     return null;
   }, [product.vendorStoreId, relatedData?.stores]);
 
-  // Wishlist Check Effect
-  // ... (আপনার আগের লজিক অপরিবর্তিত) ...
+  // Wishlist Status Check
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      if (product?._id && session?.user) {
+        const inWishlist = await isInWishlist(product._id);
+        setIsProductInWishlist(inWishlist);
+      }
+    };
+    checkWishlistStatus();
+  }, [product?._id, isInWishlist, session?.user]);
 
-  // Variants & Pricing Logic
+  // Wishlist Handler
+  const handleWishlist = async () => {
+    if (!session?.user) {
+      toast.error('Please login to add to wishlist');
+      router.push('/auth/login');
+      return;
+    }
+    if (!product?._id) return;
+    setIsWishlistToggling(true);
+    try {
+      if (isProductInWishlist) {
+        const wishlistItemId = await getWishlistItemId(product._id);
+        if (wishlistItemId) {
+          await removeFromWishlist(wishlistItemId);
+          setIsProductInWishlist(false);
+          toast.success('Removed from wishlist');
+        }
+      } else {
+        const success = await addToWishlist(product._id, selectedColor || undefined, selectedSize || undefined);
+        if (success) {
+          setIsProductInWishlist(true);
+          toast.success('Added to wishlist');
+        }
+      }
+    } catch (error) {
+      console.error('Wishlist error:', error);
+      toast.error('Failed to update wishlist');
+    } finally {
+      setIsWishlistToggling(false);
+    }
+  };
+
+  // Variants Logic
   const availableColors = useMemo(() => {
     if (!product.productOptions) return [];
     const colors = product.productOptions.map((opt: any) => Array.isArray(opt.color) ? opt.color[0] : opt.color);
@@ -102,9 +169,7 @@ export default function ProductMainInfo({
     toast.success(`Location changed to ${locationType === 'dhaka' ? 'Outside Dhaka' : 'Inside Dhaka'}`);
   };
 
-  // Handlers (AddToCart, BuyNow, Wishlist)
-  const handleWishlist = async () => { /* ... আগের লজিক ... */ };
-  
+  // Cart Handlers
   const handleBuyNow = async () => {
     if (availableColors.length > 0 && !selectedColor) return toast.error('Please select a color');
     if (availableSizes.length > 0 && !selectedSize) return toast.error('Please select a size');
@@ -116,7 +181,7 @@ export default function ProductMainInfo({
         color: selectedColor || undefined, size: selectedSize || undefined 
       });
       router.push('/home/product/shoppinginfo?buyNow=true');
-    } catch { toast.error('Failed'); } 
+    } catch { toast.error('Failed to process buy now'); } 
     finally { setIsBuyingNow(false); }
   };
 
@@ -131,32 +196,39 @@ export default function ProductMainInfo({
   };
 
   return (
-    <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="bg-white rounded-lg border border-gray-100 p-5 md:p-6">
+    <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="bg-white rounded-xl border border-gray-100 p-5 md:p-6 shadow-sm">
       <div className="flex flex-col lg:flex-row gap-8">
         
-        {/* ================= LEFT SIDE: Product Info (Title, Price, Options) ================= */}
+        {/* ================= LEFT SIDE: Product Info ================= */}
         <div className="flex-1 space-y-6">
-          
-          {/* Header */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-widest text-blue-600 px-2 py-1 bg-blue-50 rounded">
                 {getBrandName(product, relatedData?.brands)}
               </span>
-              <button onClick={handleWishlist} disabled={isWishlistToggling} className={`p-2 rounded-full border transition-colors ${isProductInWishlist ? 'bg-red-50 text-red-500 border-red-100' : 'border-gray-100 hover:bg-gray-50'}`}>
-                <Heart size={18} fill={isProductInWishlist ? 'currentColor' : 'none'} />
+              <button 
+                onClick={handleWishlist}
+                disabled={isWishlistToggling || wishlistLoading}
+                className={`p-2 rounded-full border transition-all duration-200 ${
+                  isProductInWishlist 
+                    ? 'bg-red-50 text-red-500 border-red-100 scale-110' 
+                    : 'border-gray-100 hover:bg-gray-50 text-gray-400 hover:text-red-500'
+                }`}
+                title="Add to wishlist"
+              >
+                <Heart size={20} fill={isProductInWishlist ? 'currentColor' : 'none'} />
               </button>
             </div>
             
-            <h1 className="text-xl md:text-2xl font-bold text-slate-900 leading-tight">{product.productTitle}</h1>
+            <h1 className="text-2xl font-bold text-slate-900 leading-tight">{product.productTitle}</h1>
             
             <div className="flex flex-wrap items-center gap-4 text-sm">
-              <div className="flex items-center gap-1 text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">
+              <div className="flex items-center gap-1 text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
                 <Star size={14} className="fill-current" />
                 <span className="font-bold text-slate-700">{averageRating || '0'}</span>
                 <span className="text-slate-500">({reviews.length} Reviews)</span>
               </div>
-              <div className={`flex items-center gap-1.5 font-medium px-2 py-0.5 rounded-full ${variantStock > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+              <div className={`flex items-center gap-1.5 font-medium px-2 py-0.5 rounded-full border ${variantStock > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
                 <BadgeCheck size={14} />
                 {variantStock > 0 ? `${variantStock} In Stock` : 'Out of Stock'}
               </div>
@@ -178,7 +250,7 @@ export default function ProductMainInfo({
             </div>
           </div>
 
-          {/* Variants (Color/Size) */}
+          {/* Variants */}
           <div className="space-y-4">
             {availableColors.length > 0 && (
               <div>
@@ -219,43 +291,40 @@ export default function ProductMainInfo({
             </div>
 
             <div className="flex gap-3 w-full">
-              <Button onClick={handleBuyNow} disabled={isBuyingNow || variantStock === 0} className="flex-1 h-12 bg-[#00005E] hover:bg-[#000040] text-white font-bold rounded-md shadow-lg shadow-blue-900/10">
-                <Zap size={18} className="mr-2" /> BUY NOW
+              <Button onClick={handleBuyNow} disabled={isBuyingNow || variantStock === 0} className="flex-1 h-12 bg-[#00005E] hover:bg-[#000040] text-white font-bold rounded-md shadow-lg shadow-blue-900/10 uppercase tracking-wide">
+                <Zap size={18} className="mr-2" /> Buy Now
               </Button>
-              <Button onClick={handleAddToCart} disabled={cartLoading || variantStock === 0} variant="outline" className="flex-1 h-12 border-2 border-gray-200 text-gray-800 font-bold rounded-md hover:border-gray-800 hover:bg-transparent">
-                <ShoppingCart size={18} className="mr-2" /> ADD TO CART
+              <Button onClick={handleAddToCart} disabled={cartLoading || variantStock === 0} variant="outline" className="flex-1 h-12 border-2 border-gray-200 text-gray-800 font-bold rounded-md hover:border-gray-800 hover:bg-transparent uppercase tracking-wide">
+                <ShoppingCart size={18} className="mr-2" /> Add to Cart
               </Button>
             </div>
           </div>
         </div>
 
-        {/* ================= RIGHT SIDE: Sidebar (Delivery & Store) - MERGED HERE ================= */}
-        <div className="w-full lg:w-[320px] shrink-0 space-y-5 border-t lg:border-t-0 lg:border-l lg:pl-8 border-gray-100 pt-6 lg:pt-0">
+        {/* ================= RIGHT SIDE: Sidebar (Delivery & Store) ================= */}
+        <div className="w-full lg:w-[340px] shrink-0 flex flex-col gap-4 border-t lg:border-t-0 lg:border-l lg:pl-8 border-gray-100 pt-6 lg:pt-0">
           
-          {/* Delivery Options */}
-          <div className="bg-gray-50/50 rounded-lg p-4 border border-gray-100">
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Delivery</h3>
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Delivery</h3>
               <button onClick={toggleLocation} className="text-[#0099cc] text-xs font-bold hover:underline">CHANGE</button>
             </div>
-            
-            <div className="flex gap-3 mb-3">
+            <div className="flex gap-3 mb-3 items-start">
               <MapPin className="text-gray-400 shrink-0 mt-0.5" size={18} />
               <span className="text-sm text-gray-700 leading-snug">{locationText}</span>
             </div>
-
-            <div className="space-y-2 pt-3 border-t border-gray-200/60">
+            <div className="space-y-2.5 pt-3 border-t border-gray-200">
               <div className="flex justify-between text-sm">
-                <div className="flex gap-2 text-gray-600"><Truck size={16} /> <span>Standard Delivery</span></div>
+                <div className="flex gap-2 text-gray-600 font-medium"><Truck size={16} /> Standard Delivery</div>
                 <span className="font-bold text-gray-900">৳{deliveryCharge}</span>
               </div>
-              <p className="text-xs text-gray-400 pl-6">{deliveryTime}</p>
-              <div className="flex gap-2 text-sm text-gray-600 pt-1"><Banknote size={16} /> <span>Cash on Delivery Available</span></div>
+              <p className="text-xs text-gray-500 pl-6">{deliveryTime}</p>
+              <div className="flex gap-2 text-sm text-gray-600 font-medium"><Banknote size={16} /> Cash on Delivery Available</div>
             </div>
           </div>
 
-          {/* Services */}
-          <div className="space-y-3 px-1">
+          <div className="bg-white rounded-lg p-4 border border-gray-200 space-y-3">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Services</h3>
             <div className="flex gap-3">
               <RotateCcw className="text-[#0099cc] shrink-0" size={20} />
               <div>
@@ -272,11 +341,11 @@ export default function ProductMainInfo({
             </div>
           </div>
 
-          {/* Sold By Section - Fixed Store Link */}
-          <div className="bg-gray-50/50 rounded-lg p-4 border border-gray-100">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Sold By</h3>
+          {/* Sold By Card */}
+          <div className="bg-white rounded-lg p-4 border border-gray-200">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Sold By</h3>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-white border border-gray-200 rounded-lg flex items-center justify-center overflow-hidden relative">
+              <div className="w-12 h-12 bg-white border border-gray-200 rounded-lg flex items-center justify-center overflow-hidden relative shrink-0">
                 {storeInfo?.logo ? (
                   <Image src={storeInfo.logo} alt="Store" fill className="object-cover" />
                 ) : (
@@ -287,26 +356,26 @@ export default function ProductMainInfo({
                 <h4 className="font-bold text-sm text-gray-900 truncate" title={storeInfo?.name}>
                   {storeInfo?.name || 'Unknown Store'}
                 </h4>
-                <div className="flex items-center gap-1 text-xs text-[#0099cc]">
-                  <BadgeCheck size={14} /> Verified Seller
+                <div className="flex items-center gap-1 text-xs text-[#0099cc] font-medium mt-0.5">
+                  <BadgeCheck size={14} fill="#e0f2fe" /> Verified Seller
                 </div>
               </div>
             </div>
 
-            <div className="flex text-center border-t border-gray-200/60 pt-3 mb-3">
-              <div className="w-1/3 border-r border-gray-200"><p className="text-[10px] text-gray-400">Rating</p><p className="font-bold text-sm">92%</p></div>
-              <div className="w-1/3 border-r border-gray-200"><p className="text-[10px] text-gray-400">Ship Time</p><p className="font-bold text-sm">98%</p></div>
-              <div className="w-1/3"><p className="text-[10px] text-gray-400">Response</p><p className="font-bold text-sm">95%</p></div>
+            <div className="flex text-center border-t border-gray-100 pt-3 mb-4 bg-gray-50 rounded-md p-2">
+              <div className="w-1/3 border-r border-gray-200"><p className="text-[10px] text-gray-400 uppercase">Rating</p><p className="font-bold text-sm text-gray-800">92%</p></div>
+              <div className="w-1/3 border-r border-gray-200"><p className="text-[10px] text-gray-400 uppercase">Ship Time</p><p className="font-bold text-sm text-gray-800">98%</p></div>
+              <div className="w-1/3"><p className="text-[10px] text-gray-400 uppercase">Response</p><p className="font-bold text-sm text-gray-800">95%</p></div>
             </div>
 
             {storeInfo?.id ? (
               <Link href={`/home/visit-store/${storeInfo.id}`} className="block w-full">
-                <Button variant="outline" className="w-full h-9 border-[#0099cc] text-[#0099cc] hover:bg-blue-50 text-xs font-bold uppercase">
+                <Button variant="outline" className="w-full h-10 border-[#0099cc] text-[#0099cc] hover:bg-blue-50 text-xs font-bold uppercase transition-all">
                   Visit Store
                 </Button>
               </Link>
             ) : (
-              <Button disabled variant="outline" className="w-full h-9 border-gray-200 text-gray-400 text-xs font-bold uppercase">
+              <Button disabled variant="outline" className="w-full h-10 border-gray-200 text-gray-400 text-xs font-bold uppercase">
                 Store Unavailable
               </Button>
             )}
