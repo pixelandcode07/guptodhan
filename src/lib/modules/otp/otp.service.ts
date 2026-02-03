@@ -27,18 +27,12 @@ const generateOtp = (): number => {
 // 🛠️ Helper: Format Bangladeshi Number
 // ========================================
 const formatPhoneNumber = (phone: string): string => {
-  // ১. স্পেস এবং ড্যাশ রিমুভ করা
   let formatted = phone.replace(/[\s-]/g, '');
-  
-  // ২. যদি 01 দিয়ে শুরু হয় (যেমন 017...), তাহলে সামনে 88 যোগ করো
   if (formatted.startsWith('01')) {
       formatted = '88' + formatted;
-  }
-  // ৩. যদি +88 দিয়ে শুরু হয়, + বাদ দাও
-  else if (formatted.startsWith('+88')) {
+  } else if (formatted.startsWith('+88')) {
       formatted = formatted.substring(1);
   }
-  
   return formatted;
 };
 
@@ -68,25 +62,21 @@ const checkRateLimit = async (identifier: string): Promise<void> => {
 };
 
 // ========================================
-// 📱 Send OTP to Phone (SMS) - FINAL FIX
+// 📱 Send OTP to Phone (SMS)
 // ========================================
 const sendPhoneOtpService = async (phone: string) => {
-  // ✅ 1. Rate Limiting
   await checkRateLimit(phone);
 
   const otp = generateOtp();
   console.log("📱 Generated SMS OTP:", otp);
 
-  // ✅ 2. Format Number (Critical for GP/BL)
   const formattedPhone = formatPhoneNumber(phone);
-  console.log(`📡 Sending SMS to: ${formattedPhone}`);
-
-  // ✅ 3. Save OTP in DB
+  
   const shouldHashOtp = process.env.HASH_OTP === 'true';
   const otpToSave = shouldHashOtp ? await bcrypt.hash(otp.toString(), 10) : otp;
 
   await OtpModel.create({
-    identifier: phone, // ইউজার ইনপুট (017...) সেভ রাখলাম লগিনের সুবিধার জন্য
+    identifier: phone,
     otp: otpToSave,
     type: 'phone',
     attempts: 0,
@@ -95,16 +85,11 @@ const sendPhoneOtpService = async (phone: string) => {
     expiresAt: new Date(Date.now() + parseInt(process.env.OTP_EXPIRY_MINUTES || '5') * 60 * 1000),
   });
 
-  // ✅ 4. Send SMS Logic (Dev Mode handled)
-  // যদি FORCE_SMS_SEND="true" থাকে, তাহলে Dev Mode এও SMS যাবে
-  const shouldSendSMS = process.env.FORCE_SMS_SEND === 'false' || process.env.NODE_ENV !== 'development';
+  const shouldSendSMS = process.env.FORCE_SMS_SEND === 'true' || process.env.NODE_ENV !== 'development';
 
   if (shouldSendSMS) {
     try {
       const url = "https://api.sms.net.bd/sendsms";
-      
-      // 🔥 CRITICAL CHANGE: Message Content Change 🔥
-      // "Guptodhan" শব্দটা বাদ দেওয়া হয়েছে স্প্যাম ফিল্টার এড়াতে
       const messageContent = `${otp} is your verification code. Valid for 5 minutes.`;
 
       const response = await axios.post(url, {
@@ -120,13 +105,11 @@ const sendPhoneOtpService = async (phone: string) => {
       }
     } catch (error: any) {
       console.error("❌ SMS Network Error:", error.message);
-      // এখানে error throw করছি না যাতে ফ্রন্টএন্ড না ভাঙ্গে
     }
   } else {
     console.log("⚠️ SMS Skipped (Dev Mode). Set FORCE_SMS_SEND='true' in .env to send real SMS.");
   }
 
-  // ✅ 5. Return response
   const showOtpInResponse = process.env.NODE_ENV === 'development' || 
                             process.env.SHOW_OTP_IN_RESPONSE === 'true';
 
@@ -138,7 +121,7 @@ const sendPhoneOtpService = async (phone: string) => {
 };
 
 // ========================================
-// 📧 Send OTP to Email (No Changes)
+// 📧 Send OTP to Email
 // ========================================
 const sendEmailOtpService = async (email: string) => {
   const emailUser = process.env.SMTP_USER || process.env.EMAIL_USER;
@@ -196,10 +179,10 @@ const sendEmailOtpService = async (email: string) => {
 };
 
 // ========================================
-// ✅ Verify OTP (No Changes)
+// ✅ Verify OTP (MODIFIED)
 // ========================================
-const verifyOtpService = async (identifier: string, otp: number) => {
-  console.log(`🔍 Verifying OTP for: ${identifier}`);
+const verifyOtpService = async (identifier: string, otp: number, shouldDelete = true) => {
+  console.log(`🔍 Verifying OTP for: ${identifier}, shouldDelete: ${shouldDelete}`);
 
   const record = await OtpModel.findOne({ identifier }).sort({ createdAt: -1 });
 
@@ -227,8 +210,13 @@ const verifyOtpService = async (identifier: string, otp: number) => {
     return { status: false, message: "Invalid OTP" };
   }
 
-  await OtpModel.deleteMany({ identifier });
-  console.log(`✅ OTP verified and deleted`);
+  // 🔥 IMPORTANT: Only delete if verify step allows it
+  if (shouldDelete) {
+      await OtpModel.deleteMany({ identifier });
+      console.log(`✅ OTP verified and DELETED from DB`);
+  } else {
+      console.log(`✅ OTP verified (KEPT in DB for next step)`);
+  }
 
   return { status: true, message: "OTP verified successfully" };
 };
