@@ -14,10 +14,7 @@ const sendOtp = async (req: NextRequest) => {
     // Validation: At least one must be provided
     if (!email && !phone) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: "Either email or phone number is required" 
-        },
+        { success: false, message: "Either email or phone number is required" },
         { status: 400 }
       );
     }
@@ -51,11 +48,7 @@ const sendOtp = async (req: NextRequest) => {
     console.error("❌ OTP Error:", error);
 
     return NextResponse.json(
-      { 
-        success: false, 
-        message: "Failed to send OTP", 
-        error: error?.message 
-      },
+      { success: false, message: "Failed to send OTP", error: error?.message },
       { status: 500 }
     );
   }
@@ -72,10 +65,7 @@ const verifyOtp = async (req: NextRequest) => {
 
     if (!identifier || !otp) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: "Identifier (email/phone) and OTP are required" 
-        },
+        { success: false, message: "Identifier (email/phone) and OTP are required" },
         { status: 400 }
       );
     }
@@ -85,30 +75,23 @@ const verifyOtp = async (req: NextRequest) => {
     
     if (isNaN(otpNumber)) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: "Invalid OTP format" 
-        },
+        { success: false, message: "Invalid OTP format" },
         { status: 400 }
       );
     }
 
-    const result = await OtpServices.verifyOtpService(identifier, otpNumber);
+    // 🔥 CRITICAL FIX: Pass FALSE here to NOT delete OTP yet
+    // Because the user still needs to use this OTP to create the account in the next step
+    const result = await OtpServices.verifyOtpService(identifier, otpNumber, false);
 
     if (result.status) {
       return NextResponse.json(
-        { 
-          success: true, 
-          message: "OTP verified successfully" 
-        },
+        { success: true, message: "OTP verified successfully" },
         { status: 200 }
       );
     } else {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: result.message 
-        },
+        { success: false, message: result.message },
         { status: 400 }
       );
     }
@@ -117,11 +100,7 @@ const verifyOtp = async (req: NextRequest) => {
     console.error("❌ OTP Verification Error:", error);
     
     return NextResponse.json(
-      { 
-        success: false, 
-        message: "Server error", 
-        error: error?.message 
-      },
+      { success: false, message: "Server error", error: error?.message },
       { status: 500 }
     );
   }

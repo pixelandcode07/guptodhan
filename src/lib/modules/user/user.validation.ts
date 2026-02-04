@@ -6,23 +6,15 @@ import { z } from 'zod';
 const bdPhoneNumberRegex = /^(?:\+8801[3-9]\d{8}|01[3-9]\d{8})$/;
 
 // ========================================
-// 📝 User Registration Validation
+// 📤 1. User Registration Initial Step (Send OTP)
 // ========================================
 export const createUserValidationSchema = z.object({
   body: z
     .object({
-      name: z
-        .string({ required_error: 'Name is required.' })
-        .min(1, { message: 'Name cannot be empty.' }),
-
       email: z
         .string()
         .email({ message: 'Please provide a valid email address.' })
         .optional(),
-
-      password: z
-        .string({ required_error: 'Password is required.' })
-        .min(6, { message: 'Password must be at least 6 characters long.' }),
 
       phoneNumber: z
         .string()
@@ -30,44 +22,15 @@ export const createUserValidationSchema = z.object({
           message: 'Must be a valid Bangladeshi phone number (e.g., 01712345678 or +8801712345678).',
         })
         .optional(),
-
-      profilePicture: z
-        .string()
-        .url({ message: 'Profile picture must be a valid URL.' })
-        .optional(),
-
-      address: z
-        .string()
-        .min(1, { message: 'Address cannot be empty.' })
-        .optional(),
-
-      role: z
-        .enum(['user', 'vendor', 'admin', 'service-provider'], {
-          errorMap: () => ({ message: 'Role must be one of: user, vendor, admin, service-provider' }),
-        })
-        .default('user'),
     })
     .refine((data) => data.email || data.phoneNumber, {
-      message: 'Either email or phone number must be provided.',
+      message: 'Either email or phone number must be provided to send OTP.',
       path: ['email'],
     }),
 });
 
 // ========================================
-// 📱 Register with Phone (Standalone)
-// ========================================
-export const registerWithPhoneSchema = z.object({
-  body: z.object({
-    phoneNumber: z
-      .string({ required_error: 'Phone number is required.' })
-      .regex(bdPhoneNumberRegex, {
-        message: 'Must be a valid Bangladeshi phone number (e.g., 01712345678 or +8801712345678).',
-      }),
-  }),
-});
-
-// ========================================
-// ✅ Verify OTP
+// ✅ 2. Verify OTP & Finalize Account Creation
 // ========================================
 export const verifyOtpSchema = z.object({
   body: z.object({
@@ -76,26 +39,57 @@ export const verifyOtpSchema = z.object({
       .min(1, { message: 'Identifier cannot be empty.' }),
     
     otp: z
-      .string({ required_error: 'OTP is required.' })
-      .length(6, { message: 'OTP must be 6 digits.' }),
-    
+      .string({ required_error: 'OTP is required.' }), // ✅ Fixed: Added comma here
+      // .length(6, { message: 'OTP must be 6 digits.' }), 
+
     userData: z.object({
-      name: z.string({ required_error: 'Name is required.' }).min(1),
-      email: z.string().email().optional(),
-      phoneNumber: z.string().regex(bdPhoneNumberRegex).optional(),
-      password: z.string({ required_error: 'Password is required.' }).min(6),
-      role: z.enum(['user', 'vendor', 'admin', 'service-provider']).default('user'),
+      name: z
+        .string({ required_error: 'Name is required.' })
+        .min(1, { message: 'Name cannot be empty.' }),
+
+      email: z
+        .string()
+        .email({ message: 'Invalid email format.' })
+        .optional(),
+
+      phoneNumber: z
+        .string()
+        .regex(bdPhoneNumberRegex, { message: 'Invalid phone number format.' })
+        .optional(),
+
+      password: z
+        .string({ required_error: 'Password is required.' })
+        .min(6, { message: 'Password must be at least 6 characters long.' }),
+
+      role: z
+        .enum(['user', 'vendor', 'admin', 'service-provider'])
+        .default('user'),
+
       address: z.string().optional(),
+      
       profilePicture: z.string().url().optional(),
     }).refine((data) => data.email || data.phoneNumber, {
-      message: 'Either email or phone number must be provided.',
+      message: 'UserData must contain either email or phone number.',
       path: ['email'],
     }),
   }),
 });
 
 // ========================================
-// 🔐 Set PIN
+// 📱 Register with Phone Only (Optional / Legacy)
+// ========================================
+export const registerWithPhoneSchema = z.object({
+  body: z.object({
+    phoneNumber: z
+      .string({ required_error: 'Phone number is required.' })
+      .regex(bdPhoneNumberRegex, {
+        message: 'Must be a valid Bangladeshi phone number.',
+      }),
+  }),
+});
+
+// ========================================
+// 🔐 Set PIN Validation
 // ========================================
 export const setPinSchema = z.object({
   body: z.object({
@@ -127,7 +121,7 @@ export const updateUserProfileValidationSchema = z.object({
       })
       .optional(),
 
-    address: z.string().optional(), // Empty string allowed
+    address: z.string().optional(),
 
     profilePicture: z
       .string()
@@ -216,10 +210,10 @@ export const registerServiceProviderValidationSchema = z.object({
 // ========================================
 export const UserValidations = {
   createUserValidationSchema,
+  verifyOtpSchema,
   updateUserValidationSchema,
   updateUserProfileValidationSchema,
   registerServiceProviderValidationSchema,
   registerWithPhoneSchema,
-  verifyOtpSchema,
   setPinSchema,
 };

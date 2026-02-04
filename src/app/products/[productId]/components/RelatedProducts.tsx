@@ -3,8 +3,23 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
-export default function RelatedProducts({ products, categoryName }: any) {
-  if (!products?.length) return null;
+interface RelatedProductsProps {
+  products: any[];
+  categoryName?: string;
+  categorySlug?: string;
+}
+
+export default function RelatedProducts({ products, categoryName, categorySlug }: RelatedProductsProps) {
+  if (!products?.length) {
+    console.log('❌ No related products to display');
+    return null;
+  }
+
+  console.log('✅ Related Products:', products.length);
+  console.log('📦 Category:', categoryName, '| Slug:', categorySlug);
+
+  // ✅ Ensure slug is properly formatted (no spaces)
+  const formattedSlug = categorySlug?.toLowerCase().replace(/\s+/g, '-');
 
   return (
     <div className="mt-12 space-y-6">
@@ -13,9 +28,14 @@ export default function RelatedProducts({ products, categoryName }: any) {
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">You Might Also Like</h2>
           <p className="text-slate-500 text-sm">More picks from {categoryName || 'this category'}</p>
         </div>
-        <Link href={`/category/${categoryName}`} className="text-sm font-bold text-blue-600 hover:underline">
-          View All Products
-        </Link>
+        {formattedSlug && (
+          <Link 
+            href={`/category/${formattedSlug}`}
+            className="text-sm font-bold text-blue-600 hover:underline"
+          >
+            View All Products
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">

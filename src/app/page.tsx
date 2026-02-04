@@ -51,7 +51,9 @@ export default function MainHomePage() {
         {/* Best Selling */}
         <Suspense fallback={<SkeletonSectionHeader />}>
           <BestSell />
+          
         </Suspense>
+        
 
         {/* Just For You */}
         <Suspense fallback={<SkeletonSectionHeader />}>
