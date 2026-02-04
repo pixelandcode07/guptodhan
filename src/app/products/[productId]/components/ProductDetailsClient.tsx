@@ -65,7 +65,7 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
       initial="hidden" 
       animate="visible" 
       variants={containerVariants}
-      className="min-h-screen bg-[#f2f4f8] font-sans text-gray-800 pb-12"
+      className="min-h-screen font-sans text-gray-800 pb-12"
     >
       <ProductBreadcrumb 
         product={product} 

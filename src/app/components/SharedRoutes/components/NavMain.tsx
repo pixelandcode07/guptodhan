@@ -245,7 +245,7 @@ export default function NavMain() {
                     </DropdownMenuItem>
 
                     <DropdownMenuItem asChild>
-                      <Link href="/wishlist" className="cursor-pointer flex items-center gap-3 py-2">
+                      <Link href="/home/UserProfile/wishlist" className="cursor-pointer flex items-center gap-3 py-2">
                         <Heart size={18} className="text-pink-500" />
                         <span className="font-medium text-gray-700">Wishlist</span>
                       </Link>

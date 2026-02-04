@@ -22,13 +22,20 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, index }: ProductCardProps) {
-    const pPrice = product?.productPrice || 0;
-    const dPrice = product?.discountPrice || 0;
+    // ✅ FIX 1: Price Logic Correction
+    const originalPrice = product?.productPrice || 0;
+    const discountPrice = product?.discountPrice || 0;
 
-    const discountPct =
-        pPrice > dPrice
-            ? Math.round(((pPrice - dPrice) / pPrice) * 100)
-            : 0;
+    // যদি discountPrice থাকে (0 এর বেশি) এবং সেটা originalPrice এর চেয়ে কম হয়, তাহলেই সেটা sellingPrice
+    const hasValidDiscount = discountPrice > 0 && discountPrice < originalPrice;
+    
+    // বিক্রয় মূল্য নির্ধারণ
+    const sellingPrice = hasValidDiscount ? discountPrice : originalPrice;
+
+    // ✅ FIX 2: Discount Percentage Calculation Fix
+    const discountPct = hasValidDiscount
+        ? Math.round(((originalPrice - discountPrice) / originalPrice) * 100)
+        : 0;
 
     const hasOffer =
         product?.offerDeadline &&
@@ -77,6 +84,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                             )}
                         </div>
 
+                        {/* ✅ FIX 3: Only show discount badge if there is a valid discount */}
                         {discountPct > 0 && (
                             <div className="flex items-center gap-0.5 rounded-full bg-emerald-600 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-white shadow-sm">
                                 <Tag className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
@@ -93,7 +101,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                     )}
                 </div>
 
-                {/* Content - কম প্যাডিং ও স্পেসিং */}
+                {/* Content */}
                 <div className="flex flex-grow flex-col space-y-1.5 sm:space-y-2 p-2.5 sm:p-3">
                     {/* Title */}
                     <h3 className="line-clamp-2 text-[13px] sm:text-sm font-semibold leading-snug transition-colors group-hover:text-blue-600 h-10">
@@ -140,15 +148,18 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                         </div>
                     )}
 
-                    {/* Price */}
+                    {/* Price Section - ✅ FIX 4: Correct Display Logic */}
                     <div className="mt-auto">
                         <div className="flex items-baseline gap-2 flex-wrap">
+                            {/* Always show the calculated selling price */}
                             <p className="text-base sm:text-lg font-bold text-blue-600">
-                                ৳{(dPrice || 0).toLocaleString()}
+                                ৳{(sellingPrice).toLocaleString()}
                             </p>
-                            {pPrice > dPrice && (
+                            
+                            {/* Only show crossed-out original price if there is a valid discount */}
+                            {hasValidDiscount && (
                                 <p className="text-[11px] sm:text-xs text-gray-400 line-through">
-                                    ৳{(pPrice || 0).toLocaleString()}
+                                    ৳{(originalPrice).toLocaleString()}
                                 </p>
                             )}
                         </div>
@@ -156,14 +167,17 @@ export default function ProductCard({ product, index }: ProductCardProps) {
 
                     {/* Bottom: Countdown + Ready to ship */}
                     <div className="flex justify-between items-center pt-0.5">
-                        {hasOffer && (
+                        {hasOffer ? (
                             <div className="flex items-center gap-1 text-[11px] sm:text-xs font-medium text-red-600">
                                 <Clock className="h-3.5 w-3.5" />
                                 <Countdown deadline={product.offerDeadline!} />
                             </div>
+                        ) : (
+                             // Fixed logic for alignment when no offer
+                            <div className="flex-1"></div>
                         )}
 
-                        <div className={cn("flex items-center gap-1 text-xs text-gray-500", !hasOffer && "ml-auto")}>
+                        <div className={cn("flex items-center gap-1 text-xs text-gray-500")}>
                             <PackageCheck className="h-3.5 w-3.5" />
                             Ready to ship
                         </div>

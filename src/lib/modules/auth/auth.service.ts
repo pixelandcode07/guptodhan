@@ -30,7 +30,6 @@ const loginUser = async (payload: TLoginUser) => {
     throw new Error('User not found!');
   }
 
-  // ✅ সমাধান: অ্যাকাউন্ট অ্যাক্টিভ কিনা তা চেক করা
   if (!user.isActive) {
     throw new Error('Your account is inactive or pending approval.');
   }
