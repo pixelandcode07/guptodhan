@@ -193,6 +193,10 @@ const getProductLookupPipeline = () => [
       stock: 1,
       sku: 1,
       rewardPoints: 1,
+      
+      // ✅✅✅ ADDED: Custom Delivery Charge Field ✅✅✅
+      shippingCost: 1,
+
       offerDeadline: 1,
       metaTitle: 1,
       metaKeyword: 1,
@@ -378,7 +382,7 @@ const getVendorProductByIdFromDB = async (id: string) => {
           color: Array.isArray(option.color) 
             ? option.color.map((id: any) => colorMap.get(String(id)) || String(id))
             : option.color,
-          size: Array.isArray(option.size)
+          size: Array.isArray(option.size) 
             ? option.size.map((id: any) => sizeMap.get(String(id)) || String(id))
             : option.size,
         })),

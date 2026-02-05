@@ -26,6 +26,7 @@ export interface IVendorProduct {
   vendorStoreId: Types.ObjectId;
   vendorName: string;
   shortDescription: string;
+  shippingCost?: number,
   fullDescription: string;
   specification?: string;
   warrantyPolicy?: string;

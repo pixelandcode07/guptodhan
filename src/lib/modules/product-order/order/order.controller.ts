@@ -17,6 +17,7 @@ import { OrderServices } from './order.service';
 import "@/lib/modules/product/vendorProduct.model";
 import "@/lib/modules/vendor-store/vendorStore.model";
 import "@/lib/modules/promo-code/promoCode.model";
+import { VendorProductModel } from '@/lib/modules/product/vendorProduct.model';
 
 // --- Helper: ID Conversion ---
 const toObjectId = (id: string | any, label: string, options: { optional?: boolean } = {}) => {
@@ -30,108 +31,145 @@ const toObjectId = (id: string | any, label: string, options: { optional?: boole
   throw new Error(`Invalid ${label} format.`);
 };
 
-// --- 1. Create Order - WITHOUT TRANSACTIONS ---
+const calculateDeliveryCharge = (location: string, products: any[]) => {
+  // 1. Base Charge (Dhaka 60, Outside 120)
+  let charge = location.toLowerCase().includes('dhaka') ? 60 : 120;
+
+  // 2. Heavy Item Surcharge (Product Specific)
+  let extraCharge = 0;
+  products.forEach(p => {
+    if (p.shippingCost && p.shippingCost > 0) {
+      extraCharge += p.shippingCost; 
+    }
+  });
+
+  return charge + extraCharge;
+};
+
+// --- Create Order (Multi-Vendor Supported) ---
 const createOrderWithDetails = async (req: NextRequest) => {
   await dbConnect();
 
   try {
     const body = await req.json();
+    const { userId, products, shippingCity, paymentMethod, shippingAddress } = body;
 
-    if (!body.userId || !body.products || !Array.isArray(body.products) || body.products.length === 0) {
-      throw new Error('Invalid order data: userId and products array required.');
+    if (!userId || !products || products.length === 0) {
+      throw new Error('Invalid order data.');
     }
 
-    const orderId = body.orderId || `ORD-${Date.now()}`;
+    // 1. Fetch Real Product Data form DB (Security & Grouping)
+    const productIds = products.map((p: any) => p.productId);
+    const dbProducts = await VendorProductModel.find({ _id: { $in: productIds } });
 
-    const orderDetailsDocs: Partial<IOrderDetails>[] = body.products.map(
-      (p: any) => ({
-        orderDetailsId: uuidv4().split('-')[0],
-        orderId: new Types.ObjectId(),
-        productId: toObjectId(p.productId, 'Product ID'),
-        vendorId: toObjectId(p.vendorId, 'Vendor ID'),
-        quantity: p.quantity,
-        unitPrice: p.unitPrice,
-        discountPrice: p.discountPrice,
-        totalPrice: p.discountPrice ? p.discountPrice * p.quantity : p.unitPrice * p.quantity,
-        size: p.size || undefined,
-        color: p.color || undefined,
-      })
-    );
-
-    const productsTotal = orderDetailsDocs.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-    const totalAmount = productsTotal + (body.deliveryCharge || 0);
-
-    let storeId: Types.ObjectId | undefined = undefined;
-    if (body.storeId) {
-      storeId = toObjectId(body.storeId, 'Store ID', { optional: true });
+    if (dbProducts.length !== products.length) {
+       // Some products might be missing/deleted
     }
 
-    if (!storeId && body.products.length > 0) {
-      try {
-        const { VendorProductModel } = await import('@/lib/modules/product/vendorProduct.model');
-        const firstProduct = await VendorProductModel.findById(toObjectId(body.products[0].productId, 'Product ID')).select('vendorStoreId');
-        if (firstProduct?.vendorStoreId) {
-          storeId = firstProduct.vendorStoreId as Types.ObjectId;
-        }
-      } catch (err) {
-        console.error('Error fetching store from product:', err);
+    // 2. Group Products by Vendor (Store ID)
+    const orderGroups: Record<string, any[]> = {};
+
+    for (const item of products) {
+      const dbProduct = dbProducts.find(p => p._id.toString() === item.productId);
+      if (!dbProduct) continue;
+
+      const storeId = dbProduct.vendorStoreId.toString();
+
+      if (!orderGroups[storeId]) {
+        orderGroups[storeId] = [];
       }
+
+      // Add item with Verified Data
+      orderGroups[storeId].push({
+        ...item,
+        vendorId: storeId, // Store ID is the Vendor reference
+        unitPrice: dbProduct.discountPrice || dbProduct.productPrice, // Use DB Price
+        originalProduct: dbProduct // Keep ref for checking shipping cost later
+      });
     }
 
-    if (!storeId) throw new Error('Store ID is required.');
+    // 3. Create Separate Orders for Each Vendor
+    const createdOrders = [];
+    const transactionGroupId = `TRX-${Date.now()}`; // Single Payment Reference
 
-    const orderPayload: Partial<IOrder> = {
-      orderId,
-      userId: toObjectId(body.userId, 'User ID'),
-      storeId: storeId,
-      deliveryMethodId: body.deliveryMethodId,
-      paymentMethod: body.paymentMethod,
-      shippingName: body.shippingName || 'Guest',
-      shippingPhone: body.shippingPhone,
-      shippingEmail: body.shippingEmail,
-      shippingStreetAddress: body.shippingStreetAddress,
-      shippingCity: body.shippingCity,
-      shippingDistrict: body.shippingDistrict,
-      shippingPostalCode: body.shippingPostalCode,
-      shippingCountry: body.shippingCountry,
-      addressDetails: body.addressDetails,
-      deliveryCharge: body.deliveryCharge || 0,
-      totalAmount: totalAmount,
-      paymentStatus: body.paymentStatus || 'Pending',
-      orderStatus: body.orderStatus || 'Pending',
-      orderForm: body.orderForm || 'Website',
-      orderDate: new Date(),
-      deliveryDate: body.deliveryDate ? new Date(body.deliveryDate) : undefined,
-      parcelId: body.parcelId || undefined,
-      trackingId: body.trackingId || undefined,
-      couponId: body.couponId ? toObjectId(body.couponId, 'Coupon ID', { optional: true }) : undefined,
-    };
+    for (const storeId of Object.keys(orderGroups)) {
+      const storeItems = orderGroups[storeId];
+      
+      // Calculate Totals for THIS store
+      const itemsTotal = storeItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+      
+      // Delivery Charge Logic (Specific to this shipment)
+      const deliveryCharge = calculateDeliveryCharge(shippingCity || 'Dhaka', storeItems.map(i => i.originalProduct));
+      
+      const totalAmount = itemsTotal + deliveryCharge;
 
-    // ✅ Create order WITHOUT transaction
-    const orderDoc = await OrderModel.create(orderPayload);
-    if (!orderDoc) throw new Error('Failed to create order document.');
+      // Generate Order ID
+      const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    // ✅ Create order details WITHOUT transaction
-    orderDetailsDocs.forEach((item) => { item.orderId = orderDoc._id; });
-    const createdOrderDetails = await OrderDetailsModel.insertMany(orderDetailsDocs);
+      // Create Order Document
+      const orderPayload = {
+        orderId,
+        userId: new Types.ObjectId(userId),
+        storeId: new Types.ObjectId(storeId), // Specific Store
+        deliveryMethodId: body.deliveryMethodId || 'Standard',
+        paymentMethod: paymentMethod || 'Cash On Delivery',
+        transactionId: paymentMethod === 'Online' ? transactionGroupId : undefined,
+        
+        // Shipping Info
+        shippingName: body.shippingName,
+        shippingPhone: body.shippingPhone,
+        shippingEmail: body.shippingEmail,
+        shippingStreetAddress: body.shippingStreetAddress,
+        shippingCity: shippingCity,
+        shippingDistrict: body.shippingDistrict,
+        shippingPostalCode: body.shippingPostalCode,
+        shippingCountry: body.shippingCountry || 'Bangladesh',
+        
+        deliveryCharge,
+        totalAmount,
+        paymentStatus: 'Pending',
+        orderStatus: 'Pending',
+        orderDate: new Date(),
+        orderDetails: [] // Will update after creating details
+      };
 
-    // ✅ Update order with order details
-    orderDoc.orderDetails = createdOrderDetails.map((d) => d._id) as any;
-    await orderDoc.save();
+      const newOrder = await OrderModel.create(orderPayload);
+
+      // Create Order Details Documents
+      const detailDocs = storeItems.map(item => ({
+        orderDetailsId: uuidv4().split('-')[0],
+        orderId: newOrder._id,
+        productId: new Types.ObjectId(item.productId),
+        vendorId: new Types.ObjectId(storeId),
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.unitPrice * item.quantity,
+        size: item.size,
+        color: item.color,
+      }));
+
+      const createdDetails = await OrderDetailsModel.insertMany(detailDocs);
+
+      // Link Details to Order
+      newOrder.orderDetails = createdDetails.map(d => d._id);
+      await newOrder.save();
+
+      createdOrders.push(newOrder);
+    }
 
     return sendResponse({
       success: true,
       statusCode: StatusCodes.CREATED,
-      message: 'Order created successfully!',
-      data: { order: orderDoc, orderDetails: createdOrderDetails },
+      message: `Order placed successfully! (${createdOrders.length} shipments created)`,
+      data: createdOrders,
     });
 
   } catch (error: any) {
-    console.error('❌ Error creating order:', error);
+    console.error('❌ Order Creation Failed:', error);
     return sendResponse({
       success: false,
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-      message: error.message || 'Failed to create order',
+      message: error.message || 'Failed to place order.',
       data: null,
     });
   }
