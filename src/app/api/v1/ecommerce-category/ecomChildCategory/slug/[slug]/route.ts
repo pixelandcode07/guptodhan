@@ -2,4 +2,3 @@ import { ChildCategoryController } from "@/lib/modules/ecommerce-category/contro
 import { catchAsync } from "@/lib/middlewares/catchAsync";
 
 export const GET = catchAsync(ChildCategoryController.getProductsByChildCategorySlug);
-
