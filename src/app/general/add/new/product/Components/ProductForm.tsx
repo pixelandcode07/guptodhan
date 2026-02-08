@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, FormEvent, useEffect } from 'react';
+import React, { useState, FormEvent, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
-import { toast } from 'sonner'; // ✅ সুন্দর টোস্ট মেসেজের জন্য
+import { toast } from 'sonner';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import RichTextEditor from '@/components/ReusableComponents/RichTextEditor';
-import { Loader2, Save, X, UploadCloud, AlertCircle } from 'lucide-react';
+import { Loader2, Save, X, UploadCloud } from 'lucide-react';
 import Image from 'next/image';
 import ProductVariantForm, { IProductOption } from './ProductVariantForm';
 import ProductImageGallery from './ProductImageGallery';
@@ -22,7 +22,7 @@ import PricingInventory from './PricingInventory';
 import TagInput from './TagInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-// --- Helper Functions (Robust) ---
+// --- Helper Functions ---
 const getIdFromRef = (value: unknown): string => {
     if (!value) return '';
     if (typeof value === 'string') return value;
@@ -37,11 +37,7 @@ const getIdFromRef = (value: unknown): string => {
 const normalizeToStringArray = (value: unknown): string[] => {
     if (!value) return [];
     if (Array.isArray(value)) {
-        return value.map((item) => {
-            if (typeof item === 'string') return item;
-            if (typeof item === 'object' && item !== null) return (item as any)._id || '';
-            return '';
-        }).filter(Boolean);
+        return value.map((item) => getIdFromRef(item)).filter(Boolean);
     }
     return [];
 };
@@ -51,12 +47,12 @@ export default function ProductForm({ initialData, productId: propProductId }: a
     const searchParams = useSearchParams();
     const productIdParam = searchParams?.get('id');
     const productIdParamValue = propProductId || productIdParam;
-    const productId = productIdParamValue && productIdParamValue !== 'undefined' && productIdParamValue.trim() !== '' ? productIdParamValue : null;
+    const productId = productIdParamValue && productIdParamValue !== 'undefined' ? productIdParamValue : null;
     const isEditMode = !!productId;
     const { data: session } = useSession();
     const token = (session as any)?.accessToken;
 
-    // --- LISTS FROM SERVER PROPS ---
+    // --- LISTS FROM PROPS (Server Side Data) ---
     const listStores = initialData?.stores || [];
     const listCategories = initialData?.categories || [];
     const listBrands = initialData?.brands || [];
@@ -89,6 +85,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
     const [videoUrl, setVideoUrl] = useState('');
     const [shippingCost, setShippingCost] = useState<number | undefined>(undefined);
 
+    // --- Dropdown States ---
     const [store, setStore] = useState('');
     const [category, setCategory] = useState('');
     const [subcategory, setSubcategory] = useState('');
@@ -99,7 +96,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
     const [unit, setUnit] = useState('');
     const [warranty, setWarranty] = useState('');
 
-    // Dynamic Lists
+    // --- Dynamic Lists ---
     const [subcategories, setSubcategories] = useState<any[]>([]);
     const [childCategories, setChildCategories] = useState<any[]>([]);
     const [models, setModels] = useState<any[]>([]);
@@ -116,16 +113,15 @@ export default function ProductForm({ initialData, productId: propProductId }: a
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoadingProduct, setIsLoadingProduct] = useState(isEditMode);
 
-    // ✅ TARGET IDs (For persistence logic)
-    const [targetSubcategoryId, setTargetSubcategoryId] = useState<string | null>(null);
-    const [targetChildCategoryId, setTargetChildCategoryId] = useState<string | null>(null);
-    const [targetModelId, setTargetModelId] = useState<string | null>(null);
+    // ✅ CRITICAL: Flag to prevent useEffects from overwriting initial data
+    const isInitialLoad = useRef(true);
 
-    // --- 1. LOAD PRODUCT DATA ---
+    // --- 1. LOAD PRODUCT DATA (AND FETCH DEPENDENT LISTS DIRECTLY) ---
     useEffect(() => {
         const fetchExistingProduct = async () => {
             if (!isEditMode || !productId || !token) {
                 setIsLoadingProduct(false);
+                isInitialLoad.current = false; // Not in edit mode, normal behavior
                 return;
             }
             try {
@@ -133,12 +129,14 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 const p = res.data?.data;
+                
                 if (!p) {
+                    toast.error("Product data not found!");
                     setIsLoadingProduct(false);
                     return;
                 }
 
-                // Basic Info
+                // 1. Set Basic Info
                 setTitle(p.productTitle || '');
                 setShortDescription(p.shortDescription || '');
                 setFullDescription(p.fullDescription || '');
@@ -146,13 +144,10 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 setWarrantyPolicy(p.warrantyPolicy || '');
                 setProductTags(Array.isArray(p.productTag) ? p.productTag.filter((t: any) => typeof t === 'string').map((t: string) => t.trim()) : []);
 
-                // Images
-                setThumbnail(null);
                 setThumbnailPreview(p.thumbnailImage || null);
                 setInitialThumbnailUrl(p.thumbnailImage || null);
                 setExistingGalleryUrls(Array.isArray(p.photoGallery) ? p.photoGallery : []);
 
-                // Pricing
                 setPrice(p.productPrice);
                 setDiscountPrice(p.discountPrice);
                 setStock(p.stock);
@@ -161,23 +156,62 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 setShippingCost(p.shippingCost);
                 setVideoUrl(p.videoUrl || '');
 
-                // --- SET CATEGORIZATION (Critical) ---
-                // টার্গেট সেট করছি যাতে ড্রপডাউন লিস্ট লোড হওয়ার পর সিলেক্ট হয়
-                setTargetSubcategoryId(getIdFromRef(p.subCategory));
-                setTargetChildCategoryId(getIdFromRef(p.childCategory));
-                setTargetModelId(getIdFromRef(p.productModel));
+                // 2. Extract IDs
+                const catId = getIdFromRef(p.category);
+                const subId = getIdFromRef(p.subCategory);
+                const childId = getIdFromRef(p.childCategory);
+                const brandIdRef = getIdFromRef(p.brand);
+                const modelIdRef = getIdFromRef(p.productModel);
 
-                // মেইন ফিল্ড সেট (এটি useEffect ট্রিগার করবে)
-                setStore(getIdFromRef(p.vendorStoreId));
-                setCategory(getIdFromRef(p.category)); 
-                setBrand(getIdFromRef(p.brand)); 
+                // 3. ✅ FETCH DEPENDENT LISTS MANUALLY HERE (Avoids race conditions)
+                const promises = [];
                 
-                // ইন্ডিপেন্ডেন্ট ড্রপডাউন
-                setFlag(getIdFromRef(p.flag));
-                setWarranty(getIdFromRef(p.warranty));
-                setUnit(getIdFromRef(p.weightUnit));
+                // Fetch Subcategories if category exists
+                if (catId) {
+                    promises.push(
+                        axios.get(`/api/v1/ecommerce-category/ecomSubCategory/category/${catId}`, { 
+                            headers: { Authorization: `Bearer ${token}` } 
+                        }).then(r => setSubcategories(r.data?.data || [])).catch(console.error)
+                    );
+                }
 
-                // Offer & Meta
+                // Fetch ChildCategories if subcategory exists
+                if (subId) {
+                    promises.push(
+                        axios.get(`/api/v1/ecommerce-category/ecomChildCategory?subCategoryId=${subId}`, { 
+                            headers: { Authorization: `Bearer ${token}` } 
+                        }).then(r => setChildCategories(r.data?.data || [])).catch(console.error)
+                    );
+                }
+
+                // Fetch Models if brand exists
+                if (brandIdRef) {
+                    promises.push(
+                        axios.get(`/api/v1/product-config/modelName?brandId=${brandIdRef}`, { 
+                            headers: { Authorization: `Bearer ${token}` } 
+                        }).then(r => {
+                            const mods = r.data?.data?.filter((m: any) => m.status === 'active') || [];
+                            setModels(mods);
+                        }).catch(console.error)
+                    );
+                }
+
+                // Wait for all lists to load
+                await Promise.all(promises);
+
+                // 4. ✅ SET VALUES AFTER LISTS ARE READY
+                setStore(getIdFromRef(p.vendorStoreId));
+                setCategory(catId);
+                setSubcategory(subId);
+                setChildCategory(childId);
+                setBrand(brandIdRef);
+                setModel(modelIdRef);
+                
+                setFlag(getIdFromRef(p.flag));
+                setUnit(getIdFromRef(p.weightUnit));
+                setWarranty(getIdFromRef(p.warranty));
+
+                // Offer & Variants
                 if (p.offerDeadline) {
                     setSpecialOffer(true);
                     setOfferEndTime(new Date(new Date(p.offerDeadline).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16));
@@ -186,17 +220,15 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 setMetaKeywordTags(p.metaKeyword ? p.metaKeyword.split(',').map((k: string) => k.trim()) : []);
                 setMetaDescription(p.metaDescription || '');
 
-                // Variants
                 if (p.productOptions?.length > 0) {
                     setHasVariant(true);
-                    const extractId = (val: any) => (val && typeof val === 'object' && val._id ? val._id : val);
                     setVariants(p.productOptions.map((opt: any, idx: number) => ({
                         ...opt,
                         id: Date.now() + idx,
                         imageUrl: opt.productImage || '',
-                        color: Array.isArray(opt.color) ? extractId(opt.color[0]) : extractId(opt.color),
-                        size: Array.isArray(opt.size) ? extractId(opt.size[0]) : extractId(opt.size),
-                        storage: extractId(opt.storage),
+                        color: getIdFromRef(Array.isArray(opt.color) ? opt.color[0] : opt.color),
+                        size: getIdFromRef(Array.isArray(opt.size) ? opt.size[0] : opt.size),
+                        storage: getIdFromRef(opt.storage),
                         simType: opt.simType || '',
                         condition: opt.condition || '',
                         warranty: opt.warranty || '',
@@ -205,9 +237,16 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                         discountPrice: opt.discountPrice || 0,
                     })));
                 }
+
+                // 5. ✅ Mark initial load as complete after a short delay to bypass effect triggers
+                setTimeout(() => {
+                    isInitialLoad.current = false;
+                }, 500);
+
             } catch (err: any) {
                 console.error('Failed to load product', err);
                 toast.error('❌ Failed to load product details.');
+                isInitialLoad.current = false;
             } finally {
                 setIsLoadingProduct(false);
             }
@@ -216,22 +255,18 @@ export default function ProductForm({ initialData, productId: propProductId }: a
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isEditMode, productId, token]);
 
-    // --- 2. FETCH SUBCATEGORIES ---
+    // --- 2. FETCH SUBCATEGORIES (Only on User Change) ---
     useEffect(() => {
+        if (isInitialLoad.current) return; // Skip if initial load
+        
         const fetchSubcategories = async () => {
             if (category && token) {
                 try {
                     const res = await axios.get(`/api/v1/ecommerce-category/ecomSubCategory/category/${category}`, { headers: { Authorization: `Bearer ${token}` } });
-                    const fetchedSubs = res.data?.data || [];
-                    setSubcategories(fetchedSubs);
-                    
-                    if (targetSubcategoryId) {
-                        const exists = fetchedSubs.find((s: any) => getIdFromRef(s) === targetSubcategoryId);
-                        if (exists) setSubcategory(targetSubcategoryId);
-                        else setSubcategory('');
-                    } else {
-                        setSubcategory('');
-                    }
+                    setSubcategories(res.data?.data || []);
+                    setSubcategory(''); // Reset child
+                    setChildCategory('');
+                    setChildCategories([]);
                 } catch (error) { console.error(error); }
             } else {
                 setSubcategories([]);
@@ -239,24 +274,18 @@ export default function ProductForm({ initialData, productId: propProductId }: a
             }
         };
         fetchSubcategories();
-    }, [category, token, targetSubcategoryId]); // targetSubcategoryId added to dep to ensure retry if category loads first
+    }, [category, token]);
 
-    // --- 3. FETCH CHILD CATEGORIES ---
+    // --- 3. FETCH CHILD CATEGORIES (Only on User Change) ---
     useEffect(() => {
+        if (isInitialLoad.current) return;
+
         const fetchChildCategories = async () => {
             if (subcategory && token) {
                 try {
                     const res = await axios.get(`/api/v1/ecommerce-category/ecomChildCategory?subCategoryId=${subcategory}`, { headers: { Authorization: `Bearer ${token}` } });
-                    const fetchedChilds = res.data?.data || [];
-                    setChildCategories(fetchedChilds);
-
-                    if (targetChildCategoryId) {
-                         const exists = fetchedChilds.find((c: any) => getIdFromRef(c) === targetChildCategoryId);
-                         if (exists) setChildCategory(targetChildCategoryId);
-                         else setChildCategory('');
-                    } else {
-                        setChildCategory('');
-                    }
+                    setChildCategories(res.data?.data || []);
+                    setChildCategory('');
                 } catch (error) { console.error(error); }
             } else {
                 setChildCategories([]);
@@ -264,24 +293,18 @@ export default function ProductForm({ initialData, productId: propProductId }: a
             }
         };
         fetchChildCategories();
-    }, [subcategory, token, targetChildCategoryId]);
+    }, [subcategory, token]);
 
-    // --- 4. FETCH MODELS ---
+    // --- 4. FETCH MODELS (Only on User Change) ---
     useEffect(() => {
+        if (isInitialLoad.current) return;
+
         const fetchModels = async () => {
             if (brand && token) {
                 try {
                     const res = await axios.get(`/api/v1/product-config/modelName?brandId=${brand}`, { headers: { Authorization: `Bearer ${token}` } });
-                    const filteredModels = res.data?.data?.filter((m: any) => m.status === 'active') || [];
-                    setModels(filteredModels);
-
-                    if (targetModelId) {
-                         const exists = filteredModels.find((m: any) => getIdFromRef(m) === targetModelId);
-                         if (exists) setModel(targetModelId);
-                         else setModel('');
-                    } else {
-                        setModel('');
-                    }
+                    setModels(res.data?.data?.filter((m: any) => m.status === 'active') || []);
+                    setModel('');
                 } catch (error) { console.error(error); }
             } else {
                 setModels([]);
@@ -289,12 +312,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
             }
         };
         fetchModels();
-    }, [brand, token, targetModelId]);
-
-    // --- HANDLERS ---
-    const handleCategoryChange = (val: string) => { setCategory(val); setTargetSubcategoryId(null); setTargetChildCategoryId(null); };
-    const handleSubcategoryChange = (val: string) => { setSubcategory(val); setTargetChildCategoryId(null); };
-    const handleBrandChange = (val: string) => { setBrand(val); setTargetModelId(null); };
+    }, [brand, token]);
 
     // --- PRICING HANDLERS ---
     const pricingFormData = { price: price ?? '', discountPrice: discountPrice ?? '', rewardPoints: rewardPoints ?? '', stock: stock ?? '', shippingCost: shippingCost ?? '' };
@@ -386,14 +404,11 @@ export default function ProductForm({ initialData, productId: propProductId }: a
             }
         } catch (error: any) {
             console.error("Submission Error:", error);
-            // ✅ Friendly Error Handling
             const errMsg = error.response?.data?.message || error.message;
             if (errMsg.includes('duplicate') || errMsg.includes('E11000')) {
-                toast.error(`⚠️ Duplicate Product: A product with this Title or SKU already exists.`);
-            } else if (errMsg.includes('validation')) {
-                toast.error(`⚠️ Validation Error: Please check all required fields.`);
+                toast.error(`⚠️ Duplicate Error: Product Title or SKU already exists.`);
             } else {
-                toast.error(`❌ Failed: ${errMsg || 'Something went wrong.'}`);
+                toast.error(`❌ Operation Failed: ${errMsg}`);
             }
         } finally {
             setIsSubmitting(false);
@@ -430,10 +445,10 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                         <CardContent className="pt-6 flex-1">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2"><Label>Store <span className="text-red-500">*</span></Label><Select value={store} onValueChange={setStore}><SelectTrigger className="h-11"><SelectValue placeholder="Select store" /></SelectTrigger><SelectContent>{listStores.map((s:any)=><SelectItem key={getIdFromRef(s)} value={getIdFromRef(s)}>{s.storeName}</SelectItem>)}</SelectContent></Select></div>
-                                <div className="space-y-2"><Label>Category <span className="text-red-500">*</span></Label><Select value={category} onValueChange={handleCategoryChange}><SelectTrigger className="h-11"><SelectValue placeholder="Select category" /></SelectTrigger><SelectContent>{listCategories.map((c:any)=><SelectItem key={getIdFromRef(c)} value={getIdFromRef(c)}>{c.name}</SelectItem>)}</SelectContent></Select></div>
-                                <div className="space-y-2"><Label>Subcategory</Label><Select value={subcategory} onValueChange={handleSubcategoryChange} disabled={!category}><SelectTrigger className="h-11"><SelectValue placeholder="Select subcategory" /></SelectTrigger><SelectContent>{subcategories.map((sc:any)=><SelectItem key={getIdFromRef(sc)} value={getIdFromRef(sc)}>{sc.name}</SelectItem>)}</SelectContent></Select></div>
+                                <div className="space-y-2"><Label>Category <span className="text-red-500">*</span></Label><Select value={category} onValueChange={(val)=>{ setCategory(val); if(!isInitialLoad.current) { setSubcategory(''); setChildCategory(''); } }}><SelectTrigger className="h-11"><SelectValue placeholder="Select category" /></SelectTrigger><SelectContent>{listCategories.map((c:any)=><SelectItem key={getIdFromRef(c)} value={getIdFromRef(c)}>{c.name}</SelectItem>)}</SelectContent></Select></div>
+                                <div className="space-y-2"><Label>Subcategory</Label><Select value={subcategory} onValueChange={(val)=>{ setSubcategory(val); if(!isInitialLoad.current) { setChildCategory(''); } }} disabled={!category}><SelectTrigger className="h-11"><SelectValue placeholder="Select subcategory" /></SelectTrigger><SelectContent>{subcategories.map((sc:any)=><SelectItem key={getIdFromRef(sc)} value={getIdFromRef(sc)}>{sc.name}</SelectItem>)}</SelectContent></Select></div>
                                 <div className="space-y-2"><Label>Child Category</Label><Select value={childCategory} onValueChange={setChildCategory} disabled={!subcategory}><SelectTrigger className="h-11"><SelectValue placeholder="Select child category" /></SelectTrigger><SelectContent>{childCategories.map((cc:any)=><SelectItem key={getIdFromRef(cc)} value={getIdFromRef(cc)}>{cc.name}</SelectItem>)}</SelectContent></Select></div>
-                                <div className="space-y-2"><Label>Brand</Label><Select value={brand} onValueChange={handleBrandChange}><SelectTrigger className="h-11"><SelectValue placeholder="Select brand" /></SelectTrigger><SelectContent>{listBrands.map((b:any)=><SelectItem key={getIdFromRef(b)} value={getIdFromRef(b)}>{b.name}</SelectItem>)}</SelectContent></Select></div>
+                                <div className="space-y-2"><Label>Brand</Label><Select value={brand} onValueChange={(val)=>{ setBrand(val); if(!isInitialLoad.current) { setModel(''); } }}><SelectTrigger className="h-11"><SelectValue placeholder="Select brand" /></SelectTrigger><SelectContent>{listBrands.map((b:any)=><SelectItem key={getIdFromRef(b)} value={getIdFromRef(b)}>{b.name}</SelectItem>)}</SelectContent></Select></div>
                                 <div className="space-y-2"><Label>Model</Label><Select value={model} onValueChange={setModel} disabled={!brand}><SelectTrigger className="h-11"><SelectValue placeholder="Select model" /></SelectTrigger><SelectContent>{models.map((m:any)=><SelectItem key={getIdFromRef(m)} value={getIdFromRef(m)}>{m.modelName}</SelectItem>)}</SelectContent></Select></div>
                                 <div className="space-y-2"><Label>Flag</Label><Select value={flag} onValueChange={setFlag}><SelectTrigger className="h-11"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{listFlags.map((f:any)=><SelectItem key={getIdFromRef(f)} value={getIdFromRef(f)}>{f.name}</SelectItem>)}</SelectContent></Select></div>
                                 <div className="space-y-2"><Label>Unit</Label><Select value={unit} onValueChange={setUnit}><SelectTrigger className="h-11"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{listUnits.map((u:any)=><SelectItem key={getIdFromRef(u)} value={getIdFromRef(u)}>{u.name}</SelectItem>)}</SelectContent></Select></div>
