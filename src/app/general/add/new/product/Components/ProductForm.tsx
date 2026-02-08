@@ -53,7 +53,7 @@ const normalizeToStringArray = (value: unknown): string[] => {
     return [];
 };
 
-export default function ProductForm({ productId: propProductId }: any) {
+export default function ProductForm({ initialData, productId: propProductId }: any) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const productIdParam = searchParams?.get('id');
@@ -63,23 +63,17 @@ export default function ProductForm({ productId: propProductId }: any) {
     const { data: session } = useSession();
     const token = (session as any)?.accessToken;
 
-    // --- CONFIG DATA STATES (Lists) ---
-    const [listStores, setListStores] = useState<any[]>([]);
-    const [listCategories, setListCategories] = useState<any[]>([]);
-    const [listBrands, setListBrands] = useState<any[]>([]);
-    const [listFlags, setListFlags] = useState<any[]>([]);
-    const [listUnits, setListUnits] = useState<any[]>([]);
-    const [listWarranties, setListWarranties] = useState<any[]>([]);
-    const [variantOptions, setVariantOptions] = useState<any>({
-        colors: [],
-        sizes: [],
-        storageTypes: [],
-        simTypes: [],
-        conditions: [],
-        warranties: []
-    });
+    // --- LISTS FROM PROPS (Server Side Data) ---
+    // এই ডাটাগুলো page.tsx থেকে আসছে, তাই এগুলো ১০০% থাকবে
+    const listStores = initialData?.stores || [];
+    const listCategories = initialData?.categories || [];
+    const listBrands = initialData?.brands || [];
+    const listFlags = initialData?.flags || [];
+    const listUnits = initialData?.units || [];
+    const listWarranties = initialData?.warranties || [];
+    const variantOptions = initialData?.variantOptions || {};
 
-    // --- FORM STATES ---
+    // --- STATES ---
     const [title, setTitle] = useState('');
     const [shortDescription, setShortDescription] = useState('');
     const [fullDescription, setFullDescription] = useState('');
@@ -127,79 +121,30 @@ export default function ProductForm({ productId: propProductId }: any) {
     const [metaDescription, setMetaDescription] = useState('');
 
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+    const [isLoadingProduct, setIsLoadingProduct] = useState(isEditMode);
 
-    // --- TARGET IDs ---
+    // --- TARGET IDs (For persistence) ---
     const [targetSubcategoryId, setTargetSubcategoryId] = useState<string | null>(null);
     const [targetChildCategoryId, setTargetChildCategoryId] = useState<string | null>(null);
     const [targetModelId, setTargetModelId] = useState<string | null>(null);
 
-    // --- 1. LOAD CONFIG DATA (With Error Handling) ---
-    useEffect(() => {
-        const fetchConfigData = async () => {
-            if(!token) return; 
-            setIsLoadingConfig(true);
-            
-            // Helper to safely fetch data
-            const fetchData = async (url: string) => {
-                try {
-                    const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
-                    return res.data?.data || [];
-                } catch (err) {
-                    console.warn(`Failed to fetch ${url}`);
-                    return [];
-                }
-            };
-
-            try {
-                // Parallel fetching but independent failures allowed
-                const [
-                    stores, categories, brands, flags, units, warranties,
-                    colors, sizes, storage, sim, conditions
-                ] = await Promise.all([
-                    fetchData('/api/v1/vendor-store'),
-                    fetchData('/api/v1/ecommerce-category'),
-                    fetchData('/api/v1/product-config/brandName'),
-                    fetchData('/api/v1/product-config/productFlag'),
-                    fetchData('/api/v1/product-config/productUnit'),
-                    fetchData('/api/v1/product-config/warranty'), // Corrected likely route
-                    fetchData('/api/v1/product-config/productColor'),
-                    fetchData('/api/v1/product-config/productSize'),
-                    fetchData('/api/v1/product-config/storageType'),
-                    fetchData('/api/v1/product-config/productSimType'), // Corrected likely route
-                    fetchData('/api/v1/product-config/deviceCondition'), // Corrected likely route
-                ]);
-
-                setListStores(stores);
-                setListCategories(categories);
-                setListBrands(brands);
-                setListFlags(flags);
-                setListUnits(units);
-                setListWarranties(warranties);
-                
-                setVariantOptions({
-                    colors, sizes, storageTypes: storage, simTypes: sim, conditions, warranties
-                });
-
-            } catch (error) {
-                console.error("Error loading config data:", error);
-            } finally {
-                setIsLoadingConfig(false);
-            }
-        };
-        fetchConfigData();
-    }, [token]);
-
-    // --- 2. LOAD PRODUCT DATA (Edit Mode) ---
+    // --- 1. LOAD PRODUCT DATA (Values) ---
     useEffect(() => {
         const fetchExistingProduct = async () => {
-            if (!isEditMode || !productId || !token) return;
+            if (!isEditMode || !productId || !token) {
+                setIsLoadingProduct(false);
+                return;
+            }
             try {
+                // প্রোডাক্ট ডাটা API থেকে আনা হচ্ছে
                 const res = await axios.get(`/api/v1/product/${productId}`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 const p = res.data?.data;
-                if (!p) return;
+                if (!p) {
+                    setIsLoadingProduct(false);
+                    return;
+                }
 
                 setTitle(p.productTitle || '');
                 setShortDescription(p.shortDescription || '');
@@ -226,13 +171,16 @@ export default function ProductForm({ productId: propProductId }: any) {
                 setVideoUrl(p.videoUrl || '');
 
                 // --- SET CATEGORIZATION ---
+                // টার্গেট আইডিগুলো আগে সেট করছি যাতে ডিপেন্ডেন্ট ড্রপডাউনগুলো বুঝতে পারে কি সিলেক্ট করতে হবে
                 setTargetSubcategoryId(getIdFromRef(p.subCategory));
                 setTargetChildCategoryId(getIdFromRef(p.childCategory));
                 setTargetModelId(getIdFromRef(p.productModel));
 
+                // মেইন ফিল্ডগুলো সেট করছি। এগুলো চেঞ্জ হলে useEffect ফায়ার হবে এবং ডিপেন্ডেন্ট ডাটা ফেচ হবে
                 setStore(getIdFromRef(p.vendorStoreId));
-                setCategory(getIdFromRef(p.category));
-                setBrand(getIdFromRef(p.brand));
+                setCategory(getIdFromRef(p.category)); // এটি Subcategory fetch ট্রিগার করবে
+                setBrand(getIdFromRef(p.brand));       // এটি Model fetch ট্রিগার করবে
+                
                 setFlag(getIdFromRef(p.flag));
                 setWarranty(getIdFromRef(p.warranty));
                 setUnit(getIdFromRef(p.weightUnit));
@@ -249,16 +197,15 @@ export default function ProductForm({ productId: propProductId }: any) {
                 setMetaKeywordTags(p.metaKeyword ? p.metaKeyword.split(',').map((k: string) => k.trim()) : []);
                 setMetaDescription(p.metaDescription || '');
 
+                // Variants logic...
                 const opts = Array.isArray(p.productOptions) ? p.productOptions : [];
                 if (opts.length > 0) {
                     setHasVariant(true);
-                    
                     const mapped = opts.map((opt: any, idx: number) => {
                          const extractId = (val: any) => {
                              if(val && typeof val === 'object' && val._id) return val._id;
                              return val; 
                          };
-
                         return {
                             id: Date.now() + idx,
                             image: null,
@@ -279,6 +226,8 @@ export default function ProductForm({ productId: propProductId }: any) {
             } catch (err: any) {
                 console.error('Failed to load product', err);
                 toast.error('Failed to load product details');
+            } finally {
+                setIsLoadingProduct(false);
             }
         };
 
@@ -286,7 +235,7 @@ export default function ProductForm({ productId: propProductId }: any) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isEditMode, productId, token]);
 
-    // --- DEPENDENT DROPDOWN LOGIC ---
+    // --- 2. FETCH SUBCATEGORIES (Dependent on Category) ---
     useEffect(() => {
         const fetchSubcategories = async () => {
             if (category && token) {
@@ -297,6 +246,7 @@ export default function ProductForm({ productId: propProductId }: any) {
                     const fetchedSubs = res.data?.data || [];
                     setSubcategories(fetchedSubs);
                     
+                    // টার্গেট আইডি থাকলে সেটি সেট করুন, না থাকলে খালি
                     if (targetSubcategoryId) {
                         const exists = fetchedSubs.find((s: any) => s._id === targetSubcategoryId || s.id === targetSubcategoryId);
                         if (exists) setSubcategory(targetSubcategoryId);
@@ -311,9 +261,9 @@ export default function ProductForm({ productId: propProductId }: any) {
             }
         };
         fetchSubcategories();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [category, token]); // Removed targetSubcategoryId dep
+    }, [category, token]); // টার্গেট আইডি ডিপেন্ডেন্সি হিসেবে দেবেন না
 
+    // --- 3. FETCH CHILD CATEGORIES (Dependent on Subcategory) ---
     useEffect(() => {
         const fetchChildCategories = async () => {
             if (subcategory && token) {
@@ -338,9 +288,9 @@ export default function ProductForm({ productId: propProductId }: any) {
             }
         };
         fetchChildCategories();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [subcategory, token]);
 
+    // --- 4. FETCH MODELS (Dependent on Brand) ---
     useEffect(() => {
         const fetchModels = async () => {
             if (brand && token) {
@@ -365,21 +315,15 @@ export default function ProductForm({ productId: propProductId }: any) {
             }
         };
         fetchModels();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [brand, token]);
 
-    // --- HANDLERS ---
+    // --- HANDLERS (Manual Change) ---
     const handleCategoryChange = (val: string) => { setCategory(val); setTargetSubcategoryId(null); setTargetChildCategoryId(null); };
     const handleSubcategoryChange = (val: string) => { setSubcategory(val); setTargetChildCategoryId(null); };
     const handleBrandChange = (val: string) => { setBrand(val); setTargetModelId(null); };
 
-    const pricingFormData = {
-        price: price ?? '',
-        discountPrice: discountPrice ?? '',
-        rewardPoints: rewardPoints ?? '',
-        stock: stock ?? '',
-        shippingCost: shippingCost ?? '',
-    };
+    // ... (Pricing handlers and Upload logic remain same)
+    const pricingFormData = { price: price ?? '', discountPrice: discountPrice ?? '', rewardPoints: rewardPoints ?? '', stock: stock ?? '', shippingCost: shippingCost ?? '' };
     const handlePricingInputChange = (field: string, value: unknown) => {
         const numVal = value === '' ? undefined : Number(value);
         if (field === 'price') setPrice(numVal);
@@ -396,21 +340,13 @@ export default function ProductForm({ productId: propProductId }: any) {
         if (field === 'stock') setStock(updater);
         if (field === 'shippingCost') setShippingCost(updater);
     };
-
     const uploadFile = async (file: File): Promise<string> => {
         const formData = new FormData();
         formData.append('file', file);
-        try {
-            const response = await axios.post('/api/v1/upload', formData, {
-                headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` },
-            });
-            return response.data?.url || '';
-        } catch (error) {
-            console.error(`Failed to upload file ${file.name}:`, error);
-            throw new Error(`Could not upload ${file.name}.`);
-        }
+        try { const response = await axios.post('/api/v1/upload', formData, { headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` } }); return response.data?.url || ''; } catch (error) { throw new Error(`Could not upload ${file.name}.`); }
     };
 
+    // --- SUBMIT ---
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         if (!token) return toast.error("Authentication required.");
@@ -421,14 +357,6 @@ export default function ProductForm({ productId: propProductId }: any) {
         const selectedStore = listStores.find((s: any) => s._id === store || s.id === store);
         const vendorName = selectedStore?.storeName || '';
 
-        if (hasVariant) {
-            if (variants.length === 0) return toast.error("Please add at least one product variant.");
-            for (let i = 0; i < variants.length; i++) {
-                if ((variants[i].stock ?? -1) < 0) return toast.error(`Variant ${i + 1}: Stock must be 0 or greater.`);
-                if (!variants[i].price || variants[i].price <= 0) return toast.error(`Variant ${i + 1}: Price must be greater than 0.`);
-            }
-        }
-
         setIsSubmitting(true);
         try {
             let thumbnailUrl = thumbnailPreview;
@@ -436,9 +364,7 @@ export default function ProductForm({ productId: propProductId }: any) {
 
             const filteredExistingUrls = existingGalleryUrls.filter(url => !removedGalleryUrls.includes(url));
             let newGalleryUrls: string[] = [];
-            if (galleryImages.length > 0) {
-                newGalleryUrls = (await Promise.all(galleryImages.map(file => uploadFile(file)))).filter(u => !!u);
-            }
+            if (galleryImages.length > 0) newGalleryUrls = (await Promise.all(galleryImages.map(file => uploadFile(file)))).filter(u => !!u);
             const finalGalleryUrls = [...filteredExistingUrls, ...newGalleryUrls];
             if (finalGalleryUrls.length === 0 && thumbnailUrl) finalGalleryUrls.push(thumbnailUrl as string);
 
@@ -476,22 +402,7 @@ export default function ProductForm({ productId: propProductId }: any) {
                 metaKeyword: metaKeywordTags.length > 0 ? metaKeywordTags.join(', ') : undefined,
                 metaDescription: metaDescription || undefined,
                 status: 'active',
-                productOptions: hasVariant
-                    ? await Promise.all(
-                        variants.map(async (variant) => {
-                            const uploadedImage = variant.image ? await uploadFile(variant.image as File) : (variant.imageUrl || '');
-                            const { image, imageUrl, ...rest } = variant;
-                            return {
-                                ...rest,
-                                productImage: uploadedImage,
-                                simType: normalizeToStringArray(variant.simType),
-                                condition: normalizeToStringArray(variant.condition),
-                                color: normalizeToStringArray(variant.color),
-                                size: normalizeToStringArray(variant.size),
-                            };
-                        })
-                    )
-                    : [],
+                productOptions: hasVariant ? await Promise.all(variants.map(async (variant) => { const uploadedImage = variant.image ? await uploadFile(variant.image as File) : (variant.imageUrl || ''); const { image, imageUrl, ...rest } = variant; return { ...rest, productImage: uploadedImage, simType: normalizeToStringArray(variant.simType), condition: normalizeToStringArray(variant.condition), color: normalizeToStringArray(variant.color), size: normalizeToStringArray(variant.size) }; })) : [],
             };
 
             if (isEditMode && productId) {
@@ -504,21 +415,16 @@ export default function ProductForm({ productId: propProductId }: any) {
                 router.push('/general/view/all/product');
             }
         } catch (error: any) {
-            console.error("Submission Error:", error.response?.data || error.message);
-            toast.error(error.response?.data?.message || error.message || "Failed to submit product.");
+            console.error("Submission Error:", error);
+            toast.error("Failed to submit product.");
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            if (initialThumbnailUrl) { setRemovedThumbnailUrl(initialThumbnailUrl); setInitialThumbnailUrl(null); }
-            setThumbnail(file);
-            setThumbnailPreview(URL.createObjectURL(file));
-        } else { setThumbnail(null); setThumbnailPreview(null); }
-    };
+    const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (file) { if (initialThumbnailUrl) { setRemovedThumbnailUrl(initialThumbnailUrl); setInitialThumbnailUrl(null); } setThumbnail(file); setThumbnailPreview(URL.createObjectURL(file)); } else { setThumbnail(null); setThumbnailPreview(null); } };
+
+    if (isLoadingProduct) return <div className="flex justify-center items-center h-screen"><Loader2 className="animate-spin h-10 w-10 text-blue-500" /></div>;
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
@@ -527,56 +433,17 @@ export default function ProductForm({ productId: propProductId }: any) {
                 <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="animate-spin mr-2 h-4 w-4" />}<Save className="mr-2 h-4 w-4" /> {isEditMode ? "Update Product" : "Save Product"}</Button>
             </div>
 
-            {isLoadingConfig && <div className="text-center py-4 text-blue-600">Loading configuration data...</div>}
-
-            <div className={`space-y-4 sm:space-y-6 ${isLoadingConfig ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div className="space-y-4 sm:space-y-6">
                 {/* Basic & Image Cards */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                    <Card className="shadow-sm border-gray-200 flex flex-col h-full">
-                        <CardHeader className="pb-4 border-b border-gray-100"><CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Basic Information</CardTitle></CardHeader>
-                        <CardContent className="pt-6 space-y-5 flex-1">
-                            <div className="space-y-2"><Label>Product Title <span className="text-red-500">*</span></Label><Input value={title} onChange={(e) => setTitle(e.target.value)} required className="h-11" /></div>
-                            <div className="space-y-2"><Label>Short Description (Max 255)</Label><Textarea value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} maxLength={255} className="min-h-[100px] resize-none" /><div className="text-xs text-gray-500 text-right">{shortDescription.length}/255</div></div>
-                            <div className="space-y-2"><Label>Product Tags</Label><TagInput value={productTags} onChange={setProductTags} /></div>
-                        </CardContent>
-                    </Card>
-                    <Card className="shadow-sm border-gray-200 flex flex-col h-full">
-                        <CardHeader className="pb-4 border-b border-gray-100"><CardTitle className="text-base sm:text-lg font-semibold text-gray-900">Thumbnail Image <span className="text-red-500">*</span></CardTitle></CardHeader>
-                        <CardContent className="pt-6 flex-1">
-                            <label htmlFor="thumbnail-upload" className="cursor-pointer group block w-full h-full">
-                                <div className="flex items-center justify-center w-full h-full min-h-[300px] border-2 border-dashed border-gray-300 rounded-lg p-4 transition-colors hover:border-blue-400 hover:bg-blue-50/50">
-                                    {thumbnailPreview ? <div className="relative w-full h-full min-h-[300px] rounded-md overflow-hidden"><Image src={thumbnailPreview} alt="Thumbnail" fill style={{ objectFit: 'contain' }} className="rounded-md" /><Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-8 w-8 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10" onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!thumbnail && thumbnailPreview) setRemovedThumbnailUrl(prev => prev ?? thumbnailPreview); setInitialThumbnailUrl(null); setThumbnail(null); setThumbnailPreview(null); }}><X className="h-4 w-4" /></Button></div> : <div className="text-center text-gray-500"><UploadCloud className="mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-2 text-gray-400" /><p className="text-sm font-medium">Click to upload</p></div>}
-                                </div>
-                                <Input id="thumbnail-upload" type="file" className="hidden" onChange={handleThumbnailChange} accept="image/*" />
-                            </label>
-                        </CardContent>
-                    </Card>
+                    <Card className="shadow-sm border-gray-200 flex flex-col h-full"><CardHeader className="pb-4 border-b border-gray-100"><CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">Basic Information</CardTitle></CardHeader><CardContent className="pt-6 space-y-5 flex-1"><div className="space-y-2"><Label>Product Title <span className="text-red-500">*</span></Label><Input value={title} onChange={(e) => setTitle(e.target.value)} required className="h-11" /></div><div className="space-y-2"><Label>Short Description (Max 255)</Label><Textarea value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} maxLength={255} className="min-h-[100px] resize-none" /><div className="text-xs text-gray-500 text-right">{shortDescription.length}/255</div></div><div className="space-y-2"><Label>Product Tags</Label><TagInput value={productTags} onChange={setProductTags} /></div></CardContent></Card>
+                    <Card className="shadow-sm border-gray-200 flex flex-col h-full"><CardHeader className="pb-4 border-b border-gray-100"><CardTitle className="text-base sm:text-lg font-semibold text-gray-900">Thumbnail Image <span className="text-red-500">*</span></CardTitle></CardHeader><CardContent className="pt-6 flex-1"><label htmlFor="thumbnail-upload" className="cursor-pointer group block w-full h-full"><div className="flex items-center justify-center w-full h-full min-h-[300px] border-2 border-dashed border-gray-300 rounded-lg p-4 transition-colors hover:border-blue-400 hover:bg-blue-50/50">{thumbnailPreview ? <div className="relative w-full h-full min-h-[300px] rounded-md overflow-hidden"><Image src={thumbnailPreview} alt="Thumbnail" fill style={{ objectFit: 'contain' }} className="rounded-md" /><Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-8 w-8 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10" onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!thumbnail && thumbnailPreview) setRemovedThumbnailUrl(prev => prev ?? thumbnailPreview); setInitialThumbnailUrl(null); setThumbnail(null); setThumbnailPreview(null); }}><X className="h-4 w-4" /></Button></div> : <div className="text-center text-gray-500"><UploadCloud className="mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-2 text-gray-400" /><p className="text-sm font-medium">Click to upload</p></div>}</div><Input id="thumbnail-upload" type="file" className="hidden" onChange={handleThumbnailChange} accept="image/*" /></label></CardContent></Card>
                 </div>
 
                 {/* Details & Pricing */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                    <Card className="shadow-sm border-gray-200 flex flex-col h-full">
-                        <CardHeader className="pb-4 border-b border-gray-100"><CardTitle className="text-base sm:text-lg font-semibold text-gray-900">Detailed Information</CardTitle></CardHeader>
-                        <CardContent className="pt-6 flex-1">
-                            <Tabs defaultValue="description" className="w-full h-full flex flex-col">
-                                <TabsList className="grid w-full grid-cols-3 bg-gray-50 h-auto p-1">
-                                    <TabsTrigger value="description" className="text-xs sm:text-sm py-2.5">Description</TabsTrigger>
-                                    <TabsTrigger value="specification" className="text-xs sm:text-sm py-2.5">Specification</TabsTrigger>
-                                    <TabsTrigger value="warranty" className="text-xs sm:text-sm py-2.5">Warranty</TabsTrigger>
-                                </TabsList>
-                                <TabsContent value="description" className="mt-4 flex-1"><RichTextEditor value={fullDescription} onChange={setFullDescription} /></TabsContent>
-                                <TabsContent value="specification" className="mt-4 flex-1"><RichTextEditor value={specification} onChange={setSpecification} /></TabsContent>
-                                <TabsContent value="warranty" className="mt-4 flex-1"><RichTextEditor value={warrantyPolicy} onChange={setWarrantyPolicy} /></TabsContent>
-                            </Tabs>
-                        </CardContent>
-                    </Card>
-                    <Card className="shadow-sm border-gray-200 flex flex-col h-full">
-                        <CardHeader className="pb-4 border-b border-gray-100"><CardTitle className="text-base sm:text-lg font-semibold text-gray-900">Pricing & Inventory</CardTitle></CardHeader>
-                        <CardContent className="pt-6 space-y-4 flex-1">
-                            <PricingInventory formData={pricingFormData} handleInputChange={handlePricingInputChange} handleNumberChange={handlePricingNumberChange} />
-                            <div className="space-y-2"><Label>Product Code (SKU)</Label><Input value={productCode} onChange={(e) => setProductCode(e.target.value)} className="h-11" /></div>
-                        </CardContent>
-                    </Card>
+                    <Card className="shadow-sm border-gray-200 flex flex-col h-full"><CardHeader className="pb-4 border-b border-gray-100"><CardTitle className="text-base sm:text-lg font-semibold text-gray-900">Detailed Information</CardTitle></CardHeader><CardContent className="pt-6 flex-1"><Tabs defaultValue="description" className="w-full h-full flex flex-col"><TabsList className="grid w-full grid-cols-3 bg-gray-50 h-auto p-1"><TabsTrigger value="description" className="text-xs sm:text-sm py-2.5">Description</TabsTrigger><TabsTrigger value="specification" className="text-xs sm:text-sm py-2.5">Specification</TabsTrigger><TabsTrigger value="warranty" className="text-xs sm:text-sm py-2.5">Warranty</TabsTrigger></TabsList><TabsContent value="description" className="mt-4 flex-1"><RichTextEditor value={fullDescription} onChange={setFullDescription} /></TabsContent><TabsContent value="specification" className="mt-4 flex-1"><RichTextEditor value={specification} onChange={setSpecification} /></TabsContent><TabsContent value="warranty" className="mt-4 flex-1"><RichTextEditor value={warrantyPolicy} onChange={setWarrantyPolicy} /></TabsContent></Tabs></CardContent></Card>
+                    <Card className="shadow-sm border-gray-200 flex flex-col h-full"><CardHeader className="pb-4 border-b border-gray-100"><CardTitle className="text-base sm:text-lg font-semibold text-gray-900">Pricing & Inventory</CardTitle></CardHeader><CardContent className="pt-6 space-y-4 flex-1"><PricingInventory formData={pricingFormData} handleInputChange={handlePricingInputChange} handleNumberChange={handlePricingNumberChange} /><div className="space-y-2"><Label>Product Code (SKU)</Label><Input value={productCode} onChange={(e) => setProductCode(e.target.value)} className="h-11" /></div></CardContent></Card>
                 </div>
 
                 {/* Categorization & Gallery */}
