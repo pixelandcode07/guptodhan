@@ -14,6 +14,7 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
     notFound();
   }
 
+  // আমরা এখানে কোনো ডাটা ফেচ করছি না, সব ProductForm-এ হ্যান্ডেল করা হবে
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">
@@ -32,6 +33,8 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
             </div>
           </div>
         </div>
+        
+        {/* শুধু আইডি পাস করা হচ্ছে */}
         <ProductForm productId={id} />
       </div>
     </div>

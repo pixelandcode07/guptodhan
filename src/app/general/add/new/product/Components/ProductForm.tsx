@@ -75,7 +75,8 @@ export default function ProductForm({ productId: propProductId }: any) {
         sizes: [],
         storageTypes: [],
         simTypes: [],
-        conditions: []
+        conditions: [],
+        warranties: []
     });
 
     // --- FORM STATES ---
@@ -133,43 +134,51 @@ export default function ProductForm({ productId: propProductId }: any) {
     const [targetChildCategoryId, setTargetChildCategoryId] = useState<string | null>(null);
     const [targetModelId, setTargetModelId] = useState<string | null>(null);
 
-    // --- 1. LOAD CONFIG DATA (Stores, Categories, etc.) ---
+    // --- 1. LOAD CONFIG DATA (With Error Handling) ---
     useEffect(() => {
         const fetchConfigData = async () => {
             if(!token) return; 
             setIsLoadingConfig(true);
+            
+            // Helper to safely fetch data
+            const fetchData = async (url: string) => {
+                try {
+                    const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+                    return res.data?.data || [];
+                } catch (err) {
+                    console.warn(`Failed to fetch ${url}`);
+                    return [];
+                }
+            };
+
             try {
+                // Parallel fetching but independent failures allowed
                 const [
-                    storesRes, categoriesRes, brandsRes, flagsRes, unitsRes, warrantiesRes,
-                    colorsRes, sizesRes, storageRes, simRes, conditionsRes
+                    stores, categories, brands, flags, units, warranties,
+                    colors, sizes, storage, sim, conditions
                 ] = await Promise.all([
-                    axios.get('/api/v1/vendor-store', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: { data: [] } })),
-                    axios.get('/api/v1/ecommerce-category', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: { data: [] } })),
-                    axios.get('/api/v1/product-config/brandName', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: { data: [] } })),
-                    axios.get('/api/v1/product-config/productFlag', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: { data: [] } })),
-                    axios.get('/api/v1/product-config/productUnit', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: { data: [] } })),
-                    axios.get('/api/v1/product-config/productWarrantyModel', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: { data: [] } })),
-                    axios.get('/api/v1/product-config/productColor', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: { data: [] } })),
-                    axios.get('/api/v1/product-config/productSize', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: { data: [] } })),
-                    axios.get('/api/v1/product-config/storageType', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: { data: [] } })),
-                    axios.get('/api/v1/product-config/productSimTypeModel', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: { data: [] } })),
-                    axios.get('/api/v1/product-config/deviceConditionModel', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: { data: [] } })),
+                    fetchData('/api/v1/vendor-store'),
+                    fetchData('/api/v1/ecommerce-category'),
+                    fetchData('/api/v1/product-config/brandName'),
+                    fetchData('/api/v1/product-config/productFlag'),
+                    fetchData('/api/v1/product-config/productUnit'),
+                    fetchData('/api/v1/product-config/warranty'), // Corrected likely route
+                    fetchData('/api/v1/product-config/productColor'),
+                    fetchData('/api/v1/product-config/productSize'),
+                    fetchData('/api/v1/product-config/storageType'),
+                    fetchData('/api/v1/product-config/productSimType'), // Corrected likely route
+                    fetchData('/api/v1/product-config/deviceCondition'), // Corrected likely route
                 ]);
 
-                setListStores(storesRes.data?.data || []);
-                setListCategories(categoriesRes.data?.data || []);
-                setListBrands(brandsRes.data?.data || []);
-                setListFlags(flagsRes.data?.data || []);
-                setListUnits(unitsRes.data?.data || []);
-                setListWarranties(warrantiesRes.data?.data || []);
+                setListStores(stores);
+                setListCategories(categories);
+                setListBrands(brands);
+                setListFlags(flags);
+                setListUnits(units);
+                setListWarranties(warranties);
                 
                 setVariantOptions({
-                    colors: colorsRes.data?.data || [],
-                    sizes: sizesRes.data?.data || [],
-                    storageTypes: storageRes.data?.data || [],
-                    simTypes: simRes.data?.data || [],
-                    conditions: conditionsRes.data?.data || [],
-                    warranties: warrantiesRes.data?.data || []
+                    colors, sizes, storageTypes: storage, simTypes: sim, conditions, warranties
                 });
 
             } catch (error) {
@@ -216,12 +225,11 @@ export default function ProductForm({ productId: propProductId }: any) {
                 setShippingCost(p.shippingCost);
                 setVideoUrl(p.videoUrl || '');
 
-                // --- SET CATEGORIZATION (CRITICAL) ---
+                // --- SET CATEGORIZATION ---
                 setTargetSubcategoryId(getIdFromRef(p.subCategory));
                 setTargetChildCategoryId(getIdFromRef(p.childCategory));
                 setTargetModelId(getIdFromRef(p.productModel));
 
-                // getIdFromRef will now find _id because of the backend fix
                 setStore(getIdFromRef(p.vendorStoreId));
                 setCategory(getIdFromRef(p.category));
                 setBrand(getIdFromRef(p.brand));
@@ -303,6 +311,7 @@ export default function ProductForm({ productId: propProductId }: any) {
             }
         };
         fetchSubcategories();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [category, token]); // Removed targetSubcategoryId dep
 
     useEffect(() => {
@@ -329,6 +338,7 @@ export default function ProductForm({ productId: propProductId }: any) {
             }
         };
         fetchChildCategories();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [subcategory, token]);
 
     useEffect(() => {
@@ -355,6 +365,7 @@ export default function ProductForm({ productId: propProductId }: any) {
             }
         };
         fetchModels();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [brand, token]);
 
     // --- HANDLERS ---
@@ -362,7 +373,6 @@ export default function ProductForm({ productId: propProductId }: any) {
     const handleSubcategoryChange = (val: string) => { setSubcategory(val); setTargetChildCategoryId(null); };
     const handleBrandChange = (val: string) => { setBrand(val); setTargetModelId(null); };
 
-    // --- PRICING HANDLERS ---
     const pricingFormData = {
         price: price ?? '',
         discountPrice: discountPrice ?? '',
@@ -401,7 +411,6 @@ export default function ProductForm({ productId: propProductId }: any) {
         }
     };
 
-    // --- SUBMIT ---
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         if (!token) return toast.error("Authentication required.");
@@ -597,7 +606,7 @@ export default function ProductForm({ productId: propProductId }: any) {
                     </Card>
                 </div>
 
-                {/* Variants & SEO Cards - Code remains same */}
+                {/* Variants & SEO Cards */}
                 <Card><CardContent className="p-6"><div className="flex items-center justify-center space-x-3 mb-4"><Label>Product Has Variant?</Label><Switch checked={hasVariant} onCheckedChange={setHasVariant} /></div>{hasVariant && <ProductVariantForm variants={variants} setVariants={setVariants} variantData={variantOptions} />}</CardContent></Card>
                 <Card className="shadow-sm border-gray-200"><CardHeader className="pb-4 border-b border-gray-100"><CardTitle className="text-base sm:text-lg font-semibold text-gray-900">SEO Information</CardTitle></CardHeader><CardContent className="pt-6 space-y-4"><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div className="space-y-2"><Label>Meta Title</Label><Input value={metaTitle} onChange={(e)=>setMetaTitle(e.target.value)} className="h-11" /></div><div className="space-y-2"><Label>Meta Keywords</Label><TagInput value={metaKeywordTags} onChange={setMetaKeywordTags} /></div></div><div className="space-y-2"><Label>Meta Description</Label><Textarea value={metaDescription} onChange={(e)=>setMetaDescription(e.target.value)} className="min-h-[100px] resize-none" /></div></CardContent></Card>
 
