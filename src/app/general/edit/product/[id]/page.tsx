@@ -4,6 +4,7 @@ import { CategoryServices } from '@/lib/modules/ecommerce-category/services/ecom
 import { BrandServices as ProductConfigBrandServices } from '@/lib/modules/product-config/services/brandName.service';
 import { ProductFlagServices } from '@/lib/modules/product-config/services/productFlag.service';
 import { ProductUnitServices } from '@/lib/modules/product-config/services/productUnit.service';
+import { ModelFormServices } from '@/lib/modules/product-config/services/modelCreate.service';
 import { ProductWarrantyServices } from '@/lib/modules/product-config/services/warranty.service';
 import { ProductColorServices } from '@/lib/modules/product-config/services/productColor.service';
 import { ProductSimTypeServices } from '@/lib/modules/product-config/services/productSimType.service';
@@ -28,13 +29,14 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
   }
 
   try {
-    // ✅ সব ড্রপডাউন অপশন সার্ভার থেকে একবারেই আনা হচ্ছে
+    // ✅ সব ডাটা প্যারালাল রিকোয়েস্ট দিয়ে আনা হচ্ছে
     const [
       storesData, 
       categoriesData, 
       brandsData, 
       flagsData, 
       unitsData,
+      modelsData, // ✅ সব মডেল আনা হচ্ছে
       warrantiesData,
       simTypesData,
       colorsData,
@@ -47,6 +49,7 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
       ProductConfigBrandServices.getAllBrandsFromDB(),
       ProductFlagServices.getAllProductFlagsFromDB(),
       ProductUnitServices.getAllProductUnitsFromDB(),
+      ModelFormServices.getAllModelFormsFromDB(), // ✅ মডেল সার্ভিস কল
       ProductWarrantyServices.getAllProductWarrantiesFromDB(), 
       ProductSimTypeServices.getActiveProductSimTypesFromDB(),
       ProductColorServices.getAllProductColorsFromDB(),
@@ -55,13 +58,14 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
       StorageTypeServices.getAllStorageTypesFromDB(),
     ]);
 
-    // ✅ JSON সিরিয়ালাইজেশন (Warning এড়ানোর জন্য)
+    // ✅ ডাটা প্রসেসিং
     const initialData = {
       stores: JSON.parse(JSON.stringify(storesData || [])),
       categories: JSON.parse(JSON.stringify(categoriesData || [])),
       brands: JSON.parse(JSON.stringify(brandsData || [])),
       flags: JSON.parse(JSON.stringify(flagsData || [])),
       units: JSON.parse(JSON.stringify(unitsData || [])),
+      models: JSON.parse(JSON.stringify(modelsData || [])), // ✅ মডেল লিস্ট পাস করা হচ্ছে
       warranties: JSON.parse(JSON.stringify(warrantiesData || [])),
       variantOptions: {
         warranties: JSON.parse(JSON.stringify(warrantiesData || [])),
