@@ -70,7 +70,12 @@ const populateColorAndSizeNames = async (product: any) => {
 // 🚀 REUSABLE AGGREGATION PIPELINE
 // ===================================
 
+// ===================================
+// 🚀 REUSABLE AGGREGATION PIPELINE
+// ===================================
+
 const getProductLookupPipeline = () => [
+  // 1. Lookup Brand
   {
     $lookup: {
       from: 'brandmodels',
@@ -80,7 +85,8 @@ const getProductLookupPipeline = () => [
     },
   },
   { $unwind: { path: '$brand', preserveNullAndEmptyArrays: true } },
-  
+
+  // 2. Lookup Flag
   {
     $lookup: {
       from: 'productflags',
@@ -90,7 +96,8 @@ const getProductLookupPipeline = () => [
     },
   },
   { $unwind: { path: '$flag', preserveNullAndEmptyArrays: true } },
-  
+
+  // 3. Lookup Warranty
   {
     $lookup: {
       from: 'productwarrantymodels',
@@ -100,7 +107,8 @@ const getProductLookupPipeline = () => [
     },
   },
   { $unwind: { path: '$warranty', preserveNullAndEmptyArrays: true } },
-  
+
+  // 4. Lookup Product Model
   {
     $lookup: {
       from: 'productmodels',
@@ -110,7 +118,8 @@ const getProductLookupPipeline = () => [
     },
   },
   { $unwind: { path: '$productModel', preserveNullAndEmptyArrays: true } },
-  
+
+  // 5. Lookup Category
   {
     $lookup: {
       from: 'categorymodels',
@@ -120,7 +129,8 @@ const getProductLookupPipeline = () => [
     },
   },
   { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
-  
+
+  // 6. Lookup SubCategory
   {
     $lookup: {
       from: 'subcategorymodels',
@@ -130,7 +140,8 @@ const getProductLookupPipeline = () => [
     },
   },
   { $unwind: { path: '$subCategory', preserveNullAndEmptyArrays: true } },
-  
+
+  // 7. Lookup ChildCategory
   {
     $lookup: {
       from: 'childcategorymodels',
@@ -140,7 +151,8 @@ const getProductLookupPipeline = () => [
     },
   },
   { $unwind: { path: '$childCategory', preserveNullAndEmptyArrays: true } },
-  
+
+  // 8. Lookup Weight Unit
   {
     $lookup: {
       from: 'productunits',
@@ -150,7 +162,8 @@ const getProductLookupPipeline = () => [
     },
   },
   { $unwind: { path: '$weightUnit', preserveNullAndEmptyArrays: true } },
-  
+
+  // 9. Lookup Vendor Store
   {
     $lookup: {
       from: 'storemodels',
@@ -160,23 +173,45 @@ const getProductLookupPipeline = () => [
     },
   },
   { $unwind: { path: '$vendorStoreId', preserveNullAndEmptyArrays: true } },
-  
+
+  // 10. ✅ PROJECT STAGE (CRITICAL FIX FOR EDIT MODE)
   {
     $project: {
+      // Nested Objects: Must include _id for dropdown matching
+      'brand._id': 1,
       'brand.name': 1,
       'brand.brandName': 1,
+      'brand.brandLogo': 1,
+
+      'flag._id': 1,
       'flag.name': 1,
+
+      'warranty._id': 1,
       'warranty.warrantyName': 1,
+
+      'productModel._id': 1,
       'productModel.name': 1,
+
+      'category._id': 1,
       'category.name': 1,
       'category.slug': 1,
+
+      'subCategory._id': 1,
       'subCategory.name': 1,
       'subCategory.slug': 1,
+
+      'childCategory._id': 1,
       'childCategory.name': 1,
       'childCategory.slug': 1,
+
+      'weightUnit._id': 1,
       'weightUnit.name': 1,
+
+      'vendorStoreId._id': 1, // ⚠️ This was likely missing
       'vendorStoreId.storeName': 1,
       'vendorStoreId.storeLogo': 1,
+
+      // Root Fields
       productId: 1,
       productTitle: 1,
       vendorName: 1,
@@ -193,10 +228,7 @@ const getProductLookupPipeline = () => [
       stock: 1,
       sku: 1,
       rewardPoints: 1,
-      
-      // ✅✅✅ ADDED: Custom Delivery Charge Field ✅✅✅
       shippingCost: 1,
-
       offerDeadline: 1,
       metaTitle: 1,
       metaKeyword: 1,

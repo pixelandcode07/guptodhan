@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { ZodError } from "zod";
 import { StatusCodes } from "http-status-codes";
 import { sendResponse } from "@/lib/utils/sendResponse";
@@ -7,6 +7,8 @@ import { createVendorProductValidationSchema } from "./vendorProduct.validation"
 import { IVendorProduct } from "./vendorProduct.interface";
 import dbConnect from "@/lib/db";
 import { VendorProductServices } from "./vendorProduct.service";
+import { VendorProductModel } from "@/lib/models-index";
+import { CacheKeys, deleteCacheKey, deleteCachePattern } from "@/lib/redis/cache-helpers";
 
 // ===================================
 // 📝 CREATE VENDOR PRODUCT
@@ -189,6 +191,7 @@ const getVendorProductById = async (
   });
 };
 
+
 const getVendorProductsByCategory = async (
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -329,6 +332,7 @@ const updateVendorProduct = async (
     const { id } = await params;
     const body = await req.json();
 
+    // ✅ Prepare payload with proper ObjectId conversions
     const payload: Partial<IVendorProduct> = { ...body };
 
     if (body.category) payload.category = new Types.ObjectId(body.category);
@@ -343,13 +347,16 @@ const updateVendorProduct = async (
     if (body.warranty) payload.warranty = new Types.ObjectId(body.warranty);
     if (body.weightUnit)
       payload.weightUnit = new Types.ObjectId(body.weightUnit);
+    if (body.vendorStoreId)
+      payload.vendorStoreId = new Types.ObjectId(body.vendorStoreId);
 
-    const result = await VendorProductServices.updateVendorProductInDB(
-      id,
-      payload
-    );
+    // ✅ Update the product in database
+    const updateResult = await VendorProductModel.findByIdAndUpdate(id, payload, {
+      new: true,
+      runValidators: true,
+    });
 
-    if (!result) {
+    if (!updateResult) {
       return sendResponse({
         success: false,
         statusCode: StatusCodes.NOT_FOUND,
@@ -358,11 +365,176 @@ const updateVendorProduct = async (
       });
     }
 
+    // ✅ Fetch the updated product with full aggregation pipeline
+    // (Same format as GET endpoint for consistency)
+    const result = await VendorProductModel.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(id) } },
+      
+      // ✅ Lookup category
+      {
+        $lookup: {
+          from: 'categorymodels',
+          localField: 'category',
+          foreignField: '_id',
+          as: 'category',
+        },
+      },
+      { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup subcategory
+      {
+        $lookup: {
+          from: 'subcategorymodels',
+          localField: 'subCategory',
+          foreignField: '_id',
+          as: 'subCategory',
+        },
+      },
+      { $unwind: { path: '$subCategory', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup child category
+      {
+        $lookup: {
+          from: 'childcategorymodels',
+          localField: 'childCategory',
+          foreignField: '_id',
+          as: 'childCategory',
+        },
+      },
+      { $unwind: { path: '$childCategory', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup brand
+      {
+        $lookup: {
+          from: 'brandmodels',
+          localField: 'brand',
+          foreignField: '_id',
+          as: 'brand',
+        },
+      },
+      { $unwind: { path: '$brand', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup product model
+      {
+        $lookup: {
+          from: 'productmodels',
+          localField: 'productModel',
+          foreignField: '_id',
+          as: 'productModel',
+        },
+      },
+      { $unwind: { path: '$productModel', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup flag
+      {
+        $lookup: {
+          from: 'productflags',
+          localField: 'flag',
+          foreignField: '_id',
+          as: 'flag',
+        },
+      },
+      { $unwind: { path: '$flag', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup warranty
+      {
+        $lookup: {
+          from: 'productwarrantymodels',
+          localField: 'warranty',
+          foreignField: '_id',
+          as: 'warranty',
+        },
+      },
+      { $unwind: { path: '$warranty', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup weight unit
+      {
+        $lookup: {
+          from: 'productunits',
+          localField: 'weightUnit',
+          foreignField: '_id',
+          as: 'weightUnit',
+        },
+      },
+      { $unwind: { path: '$weightUnit', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup vendor store
+      {
+        $lookup: {
+          from: 'storemodels',
+          localField: 'vendorStoreId',
+          foreignField: '_id',
+          as: 'vendorStoreId',
+        },
+      },
+      { $unwind: { path: '$vendorStoreId', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup colors for productOptions
+      {
+        $lookup: {
+          from: 'productcolors',
+          localField: 'productOptions.color',
+          foreignField: '_id',
+          as: 'colorDetails',
+        },
+      },
+
+      // ✅ Lookup sizes for productOptions
+      {
+        $lookup: {
+          from: 'productsizes',
+          localField: 'productOptions.size',
+          foreignField: '_id',
+          as: 'sizeDetails',
+        },
+      },
+    ]);
+
+    if (!result || !result[0]) {
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.NOT_FOUND,
+        message: "Failed to fetch updated product!",
+        data: null,
+      });
+    }
+
+    const productDoc = result[0];
+
+    // ✅ Transform color and size arrays (ObjectIds → names)
+    const colorMap = new Map(
+      (productDoc.colorDetails || []).map((c: any) => [String(c._id), c.colorName])
+    );
+    const sizeMap = new Map(
+      (productDoc.sizeDetails || []).map((s: any) => [String(s._id), s.name])
+    );
+
+    const transformedProduct = {
+      ...productDoc,
+      productOptions: (productDoc.productOptions || []).map((option: any) => ({
+        ...option,
+        color: Array.isArray(option.color)
+          ? option.color.map((id: any) => colorMap.get(String(id)) || String(id))
+          : option.color,
+        size: Array.isArray(option.size)
+          ? option.size.map((id: any) => sizeMap.get(String(id)) || String(id))
+          : option.size,
+      })),
+    };
+
+    // ✅ Remove temporary lookup fields
+    delete transformedProduct.colorDetails;
+    delete transformedProduct.sizeDetails;
+
+    // ✅ Clear cache after update
+    await deleteCacheKey(CacheKeys.PRODUCT.BY_ID(id));
+    await deleteCachePattern(CacheKeys.PATTERNS.PRODUCTS_ALL);
+
     return sendResponse({
       success: true,
       statusCode: StatusCodes.OK,
       message: "Vendor product updated successfully!",
-      data: result,
+      data: transformedProduct,
     });
   } catch (err) {
     console.error("Error updating vendor product:", err);
@@ -378,6 +550,7 @@ const updateVendorProduct = async (
     });
   }
 };
+
 
 const deleteVendorProduct = async (
   req: NextRequest,
