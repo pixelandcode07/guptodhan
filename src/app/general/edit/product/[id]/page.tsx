@@ -28,7 +28,7 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
   }
 
   try {
-    // ✅ সার্ভার সাইড থেকে সব লিস্ট ডাটা আনা হচ্ছে (ড্রপডাউন পপুলেট করার জন্য)
+    // ✅ সব ড্রপডাউন অপশন সার্ভার থেকে একবারেই আনা হচ্ছে
     const [
       storesData, 
       categoriesData, 
@@ -55,7 +55,7 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
       StorageTypeServices.getAllStorageTypesFromDB(),
     ]);
 
-    // ✅ ডাটাগুলো JSON এ কনভার্ট করা হচ্ছে যাতে ক্লায়েন্ট কম্পোনেন্টে পাঠানো যায়
+    // ✅ JSON সিরিয়ালাইজেশন (Warning এড়ানোর জন্য)
     const initialData = {
       stores: JSON.parse(JSON.stringify(storesData || [])),
       categories: JSON.parse(JSON.stringify(categoriesData || [])),
