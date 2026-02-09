@@ -109,7 +109,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
     const [metaTitle, setMetaTitle] = useState('');
     const [metaKeywordTags, setMetaKeywordTags] = useState<string[]>([]);
     const [metaDescription, setMetaDescription] = useState('');
-
+ 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoadingProduct, setIsLoadingProduct] = useState(isEditMode);
 
