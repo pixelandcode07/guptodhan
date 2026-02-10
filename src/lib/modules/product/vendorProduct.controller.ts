@@ -121,7 +121,8 @@ const getAllVendorProducts = async (req: NextRequest) => {
   
   const { searchParams } = new URL(req.url);
   const page = Number(searchParams.get("page")) || 1;
-  const limit = Number(searchParams.get("limit"));
+  // 🔥 FIX: যদি limit প্যারামিটার না থাকে বা 0 হয়, তবে ডিফল্ট 20 হবে
+  const limit = Number(searchParams.get("limit")) || 20; 
   
   const result = await VendorProductServices.getAllVendorProductsFromDB(page, limit);
 
@@ -153,6 +154,7 @@ const getActiveVendorProducts = async (req: NextRequest) => {
   
   const { searchParams } = new URL(req.url);
   const page = Number(searchParams.get("page")) || 1;
+  // 🔥 FIX: এখানেও limit ফিক্স করা হলো
   const limit = Number(searchParams.get("limit")) || 20;
   
   const result = await VendorProductServices.getActiveVendorProductsFromDB(page, limit);
