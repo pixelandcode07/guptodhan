@@ -6,6 +6,10 @@ import { ProductQAModel } from "../product-qna/productQNA.model";
 import { StoreModel } from "../vendor-store/vendorStore.model";
 import { ProductColor } from "../product-config/models/productColor.model";
 import { ProductSize } from "../product-config/models/productSize.model";
+import { StorageType } from "../product-config/models/storageType.model";
+import { DeviceConditionModel } from "../product-config/models/deviceCondition.model";
+import { ProductSimTypeModel } from "../product-config/models/productSimType.model";
+import { ProductWarrantyModel } from "../product-config/models/warranty.model";
 import { Types } from 'mongoose';
 
 // ✅ Import Redis cache helpers
@@ -21,6 +25,10 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
 
   const colorIds = new Set<string>();
   const sizeIds = new Set<string>();
+  const storageIds = new Set<string>();
+  const simTypeIds = new Set<string>();
+  const conditionIds = new Set<string>();
+  const warrantyIds = new Set<string>();
 
   // ১. সব আইডি সংগ্রহ করা
   for (const p of products) {
@@ -35,17 +43,45 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
             if(id && mongoose.Types.ObjectId.isValid(id)) sizeIds.add(String(id));
         });
       }
+      // Storage ID
+      if (opt.storage && mongoose.Types.ObjectId.isValid(opt.storage)) {
+        storageIds.add(String(opt.storage));
+      }
+      // SimType IDs
+      if (Array.isArray(opt.simType)) {
+        opt.simType.forEach((id: any) => {
+            if(id && mongoose.Types.ObjectId.isValid(id)) simTypeIds.add(String(id));
+        });
+      }
+      // Condition IDs
+      if (Array.isArray(opt.condition)) {
+        opt.condition.forEach((id: any) => {
+            if(id && mongoose.Types.ObjectId.isValid(id)) conditionIds.add(String(id));
+        });
+      }
+      // Warranty ID
+      if (opt.warranty && mongoose.Types.ObjectId.isValid(opt.warranty)) {
+        warrantyIds.add(String(opt.warranty));
+      }
     }
   }
 
-  // ২. ডাটাবেস থেকে কালার ও সাইজ আনা
-  const [colors, sizes] = await Promise.all([
+  // ২. ডাটাবেস থেকে সব ডাটা আনা (Fetch all data from DB)
+  const [colors, sizes, storages, simTypes, conditions, warranties] = await Promise.all([
     colorIds.size ? ProductColor.find({ _id: { $in: Array.from(colorIds) } }).lean() : [],
     sizeIds.size ? ProductSize.find({ _id: { $in: Array.from(sizeIds) } }).lean() : [],
+    storageIds.size ? StorageType.find({ _id: { $in: Array.from(storageIds) } }).lean() : [],
+    simTypeIds.size ? ProductSimTypeModel.find({ _id: { $in: Array.from(simTypeIds) } }).lean() : [],
+    conditionIds.size ? DeviceConditionModel.find({ _id: { $in: Array.from(conditionIds) } }).lean() : [],
+    warrantyIds.size ? ProductWarrantyModel.find({ _id: { $in: Array.from(warrantyIds) } }).lean() : [],
   ]);
 
   const colorMap = new Map(colors.map((c: any) => [String(c._id), c])); 
   const sizeMap = new Map(sizes.map((s: any) => [String(s._id), s]));
+  const storageMap = new Map(storages.map((st: any) => [String(st._id), st]));
+  const simTypeMap = new Map(simTypes.map((sim: any) => [String(sim._id), sim]));
+  const conditionMap = new Map(conditions.map((cond: any) => [String(cond._id), cond]));
+  const warrantyMap = new Map(warranties.map((war: any) => [String(war._id), war]));
 
   // ৩. ডাটা ম্যাপ করা
   return products.map((p: any) => ({
@@ -70,10 +106,38 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
           })
         : [],
       
-      // ✅ Explicitly ensure simple arrays are preserved (Optional but safe)
-      unit: opt.unit || [],
-      simType: opt.simType || [],
-      condition: opt.condition || []
+      // ✅ Storage Populate
+      storage: (() => {
+        if (!opt.storage) return undefined;
+        const st = storageMap.get(String(opt.storage));
+        return st ? { _id: String(st._id), ram: st.ram, rom: st.rom } : opt.storage;
+      })(),
+
+      // ✅ SimType Populate
+      simType: Array.isArray(opt.simType) 
+        ? opt.simType.map((id: any) => {
+            const sim = simTypeMap.get(String(id));
+            return sim ? { _id: String(sim._id), name: sim.name } : id;
+          })
+        : [],
+
+      // ✅ Condition Populate
+      condition: Array.isArray(opt.condition) 
+        ? opt.condition.map((id: any) => {
+            const cond = conditionMap.get(String(id));
+            return cond ? { _id: String(cond._id), deviceCondition: cond.deviceCondition } : id;
+          })
+        : [],
+
+      // ✅ Warranty Populate
+      warranty: (() => {
+        if (!opt.warranty) return undefined;
+        const war = warrantyMap.get(String(opt.warranty));
+        return war ? { _id: String(war._id), warrantyName: war.warrantyName } : opt.warranty;
+      })(),
+      
+      // ✅ Preserve unit array
+      unit: opt.unit || []
     })) || [],
   }));
 };

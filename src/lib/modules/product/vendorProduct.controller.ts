@@ -52,26 +52,27 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
           : option.unit
             ? [option.unit]
             : [],
-        simType: Array.isArray(option.simType)
-          ? option.simType
-          : option.simType
-            ? [option.simType]
-            : [],
-        condition: Array.isArray(option.condition)
-          ? option.condition
-          : option.condition
-            ? [option.condition]
-            : [],
-        color: Array.isArray(option.color)
-          ? option.color
-          : option.color
-            ? [option.color]
-            : [],
-        size: Array.isArray(option.size)
-          ? option.size
-          : option.size
-            ? [option.size]
-            : [],
+        simType: option.simType 
+          ? (Array.isArray(option.simType)
+              ? option.simType.map((id: string) => new Types.ObjectId(id))
+              : [new Types.ObjectId(option.simType)])
+          : [],
+        condition: option.condition
+          ? (Array.isArray(option.condition)
+              ? option.condition.map((id: string) => new Types.ObjectId(id))
+              : [new Types.ObjectId(option.condition)])
+          : [],
+        color: option.color
+          ? (Array.isArray(option.color)
+              ? option.color.map((id: string) => new Types.ObjectId(id))
+              : [new Types.ObjectId(option.color)])
+          : [],
+        size: option.size
+          ? (Array.isArray(option.size)
+              ? option.size.map((id: string) => new Types.ObjectId(id))
+              : [new Types.ObjectId(option.size)])
+          : [],
+        storage: option.storage || undefined,
         warranty: option.warranty || undefined,
         stock: option.stock || undefined,
         price: option.price || undefined,
@@ -351,6 +352,43 @@ const updateVendorProduct = async (
       payload.weightUnit = new Types.ObjectId(body.weightUnit);
     if (body.vendorStoreId)
       payload.vendorStoreId = new Types.ObjectId(body.vendorStoreId);
+    
+    // ✅ Handle productOptions with proper ObjectId conversions
+    if (body.productOptions && Array.isArray(body.productOptions)) {
+      payload.productOptions = body.productOptions.map((option: any) => ({
+        productImage: option.productImage || undefined,
+        unit: Array.isArray(option.unit)
+          ? option.unit
+          : option.unit
+            ? [option.unit]
+            : [],
+        simType: option.simType 
+          ? (Array.isArray(option.simType)
+              ? option.simType.map((id: string) => new Types.ObjectId(id))
+              : [new Types.ObjectId(option.simType)])
+          : [],
+        condition: option.condition
+          ? (Array.isArray(option.condition)
+              ? option.condition.map((id: string) => new Types.ObjectId(id))
+              : [new Types.ObjectId(option.condition)])
+          : [],
+        color: option.color
+          ? (Array.isArray(option.color)
+              ? option.color.map((id: string) => new Types.ObjectId(id))
+              : [new Types.ObjectId(option.color)])
+          : [],
+        size: option.size
+          ? (Array.isArray(option.size)
+              ? option.size.map((id: string) => new Types.ObjectId(id))
+              : [new Types.ObjectId(option.size)])
+          : [],
+        storage: option.storage || undefined,
+        warranty: option.warranty || undefined,
+        stock: option.stock || undefined,
+        price: option.price || undefined,
+        discountPrice: option.discountPrice || undefined,
+      }));
+    }
 
     // ✅ Update the product in database
     const updateResult = await VendorProductModel.findByIdAndUpdate(id, payload, {
