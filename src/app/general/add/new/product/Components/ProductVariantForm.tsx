@@ -305,7 +305,10 @@ const VariantCard = React.memo(({
           {/* Attributes */}
           <div>
               <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Color</Label>
-              <Select value={variant.color} onValueChange={handleColorChange}>
+              <Select 
+                value={variant.color || undefined} 
+                onValueChange={handleColorChange}
+              >
                   <SelectTrigger className="h-8 text-xs bg-white">
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
@@ -321,7 +324,10 @@ const VariantCard = React.memo(({
 
           <div>
               <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Size</Label>
-              <Select value={variant.size} onValueChange={handleSizeChange}>
+              <Select 
+                value={variant.size || undefined} 
+                onValueChange={handleSizeChange}
+              >
                   <SelectTrigger className="h-8 text-xs bg-white">
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
@@ -337,7 +343,10 @@ const VariantCard = React.memo(({
 
           <div>
               <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Storage</Label>
-              <Select value={variant.storage} onValueChange={handleStorageChange}>
+              <Select 
+                value={variant.storage || undefined} 
+                onValueChange={handleStorageChange}
+              >
                   <SelectTrigger className="h-8 text-xs bg-white">
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
@@ -354,7 +363,10 @@ const VariantCard = React.memo(({
           {/* Tech Specs */}
           <div>
               <Label className="text-[11px] font-medium text-slate-700 mb-1 block">SIM Type</Label>
-              <Select value={variant.simType} onValueChange={handleSimTypeChange}>
+              <Select 
+                value={variant.simType || undefined} 
+                onValueChange={handleSimTypeChange}
+              >
                   <SelectTrigger className="h-8 text-xs bg-white">
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
@@ -370,7 +382,10 @@ const VariantCard = React.memo(({
 
           <div>
               <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Condition</Label>
-              <Select value={variant.condition} onValueChange={handleConditionChange}>
+              <Select 
+                value={variant.condition || undefined} 
+                onValueChange={handleConditionChange}
+              >
                   <SelectTrigger className="h-8 text-xs bg-white">
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
@@ -386,7 +401,10 @@ const VariantCard = React.memo(({
 
           <div>
               <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Warranty</Label>
-              <Select value={variant.warranty} onValueChange={handleWarrantyChange}>
+              <Select 
+                value={variant.warranty || undefined} 
+                onValueChange={handleWarrantyChange}
+              >
                   <SelectTrigger className="h-8 text-xs bg-white">
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
