@@ -265,6 +265,7 @@ const reorderClassifiedCategoryService = async (orderedIds: string[]) => {
 // 🔥 GET PAGE DATA BY SLUG (Single API) - SOLVED HERE
 // ================================================================
 const getCategoryPageDataBySlugFromDB = async (slug: string, filters: any) => {
+  // ১. Slug দিয়ে ক্যাটাগরি খোঁজা
   const category = await ClassifiedCategory.findOne({ 
     slug: { $regex: new RegExp(`^${slug}$`, 'i') }, 
     status: 'active' 
@@ -274,60 +275,68 @@ const getCategoryPageDataBySlugFromDB = async (slug: string, filters: any) => {
 
   const categoryId = category._id;
 
+  // ২. বেসিক কুয়েরি
   const query: any = { 
     category: new Types.ObjectId(categoryId as string), 
     status: 'active' 
   };
 
-  // --- Updated Filter Logic for Arrays ---
+  // --- 🔥 FIXED FILTER LOGIC ---
   
-  // A. Search
+  // A. Search (Title)
   if (filters.search) {
     query.title = { $regex: filters.search, $options: 'i' };
   }
 
-  // B. Sub Category (Handle Array)
+  // B. Sub Category (Array of ObjectIds)
   if (filters.subCategory) {
-    // If it's an array, map to ObjectIds
     const subCats = Array.isArray(filters.subCategory) ? filters.subCategory : [filters.subCategory];
-    query.subCategory = { $in: subCats.map((id:string) => new Types.ObjectId(id)) };
+    // ✅ FIX: Convert all strings to ObjectIds
+    query.subCategory = { $in: subCats.map((id: string) => new Types.ObjectId(id)) };
   }
 
-  // C. Brand (Handle Array with Case-Insensitive Regex)
+  // C. Brand (Array of Strings) - ✅ FIX: No Regex inside $in
   if (filters.brand) {
     const brands = Array.isArray(filters.brand) ? filters.brand : [filters.brand];
-    // Create regex for each selected brand
-    const brandRegexes = brands.map((b:string) => new RegExp(`^${b}$`, 'i'));
-    query.brand = { $in: brandRegexes };
+    // MongoDB $in supports array of strings directly
+    query.brand = { $in: brands };
   }
 
-  // D. Location (Handle Array)
+  // D. Location (District & Division) - ✅ FIX: No Regex inside $in
   if (filters.district) {
     const districts = Array.isArray(filters.district) ? filters.district : [filters.district];
-    const distRegexes = districts.map((d:string) => new RegExp(`^${d}$`, 'i'));
-    query.district = { $in: distRegexes };
+    query.district = { $in: districts };
+  }
+  if (filters.division) {
+    const divisions = Array.isArray(filters.division) ? filters.division : [filters.division];
+    query.division = { $in: divisions };
   }
 
-  // E. Price
+  // E. Price Range
   if (filters.minPrice || filters.maxPrice) {
     query.price = {};
     if (filters.minPrice) query.price.$gte = Number(filters.minPrice);
     if (filters.maxPrice) query.price.$lte = Number(filters.maxPrice);
   }
 
-  // Sorting
+  // F. Sorting
   let sortOption: any = { createdAt: -1 };
-  if (filters.sort === 'priceLowHigh') sortOption = { price: 1 };
-  else if (filters.sort === 'priceHighLow') sortOption = { price: -1 };
+  if (filters.sort === 'priceLowHigh') {
+    sortOption = { price: 1 };
+  } else if (filters.sort === 'priceHighLow') {
+    sortOption = { price: -1 };
+  }
 
-  // Run Queries
+  // ৩. প্যারালাল কুয়েরি
   const [ads, filtersRaw, priceStats] = await Promise.all([
+    // A. Filtered Ads
     ClassifiedAd.find(query)
       .populate('subCategory', 'name')
       .populate('brand', 'name')
       .sort(sortOption)
       .lean(),
 
+    // B. Filters Facets (Always from Base Category to show all options)
     ClassifiedAd.aggregate([
       { $match: { category: new Types.ObjectId(categoryId as string), status: 'active' } },
       {
@@ -352,9 +361,16 @@ const getCategoryPageDataBySlugFromDB = async (slug: string, filters: any) => {
       }
     ]),
 
+    // C. Price Range (Global for this category)
     ClassifiedAd.aggregate([
       { $match: { category: new Types.ObjectId(categoryId as string), status: 'active' } },
-      { $group: { _id: null, minPrice: { $min: "$price" }, maxPrice: { $max: "$price" } } }
+      {
+        $group: {
+          _id: null,
+          minPrice: { $min: "$price" },
+          maxPrice: { $max: "$price" }
+        }
+      }
     ])
   ]);
 
