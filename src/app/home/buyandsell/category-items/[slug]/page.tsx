@@ -1,7 +1,7 @@
 import axios from 'axios';
-import CategoryItemsClient from './CategoryItemsClient';
 import { generateGuptodhanMetadata } from '@/lib/metadata/generateGuptodhanMetadata';
 import { notFound } from 'next/navigation';
+import CategoryItemsClient from '../[id]/CategoryItemsClient';
 
 // SEO Metadata (Dynamic)
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
