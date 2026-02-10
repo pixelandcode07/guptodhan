@@ -8,12 +8,18 @@ export interface IJob {
   location: string;
   category: string;
   salaryRange?: string;
+  
+  // ✅ নতুন ফিল্ড
+  contactEmail: string;
+  contactPhone: string;
+  
   status: IJobStatus;
   postedBy: {
     _id: string;
     name: string;
     profilePicture?: string;
-  } | string;
+    email?: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
