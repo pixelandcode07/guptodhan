@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { MapPin, Building2, Banknote, Calendar, ArrowLeft, Share2, Phone, Mail, X } from 'lucide-react';
+import { MapPin, Building2, Banknote, Calendar, ArrowLeft } from 'lucide-react';
 import { IJob, ApiResponse } from '@/types/job';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
+// ✅ Import Client Components from the specific path
+import { ApplyButton, ShareButton } from '../components/getPubliceSingleJobClint';
 
 // Base URL Helper
 const getBaseUrl = () => {
@@ -24,52 +26,8 @@ async function getJob(id: string): Promise<IJob | null> {
   }
 }
 
-// Client Component for Apply Button
-function ApplyButton({ email, phone }: { email: string; phone: string }) {
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <button className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition shadow-lg shadow-blue-200 cursor-pointer">
-          Apply Now
-        </button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-center text-xl font-bold text-gray-900">Contact Information</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col gap-4 py-4">
-          <p className="text-center text-gray-500 text-sm">
-            Please contact the recruiter directly using the information below.
-          </p>
-          
-          <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-            <div className="bg-white p-2 rounded-full shadow-sm">
-              <Mail className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 font-medium">Send CV via Email</p>
-              <a href={`mailto:${email}`} className="text-sm font-bold text-gray-900 hover:text-blue-600 hover:underline">
-                {email}
-              </a>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
-            <div className="bg-white p-2 rounded-full shadow-sm">
-              <Phone className="w-5 h-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 font-medium">Call for Details</p>
-              <a href={`tel:${phone}`} className="text-sm font-bold text-gray-900 hover:text-green-600 hover:underline">
-                {phone}
-              </a>
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
+// Helper for Name Initials
+const getInitials = (name: string) => name?.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'JP';
 
 // Main Page Component
 export default async function JobDetailsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -77,8 +35,6 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
   const job = await getJob(id);
 
   if (!job) notFound();
-
-  const getInitials = (name: string) => name?.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'JP';
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
@@ -97,7 +53,8 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
             <div className="flex flex-col md:flex-row justify-between md:items-start gap-6">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="px-3 py-1 text-xs font-semibold text-blue-800 bg-blue-100 rounded-full">
+                  {/* Category Badge */}
+                  <span className="px-3 py-1 text-xs font-semibold text-[#0097e9] bg-blue-50 rounded-full border border-blue-100">
                     {job.category}
                   </span>
                   <span className="flex items-center text-xs text-gray-500">
@@ -120,7 +77,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                 </div>
               </div>
 
-              {/* Action Card with Apply Button */}
+              {/* Action Card with Client Apply Button */}
               <div className="w-full md:w-64 bg-gray-50 p-4 rounded-lg border border-gray-100">
                 {job.salaryRange && (
                    <div className="mb-4 text-center">
@@ -131,13 +88,13 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                      </p>
                    </div>
                  )}
-                 {/* 🔥 Using the Client Component Here */}
+                 {/* 🔥 Using Client Component */}
                  <ApplyButton email={job.contactEmail} phone={job.contactPhone} />
               </div>
             </div>
           </div>
 
-          {/* Body */}
+          {/* Body Content */}
           <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-2">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Job Description</h3>
@@ -146,18 +103,19 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
               </div>
             </div>
 
+            {/* Recruiter Section */}
             <div className="md:col-span-1">
-              <div className="bg-blue-50/50 p-5 rounded-lg border border-blue-100">
+              <div className="bg-[#0097e9]/10 p-5 rounded-lg border border-blue-100">
                 <h4 className="text-sm font-semibold text-gray-900 mb-4">Recruiter Info</h4>
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
                     <AvatarImage src={job.postedBy?.profilePicture} />
-                    <AvatarFallback className="bg-blue-200 text-blue-800 text-xs">
+                    <AvatarFallback className="bg-[#0097e9] text-white text-xs">
                       {getInitials(job.postedBy?.name || 'Recruiter')}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{job.postedBy?.name}</p>
+                  <div className="overflow-hidden">
+                    <p className="text-sm font-medium text-gray-900 truncate">{job.postedBy?.name}</p>
                     <p className="text-xs text-gray-500">Hiring Manager</p>
                   </div>
                 </div>
@@ -165,11 +123,12 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
             </div>
           </div>
 
+          {/* Footer with Client Share Button */}
           <div className="px-8 py-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
              <div className="text-xs text-gray-400">ID: {job._id}</div>
-             <button className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition text-sm">
-               <Share2 className="w-4 h-4" /> Share
-             </button>
+             
+             {/* 🔥 Using Client Component */}
+             <ShareButton title={job.title} company={job.companyName} />
           </div>
         </div>
       </div>
