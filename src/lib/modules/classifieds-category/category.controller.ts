@@ -237,26 +237,31 @@ const getCategoryPageDataBySlug = async (req: NextRequest, { params }: { params:
     await dbConnect();
     const { slug } = await params;
     
-    // URL Decode
     const decodedSlug = decodeURIComponent(slug);
+    const { searchParams } = new URL(req.url);
 
-    const result = await ClassifiedCategoryServices.getCategoryPageDataBySlugFromDB(decodedSlug);
+    // ✅ FIX: Use 'getAll' for array fields to support multiple selections
+    const filters = {
+        search: searchParams.get('search') || undefined,
+        
+        // Multi-select support
+        subCategory: searchParams.getAll('subCategory').length > 0 ? searchParams.getAll('subCategory') : undefined,
+        brand: searchParams.getAll('brand').length > 0 ? searchParams.getAll('brand') : undefined,
+        district: searchParams.getAll('district').length > 0 ? searchParams.getAll('district') : undefined,
+        division: searchParams.getAll('division').length > 0 ? searchParams.getAll('division') : undefined,
+        
+        minPrice: searchParams.get('minPrice') || undefined,
+        maxPrice: searchParams.get('maxPrice') || undefined,
+        sort: searchParams.get('sort') || undefined,
+    };
+
+    const result = await ClassifiedCategoryServices.getCategoryPageDataBySlugFromDB(decodedSlug, filters);
 
     if (!result) {
-        return sendResponse({
-            success: false,
-            statusCode: StatusCodes.NOT_FOUND,
-            message: 'Category not found',
-            data: null,
-        });
+        return sendResponse({ success: false, statusCode: StatusCodes.NOT_FOUND, message: 'Category not found', data: null });
     }
 
-    return sendResponse({
-        success: true,
-        statusCode: StatusCodes.OK,
-        message: 'Category page data retrieved successfully!',
-        data: result,
-    });
+    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Data retrieved', data: result });
 };
 
 export const ClassifiedCategoryController = {
