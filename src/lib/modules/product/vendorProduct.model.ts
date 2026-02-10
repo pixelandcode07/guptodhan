@@ -13,10 +13,23 @@ const productOptionSchema = new Schema(
       type: Schema.Types.ObjectId, 
       ref: 'ProductSize'
     }],
+    storage: { 
+      type: Schema.Types.ObjectId, 
+      ref: 'StorageType'
+    },
     unit: [{ type: String }],
-    simType: [{ type: String }],
-    condition: [{ type: String }],
-    warranty: { type: String },
+    simType: [{ 
+      type: Schema.Types.ObjectId, 
+      ref: 'ProductSimType'
+    }],
+    condition: [{ 
+      type: Schema.Types.ObjectId, 
+      ref: 'DeviceCondition'
+    }],
+    warranty: { 
+      type: Schema.Types.ObjectId, 
+      ref: 'ProductWarrantyModel'
+    },
     stock: { type: Number },
     price: { type: Number },
     discountPrice: { type: Number },
