@@ -1,6 +1,7 @@
 'use client';
 
-import { Heart, LogOut, Menu, User, X, ShoppingBag, Gift, UserPlus, Truck, Phone, LogIn, Workflow, UserIcon, LayoutGrid, Info, HelpCircle, Store, PhoneCall, MessageCircle, Search } from 'lucide-react';
+// 1. Added 'Briefcase' to imports
+import { Heart, LogOut, Menu, User, X, ShoppingBag, Gift, UserPlus, Truck, Phone, LogIn, Workflow, UserIcon, LayoutGrid, Info, HelpCircle, Store, PhoneCall, MessageCircle, Search, Briefcase } from 'lucide-react';
 import Image from 'next/image';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -114,7 +115,7 @@ export default function NavMain() {
                 </Link>
               </li>
 
-              {/* Join As Provider - Desktop/Large Tablet only or Shorter Text */}
+              {/* Join As Provider */}
               <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
                 <Link href={'/join-as-provider'} className="flex flex-col items-center gap-0.5 group">
                   <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
@@ -123,6 +124,16 @@ export default function NavMain() {
                     </svg>
                   </div>
                   <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">Provider</span>
+                </Link>
+              </li>
+
+              {/* 2. Added JOB Button Here */}
+              <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
+                <Link href={'/jobs'} className="flex flex-col items-center gap-0.5 group">
+                  <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
+                    <Briefcase className="size-5 lg:size-6" />
+                  </div>
+                  <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">Job</span>
                 </Link>
               </li>
 
@@ -149,54 +160,6 @@ export default function NavMain() {
               {/* Profile / Auth */}
               {session ? (
                 <li className="flex flex-col justify-center items-center text-[#00005E] font-medium">
-                  {/* <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="flex flex-col items-center gap-0.5 outline-none group cursor-pointer">
-                        <Avatar className="h-6 w-6 lg:h-7 lg:w-7 border-2 border-transparent group-hover:border-blue-400 transition-all">
-                          <AvatarImage
-                            src={user?.image && user.image !== "undefined" ? user.image : undefined}
-                            alt={user?.name ?? "User"}
-                          />
-                          <AvatarFallback className="bg-[#00005E] text-white text-[10px]">
-                            {getInitials(user?.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-[#00005E] text-[10px] lg:text-[11px] font-medium">Account</span>
-                      </button>
-                    </DropdownMenuTrigger>
-
-                    <DropdownMenuContent align="end" className="w-56 mt-2 shadow-xl border-gray-100">
-                      <DropdownMenuLabel className="font-normal">
-                        <div className="flex flex-col space-y-1">
-                          <p className="text-sm font-medium leading-none text-[#00005E]">{user?.name}</p>
-                          <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
-                        </div>
-                      </DropdownMenuLabel>
-
-                      <DropdownMenuSeparator />
-
-                      <DropdownMenuItem asChild>
-                        <Link href="/home/UserProfile" className="cursor-pointer flex items-center w-full">
-                          <UserIcon className="mr-2 h-4 w-4" />
-                          <span>Profile Setting</span>
-                        </Link>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem
-                        onClick={async () => {
-                          if (isLoggingOut) return;
-                          setIsLoggingOut(true);
-                          toast.loading("Logging out...");
-                          await signOut({ callbackUrl: "/" });
-                        }}
-                        className="text-red-600 focus:text-red-600 cursor-pointer"
-                        disabled={isLoggingOut}
-                      >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>{isLoggingOut ? "Logging out..." : "Log out"}</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu> */}
                   <Link href="/home/UserProfile" className="flex flex-col items-center gap-1">
                     <button className="flex flex-col items-center gap-0.5 outline-none group cursor-pointer">
                       <Avatar className="h-6 w-6 lg:h-7 lg:w-7 border-2 border-transparent group-hover:border-blue-400 transition-all">
@@ -401,6 +364,12 @@ export default function NavMain() {
 
                   {/* Others */}
                   <div className="space-y-1">
+                    {/* 3. Added JOB Button Here for Mobile */}
+                    <Link href="/jobs" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
+                      <Briefcase size={16} />
+                      <span>Job</span>
+                    </Link>
+
                     <Link href="/track-order" className="flex items-center gap-3 p-2 hover:bg-white/10 rounded">
                       <Truck size={16} />
                       <span>Track Order</span>
