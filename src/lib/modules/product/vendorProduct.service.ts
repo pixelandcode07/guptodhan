@@ -22,222 +22,111 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
   const colorIds = new Set<string>();
   const sizeIds = new Set<string>();
 
+  // ১. সব আইডি সংগ্রহ করা
   for (const p of products) {
     for (const opt of p.productOptions || []) {
       if (Array.isArray(opt.color)) {
-        opt.color.forEach((id: any) => colorIds.add(String(id)));
+        opt.color.forEach((id: any) => {
+            if(id && mongoose.Types.ObjectId.isValid(id)) colorIds.add(String(id));
+        });
       }
       if (Array.isArray(opt.size)) {
-        opt.size.forEach((id: any) => sizeIds.add(String(id)));
+        opt.size.forEach((id: any) => {
+            if(id && mongoose.Types.ObjectId.isValid(id)) sizeIds.add(String(id));
+        });
       }
     }
   }
 
-  if (!colorIds.size && !sizeIds.size) return products;
-
+  // ২. ডাটাবেস থেকে কালার ও সাইজ আনা
   const [colors, sizes] = await Promise.all([
-    colorIds.size
-      ? ProductColor.find({ _id: { $in: Array.from(colorIds) } }).lean()
-      : [],
-    sizeIds.size
-      ? ProductSize.find({ _id: { $in: Array.from(sizeIds) } }).lean()
-      : [],
+    colorIds.size ? ProductColor.find({ _id: { $in: Array.from(colorIds) } }).lean() : [],
+    sizeIds.size ? ProductSize.find({ _id: { $in: Array.from(sizeIds) } }).lean() : [],
   ]);
 
-  const colorMap = new Map(colors.map((c: any) => [String(c._id), c.colorName]));
-  const sizeMap = new Map(sizes.map((s: any) => [String(s._id), s.name]));
+  const colorMap = new Map(colors.map((c: any) => [String(c._id), c])); 
+  const sizeMap = new Map(sizes.map((s: any) => [String(s._id), s]));
 
+  // ৩. ডাটা ম্যাপ করা
   return products.map((p: any) => ({
     ...p,
     productOptions: p.productOptions?.map((opt: any) => ({
-      ...opt,
+      // ✅ CRITICAL FIX: ...opt ব্যবহার করা হয়েছে যাতে unit, simType, condition হারিয়ে না যায়
+      ...opt, 
+      
+      // Color Populate
       color: Array.isArray(opt.color) 
-        ? opt.color.map((id: any) => colorMap.get(String(id)) || String(id)) 
-        : opt.color,
+        ? opt.color.map((id: any) => {
+            const c = colorMap.get(String(id));
+            return c ? { _id: String(c._id), colorName: c.colorName, colorCode: c.colorCode } : id;
+          })
+        : [],
+
+      // Size Populate
       size: Array.isArray(opt.size) 
-        ? opt.size.map((id: any) => sizeMap.get(String(id)) || String(id)) 
-        : opt.size,
-    })) || p.productOptions,
+        ? opt.size.map((id: any) => {
+            const s = sizeMap.get(String(id));
+            return s ? { _id: String(s._id), name: s.name } : id;
+          })
+        : [],
+      
+      // ✅ Explicitly ensure simple arrays are preserved (Optional but safe)
+      unit: opt.unit || [],
+      simType: opt.simType || [],
+      condition: opt.condition || []
+    })) || [],
   }));
 };
 
 const populateColorAndSizeNames = async (product: any) => {
-  if (!product?.productOptions?.length) return product;
-  return (await populateColorAndSizeNamesForProducts([product]))[0];
+  if (!product) return null;
+  const result = await populateColorAndSizeNamesForProducts([product]);
+  return result[0];
 };
-
-// ===================================
-// 🚀 REUSABLE AGGREGATION PIPELINE
-// ===================================
 
 // ===================================
 // 🚀 REUSABLE AGGREGATION PIPELINE
 // ===================================
 
 const getProductLookupPipeline = () => [
-  // 1. Lookup Brand
-  {
-    $lookup: {
-      from: 'brandmodels',
-      localField: 'brand',
-      foreignField: '_id',
-      as: 'brand',
-    },
-  },
+  { $lookup: { from: 'brandmodels', localField: 'brand', foreignField: '_id', as: 'brand' } },
   { $unwind: { path: '$brand', preserveNullAndEmptyArrays: true } },
-
-  // 2. Lookup Flag
-  {
-    $lookup: {
-      from: 'productflags',
-      localField: 'flag',
-      foreignField: '_id',
-      as: 'flag',
-    },
-  },
+  { $lookup: { from: 'productflags', localField: 'flag', foreignField: '_id', as: 'flag' } },
   { $unwind: { path: '$flag', preserveNullAndEmptyArrays: true } },
-
-  // 3. Lookup Warranty
-  {
-    $lookup: {
-      from: 'productwarrantymodels',
-      localField: 'warranty',
-      foreignField: '_id',
-      as: 'warranty',
-    },
-  },
+  { $lookup: { from: 'productwarrantymodels', localField: 'warranty', foreignField: '_id', as: 'warranty' } },
   { $unwind: { path: '$warranty', preserveNullAndEmptyArrays: true } },
-
-  // 4. Lookup Product Model
-  {
-    $lookup: {
-      from: 'productmodels',
-      localField: 'productModel',
-      foreignField: '_id',
-      as: 'productModel',
-    },
-  },
+  { $lookup: { from: 'productmodels', localField: 'productModel', foreignField: '_id', as: 'productModel' } },
   { $unwind: { path: '$productModel', preserveNullAndEmptyArrays: true } },
-
-  // 5. Lookup Category
-  {
-    $lookup: {
-      from: 'categorymodels',
-      localField: 'category',
-      foreignField: '_id',
-      as: 'category',
-    },
-  },
+  { $lookup: { from: 'categorymodels', localField: 'category', foreignField: '_id', as: 'category' } },
   { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
-
-  // 6. Lookup SubCategory
-  {
-    $lookup: {
-      from: 'subcategorymodels',
-      localField: 'subCategory',
-      foreignField: '_id',
-      as: 'subCategory',
-    },
-  },
+  { $lookup: { from: 'subcategorymodels', localField: 'subCategory', foreignField: '_id', as: 'subCategory' } },
   { $unwind: { path: '$subCategory', preserveNullAndEmptyArrays: true } },
-
-  // 7. Lookup ChildCategory
-  {
-    $lookup: {
-      from: 'childcategorymodels',
-      localField: 'childCategory',
-      foreignField: '_id',
-      as: 'childCategory',
-    },
-  },
+  { $lookup: { from: 'childcategorymodels', localField: 'childCategory', foreignField: '_id', as: 'childCategory' } },
   { $unwind: { path: '$childCategory', preserveNullAndEmptyArrays: true } },
-
-  // 8. Lookup Weight Unit
-  {
-    $lookup: {
-      from: 'productunits',
-      localField: 'weightUnit',
-      foreignField: '_id',
-      as: 'weightUnit',
-    },
-  },
+  { $lookup: { from: 'productunits', localField: 'weightUnit', foreignField: '_id', as: 'weightUnit' } },
   { $unwind: { path: '$weightUnit', preserveNullAndEmptyArrays: true } },
-
-  // 9. Lookup Vendor Store
-  {
-    $lookup: {
-      from: 'storemodels',
-      localField: 'vendorStoreId',
-      foreignField: '_id',
-      as: 'vendorStoreId',
-    },
-  },
+  { $lookup: { from: 'storemodels', localField: 'vendorStoreId', foreignField: '_id', as: 'vendorStoreId' } },
   { $unwind: { path: '$vendorStoreId', preserveNullAndEmptyArrays: true } },
 
-  // 10. ✅ PROJECT STAGE (CRITICAL FIX FOR EDIT MODE)
   {
     $project: {
-      // Nested Objects: Must include _id for dropdown matching
-      'brand._id': 1,
-      'brand.name': 1,
-      'brand.brandName': 1,
-      'brand.brandLogo': 1,
+      'brand._id': 1, 'brand.name': 1, 'brand.brandName': 1, 'brand.brandLogo': 1,
+      'flag._id': 1, 'flag.name': 1,
+      'warranty._id': 1, 'warranty.warrantyName': 1,
+      'productModel._id': 1, 'productModel.name': 1, 'productModel.modelName': 1,
+      'category._id': 1, 'category.name': 1, 'category.slug': 1,
+      'subCategory._id': 1, 'subCategory.name': 1, 'subCategory.slug': 1,
+      'childCategory._id': 1, 'childCategory.name': 1, 'childCategory.slug': 1,
+      'weightUnit._id': 1, 'weightUnit.name': 1,
+      'vendorStoreId._id': 1, 'vendorStoreId.storeName': 1, 'vendorStoreId.storeLogo': 1,
 
-      'flag._id': 1,
-      'flag.name': 1,
-
-      'warranty._id': 1,
-      'warranty.warrantyName': 1,
-
-      'productModel._id': 1,
-      'productModel.name': 1,
-
-      'category._id': 1,
-      'category.name': 1,
-      'category.slug': 1,
-
-      'subCategory._id': 1,
-      'subCategory.name': 1,
-      'subCategory.slug': 1,
-
-      'childCategory._id': 1,
-      'childCategory.name': 1,
-      'childCategory.slug': 1,
-
-      'weightUnit._id': 1,
-      'weightUnit.name': 1,
-
-      'vendorStoreId._id': 1, // ⚠️ This was likely missing
-      'vendorStoreId.storeName': 1,
-      'vendorStoreId.storeLogo': 1,
-
-      // Root Fields
-      productId: 1,
-      productTitle: 1,
-      vendorName: 1,
-      shortDescription: 1,
-      fullDescription: 1,
-      specification: 1,
-      warrantyPolicy: 1,
-      productTag: 1,
-      videoUrl: 1,
-      photoGallery: 1,
-      thumbnailImage: 1,
-      productPrice: 1,
-      discountPrice: 1,
-      stock: 1,
-      sku: 1,
-      rewardPoints: 1,
-      shippingCost: 1,
-      offerDeadline: 1,
-      metaTitle: 1,
-      metaKeyword: 1,
-      metaDescription: 1,
-      status: 1,
-      sellCount: 1,
-      productOptions: 1,
-      createdAt: 1,
-      updatedAt: 1,
+      productId: 1, productTitle: 1, vendorName: 1, shortDescription: 1, fullDescription: 1,
+      specification: 1, warrantyPolicy: 1, productTag: 1, videoUrl: 1, photoGallery: 1,
+      thumbnailImage: 1, productPrice: 1, discountPrice: 1, stock: 1, sku: 1, rewardPoints: 1,
+      shippingCost: 1, offerDeadline: 1, metaTitle: 1, metaKeyword: 1, metaDescription: 1,
+      status: 1, sellCount: 1, 
+      productOptions: 1, // ✅ Raw Data projected
+      createdAt: 1, updatedAt: 1,
     },
   },
 ];
@@ -369,80 +258,28 @@ const getVendorProductByIdFromDB = async (id: string) => {
   return getCachedData(
     cacheKey,
     async () => {
-      // ✅ Full aggregation pipeline for single product
       const productResult = await VendorProductModel.aggregate([
         { $match: { _id: new mongoose.Types.ObjectId(id) } },
         ...getProductLookupPipeline(),
-        
-        // ✅ Lookup colors for productOptions
-        {
-          $lookup: {
-            from: 'productcolors',
-            localField: 'productOptions.color',
-            foreignField: '_id',
-            as: 'colorDetails',
-          },
-        },
-        
-        // ✅ Lookup sizes for productOptions
-        {
-          $lookup: {
-            from: 'productsizes',
-            localField: 'productOptions.size',
-            foreignField: '_id',
-            as: 'sizeDetails',
-          },
-        },
       ]);
 
       if (!productResult || !productResult[0]) return null;
       
-      const productDoc = productResult[0];
+      // ✅ Helper will now preserve 'unit', 'simType', 'condition'
+      const transformedProduct = await populateColorAndSizeNames(productResult[0]);
 
-      // Transform color and size IDs to names
-      const colorMap = new Map(
-        (productDoc.colorDetails || []).map((c: any) => [String(c._id), c.colorName])
-      );
-      const sizeMap = new Map(
-        (productDoc.sizeDetails || []).map((s: any) => [String(s._id), s.name])
-      );
-
-      const transformedProduct = {
-        ...productDoc,
-        productOptions: (productDoc.productOptions || []).map((option: any) => ({
-          ...option,
-          color: Array.isArray(option.color) 
-            ? option.color.map((id: any) => colorMap.get(String(id)) || String(id))
-            : option.color,
-          size: Array.isArray(option.size) 
-            ? option.size.map((id: any) => sizeMap.get(String(id)) || String(id))
-            : option.size,
-        })),
-      };
-
-      // Remove temporary fields
-      delete transformedProduct.colorDetails;
-      delete transformedProduct.sizeDetails;
-
-      // ✅ Parallel fetch reviews and QNA
       const [reviews, qna, ratingStats] = await Promise.all([
         ReviewModel.find({ productId: id }).lean(),
         ProductQAModel.find({ productId: id }).lean(),
         ReviewModel.aggregate([
           { $match: { productId: new mongoose.Types.ObjectId(id) } },
-          {
-            $group: {
-              _id: "$productId",
-              totalReviews: { $sum: 1 },
-              averageRating: { $avg: "$rating" },
-            },
-          },
+          { $group: { _id: "$productId", totalReviews: { $sum: 1 }, averageRating: { $avg: "$rating" } } },
         ]),
       ]);
 
       return {
         ...transformedProduct,
-        ratingStats,
+        ratingStats: ratingStats[0] || { totalReviews: 0, averageRating: 0 },
         reviews,
         qna,
       };
