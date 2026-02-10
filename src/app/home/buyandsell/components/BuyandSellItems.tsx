@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 interface CategoryDataType {
   _id: string;
   name: string;
+  slug: string; // ✅ Slug added to interface
   icon?: string;
   status: 'active' | 'inactive';
   adCount?: number;
@@ -33,9 +34,8 @@ export default function BuyandSellItems({ allCategory }: BuyandSellItemsProps) {
 
   const displayedCategories = isMobile ? allCategory?.slice(0, 4) : allCategory;
 
-
   return (
-   <div className="space-y-6">
+    <div className="space-y-6">
       {/* Headers */}
       <div className="mb-6 hidden md:block">
         <PageHeader title="Buy and Sell Items" />
@@ -53,7 +53,8 @@ export default function BuyandSellItems({ allCategory }: BuyandSellItemsProps) {
         {displayedCategories?.map((cat) => (
           <Link
             key={cat._id}
-            href={`/home/buyandsell/category-items/${cat._id}`}
+            // ✅ FIX: Using cat.slug instead of cat._id
+            href={`/home/buyandsell/category-items/${cat.slug}`} 
             className="group flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm border hover:shadow-md transition-all cursor-pointer"
           >
             <div className="flex shrink-0">
