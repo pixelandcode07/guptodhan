@@ -233,6 +233,5 @@ export const ClassifiedCategoryController = {
     getCategoryById,
     getPublicCategoriesWithCounts,
     searchAds,
-
     reorderClassifiedCategory
 };
