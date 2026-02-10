@@ -474,4 +474,4 @@ export default function ProductForm({ initialData, productId: propProductId }: a
             </div>
         </form>
     );
-}
+}   
