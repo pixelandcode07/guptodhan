@@ -26,7 +26,7 @@ export const buildDynamicMenuConfig = (
         if (item.url === '/general/view/all/product') {
           return {
             ...item,
-            title: `View All Products`,
+            title: `View All Products (${counts.productCount})`,
             count: counts.productCount,
           };
         }

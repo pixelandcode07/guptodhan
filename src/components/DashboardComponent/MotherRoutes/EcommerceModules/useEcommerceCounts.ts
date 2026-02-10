@@ -28,9 +28,27 @@ export const useEcommerceCounts = (): EcommerceCounts => {
         ...(userRole ? { 'x-user-role': userRole } : {}),
       },
     });
+  //   const data = res.data?.data;
+  //   if (Array.isArray(data)) return data.length;
+  //   if (typeof res.data?.count === 'number') return res.data.count;
+  //   return 0;
+  // };
+
+    if (res.data?.data?.pagination?.total !== undefined) {
+      return res.data.data.pagination.total;
+    }
+    
+  
+    if (typeof res.data?.count === 'number') {
+      return res.data.count;
+    }
+
     const data = res.data?.data;
     if (Array.isArray(data)) return data.length;
-    if (typeof res.data?.count === 'number') return res.data.count;
+    
+ 
+    if (data?.products && Array.isArray(data.products)) return data.products.length;
+
     return 0;
   };
 
