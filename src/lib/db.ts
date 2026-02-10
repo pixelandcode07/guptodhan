@@ -128,7 +128,7 @@ const opts: mongoose.ConnectOptions = {
     retryWrites: true,
     retryReads: true,
     
-    tls: true,
+    tls: false,
     tlsAllowInvalidCertificates: true, // Free tier হ্যান্ডশেক এরর এড়াতে সাহায্য করে
     
     // ================================================================
