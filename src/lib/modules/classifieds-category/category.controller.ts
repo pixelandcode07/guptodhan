@@ -236,20 +236,15 @@ const reorderClassifiedCategory = async (req: NextRequest) => {
 const getCategoryPageDataBySlug = async (req: NextRequest, { params }: { params: Promise<{ slug: string }> }) => {
     await dbConnect();
     const { slug } = await params;
-    
     const decodedSlug = decodeURIComponent(slug);
     const { searchParams } = new URL(req.url);
 
-    // ✅ FIX: Use 'getAll' for array fields to support multiple selections
     const filters = {
         search: searchParams.get('search') || undefined,
-        
-        // Multi-select support
+        // ✅ Handle Arrays correctly using getAll
         subCategory: searchParams.getAll('subCategory').length > 0 ? searchParams.getAll('subCategory') : undefined,
         brand: searchParams.getAll('brand').length > 0 ? searchParams.getAll('brand') : undefined,
         district: searchParams.getAll('district').length > 0 ? searchParams.getAll('district') : undefined,
-        division: searchParams.getAll('division').length > 0 ? searchParams.getAll('division') : undefined,
-        
         minPrice: searchParams.get('minPrice') || undefined,
         maxPrice: searchParams.get('maxPrice') || undefined,
         sort: searchParams.get('sort') || undefined,
