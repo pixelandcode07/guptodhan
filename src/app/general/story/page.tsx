@@ -9,7 +9,7 @@ export default function StoryManagerPage() {
         Create, manage, and organize your stories with linked products.
       </p>
       {/* কোনো props পাঠানোর দরকার নেই কারণ আমরা ক্লায়েন্টেই fetch করব */}
-      <StoryClient /> 
+      <StoryClie  nt /> 
     </div>
   );
 }
