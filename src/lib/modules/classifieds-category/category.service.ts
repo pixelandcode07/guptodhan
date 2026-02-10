@@ -264,8 +264,7 @@ const reorderClassifiedCategoryService = async (orderedIds: string[]) => {
 // ================================================================
 // 🔥 GET PAGE DATA BY SLUG (Single API) - SOLVED HERE
 // ================================================================
-const getCategoryPageDataBySlugFromDB = async (slug: string) => {
-  // ✅ FIX: Explicitly tell TypeScript the return type of lean()
+const getCategoryPageDataBySlugFromDB = async (slug: string, filters: any) => {
   const category = await ClassifiedCategory.findOne({ 
     slug: { $regex: new RegExp(`^${slug}$`, 'i') }, 
     status: 'active' 
@@ -273,19 +272,62 @@ const getCategoryPageDataBySlugFromDB = async (slug: string) => {
 
   if (!category) return null;
 
-  // Now TypeScript knows category has _id because of IClassifiedCategory
   const categoryId = category._id;
 
+  const query: any = { 
+    category: new Types.ObjectId(categoryId as string), 
+    status: 'active' 
+  };
+
+  // --- Updated Filter Logic for Arrays ---
+  
+  // A. Search
+  if (filters.search) {
+    query.title = { $regex: filters.search, $options: 'i' };
+  }
+
+  // B. Sub Category (Handle Array)
+  if (filters.subCategory) {
+    // If it's an array, map to ObjectIds
+    const subCats = Array.isArray(filters.subCategory) ? filters.subCategory : [filters.subCategory];
+    query.subCategory = { $in: subCats.map((id:string) => new Types.ObjectId(id)) };
+  }
+
+  // C. Brand (Handle Array with Case-Insensitive Regex)
+  if (filters.brand) {
+    const brands = Array.isArray(filters.brand) ? filters.brand : [filters.brand];
+    // Create regex for each selected brand
+    const brandRegexes = brands.map((b:string) => new RegExp(`^${b}$`, 'i'));
+    query.brand = { $in: brandRegexes };
+  }
+
+  // D. Location (Handle Array)
+  if (filters.district) {
+    const districts = Array.isArray(filters.district) ? filters.district : [filters.district];
+    const distRegexes = districts.map((d:string) => new RegExp(`^${d}$`, 'i'));
+    query.district = { $in: distRegexes };
+  }
+
+  // E. Price
+  if (filters.minPrice || filters.maxPrice) {
+    query.price = {};
+    if (filters.minPrice) query.price.$gte = Number(filters.minPrice);
+    if (filters.maxPrice) query.price.$lte = Number(filters.maxPrice);
+  }
+
+  // Sorting
+  let sortOption: any = { createdAt: -1 };
+  if (filters.sort === 'priceLowHigh') sortOption = { price: 1 };
+  else if (filters.sort === 'priceHighLow') sortOption = { price: -1 };
+
+  // Run Queries
   const [ads, filtersRaw, priceStats] = await Promise.all([
-    // Ads
-    ClassifiedAd.find({ category: categoryId, status: 'active' })
+    ClassifiedAd.find(query)
       .populate('subCategory', 'name')
       .populate('brand', 'name')
-      .populate('district', 'name') 
-      .sort({ createdAt: -1 })
+      .sort(sortOption)
       .lean(),
 
-    // Filters
     ClassifiedAd.aggregate([
       { $match: { category: new Types.ObjectId(categoryId as string), status: 'active' } },
       {
@@ -298,9 +340,8 @@ const getCategoryPageDataBySlugFromDB = async (slug: string) => {
           ],
           brands: [
             { $group: { _id: "$brand", count: { $sum: 1 } } },
-            { $lookup: { from: "brandmodels", localField: "_id", foreignField: "_id", as: "details" } },
-            { $unwind: { path: "$details", preserveNullAndEmptyArrays: true } },
-            { $project: { brand: { $ifNull: ["$details.name", "$_id"] }, count: 1 } }
+            { $match: { _id: { $ne: null } } },
+            { $project: { brand: "$_id", count: 1 } }
           ],
           locations: [
             { $group: { _id: "$district", count: { $sum: 1 } } },
@@ -311,16 +352,9 @@ const getCategoryPageDataBySlugFromDB = async (slug: string) => {
       }
     ]),
 
-    // Price Stats
     ClassifiedAd.aggregate([
       { $match: { category: new Types.ObjectId(categoryId as string), status: 'active' } },
-      {
-        $group: {
-          _id: null,
-          minPrice: { $min: "$price" },
-          maxPrice: { $max: "$price" }
-        }
-      }
+      { $group: { _id: null, minPrice: { $min: "$price" }, maxPrice: { $max: "$price" } } }
     ])
   ]);
 
