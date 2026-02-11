@@ -32,6 +32,11 @@ const createBooking = async (req: NextRequest) => {
   await dbConnect();
   const { userId } = getUserDetailsFromToken(req);
 
+  const body = await req.json();
+
+  // 1. Fetch Service to get Provider ID
+  const service = await ServiceModel.findById(body.service_id);
+  if (!service) {
     return sendResponse({
       success: false,
       statusCode: StatusCodes.NOT_FOUND,
