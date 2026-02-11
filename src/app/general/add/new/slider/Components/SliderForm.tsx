@@ -54,32 +54,48 @@ export default function SliderForm({ initialData }: SliderFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditMode = !!initialData?._id;
 
-  // Load Data on Edit
+  // Load Data on Edit (এই অংশটি ডাটা সেট করে)
   useEffect(() => {
     if (initialData) {
       setTextPosition((initialData.textPosition as TextPosition) || '');
       setSliderLink(initialData.sliderLink || '');
       setSubTitle(initialData.subTitleWithColor || '');
       setTitle(initialData.bannerTitleWithColor || '');
+      // 🔥 নিশ্চিত করা হলো ডেসক্রিপশন সেট হচ্ছে
       setDescription(initialData.bannerDescriptionWithColor || '');
       setButtonText(initialData.buttonWithColor || '');
       setButtonLink(initialData.buttonLink || '');
 
-      // App Data
       setAppRedirectType((initialData.appRedirectType as AppRedirectType) || 'None');
       setAppRedirectValue(initialData.appRedirectId || '');
     }
   }, [initialData]);
+
+  // Image Validation (1 MB Limit)
+  const handleImageChange = (name: string, file: File | null) => {
+    if (file) {
+      const fileSizeInMB = file.size / (1024 * 1024);
+      if (fileSizeInMB > 1) {
+        toast.error('Image size is greater than 1MB. Please upload an image under 1MB.');
+        return; 
+      }
+      setImage(file);
+    } else {
+      setImage(null);
+    }
+  };
 
   const handleSave = async () => {
     if (isSubmitting) return;
     try {
       setIsSubmitting(true);
 
+      // Validation Checks
       if (!image && !isEditMode && !initialData?.image) throw new Error('Please upload an image.');
       if (!textPosition) throw new Error('Please select text position.');
       if (!subTitle) throw new Error('Please provide sub title.');
       if (!title) throw new Error('Please provide slider title.');
+      // 🔥 এই লাইনটি থাকলে আর JSON Error দেখাবে না, সুন্দর মেসেজ দেখাবে
       if (!description) throw new Error('Please provide slider description.');
       
       if (appRedirectType !== 'None' && !appRedirectValue.trim()) {
@@ -95,7 +111,6 @@ export default function SliderForm({ initialData }: SliderFormProps) {
       if (sliderLink && !isValidUrl(sliderLink)) throw new Error('Invalid slider URL');
       if (buttonLink && !isValidUrl(buttonLink)) throw new Error('Invalid button URL');
 
-      // Image Handling
       let imageUrl = initialData?.image || ''; 
 
       if (image) {
@@ -168,9 +183,9 @@ export default function SliderForm({ initialData }: SliderFormProps) {
         <div className="lg:col-span-1">
           <UploadImage 
             name="sliderImage"
-            label="Slider Image"
+            label={<span>Slider Image <span className="text-red-500">*</span></span> as any} 
             preview={initialData?.image} 
-            onChange={(name, file) => setImage(file)}
+            onChange={handleImageChange}
           />
           <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-[12px] text-gray-700 font-semibold mb-2">📐 Image Size Guidelines:</p>
@@ -184,6 +199,9 @@ export default function SliderForm({ initialData }: SliderFormProps) {
                 <span className="font-semibold">Small Banner (Sidebar):</span>
                 <br />
                 <span className="text-blue-600">2250px × 1125px</span>
+              </div>
+              <div className="text-[11px] mt-2">
+                 Max Size: <span className="text-red-600 font-bold">1 MB</span>
               </div>
             </div>
           </div>

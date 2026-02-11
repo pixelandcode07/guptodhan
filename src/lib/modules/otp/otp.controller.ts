@@ -1,59 +1,88 @@
-
-import { Request, Response } from "express";
 import { OtpServices } from "./otp.service";
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 
+// ========================================
+// 📤 Send OTP (Auto-detect Email or Phone)
+// ========================================
 const sendOtp = async (req: NextRequest) => {
   try {
     await dbConnect();
-     const body = await req.json();
-    const { phone } = body; 
+    const body = await req.json();
+    const { email, phone } = body;
 
-
-    console.log(phone);
-    // const phone = "8801688399676"; // For testing purpose only. Remove this line in production.
-
-    if (!phone) {
+    // Validation: At least one must be provided
+    if (!email && !phone) {
       return NextResponse.json(
-        { success: false, message: "Phone number is required" },
+        { success: false, message: "Either email or phone number is required" },
         { status: 400 }
       );
     }
 
-    const data = await OtpServices.sendOtpService(phone);
+    let result;
+    let type;
+
+    // ✅ Smart Detection: Send to Email or Phone
+    if (email) {
+      result = await OtpServices.sendEmailOtpService(email);
+      type = 'email';
+    } else if (phone) {
+      result = await OtpServices.sendPhoneOtpService(phone);
+      type = 'phone';
+    }
 
     return NextResponse.json(
-      { success: true, message: "OTP sent successfully", data },
+      { 
+        success: true, 
+        message: `OTP sent to ${type} successfully`,
+        data: {
+          type,
+          identifier: email || phone,
+          ...result
+        }
+      },
       { status: 200 }
     );
-  } catch (error) {
-    console.error("OTP Error:", error);
+
+  } catch (error: any) {
+    console.error("❌ OTP Error:", error);
 
     return NextResponse.json(
-      { success: false, message: "Server error", error: error?.message },
+      { success: false, message: "Failed to send OTP", error: error?.message },
       { status: 500 }
     );
   }
 };
 
-// Verify OTP (এটা আপডেট করা হয়েছে Next.js এর জন্য)
+// ========================================
+// ✅ Verify OTP (Works for both Email & Phone)
+// ========================================
 const verifyOtp = async (req: NextRequest) => {
   try {
     await dbConnect();
     const body = await req.json();
-    const { phone, otp } = body;
+    const { identifier, otp } = body; // identifier can be email or phone
 
-    if (!phone || !otp) {
+    if (!identifier || !otp) {
       return NextResponse.json(
-        { success: false, message: "Phone and OTP are required" },
+        { success: false, message: "Identifier (email/phone) and OTP are required" },
         { status: 400 }
       );
     }
 
-    // otp কে Number এ কনভার্ট করা হচ্ছে কারণ DB তে Number হিসেবে আছে
-    const otpNumber = Number(otp); 
-    const result = await OtpServices.verifyOtpService(phone, otpNumber);
+    // Convert OTP to number
+    const otpNumber = Number(otp);
+    
+    if (isNaN(otpNumber)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid OTP format" },
+        { status: 400 }
+      );
+    }
+
+    // 🔥 CRITICAL FIX: Pass FALSE here to NOT delete OTP yet
+    // Because the user still needs to use this OTP to create the account in the next step
+    const result = await OtpServices.verifyOtpService(identifier, otpNumber, false);
 
     if (result.status) {
       return NextResponse.json(
@@ -66,7 +95,10 @@ const verifyOtp = async (req: NextRequest) => {
         { status: 400 }
       );
     }
+
   } catch (error: any) {
+    console.error("❌ OTP Verification Error:", error);
+    
     return NextResponse.json(
       { success: false, message: "Server error", error: error?.message },
       { status: 500 }

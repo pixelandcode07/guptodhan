@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useTransition, useState } from 'react';
-import { ShoppingCart, Package, Eye, Heart, Filter, X } from 'lucide-react';
+import { Package, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -41,7 +41,7 @@ interface Product {
 }
 
 interface CategoryData {
-    category: { name: string; slug: string };
+    category: { name: string; slug: string; banner?: string; categoryIcon?: string; };
     products: Product[];
     totalProducts: number;
 }
@@ -56,7 +56,6 @@ function extractFilters(products: Product[]) {
     let maxPrice = 0;
 
     products.forEach((p) => {
-        // if (p.brand) brands.add(p.brand);
         if (p.brand?.name) brands.add(p.brand.name);
         if (p.subCategory?.name) subCategories.add(p.subCategory.name);
         if (p.childCategory?.name) childCategories.add(p.childCategory.name);
@@ -115,11 +114,6 @@ function ProductCard({ product }: { product: Product }) {
                             </span>
                         )}
                     </div>
-                    {/* <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                        <button className="p-3 bg-white rounded-full hover:scale-110 transition"><Heart className="w-5 h-5" /></button>
-                        <button className="p-3 bg-white rounded-full hover:scale-110 transition"><Eye className="w-5 h-5" /></button>
-                        <button className="p-3 bg-blue-600 text-white rounded-full hover:scale-110 transition"><ShoppingCart className="w-5 h-5" /></button>
-                    </div> */}
                 </div>
                 <div className="p-3">
                     <h3 className="font-medium text-sm line-clamp-2 group-hover:text-blue-600 transition">
@@ -198,12 +192,9 @@ function FilterSidebar({ filters }: { filters: any }) {
                 </Button>
             )}
 
-
             {/* Price Range */}
             <div>
                 <h3 className="font-semibold text-lg mb-4">Price Range</h3>
-
-                {/* Optional Slider */}
                 <div className="px-2 mb-5">
                     <Slider
                         value={[appliedMin, appliedMax]}
@@ -218,8 +209,6 @@ function FilterSidebar({ filters }: { filters: any }) {
                         disabled={isPending}
                     />
                 </div>
-
-                {/* Input Fields */}
                 <div className="flex items-center gap-3">
                     <Input
                         type="number"
@@ -244,7 +233,6 @@ function FilterSidebar({ filters }: { filters: any }) {
                         {isPending ? '...' : 'Go'}
                     </Button>
                 </div>
-
                 <div className="mt-3 text-sm text-gray-600 flex justify-between">
                     <span>৳{appliedMin.toLocaleString()}</span>
                     <span>৳{appliedMax.toLocaleString()}</span>
@@ -285,7 +273,7 @@ function FilterSidebar({ filters }: { filters: any }) {
                 </div>
             )}
 
-            {/* Child Category & Size – same pattern */}
+            {/* Child Category */}
             {filters.childCategories.length > 0 && (
                 <div>
                     <h3 className="font-semibold text-lg mb-4">Child Category</h3>
@@ -299,6 +287,7 @@ function FilterSidebar({ filters }: { filters: any }) {
                     </div>
                 </div>
             )}
+            
             {/* Size */}
             {filters.sizes.length > 0 && (
                 <div>
@@ -313,8 +302,6 @@ function FilterSidebar({ filters }: { filters: any }) {
                     </div>
                 </div>
             )}
-
-
         </div>
     );
 }
@@ -324,18 +311,22 @@ export default function CategoryClient({ initialData }: { initialData: CategoryD
     const [isPending] = useTransition();
     const filters = extractFilters(initialData.products);
 
+    // ✅ Standard Wrapper Class for Consistent Alignment
+    const containerClass = "md:max-w-[95vw] xl:container mx-auto sm:px-8 px-4";
+
     return (
         <>
-            {/* Custom Loading Bar – No shadcn Progress needed */}
+            {/* Loading Bar */}
             <div
-                className={`fixed top-0 left-0 h-1 bg-gradient-to-r from-blue-600 to-purple-600 z-50 transition-all duration-500 ease-out ${isPending ? 'w-full' : 'w-0'
-                    }`}
+                className={`fixed top-0 left-0 h-1 bg-gradient-to-r from-blue-600 to-purple-600 z-50 transition-all duration-500 ease-out ${isPending ? 'w-full' : 'w-0'}`}
             />
 
             <div className="min-h-screen bg-gray-50">
-                {/* Breadcrumb */}
-                <div className="bg-white border-b">
-                    <div className="max-w-7xl mx-auto px-4 py-4">
+                
+                {/* 1. Breadcrumb & Header Section */}
+                <div className="bg-white border-b w-full">
+                    <div className={`${containerClass} py-4 flex flex-col md:flex-row md:items-center justify-between gap-4`}>
+                        {/* Breadcrumb */}
                         <Breadcrumb>
                             <BreadcrumbList>
                                 <BreadcrumbItem><BreadcrumbLink href="/">Home</BreadcrumbLink></BreadcrumbItem>
@@ -343,20 +334,45 @@ export default function CategoryClient({ initialData }: { initialData: CategoryD
                                 <BreadcrumbItem><BreadcrumbPage>{initialData.category.name}</BreadcrumbPage></BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>
+
+                        {/* Category Name & Count */}
+                        <div className='flex items-center gap-3'>
+                            <h1 className="text-lg md:text-xl font-bold text-gray-800">
+                                {initialData.category.name}
+                            </h1>
+                            <span className="hidden md:inline text-gray-300">|</span>
+                            <p className="text-sm md:text-base text-gray-500 font-medium">
+                                {initialData.totalProducts} Products
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                {/* Hero */}
-                <div className="bg-gradient-to-r from-blue-900 to-purple-900 text-white py-16">
-                    <div className="max-w-7xl mx-auto px-4 text-center">
-                        <h1 className="text-4xl md:text-5xl font-bold mb-2">{initialData.category.name}</h1>
-                        <p className="text-lg opacity-90">{initialData.totalProducts} Products</p>
-                    </div>
+                {/* 2. Banner Section (SOLVED) */}
+                <div className={`${containerClass} mt-4`}>
+                    {initialData.category.banner ? (
+                        // ✅ Height Fixed (Mobile 200px, Desktop 400px)
+                        // ✅ fill + object-cover: ইমেজটি ব্যানারের শেপে ক্রপ হয়ে বসবে, বড় হবে না।
+                        <div className="w-full relative rounded-lg overflow-hidden shadow-sm h-[200px] md:h-[350px] lg:h-[220px]">
+                            <Image
+                                src={initialData.category.banner}
+                                alt={initialData.category.name}
+                                fill
+                                className="object-cover align-middle"
+                                priority
+                            />
+                        </div>
+                    ) : (
+                        <div className="w-full h-40 bg-gradient-to-r from-gray-800 to-gray-900 rounded-lg flex flex-col items-center justify-center text-white">
+                            <h1 className="text-3xl font-bold">{initialData.category.name}</h1>
+                            <p className="opacity-80">{initialData.totalProducts} Products</p>
+                        </div>
+                    )}
                 </div>
 
-                {/* Mobile Filter */}
-                <div className="md:hidden sticky top-0 z-40 bg-white border-b shadow-sm">
-                    <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+                {/* Mobile Filter Bar */}
+                <div className="md:hidden sticky top-0 z-40 bg-white border-b shadow-sm mt-4">
+                    <div className={`${containerClass} py-3 flex justify-between items-center`}>
                         <span className="text-sm text-gray-600">
                             {isPending ? 'Loading...' : `Showing ${initialData.products.length} of ${initialData.totalProducts}`}
                         </span>
@@ -381,8 +397,8 @@ export default function CategoryClient({ initialData }: { initialData: CategoryD
                     </div>
                 </div>
 
-                {/* Main Content */}
-                <div className="max-w-7xl mx-auto px-4 py-8">
+                {/* 3. Main Content Section */}
+                <div className={`${containerClass} py-8`}>
                     <div className="flex gap-8">
                         {/* Desktop Sidebar */}
                         <aside className="hidden md:block w-80 flex-shrink-0">

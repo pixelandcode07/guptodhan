@@ -11,6 +11,7 @@ import bcrypt from 'bcrypt';
 import { User } from '../user/user.model';
 import { verifyGoogleToken } from '@/lib/utils/verifyGoogleToken';
 import { Vendor } from '../vendors/vendor.model';
+import { OtpServices } from '../otp/otp.service';
 
 
 
@@ -30,7 +31,6 @@ const loginUser = async (payload: TLoginUser) => {
     throw new Error('User not found!');
   }
 
-  // ✅ সমাধান: অ্যাকাউন্ট অ্যাক্টিভ কিনা তা চেক করা
   if (!user.isActive) {
     throw new Error('Your account is inactive or pending approval.');
   }
@@ -311,6 +311,60 @@ const sendForgotPasswordOtpToEmail = async (email: string) => {
   return null;
 };
 
+const sendForgotPasswordOtp = async (identifier: string) => {
+  const isEmail = identifier.includes('@');
+  
+  // Find User
+  const user = isEmail
+    ? await User.findOne({ email: identifier })
+    : await User.findOne({ phoneNumber: identifier });
+
+  if (!user) {
+    throw new Error('No account found with this email/phone number.');
+  }
+
+  // Send OTP using existing OtpServices
+  let otpResult;
+  if (isEmail) {
+    if (!user.email) throw new Error("User has no email attached.");
+    otpResult = await OtpServices.sendEmailOtpService(user.email);
+  } else {
+    if (!user.phoneNumber) throw new Error("User has no phone number attached.");
+    otpResult = await OtpServices.sendPhoneOtpService(user.phoneNumber);
+  }
+
+  return { 
+    type: isEmail ? 'email' : 'phone',
+    otp: otpResult?.otp // Only in dev mode
+  };
+};
+
+// 2. Verify OTP & Generate Reset Token
+const verifyForgotPasswordOtp = async (identifier: string, otp: string) => {
+  const otpNumber = Number(otp);
+  if (isNaN(otpNumber)) throw new Error("Invalid OTP format");
+
+  // Verify OTP (Do not delete yet, or delete - depends on flow. Let's verify & delete)
+  const verificationResult = await OtpServices.verifyOtpService(identifier, otpNumber, true);
+
+  if (!verificationResult.status) {
+    throw new Error(verificationResult.message);
+  }
+
+  // Find User Again to get ID
+  const isEmail = identifier.includes('@');
+  const user = isEmail
+    ? await User.findOne({ email: identifier })
+    : await User.findOne({ phoneNumber: identifier });
+
+  if (!user) throw new Error('User not found.');
+
+  // Generate Reset Token
+  const resetTokenPayload = { userId: user._id.toString(), purpose: 'password-reset' };
+  const resetToken = generateToken(resetTokenPayload, process.env.JWT_ACCESS_SECRET!, '10m'); // 10 minutes
+
+  return { resetToken };
+};
 
 const verifyForgotPasswordOtpFromEmail = async (email: string, otp: string) => {
   await connectRedis();
@@ -350,37 +404,26 @@ const getResetTokenWithFirebase = async (idToken: string) => {
 
 
 
+// --- Reset Password With Token ---
 const resetPasswordWithToken = async (token: string, newPassword: string) => {
   let decoded: any;
-
   try {
     decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
   } catch (error) {
     throw new Error('Invalid or expired reset token');
   }
 
-  if (decoded.type === 'vendor_password_reset') {
-    const user = await User.findById(decoded.userId);
-    if (!user) throw new Error('User not found');
-    if (user.role !== 'vendor') throw new Error('This token is not valid for vendor accounts');
+  const user = await User.findById(decoded.userId);
+  if (!user) throw new Error('User not found');
 
-    user.password = newPassword;
-    await user.save();
-    return null;
+  // Vendor check handled by specific routes if needed, or generic reset works for all roles
+  if (decoded.type === 'vendor_password_reset' && user.role !== 'vendor') {
+    throw new Error('This token is not valid for vendor accounts');
   }
 
-  else if (decoded.purpose === 'password-reset') {
-    const user = await User.findById(decoded.userId);
-    if (!user) throw new Error('User not found');
-
-    user.password = newPassword;
-    await user.save();
-    return null;
-  }
-
-  else {
-    throw new Error('Invalid or unauthorized token payload');
-  }
+  user.password = newPassword;
+  await user.save();
+  return null;
 };
 
 const vendorSendRegistrationOtp = async (email: string) => {
@@ -856,4 +899,6 @@ export const AuthServices = {
   serviceProviderSendForgotPasswordOtp,
   serviceProviderVerifyForgotPasswordOtp,
   adminLogin,
+  sendForgotPasswordOtp,
+  verifyForgotPasswordOtp,
 };

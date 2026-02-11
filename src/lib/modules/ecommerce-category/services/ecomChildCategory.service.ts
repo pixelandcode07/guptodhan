@@ -166,20 +166,21 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
   return getCachedData(
     cacheKey,
     async () => {
-      // Get child category
+      // ✅ FIX 2: Case-insensitive Slug Search
       const childCategory = await ChildCategoryModel.findOne({ 
-        slug, 
+        slug: { $regex: new RegExp(`^${slug}$`, 'i') }, 
         status: 'active' 
       }).lean();
 
-      if (!childCategory) return null;
+      if (!childCategory) return null; // ❌ এই লাইনের কারণেই আপনার "Not Found" আসছিল
 
       // ✅ Type-safe access
       const childCategoryData = childCategory as any;
 
-      // Build match stage
+      // Build match stage for Products
       const matchStage: any = {
-        childCategory: childCategoryData._id,
+        // ✅ FIX 3: Ensure ObjectId casting for Aggregation
+        childCategory: new Types.ObjectId(childCategoryData._id),
         status: 'active',
       };
 
@@ -190,10 +191,12 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
           name: { $regex: regex } 
         }).lean();
 
-        if (!brandDoc) {
-          return { childCategory: childCategoryData, products: [], totalProducts: 0 };
+        if (brandDoc) {
+           matchStage.brand = (brandDoc as any)._id;
+        } else {
+           // ব্র্যান্ড না পেলে খালি রেজাল্ট রিটার্ন করুন, 404 নয়
+           return { childCategory: childCategoryData, products: [], totalProducts: 0 };
         }
-        matchStage.brand = (brandDoc as any)._id;
       }
 
       // Filter: Size
@@ -203,10 +206,11 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
           name: { $regex: regex } 
         }).lean();
 
-        if (!sizeDoc) {
-          return { childCategory: childCategoryData, products: [], totalProducts: 0 };
+        if (sizeDoc) {
+           matchStage['productOptions.size'] = (sizeDoc as any)._id;
+        } else {
+           return { childCategory: childCategoryData, products: [], totalProducts: 0 };
         }
-        matchStage['productOptions.size'] = (sizeDoc as any)._id;
       }
 
       // Filter: Search
@@ -239,7 +243,7 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
       if (filters.sort === 'priceLowHigh') sortStage = { productPrice: 1 };
       if (filters.sort === 'priceHighLow') sortStage = { productPrice: -1 };
 
-      // ✅ Use aggregation instead of populate
+      // ✅ Use aggregation
       const products = await VendorProductModel.aggregate([
         { $match: matchStage },
         { $sort: sortStage },

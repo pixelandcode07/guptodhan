@@ -13,10 +13,23 @@ const productOptionSchema = new Schema(
       type: Schema.Types.ObjectId, 
       ref: 'ProductSize'
     }],
+    storage: { 
+      type: Schema.Types.ObjectId, 
+      ref: 'StorageType'
+    },
     unit: [{ type: String }],
-    simType: [{ type: String }],
-    condition: [{ type: String }],
-    warranty: { type: String },
+    simType: [{ 
+      type: Schema.Types.ObjectId, 
+      ref: 'ProductSimType'
+    }],
+    condition: [{ 
+      type: Schema.Types.ObjectId, 
+      ref: 'DeviceCondition'
+    }],
+    warranty: { 
+      type: Schema.Types.ObjectId, 
+      ref: 'ProductWarrantyModel'
+    },
     stock: { type: Number },
     price: { type: Number },
     discountPrice: { type: Number },
@@ -26,7 +39,6 @@ const productOptionSchema = new Schema(
 
 const vendorProductSchema = new Schema<IVendorProduct>(
   {
-    // ✅ unique: true অটোমেটিক ইনডেক্স তৈরি করে, তাই নিচে আর ইনডেক্স লাগবে না
     productId: { type: String, required: true, unique: true },
     productTitle: { type: String, required: true, trim: true },
     vendorStoreId: { type: Schema.Types.ObjectId, ref: 'StoreModel', required: true }, 
@@ -44,6 +56,10 @@ const vendorProductSchema = new Schema<IVendorProduct>(
     stock: { type: Number },
     sku: { type: String },
     rewardPoints: { type: Number },
+    
+    // ✅ NEW: Shipping Cost Field Added
+    shippingCost: { type: Number, default: 0 },
+
     category: { type: Schema.Types.ObjectId, ref: 'CategoryModel', required: true }, 
     subCategory: { type: Schema.Types.ObjectId, ref: 'SubCategoryModel' }, 
     childCategory: { type: Schema.Types.ObjectId, ref: 'ChildCategoryModel' }, 
@@ -63,66 +79,17 @@ const vendorProductSchema = new Schema<IVendorProduct>(
   { timestamps: true }
 );
 
-// ===================================
-// 🔥 DATABASE INDEXES (OPTIMIZED)
-// ===================================
-
-// ❌ REMOVED: productId index because 'unique: true' already creates it.
-// vendorProductSchema.index({ productId: 1 });
-
-// ❌ REMOVED: Redundant Single Indexes (Because Compound Indexes covers them)
-// MongoDB 'Prefix Rule' অনুযায়ী, যদি { category: 1, status: 1 } থাকে, 
-// তাহলে শুধু category দিয়ে সার্চ করলেও ওই ইনডেক্স কাজ করে। আলাদা ইনডেক্স লাগে না।
-
-// vendorProductSchema.index({ category: 1 });       <-- Covered by Index 11
-// vendorProductSchema.index({ vendorStoreId: 1 });  <-- Covered by Index 12
-// vendorProductSchema.index({ subCategory: 1 });    <-- Covered by Index 13
-// vendorProductSchema.index({ brand: 1 });          <-- Covered by Index 14
-
-// ✅ KEEPING: These are unique/necessary
+// Indexes
 vendorProductSchema.index({ status: 1 });
 vendorProductSchema.index({ childCategory: 1 });
-vendorProductSchema.index({ createdAt: -1 });
-vendorProductSchema.index({ sellCount: -1 }); // Best selling
-vendorProductSchema.index({ offerDeadline: 1 }); // Flash sales
-vendorProductSchema.index({ sku: 1 }); // Product lookup
-
-// 🚀 COMPOUND INDEXES (ESR Rule Followed)
-// এগুলো সবচেয়ে ফাস্ট কুয়েরি দিবে
-
-// 1️⃣ Category Page Queries (Filter by Category + Active Status + Sort Newest)
-vendorProductSchema.index({ 
-  category: 1, 
-  status: 1, 
-  createdAt: -1 
-});
-
-// 2️⃣ Vendor Dashboard (My Products + Active/Inactive + Sort)
-vendorProductSchema.index({ 
-  vendorStoreId: 1, 
-  status: 1, 
-  createdAt: -1 
-});
-
-// 3️⃣ SubCategory Page
-vendorProductSchema.index({ 
-  subCategory: 1, 
-  status: 1, 
-  createdAt: -1 
-});
-
-// 4️⃣ Brand Page
-vendorProductSchema.index({ 
-  brand: 1, 
-  status: 1 
-});
-
-// 5️⃣ Text Search (Search Bar)
-vendorProductSchema.index({ 
-  productTitle: 'text', 
-  shortDescription: 'text',
-  productTag: 'text'
-});
+vendorProductSchema.index({ sku: 1 });
+vendorProductSchema.index({ category: 1, status: 1, createdAt: -1 });
+vendorProductSchema.index({ vendorStoreId: 1, status: 1, createdAt: -1 });
+vendorProductSchema.index({ subCategory: 1, status: 1, createdAt: -1 });
+vendorProductSchema.index({ brand: 1, status: 1 });
+vendorProductSchema.index({ productTitle: 'text', shortDescription: 'text', productTag: 'text' });
+vendorProductSchema.index({ sellCount: -1 });
+vendorProductSchema.index({ offerDeadline: 1 });
 
 export const VendorProductModel =
   models.VendorProductModel || model<IVendorProduct>('VendorProductModel', vendorProductSchema);

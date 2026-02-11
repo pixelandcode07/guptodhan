@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { ZodError } from "zod";
 import { StatusCodes } from "http-status-codes";
 import { sendResponse } from "@/lib/utils/sendResponse";
@@ -7,6 +7,8 @@ import { createVendorProductValidationSchema } from "./vendorProduct.validation"
 import { IVendorProduct } from "./vendorProduct.interface";
 import dbConnect from "@/lib/db";
 import { VendorProductServices } from "./vendorProduct.service";
+import { VendorProductModel } from "@/lib/models-index";
+import { CacheKeys, deleteCacheKey, deleteCachePattern } from "@/lib/redis/cache-helpers";
 
 // ===================================
 // 📝 CREATE VENDOR PRODUCT
@@ -50,26 +52,27 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
           : option.unit
             ? [option.unit]
             : [],
-        simType: Array.isArray(option.simType)
-          ? option.simType
-          : option.simType
-            ? [option.simType]
-            : [],
-        condition: Array.isArray(option.condition)
-          ? option.condition
-          : option.condition
-            ? [option.condition]
-            : [],
-        color: Array.isArray(option.color)
-          ? option.color
-          : option.color
-            ? [option.color]
-            : [],
-        size: Array.isArray(option.size)
-          ? option.size
-          : option.size
-            ? [option.size]
-            : [],
+        simType: option.simType 
+          ? (Array.isArray(option.simType)
+              ? option.simType.map((id: string) => new Types.ObjectId(id))
+              : [new Types.ObjectId(option.simType)])
+          : [],
+        condition: option.condition
+          ? (Array.isArray(option.condition)
+              ? option.condition.map((id: string) => new Types.ObjectId(id))
+              : [new Types.ObjectId(option.condition)])
+          : [],
+        color: option.color
+          ? (Array.isArray(option.color)
+              ? option.color.map((id: string) => new Types.ObjectId(id))
+              : [new Types.ObjectId(option.color)])
+          : [],
+        size: option.size
+          ? (Array.isArray(option.size)
+              ? option.size.map((id: string) => new Types.ObjectId(id))
+              : [new Types.ObjectId(option.size)])
+          : [],
+        storage: option.storage || undefined,
         warranty: option.warranty || undefined,
         stock: option.stock || undefined,
         price: option.price || undefined,
@@ -119,7 +122,8 @@ const getAllVendorProducts = async (req: NextRequest) => {
   
   const { searchParams } = new URL(req.url);
   const page = Number(searchParams.get("page")) || 1;
-  const limit = Number(searchParams.get("limit")) || 20;
+  // 🔥 FIX: যদি limit প্যারামিটার না থাকে বা 0 হয়, তবে ডিফল্ট 20 হবে
+  const limit = Number(searchParams.get("limit")) || 20; 
   
   const result = await VendorProductServices.getAllVendorProductsFromDB(page, limit);
 
@@ -131,11 +135,27 @@ const getAllVendorProducts = async (req: NextRequest) => {
   });
 };
 
+
+const getAllVendorProductsNoPagination = async (req: NextRequest) => {
+  await dbConnect();
+  
+  // Direct Service call (No params needed)
+  const result = await VendorProductServices.getAllVendorProductsNoPaginationFromDB();
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "All vendor products retrieved successfully (No Pagination)!",
+    data: result,
+  });
+};
+
 const getActiveVendorProducts = async (req: NextRequest) => {
   await dbConnect();
   
   const { searchParams } = new URL(req.url);
   const page = Number(searchParams.get("page")) || 1;
+  // 🔥 FIX: এখানেও limit ফিক্স করা হলো
   const limit = Number(searchParams.get("limit")) || 20;
   
   const result = await VendorProductServices.getActiveVendorProductsFromDB(page, limit);
@@ -173,6 +193,7 @@ const getVendorProductById = async (
     data: result,
   });
 };
+
 
 const getVendorProductsByCategory = async (
   req: NextRequest,
@@ -314,6 +335,7 @@ const updateVendorProduct = async (
     const { id } = await params;
     const body = await req.json();
 
+    // ✅ Prepare payload with proper ObjectId conversions
     const payload: Partial<IVendorProduct> = { ...body };
 
     if (body.category) payload.category = new Types.ObjectId(body.category);
@@ -328,13 +350,53 @@ const updateVendorProduct = async (
     if (body.warranty) payload.warranty = new Types.ObjectId(body.warranty);
     if (body.weightUnit)
       payload.weightUnit = new Types.ObjectId(body.weightUnit);
+    if (body.vendorStoreId)
+      payload.vendorStoreId = new Types.ObjectId(body.vendorStoreId);
+    
+    // ✅ Handle productOptions with proper ObjectId conversions
+    if (body.productOptions && Array.isArray(body.productOptions)) {
+      payload.productOptions = body.productOptions.map((option: any) => ({
+        productImage: option.productImage || undefined,
+        unit: Array.isArray(option.unit)
+          ? option.unit
+          : option.unit
+            ? [option.unit]
+            : [],
+        simType: option.simType 
+          ? (Array.isArray(option.simType)
+              ? option.simType.map((id: string) => new Types.ObjectId(id))
+              : [new Types.ObjectId(option.simType)])
+          : [],
+        condition: option.condition
+          ? (Array.isArray(option.condition)
+              ? option.condition.map((id: string) => new Types.ObjectId(id))
+              : [new Types.ObjectId(option.condition)])
+          : [],
+        color: option.color
+          ? (Array.isArray(option.color)
+              ? option.color.map((id: string) => new Types.ObjectId(id))
+              : [new Types.ObjectId(option.color)])
+          : [],
+        size: option.size
+          ? (Array.isArray(option.size)
+              ? option.size.map((id: string) => new Types.ObjectId(id))
+              : [new Types.ObjectId(option.size)])
+          : [],
+        storage: option.storage || undefined,
+        warranty: option.warranty || undefined,
+        stock: option.stock || undefined,
+        price: option.price || undefined,
+        discountPrice: option.discountPrice || undefined,
+      }));
+    }
 
-    const result = await VendorProductServices.updateVendorProductInDB(
-      id,
-      payload
-    );
+    // ✅ Update the product in database
+    const updateResult = await VendorProductModel.findByIdAndUpdate(id, payload, {
+      new: true,
+      runValidators: true,
+    });
 
-    if (!result) {
+    if (!updateResult) {
       return sendResponse({
         success: false,
         statusCode: StatusCodes.NOT_FOUND,
@@ -343,11 +405,176 @@ const updateVendorProduct = async (
       });
     }
 
+    // ✅ Fetch the updated product with full aggregation pipeline
+    // (Same format as GET endpoint for consistency)
+    const result = await VendorProductModel.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(id) } },
+      
+      // ✅ Lookup category
+      {
+        $lookup: {
+          from: 'categorymodels',
+          localField: 'category',
+          foreignField: '_id',
+          as: 'category',
+        },
+      },
+      { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup subcategory
+      {
+        $lookup: {
+          from: 'subcategorymodels',
+          localField: 'subCategory',
+          foreignField: '_id',
+          as: 'subCategory',
+        },
+      },
+      { $unwind: { path: '$subCategory', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup child category
+      {
+        $lookup: {
+          from: 'childcategorymodels',
+          localField: 'childCategory',
+          foreignField: '_id',
+          as: 'childCategory',
+        },
+      },
+      { $unwind: { path: '$childCategory', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup brand
+      {
+        $lookup: {
+          from: 'brandmodels',
+          localField: 'brand',
+          foreignField: '_id',
+          as: 'brand',
+        },
+      },
+      { $unwind: { path: '$brand', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup product model
+      {
+        $lookup: {
+          from: 'productmodels',
+          localField: 'productModel',
+          foreignField: '_id',
+          as: 'productModel',
+        },
+      },
+      { $unwind: { path: '$productModel', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup flag
+      {
+        $lookup: {
+          from: 'productflags',
+          localField: 'flag',
+          foreignField: '_id',
+          as: 'flag',
+        },
+      },
+      { $unwind: { path: '$flag', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup warranty
+      {
+        $lookup: {
+          from: 'productwarrantymodels',
+          localField: 'warranty',
+          foreignField: '_id',
+          as: 'warranty',
+        },
+      },
+      { $unwind: { path: '$warranty', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup weight unit
+      {
+        $lookup: {
+          from: 'productunits',
+          localField: 'weightUnit',
+          foreignField: '_id',
+          as: 'weightUnit',
+        },
+      },
+      { $unwind: { path: '$weightUnit', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup vendor store
+      {
+        $lookup: {
+          from: 'storemodels',
+          localField: 'vendorStoreId',
+          foreignField: '_id',
+          as: 'vendorStoreId',
+        },
+      },
+      { $unwind: { path: '$vendorStoreId', preserveNullAndEmptyArrays: true } },
+
+      // ✅ Lookup colors for productOptions
+      {
+        $lookup: {
+          from: 'productcolors',
+          localField: 'productOptions.color',
+          foreignField: '_id',
+          as: 'colorDetails',
+        },
+      },
+
+      // ✅ Lookup sizes for productOptions
+      {
+        $lookup: {
+          from: 'productsizes',
+          localField: 'productOptions.size',
+          foreignField: '_id',
+          as: 'sizeDetails',
+        },
+      },
+    ]);
+
+    if (!result || !result[0]) {
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.NOT_FOUND,
+        message: "Failed to fetch updated product!",
+        data: null,
+      });
+    }
+
+    const productDoc = result[0];
+
+    // ✅ Transform color and size arrays (ObjectIds → names)
+    const colorMap = new Map(
+      (productDoc.colorDetails || []).map((c: any) => [String(c._id), c.colorName])
+    );
+    const sizeMap = new Map(
+      (productDoc.sizeDetails || []).map((s: any) => [String(s._id), s.name])
+    );
+
+    const transformedProduct = {
+      ...productDoc,
+      productOptions: (productDoc.productOptions || []).map((option: any) => ({
+        ...option,
+        color: Array.isArray(option.color)
+          ? option.color.map((id: any) => colorMap.get(String(id)) || String(id))
+          : option.color,
+        size: Array.isArray(option.size)
+          ? option.size.map((id: any) => sizeMap.get(String(id)) || String(id))
+          : option.size,
+      })),
+    };
+
+    // ✅ Remove temporary lookup fields
+    delete transformedProduct.colorDetails;
+    delete transformedProduct.sizeDetails;
+
+    // ✅ Clear cache after update
+    await deleteCacheKey(CacheKeys.PRODUCT.BY_ID(id));
+    await deleteCachePattern(CacheKeys.PATTERNS.PRODUCTS_ALL);
+
     return sendResponse({
       success: true,
       statusCode: StatusCodes.OK,
       message: "Vendor product updated successfully!",
-      data: result,
+      data: transformedProduct,
     });
   } catch (err) {
     console.error("Error updating vendor product:", err);
@@ -363,6 +590,7 @@ const updateVendorProduct = async (
     });
   }
 };
+
 
 const deleteVendorProduct = async (
   req: NextRequest,
@@ -664,6 +892,7 @@ export const VendorProductController = {
   getBestSellingProducts,
   getForYouProducts,
 
+  getAllVendorProductsNoPagination,
   getVendorStoreAndProducts,
   getVendorStoreAndProductsVendorDashboard,
   getVendorStoreProductsWithReviews,

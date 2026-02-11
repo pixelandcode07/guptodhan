@@ -141,27 +141,17 @@ export const ProductQASection = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            Questions About this Product ({questionCount})
-          </h3>
-          <p className="text-sm text-gray-500">
-            Have a question? Ask and we&apos;ll respond as soon as possible.
-          </p>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row">
+      {/* Ask Question Input */}
+      <div className="flex flex-col sm:flex-row gap-3">
         <Input
-          placeholder="Enter your question here"
+          placeholder="Have question about this product? Get specific details about this product from expert."
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          className="h-12 flex-1"
+          className="h-12 flex-1 border-gray-300"
           disabled={isSubmitting}
         />
         <Button
-          className="h-12 sm:w-40"
+          className="h-12 sm:w-40 bg-[#00005E] hover:bg-[#d43d1a] text-white"
           onClick={handleSubmit}
           disabled={isSubmitting || !question.trim()}
         >
@@ -169,28 +159,36 @@ export const ProductQASection = ({
         </Button>
       </div>
 
+      {/* Loading or Questions List */}
       {isLoading ? (
         <Card className="p-6 text-center text-gray-500">
           Loading questions...
         </Card>
       ) : items.length === 0 ? (
-        <Card className="p-6 text-center text-gray-500">
-          No questions yet. Be the first to ask!
-        </Card>
+        <div className="text-center py-16 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+              <MessageCircleQuestion size={32} className="text-blue-600" />
+            </div>
+          </div>
+          <p className="text-gray-600 font-medium">
+            There are no questions asked yet. Be the first one to ask a question.
+          </p>
+        </div>
       ) : (
         <div className="space-y-4">
           {items.map((qa) => (
             <div
               key={qa._id || qa.qaId}
-              className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+              className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
             >
               <div className="flex gap-3">
-                <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                  <MessageCircleQuestion className="h-4 w-4" />
+                <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 flex-shrink-0">
+                  <MessageCircleQuestion className="h-5 w-5" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-900">{qa.question}</p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-base text-gray-900 font-medium">{qa.question}</p>
+                  <p className="text-sm text-gray-500 mt-1">
                     {qa.userName || 'Customer'} •{' '}
                     {qa.createdAt
                       ? new Date(qa.createdAt).toLocaleDateString()
@@ -198,9 +196,9 @@ export const ProductQASection = ({
                   </p>
 
                   {qa.answer?.answerText && (
-                    <div className="mt-4 flex gap-3 rounded-xl bg-gray-50 p-3">
-                      <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-green-600">
-                        <MessageCircle className="h-4 w-4" />
+                    <div className="mt-4 flex gap-3 rounded-lg bg-gray-50 p-4 border border-gray-200">
+                      <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-green-600 flex-shrink-0">
+                        <MessageCircle className="h-5 w-5" />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-900">
@@ -212,6 +210,7 @@ export const ProductQASection = ({
                       </div>
                     </div>
                   )}
+                  
                   {isAdmin && qa._id && (
                     <div className="mt-4 space-y-2">
                       {editingQaId === qa._id || !qa.answer?.answerText ? (
@@ -241,7 +240,7 @@ export const ProductQASection = ({
                           onCancel={() => setEditingQaId(null)}
                         />
                       ) : (
-                        <div className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                        <div className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
                           <p className="text-sm text-gray-600">
                             You have replied to this question. Need to update your answer?
                           </p>
@@ -266,4 +265,3 @@ export const ProductQASection = ({
     </div>
   );
 };
-

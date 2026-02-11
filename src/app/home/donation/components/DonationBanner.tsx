@@ -36,7 +36,8 @@ export default async function DonationBanner() {
 
     return (
         <div className="py-6">
-            <div className="container mx-auto px-4">
+            {/* ✅ Alignment Fixed Matches JustForYou */}
+            <div className="md:max-w-[95vw] xl:container mx-auto px-4 md:px-8">
                 <div className="relative w-full aspect-[4/3] md:aspect-[2/1] lg:aspect-[16/5] rounded-2xl overflow-hidden shadow-xl group bg-gray-200">
                     <Image 
                         src={displayConfig.image} 
@@ -47,10 +48,6 @@ export default async function DonationBanner() {
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 100vw"
                     />
                     
-                    {/* 🔥 FIX: Deep Shadow সরিয়ে Gradient দেওয়া হয়েছে।
-                        - to-transparent: উপরের অংশ স্বচ্ছ থাকবে (ইমেজ নরমাল দেখাবে)
-                        - from-black/80: শুধু একদম নিচে যেখানে লেখা আছে সেখানে ডার্ক হবে
-                    */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                     
                     <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-12 text-white">

@@ -100,11 +100,24 @@ const getServicesByCategorySlugFromDB = async (
   slug: string,
   filters: FilterOptions,
 ) => {
-  const formatSlugToCategory = (slug: string) => {
-    return slug
-      .split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+  const category = await ServiceCategoryModel.findOne({ slug: slug })
+    .select("_id name description") 
+    .lean<IServiceCategory>(); 
+
+  if (!category) {
+    return {
+      category: null,
+      total: 0,
+      services: [],
+    };
+  }
+
+  const categoryName = category.name; 
+
+  const query: any = {
+    service_category: categoryName, 
+    service_status: "Active", 
+    is_visible_to_customers: true, 
   };
   const formattedCategory = formatSlugToCategory(slug);
   const query: any = {
@@ -114,34 +127,40 @@ const getServicesByCategorySlugFromDB = async (
 
   console.log("Filters received in service:", slug);
 
-  // Search by service name
+  // --- Filters ---
   if (filters.search) {
     query.$or = [
-      { name: { $regex: filters.search, $options: "i" } },
-      { description: { $regex: filters.search, $options: "i" } },
+      { service_title: { $regex: filters.search, $options: "i" } },
+      { service_description: { $regex: filters.search, $options: "i" } },
     ];
   }
 
-  // Location filter
   if (filters.location) {
-    query.location = { $regex: filters.location, $options: "i" };
+    query.$or = [
+      { "service_area.city": { $regex: filters.location, $options: "i" } },
+      { "service_area.district": { $regex: filters.location, $options: "i" } },
+      { "service_area.thana": { $regex: filters.location, $options: "i" } },
+    ];
   }
 
-  // Price filtering
   if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-    query.price = {};
-    if (filters.minPrice !== undefined) {
-      query.price.$gte = filters.minPrice;
-    }
-    if (filters.maxPrice !== undefined) {
-      query.price.$lte = filters.maxPrice;
-    }
+    query.base_price = {};
+    if (filters.minPrice !== undefined) query.base_price.$gte = filters.minPrice;
+    if (filters.maxPrice !== undefined) query.base_price.$lte = filters.maxPrice;
   }
 
-  const services = await ServiceModel.find(query).sort({ createdAt: -1 });
-  console.log("Services retrieved from DB:", services);
+  const services = await ServiceModel.find(query)
+    .sort({ createdAt: -1 })
+    .select(
+      "service_id service_title base_price service_images service_area average_rating total_bookings estimated_duration_hours pricing_type available_time_slots working_days service_status service_category"
+    ) 
+    .lean();
 
   return {
+    category: { 
+        name: category.name,
+        description: category.description
+    },
     total: services.length,
     services,
   };

@@ -15,7 +15,8 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import axios from 'axios';
-import Loadding from '../Components/Loadding';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function FAQCreateForm() {
   const router = useRouter();
@@ -24,11 +25,11 @@ export default function FAQCreateForm() {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [loading, setLoading] = useState(false);
-  const [loadingCategories, setLoadingCategories] = useState(true); // ✅ Loading state
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
   const faqApi = '/api/v1/faq';
 
-  // ✅ Category load from backend
+  // Load Categories
   useEffect(() => {
     const fetchCategories = async () => {
       setLoadingCategories(true);
@@ -46,42 +47,30 @@ export default function FAQCreateForm() {
     fetchCategories();
   }, []);
 
-  // ✅ Submit handler
+  // Submit Handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!category || !question || !answer) {
       return toast.error('Please fill all required fields');
     }
 
-    // const payload = {
-    //   faqID: `FAQ-${Date.now()}`,
-    //   category, // category ID (_id)
-    //   question,
-    //   answer,
-    //   isActive: true,
-    // };
-    // console.log(payload);
-
     setLoading(true);
 
     try {
       const payload = {
         faqID: `FAQ-${Date.now()}`,
-        category, // category ID (_id)
+        category,
         question,
         answer,
         isActive: true,
       };
-      console.log(payload);
 
       const res = await axios.post(faqApi, payload);
 
       if (res.data?.success) {
         toast.success('FAQ created successfully!');
-        setCategory('');
-        setQuestion('');
-        setAnswer('');
         router.push('/general/view/all/faqs');
+        router.refresh(); // Refresh server components
       } else {
         toast.error(res.data?.message || 'Failed to create FAQ');
       }
@@ -93,85 +82,85 @@ export default function FAQCreateForm() {
     }
   };
 
-  // ✅ Skeleton Loader for categories
-  if (loadingCategories) {
-    return <Loadding />;
-  }
-
   return (
-    <div className="card bg-white shadow rounded p-6">
-      <h4 className="text-xl font-semibold mb-6">FAQ Create Form</h4>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Category */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-          <Label htmlFor="category_id" className="w-full sm:w-1/5">
-            Category <span className="text-red-500">*</span>
-          </Label>
-          <Select
-            value={category}
-            onValueChange={setCategory}
-            required
-            className="w-full sm:w-4/5">
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select One" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories && categories.length > 0 ? (
-                categories.map(cat => (
-                  <SelectItem
-                    key={cat._id}
-                    value={cat.name || cat.categoryName}>
-                    {cat.name || cat.categoryName}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem disabled value="">
-                  No categories found
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
+    <div className="bg-gray-50 min-h-screen p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+            {/* Back Button */}
+            <div className="mb-6">
+                <Button variant="ghost" asChild>
+                    <Link href="/general/view/all/faqs" className="flex items-center gap-2 text-gray-600">
+                        <ArrowLeft className="w-4 h-4" /> Back to List
+                    </Link>
+                </Button>
+            </div>
 
-        {/* Question */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-          <Label htmlFor="question" className="w-full sm:w-1/5">
-            Question <span className="text-red-500">*</span>
-          </Label>
-          <Input
-            id="question"
-            type="text"
-            placeholder="Enter question"
-            value={question}
-            onChange={e => setQuestion(e.target.value)}
-            className="w-full sm:w-4/5"
-            required
-          />
-        </div>
+            <div className="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-100">
+                <div className="p-6 border-b bg-gray-50/50">
+                    <h4 className="text-xl font-bold text-gray-800">Create New FAQ</h4>
+                </div>
+                
+                <div className="p-6 md:p-8">
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        
+                        {/* Category */}
+                        <div className="grid gap-2">
+                            <Label htmlFor="category_id">Category <span className="text-red-500">*</span></Label>
+                            <Select value={category} onValueChange={setCategory} required>
+                                <SelectTrigger className="w-full bg-gray-50/50 h-11">
+                                    <SelectValue placeholder={loadingCategories ? "Loading..." : "Select Category"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {categories && categories.length > 0 ? (
+                                        categories.map(cat => (
+                                            <SelectItem key={cat._id} value={cat._id}>
+                                                {cat.name || cat.categoryName}
+                                            </SelectItem>
+                                        ))
+                                    ) : (
+                                        <SelectItem disabled value="no-cat">No categories found</SelectItem>
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </div>
 
-        {/* Answer */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-start gap-2">
-          <Label htmlFor="answer" className="w-full sm:w-1/5">
-            Answer <span className="text-red-500">*</span>
-          </Label>
-          <Textarea
-            id="answer"
-            rows={8}
-            placeholder="Write the answer here..."
-            value={answer}
-            onChange={e => setAnswer(e.target.value)}
-            className="w-full sm:w-4/5"
-            required
-          />
-        </div>
+                        {/* Question */}
+                        <div className="grid gap-2">
+                            <Label htmlFor="question">Question <span className="text-red-500">*</span></Label>
+                            <Input
+                                id="question"
+                                type="text"
+                                placeholder="Enter the question here"
+                                value={question}
+                                onChange={e => setQuestion(e.target.value)}
+                                className="w-full bg-gray-50/50 h-11"
+                                required
+                            />
+                        </div>
 
-        {/* Submit */}
-        <div className="flex justify-start">
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Saving...' : 'Create FAQ'}
-          </Button>
+                        {/* Answer */}
+                        <div className="grid gap-2">
+                            <Label htmlFor="answer">Answer <span className="text-red-500">*</span></Label>
+                            <Textarea
+                                id="answer"
+                                rows={6}
+                                placeholder="Provide the detailed answer..."
+                                value={answer}
+                                onChange={e => setAnswer(e.target.value)}
+                                className="w-full bg-gray-50/50 resize-none"
+                                required
+                            />
+                        </div>
+
+                        {/* Submit Button */}
+                        <div className="pt-4 flex justify-end">
+                            <Button type="submit" disabled={loading} className="w-full sm:w-auto min-w-[150px]">
+                                {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Saving...</> : 'Create FAQ'}
+                            </Button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-      </form>
     </div>
   );
 }

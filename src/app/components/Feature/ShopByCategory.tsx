@@ -33,7 +33,7 @@ export function ShopByCategory({ featuredData }: FeatureProps) {
             >
               <Link href={`/feature/${category.slug}`} className="group block">
                 <div className="flex flex-col items-center gap-2 md:gap-3 rounded-xl border bg-white p-2 md:p-4 shadow-sm transition-all duration-300 hover:shadow-md md:hover:shadow-lg hover:-translate-y-1">
-                  <div className="flex items-center justify-center w-14 h-14 md:w-20 md:h-20 rounded-lg group-hover:bg-[#f0f9ff] transition-colors overflow-hidden">
+                  <div className="flex items-center justify-center w-14 h-14 md:w-20 md:h-20 ">
                     <Image
                       src={category.categoryIcon}
                       alt={category.name}

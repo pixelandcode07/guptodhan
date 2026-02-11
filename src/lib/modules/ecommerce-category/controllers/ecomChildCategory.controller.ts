@@ -237,7 +237,10 @@ const getProductsByChildCategorySlug = async (
   { params }: { params: Promise<{ slug: string }> }
 ) => {
   await dbConnect();
+  
+  // ✅ FIX 1: Decode Slug (e.g. "men%20fashion" -> "men fashion")
   const { slug } = await params;
+  const decodedSlug = decodeURIComponent(slug);
 
   const { searchParams } = new URL(req.url);
   
@@ -251,7 +254,7 @@ const getProductsByChildCategorySlug = async (
   };
 
   const result = await ChildCategoryServices.getProductsByChildCategorySlugWithFiltersFromDB(
-    slug,
+    decodedSlug,
     filters
   );
 
@@ -259,7 +262,7 @@ const getProductsByChildCategorySlug = async (
     return sendResponse({
       success: false,
       statusCode: StatusCodes.NOT_FOUND,
-      message: 'Child category not found',
+      message: 'Child category not found (Check slug or status)',
       data: null,
     });
   }
