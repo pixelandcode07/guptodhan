@@ -4,15 +4,15 @@ import { ServiceModel } from "../provideService/provideService.model";
 
 // Create service category
 const createServiceCategoryInDB = async (
-  payload: Partial<IServiceCategory>
+  payload: Partial<IServiceCategory>,
 ) => {
   const maxOrderCategory = await ServiceCategoryModel.findOne()
     .sort({ orderCount: -1 })
-    .select('orderCount -_id')
+    .select("orderCount -_id")
     .lean<{ orderCount: number }>();
 
   const nextOrder =
-    maxOrderCategory && typeof maxOrderCategory.orderCount === 'number'
+    maxOrderCategory && typeof maxOrderCategory.orderCount === "number"
       ? maxOrderCategory.orderCount + 1
       : 0;
 
@@ -43,8 +43,13 @@ const getServiceCategoryBySlugFromDB = async (slug: string) => {
 };
 
 // Update service category
-const updateServiceCategoryInDB = async (id: string, payload: Partial<IServiceCategory>) => {
-  const result = await ServiceCategoryModel.findByIdAndUpdate(id, payload, { new: true });
+const updateServiceCategoryInDB = async (
+  id: string,
+  payload: Partial<IServiceCategory>,
+) => {
+  const result = await ServiceCategoryModel.findByIdAndUpdate(id, payload, {
+    new: true,
+  });
 
   if (!result) {
     throw new Error("Service Category not found to update.");
@@ -72,7 +77,11 @@ export const reorderServiceCategoryService = async (orderedIds: string[]) => {
 
   // Loop and update orderCount = index
   const updatePromises = orderedIds.map((id, index) =>
-    ServiceCategoryModel.findByIdAndUpdate(id, { orderCount: index }, { new: true })
+    ServiceCategoryModel.findByIdAndUpdate(
+      id,
+      { orderCount: index },
+      { new: true },
+    ),
   );
 
   await Promise.all(updatePromises);
@@ -89,12 +98,21 @@ interface FilterOptions {
 
 const getServicesByCategorySlugFromDB = async (
   slug: string,
-  filters: FilterOptions
+  filters: FilterOptions,
 ) => {
-  const query: any = {
-    category_slug: slug,
-    is_active: true,
+  const formatSlugToCategory = (slug: string) => {
+    return slug
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
+  const formattedCategory = formatSlugToCategory(slug);
+  const query: any = {
+    service_category: formattedCategory,
+    is_visible_to_customers: true,
+  };
+
+  console.log("Filters received in service:", slug);
 
   // Search by service name
   if (filters.search) {
@@ -120,8 +138,8 @@ const getServicesByCategorySlugFromDB = async (
     }
   }
 
-  const services = await ServiceModel.find(query)
-    .sort({ createdAt: -1 });
+  const services = await ServiceModel.find(query).sort({ createdAt: -1 });
+  console.log("Services retrieved from DB:", services);
 
   return {
     total: services.length,
@@ -138,5 +156,5 @@ export const ServiceCategoryServices = {
   deleteServiceCategoryFromDB,
 
   reorderServiceCategoryService,
-  getServicesByCategorySlugFromDB
+  getServicesByCategorySlugFromDB,
 };

@@ -1,5 +1,4 @@
 import { ServiceCategoryController } from "@/lib/modules/service-section/serviceCategory/serviceCategory.controller";
 import { catchAsync } from "@/lib/middlewares/catchAsync";
-import { checkRole } from "@/lib/middlewares/checkRole";
 
-export const GET = catchAsync(checkRole(["admin"])(ServiceCategoryController.getServicesByCategorySlug));
+export const GET = catchAsync(ServiceCategoryController.getServicesByCategorySlug);

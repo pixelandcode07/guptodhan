@@ -41,10 +41,11 @@ const adminRoutes = [
   // '/api/v1/ecommerce-category/ecomCategory', 
   '/api/v1/ecommerce-category/ecomSubCategory/[id]',
   // '/api/v1/service-section/service-provider',
-  '/api/v1/service-section/service-category',
-  '/api/v1/service-section/service-banner',
-  '/api/v1/service-section/provide-service/status/[id]',
+  // '/api/v1/service-section/service-category',
+  // '/api/v1/service-section/service-banner',
+  // '/api/v1/service-section/provide-service/status/[id]',
   // '/api/v1/service-section/provide-service/[id]',
+  
 ];
 
 // 🔥 Vendor Routes
@@ -101,8 +102,8 @@ const protectedApiRoutes = [
   '/api/v1/crm-modules/support-ticket',
   '/home/UserProfile/support-tickets',
   '/api/v1/vendor-category',
-  // '/api/v1/service-section/provide-service',
 ];
+
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
