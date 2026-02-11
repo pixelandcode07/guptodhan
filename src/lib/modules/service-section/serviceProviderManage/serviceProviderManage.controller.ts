@@ -20,35 +20,18 @@ const getUserDetailsFromToken = (req: NextRequest) => {
   if (!authHeader?.startsWith('Bearer ')) {
     throw new Error('Authorization token missing or invalid.');
   }
-<<<<<<< HEAD
   const token = authHeader.split(" ")[1];
   const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as {
     userId: string;
     role: string;
   };
-=======
-  console.log('🔐 Extracting user details from token');
-  const token = authHeader.split(' ')[1];
-  // Token verify করে userId এবং role বের করা হচ্ছে
-  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as { userId: string; role: string };
->>>>>>> 6140dfada5d6bb9b501b147187dcc3dced2cac75
   return { userId: decoded.userId, role: decoded.role };
 };
 
 const createBooking = async (req: NextRequest) => {
   await dbConnect();
-<<<<<<< HEAD
-=======
-
-  console.log("🔹 Received booking creation request");
->>>>>>> 6140dfada5d6bb9b501b147187dcc3dced2cac75
   const { userId } = getUserDetailsFromToken(req);
 
-  const body = await req.json();
-
-  // 1. Fetch Service to get Provider ID
-  const service = await ServiceModel.findById(body.service_id);
-  if (!service) {
     return sendResponse({
       success: false,
       statusCode: StatusCodes.NOT_FOUND,
