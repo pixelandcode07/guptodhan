@@ -44,8 +44,17 @@ export interface IBooking extends Document {
   provider_notes?: string;
   cancellation_reason?: string;
   provider_rejection_message?: string;
+<<<<<<< HEAD
 
   // System
   createdAt: Date;
   updatedAt: Date;
 }
+=======
+   // System
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+
+>>>>>>> 6140dfada5d6bb9b501b147187dcc3dced2cac75

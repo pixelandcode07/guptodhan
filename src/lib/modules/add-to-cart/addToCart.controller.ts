@@ -119,6 +119,28 @@ const getCartItemByUserAndCartId = async (
   });
 };
 
+const deleteSelectedCartItems = async (req: NextRequest) => {
+  await dbConnect();
+
+  const body = await req.json();
+
+  const { cartIds, userId } = body;
+
+  if (!cartIds || !Array.isArray(cartIds) || cartIds.length === 0) {
+    throw new Error("Cart IDs array is required.");
+  }
+
+  await CartServices.deleteSelectedCartItemsFromDB(cartIds, userId);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Selected cart items deleted successfully!",
+    data: null,
+  });
+};
+
+
 
 export const CartController = {
   addToCart,
@@ -126,5 +148,6 @@ export const CartController = {
   updateCartItem,
   deleteCartItem,
   clearCartForUser,
-  getCartItemByUserAndCartId
+  getCartItemByUserAndCartId,
+  deleteSelectedCartItems,
 };

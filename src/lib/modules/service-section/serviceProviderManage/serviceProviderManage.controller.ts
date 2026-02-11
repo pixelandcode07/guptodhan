@@ -15,20 +15,33 @@ import { NextResponse } from "next/server";
 // 🔐 HELPER: Secure User ID & Role Extraction
 // ==========================================
 const getUserDetailsFromToken = (req: NextRequest) => {
-  const authHeader = req.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    throw new Error("Authorization token missing or invalid.");
+  const authHeader = req.headers.get('authorization');
+  console.log('🔐 Extracting user details from token, Authorization header:', authHeader);
+  if (!authHeader?.startsWith('Bearer ')) {
+    throw new Error('Authorization token missing or invalid.');
   }
+<<<<<<< HEAD
   const token = authHeader.split(" ")[1];
   const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as {
     userId: string;
     role: string;
   };
+=======
+  console.log('🔐 Extracting user details from token');
+  const token = authHeader.split(' ')[1];
+  // Token verify করে userId এবং role বের করা হচ্ছে
+  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as { userId: string; role: string };
+>>>>>>> 6140dfada5d6bb9b501b147187dcc3dced2cac75
   return { userId: decoded.userId, role: decoded.role };
 };
 
 const createBooking = async (req: NextRequest) => {
   await dbConnect();
+<<<<<<< HEAD
+=======
+
+  console.log("🔹 Received booking creation request");
+>>>>>>> 6140dfada5d6bb9b501b147187dcc3dced2cac75
   const { userId } = getUserDetailsFromToken(req);
 
   const body = await req.json();
