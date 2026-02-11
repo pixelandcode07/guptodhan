@@ -15,70 +15,22 @@ import { NextResponse } from "next/server";
 // 🔐 HELPER: Secure User ID & Role Extraction
 // ==========================================
 const getUserDetailsFromToken = (req: NextRequest) => {
-  const authHeader = req.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    throw new Error("Authorization token missing or invalid.");
+  const authHeader = req.headers.get('authorization');
+  console.log('🔐 Extracting user details from token, Authorization header:', authHeader);
+  if (!authHeader?.startsWith('Bearer ')) {
+    throw new Error('Authorization token missing or invalid.');
   }
-  const token = authHeader.split(" ")[1];
+  console.log('🔐 Extracting user details from token');
+  const token = authHeader.split(' ')[1];
   // Token verify করে userId এবং role বের করা হচ্ছে
-  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as {
-    userId: string;
-    role: string;
-  };
+  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as { userId: string; role: string };
   return { userId: decoded.userId, role: decoded.role };
 };
-
-// Create a new booking
-// const createBooking = async (req: NextRequest) => {
-//   await dbConnect();
-
-//    const { userId } = getUserDetailsFromToken(req);
-//    console.log('🟢 Creating booking for user:', userId);
-//   try {
-//     const body = await req.json();
-
-//     const { customer_id, customer_name, service_id, service_name, booking_date, time_slot, location_details, estimated_cost } = body;
-
-//     if (!customer_id || !customer_name || !service_id || !service_name || !booking_date || !time_slot || !location_details || !estimated_cost) {
-//       return sendResponse({
-//         success: false,
-//         statusCode: StatusCodes.BAD_REQUEST,
-//         message: "Missing required booking fields",
-//         data: null,
-//       });
-//     }
-
-//     const payload: Partial<IBooking> = {
-//       customer_id,
-//       service_id,
-//       booking_date,
-//       time_slot,
-//       location_details,
-//       estimated_cost,
-//     };
-
-//     const result = "await BookingServices.createBookingInDB(payload)";
-
-//     return sendResponse({
-//       success: true,
-//       statusCode: StatusCodes.CREATED,
-//       message: "Booking created successfully!",
-//       data: result,
-//     });
-//   } catch (error) {
-//     console.error("Error creating booking:", error);
-//     return sendResponse({
-//       success: false,
-//       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-//       message: "Failed to create booking",
-//       data: null,
-//     });
-//   }
-// };
 
 const createBooking = async (req: NextRequest) => {
   await dbConnect();
 
+  console.log("🔹 Received booking creation request");
   const { userId } = getUserDetailsFromToken(req);
   console.log('🟢 Creating booking for user:', userId);
 

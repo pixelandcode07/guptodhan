@@ -146,6 +146,25 @@ const getCartItemByUserAndCartIdFromDB = async (
   return result;
 };
 
+const deleteSelectedCartItemsFromDB = async (
+  cartIds: string[],
+  userID: string
+) => {
+  const objectIds = cartIds.map((id) => new Types.ObjectId(id));
+
+  const result = await CartModel.deleteMany({
+    _id: { $in: objectIds },
+    userID: new Types.ObjectId(userID),
+  });
+
+  if (result.deletedCount === 0) {
+    throw new Error("No cart items found to delete.");
+  }
+
+  return result;
+};
+
+
 export const CartServices = {
   addToCartInDB,
   getAllCartItemsFromDB,
@@ -153,4 +172,5 @@ export const CartServices = {
   deleteCartItemFromDB,
   clearCartForUserInDB,
   getCartItemByUserAndCartIdFromDB,
+  deleteSelectedCartItemsFromDB,
 };
