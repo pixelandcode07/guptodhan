@@ -211,7 +211,7 @@ const getServiceById = async (
 ) => {
   await dbConnect();
 
-  const {id} = await params;
+  const { id } = await params;
   const service = await ServiceServices.getServiceByIdFromDB(id);
   return sendResponse({
     success: true,
