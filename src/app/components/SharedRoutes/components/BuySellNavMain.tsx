@@ -129,7 +129,7 @@ export default function BuySellNavMain() {
 
                         {/* Post Ad Button */}
                         <Button onClick={handlePostAdClick} variant="BlueBtn" size="lg" className="font-bold px-6">
-                            <Plus size={20} /> Post a Free Ad
+                            <Plus size={20} /> <span className="hidden md:block">Post a Free Ad</span>
                         </Button>
                     </div>
 

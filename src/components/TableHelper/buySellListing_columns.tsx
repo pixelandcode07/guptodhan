@@ -1,8 +1,7 @@
-// components/TableHelper/buySellListing_columns.tsx
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Check, X, Edit, Eye, MoreHorizontal, Trash2, PackageCheck } from "lucide-react";
+import { Check, X, EyeOff, RotateCcw, PackageCheck, Trash2, MoreHorizontal } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,17 +11,30 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { approveAd, rejectAd, deleteAd, markAdAsSold } from "@/lib/BuyandSellApis/fetchBuyAndSellAction";
 import { confirmDelete } from "../ReusableComponents/ConfirmToast";
 import { cn } from "@/lib/utils";
 import { ClassifiedAdListing } from "@/types/ClassifiedAdsType";
-import Link from "next/link";
 
-// Server Actions
+// You need to create/update these server actions
+// (same pattern as approveAd, rejectAd, etc.)
+import {
+  approveAd,
+  rejectAd,
+  deleteAd,
+  markAdAsSold,
+  markAdAsPending,     // new
+  markAdAsActive,       // new
+  markAdAsInactive,     // new
+} from "@/lib/BuyandSellApis/fetchBuyAndSellAction";
+
+// ────────────────────────────────────────────────
+//  Server Action Handlers (you need to implement these)
+// ────────────────────────────────────────────────
+
 const handleApprove = async (id: string) => {
   const res = await approveAd(id);
   toast[res.success ? "success" : "error"]("Status Updated", {
-    description: res.success ? "Ad approved successfully!" : res.message,
+    description: res.success ? "Ad approved (active) successfully!" : res.message,
   });
 };
 
@@ -35,8 +47,29 @@ const handleReject = async (id: string) => {
 
 const handleMarkAsSold = async (id: string) => {
   const res = await markAdAsSold(id);
-  toast[res.success ? "success" : "error"]("Marked as Sold", {
-    description: res.success ? "Ad status changed to sold!" : res.message,
+  toast[res.success ? "success" : "error"]("Status Updated", {
+    description: res.success ? "Ad marked as sold!" : res.message,
+  });
+};
+
+const handleMakePending = async (id: string) => {
+  const res = await markAdAsPending(id);
+  toast[res.success ? "success" : "error"]("Status Updated", {
+    description: res.success ? "Ad moved back to pending!" : res.message,
+  });
+};
+
+const handleMakeActive = async (id: string) => {
+  const res = await markAdAsActive(id);
+  toast[res.success ? "success" : "error"]("Status Updated", {
+    description: res.success ? "Ad activated successfully!" : res.message,
+  });
+};
+
+const handleMakeInactive = async (id: string) => {
+  const res = await markAdAsInactive(id);
+  toast[res.success ? "success" : "error"]("Status Updated", {
+    description: res.success ? "Ad marked as inactive!" : res.message,
   });
 };
 
@@ -128,7 +161,8 @@ export const buySellListing_columns: ColumnDef<ClassifiedAdListing>[] = [
             status === "pending" && "bg-yellow-100 text-yellow-800",
             status === "active" && "bg-green-100 text-green-800",
             status === "inactive" && "bg-red-100 text-red-800",
-            status === "sold" && "bg-gray-100 text-gray-800"
+            status === "sold" && "bg-gray-100 text-gray-800",
+            status === "rejected" && "bg-orange-100 text-orange-800"
           )}
         >
           {status}
@@ -156,7 +190,7 @@ export const buySellListing_columns: ColumnDef<ClassifiedAdListing>[] = [
     },
   },
 
-  // Actions — তোমার চাহিদা অনুযায়ী
+  // Actions Dropdown
   {
     id: "actions",
     header: "Actions",
@@ -171,29 +205,39 @@ export const buySellListing_columns: ColumnDef<ClassifiedAdListing>[] = [
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
+          <DropdownMenuContent align="end" className="w-56">
 
-            {/* Approve — শুধু pending হলে */}
-            {status === "pending" && (
+            {/* Make Pending — useful for rejected or inactive ads */}
+            {(status === "rejected" || status === "inactive" || status === "active") && (
+              <DropdownMenuItem
+                className="flex items-center gap-2 text-amber-600 cursor-pointer"
+                onClick={() => handleMakePending(id)}
+              >
+                <RotateCcw className="h-4 w-4" /> Make Pending
+              </DropdownMenuItem>
+            )}
+
+            {/* Make Active */}
+            {(status === "pending" || status === "inactive" || status === "rejected") && (
               <DropdownMenuItem
                 className="flex items-center gap-2 text-green-600 cursor-pointer"
-                onClick={() => handleApprove(id)}
+                onClick={() => handleMakeActive(id)}
               >
-                <Check className="h-4 w-4" /> Approve
+                <Check className="h-4 w-4" /> Mark as Active
               </DropdownMenuItem>
             )}
 
-            {/* Reject — pending বা active হলে */}
-            {(status === "pending" || status === "active") && (
+            {/* Make Inactive */}
+            {status === "active" && (
               <DropdownMenuItem
-                className="flex items-center gap-2 text-red-600 cursor-pointer"
-                onClick={() => handleReject(id)}
+                className="flex items-center gap-2 text-orange-600 cursor-pointer"
+                onClick={() => handleMakeInactive(id)}
               >
-                <X className="h-4 w-4" /> Reject
+                <EyeOff className="h-4 w-4" /> Mark as Inactive
               </DropdownMenuItem>
             )}
 
-            {/* Mark as Sold — শুধু active হলে */}
+            {/* Mark as Sold */}
             {status === "active" && (
               <DropdownMenuItem
                 className="flex items-center gap-2 text-purple-600 cursor-pointer"
@@ -203,16 +247,19 @@ export const buySellListing_columns: ColumnDef<ClassifiedAdListing>[] = [
               </DropdownMenuItem>
             )}
 
-            {/* Edit */}
-            <DropdownMenuItem className="flex items-center gap-2 text-yellow-600">
-              <Link href={`/general/buy/sell/edit/${id}`} className="w-full flex gap-2 items-center">
-                <Edit className="h-4 w-4" /> Edit Ad
-              </Link>
-            </DropdownMenuItem>
+            {/* Reject */}
+            {(status === "pending" || status === "active") && (
+              <DropdownMenuItem
+                className="flex items-center gap-2 text-red-600 cursor-pointer"
+                onClick={() => handleReject(id)}
+              >
+                <X className="h-4 w-4" /> Reject
+              </DropdownMenuItem>
+            )}
 
             {/* Delete */}
             <DropdownMenuItem
-              className="flex items-center gap-2 text-red-600 cursor-pointer"
+              className="flex items-center gap-2 text-red-700 font-medium cursor-pointer mt-1 border-t pt-1"
               onClick={() => handleDelete(id)}
             >
               <Trash2 className="h-4 w-4" /> Delete Permanently

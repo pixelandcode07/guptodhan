@@ -50,6 +50,14 @@ type Props = {
     adId: string;
 };
 
+const toastStyle = {
+    style: {
+        background: '#ffffff',
+        color: '#000000',
+        border: '1px solid #e2e8f0'
+    }
+};
+
 export default function EditAdClient({ ad, categories, token, adId }: Props) {
     const [newImages, setNewImages] = useState<(File | null)[]>(new Array(5).fill(null));
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -136,7 +144,7 @@ export default function EditAdClient({ ad, categories, token, adId }: Props) {
                 },
             });
 
-            toast.success("Ad updated successfully!");
+            toast.success("Ad updated successfully!", { ...toastStyle });
             router.push("/general/buy/sell/listing");
         } catch (err: any) {
             toast.error(err.response?.data?.message || "Failed to update ad");
@@ -161,11 +169,11 @@ export default function EditAdClient({ ad, categories, token, adId }: Props) {
                     },
                 }
             );
-            toast.success(`Status changed to ${newStatus}`);
+            toast.success(`Status changed to ${newStatus}`, { ...toastStyle });
             // Optionally refresh page or update ad.status in state
             setTimeout(() => window.location.reload(), 800);
         } catch (err: any) {
-            toast.error("Failed to update status");
+            toast.error("Failed to update status", { ...toastStyle });
         } finally {
             setIsStatusUpdating(false);
         }

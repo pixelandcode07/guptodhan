@@ -29,7 +29,7 @@ export default async function BuySellEditPage({ params }: { params: { id: string
         return <div>Please log in as admin to edit ads.</div>;
     }
 
-    const token = session.accessToken || session.user.token;
+    const token = session.accessToken;
 
     if (!token) {
         return <div>Access token missing. Please log in again.</div>;
