@@ -23,7 +23,7 @@ import { z } from "zod";
 //   tools_provided: z.boolean().optional(),
 //   service_images: z.array(z.string().url()).optional(),
 // };
-
+ 
 const serviceBaseSchema = {
   service_title: z.string().min(3),
   service_category: z.string().min(2),

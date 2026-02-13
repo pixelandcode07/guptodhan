@@ -20,45 +20,56 @@ const getUserDetailsFromToken = (req: NextRequest) => {
   if (!authHeader?.startsWith('Bearer ')) {
     throw new Error('Authorization token missing or invalid.');
   }
-  console.log('🔐 Extracting user details from token');
-  const token = authHeader.split(' ')[1];
-  // Token verify করে userId এবং role বের করা হচ্ছে
-  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as { userId: string; role: string };
+  const token = authHeader.split(" ")[1];
+  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as {
+    userId: string;
+    role: string;
+  };
   return { userId: decoded.userId, role: decoded.role };
 };
 
 const createBooking = async (req: NextRequest) => {
   await dbConnect();
-
-  console.log("🔹 Received booking creation request");
   const { userId } = getUserDetailsFromToken(req);
-  console.log('🟢 Creating booking for user:', userId);
 
-  // Parse and validate request body
   const body = await req.json();
-  console.log('🟢 Creating booking with data:', body);
 
+  // 1. Fetch Service to get Provider ID
   const service = await ServiceModel.findById(body.service_id);
-  console.log('🟢 Fetched service for booking:', service);
   if (!service) {
-    return new NextResponse("Service not found", { status: 404 });
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.NOT_FOUND,
+      message: "Service not found",
+      data: null,
+    });
   }
 
-  // Prepare payload
+  // 2. Prepare Payload (Including Contact Info)
   const payload = {
-    ...body,
     customer_id: userId,
-    provider_id: service.provider_id,
+    provider_id: service.provider_id.toString(),
+    service_id: body.service_id,
+    booking_date: body.booking_date,
+    time_slot: body.time_slot,
+    location_details: body.location_details,
+    estimated_cost: Number(body.estimated_cost),
+    customer_notes: body.customer_notes,
+    
+    // ✅ NEW: Passing contact info
+    contact_info: {
+      name: body.contact_info?.name,
+      phone: body.contact_info?.phone,
+      email: body.contact_info?.email
+    }
   };
-  console.log('🟢 Booking payload prepared:', payload);
 
+  // 3. Validation
   const validatedData = createBookingValidationSchema.parse(payload);
-  console.log('🟢 Booking data validated:', validatedData);
 
-  // Save booking
+  // 4. Save to DB
   const booking = await BookingServices.createBookingInDB(validatedData);
 
-  // Return response
   return sendResponse({
     success: true,
     statusCode: StatusCodes.CREATED,

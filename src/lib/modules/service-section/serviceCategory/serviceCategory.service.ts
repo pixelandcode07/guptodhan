@@ -4,15 +4,15 @@ import { ServiceModel } from "../provideService/provideService.model";
 
 // Create service category
 const createServiceCategoryInDB = async (
-  payload: Partial<IServiceCategory>,
+  payload: Partial<IServiceCategory>
 ) => {
   const maxOrderCategory = await ServiceCategoryModel.findOne()
     .sort({ orderCount: -1 })
-    .select("orderCount -_id")
+    .select('orderCount -_id')
     .lean<{ orderCount: number }>();
 
   const nextOrder =
-    maxOrderCategory && typeof maxOrderCategory.orderCount === "number"
+    maxOrderCategory && typeof maxOrderCategory.orderCount === 'number'
       ? maxOrderCategory.orderCount + 1
       : 0;
 
@@ -43,13 +43,8 @@ const getServiceCategoryBySlugFromDB = async (slug: string) => {
 };
 
 // Update service category
-const updateServiceCategoryInDB = async (
-  id: string,
-  payload: Partial<IServiceCategory>,
-) => {
-  const result = await ServiceCategoryModel.findByIdAndUpdate(id, payload, {
-    new: true,
-  });
+const updateServiceCategoryInDB = async (id: string, payload: Partial<IServiceCategory>) => {
+  const result = await ServiceCategoryModel.findByIdAndUpdate(id, payload, { new: true });
 
   if (!result) {
     throw new Error("Service Category not found to update.");
@@ -77,11 +72,7 @@ export const reorderServiceCategoryService = async (orderedIds: string[]) => {
 
   // Loop and update orderCount = index
   const updatePromises = orderedIds.map((id, index) =>
-    ServiceCategoryModel.findByIdAndUpdate(
-      id,
-      { orderCount: index },
-      { new: true },
-    ),
+    ServiceCategoryModel.findByIdAndUpdate(id, { orderCount: index }, { new: true })
   );
 
   await Promise.all(updatePromises);
@@ -98,7 +89,7 @@ interface FilterOptions {
 
 const getServicesByCategorySlugFromDB = async (
   slug: string,
-  filters: FilterOptions,
+  filters: FilterOptions
 ) => {
   const category = await ServiceCategoryModel.findOne({ slug: slug })
     .select("_id name description") 
@@ -119,13 +110,6 @@ const getServicesByCategorySlugFromDB = async (
     service_status: "Active", 
     is_visible_to_customers: true, 
   };
-  const formattedCategory = formatSlugToCategory(slug);
-  const query: any = {
-    service_category: formattedCategory,
-    is_visible_to_customers: true,
-  };
-
-  console.log("Filters received in service:", slug);
 
   // --- Filters ---
   if (filters.search) {
@@ -175,5 +159,5 @@ export const ServiceCategoryServices = {
   deleteServiceCategoryFromDB,
 
   reorderServiceCategoryService,
-  getServicesByCategorySlugFromDB,
+  getServicesByCategorySlugFromDB
 };
