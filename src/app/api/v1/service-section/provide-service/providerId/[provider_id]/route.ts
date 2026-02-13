@@ -2,3 +2,5 @@ import {ServiceController} from "@/lib/modules/service-section/provideService/pr
 import {catchAsync} from "@/lib/middlewares/catchAsync";
 
 export const GET = catchAsync(ServiceController.getProviderServices);
+export const DELETE = catchAsync(ServiceController.deleteService);
+export const PATCH = catchAsync(ServiceController.updateService);

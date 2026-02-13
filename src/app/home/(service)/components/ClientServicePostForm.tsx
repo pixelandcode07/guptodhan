@@ -78,6 +78,14 @@ export default function ClientServicePostForm({ categories }: { categories: any[
     const [selectedCity, setSelectedCity] = useState<City | ''>('');
     const [selectedArea, setSelectedArea] = useState<Area | ''>('');
 
+    const toastStyle = {
+        style: {
+            background: '#ffffff',
+            color: '#000000',
+            border: '1px solid #e2e8f0'
+        }
+    };
+
     const { register, handleSubmit, setValue, watch, control, reset } = useForm<FormData>({
         defaultValues: { pricing_type: 'fixed', available_time_slots: [], working_days: [] },
     });
@@ -116,10 +124,10 @@ export default function ClientServicePostForm({ categories }: { categories: any[
 
     const onSubmit: SubmitHandler<FormData> = async (data) => {
         if (!(session as any)?.accessToken) return toast.error("Please login first");
-        
+
         // Basic validation
-        if (images.length === 0) return toast.error("Please upload at least one image");
-        if (!selectedDivision || !selectedCity || !selectedArea) return toast.error("Please select full location details");
+        if (images.length === 0) return toast.error("Please upload at least one image", { ...toastStyle });
+        if (!selectedDivision || !selectedCity || !selectedArea) return toast.error("Please select full location details", { ...toastStyle });
 
         setLoading(true);
         const toastId = toast.loading("Publishing service... Please wait.");
@@ -129,40 +137,50 @@ export default function ClientServicePostForm({ categories }: { categories: any[
             if (Array.isArray(value)) value.forEach(v => formData.append(key, v));
             else formData.append(key, String(value));
         });
-        
+
         // Location Data
         formData.append('service_area.city', selectedCity);
-        formData.append('service_area.district', selectedDivision); // Using Division as District for now based on data structure
+        formData.append('service_area.district', selectedDivision);
         formData.append('service_area.thana', selectedArea);
-        
+
         // Append Images
         images.forEach(file => formData.append('service_images', file));
 
         try {
             // ✅ FIX 2: Increased Timeout to 120 seconds (2 minutes)
             const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/service-section/provide-service`, formData, {
-                headers: { 
-                    'Authorization': `Bearer ${(session as any)?.accessToken}`, 
-                    'Content-Type': 'multipart/form-data' 
+                headers: {
+                    'Authorization': `Bearer ${(session as any)?.accessToken}`,
+                    'Content-Type': 'multipart/form-data'
                 },
-                timeout: 120000 // 120s timeout to prevent 504 on client side
+                timeout: 120000
             });
 
             if (res.data.success) {
-                toast.success("Service posted successfully!", { id: toastId });
+                toast.success(
+                    "Service posted successfully!", {
+                    ...toastStyle,
+                    id: toastId
+                });
                 setShowSuccessDialog(true);
             }
         } catch (err: any) {
             console.error(err);
             const errorMsg = err.response?.data?.message || "Failed to post service";
-            
+
             if (err.code === 'ECONNABORTED') {
-                toast.error("Request timed out. Please try uploading smaller images.", { id: toastId });
+                toast.error("Request timed out. Please try uploading smaller images.", {
+                    ...toastStyle,
+                    id: toastId
+                });
             } else {
-                toast.error(errorMsg, { id: toastId });
+                toast.error(errorMsg, {
+                    ...toastStyle,
+                    id: toastId
+                });
             }
-        } finally { 
-            setLoading(false); 
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -188,7 +206,7 @@ export default function ClientServicePostForm({ categories }: { categories: any[
 
             <motion.div initial="initial" animate="animate" variants={fadeInUp} className="max-w-6xl mx-auto px-4">
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-                    
+
                     {/* 1. Basic Info Section */}
                     <Card className="border-none shadow-md overflow-hidden">
                         <div className="bg-primary/5 px-6 py-4 border-b flex items-center gap-2">
@@ -325,7 +343,7 @@ export default function ClientServicePostForm({ categories }: { categories: any[
                                 <p className="text-sm text-gray-500">Upload up to 5 high-quality images of your work.</p>
                                 <span className="text-xs bg-red-50 text-red-600 px-2 py-1 rounded border border-red-100 font-medium">Max 2MB per image</span>
                             </div>
-                            
+
                             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                                 {Array.from({ length: 5 }).map((_, i) => (
                                     <FiveUploadImageBtn key={i} value={images[i] || null} onChange={handleImageChange(i)} />

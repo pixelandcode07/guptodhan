@@ -14,9 +14,7 @@ export default async function PostServicePage() {
     const categories = await fetchAllPublicServiceCategories();
 
     return (
-        // <div className="max-w-4xl mx-auto py-10 px-4">
         <div className="">
-            {/* <h1 className="text-3xl font-bold mb-8">Post a New Service</h1> */}
             <ClientServicePostForm
                 categories={categories}
             />

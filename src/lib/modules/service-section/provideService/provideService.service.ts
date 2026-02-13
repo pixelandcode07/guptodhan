@@ -52,7 +52,7 @@ const changeServiceStatusInDB = async (
   is_visible_to_customers?: boolean
 ) => {
   const service = await ServiceModel.findOneAndUpdate(
-    { id },
+    { _id: id },
     { service_status: status, is_visible_to_customers },
     { new: true }
   );
@@ -84,6 +84,8 @@ const deleteServiceInDB = async (id: string, provider_id: string) => {
   if (!service) throw new Error("Service not found or not owned by provider.");
   return service;
 };
+
+
 
 export const ServiceServices = {
   createServiceInDB,

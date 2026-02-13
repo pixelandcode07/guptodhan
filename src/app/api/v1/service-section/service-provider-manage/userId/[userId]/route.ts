@@ -2,3 +2,5 @@ import { BookingController } from "@/lib/modules/service-section/serviceProvider
 import { catchAsync } from "@/lib/middlewares/catchAsync";
 
 export const GET = catchAsync(BookingController.getUserBookings);
+
+

@@ -28,6 +28,14 @@ export default function AdminLoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
+    const toastStyle = {
+        style: {
+            background: '#ffffff',
+            color: '#000000',
+            border: '1px solid #e2e8f0'
+        }
+    };
+
     const {
         register,
         handleSubmit,
@@ -58,12 +66,14 @@ export default function AdminLoginPage() {
 
             if (result?.error) {
                 toast.error('Admin Access Denied', {
+                    ...toastStyle,
                     description: 'Invalid credentials or unauthorized access.',
                 });
                 return;
             }
 
             toast.success('Access Granted', {
+                 ...toastStyle,
                 description: 'Welcome to the Admin Control Center.',
             });
 
@@ -72,7 +82,7 @@ export default function AdminLoginPage() {
 
         } catch (err: any) {
             const message = err.response?.data?.message || 'Unauthorized access attempt.';
-            toast.error('Login Failed', { description: message });
+            toast.error('Login Failed', {  ...toastStyle, description: message });
         } finally {
             setIsLoading(false);
         }

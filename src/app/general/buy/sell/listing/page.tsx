@@ -9,9 +9,7 @@ import { getServerSession } from 'next-auth'
 export default async function BuySellListing() {
     const session = await getServerSession(authOptions)
     const token = session?.accessToken as string | undefined;
-    // console.log("Token in BuySellListing page:", token);
     const buySellListing: ClassifiedAdListing[] = await fetchClassifiedAds(token)
-    // console.log("BuySellListing data:", buySellListing);
     return (
         <>
             <div className='py-5'>
