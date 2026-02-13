@@ -21,6 +21,7 @@ const createCampaign = async (req: NextRequest) => {
     const formData = await req.formData();
     const images = formData.getAll('images') as File[];
 
+    // ১. ইমেজ আপলোড
     const uploadResults = images.length > 0
       ? await Promise.all(
           images.map(async (file) => {
@@ -30,11 +31,22 @@ const createCampaign = async (req: NextRequest) => {
         )
       : [];
 
+    // ২. পেলোড তৈরি এবং ডাটা কনভারশন (ফিক্স করা অংশ)
     const payload: Record<string, any> = {};
+    
     for (const [key, value] of formData.entries()) {
-      if (key !== 'images') payload[key] = value;
+      // ইমেজ বাদে বাকি ডাটা প্রসেস করা হবে
+      if (key !== 'images') {
+        if (key === 'goalAmount') {
+            // FormData থেকে আসা স্ট্রিং ভ্যালুকে নাম্বারে কনভার্ট করা হচ্ছে
+            payload[key] = Number(value);
+        } else {
+            payload[key] = value;
+        }
+      }
     }
 
+    // ৩. জড ভ্যালিডেশন
     const validatedData = createDonationCampaignSchema.parse(payload);
 
     let categoryId: Types.ObjectId;

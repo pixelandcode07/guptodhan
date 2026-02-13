@@ -8,17 +8,24 @@ export const useSocket = () => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const SOCKET_URL = "https://guptodhan-socket-server.onrender.com";
+    // 🔴 OLD RENDER LINK REMOVED
+    // ✅ NEW VPS DOMAIN (সরাসরি তোমার ডোমেইন ব্যবহার করবে)
+    // অথবা .env থেকে NEXT_PUBLIC_SOCKET_URL নিবে
+    const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "https://guptodhandigital.com";
 
     if (!socketRef.current) {
+      console.log('🔌 Connecting to Socket Server at:', SOCKET_URL);
+
       socketRef.current = io(SOCKET_URL, {
-        transports: ['websocket', 'polling'],
+        path: '/socket.io/', // Nginx এর location ব্লকের সাথে মিল রেখে
+        transports: ['websocket', 'polling'], // Nginx WebSocket সাপোর্ট করবে
         reconnection: true,
         reconnectionAttempts: 10,
+        secure: true, // HTTPS এর জন্য জরুরি
       });
 
       socketRef.current.on('connect', () => {
-        console.log('✅ Socket Connected:', socketRef.current?.id);
+        console.log('✅ Socket Connected successfully:', socketRef.current?.id);
         setIsConnected(true);
       });
 
@@ -27,13 +34,18 @@ export const useSocket = () => {
         setIsConnected(false);
       });
 
+      socketRef.current.on('connect_error', (err) => {
+        console.error('❌ Socket Connection Error:', err.message);
+      });
+
       socketRef.current.on('authenticated', (data) => {
         console.log('✅ Socket authenticated:', data);
       });
     }
 
     return () => {
-      // socketRef.current?.disconnect();
+      // ক্লিনআপ: কম্পোনেন্ট আনমাউন্ট হলে ডিসকানেক্ট করার দরকার নেই যদি গ্লোবাল স্টেট থাকে
+      // তবে চাইলে socketRef.current?.disconnect() করতে পারো
     };
   }, []);
 
@@ -41,27 +53,34 @@ export const useSocket = () => {
     if (socketRef.current?.connected) {
       socketRef.current.emit('send_message', data, onAck);
     } else {
+      console.warn('⚠️ Cannot send message: Socket not connected');
       onAck({ success: false, error: 'Socket not connected' });
     }
   }, []);
 
   const authenticate = useCallback((userId: string) => {
-    socketRef.current?.emit('authenticate', userId);
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('authenticate', userId);
+    }
   }, []);
 
   const joinConversation = useCallback((conversationId: string) => {
-    socketRef.current?.emit('join_conversation', {
-      conversationId: conversationId
-    });
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('join_conversation', {
+        conversationId: conversationId
+      });
+    }
   }, []);
 
   const checkUserStatus = useCallback((userId: string, callback?: (status: any) => void) => {
-    socketRef.current?.emit('check_user_status', userId, (status: any) => {
-      console.log('📊 User status:', status);
-      if (callback) {
-        callback(status);
-      }
-    });
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('check_user_status', userId, (status: any) => {
+        console.log('📊 User status:', status);
+        if (callback) {
+          callback(status);
+        }
+      });
+    }
   }, []);
 
   const on = useCallback((event: string, callback: any) => {

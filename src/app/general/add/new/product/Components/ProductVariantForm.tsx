@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Plus } from 'lucide-react';
+import { Trash2, Plus, ImageIcon } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import Image from 'next/image';
 
 interface VariantOption {
   _id: string;
@@ -21,8 +22,8 @@ export interface IProductOption {
   id: number;
   image?: File | null;
   imageUrl?: string;
-  color: string;  // ✅ Store as ID string
-  size: string;   // ✅ Store as ID string
+  color: string;
+  size: string;
   storage?: string;
   simType?: string;
   condition?: string;
@@ -48,335 +49,121 @@ interface ProductVariantFormProps {
 export default function ProductVariantForm({ variants, setVariants, variantData }: ProductVariantFormProps) {
   const [previewImages, setPreviewImages] = useState<{ [key: number]: string }>({});
 
-  // ✅ Get color display name from ID
-  const getColorName = (colorId: string) => {
-    if (!colorId) return 'No Color Selected';
-    const color = variantData.colors.find(c => c._id === colorId);
-    return color?.colorName || colorId;
-  };
+  // ✅ Memoize lookup functions to prevent unnecessary recalculations
+  const colorMap = useMemo(() => {
+    return new Map(variantData.colors?.map(c => [c._id, c.colorName]) || []);
+  }, [variantData.colors]);
 
-  // ✅ Get size display name from ID
-  const getSizeName = (sizeId: string) => {
-    if (!sizeId) return 'No Size Selected';
-    const size = variantData.sizes.find(s => s._id === sizeId);
-    return size?.name || sizeId;
-  };
+  const sizeMap = useMemo(() => {
+    return new Map(variantData.sizes?.map(s => [s._id, s.name]) || []);
+  }, [variantData.sizes]);
 
-  // ✅ Get warranty display name from ID
-  const getWarrantyName = (warrantyId: string) => {
-    if (!warrantyId) return 'Not Selected';
-    const warranty = variantData.warranties.find(w => w._id === warrantyId);
-    return warranty?.warrantyName || warrantyId;
-  };
+  const warrantyMap = useMemo(() => {
+    return new Map(variantData.warranties?.map(w => [w._id, w.warrantyName]) || []);
+  }, [variantData.warranties]);
 
-  // ✅ Get condition display name from ID
-  const getConditionName = (conditionId: string) => {
-    if (!conditionId) return 'Not Selected';
-    const condition = variantData.conditions.find(c => c._id === conditionId);
-    return condition?.deviceCondition || conditionId;
-  };
+  const storageMap = useMemo(() => {
+    return new Map(variantData.storageTypes?.map(s => [
+      s._id, 
+      s.ram && s.rom ? `${s.ram}/${s.rom}` : s.name || 'Unknown Storage'
+    ]) || []);
+  }, [variantData.storageTypes]);
 
-  // ✅ Get storage display name from ID
-  const getStorageName = (storageId: string) => {
-    if (!storageId) return 'Not Selected';
-    const storage = variantData.storageTypes.find(s => s._id === storageId);
-    return storage?.name || storageId;
-  };
+  // ✅ Helper functions using memoized maps
+  const getColorName = useCallback((id: string) => colorMap.get(id) || 'None', [colorMap]);
+  const getSizeName = useCallback((id: string) => sizeMap.get(id) || 'None', [sizeMap]);
+  const getWarrantyName = useCallback((id: string) => warrantyMap.get(id) || 'None', [warrantyMap]);
+  const getStorageName = useCallback((id: string) => storageMap.get(id) || 'None', [storageMap]);
 
-  // Handle variant field change
-  const handleVariantChange = (index: number, field: string, value: any) => {
-    const updatedVariants = [...variants];
-    updatedVariants[index] = { ...updatedVariants[index], [field]: value };
-    setVariants(updatedVariants);
-  };
+  // ✅ Use useCallback to prevent function recreation on every render
+  const handleVariantChange = useCallback((index: number, field: string, value: any) => {
+    setVariants(prev => {
+      const updatedVariants = [...prev];
+      updatedVariants[index] = { ...updatedVariants[index], [field]: value };
+      return updatedVariants;
+    });
+  }, [setVariants]);
 
-  // Handle image upload
-  const handleImageUpload = (index: number, file: File | null) => {
+  const handleImageUpload = useCallback((index: number, file: File | null) => {
     if (file) {
       const preview = URL.createObjectURL(file);
-      setPreviewImages(prev => ({ ...prev, [index]: preview }));
+      setPreviewImages(prev => {
+        const updated = { ...prev, [variants[index].id]: preview };
+        return updated;
+      });
       handleVariantChange(index, 'image', file);
     }
-  };
+  }, [variants, handleVariantChange]);
 
-  // Add new variant
-  const addVariant = () => {
-    const newVariant: IProductOption = {
-      id: Date.now(),
-      color: '',
-      size: '',
-      stock: 0,
-      price: 0,
-      discountPrice: 0,
-      storage: '',
-      simType: '',
-      condition: '',
-      warranty: '',
-    };
-    setVariants([...variants, newVariant]);
-  };
+  const addVariant = useCallback(() => {
+    setVariants(prev => [...prev, { 
+      id: Date.now(), 
+      color: '', 
+      size: '', 
+      storage: '', 
+      simType: '', 
+      condition: '', 
+      warranty: '', 
+      stock: 0, 
+      price: 0, 
+      discountPrice: 0 
+    }]);
+  }, [setVariants]);
 
-  // Remove variant
-  const removeVariant = (index: number) => {
-    setVariants(variants.filter((_, i) => i !== index));
-    const newPreviews = { ...previewImages };
-    delete newPreviews[variants[index].id];
-    setPreviewImages(newPreviews);
-  };
+  const removeVariant = useCallback((index: number) => {
+    const variantId = variants[index].id;
+    setVariants(prev => prev.filter((_, i) => i !== index));
+    setPreviewImages(prev => {
+      const newPreviews = { ...prev };
+      delete newPreviews[variantId];
+      return newPreviews;
+    });
+  }, [variants, setVariants]);
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6">
-      <h2 className="text-lg font-semibold text-gray-900 border-b pb-2 mb-6">
-        Product Variants
-      </h2>
-
+    <div className="space-y-4">
       {variants.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500 mb-4">No variants added yet</p>
-          <Button type="button" onClick={addVariant} className="bg-teal-500 hover:bg-teal-600">
-            <Plus className="mr-2 h-4 w-4" /> Add First Variant
+        <div className="flex flex-col items-center justify-center py-8 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50/50 hover:bg-slate-50 transition-colors">
+          <div className="p-3 bg-white rounded-full shadow-sm mb-3">
+             <Plus className="h-5 w-5 text-slate-400" />
+          </div>
+          <p className="text-slate-500 text-sm font-medium mb-4">No variants added yet</p>
+          <Button 
+            type="button" 
+            onClick={addVariant} 
+            className="bg-slate-900 text-white hover:bg-slate-800 h-9 px-4 text-xs font-semibold"
+          >
+            Add Variant
           </Button>
         </div>
       ) : (
         <>
-          <div className="space-y-6">
+          <div className="flex flex-col gap-4">
             {variants.map((variant, index) => (
-              <div key={variant.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold text-gray-700">Variant {index + 1}</h3>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-500 hover:text-red-700"
-                    onClick={() => removeVariant(index)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Image Upload */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Product Image</Label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleImageUpload(index, e.target.files?.[0] || null)}
-                        className="flex-1"
-                      />
-                    </div>
-                    {previewImages[variant.id] && (
-                      <div className="mt-2 relative w-20 h-20">
-                        <img
-                          src={previewImages[variant.id]}
-                          alt="Preview"
-                          className="w-full h-full object-cover rounded-md border border-gray-300"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Color Selection - ✅ FIXED: value={color._id} */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Color *</Label>
-                    <Select
-                      value={variant.color || ''}
-                      onValueChange={(value) => handleVariantChange(index, 'color', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Color" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {variantData.colors && variantData.colors.length > 0 ? (
-                          variantData.colors.map(color => (
-                            <SelectItem key={color._id} value={color._id}>
-                              {color.colorName || 'Unknown'}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <div className="p-2 text-sm text-gray-500">No colors available</div>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Size Selection - ✅ FIXED: value={size._id} */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Size *</Label>
-                    <Select
-                      value={variant.size || ''}
-                      onValueChange={(value) => handleVariantChange(index, 'size', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Size" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {variantData.sizes && variantData.sizes.length > 0 ? (
-                          variantData.sizes.map(size => (
-                            <SelectItem key={size._id} value={size._id}>
-                              {size.name || 'Unknown'}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <div className="p-2 text-sm text-gray-500">No sizes available</div>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Stock */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Stock *</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={variant.stock}
-                      onChange={(e) => handleVariantChange(index, 'stock', parseInt(e.target.value) || 0)}
-                      placeholder="0"
-                    />
-                  </div>
-
-                  {/* Price */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Price (BDT) *</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={variant.price}
-                      onChange={(e) => handleVariantChange(index, 'price', parseInt(e.target.value) || 0)}
-                      placeholder="0"
-                    />
-                  </div>
-
-                  {/* Discount Price */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Discount Price</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={variant.discountPrice || 0}
-                      onChange={(e) => handleVariantChange(index, 'discountPrice', parseInt(e.target.value) || 0)}
-                      placeholder="0"
-                    />
-                  </div>
-
-                  {/* Storage - ✅ FIXED: value={storage._id} */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Storage</Label>
-                    <Select
-                      value={variant.storage || ''}
-                      onValueChange={(value) => handleVariantChange(index, 'storage', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Storage" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {variantData.storageTypes && variantData.storageTypes.length > 0 ? (
-                          variantData.storageTypes.map(storage => (
-                            <SelectItem key={storage._id} value={storage._id}>
-                              {storage.ram && storage.rom ? `${storage.ram} / ${storage.rom}` : storage.name || storage._id}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <div className="p-2 text-sm text-gray-500">No storage types available</div>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* SIM Type - ✅ FIXED: value={simType._id} */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">SIM Type</Label>
-                    <Select
-                      value={variant.simType || ''}
-                      onValueChange={(value) => handleVariantChange(index, 'simType', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select SIM Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {variantData.simTypes && variantData.simTypes.length > 0 ? (
-                          variantData.simTypes.map(simType => (
-                            <SelectItem key={simType._id} value={simType._id}>
-                              {simType.name || 'Unknown'}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <div className="p-2 text-sm text-gray-500">No SIM types available</div>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Condition - ✅ FIXED: value={condition._id} */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Condition</Label>
-                    <Select
-                      value={variant.condition || ''}
-                      onValueChange={(value) => handleVariantChange(index, 'condition', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Condition" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {variantData.conditions && variantData.conditions.length > 0 ? (
-                          variantData.conditions.map(condition => (
-                            <SelectItem key={condition._id} value={condition._id}>
-                              {condition.deviceCondition || 'Unknown'}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <div className="p-2 text-sm text-gray-500">No conditions available</div>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Warranty - ✅ FIXED: value={warranty._id} */}
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Warranty</Label>
-                    <Select
-                      value={variant.warranty || ''}
-                      onValueChange={(value) => handleVariantChange(index, 'warranty', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Warranty" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {variantData.warranties && variantData.warranties.length > 0 ? (
-                          variantData.warranties.map(warranty => (
-                            <SelectItem key={warranty._id} value={warranty._id}>
-                              {warranty.warrantyName || 'Unknown'}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <div className="p-2 text-sm text-gray-500">No warranties available</div>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Summary - ✅ ENHANCED: Display selected values properly */}
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-sm text-blue-800 mb-2">
-                    <strong>Summary:</strong>
-                  </p>
-                  <div className="text-xs text-blue-700 space-y-1">
-                    <p>Color: <strong>{getColorName(variant.color)}</strong></p>
-                    <p>Size: <strong>{getSizeName(variant.size)}</strong></p>
-                    <p>Storage: <strong>{getStorageName(variant.storage || '')}</strong></p>
-                    <p>Stock: <strong>{variant.stock}</strong> | Price: <strong>৳{variant.price}</strong></p>
-                  </div>
-                </div>
-              </div>
+              <VariantCard 
+                key={variant.id}
+                variant={variant}
+                index={index}
+                previewImage={previewImages[variant.id]}
+                onVariantChange={handleVariantChange}
+                onImageUpload={handleImageUpload}
+                onRemove={removeVariant}
+                variantData={variantData}
+                getColorName={getColorName}
+                getSizeName={getSizeName}
+                getStorageName={getStorageName}
+                getWarrantyName={getWarrantyName}
+              />
             ))}
           </div>
 
-          <div className="mt-6 flex justify-center">
-            <Button type="button" onClick={addVariant} className="bg-teal-500 hover:bg-teal-600">
+          <div className="flex justify-center pt-2">
+            <Button 
+              type="button" 
+              onClick={addVariant} 
+              variant="outline" 
+              className="w-full sm:w-auto border-dashed border-slate-300 text-slate-600 hover:text-slate-900 hover:bg-slate-50 h-10"
+            >
               <Plus className="mr-2 h-4 w-4" /> Add Another Variant
             </Button>
           </div>
@@ -385,3 +172,300 @@ export default function ProductVariantForm({ variants, setVariants, variantData 
     </div>
   );
 }
+
+// ✅ Separate component for each variant card to prevent unnecessary re-renders
+interface VariantCardProps {
+  variant: IProductOption;
+  index: number;
+  previewImage?: string;
+  onVariantChange: (index: number, field: string, value: any) => void;
+  onImageUpload: (index: number, file: File | null) => void;
+  onRemove: (index: number) => void;
+  variantData: {
+    warranties: VariantOption[];
+    conditions: VariantOption[];
+    simTypes: VariantOption[];
+    colors: VariantOption[];
+    sizes: VariantOption[];
+    storageTypes: VariantOption[];
+  };
+  getColorName: (id: string) => string;
+  getSizeName: (id: string) => string;
+  getStorageName: (id: string) => string;
+  getWarrantyName: (id: string) => string;
+}
+
+const VariantCard = React.memo(({
+  variant,
+  index,
+  previewImage,
+  onVariantChange,
+  onImageUpload,
+  onRemove,
+  variantData,
+  getColorName,
+  getSizeName,
+  getStorageName,
+  getWarrantyName,
+}: VariantCardProps) => {
+  const handleColorChange = useCallback((val: string) => {
+    onVariantChange(index, 'color', val);
+  }, [index, onVariantChange]);
+
+  const handleSizeChange = useCallback((val: string) => {
+    onVariantChange(index, 'size', val);
+  }, [index, onVariantChange]);
+
+  const handleStorageChange = useCallback((val: string) => {
+    onVariantChange(index, 'storage', val);
+  }, [index, onVariantChange]);
+
+  const handleSimTypeChange = useCallback((val: string) => {
+    onVariantChange(index, 'simType', val);
+  }, [index, onVariantChange]);
+
+  const handleConditionChange = useCallback((val: string) => {
+    onVariantChange(index, 'condition', val);
+  }, [index, onVariantChange]);
+
+  const handleWarrantyChange = useCallback((val: string) => {
+    onVariantChange(index, 'warranty', val);
+  }, [index, onVariantChange]);
+
+  const handleStockChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onVariantChange(index, 'stock', Number(e.target.value));
+  }, [index, onVariantChange]);
+
+  const handlePriceChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onVariantChange(index, 'price', Number(e.target.value));
+  }, [index, onVariantChange]);
+
+  const handleDiscountChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onVariantChange(index, 'discountPrice', Number(e.target.value));
+  }, [index, onVariantChange]);
+
+  const handleRemoveClick = useCallback(() => {
+    onRemove(index);
+  }, [index, onRemove]);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onImageUpload(index, e.target.files?.[0] || null);
+  }, [index, onImageUpload]);
+
+  return (
+    <div className="relative border border-slate-200 rounded-lg p-4 bg-white shadow-sm transition-all hover:border-slate-300">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+        <div className="flex items-center gap-2">
+            <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Option {index + 1}</span>
+        </div>
+        <Button 
+          type="button" 
+          variant="ghost" 
+          size="icon" 
+          className="h-6 w-6 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" 
+          onClick={handleRemoveClick}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-5">
+        
+        {/* Left: Image */}
+        <div className="w-full md:w-28 flex-shrink-0 flex flex-col gap-2">
+          <Label className="text-[11px] font-semibold text-slate-500 uppercase">Photo</Label>
+          <label className="cursor-pointer flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-slate-300 rounded-lg hover:border-slate-400 hover:bg-slate-50 transition-all relative overflow-hidden bg-white">
+              {(previewImage || variant.imageUrl) ? (
+                  <Image 
+                    src={previewImage || variant.imageUrl || ''} 
+                    alt={`Variant ${index}`} 
+                    fill 
+                    className="object-cover" 
+                    sizes="(max-width: 112px) 100vw, 112px"
+                  />
+              ) : (
+                  <div className="text-center">
+                      <ImageIcon className="h-5 w-5 text-slate-300 mx-auto mb-1" />
+                      <span className="text-[9px] text-slate-400 font-medium">Upload</span>
+                  </div>
+              )}
+              <Input 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={handleFileChange}
+              />
+          </label>
+        </div>
+
+        {/* Right: Inputs Grid */}
+        <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          
+          {/* Attributes */}
+          <div>
+              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Color</Label>
+              <Select 
+                value={variant.color || undefined} 
+                onValueChange={handleColorChange}
+              >
+                  <SelectTrigger className="h-8 text-xs bg-white">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {variantData.colors?.map(c => (
+                      <SelectItem key={c._id} value={c._id} className="text-xs">
+                        {c.colorName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+              </Select>
+          </div>
+
+          <div>
+              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Size</Label>
+              <Select 
+                value={variant.size || undefined} 
+                onValueChange={handleSizeChange}
+              >
+                  <SelectTrigger className="h-8 text-xs bg-white">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {variantData.sizes?.map(s => (
+                      <SelectItem key={s._id} value={s._id} className="text-xs">
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+              </Select>
+          </div>
+
+          <div>
+              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Storage</Label>
+              <Select 
+                value={variant.storage || undefined} 
+                onValueChange={handleStorageChange}
+              >
+                  <SelectTrigger className="h-8 text-xs bg-white">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      {variantData.storageTypes?.map(s => (
+                          <SelectItem key={s._id} value={s._id} className="text-xs">
+                              {s.ram && s.rom ? `${s.ram}/${s.rom}` : s.name}
+                          </SelectItem>
+                      ))}
+                  </SelectContent>
+              </Select>
+          </div>
+
+          {/* Tech Specs */}
+          <div>
+              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">SIM Type</Label>
+              <Select 
+                value={variant.simType || undefined} 
+                onValueChange={handleSimTypeChange}
+              >
+                  <SelectTrigger className="h-8 text-xs bg-white">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {variantData.simTypes?.map(s => (
+                      <SelectItem key={s._id} value={s._id} className="text-xs">
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+              </Select>
+          </div>
+
+          <div>
+              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Condition</Label>
+              <Select 
+                value={variant.condition || undefined} 
+                onValueChange={handleConditionChange}
+              >
+                  <SelectTrigger className="h-8 text-xs bg-white">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {variantData.conditions?.map(c => (
+                      <SelectItem key={c._id} value={c._id} className="text-xs">
+                        {c.deviceCondition}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+              </Select>
+          </div>
+
+          <div>
+              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Warranty</Label>
+              <Select 
+                value={variant.warranty || undefined} 
+                onValueChange={handleWarrantyChange}
+              >
+                  <SelectTrigger className="h-8 text-xs bg-white">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {variantData.warranties?.map(w => (
+                      <SelectItem key={w._id} value={w._id} className="text-xs">
+                        {w.warrantyName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+              </Select>
+          </div>
+
+          {/* Pricing */}
+          <div>
+              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Stock</Label>
+              <Input 
+                type="number" 
+                value={variant.stock} 
+                onChange={handleStockChange}
+                className="h-8 text-xs bg-white" 
+                placeholder="0" 
+              />
+          </div>
+
+          <div>
+              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Price</Label>
+              <Input 
+                type="number" 
+                value={variant.price} 
+                onChange={handlePriceChange}
+                className="h-8 text-xs bg-white" 
+                placeholder="0" 
+              />
+          </div>
+
+          <div>
+              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Discount</Label>
+              <Input 
+                type="number" 
+                value={variant.discountPrice} 
+                onChange={handleDiscountChange}
+                className="h-8 text-xs bg-white" 
+                placeholder="0" 
+              />
+          </div>
+        </div>
+      </div>
+
+      {/* Summary Strip */}
+      <div className="mt-3 pt-2 border-t border-slate-100 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-slate-500 font-medium">
+          <span className="flex items-center gap-1">Color: <span className="text-slate-800">{getColorName(variant.color)}</span></span>
+          <span className="text-slate-300">|</span>
+          <span className="flex items-center gap-1">Size: <span className="text-slate-800">{getSizeName(variant.size)}</span></span>
+          <span className="text-slate-300">|</span>
+          <span className="flex items-center gap-1">Storage: <span className="text-slate-800">{getStorageName(variant.storage || '')}</span></span>
+          <span className="text-slate-300">|</span>
+          <span className="flex items-center gap-1">Warranty: <span className="text-slate-800">{getWarrantyName(variant.warranty || '')}</span></span>
+      </div>
+    </div>
+  );
+});
+
+VariantCard.displayName = 'VariantCard';
