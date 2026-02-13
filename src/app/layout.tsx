@@ -68,7 +68,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const integrations = await getIntegrations();
   const verificationCode =
     integrations?.googleSearchConsoleEnabled &&
-    integrations?.googleSearchConsoleId
+      integrations?.googleSearchConsoleId
       ? extractVerificationCode(integrations.googleSearchConsoleId)
       : 'your-google-site-verification-code';
 
@@ -616,7 +616,7 @@ fbq('track', 'PageView');`,
               />
 
               {/* Toast Notifications */}
-              <Toaster position="top-center" richColors />
+              <Toaster position="top-center" />
             </PathnameDetector>
           </AuthProvider>
         </SessionProviderWrapper>
