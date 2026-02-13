@@ -1,10 +1,9 @@
 import { IBooking } from "./serviceProviderManage.interface";
-import mongoose, { Schema, Types } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 
 const bookingSchema = new Schema<IBooking>(
   {
-    // Core Identifiers
     order_id: {
       type: String,
       required: true,
@@ -14,106 +13,46 @@ const bookingSchema = new Schema<IBooking>(
         return `SOID-${shortId}`;
       },
     },
+    customer_id: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    provider_id: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    service_id: { type: Schema.Types.ObjectId, ref: "Service", required: true, index: true },
 
-    // Customer Info (CORE)
-    customer_id: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    booking_date: { type: Date, required: true, index: true },
+    time_slot: { type: String, required: true },
+    location_details: { type: String, required: true, trim: true },
 
-    // Provider Info (assigned later)
-    provider_id: {
-      type: Schema.Types.ObjectId,
-      ref: "Provider",
-    },
-
-    // Service Info (CORE)
-    service_id: {
-      type: Schema.Types.ObjectId,
-      ref: "Service",
-      required: true,
+    // ✅ NEW: Contact Information Schema
+    contact_info: {
+      name: { type: String, required: true, trim: true },
+      phone: { type: String, required: true, trim: true },
+      email: { type: String, trim: true }, // Optional
     },
 
-    // Booking Schedule (CORE)
-    booking_date: {
-      type: Date,
-      required: true,
-    },
-    time_slot: {
-      type: String,
-      required: true,
-    },
+    estimated_cost: { type: Number, required: true, min: 0 },
+    final_cost: { type: Number, min: 0 },
 
-    // Location (CORE)
-    location_details: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    // Cost & Billing (CORE → estimated)
-    estimated_cost: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    final_cost: {
-      type: Number,
-      min: 0,
-    },
-
-    // Status Tracking (CORE)
     status: {
       type: String,
-      enum: [
-        "Pending Confirmation",
-        "Confirmed",
-        "In Progress",
-        "Completed",
-        "Cancelled",
-      ],
+      enum: ["Pending Confirmation", "Confirmed", "In Progress", "Completed", "Cancelled"],
       default: "Pending Confirmation",
       required: true,
+      index: true,
     },
 
-    // Provider Workflow (OPTIONAL)
-    estimated_arrival: {
-      type: String,
-    },
-    service_start_time: {
-      type: Date,
-    },
-    service_end_time: {
-      type: Date,
-    },
-    final_hours: {
-      type: Number,
-      min: 0,
-    },
+    estimated_arrival: String,
+    service_start_time: Date,
+    service_end_time: Date,
+    final_hours: Number,
 
-    // Notes (OPTIONAL)
-    customer_notes: {
-      type: String,
-      trim: true,
-    },
-    provider_notes: {
-      type: String,
-      trim: true,
-    },
-    cancellation_reason: {
-      type: String,
-      trim: true,
-    },
-    provider_rejection_message: {
-      type: String,
-      trim: true,
-    }
+    customer_notes: String,
+    provider_notes: String,
+    cancellation_reason: String,
+    provider_rejection_message: String,
   },
-  {
-    timestamps: true,
-  },
+  { timestamps: true }
 );
 
-export const BookingModel =
-  mongoose.models.Booking || mongoose.model<IBooking>("Booking", bookingSchema);
+bookingSchema.index({ provider_id: 1, status: 1 });
+bookingSchema.index({ customer_id: 1, booking_date: -1 });
+
+export const BookingModel = mongoose.models.Booking || mongoose.model<IBooking>("Booking", bookingSchema);
