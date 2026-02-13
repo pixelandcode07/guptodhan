@@ -52,6 +52,7 @@ const adminRoutes = [
   '/api/v1/service-section/service-category',
   '/api/v1/service-section/service-banner',
   '/api/v1/service-section/provide-service/status/[id]',
+  '/api/v1/service-section/service-provider-manage',
 ];
 
 // 🔥 Vendor Routes
@@ -109,6 +110,8 @@ const protectedApiRoutes = [
   '/home/UserProfile/support-tickets',
   '/api/v1/vendor-category',
   '/api/v1/service-section/provide-service',
+  '/api/v1/service-section/service-provider-manage/userId/[id]',
+  // '/api/v1/service-section/service-provider-manage',
 ];
 
 export async function middleware(req: NextRequest) {
