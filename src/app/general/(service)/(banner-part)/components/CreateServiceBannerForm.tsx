@@ -42,6 +42,15 @@ const createServiceBannerValidationSchema = z.object({
 
 type FormValues = z.infer<typeof createServiceBannerValidationSchema>;
 
+const toastStyle = {
+    style: {
+        background: '#ffffff',
+        // text: '#fffff',
+        color: '#000000',
+        border: '1px solid #e2e8f0'
+    }
+};
+
 export default function CreateServiceBannerForm() {
     const session = useSession()
     const token = (session as any)?.accessToken;
@@ -94,6 +103,7 @@ export default function CreateServiceBannerForm() {
             });
 
             toast.success('Banner Created Successfully!', {
+                ...toastStyle,
                 description: 'Your service banner has been added.',
             });
             reset();
@@ -105,6 +115,7 @@ export default function CreateServiceBannerForm() {
                 'Failed to create banner. Please try again.';
 
             toast.error('Error', {
+                ...toastStyle,
                 description: message,
             });
         } finally {

@@ -85,6 +85,8 @@ const deleteServiceInDB = async (id: string, provider_id: string) => {
   return service;
 };
 
+
+
 export const ServiceServices = {
   createServiceInDB,
   getProviderServicesFromDB,

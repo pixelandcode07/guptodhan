@@ -9,12 +9,6 @@ export default async function AllServiceAds() {
     const session = await getServerSession(authOptions);
     const token = (session as any)?.accessToken;
 
-    // Optional: Jodi login chara ei page dekha nished hoy
-    // if (!token) {
-    //     redirect('/login');
-    // }
-
-    // Fetch data safely
     const allAds = await fetchAllServiceAds(token);
 
     return (

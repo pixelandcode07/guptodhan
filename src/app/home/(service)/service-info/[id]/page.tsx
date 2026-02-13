@@ -8,7 +8,6 @@ import { getServiceById } from "@/lib/ServicePageApis/getServiceById";
 import ServiceImages from "../../components/ServiceImages";
 import ServicePricing from "../../components/ServicePricing";
 import ServiceAvailability from "../../components/ServiceAvailability";
-import { motion, AnimatePresence } from "framer-motion";
 import BookNowBtn from "../components/BookNowBtn";
 
 

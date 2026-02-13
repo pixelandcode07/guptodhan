@@ -248,7 +248,7 @@ const deleteService = async (
   { params }: { params: { id: string; provider_id: string } }
 ) => {
   await dbConnect();
-  const { id, provider_id } = params;
+  const { id, provider_id } = await params;
   const result = await ServiceServices.deleteServiceInDB(
     id,
     provider_id
@@ -260,6 +260,7 @@ const deleteService = async (
     data: result,
   });
 };
+
 
 // Admin: Get all services
 const getAllServices = async () => {
