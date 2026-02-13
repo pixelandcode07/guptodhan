@@ -149,18 +149,22 @@ export default function UserSidebar() {
   return (
     <aside className="bg-transparent">
       <div className="flex flex-col items-center gap-2 p-4 border-b">
-        <div className="h-16 w-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+        <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
           {/* {displayImage ? (
             <Image src={displayImage} alt={displayName} width={64} height={64} className="object-cover" />
           ) : (
             <User className="h-8 w-8 text-gray-400" />
           )} */}
-          {session && <Avatar className="h-10 w-10">
-            <AvatarImage src={user?.image && user.image !== 'undefined' ? user.image : undefined} />
-            <AvatarFallback className="bg-white text-[#000066] font-medium">
-              {getInitials(user?.name)}
-            </AvatarFallback>
-          </Avatar>}
+          {session && (
+            <Avatar className="h-full w-full">
+              <AvatarImage
+                src={displayImage && displayImage !== 'undefined' ? displayImage : undefined}
+              />
+              <AvatarFallback className="bg-white text-[#000066] font-medium">
+                {getInitials(displayName)}
+              </AvatarFallback>
+            </Avatar>
+          )}
 
         </div>
         <div className="text-sm font-medium">{displayName}</div>
