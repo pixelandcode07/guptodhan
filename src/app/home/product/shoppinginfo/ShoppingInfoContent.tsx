@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import OrderSummary from './components/OrderSummary'
 import DeliveryOptions, { DeliveryOption } from './components/DeliveryOptions'
 import ItemsList from './components/ItemsList'
+import CheckoutItemsTable from './components/CheckoutItemsTable'
 import OrderSuccessModal from './components/OrderSuccessModal'
 import OrderErrorModal from './components/OrderErrorModal'
 import InfoForm from './components/InfoForm'
@@ -54,7 +55,15 @@ const isValidObjectId = (id: string | undefined): boolean => {
     return /^[0-9a-fA-F]{24}$/.test(id)
 }
 
-export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem[] }) {
+export default function ShoppingInfoContent({
+  cartItems,
+  onUpdateQuantity,
+  onRemoveItem,
+}: {
+  cartItems: CartItem[];
+  onUpdateQuantity?: (itemId: string, newQuantity: number) => void;
+  onRemoveItem?: (itemId: string) => void;
+}) {
     const [selectedDelivery, setSelectedDelivery] = useState<DeliveryOption>('standard')
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
     const [profileLoading, setProfileLoading] = useState(true)
@@ -160,6 +169,9 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
         setSuccessOrderId(orderId)
         setSuccessModalOpen(true)
         setErrorModalOpen(false)
+        if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('buyNowProductId')
+        }
         if (userProfile?._id) {
             try {
                 await axios.delete(`/api/v1/add-to-cart/get-cart/${userProfile._id}`)
@@ -402,7 +414,15 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
                         selectedDelivery={selectedDelivery}
                         onDeliveryChange={setSelectedDelivery}
                     />
-                    <ItemsList items={enrichedCartItems} />
+                    {onUpdateQuantity && onRemoveItem ? (
+                      <CheckoutItemsTable
+                        items={enrichedCartItems}
+                        onUpdateQuantity={onUpdateQuantity}
+                        onRemoveItem={onRemoveItem}
+                      />
+                    ) : (
+                      <ItemsList items={enrichedCartItems} />
+                    )}
                 </div>
                 <div className="lg:col-span-1">
                     <OrderSummary 

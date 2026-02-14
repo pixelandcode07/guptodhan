@@ -19,6 +19,11 @@ import {
 } from '@/components/ui/alert-dialog'
 import type { CartItem } from '../ShoppingCartContent'
 
+const hasVariant = (value: string | undefined): boolean => {
+  const v = value != null ? String(value).trim() : '';
+  return v !== '' && v !== '—';
+};
+
 export default function ShoppingCartSection({ 
   cartItems,
   selectedItems,
@@ -238,11 +243,13 @@ function CartItemRow({
       <td className="py-4 px-2">
         <div>
           <h3 className="font-medium text-gray-900 text-sm mb-1">{item.product.name}</h3>
-          <div className="flex items-center gap-2 text-xs text-gray-600">
-            <span>Size: {item.product.size}</span>
-            <span>•</span>
-            <span>Color: {item.product.color}</span>
-          </div>
+          {(hasVariant(item.product.size) || hasVariant(item.product.color)) && (
+            <div className="flex items-center gap-2 text-xs text-gray-600">
+              {hasVariant(item.product.size) && <span>Size: {item.product.size}</span>}
+              {hasVariant(item.product.size) && hasVariant(item.product.color) && <span>•</span>}
+              {hasVariant(item.product.color) && <span>Color: {item.product.color}</span>}
+            </div>
+          )}
           {savings > 0 && (
             <div className="text-xs text-green-600 mt-1">
               Save ৳{savings.toLocaleString()}
