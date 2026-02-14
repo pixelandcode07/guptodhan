@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { signOut, useSession } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
 import {
@@ -16,34 +15,29 @@ import {
   LogOut,
   Calendar,
   Headset,
-  HeartHandshake, // ✅ Donation Icon
-  Gift,           // ✅ Campaign Icon
-  Hand,            // ✅ Claim Icon
+  HeartHandshake,
+  Gift,
+  Hand,
   LucideWorkflow
 } from 'lucide-react'
-import api from '@/lib/axios'
+import api from '@/lib/axios' // আপনার axios instance
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
-// import Logout from '@/app/home/UserProfile/(LogoutFromProfile)/Logout'
+import { toast } from 'sonner' // অপশনাল: টোস্ট মেসেজের জন্য
 
 const items = [
-  // E-commerce Section
+  // ... আপনার মেনু আইটেমগুলো (যা ছিল তাই থাকবে)
   { title: 'Dashboard', url: '/home/UserProfile', icon: LayoutDashboard },
   { title: 'Profile', url: '/home/UserProfile/profile', icon: User },
   { title: 'My Order', url: '/home/UserProfile/orders', icon: ShoppingBag },
   { title: 'My Return', url: '/home/UserProfile/returns', icon: RotateCcw },
   { title: 'My Review', url: '/home/UserProfile/reviews', icon: Star },
   { title: 'My Services', url: '/home/UserProfile/services', icon: LucideWorkflow },
-
-  // 🔥 Donation Section (New)
   { title: 'Donation Stats', url: '/home/UserProfile/donation-dashboard', icon: HeartHandshake },
   { title: 'My Campaigns', url: '/home/UserProfile/my-campaigns', icon: Gift },
   { title: 'My Requests', url: '/home/UserProfile/my-claims', icon: Hand },
-
-  // Support & Settings
   { title: 'Support Tickets', url: '/home/UserProfile/support-tickets', icon: Headset },
   { title: 'Saved Address', url: '/home/UserProfile/addresses', icon: MapPin },
   { title: 'Change Password', url: '/home/UserProfile/change-password', icon: KeyRound },
-  // { title: 'Logout', url: '/home/UserProfile/logout', icon: LogOut },
 ]
 
 export default function UserSidebar() {
@@ -70,7 +64,7 @@ export default function UserSidebar() {
     image: user?.image || undefined
   })
 
-  // Fetch the latest profile data from the database
+  // ... (আপনার useEffect গুলো যেমন ছিল তেমনই থাকবে)
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -86,17 +80,13 @@ export default function UserSidebar() {
         console.error('Error fetching profile for sidebar:', error)
       }
     }
-
-    // Only fetch if user is logged in
     if (user) {
       fetchProfile()
     }
-  }, [user, pathname]) // Refetch when navigating between pages
+  }, [user, pathname])
 
-  // Listen for profile update events
   useEffect(() => {
     const handleProfileUpdate = () => {
-      // Refetch profile data when update event is received
       const fetchProfile = async () => {
         try {
           const response = await api.get('/profile/me')
@@ -111,50 +101,63 @@ export default function UserSidebar() {
           console.error('Error fetching profile for sidebar:', error)
         }
       }
-
       if (user) {
         fetchProfile()
       }
     }
-
-    // Listen for custom event dispatched when profile is updated
     window.addEventListener('profileUpdated', handleProfileUpdate)
-
     return () => {
       window.removeEventListener('profileUpdated', handleProfileUpdate)
     }
   }, [user])
 
-  // Use profile data if available, otherwise fall back to session data
   const displayName = profileData.name || user?.name || 'Guest User'
   const displayImage = profileData.image || user?.image
 
-  // Format the createdAt date
   const formatCustomerDate = (date: Date | string | undefined) => {
     if (!date) return 'Recent'
-
     const customerDate = new Date(date)
     const months = ['January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December']
-
     const day = customerDate.getDate().toString().padStart(2, '0')
     const month = months[customerDate.getMonth()]
     const year = customerDate.getFullYear()
-
     return `${month} ${day} ${year}`
   }
 
   const customerSince = formatCustomerDate(profileData.createdAt)
 
+  // ✅ নতুন: শক্তপোক্ত লগআউট ফাংশন
+  const handleLogout = async () => {
+    try {
+      // ১. ব্রাউজারের লোকাল ডাটা ক্লিন করা
+      localStorage.removeItem('accessToken'); // যদি সেভ করে থাকেন
+      localStorage.removeItem('refreshToken');
+      localStorage.clear(); // সব ক্লিয়ার করে দেওয়া ভালো
+      sessionStorage.clear();
+
+      // ২. ব্যাকএন্ডের কুকি ডিলিট করার জন্য API কল (এটি খুবই গুরুত্বপূর্ণ)
+      // আপনার যদি /api/v1/auth/logout রাউট থাকে তবে এটি কল করতে হবে
+      try {
+         await api.post('/auth/logout'); 
+      } catch (err) {
+         console.warn("Backend logout failed or not needed", err);
+      }
+
+      // ৩. অবশেষে NextAuth সেশন ক্লিন করে রিডাইরেক্ট করা
+      await signOut({ callbackUrl: "/", redirect: true });
+      
+    } catch (error) {
+      console.error("Logout Error:", error);
+      // এরর হলেও যেন লগআউট হয়
+      signOut({ callbackUrl: "/" });
+    }
+  };
+
   return (
     <aside className="bg-transparent">
       <div className="flex flex-col items-center gap-2 p-4 border-b">
         <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-          {/* {displayImage ? (
-            <Image src={displayImage} alt={displayName} width={64} height={64} className="object-cover" />
-          ) : (
-            <User className="h-8 w-8 text-gray-400" />
-          )} */}
           {session && (
             <Avatar className="h-full w-full">
               <AvatarImage
@@ -165,7 +168,6 @@ export default function UserSidebar() {
               </AvatarFallback>
             </Avatar>
           )}
-
         </div>
         <div className="text-sm font-medium">{displayName}</div>
         <div className="text-xs text-black flex items-center gap-1">
@@ -190,9 +192,11 @@ export default function UserSidebar() {
           })}
         </ul>
       </nav>
+      
+      {/* ✅ আপডেট করা বাটন */}
       <button
-        onClick={() => signOut({ callbackUrl: "/" })}
-        className="flex items-center gap-2 px-4 py-2 hover:bg-red-600 bg-red-600 text-white cursor-pointer w-full"
+        onClick={handleLogout}
+        className="flex items-center gap-2 px-4 py-2 hover:bg-red-600 bg-red-600 text-white cursor-pointer w-full transition-colors duration-200"
       >
         <LogOut size={16} />
         Logout
