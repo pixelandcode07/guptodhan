@@ -12,8 +12,8 @@ export default function ProductTabs({ product, reviews, onReviewsUpdate }: any) 
 
   // ট্যাব লিস্ট
   const tabs = [
-    { id: 'specification', label: 'Specification', icon: <List size={16} /> },
     { id: 'description', label: 'Description', icon: <FileText size={16} /> },
+    { id: 'specification', label: 'Specification', icon: <List size={16} /> },
     { id: 'qna', label: `Questions (${product.qna?.length || 0})`, icon: <MessageCircleQuestion size={16} /> },
     { id: 'reviews', label: `Reviews (${reviews.length})`, icon: <Star size={16} /> },
   ];
