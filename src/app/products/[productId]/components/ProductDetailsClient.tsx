@@ -10,7 +10,6 @@ import ProductTabs from './ProductTabs';
 import RelatedProducts from './RelatedProducts';
 import ProductMainInfo from './ProductSidebar';
 import { processProduct } from './dataFormatHandler';
-// ✅ Import the data format handler
 
 export default function ProductDetailsClient({ productData }: ProductDetailsClientProps) {
   // ✅ Process product data to handle both old and new backend formats
@@ -20,6 +19,33 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
   const [reviews, setReviews] = useState<Review[]>(product.reviews || []);
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [selectedSize, setSelectedSize] = useState<string>('');
+  const [isLoadingReviews, setIsLoadingReviews] = useState(true);
+
+  // ✅ Fetch reviews on component mount
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        setIsLoadingReviews(true);
+        const response = await fetch(`/api/v1/product-review/product-review-product/${product._id}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            setReviews(data.data);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+        // Fall back to product reviews if API fails
+        setReviews(product.reviews || []);
+      } finally {
+        setIsLoadingReviews(false);
+      }
+    };
+
+    if (product._id) {
+      fetchReviews();
+    }
+  }, [product._id]);
 
   useEffect(() => {
     if (product.productOptions && product.productOptions.length > 0) {
@@ -40,7 +66,7 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
 
   const handleColorChange = (color: string) => {
     setSelectedColor(color);
-    const variant = product.productOptions?.find((option) => {
+    const variant = product.productOptions?.find((option: any) => {
       const optionColor = Array.isArray(option.color) ? option.color[0] : option.color;
       return optionColor === color;
     });
@@ -89,7 +115,12 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
         </div>
       </div>
       
-      <ProductTabs product={product} reviews={reviews} onReviewsUpdate={setReviews} />
+      <ProductTabs 
+        product={product} 
+        reviews={reviews} 
+        onReviewsUpdate={setReviews}
+        isLoadingReviews={isLoadingReviews}
+      />
       
       {productData.relatedProducts && productData.relatedProducts.length > 0 && (
         <div className="container mx-auto px-3 sm:px-4 md:px-6 mt-4 sm:mt-6 md:mt-8">
