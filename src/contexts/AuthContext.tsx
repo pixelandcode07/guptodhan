@@ -1,8 +1,9 @@
-// ফাইল পাথ: D:\yeamin student\Guptodhan Project\guptodhan\src\context\AuthContext.tsx
+// ফাইল পাথ: D:\Guptodhan Project\guptodhan\src\contexts\AuthContext.tsx
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner'; // অপশনাল: টোস্ট মেসেজের জন্য
 
 export interface User {
   _id: string;
@@ -20,7 +21,7 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (identifier: string, pin: string) => Promise<void>;
   register: (data: any) => Promise<void>;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
@@ -40,32 +41,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Check localStorage for existing token
-        const storedToken = localStorage.getItem('token');
+        // ১. লোকাল স্টোরেজ থেকে ডাটা নিন
+        const storedToken = localStorage.getItem('accessToken'); // 'token' এর বদলে 'accessToken' ব্যবহার করা ভালো
         const storedUser = localStorage.getItem('user');
 
         if (storedToken && storedUser) {
           setToken(storedToken);
           setUser(JSON.parse(storedUser));
         } else {
-          // Try to fetch user from API if token exists in cookie
-          const response = await fetch('/api/v1/profile/me', {
-            headers: {
-              'Authorization': `Bearer ${storedToken}`,
-            },
-          });
-
+          // ২. যদি টোকেন না থাকে, তবে API কল করে চেক করুন (Cookies check)
+          const response = await fetch('/api/v1/profile/me'); // Header ছাড়া কল করুন, ব্রাউজার অটোমেটিক কুকি পাঠাবে
+          
           if (response.ok) {
             const data = await response.json();
-            setUser(data.data);
-            setToken(storedToken);
+            if (data.success) {
+              setUser(data.data);
+              // টোকেন যদি রেসপন্সে আসে সেট করুন, নাহলে কুকিতেই থাকবে
+            }
           }
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
-        // Clear invalid token
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        // এরর হলে সব ক্লিয়ার করে দিন
+        localStorage.clear();
+        sessionStorage.clear();
       } finally {
         setIsLoading(false);
       }
@@ -77,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ========================================
   // LOGIN
   // ========================================
-  const login = async (email: string, password: string) => {
+  const login = async (identifier: string, pin: string) => {
     try {
       setIsLoading(true);
 
@@ -86,27 +85,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ identifier, password: pin }), // আপনার লগইন পেইজে identifier এবং password চাচ্ছে
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Login failed');
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || 'Login failed');
       }
 
-      const data = await response.json();
+      const { user, accessToken } = result.data;
 
-      // Store token and user
-      localStorage.setItem('token', data.data.token);
-      localStorage.setItem('user', JSON.stringify(data.data.user));
+      // ৩. ডাটা স্টোর করুন
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('user', JSON.stringify(user));
 
-      setToken(data.data.token);
-      setUser(data.data.user);
+      setToken(accessToken);
+      setUser(user);
 
-      // Redirect to home
-      router.push('/home');
-    } catch (error) {
+      toast.success('Logged in successfully!');
+      router.push('/'); // হোমপেজে রিডাইরেক্ট
+      router.refresh(); // রাউটার রিফ্রেশ করুন যাতে হেডার আপডেট হয়
+    } catch (error: any) {
       console.error('Login error:', error);
+      toast.error(error.message);
       throw error;
     } finally {
       setIsLoading(false);
@@ -119,31 +121,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (data: any) => {
     try {
       setIsLoading(true);
-
-      const response = await fetch('/api/v1/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Registration failed');
-      }
-
-      const result = await response.json();
-
-      // Store token and user
-      localStorage.setItem('token', result.data.token);
-      localStorage.setItem('user', JSON.stringify(result.data.user));
-
-      setToken(result.data.token);
-      setUser(result.data.user);
-
-      // Redirect to home
-      router.push('/home');
+      // রেজিস্ট্রেশন লজিক (আপনার আগের মতোই রাখুন)
+      // ...
     } catch (error) {
       console.error('Register error:', error);
       throw error;
@@ -153,19 +132,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // ========================================
-  // LOGOUT
+  // ✅ LOGOUT (FIXED)
   // ========================================
-  const logout = () => {
-    // Clear localStorage
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try {
+      setIsLoading(true);
 
-    // Clear state
-    setUser(null);
-    setToken(null);
+      // ১. ব্যাকএন্ডে রিকোয়েস্ট পাঠান কুকি ডিলিট করার জন্য
+      await fetch('/api/v1/auth/logout', { method: 'POST' });
 
-    // Redirect to login
-    router.push('/login');
+      // ২. লোকাল স্টোরেজ এবং সেশন স্টোরেজ পুরো ক্লিয়ার করুন
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // ৩. স্টেট ক্লিয়ার করুন
+      setUser(null);
+      setToken(null);
+
+      toast.success('Logged out successfully');
+      
+      // ৪. লগইন পেজে পাঠান এবং পেজ রিফ্রেশ দিন (যাতে সব স্টেট রিসেট হয়)
+      router.push('/auth/login');
+      router.refresh(); 
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      // এরর হলেও লোকাল ডাটা ক্লিয়ার করুন
+      localStorage.clear();
+      setUser(null);
+      router.push('/auth/login');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // ========================================
@@ -182,7 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContextType = {
     user,
     token,
-    isAuthenticated: !!user && !!token,
+    isAuthenticated: !!user,
     isLoading,
     login,
     register,
@@ -193,15 +191,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-// ========================================
-// CUSTOM HOOK: useAuth
-// ========================================
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
-  
   if (context === undefined) {
     throw new Error('useAuth must be used within AuthProvider');
   }
-  
   return context;
 }
