@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { signOut, useSession } from 'next-auth/react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
   User,
@@ -18,14 +18,14 @@ import {
   HeartHandshake,
   Gift,
   Hand,
-  LucideWorkflow
+  LucideWorkflow,
 } from 'lucide-react'
-import api from '@/lib/axios' // আপনার axios instance
+import api from '@/lib/axios'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
-import { toast } from 'sonner' // অপশনাল: টোস্ট মেসেজের জন্য
+import { toast } from 'sonner'
+import { logoutAction } from '@/lib/actions/auth.actions'
 
 const items = [
-  // ... আপনার মেনু আইটেমগুলো (যা ছিল তাই থাকবে)
   { title: 'Dashboard', url: '/home/UserProfile', icon: LayoutDashboard },
   { title: 'Profile', url: '/home/UserProfile/profile', icon: User },
   { title: 'My Order', url: '/home/UserProfile/orders', icon: ShoppingBag },
@@ -43,17 +43,8 @@ const items = [
 export default function UserSidebar() {
   const { data: session } = useSession()
   const pathname = usePathname()
+  const router = useRouter()
   const user = session?.user
-
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return 'U';
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   const [profileData, setProfileData] = useState<{
     name: string
@@ -61,10 +52,22 @@ export default function UserSidebar() {
     createdAt?: Date | string
   }>({
     name: user?.name ?? 'Guest User',
-    image: user?.image || undefined
+    image: user?.image || undefined,
   })
 
-  // ... (আপনার useEffect গুলো যেমন ছিল তেমনই থাকবে)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return 'U'
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
+  // Fetch profile data
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -73,18 +76,20 @@ export default function UserSidebar() {
           setProfileData({
             name: response.data.data.name || user?.name || 'Guest User',
             image: response.data.data.profilePicture || user?.image || undefined,
-            createdAt: response.data.data.createdAt
+            createdAt: response.data.data.createdAt,
           })
         }
       } catch (error) {
-        console.error('Error fetching profile for sidebar:', error)
+        console.error('Error fetching profile:', error)
       }
     }
+
     if (user) {
       fetchProfile()
     }
-  }, [user, pathname])
+  }, [user])
 
+  // Listen for profile updates
   useEffect(() => {
     const handleProfileUpdate = () => {
       const fetchProfile = async () => {
@@ -94,17 +99,19 @@ export default function UserSidebar() {
             setProfileData({
               name: response.data.data.name || user?.name || 'Guest User',
               image: response.data.data.profilePicture || user?.image || undefined,
-              createdAt: response.data.data.createdAt
+              createdAt: response.data.data.createdAt,
             })
           }
         } catch (error) {
-          console.error('Error fetching profile for sidebar:', error)
+          console.error('Error fetching profile:', error)
         }
       }
+
       if (user) {
         fetchProfile()
       }
     }
+
     window.addEventListener('profileUpdated', handleProfileUpdate)
     return () => {
       window.removeEventListener('profileUpdated', handleProfileUpdate)
@@ -117,8 +124,10 @@ export default function UserSidebar() {
   const formatCustomerDate = (date: Date | string | undefined) => {
     if (!date) return 'Recent'
     const customerDate = new Date(date)
-    const months = ['January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December']
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
+    ]
     const day = customerDate.getDate().toString().padStart(2, '0')
     const month = months[customerDate.getMonth()]
     const year = customerDate.getFullYear()
@@ -127,32 +136,142 @@ export default function UserSidebar() {
 
   const customerSince = formatCustomerDate(profileData.createdAt)
 
-  // ✅ নতুন: শক্তপোক্ত লগআউট ফাংশন
+  // ✅ COMPLETE SOLVED LOGOUT FUNCTION
   const handleLogout = async () => {
-    try {
-      // ১. ব্রাউজারের লোকাল ডাটা ক্লিন করা
-      localStorage.removeItem('accessToken'); // যদি সেভ করে থাকেন
-      localStorage.removeItem('refreshToken');
-      localStorage.clear(); // সব ক্লিয়ার করে দেওয়া ভালো
-      sessionStorage.clear();
+    if (isLoggingOut) return // Prevent double-click
 
-      // ২. ব্যাকএন্ডের কুকি ডিলিট করার জন্য API কল (এটি খুবই গুরুত্বপূর্ণ)
-      // আপনার যদি /api/v1/auth/logout রাউট থাকে তবে এটি কল করতে হবে
+    setIsLoggingOut(true)
+    const toastId = toast.loading('Logging out...')
+
+    try {
+      console.log('🚀 Logout process started')
+
+      // ========================================
+      // STEP 1: Clear Browser Storage
+      // ========================================
+      console.log('🧹 Step 1: Clearing browser storage...')
+      localStorage.clear()
+      sessionStorage.clear()
+
+      // ========================================
+      // STEP 2: Clear IndexedDB (যদি থাকে)
+      // ========================================
+      console.log('🧹 Step 2: Clearing IndexedDB...')
       try {
-         await api.post('/auth/logout'); 
-      } catch (err) {
-         console.warn("Backend logout failed or not needed", err);
+        const databases = await indexedDB.databases()
+        for (const db of databases) {
+          if (db.name) {
+            indexedDB.deleteDatabase(db.name)
+          }
+        }
+      } catch (indexedDBError) {
+        console.warn('⚠️ IndexedDB clear skipped:', indexedDBError)
       }
 
-      // ৩. অবশেষে NextAuth সেশন ক্লিন করে রিডাইরেক্ট করা
-      await signOut({ callbackUrl: "/", redirect: true });
+      // ========================================
+      // STEP 3: Clear API cache/axios cache
+      // ========================================
+      console.log('🧹 Step 3: Clearing API cache...')
+      if (api.defaults.headers.common['Authorization']) {
+        delete api.defaults.headers.common['Authorization']
+      }
+
+      // ========================================
+      // STEP 4: Call Server Action (auth.actions.ts)
+      // ========================================
+      console.log('🧹 Step 4: Clearing server-side data...')
+      const userId = user?.id || (session?.user as any)?.id
+      const logoutResult = await logoutAction(userId)
+
+      if (!logoutResult.success) {
+        console.warn('⚠️ Server logout result:', logoutResult.message)
+      } else {
+        console.log('✅ Server logout successful:', logoutResult.message)
+      }
+
+      // ========================================
+      // STEP 5: Clear NextAuth Session
+      // ========================================
+      console.log('🧹 Step 5: Clearing NextAuth session...')
+      await signOut({
+        redirect: false,
+        callbackUrl: '/components/LogInAndRegister',
+      })
+
+      // ========================================
+      // STEP 6: Clear all cookies via JavaScript (Double check)
+      // ========================================
+      console.log('🧹 Step 6: Double-checking cookies...')
+      const cookieList = [
+        'accessToken',
+        'refreshToken',
+        'next-auth.session-token',
+        'next-auth.csrf-token',
+        '__Secure-next-auth.session-token',
+        '__Host-next-auth.csrf-token',
+      ]
+
+      for (const cookieName of cookieList) {
+        // Method 1: Standard way
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax;`
+        // Method 2: Secure way
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; secure; path=/; SameSite=Lax;`
+        // Method 3: All domains
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`
+      }
+
+      // ========================================
+      // STEP 7: Unregister Service Workers (PWA)
+      // ========================================
+      console.log('🧹 Step 7: Unregistering service workers...')
+      try {
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations()
+          for (const registration of registrations) {
+            await registration.unregister()
+          }
+        }
+      } catch (swError) {
+        console.warn('⚠️ Service worker unregister skipped:', swError)
+      }
+
+      toast.dismiss(toastId)
+      toast.success('✅ Logged out successfully')
+      console.log('✅ All logout steps completed')
+
+      // ========================================
+      // STEP 8: Hard Redirect (Browser refresh)
+      // ========================================
+      console.log('🔄 Step 8: Redirecting to login...')
       
-    } catch (error) {
-      console.error("Logout Error:", error);
-      // এরর হলেও যেন লগআউট হয়
-      signOut({ callbackUrl: "/" });
+      // Hard redirect যাতে ব্রাউজার সম্পূর্ণভাবে রিফ্রেশ হয়
+      setTimeout(() => {
+        window.location.href = '/components/LogInAndRegister'
+      }, 500)
+
+    } catch (error: any) {
+      console.error('❌ Logout error:', error)
+      
+      toast.dismiss(toastId)
+      toast.error('Logout encountered an issue, clearing local data...')
+
+      // Error হলেও সবকিছু clear করার চেষ্টা করুন
+      try {
+        localStorage.clear()
+        sessionStorage.clear()
+      } catch (e) {
+        console.error('Clear storage error:', e)
+      }
+
+      // Force logout anyway
+      setTimeout(() => {
+        window.location.href = '/components/LogInAndRegister'
+      }, 1000)
+
+    } finally {
+      setIsLoggingOut(false)
     }
-  };
+  }
 
   return (
     <aside className="bg-transparent">
@@ -174,15 +293,18 @@ export default function UserSidebar() {
           <Calendar className="h-3 w-3" /> Customer since {customerSince}
         </div>
       </div>
+
       <nav className="py-2">
         <ul className="text-sm text-gray-500">
-          {items.map(item => {
+          {items.map((item) => {
             const active = pathname === item.url
             return (
               <li key={item.title}>
                 <Link
                   href={item.url}
-                  className={`flex items-center gap-2 px-4 py-2 hover:bg-blue-50 ${active ? 'bg-blue-50 text-blue-600' : ''}`}
+                  className={`flex items-center gap-2 px-4 py-2 hover:bg-blue-50 transition-colors ${
+                    active ? 'bg-blue-50 text-blue-600' : ''
+                  }`}
                 >
                   <item.icon className="h-4 w-4" />
                   {item.title}
@@ -192,14 +314,19 @@ export default function UserSidebar() {
           })}
         </ul>
       </nav>
-      
-      {/* ✅ আপডেট করা বাটন */}
+
+      {/* ✅ Complete Logout Button */}
       <button
         onClick={handleLogout}
-        className="flex items-center gap-2 px-4 py-2 hover:bg-red-600 bg-red-600 text-white cursor-pointer w-full transition-colors duration-200"
+        disabled={isLoggingOut}
+        className={`flex items-center justify-center gap-2 px-4 py-2 w-full rounded-md transition-all duration-200 mt-4 ${
+          isLoggingOut
+            ? 'bg-gray-400 text-white cursor-not-allowed opacity-50'
+            : 'bg-red-600 text-white hover:bg-red-700 cursor-pointer'
+        }`}
       >
         <LogOut size={16} />
-        Logout
+        {isLoggingOut ? 'Logging out...' : 'Logout'}
       </button>
     </aside>
   )
