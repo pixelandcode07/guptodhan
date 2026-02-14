@@ -1,18 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ProductDetailsClientProps, Review } from './types';
 import { containerVariants } from './constants';
 import ProductBreadcrumb from './ProductBreadcrumb';
 import ProductImageGallery from './ProductImageGallery';
-// ✅ Import the new merged component
 import ProductTabs from './ProductTabs';
 import RelatedProducts from './RelatedProducts';
 import ProductMainInfo from './ProductSidebar';
+import { processProduct } from './dataFormatHandler';
+// ✅ Import the data format handler
 
 export default function ProductDetailsClient({ productData }: ProductDetailsClientProps) {
-  const { product } = productData;
+  // ✅ Process product data to handle both old and new backend formats
+  const processedProduct = useMemo(() => processProduct(productData.product), [productData.product]);
+  
+  const { product } = { ...productData, product: processedProduct };
   const [reviews, setReviews] = useState<Review[]>(product.reviews || []);
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [selectedSize, setSelectedSize] = useState<string>('');
@@ -20,6 +24,7 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
   useEffect(() => {
     if (product.productOptions && product.productOptions.length > 0) {
       const firstOption = product.productOptions[0];
+      // ✅ These are now guaranteed to be strings
       const firstColor = Array.isArray(firstOption.color) ? firstOption.color[0] : firstOption.color;
       const firstSize = Array.isArray(firstOption.size) ? firstOption.size[0] : firstOption.size;
       if (firstColor) setSelectedColor(firstColor);
@@ -55,7 +60,7 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* Left: Images */}
-          <div className="lg:col-span-5"> {/* Image Gallery কে আলাদা কলামে রাখা হয়েছে */}
+          <div className="lg:col-span-5">
             <div className="sticky top-24">
               <ProductImageGallery 
                 product={product}
