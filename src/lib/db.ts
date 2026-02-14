@@ -120,7 +120,7 @@ const opts: mongoose.ConnectOptions = {
     serverSelectionTimeoutMS: 5000, 
     connectTimeoutMS: 10000, 
     socketTimeoutMS: 45000, 
-    family: 4,
+    family: 4, // IPv4 prefer করা ভালো
     
     // ================================================================
     // Retry & Security Settings
@@ -128,8 +128,9 @@ const opts: mongoose.ConnectOptions = {
     retryWrites: true,
     retryReads: true,
     
-    tls: true,
-    tlsAllowInvalidCertificates: true,
+    tls: false,
+    tlsAllowInvalidCertificates: true, // Free tier হ্যান্ডশেক এরর এড়াতে সাহায্য করে
+    
     // ================================================================
     // Queue Management
     // ================================================================
