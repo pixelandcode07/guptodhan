@@ -130,7 +130,7 @@ const opts: mongoose.ConnectOptions = {
     
     tls: false,
     tlsAllowInvalidCertificates: true, // Free tier হ্যান্ডশেক এরর এড়াতে সাহায্য করে
-    
+     
     // ================================================================
     // Queue Management
     // ================================================================
