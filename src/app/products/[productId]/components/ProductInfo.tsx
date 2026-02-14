@@ -278,6 +278,15 @@ export default function ProductInfo({
                 <ShoppingCart size={18} className="mr-2" /> ADD TO CART
               </Button>
             </div>
+
+            {/* ✅ SHORT DESCRIPTION ADDED HERE */}
+            {product.shortDescription && (
+              <div className="mt-3 pt-4 border-t border-gray-100">
+                <p className="text-sm text-gray-600 leading-relaxed font-medium">
+                  {product.shortDescription}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
