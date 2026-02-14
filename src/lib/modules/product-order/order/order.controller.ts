@@ -12,6 +12,7 @@ import { OrderDetailsModel } from '../orderDetails/orderDetails.model';
 import { IOrder } from './order.interface';
 import { IOrderDetails } from '../orderDetails/orderDetails.interface';
 import { OrderServices } from './order.service';
+import { deleteCachePattern } from '@/lib/redis/cache-helpers';
 
 // --- Import Models ---
 import "@/lib/modules/product/vendorProduct.model";
@@ -156,6 +157,8 @@ const createOrderWithDetails = async (req: NextRequest) => {
 
       createdOrders.push(newOrder);
     }
+
+    await deleteCachePattern(`orders:user:${userId}*`);
 
     return sendResponse({
       success: true,

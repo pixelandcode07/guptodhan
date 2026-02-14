@@ -194,6 +194,7 @@ export default function ProductMainInfo({
         skipModal: true, silent: true, 
         color: selectedColor || undefined, size: selectedSize || undefined 
       });
+      sessionStorage.setItem('buyNowProductId', product._id);
       router.push('/home/product/shoppinginfo?buyNow=true');
     } catch { toast.error('Failed to process buy now'); } 
     finally { setIsBuyingNow(false); }
