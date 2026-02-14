@@ -144,8 +144,8 @@ export default function OrderDetailsPage() {
             thumbnailUrl: productImage,
             priceFormatted: formatCurrency(unitPrice),
             quantity: detail.quantity || 1, // From orderDetails model
-            size: detail.size || 'Standard', // From orderDetails if exists
-            color: detail.color || 'Default', // From orderDetails if exists
+            size: detail.size?.trim() && detail.size !== '—' ? detail.size : '',
+            color: detail.color?.trim() && detail.color !== '—' ? detail.color : '',
             unitPrice, // Store actual price for calculations
             subtotal: itemSubtotal, // Store subtotal for display
           }
@@ -217,9 +217,13 @@ export default function OrderDetailsPage() {
                 />
                 <div className="flex-1 text-sm">
                   <div className="font-medium leading-5">{item.title || 'Product'}</div>
-                  <div className="text-gray-600 mt-1">
-                    Size: {item.size || '—'}, Color: {item.color || '—'}
-                  </div>
+                  {(item.size || item.color) && (
+                    <div className="text-gray-600 mt-1">
+                      {item.size && <span>Size: {item.size}</span>}
+                      {item.size && item.color && ' · '}
+                      {item.color && <span>Color: {item.color}</span>}
+                    </div>
+                  )}
                   <div className="text-blue-600 font-semibold mt-1">
                     {item.priceFormatted || '৳ 0'}
                   </div>

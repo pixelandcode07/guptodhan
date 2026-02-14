@@ -95,9 +95,13 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
             />
             <div className="text-sm">
               <div className="font-medium">{order.productName}</div>
-              <div className="text-gray-600">
-                {order.size && order.color ? `Size: ${order.size}, Color: ${order.color}` : ''}
-              </div>
+              {(order.size || order.color) && (
+                <div className="text-gray-600">
+                  {order.size && <span>Size: {order.size}</span>}
+                  {order.size && order.color && ' · '}
+                  {order.color && <span>Color: {order.color}</span>}
+                </div>
+              )}
               <div className="text-blue-600 font-semibold">{order.price}</div>
               <div className="text-xs text-gray-500">Qty {order.quantity}</div>
             </div>

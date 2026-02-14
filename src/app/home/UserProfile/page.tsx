@@ -18,6 +18,11 @@ type DashboardOrder = {
     quantity: number
 }
 
+const hasVariant = (v: string | undefined): boolean => {
+  const s = v != null ? String(v).trim() : ''
+  return s !== '' && s !== '—'
+}
+
 export default function UserProfilePage() {
     const { data: session } = useSession()
     const [orders, setOrders] = useState<DashboardOrder[]>([])
@@ -48,27 +53,32 @@ export default function UserProfilePage() {
                 storeId?: { storeName?: string; verified?: boolean } | string
                 orderStatus?: string
                 orderDetails?: Array<{
-                    productId?: any
+                    productId?: { productTitle?: string; thumbnailImage?: string; photoGallery?: string[]; productPrice?: number; discountPrice?: number }
                     quantity?: number
+                    size?: string
+                    color?: string
                 }>
             }>
 
             const mapped: DashboardOrder[] = apiOrders.map((o) => {
                 const firstItem = Array.isArray(o.orderDetails) && o.orderDetails.length > 0 ? o.orderDetails[0] : undefined
                 const product = firstItem?.productId && typeof firstItem.productId === 'object' ? firstItem.productId : undefined
-                const priceNumber = product?.discountPrice && product.discountPrice < product.productPrice
+                const priceNumber = product?.discountPrice != null && product?.productPrice != null && product.discountPrice < product.productPrice
                     ? product.discountPrice
                     : product?.productPrice
+                const img = product?.thumbnailImage || (Array.isArray(product?.photoGallery) && product.photoGallery?.length ? product.photoGallery[0] : null)
+                const size = firstItem?.size != null && hasVariant(firstItem.size) ? firstItem.size : ''
+                const color = firstItem?.color != null && hasVariant(firstItem.color) ? firstItem.color : ''
 
                 return {
                     id: String(o._id || ''),
                     seller: (typeof o.storeId === 'object' && o.storeId && 'storeName' in o.storeId) ? (o.storeId.storeName || 'Store') : 'Store',
-                    sellerVerified: (typeof o.storeId === 'object' && o.storeId && 'verified' in o.storeId) ? Boolean((o.storeId as any).verified) : true,
+                    sellerVerified: (typeof o.storeId === 'object' && o.storeId && 'verified' in o.storeId) ? Boolean((o.storeId as { verified?: boolean }).verified) : true,
                     status: (o.orderStatus?.toLowerCase() as DashboardOrder['status']) || 'pending',
                     productName: product?.productTitle || 'Product',
-                    productImage: product?.thumbnailImage || (Array.isArray(product?.photoGallery) ? (product?.photoGallery[0] || '/img/product/p-1.png') : '/img/product/p-1.png'),
-                    size: 'Standard',
-                    color: 'Default',
+                    productImage: img || '/img/product/p-1.png',
+                    size,
+                    color,
                     price: typeof priceNumber === 'number' ? `৳ ${priceNumber.toLocaleString()}` : '৳ 0',
                     quantity: firstItem?.quantity || 1,
                 }
