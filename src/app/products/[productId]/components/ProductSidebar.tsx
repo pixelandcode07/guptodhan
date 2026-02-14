@@ -17,11 +17,26 @@ import { useWishlist } from '@/contexts/WishlistContext';
 import { getBrandName, formatPrice, calculateDiscountPercent } from './utils';
 import { fadeInUp } from './constants';
 
+// ✅ HELPER: অবজেক্ট থেকে সেইফলি নাম বের করার জন্য
+const getColorName = (color: any): string => {
+  if (!color) return '';
+  if (typeof color === 'string') return color;
+  if (typeof color === 'object' && color !== null) return color.colorName || color.name || '';
+  return '';
+};
+
+const getSizeName = (size: any): string => {
+  if (!size) return '';
+  if (typeof size === 'string') return size;
+  if (typeof size === 'object' && size !== null) return size.size || size.name || '';
+  return '';
+};
+
 export default function ProductMainInfo({
   product,
   reviews,
   averageRating,
-  relatedData, // এখানেই সব স্টোরের লিস্ট আছে
+  relatedData,
   onColorChange,
   onSizeChange,
   selectedColor = '',
@@ -38,25 +53,20 @@ export default function ProductMainInfo({
   const [isWishlistToggling, setIsWishlistToggling] = useState(false);
   const [locationType, setLocationType] = useState<'dhaka' | 'outside'>('dhaka');
 
-  // ✅ FIXED: Store Finding Logic (ID না থাকলে Name দিয়ে খোঁজার ব্যবস্থা)
+  // Store Logic
   const storeInfo = useMemo(() => {
     const vendor = product.vendorStoreId;
-    
     let id = null;
     let name = 'Unknown Store';
     let logo = null;
 
-    // ১. প্রথমে প্রোডাক্টের ভেতরের ডাটা চেক করি
     if (vendor && typeof vendor === 'object') {
       name = vendor.storeName || name;
       logo = vendor.storeLogo || logo;
-      id = vendor._id || vendor.id || null; // আপনার জেসনে এখানে আইডি নেই, তাই নাল আসবে
+      id = vendor._id || vendor.id || null;
     }
 
-    // ২. যদি প্রোডাক্টে আইডি না পাওয়া যায়, কিন্তু নাম আছে -> তাহলে relatedData থেকে খুঁজি
     if (!id && relatedData?.stores?.length > 0) {
-      
-      // নাম দিয়ে স্টোর খোঁজা (Fallback Logic)
       if (name !== 'Unknown Store') {
         const foundByName = relatedData.stores.find((s: any) => s.storeName === name);
         if (foundByName) {
@@ -64,8 +74,6 @@ export default function ProductMainInfo({
           if (!logo) logo = foundByName.storeLogo;
         }
       }
-
-      // অথবা যদি vendor শুধু স্ট্রিং আইডি হয়
       if (!id && vendor && typeof vendor === 'string') {
         const foundById = relatedData.stores.find((s: any) => s._id === vendor || s.id === vendor);
         if (foundById) {
@@ -76,11 +84,7 @@ export default function ProductMainInfo({
       }
     }
 
-    // যদি আইডি পাওয়া যায় তবেই রিটার্ন করবে
-    if (id) {
-      return { id, name, logo };
-    }
-    
+    if (id) return { id, name, logo };
     return null;
   }, [product.vendorStoreId, relatedData?.stores]);
 
@@ -127,29 +131,39 @@ export default function ProductMainInfo({
     }
   };
 
-  // Variants Logic
+  // ✅ FIXED: Variants Logic (Using helpers for safety)
   const availableColors = useMemo(() => {
     if (!product.productOptions) return [];
-    const colors = product.productOptions.map((opt: any) => Array.isArray(opt.color) ? opt.color[0] : opt.color);
+    const colors = product.productOptions.map((opt: any) => {
+      const rawColor = Array.isArray(opt.color) ? opt.color[0] : opt.color;
+      return getColorName(rawColor);
+    });
     return Array.from(new Set(colors)).filter(Boolean) as string[];
   }, [product.productOptions]);
 
   const availableSizes = useMemo(() => {
     if (!selectedColor || !product.productOptions) return [];
     const matchingOptions = product.productOptions.filter((opt: any) => {
-      const optColor = Array.isArray(opt.color) ? opt.color[0] : opt.color;
-      return optColor === selectedColor;
+      const rawColor = Array.isArray(opt.color) ? opt.color[0] : opt.color;
+      return getColorName(rawColor) === selectedColor;
     });
-    const sizes = matchingOptions.flatMap((opt: any) => Array.isArray(opt.size) ? opt.size : [opt.size]);
+    const sizes = matchingOptions.flatMap((opt: any) => {
+      const rawSizes = Array.isArray(opt.size) ? opt.size : [opt.size];
+      return rawSizes.map((s: any) => getSizeName(s));
+    });
     return Array.from(new Set(sizes)).filter(Boolean) as string[];
   }, [selectedColor, product.productOptions]);
 
   const selectedVariant = useMemo(() => {
     if (!selectedColor || !product.productOptions) return null;
     return product.productOptions.find((opt: any) => {
-      const optColor = Array.isArray(opt.color) ? opt.color[0] : opt.color;
-      const optSize = Array.isArray(opt.size) ? opt.size[0] : opt.size;
-      return optColor === selectedColor && (selectedSize ? optSize === selectedSize : true);
+      const rawColor = Array.isArray(opt.color) ? opt.color[0] : opt.color;
+      const rawSize = Array.isArray(opt.size) ? opt.size[0] : opt.size;
+      
+      const colorMatch = getColorName(rawColor) === selectedColor;
+      const sizeMatch = selectedSize ? getSizeName(rawSize) === selectedSize : true;
+      
+      return colorMatch && sizeMatch;
     });
   }, [selectedColor, selectedSize, product.productOptions]);
 
@@ -199,7 +213,7 @@ export default function ProductMainInfo({
     <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="bg-white rounded-xl border border-gray-100 p-5 md:p-6 shadow-sm">
       <div className="flex flex-col lg:flex-row gap-8">
         
-        {/* ================= LEFT SIDE: Product Info ================= */}
+        {/* LEFT SIDE: Product Info */}
         <div className="flex-1 space-y-6">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -298,10 +312,19 @@ export default function ProductMainInfo({
                 <ShoppingCart size={18} className="mr-2" /> Add to Cart
               </Button>
             </div>
+
+            {/* ✅ ADDED: SHORT DESCRIPTION */}
+            {product.shortDescription && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  {product.shortDescription}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* ================= RIGHT SIDE: Sidebar (Delivery & Store) ================= */}
+        {/* RIGHT SIDE: Sidebar */}
         <div className="w-full lg:w-[340px] shrink-0 flex flex-col gap-4 border-t lg:border-t-0 lg:border-l lg:pl-8 border-gray-100 pt-6 lg:pt-0">
           
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
@@ -341,7 +364,7 @@ export default function ProductMainInfo({
             </div>
           </div>
 
-          {/* Sold By Card */}
+          {/* Sold By */}
           <div className="bg-white rounded-lg p-4 border border-gray-200">
             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Sold By</h3>
             <div className="flex items-center gap-3 mb-4">
