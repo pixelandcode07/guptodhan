@@ -87,53 +87,53 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
   return products.map((p: any) => ({
     ...p,
     productOptions: p.productOptions?.map((opt: any) => ({
-      // ✅ CRITICAL FIX: ...opt ব্যবহার করা হয়েছে যাতে unit, simType, condition হারিয়ে না যায়
+      // ✅ CRITICAL FIX: ...opt ব্যবহার করা হয়েছে যাতে unit, simType, condition হারিয়ে না যায়
       ...opt, 
       
-      // Color Populate
+      // Color Populate - Return string values only (FIXED: was returning objects)
       color: Array.isArray(opt.color) 
         ? opt.color.map((id: any) => {
             const c = colorMap.get(String(id));
-            return c ? { _id: String(c._id), colorName: c.colorName, colorCode: c.colorCode } : id;
+            return c ? c.colorName : id;
           })
         : [],
 
-      // Size Populate
+      // Size Populate - Return string values only (FIXED: was returning objects)
       size: Array.isArray(opt.size) 
         ? opt.size.map((id: any) => {
             const s = sizeMap.get(String(id));
-            return s ? { _id: String(s._id), name: s.name } : id;
+            return s ? s.name : id;
           })
         : [],
       
-      // ✅ Storage Populate
+      // ✅ Storage Populate - Return formatted string (FIXED: was returning objects)
       storage: (() => {
         if (!opt.storage) return undefined;
         const st = storageMap.get(String(opt.storage));
-        return st ? { _id: String(st._id), ram: st.ram, rom: st.rom } : opt.storage;
+        return st ? `${st.ram}GB / ${st.rom}GB` : opt.storage;
       })(),
 
-      // ✅ SimType Populate
+      // ✅ SimType Populate - Return string values only (FIXED: was returning objects)
       simType: Array.isArray(opt.simType) 
         ? opt.simType.map((id: any) => {
             const sim = simTypeMap.get(String(id));
-            return sim ? { _id: String(sim._id), name: sim.name } : id;
+            return sim ? sim.name : id;
           })
         : [],
 
-      // ✅ Condition Populate
+      // ✅ Condition Populate - Return string values only (FIXED: was returning objects)
       condition: Array.isArray(opt.condition) 
         ? opt.condition.map((id: any) => {
             const cond = conditionMap.get(String(id));
-            return cond ? { _id: String(cond._id), deviceCondition: cond.deviceCondition } : id;
+            return cond ? cond.deviceCondition : id;
           })
         : [],
 
-      // ✅ Warranty Populate
+      // ✅ Warranty Populate - Return string value (FIXED: was returning object)
       warranty: (() => {
         if (!opt.warranty) return undefined;
         const war = warrantyMap.get(String(opt.warranty));
-        return war ? { _id: String(war._id), warrantyName: war.warrantyName } : opt.warranty;
+        return war ? war.warrantyName : opt.warranty;
       })(),
       
       // ✅ Preserve unit array
