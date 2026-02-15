@@ -53,7 +53,54 @@ interface SettingsData {
 export default function FooterComplete() {
     const [socialLinks, setSocialLinks] = useState<SocialLinksData>({});
     const [settings, setSettings] = useState<SettingsData | null>(null);
-    
+    const TikTokIcon = ({ size = 16 }: { size?: number }) => {
+    return (
+        <div style={{ width: size, height: size }} className="relative flex items-center justify-center">
+            <Image 
+                src="/img/tiktok.png"  // আপনার পাবলিক ফোল্ডারের পাথ
+                alt="TikTok" 
+                width={size} 
+                height={size} 
+                className="object-contain" 
+                // যদি আপনার আইকন কালো হয় এবং ব্যাকগ্রাউন্ড কালো হওয়ায় দেখা না যায়, 
+                // তবে নিচের ক্লাসটি ব্যবহার করে সাদা করতে পারেন:
+                // className="object-contain brightness-0 invert" 
+            />
+        </div>
+    );
+};
+    const PinterestIcons = ({ size = 16 }: { size?: number }) => {
+    return (
+        <div style={{ width: size, height: size }} className="relative flex items-center justify-center">
+            <Image 
+                src="/img/pinterest.png"  
+                alt="TikTok" 
+                width={size} 
+                height={size} 
+                className="object-contain" 
+                // যদি আপনার আইকন কালো হয় এবং ব্যাকগ্রাউন্ড কালো হওয়ায় দেখা না যায়, 
+                // তবে নিচের ক্লাসটি ব্যবহার করে সাদা করতে পারেন:
+                // className="object-contain brightness-0 invert" 
+            />
+        </div>
+    );
+};
+    const TelegramIcon = ({ size = 16 }: { size?: number }) => {
+    return (
+        <div style={{ width: size, height: size }} className="relative flex items-center justify-center">
+            <Image 
+                src="/img/telegram.png"  
+                alt="TikTok" 
+                width={size} 
+                height={size} 
+                className="object-contain" 
+                // যদি আপনার আইকন কালো হয় এবং ব্যাকগ্রাউন্ড কালো হওয়ায় দেখা না যায়, 
+                // তবে নিচের ক্লাসটি ব্যবহার করে সাদা করতে পারেন:
+                // className="object-contain brightness-0 invert" 
+            />
+        </div>
+    );
+};
     const socialMediaConfig = [
         { key: 'facebook', Icon: Facebook, color: "bg-[#3b5998]" },
         { key: 'twitter', Icon: Twitter, color: "bg-[#00acee]" },
@@ -61,9 +108,9 @@ export default function FooterComplete() {
         { key: 'youtube', Icon: Youtube, color: "bg-[#FF0000]" },
         { key: 'linkedin', Icon: Linkedin, color: "bg-[#0072b1]" },
         { key: 'whatsapp', Icon: Smartphone, color: "bg-[#25D366]" },
-        { key: 'telegram', Icon: Send, color: "bg-[#0088cc]" },
-        { key: 'tiktok', Icon: Film, color: "bg-[#000000]" },
-        { key: 'pinterest', Icon: MessageSquareHeart, color: "bg-[#E60023]" },
+        { key: 'telegram', Icon: TelegramIcon, color: "bg-[#0088cc]" },
+        { key: 'tiktok', Icon: TikTokIcon, color: "bg-white" }, // এখানে পরিবর্তন করা হয়েছে
+        { key: 'pinterest', Icon: PinterestIcons, color: "bg-[#E60023]" },
         { key: 'viber', Icon: PhoneCall, color: "bg-[#665CAC]" },
     ];
 
