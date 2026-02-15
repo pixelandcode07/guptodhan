@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useTransition, useState } from 'react';
-import { Package, Filter, X } from 'lucide-react';
+import { Package, Filter, X, ShoppingCart, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,8 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import { useCart } from '@/hooks/useCart';
+import { toast } from 'sonner';
 
 interface Product {
     _id: string;
@@ -35,6 +37,7 @@ interface Product {
     childCategory?: { name: string };
     productOptions?: Array<{
         size?: Array<{ name: string }>;
+        color?: Array<{ name: string }>; // Added color type safety
         price: number;
         discountPrice: number;
     }>;
@@ -84,15 +87,59 @@ function extractFilters(products: Product[]) {
     };
 }
 
-// Product Card
+// ✅ Updated Product Card with Smart Logic
 function ProductCard({ product }: { product: Product }) {
+    const router = useRouter();
+    const { addToCart } = useCart();
+    const [isAdding, setIsAdding] = useState(false);
+
+    // Discount Calculation
     const hasDiscount = product.discountPrice > 0 && product.discountPrice < product.productPrice;
     const discountPercent = hasDiscount
         ? Math.round(((product.productPrice - product.discountPrice) / product.productPrice) * 100).toFixed(0)
         : 0;
 
+    // ✅ Check if Product has Variants (Size/Color)
+    // We check if productOptions exists AND has length > 0
+    const hasVariants = product.productOptions && product.productOptions.length > 0;
+
+    // ✅ Add to Cart Handler
+    const handleAddToCart = async (e: React.MouseEvent) => {
+        e.preventDefault(); // Stop Link Navigation
+        e.stopPropagation();
+
+        if (product.stock === 0) {
+            toast.error("Out of stock!");
+            return;
+        }
+
+        // 🔴 Case 1: Product has variants -> Redirect to Details Page
+        if (hasVariants) {
+            toast.info("Please select options", {
+                description: "Choose your size or color on the details page.",
+                duration: 2500, // Slightly longer duration
+                action: {
+                    label: "Go",
+                    onClick: () => router.push(`/products/${product._id}`)
+                }
+            });
+            router.push(`/products/${product._id}`);
+            return;
+        }
+
+        // 🟢 Case 2: Simple Product -> Add directly to Cart
+        setIsAdding(true);
+        try {
+            await addToCart(product._id, 1, { skipModal: false });
+        } catch (error) {
+            console.error("Add to cart failed", error);
+        } finally {
+            setIsAdding(false);
+        }
+    };
+
     return (
-        <Link href={`/products/${product._id}`} className="group block">
+        <Link href={`/products/${product._id}`} className="group block relative">
             <div className="bg-white rounded-xl shadow-sm hover:shadow-2xl transition-all duration-300 border overflow-hidden">
                 <div className="relative aspect-square bg-gray-50">
                     <Image
@@ -102,7 +149,9 @@ function ProductCard({ product }: { product: Product }) {
                         className="object-cover group-hover:scale-110 transition-transform duration-500"
                         sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                     />
-                    <div className="absolute top-2 left-2 flex flex-col gap-1">
+                    
+                    {/* Badges */}
+                    <div className="absolute top-2 left-2 flex flex-col gap-1 pointer-events-none">
                         {hasDiscount && (
                             <span className="px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full">
                                 -{discountPercent}%
@@ -114,9 +163,34 @@ function ProductCard({ product }: { product: Product }) {
                             </span>
                         )}
                     </div>
+
+                    {/* ✅ SMART ADD TO CART BUTTON */}
+                    {/* Desktop: Hidden (opacity 0), Visible on Hover. Mobile: Always Visible (opacity 100) */}
+                    <div className="absolute bottom-3 right-3 z-10 translate-y-0 md:translate-y-10 md:opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                        <Button
+                            onClick={handleAddToCart}
+                            disabled={isAdding || product.stock === 0}
+                            size="icon"
+                            className={`h-9 w-9 md:h-10 md:w-10 rounded-full shadow-lg transition-transform active:scale-95 ${
+                                product.stock === 0 
+                                ? "bg-gray-400 cursor-not-allowed" 
+                                : hasVariants 
+                                    ? "bg-white text-gray-700 hover:bg-gray-800 hover:text-white border border-gray-200" // Variant Style
+                                    : "bg-white text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-100" // Direct Add Style
+                            }`}
+                            title={hasVariants ? "Select Options" : "Add to Cart"}
+                        >
+                            {isAdding ? (
+                                <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" />
+                            ) : (
+                                <ShoppingCart className="h-4 w-4 md:h-5 md:w-5" />
+                            )}
+                        </Button>
+                    </div>
                 </div>
+
                 <div className="p-3">
-                    <h3 className="font-medium text-sm line-clamp-2 group-hover:text-blue-600 transition">
+                    <h3 className="font-medium text-sm line-clamp-2 group-hover:text-blue-600 transition h-10">
                         {product.productTitle}
                     </h3>
                     <div className="mt-2 flex items-center gap-2">
@@ -311,7 +385,7 @@ export default function CategoryClient({ initialData }: { initialData: CategoryD
     const [isPending] = useTransition();
     const filters = extractFilters(initialData.products);
 
-    // ✅ Standard Wrapper Class for Consistent Alignment
+    // Standard Wrapper Class for Consistent Alignment
     const containerClass = "md:max-w-[95vw] xl:container mx-auto sm:px-8 px-4";
 
     return (
@@ -348,11 +422,9 @@ export default function CategoryClient({ initialData }: { initialData: CategoryD
                     </div>
                 </div>
 
-                {/* 2. Banner Section (SOLVED) */}
+                {/* 2. Banner Section */}
                 <div className={`${containerClass} mt-4`}>
                     {initialData.category.banner ? (
-                        // ✅ Height Fixed (Mobile 200px, Desktop 400px)
-                        // ✅ fill + object-cover: ইমেজটি ব্যানারের শেপে ক্রপ হয়ে বসবে, বড় হবে না।
                         <div className="w-full relative rounded-lg overflow-hidden shadow-sm h-[200px] md:h-[350px] lg:h-[220px]">
                             <Image
                                 src={initialData.category.banner}
