@@ -235,7 +235,7 @@ const getProductsBySubCategorySlugWithFiltersFromDB = async (
       if (filters.sort === 'priceLowHigh') sortStage = { productPrice: 1 };
       if (filters.sort === 'priceHighLow') sortStage = { productPrice: -1 };
 
-      // ✅ Use aggregation instead of populate
+      // ✅ Use aggregation
       const products = await VendorProductModel.aggregate([
         { $match: matchStage },
         { $sort: sortStage },
@@ -306,7 +306,14 @@ const getProductsBySubCategorySlugWithFiltersFromDB = async (
         },
         { $unwind: { path: '$productModel', preserveNullAndEmptyArrays: true } },
 
-        // Project only needed fields
+        // ✅ SLUG SAFETY: Slug না থাকলে বানিয়ে নেবে
+        {
+          $addFields: {
+            slug: { $ifNull: ["$slug", { $concat: ["product-", { $toString: "$_id" }] }] }
+          }
+        },
+
+        // ✅ PROJECT STAGE (SLUG ADDED HERE)
         {
           $project: {
             'category.name': 1,
@@ -327,6 +334,9 @@ const getProductsBySubCategorySlugWithFiltersFromDB = async (
             status: 1,
             productOptions: 1,
             createdAt: 1,
+            
+            // 🔥 CRITICAL FIX: এই লাইনটি আগে মিসিং ছিল
+            slug: 1, 
           },
         },
       ]);
