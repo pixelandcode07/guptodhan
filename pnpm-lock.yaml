@@ -278,6 +278,9 @@ importers:
       shadcn:
         specifier: ^3.5.0
         version: 3.5.1(@types/node@20.19.25)(babel-plugin-macros@3.1.0)(typescript@5.9.3)
+      slugify:
+        specifier: ^1.6.6
+        version: 1.6.6
       socket.io:
         specifier: ^4.8.1
         version: 4.8.1
@@ -6629,6 +6632,10 @@ packages:
 
   sisteransi@1.0.5:
     resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
+
+  slugify@1.6.6:
+    resolution: {integrity: sha512-h+z7HKHYXj6wJU+AnS/+IH8Uh9fdcX1Lrhg1/VMdf9PwoBQXFcXiAdsy2tSK0P6gKwJLXp02r90ahUCqHk9rrw==}
+    engines: {node: '>=8.0.0'}
 
   socket.io-adapter@2.5.5:
     resolution: {integrity: sha512-eLDQas5dzPgOWCk9GuuJC2lBqItuhKI4uxGgo9aIV7MYbk2h9Q6uULEh8WBzThoI7l+qU9Ast9fVUmkqPP9wYg==}
@@ -14621,6 +14628,8 @@ snapshots:
   signal-exit@4.1.0: {}
 
   sisteransi@1.0.5: {}
+
+  slugify@1.6.6: {}
 
   socket.io-adapter@2.5.5:
     dependencies:
