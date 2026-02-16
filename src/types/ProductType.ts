@@ -75,6 +75,7 @@ export interface Product {
   discountPrice: number;
   stock: number;
   sku: string;
+  slug?: string;
   rewardPoints: number;
   category: Category;
   brand: Brand;
