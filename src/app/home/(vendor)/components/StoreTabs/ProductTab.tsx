@@ -98,4 +98,4 @@ export default function ProductTab({ isLoading, products, pagination, onPageChan
             )}
         </div>
     );
-}
+} 
