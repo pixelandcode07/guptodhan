@@ -17,7 +17,7 @@ import { HeroNav } from '@/app/components/Hero/HeroNav';
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
-
+ 
 function toISOString(date: any): string {
   if (!date) return new Date().toISOString();
   if (typeof date === 'string') return date;
