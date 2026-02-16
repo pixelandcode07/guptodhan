@@ -9,6 +9,7 @@ import dbConnect from "@/lib/db";
 import { VendorProductServices } from "./vendorProduct.service";
 import { VendorProductModel } from "@/lib/models-index";
 import { CacheKeys, deleteCacheKey, deleteCachePattern } from "@/lib/redis/cache-helpers";
+import slugify from "slugify";
 
 // ===================================
 // 📝 CREATE VENDOR PRODUCT
@@ -20,8 +21,22 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
     const body = await req.json();
     const validatedData = createVendorProductValidationSchema.parse(body);
 
+    // ✅ SLUG GENERATION LOGIC STARTS HERE
+    const baseSlug = slugify(validatedData.productTitle, {
+      lower: true,      // ছোট হাতের অক্ষর
+      strict: true,     // স্পেশাল ক্যারেক্টার রিমুভ
+      trim: true        // স্পেস রিমুভ
+    });
+
+    // ইউনিক করার জন্য বর্তমান সময়ের শেষ ৪ ডিজিট এবং একটি র‍্যান্ডম নম্বর যোগ করা হলো
+    const uniqueSuffix = `${Date.now().toString().slice(-4)}${Math.floor(Math.random() * 1000)}`;
+    const finalSlug = `${baseSlug}-${uniqueSuffix}`;
+    // ✅ SLUG GENERATION LOGIC ENDS HERE
+
     const payload: Partial<IVendorProduct> = {
       ...validatedData,
+      slug: finalSlug, // ✅ স্লাগটি পে-লোডে যুক্ত করা হলো
+      
       vendorStoreId: new Types.ObjectId(validatedData.vendorStoreId),
       category: new Types.ObjectId(validatedData.category),
       subCategory: validatedData.subCategory
@@ -45,32 +60,22 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
       weightUnit: validatedData.weightUnit
         ? new Types.ObjectId(validatedData.weightUnit)
         : undefined,
+      
+      // Product Options Mapping
       productOptions: (validatedData.productOptions ?? []).map((option: any) => ({
         productImage: option.productImage || undefined,
-        unit: Array.isArray(option.unit)
-          ? option.unit
-          : option.unit
-            ? [option.unit]
-            : [],
+        unit: Array.isArray(option.unit) ? option.unit : option.unit ? [option.unit] : [],
         simType: option.simType 
-          ? (Array.isArray(option.simType)
-              ? option.simType.map((id: string) => new Types.ObjectId(id))
-              : [new Types.ObjectId(option.simType)])
+          ? (Array.isArray(option.simType) ? option.simType.map((id: string) => new Types.ObjectId(id)) : [new Types.ObjectId(option.simType)])
           : [],
         condition: option.condition
-          ? (Array.isArray(option.condition)
-              ? option.condition.map((id: string) => new Types.ObjectId(id))
-              : [new Types.ObjectId(option.condition)])
+          ? (Array.isArray(option.condition) ? option.condition.map((id: string) => new Types.ObjectId(id)) : [new Types.ObjectId(option.condition)])
           : [],
         color: option.color
-          ? (Array.isArray(option.color)
-              ? option.color.map((id: string) => new Types.ObjectId(id))
-              : [new Types.ObjectId(option.color)])
+          ? (Array.isArray(option.color) ? option.color.map((id: string) => new Types.ObjectId(id)) : [new Types.ObjectId(option.color)])
           : [],
         size: option.size
-          ? (Array.isArray(option.size)
-              ? option.size.map((id: string) => new Types.ObjectId(id))
-              : [new Types.ObjectId(option.size)])
+          ? (Array.isArray(option.size) ? option.size.map((id: string) => new Types.ObjectId(id)) : [new Types.ObjectId(option.size)])
           : [],
         storage: option.storage || undefined,
         warranty: option.warranty || undefined,
@@ -871,6 +876,34 @@ const getVendorStoreProductsWithReviews = async (
   });
 };
 
+
+const getVendorProductBySlug = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ slug: string }> } // Next.js 15 এ params একটি Promise
+) => {
+  await dbConnect();
+  const { slug } = await params;
+
+  // সার্ভিস কল করা হচ্ছে (যেটা আপনি অলরেডি বানিয়েছেন)
+  const result = await VendorProductServices.getVendorProductBySlugFromDB(slug);
+
+  if (!result) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.NOT_FOUND,
+      message: "Product not found!",
+      data: null,
+    });
+  }
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Product retrieved successfully by slug!",
+    data: result,
+  });
+};
+
 export const VendorProductController = {
   createVendorProduct,
   getAllVendorProducts,
@@ -891,7 +924,7 @@ export const VendorProductController = {
   getOfferProducts,
   getBestSellingProducts,
   getForYouProducts,
-
+  getVendorProductBySlug,
   getAllVendorProductsNoPagination,
   getVendorStoreAndProducts,
   getVendorStoreAndProductsVendorDashboard,
