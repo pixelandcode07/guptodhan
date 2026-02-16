@@ -172,7 +172,7 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
         status: 'active' 
       }).lean();
 
-      if (!childCategory) return null; // ❌ এই লাইনের কারণেই আপনার "Not Found" আসছিল
+      if (!childCategory) return null; 
 
       // ✅ Type-safe access
       const childCategoryData = childCategory as any;
@@ -184,7 +184,7 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
         status: 'active',
       };
 
-      // Filter: Brand
+      // Filter: Brand (Original logic kept)
       if (filters.brand) {
         const regex = createFlexibleRegex(filters.brand);
         const brandDoc = await BrandModel.findOne({ 
@@ -194,12 +194,11 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
         if (brandDoc) {
            matchStage.brand = (brandDoc as any)._id;
         } else {
-           // ব্র্যান্ড না পেলে খালি রেজাল্ট রিটার্ন করুন, 404 নয়
            return { childCategory: childCategoryData, products: [], totalProducts: 0 };
         }
       }
 
-      // Filter: Size
+      // Filter: Size (Original logic kept)
       if (filters.size) {
         const regex = createFlexibleRegex(filters.size);
         const sizeDoc = await ProductSize.findOne({ 
@@ -314,9 +313,18 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
         },
         { $unwind: { path: '$productModel', preserveNullAndEmptyArrays: true } },
 
-        // Project only needed fields
+        // ✅ SAFETY: Ensure slug exists (যদি DB তে না থাকে, তবে ID দিয়ে তৈরি হবে)
+        {
+          $addFields: {
+            slug: { $ifNull: ["$slug", { $concat: ["product-", { $toString: "$_id" }] }] }
+          }
+        },
+
+        // ✅ Project - UPDATED to include slug
         {
           $project: {
+            _id: 1, // ID অন্তর্ভুক্ত রাখা ভালো
+            slug: 1, // 🔥 এই লাইনটি যোগ করা হয়েছে যাতে আউটপুটে স্ল্যাগ আসে
             'category.name': 1,
             'category.slug': 1,
             'subCategory.name': 1,
