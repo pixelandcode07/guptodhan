@@ -24,6 +24,7 @@ import { toast } from 'sonner'; // ✅ Import Toast
 
 interface Product {
     _id: string;
+    slug: string; // ✅ Added Slug
     productId: string;
     productTitle: string;
     thumbnailImage: string;
@@ -82,6 +83,9 @@ function ProductCard({ product }: { product: Product }) {
     const { addToCart } = useCart();
     const [isAdding, setIsAdding] = useState(false);
 
+    // ✅ FIXED: Using Slug for URL
+    const productUrl = `/products/${product.slug || product._id}`;
+
     const hasDiscount = product.discountPrice > 0 && product.discountPrice < product.productPrice;
     const discountPercent = hasDiscount
         ? Math.round(((product.productPrice - product.discountPrice) / product.productPrice) * 100)
@@ -100,17 +104,17 @@ function ProductCard({ product }: { product: Product }) {
             return;
         }
 
-        // 🔴 Case 1: Variants exist -> Redirect
+        // 🔴 Case 1: Variants exist -> Redirect using Slug
         if (hasVariants) {
             toast.info("Please select options", {
                 description: "Choose your size or color on the details page.",
                 duration: 2500,
                 action: {
                     label: "Go",
-                    onClick: () => router.push(`/products/${product._id}`)
+                    onClick: () => router.push(productUrl) // ✅ Use Slug URL
                 }
             });
-            router.push(`/products/${product._id}`);
+            router.push(productUrl); // ✅ Use Slug URL
             return;
         }
 
@@ -126,7 +130,7 @@ function ProductCard({ product }: { product: Product }) {
     };
 
     return (
-        <Link href={`/products/${product._id}`} className="group block relative">
+        <Link href={productUrl} className="group block relative">
             <div className="bg-white rounded-xl shadow-sm hover:shadow-2xl transition-all duration-300 border overflow-hidden">
                 <div className="relative aspect-square bg-gray-50">
                     <Image
@@ -214,6 +218,7 @@ function FilterSidebar({ filters }: { filters: any }) {
         const params = new URLSearchParams(searchParams.toString());
         if (params.get(key) === value) params.delete(key);
         else params.set(key, value);
+        params.delete('page');
         startTransition(() => router.push(`${pathname}?${params.toString()}`));
     };
 
@@ -358,12 +363,13 @@ export default function ChildCategoryClient({ initialData }: { initialData: Chil
                             </div>
                         </aside>
 
-                        {/* Products */}
+                        {/* Products Grid */}
                         <div className="flex-1">
                             {initialData.products.length === 0 ? (
                                 <div className="text-center py-24">
                                     <Package className="w-24 h-24 mx-auto text-gray-300 mb-6" />
                                     <h3 className="text-2xl font-semibold text-gray-600">No products found</h3>
+                                    <p className="text-gray-500 mt-2">Try adjusting your filters</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
