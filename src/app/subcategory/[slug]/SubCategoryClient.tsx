@@ -19,11 +19,13 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { useCart } from '@/hooks/useCart'; // ✅ Import useCart
-import { toast } from 'sonner'; // ✅ Import Toast
+import { useCart } from '@/hooks/useCart';
+import { toast } from 'sonner';
 
+// ✅ Product Interface Updated with SLUG
 interface Product {
     _id: string;
+    slug: string; // ✅ Slug is now required
     productId: string;
     productTitle: string;
     thumbnailImage: string;
@@ -37,7 +39,7 @@ interface Product {
     childCategory?: { name: string };
     productOptions?: Array<{
         size?: Array<{ name: string }>;
-        color?: Array<{ name: string }>; // ✅ Added color for safety
+        color?: Array<{ name: string }>;
         price: number;
         discountPrice: number;
     }>;
@@ -78,23 +80,24 @@ function extractFilters(products: Product[]) {
     };
 }
 
-// ✅ Updated Product Card with Smart Logic
+// ✅ Updated Product Card to use SLUG
 function ProductCard({ product }: { product: Product }) {
     const router = useRouter();
     const { addToCart } = useCart();
     const [isAdding, setIsAdding] = useState(false);
+
+    // ✅ FIXED: Using Slug for Product URL
+    const productUrl = `/products/${product.slug || product._id}`;
 
     const hasDiscount = product.discountPrice > 0 && product.discountPrice < product.productPrice;
     const discountPercent = hasDiscount
         ? Math.round(((product.productPrice - product.discountPrice) / product.productPrice) * 100)
         : 0;
 
-    // ✅ Check if Product has Variants (Size/Color)
     const hasVariants = product.productOptions && product.productOptions.length > 0;
 
-    // ✅ Add to Cart Handler
     const handleAddToCart = async (e: React.MouseEvent) => {
-        e.preventDefault(); // Stop Link Navigation
+        e.preventDefault();
         e.stopPropagation();
 
         if (product.stock === 0) {
@@ -102,21 +105,21 @@ function ProductCard({ product }: { product: Product }) {
             return;
         }
 
-        // 🔴 Case 1: Product has variants -> Redirect to Details Page
+        // Case 1: Product has variants -> Redirect to Details Page (using Slug)
         if (hasVariants) {
             toast.info("Please select options", {
                 description: "Choose your size or color on the details page.",
                 duration: 2500,
                 action: {
                     label: "Go",
-                    onClick: () => router.push(`/products/${product._id}`)
+                    onClick: () => router.push(productUrl) // ✅ Redirects to slug URL
                 }
             });
-            router.push(`/products/${product._id}`);
+            router.push(productUrl); // ✅ Redirects to slug URL
             return;
         }
 
-        // 🟢 Case 2: Simple Product -> Add directly to Cart
+        // Case 2: Simple Product -> Add directly to Cart
         setIsAdding(true);
         try {
             await addToCart(product._id, 1, { skipModal: false });
@@ -128,7 +131,7 @@ function ProductCard({ product }: { product: Product }) {
     };
 
     return (
-        <Link href={`/products/${product._id}`} className="group block relative">
+        <Link href={productUrl} className="group block relative">
             <div className="bg-white rounded-xl shadow-sm hover:shadow-2xl transition-all duration-300 border overflow-hidden">
                 <div className="relative aspect-square bg-gray-50">
                     <Image
@@ -139,7 +142,6 @@ function ProductCard({ product }: { product: Product }) {
                         sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                     />
                     
-                    {/* Badges */}
                     <div className="absolute top-2 left-2 flex flex-col gap-1 pointer-events-none">
                         {hasDiscount && (
                             <span className="px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full">
@@ -153,7 +155,6 @@ function ProductCard({ product }: { product: Product }) {
                         )}
                     </div>
 
-                    {/* ✅ SMART ADD TO CART BUTTON */}
                     <div className="absolute bottom-3 right-3 z-10 translate-y-0 md:translate-y-10 md:opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
                         <Button
                             onClick={handleAddToCart}
@@ -168,11 +169,7 @@ function ProductCard({ product }: { product: Product }) {
                             }`}
                             title={hasVariants ? "Select Options" : "Add to Cart"}
                         >
-                            {isAdding ? (
-                                <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" />
-                            ) : (
-                                <ShoppingCart className="h-4 w-4 md:h-5 md:w-5" />
-                            )}
+                            {isAdding ? <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" /> : <ShoppingCart className="h-4 w-4 md:h-5 md:w-5" />}
                         </Button>
                     </div>
                 </div>
@@ -199,6 +196,7 @@ function ProductCard({ product }: { product: Product }) {
     );
 }
 
+// Filter Sidebar (No Logic Changes)
 function FilterSidebar({ filters }: { filters: any }) {
     const router = useRouter();
     const searchParams = useSearchParams() as URLSearchParams;
@@ -234,22 +232,16 @@ function FilterSidebar({ filters }: { filters: any }) {
     return (
         <div className="space-y-8">
             {searchParams.toString() && (
-                <Button variant="ghost" size="sm" className="w-full text-blue-600" onClick={() => router.push(pathname)}>
-                    Clear All Filters
-                </Button>
+                <Button variant="ghost" size="sm" className="w-full text-blue-600" onClick={() => router.push(pathname)}>Clear All Filters</Button>
             )}
-
+            
             {filters.brands.length > 0 && (
                 <div>
                     <h3 className="font-semibold text-lg mb-4">Brand</h3>
                     <div className="space-y-3">
                         {filters.brands.map((brandName: string) => (
                             <Label key={brandName} className="flex items-center gap-3 cursor-pointer">
-                                <Checkbox
-                                    checked={current.brand === brandName}
-                                    onCheckedChange={() => updateFilter('brand', brandName)}
-                                    disabled={isPending}
-                                />
+                                <Checkbox checked={current.brand === brandName} onCheckedChange={() => updateFilter('brand', brandName)} disabled={isPending} />
                                 <span>{brandName}</span>
                             </Label>
                         ))}
@@ -274,17 +266,7 @@ function FilterSidebar({ filters }: { filters: any }) {
             <div>
                 <h3 className="font-semibold text-lg mb-4">Price Range</h3>
                 <div className="px-2 mb-5">
-                    <Slider
-                        value={[appliedMin, appliedMax]}
-                        min={filters.priceRange.min}
-                        max={filters.priceRange.max}
-                        step={50}
-                        onValueChange={([min, max]) => {
-                            setMinPrice(min.toString());
-                            setMaxPrice(max.toString());
-                        }}
-                        onValueCommit={applyPriceFilter}
-                    />
+                    <Slider value={[appliedMin, appliedMax]} min={filters.priceRange.min} max={filters.priceRange.max} step={50} onValueChange={([min, max]) => { setMinPrice(min.toString()); setMaxPrice(max.toString()); }} onValueCommit={applyPriceFilter} />
                 </div>
                 <div className="flex items-center gap-3">
                     <Input type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="Min" className="text-sm" />
@@ -301,13 +283,13 @@ function FilterSidebar({ filters }: { filters: any }) {
     );
 }
 
+// ✅ Main Client Component
 export default function SubCategoryClient({ initialData }: { initialData: SubCategoryData }) {
     const [isPending] = useTransition();
     const filters = extractFilters(initialData.products);
 
     return (
         <>
-            {/* Custom Loading Bar */}
             <div className={`fixed top-0 left-0 h-1 bg-gradient-to-r from-blue-600 to-purple-600 z-50 transition-all duration-500 ${isPending ? 'w-full' : 'w-0'}`} />
 
             <div className="min-h-screen bg-gray-50">
@@ -330,7 +312,6 @@ export default function SubCategoryClient({ initialData }: { initialData: SubCat
                     </div>
                 </div>
 
-                {/* Mobile Filter */}
                 <div className="md:hidden sticky top-0 z-40 bg-white border-b shadow-sm">
                     <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
                         <span className="text-sm text-gray-600">Showing {initialData.products.length} products</span>
