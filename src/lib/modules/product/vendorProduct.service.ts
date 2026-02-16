@@ -184,12 +184,12 @@ const getProductLookupPipeline = () => [
       'weightUnit._id': 1, 'weightUnit.name': 1,
       'vendorStoreId._id': 1, 'vendorStoreId.storeName': 1, 'vendorStoreId.storeLogo': 1,
 
-      productId: 1, productTitle: 1, vendorName: 1, shortDescription: 1, fullDescription: 1,
+      productId: 1, productTitle: 1, slug: 1, vendorName: 1, shortDescription: 1, fullDescription: 1,
       specification: 1, warrantyPolicy: 1, productTag: 1, videoUrl: 1, photoGallery: 1,
       thumbnailImage: 1, productPrice: 1, discountPrice: 1, stock: 1, sku: 1, rewardPoints: 1,
       shippingCost: 1, offerDeadline: 1, metaTitle: 1, metaKeyword: 1, metaDescription: 1,
       status: 1, sellCount: 1, 
-      productOptions: 1, // ✅ Raw Data projected
+      productOptions: 1,
       createdAt: 1, updatedAt: 1,
     },
   },
@@ -200,19 +200,22 @@ const getProductLookupPipeline = () => [
 // ===================================
 
 const createVendorProductInDB = async (payload: Partial<IVendorProduct>) => {
+  // ১. ডাটাবেসে সেভ হবে (slug সহ, কারণ payload এ slug আছে)
   const result = await VendorProductModel.create(payload);
 
-  // ✅ Use aggregation instead of populate
+  // ২. সেভ হওয়ার পর আবার ডাটাবেস থেকে তুলে আনা হচ্ছে (যাতে পপুলেট করা যায়)
+  // এখানে getProductLookupPipeline() কল হবে, যেখানে আমরা slug: 1 দিয়েছি।
   const populatedResult = await VendorProductModel.aggregate([
     { $match: { _id: result._id } },
-    ...getProductLookupPipeline(),
+    ...getProductLookupPipeline(), 
   ]);
 
-  // 🗑️ Clear all product caches
+  // ৩. ক্যাশ ক্লিয়ার করা
   await deleteCachePattern(CacheKeys.PATTERNS.PRODUCTS_ALL);
 
   if (!populatedResult || !populatedResult[0]) return null;
   
+  // ৪. কালার ও সাইজ পপুলেট করে রিটার্ন করা
   return await populateColorAndSizeNames(populatedResult[0]);
 };
 
@@ -1302,6 +1305,73 @@ const getVendorStoreProductsWithReviewsFromDB = async (vendorId: string) => {
   };
 };
 
+const getVendorProductBySlugFromDB = async (slugOrId: string) => {
+  const cacheKey = `product:details:${slugOrId}`;
+  
+  return getCachedData(
+    cacheKey,
+    async () => {
+      let matchQuery: any = {};
+      
+      // ✅ Step 1: Trim এবং decode
+      const cleanInput = decodeURIComponent(slugOrId.trim());
+
+      // ✅ Step 2: Check valid MongoDB ID
+      if (mongoose.Types.ObjectId.isValid(cleanInput)) {
+        matchQuery = { _id: new mongoose.Types.ObjectId(cleanInput) };
+        console.log('🔍 Searching by ID:', cleanInput);
+      } else {
+        // ✅ Step 3: Case-insensitive slug search
+        matchQuery = { 
+          slug: {
+            $regex: `^${cleanInput}$`,
+            $options: 'i'
+          }
+        };
+        console.log('🔍 Searching by slug:', cleanInput);
+      }
+
+      // ✅ Step 4: Execute aggregation
+      const productResult = await VendorProductModel.aggregate([
+        { $match: matchQuery }, 
+        ...getProductLookupPipeline(),
+      ]);
+
+      if (!productResult || !productResult[0]) {
+        console.log('❌ Product not found. Query was:', matchQuery);
+        return null;
+      }
+      
+      console.log('✅ Product found:', productResult[0].productTitle);
+      
+      const transformedProduct = await populateColorAndSizeNames(productResult[0]);
+
+      // Reviews, QnA, Rating আনা
+      const productId = productResult[0]._id;
+      const [reviews, qna, ratingStats] = await Promise.all([
+        ReviewModel.find({ productId }).lean(),
+        ProductQAModel.find({ productId }).lean(),
+        ReviewModel.aggregate([
+          { $match: { productId: new mongoose.Types.ObjectId(productId) } },
+          { $group: { 
+            _id: "$productId", 
+            totalReviews: { $sum: 1 }, 
+            averageRating: { $avg: "$rating" } 
+          } },
+        ]),
+      ]);
+
+      return {
+        ...transformedProduct,
+        ratingStats: ratingStats[0] || { totalReviews: 0, averageRating: 0 },
+        reviews,
+        qna,
+      };
+    },
+    CacheTTL.PRODUCT_DETAIL
+  );
+};
+
 // ===================================
 // 📤 EXPORTS
 // ===================================
@@ -1330,4 +1400,5 @@ export const VendorProductServices = {
   getVendorStoreAndProductsFromDBVendorDashboard,
   getVendorStoreProductsWithReviewsFromDB,
   getAllVendorProductsNoPaginationFromDB,
+  getVendorProductBySlugFromDB,
 };
