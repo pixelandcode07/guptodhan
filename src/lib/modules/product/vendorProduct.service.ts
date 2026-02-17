@@ -184,12 +184,12 @@ const getProductLookupPipeline = () => [
       'weightUnit._id': 1, 'weightUnit.name': 1,
       'vendorStoreId._id': 1, 'vendorStoreId.storeName': 1, 'vendorStoreId.storeLogo': 1,
 
-      productId: 1, productTitle: 1, vendorName: 1, shortDescription: 1, fullDescription: 1,
+      productId: 1, productTitle: 1, slug: 1, vendorName: 1, shortDescription: 1, fullDescription: 1,
       specification: 1, warrantyPolicy: 1, productTag: 1, videoUrl: 1, photoGallery: 1,
       thumbnailImage: 1, productPrice: 1, discountPrice: 1, stock: 1, sku: 1, rewardPoints: 1,
       shippingCost: 1, offerDeadline: 1, metaTitle: 1, metaKeyword: 1, metaDescription: 1,
       status: 1, sellCount: 1, 
-      productOptions: 1, // ✅ Raw Data projected
+      productOptions: 1,
       createdAt: 1, updatedAt: 1,
     },
   },
@@ -200,19 +200,22 @@ const getProductLookupPipeline = () => [
 // ===================================
 
 const createVendorProductInDB = async (payload: Partial<IVendorProduct>) => {
+  // ১. ডাটাবেসে সেভ হবে (slug সহ, কারণ payload এ slug আছে)
   const result = await VendorProductModel.create(payload);
 
-  // ✅ Use aggregation instead of populate
+  // ২. সেভ হওয়ার পর আবার ডাটাবেস থেকে তুলে আনা হচ্ছে (যাতে পপুলেট করা যায়)
+  // এখানে getProductLookupPipeline() কল হবে, যেখানে আমরা slug: 1 দিয়েছি।
   const populatedResult = await VendorProductModel.aggregate([
     { $match: { _id: result._id } },
-    ...getProductLookupPipeline(),
+    ...getProductLookupPipeline(), 
   ]);
 
-  // 🗑️ Clear all product caches
+  // ৩. ক্যাশ ক্লিয়ার করা
   await deleteCachePattern(CacheKeys.PATTERNS.PRODUCTS_ALL);
 
   if (!populatedResult || !populatedResult[0]) return null;
   
+  // ৪. কালার ও সাইজ পপুলেট করে রিটার্ন করা
   return await populateColorAndSizeNames(populatedResult[0]);
 };
 
@@ -370,31 +373,35 @@ const getVendorProductsByCategoryFromDB = async (
   page = 1,
   limit = 20
 ) => {
+  // ক্যাশ কী জেনারেট করা
   const cacheKey = `${CacheKeys.PRODUCT.BY_CATEGORY(categoryId, page)}:${JSON.stringify(filters)}`;
   
   return getCachedData(
     cacheKey,
     async () => {
+      // ১. কুয়েরি তৈরি
       const query: any = {
         status: "active",
       };
 
-      if (categoryId) {
+      // Category ID ভ্যালিড কিনা চেক করা (Safety Check)
+      if (categoryId && mongoose.Types.ObjectId.isValid(categoryId)) {
         query.category = new mongoose.Types.ObjectId(categoryId);
       }
 
-      if (filters.subCategory) {
+      if (filters.subCategory && mongoose.Types.ObjectId.isValid(filters.subCategory)) {
         query.subCategory = new mongoose.Types.ObjectId(filters.subCategory);
       }
 
-      if (filters.childCategory) {
+      if (filters.childCategory && mongoose.Types.ObjectId.isValid(filters.childCategory)) {
         query.childCategory = new mongoose.Types.ObjectId(filters.childCategory);
       }
 
-      if (filters.brand) {
+      if (filters.brand && mongoose.Types.ObjectId.isValid(filters.brand)) {
         query.brand = new mongoose.Types.ObjectId(filters.brand);
       }
 
+      // সার্চ ফিল্টার
       if (filters.search) {
         query.$or = [
           { productTitle: { $regex: filters.search, $options: "i" } },
@@ -403,6 +410,7 @@ const getVendorProductsByCategoryFromDB = async (
         ];
       }
 
+      // প্রাইস ফিল্টার
       if (filters.priceMin || filters.priceMax) {
         query["productOptions.price"] = {};
         if (filters.priceMin) {
@@ -413,6 +421,7 @@ const getVendorProductsByCategoryFromDB = async (
         }
       }
 
+      // সর্টিং লজিক
       let sortQuery: any = { createdAt: -1 };
       if (filters.sort === "priceLowHigh") {
         sortQuery = { "productOptions.price": 1 };
@@ -426,15 +435,28 @@ const getVendorProductsByCategoryFromDB = async (
 
       const skip = (page - 1) * limit;
 
+      // ২. এগ্রিগেশন পাইপলাইন
       const products = await VendorProductModel.aggregate([
         { $match: query },
         { $sort: sortQuery },
         { $skip: skip },
         { $limit: limit },
+        
+        // ✅ আপনার কমন পাইপলাইন (এটি ডাটা ফরম্যাট করবে)
         ...getProductLookupPipeline(),
+
+        // ✅ SLUG নিশ্চিত করা হচ্ছে (সবচেয়ে গুরুত্বপূর্ণ অংশ)
+        {
+          $addFields: {
+            slug: { $ifNull: ["$slug", { $concat: ["product-", { $toString: "$_id" }] }] }
+          }
+        }
       ]);
 
+      // টোটাল কাউন্ট
       const total = await VendorProductModel.countDocuments(query);
+      
+      // কালার এবং সাইজ পপুলেট করা
       const populatedProducts = await populateColorAndSizeNamesForProducts(products);
 
       return {
@@ -1122,9 +1144,7 @@ const getVendorStoreAndProductsFromDB = async (
   id: string,
   query: any
 ) => {
-  const store = await StoreModel.findOne({
-    _id: id,
-  });
+  const store = await StoreModel.findOne({ _id: id });
 
   if (!store) {
     throw new Error("Store not found for this vendor.");
@@ -1135,57 +1155,65 @@ const getVendorStoreAndProductsFromDB = async (
     status: "active",
   };
 
+  // ... (আপনার আগের ফিল্টার লজিকগুলো হুবহু থাকবে) ...
   if (query.min && query.max) {
     filter["productOptions.price"] = {
       ...(query.min && { $gte: Number(query.min) }),
       ...(query.max && { $lte: Number(query.max) }),
     };
   }
-
-  if (query.size) {
-    filter["productOptions.size"] = { $in: query.size.split(",") };
-  }
-
-  if (query.brand) {
-    filter.brand = { $in: query.brand.split(",") };
-  }
-
-  if (query.color) {
-    filter["productOptions.color"] = { $in: query.color.split(",") };
-  }
-
-  if (query.flag) {
-    filter.flag = { $in: query.flag.split(",") };
-  }
-
-  if (query.search) {
-    filter.productTitle = { $regex: query.search, $options: "i" };
-  }
-
+  if (query.size) filter["productOptions.size"] = { $in: query.size.split(",") };
+  if (query.brand) filter.brand = { $in: query.brand.split(",") };
+  if (query.color) filter["productOptions.color"] = { $in: query.color.split(",") };
+  if (query.flag) filter.flag = { $in: query.flag.split(",") };
+  if (query.search) filter.productTitle = { $regex: query.search, $options: "i" };
   if (query.category) filter.category = query.category;
   if (query.subCategory) filter.subCategory = query.subCategory;
   if (query.childCategory) filter.childCategory = query.childCategory;
 
   let sortObj = {};
   if (query.sortBy === "price-asc") sortObj = { productPrice: 1 };
-  if (query.sortBy === "price-desc") sortObj = { productPrice: -1 };
+  else if (query.sortBy === "price-desc") sortObj = { productPrice: -1 };
   else sortObj = { createdAt: -1 };
 
   const page = Number(query.page) || 1;
   const limit = Number(query.limit) || 20;
   const skip = (page - 1) * limit;
 
+  // ✅ Updated Pipeline with Projection
   const products = await VendorProductModel.aggregate([
     { $match: filter },
     { $sort: sortObj },
     { $skip: skip },
     { $limit: limit },
     ...getProductLookupPipeline(),
+    // 🔥 Added Projection to ensure slug is returned
+    {
+      $project: {
+        _id: 1,
+        productTitle: 1,
+        slug: 1, // ✅ Slug added
+        thumbnailImage: 1,
+        productPrice: 1,
+        discountPrice: 1,
+        stock: 1,
+        sellCount: 1,
+        rewardPoints: 1,
+        brand: 1,
+        flag: 1,
+        category: 1,
+        subCategory: 1,
+        childCategory: 1,
+        productOptions: 1,
+        status: 1,
+        createdAt: 1,
+      }
+    }
   ]);
 
   const totalProducts = await VendorProductModel.countDocuments(filter);
-
   const productIds = products.map((p) => p._id);
+  
   const reviewStats = await ReviewModel.aggregate([
     { $match: { productId: { $in: productIds } } },
     {
@@ -1197,9 +1225,7 @@ const getVendorStoreAndProductsFromDB = async (
     },
   ]);
 
-  const reviewMap = new Map(
-    reviewStats.map((r) => [String(r._id), r])
-  );
+  const reviewMap = new Map(reviewStats.map((r) => [String(r._id), r]));
 
   const productsWithReviews = products.map((product) => {
     const stats = reviewMap.get(String(product._id));
@@ -1210,9 +1236,7 @@ const getVendorStoreAndProductsFromDB = async (
     };
   });
 
-  const populatedProducts = await populateColorAndSizeNamesForProducts(
-    productsWithReviews
-  );
+  const populatedProducts = await populateColorAndSizeNamesForProducts(productsWithReviews);
 
   return {
     store,
@@ -1302,6 +1326,73 @@ const getVendorStoreProductsWithReviewsFromDB = async (vendorId: string) => {
   };
 };
 
+const getVendorProductBySlugFromDB = async (slugOrId: string) => {
+  const cacheKey = `product:details:${slugOrId}`;
+  
+  return getCachedData(
+    cacheKey,
+    async () => {
+      let matchQuery: any = {};
+      
+      // ✅ Step 1: Trim এবং decode
+      const cleanInput = decodeURIComponent(slugOrId.trim());
+
+      // ✅ Step 2: Check valid MongoDB ID
+      if (mongoose.Types.ObjectId.isValid(cleanInput)) {
+        matchQuery = { _id: new mongoose.Types.ObjectId(cleanInput) };
+        console.log('🔍 Searching by ID:', cleanInput);
+      } else {
+        // ✅ Step 3: Case-insensitive slug search
+        matchQuery = { 
+          slug: {
+            $regex: `^${cleanInput}$`,
+            $options: 'i'
+          }
+        };
+        console.log('🔍 Searching by slug:', cleanInput);
+      }
+
+      // ✅ Step 4: Execute aggregation
+      const productResult = await VendorProductModel.aggregate([
+        { $match: matchQuery }, 
+        ...getProductLookupPipeline(),
+      ]);
+
+      if (!productResult || !productResult[0]) {
+        console.log('❌ Product not found. Query was:', matchQuery);
+        return null;
+      }
+      
+      console.log('✅ Product found:', productResult[0].productTitle);
+      
+      const transformedProduct = await populateColorAndSizeNames(productResult[0]);
+
+      // Reviews, QnA, Rating আনা
+      const productId = productResult[0]._id;
+      const [reviews, qna, ratingStats] = await Promise.all([
+        ReviewModel.find({ productId }).lean(),
+        ProductQAModel.find({ productId }).lean(),
+        ReviewModel.aggregate([
+          { $match: { productId: new mongoose.Types.ObjectId(productId) } },
+          { $group: { 
+            _id: "$productId", 
+            totalReviews: { $sum: 1 }, 
+            averageRating: { $avg: "$rating" } 
+          } },
+        ]),
+      ]);
+
+      return {
+        ...transformedProduct,
+        ratingStats: ratingStats[0] || { totalReviews: 0, averageRating: 0 },
+        reviews,
+        qna,
+      };
+    },
+    CacheTTL.PRODUCT_DETAIL
+  );
+};
+
 // ===================================
 // 📤 EXPORTS
 // ===================================
@@ -1330,4 +1421,5 @@ export const VendorProductServices = {
   getVendorStoreAndProductsFromDBVendorDashboard,
   getVendorStoreProductsWithReviewsFromDB,
   getAllVendorProductsNoPaginationFromDB,
+  getVendorProductBySlugFromDB,
 };

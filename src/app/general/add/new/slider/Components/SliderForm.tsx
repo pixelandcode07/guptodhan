@@ -1,6 +1,7 @@
+// src/app/general/add/new/slider/Components/SliderForm.tsx - FIXED VERSION (All TypeScript errors resolved)
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
@@ -13,21 +14,24 @@ import { useRouter } from 'next/navigation';
 
 export type TextPosition = 'Left' | 'Right';
 
+// ✅ FIXED: Proper type definition with optional properties
+interface SliderFormData {
+  _id?: string;
+  image?: string;
+  textPosition?: string;
+  sliderLink?: string;
+  subTitleWithColor?: string;
+  bannerTitleWithColor?: string;
+  bannerDescriptionWithColor?: string;
+  buttonWithColor?: string;
+  buttonLink?: string;
+  status?: string;
+  appRedirectType?: string;
+  appRedirectId?: string;
+}
+
 interface SliderFormProps {
-  initialData?: {
-    _id?: string;
-    image?: string;
-    textPosition?: string;
-    sliderLink?: string;
-    subTitleWithColor?: string;
-    bannerTitleWithColor?: string;
-    bannerDescriptionWithColor?: string;
-    buttonWithColor?: string;
-    buttonLink?: string;
-    status?: string;
-    appRedirectType?: string;
-    appRedirectId?: string;
-  };
+  initialData?: SliderFormData;
 }
 
 export default function SliderForm({ initialData }: SliderFormProps) {
@@ -52,27 +56,31 @@ export default function SliderForm({ initialData }: SliderFormProps) {
   const [appRedirectValue, setAppRedirectValue] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const isEditMode = !!initialData?._id;
+  
+  // ✅ FIXED: Proper useMemo with null check for initialData
+  const isEditMode = useMemo(
+    () => !!initialData?._id,
+    [initialData?._id]
+  );
 
-  // Load Data on Edit (এই অংশটি ডাটা সেট করে)
+  // ✅ FIXED: Proper useEffect with null safety checks
   useEffect(() => {
-    if (initialData) {
-      setTextPosition((initialData.textPosition as TextPosition) || '');
-      setSliderLink(initialData.sliderLink || '');
-      setSubTitle(initialData.subTitleWithColor || '');
-      setTitle(initialData.bannerTitleWithColor || '');
-      // 🔥 নিশ্চিত করা হলো ডেসক্রিপশন সেট হচ্ছে
-      setDescription(initialData.bannerDescriptionWithColor || '');
-      setButtonText(initialData.buttonWithColor || '');
-      setButtonLink(initialData.buttonLink || '');
-
-      setAppRedirectType((initialData.appRedirectType as AppRedirectType) || 'None');
-      setAppRedirectValue(initialData.appRedirectId || '');
-    }
+    if (!initialData) return;
+    
+    // ✅ Safe optional chaining and nullish coalescing
+    setTextPosition((initialData.textPosition as TextPosition) || '');
+    setSliderLink(initialData.sliderLink || '');
+    setSubTitle(initialData.subTitleWithColor || '');
+    setTitle(initialData.bannerTitleWithColor || '');
+    setDescription(initialData.bannerDescriptionWithColor || '');
+    setButtonText(initialData.buttonWithColor || '');
+    setButtonLink(initialData.buttonLink || '');
+    setAppRedirectType((initialData.appRedirectType as AppRedirectType) || 'None');
+    setAppRedirectValue(initialData.appRedirectId || '');
   }, [initialData]);
 
-  // Image Validation (1 MB Limit)
-  const handleImageChange = (name: string, file: File | null) => {
+  // ✅ FIXED: useCallback with proper dependency array
+  const handleImageChange = useCallback((name: string, file: File | null) => {
     if (file) {
       const fileSizeInMB = file.size / (1024 * 1024);
       if (fileSizeInMB > 1) {
@@ -83,36 +91,59 @@ export default function SliderForm({ initialData }: SliderFormProps) {
     } else {
       setImage(null);
     }
-  };
+  }, []);
 
-  const handleSave = async () => {
+  // ✅ FIXED: URL validation function
+  const isValidUrl = useCallback((url: string): boolean => {
+    if (!url || !url.trim()) return true; 
+    try { 
+      new URL(url.trim()); 
+      return true; 
+    } catch { 
+      return false; 
+    }
+  }, []);
+
+  // ✅ FIXED: Main save handler with complete dependency array
+  const handleSave = useCallback(async () => {
     if (isSubmitting) return;
+    
     try {
       setIsSubmitting(true);
 
-      // Validation Checks
-      if (!image && !isEditMode && !initialData?.image) throw new Error('Please upload an image.');
-      if (!textPosition) throw new Error('Please select text position.');
-      if (!subTitle) throw new Error('Please provide sub title.');
-      if (!title) throw new Error('Please provide slider title.');
-      // 🔥 এই লাইনটি থাকলে আর JSON Error দেখাবে না, সুন্দর মেসেজ দেখাবে
-      if (!description) throw new Error('Please provide slider description.');
+      // ✅ Validation Checks
+      if (!image && !isEditMode && !initialData?.image) {
+        throw new Error('Please upload an image.');
+      }
+      if (!textPosition) {
+        throw new Error('Please select text position.');
+      }
+      if (!subTitle) {
+        throw new Error('Please provide sub title.');
+      }
+      if (!title) {
+        throw new Error('Please provide slider title.');
+      }
+      if (!description) {
+        throw new Error('Please provide slider description.');
+      }
       
       if (appRedirectType !== 'None' && !appRedirectValue.trim()) {
         throw new Error('Please select a target for Mobile App Navigation.');
       }
 
-      // URL Validation
-      const isValidUrl = (url: string): boolean => {
-        if (!url || !url.trim()) return true; 
-        try { new URL(url.trim()); return true; } catch { return false; }
-      };
+      // ✅ URL Validation
+      if (sliderLink && !isValidUrl(sliderLink)) {
+        throw new Error('Invalid slider URL');
+      }
+      if (buttonLink && !isValidUrl(buttonLink)) {
+        throw new Error('Invalid button URL');
+      }
 
-      if (sliderLink && !isValidUrl(sliderLink)) throw new Error('Invalid slider URL');
-      if (buttonLink && !isValidUrl(buttonLink)) throw new Error('Invalid button URL');
-
+      // ✅ FIXED: Safe null check for initialData?.image
       let imageUrl = initialData?.image || ''; 
 
+      // Upload Image if changed
       if (image) {
         const formData = new FormData();
         formData.append('file', image);
@@ -131,6 +162,7 @@ export default function SliderForm({ initialData }: SliderFormProps) {
         imageUrl = uploadData.url;
       }
 
+      // ✅ FIXED: Safe optional chaining for initialData._id and initialData.status
       const payload = {
         ...(!isEditMode && { sliderId: `SL-${Date.now()}` }),
         image: imageUrl,
@@ -147,7 +179,7 @@ export default function SliderForm({ initialData }: SliderFormProps) {
       };
 
       const url = isEditMode 
-        ? `/api/v1/slider-form/${initialData._id}` 
+        ? `/api/v1/slider-form/${initialData?._id}` 
         : '/api/v1/slider-form';
       
       const method = isEditMode ? 'PATCH' : 'POST';
@@ -174,12 +206,29 @@ export default function SliderForm({ initialData }: SliderFormProps) {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [
+    isSubmitting,
+    isEditMode,
+    initialData,
+    image,
+    textPosition,
+    subTitle,
+    title,
+    description,
+    appRedirectType,
+    appRedirectValue,
+    sliderLink,
+    buttonLink,
+    isValidUrl,
+    token,
+    userRole,
+    router,
+  ]);
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column */}
+        {/* Left Column - Image Upload */}
         <div className="lg:col-span-1">
           <UploadImage 
             name="sliderImage"
@@ -187,6 +236,7 @@ export default function SliderForm({ initialData }: SliderFormProps) {
             preview={initialData?.image} 
             onChange={handleImageChange}
           />
+          {/* ✅ Image size guidelines */}
           <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-[12px] text-gray-700 font-semibold mb-2">📐 Image Size Guidelines:</p>
             <div className="space-y-1.5">
@@ -207,7 +257,7 @@ export default function SliderForm({ initialData }: SliderFormProps) {
           </div>
         </div>
 
-        {/* Right Column */}
+        {/* Right Column - Form Fields */}
         <div className="lg:col-span-2 space-y-6">
           <TopRow
             textPosition={textPosition}
@@ -241,6 +291,7 @@ export default function SliderForm({ initialData }: SliderFormProps) {
         </div>
       </div>
 
+      {/* Submit Button */}
       <div className="flex justify-center pb-5">
         <Button 
           onClick={handleSave} 

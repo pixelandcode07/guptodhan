@@ -131,7 +131,7 @@ export default function ProductMainInfo({
     }
   };
 
-  // ✅ FIXED: Variants Logic (Using helpers for safety)
+  // ✅ FIXED: Variants Logic
   const availableColors = useMemo(() => {
     if (!product.productOptions) return [];
     const colors = product.productOptions.map((opt: any) => {
@@ -211,14 +211,14 @@ export default function ProductMainInfo({
   };
 
   return (
-    <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="bg-white rounded-xl border border-gray-100 p-5 md:p-6 shadow-sm">
-      <div className="flex flex-col lg:flex-row gap-8">
+    <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="bg-white rounded-xl border border-gray-100 p-4 sm:p-5 md:p-6 shadow-sm">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
         
         {/* LEFT SIDE: Product Info */}
-        <div className="flex-1 space-y-6">
+        <div className="flex-1 space-y-4 sm:space-y-6">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-widest text-blue-600 px-2 py-1 bg-blue-50 rounded">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-blue-600 px-2 py-1 bg-blue-50 rounded">
                 {getBrandName(product, relatedData?.brands)}
               </span>
               <button 
@@ -235,9 +235,12 @@ export default function ProductMainInfo({
               </button>
             </div>
             
-            <h1 className="text-2xl font-bold text-slate-900 leading-tight">{product.productTitle}</h1>
+            {/* Title - Responsive Font */}
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 leading-tight break-words">
+                {product.productTitle}
+            </h1>
             
-            <div className="flex flex-wrap items-center gap-4 text-sm">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm">
               <div className="flex items-center gap-1 text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
                 <Star size={14} className="fill-current" />
                 <span className="font-bold text-slate-700">{averageRating || '0'}</span>
@@ -252,13 +255,13 @@ export default function ProductMainInfo({
 
           <div className="h-px bg-gray-100 w-full" />
 
-          {/* Pricing */}
+          {/* Pricing - Responsive Size */}
           <div>
-            <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-extrabold text-[#EF4A23]">{formatPrice(finalPrice)}</span>
+            <div className="flex items-baseline gap-3 flex-wrap">
+              <span className="text-2xl sm:text-3xl font-extrabold text-[#EF4A23]">{formatPrice(finalPrice)}</span>
               {variantDiscountPrice && (
                 <>
-                  <span className="text-lg text-gray-400 line-through font-medium">{formatPrice(variantPrice)}</span>
+                  <span className="text-sm sm:text-lg text-gray-400 line-through font-medium">{formatPrice(variantPrice)}</span>
                   <span className="bg-[#EF4A23]/10 text-[#EF4A23] text-xs font-bold px-2 py-1 rounded-md">-{discountPercent}% OFF</span>
                 </>
               )}
@@ -285,7 +288,7 @@ export default function ProductMainInfo({
                 <label className="text-sm font-semibold text-slate-900 mb-2 block">Size: <span className="font-normal text-slate-500">{selectedSize}</span></label>
                 <div className="flex gap-2 flex-wrap">
                   {availableSizes.map((size) => (
-                    <button key={size} onClick={() => onSizeChange?.(size)} className={`min-w-[40px] h-9 flex items-center justify-center rounded border text-xs font-bold transition-all ${selectedSize === size ? 'border-slate-900 bg-slate-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
+                    <button key={size} onClick={() => onSizeChange?.(size)} className={`min-w-[40px] h-9 px-2 flex items-center justify-center rounded border text-xs font-bold transition-all ${selectedSize === size ? 'border-slate-900 bg-slate-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
                       {size}
                     </button>
                   ))}
@@ -305,16 +308,17 @@ export default function ProductMainInfo({
               </div>
             </div>
 
+            {/* Action Buttons - Stack on super small screens if needed, otherwise Row */}
             <div className="flex gap-3 w-full">
-              <Button onClick={handleBuyNow} disabled={isBuyingNow || variantStock === 0} className="flex-1 h-12 bg-[#00005E] hover:bg-[#000040] text-white font-bold rounded-md shadow-lg shadow-blue-900/10 uppercase tracking-wide">
+              <Button onClick={handleBuyNow} disabled={isBuyingNow || variantStock === 0} className="flex-1 h-12 bg-[#00005E] hover:bg-[#000040] text-white font-bold rounded-md shadow-lg shadow-blue-900/10 uppercase tracking-wide text-xs sm:text-sm">
                 <Zap size={18} className="mr-2" /> Buy Now
               </Button>
-              <Button onClick={handleAddToCart} disabled={cartLoading || variantStock === 0} variant="outline" className="flex-1 h-12 border-2 border-gray-200 text-gray-800 font-bold rounded-md hover:border-gray-800 hover:bg-transparent uppercase tracking-wide">
+              <Button onClick={handleAddToCart} disabled={cartLoading || variantStock === 0} variant="outline" className="flex-1 h-12 border-2 border-gray-200 text-gray-800 font-bold rounded-md hover:border-gray-800 hover:bg-transparent uppercase tracking-wide text-xs sm:text-sm">
                 <ShoppingCart size={18} className="mr-2" /> Add to Cart
               </Button>
             </div>
 
-            {/* ✅ ADDED: SHORT DESCRIPTION */}
+            {/* Short Description */}
             {product.shortDescription && (
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <p className="text-sm text-gray-600 leading-relaxed">
@@ -325,8 +329,9 @@ export default function ProductMainInfo({
           </div>
         </div>
 
-        {/* RIGHT SIDE: Sidebar */}
-        <div className="w-full lg:w-[340px] shrink-0 flex flex-col gap-4 border-t lg:border-t-0 lg:border-l lg:pl-8 border-gray-100 pt-6 lg:pt-0">
+        {/* RIGHT SIDE: Sidebar (Responsive) */}
+        {/* On Mobile: Full width, Border Top. On Desktop: Fixed Width, Border Left */}
+        <div className="w-full lg:w-[320px] xl:w-[350px] shrink-0 flex flex-col gap-4 border-t lg:border-t-0 lg:border-l lg:pl-8 border-gray-100 pt-6 lg:pt-0">
           
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <div className="flex justify-between items-center mb-3">

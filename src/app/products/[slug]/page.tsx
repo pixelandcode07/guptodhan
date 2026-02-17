@@ -13,10 +13,11 @@ import { ProductSizeServices } from '@/lib/modules/product-config/services/produ
 import ProductDetailsClient from './components/ProductDetailsClient';
 import { HeroNav } from '@/app/components/Hero/HeroNav';
 
+// ✅ আপডেট: productId এর বদলে slug ব্যবহার করা হয়েছে
 interface ProductPageProps {
-  params: Promise<{ productId: string }>;
+  params: Promise<{ slug: string }>;
 }
-
+ 
 function toISOString(date: any): string {
   if (!date) return new Date().toISOString();
   if (typeof date === 'string') return date;
@@ -28,12 +29,12 @@ function toISOString(date: any): string {
   }
 }
 
-// ✅ NEW: Fetch related products via API
+// ✅ Related Products Fetcher (Logic Unchanged)
 async function getRelatedProducts(categorySlug: string, currentProductId: string) {
   try {
     const url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/ecommerce-category/ecomCategory/slug/${categorySlug}`;
     
-    console.log('🔍 Fetching related products from API:', url);
+    // console.log('🔍 Fetching related products from API:', url);
     
     const res = await fetch(url, {
       next: { revalidate: 60 },
@@ -41,28 +42,23 @@ async function getRelatedProducts(categorySlug: string, currentProductId: string
     });
 
     if (!res.ok) {
-      console.log('❌ API response not OK:', res.status);
+      // console.log('❌ API response not OK:', res.status);
       return [];
     }
 
     const json = await res.json();
-    console.log('📊 API Response:', json.success ? 'Success' : 'Failed');
     
     if (!json.success || !json.data) {
-      console.log('❌ No data in response');
       return [];
     }
 
     const { products } = json.data;
     
     if (!Array.isArray(products)) {
-      console.log('❌ Products is not an array');
       return [];
     }
 
-    
-
-    // Filter out current product and limit to 6
+    // Filter out current product
     const relatedProducts = products
       .filter((p: any) => p._id?.toString() !== currentProductId);
     return relatedProducts;
@@ -72,12 +68,14 @@ async function getRelatedProducts(categorySlug: string, currentProductId: string
   }
 }
 
+// ✅ Metadata Generation using Slug
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   try {
     await dbConnect();
-    const { productId } = await params;
+    const { slug } = await params;
     
-    const product = await VendorProductServices.getVendorProductByIdFromDB(productId);
+    // ✅ Change: Get product by SLUG instead of ID
+    const product = await VendorProductServices.getVendorProductBySlugFromDB(slug);
 
     if (!product) {
       return {
@@ -123,7 +121,8 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
       .filter(Boolean)
       .join(', ');
 
-    const canonicalUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/products/${productId}`;
+    // ✅ URL update to use slug
+    const canonicalUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/products/${slug}`;
 
     return {
       title,
@@ -170,16 +169,19 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   }
 }
 
+// ✅ Main Page Component
 export default async function ProductPage({ params }: ProductPageProps) {
   try {
     await dbConnect();
-    const { productId } = await params;
+    const { slug } = await params;
 
     console.log('\n═══════════════════════════════════════════');
-    console.log('🔍 RELATED PRODUCTS - API FETCH METHOD');
-    console.log('═══════════════════════════════════════════');
-    console.log('📦 Product ID:', productId);
+    console.log('🔍 PRODUCT PAGE - SLUG METHOD');
+    console.log('📦 Slug:', slug);
 
+    // ✅ Parallel Data Fetching
+    // 1. Fetch Product by Slug
+    // 2. Fetch all config data for Sidebar/Filters
     const [
       rawProduct,
       categoriesData,
@@ -191,7 +193,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       colorsData,
       sizesData,
     ] = await Promise.all([
-      VendorProductServices.getVendorProductByIdFromDB(productId),
+      VendorProductServices.getVendorProductBySlugFromDB(slug), // ✅ Call new Slug service
       CategoryServices.getAllCategoriesFromDB(),
       StoreServices.getAllStoresFromDB(),
       BrandServices.getAllBrandsFromDB(),
@@ -203,36 +205,24 @@ export default async function ProductPage({ params }: ProductPageProps) {
     ]);
 
     if (!rawProduct) {
-      console.log('❌ Product not found');
+      console.log('❌ Product not found for slug:', slug);
       notFound();
     }
 
     console.log('✅ Product loaded:', rawProduct.productTitle);
 
-    // ✅ Get related products via API using category slug
+    // ✅ Get related products
+    // We need to pass rawProduct._id to exclude it from related list
     let relatedProducts: any[] = [];
     
     if (rawProduct.category && typeof rawProduct.category === 'object') {
       const categorySlug = (rawProduct.category as any).slug;
-      const categoryName = (rawProduct.category as any).name;
       
-      console.log('📂 Category:', categoryName);
-      console.log('🔗 Category Slug:', categorySlug);
-
       if (categorySlug) {
-        console.log('🌐 Fetching via API...');
-        relatedProducts = await getRelatedProducts(categorySlug, productId);
-        console.log('✅ API fetch complete. Got', relatedProducts.length, 'products');
-      } else {
-        console.log('⚠️ No category slug available');
+        // Pass category slug AND current product ID (as string)
+        relatedProducts = await getRelatedProducts(categorySlug, rawProduct._id.toString());
       }
-    } else {
-      console.log('⚠️ Product has no category or category is not populated');
     }
-
-    console.log('═══════════════════════════════════════════');
-    console.log('📊 FINAL: Related Products Count:', relatedProducts.length);
-    console.log('═══════════════════════════════════════════\n');
 
     // Prepare product data
     const productData = {
@@ -252,7 +242,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       relatedProducts: relatedProducts,
     };
 
-    // Clean categories data
+    // Clean categories data (Sidebar Navigation)
     const categoriesInfo = JSON.parse(JSON.stringify(categoriesData || []))
       .filter((cat: any) => cat && cat._id)
       .map((cat: any, index: number) => ({
@@ -275,13 +265,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
     const averageRating = rawProduct.ratingStats?.[0]?.averageRating || 0;
     const totalReviews = rawProduct.ratingStats?.[0]?.totalReviews || 0;
 
+    // ✅ JSON-LD Schema (Updated URL to use Slug)
     const productSchema = {
       '@context': 'https://schema.org/',
       '@type': 'Product',
       name: rawProduct.productTitle,
       image: rawProduct.photoGallery || [rawProduct.thumbnailImage],
       description: rawProduct.fullDescription || rawProduct.shortDescription,
-      sku: rawProduct.sku || productId,
+      sku: rawProduct.sku || rawProduct._id,
       brand: {
         '@type': 'Brand',
         name: rawProduct.brand?.name || rawProduct.brand?.brandName || 'Guptodhan',
@@ -295,7 +286,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       } : undefined,
       offers: {
         '@type': 'Offer',
-        url: `${process.env.NEXT_PUBLIC_BASE_URL}/products/${productId}`,
+        url: `${process.env.NEXT_PUBLIC_BASE_URL}/products/${slug}`, // ✅ URL is now slug based
         priceCurrency: 'BDT',
         price: rawProduct.discountPrice || rawProduct.productPrice || 0,
         priceValidUntil: rawProduct.offerDeadline 
@@ -335,7 +326,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           '@type': 'ListItem',
           position: 3,
           name: rawProduct.productTitle,
-          item: `${process.env.NEXT_PUBLIC_BASE_URL}/products/${productId}`,
+          item: `${process.env.NEXT_PUBLIC_BASE_URL}/products/${slug}`, // ✅ Slug URL
         },
       ],
     };
