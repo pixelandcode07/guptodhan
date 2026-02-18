@@ -4,7 +4,6 @@ import React, { useState, useMemo } from 'react'
 import FilterSidebar, { type FilterState } from './components/FilterSidebar'
 import ProductGrid from './components/ProductGrid'
 
-// ✅ আপনার ব্যাকএন্ড ডাটা টাইপ
 export type Product = {
   _id: string;
   productTitle: string;
@@ -16,12 +15,46 @@ export type Product = {
   status: string;
 }
 
-export default function FilterContent({ initialProducts }: { initialProducts: Product[] }) {
+// ✅ Backend Types
+export type BackendColor = {
+  _id: string;
+  productColorId: string;
+  colorName: string;
+  colorCode: string;
+  status: string;
+}
+
+export type BackendBrand = {
+  _id: string;
+  brandId: string;
+  name: string;
+  brandLogo: string;
+  status: string;
+}
+
+export type BackendSize = {
+  _id: string;
+  sizeId: string;
+  name: string;
+  status: string;
+}
+
+export default function FilterContent({ 
+  initialProducts, 
+  initialColors,
+  initialBrands,
+  initialSizes
+}: { 
+  initialProducts: Product[], 
+  initialColors: BackendColor[],
+  initialBrands: BackendBrand[],
+  initialSizes: BackendSize[]
+}) {
   const [filters, setFilters] = useState<FilterState>({})
   const [sortBy, setSortBy] = useState('popularity')
 
-  // ✅ ডাইনামিক ফিল্টারিং লজিক (Client Side)
   const filteredProducts = useMemo(() => {
+    if (!initialProducts) return [];
     let result = [...initialProducts];
 
     // 1. Price Filter
@@ -37,10 +70,12 @@ export default function FilterContent({ initialProducts }: { initialProducts: Pr
       result = result.filter(p => p.brand?.name === filters.brand);
     }
 
-    // 3. Color Filter (Product Options check)
+    // 3. Color Filter
     if (filters.color) {
       result = result.filter(p => 
-        p.productOptions?.some(opt => opt.color.includes(filters.color!))
+        p.productOptions?.some(opt => 
+          opt.color.some(c => c.toLowerCase() === filters.color!.toLowerCase())
+        )
       );
     }
 
@@ -61,24 +96,25 @@ export default function FilterContent({ initialProducts }: { initialProducts: Pr
     return result;
   }, [initialProducts, filters, sortBy]);
 
-  // ✅ সাইডবারের জন্য ইউনিক অপশন বের করা (ডাটাবেজে যা আছে শুধু তাই দেখাবে)
-  const availableBrands = Array.from(new Set(initialProducts.map(p => p.brand?.name).filter(Boolean))) as string[];
-  
-  const availableColors = Array.from(new Set(initialProducts.flatMap(p => 
-    p.productOptions?.flatMap(o => o.color) || []
-  ))).filter(Boolean);
+  // ✅ Transform Backend Data for Sidebar
+  const sidebarColors = initialColors.map(c => ({
+    name: c.colorName,
+    hex: c.colorCode
+  }));
 
-  const availableSizes = Array.from(new Set(initialProducts.flatMap(p => 
-    p.productOptions?.flatMap(o => o.size) || []
-  ))).filter(Boolean);
+  const sidebarBrands = initialBrands.map(b => b.name);
+  const sidebarSizes = initialSizes.map(s => s.name);
 
   return (
     <div className="flex flex-col md:flex-row gap-6 mt-4">
-      {/* সাইডবারে ডাইনামিক অপশন পাঠানো হচ্ছে */}
       <FilterSidebar 
         value={filters} 
         onChange={setFilters} 
-        options={{ brands: availableBrands, colors: availableColors, sizes: availableSizes }} 
+        options={{ 
+          brands: sidebarBrands, // ✅ Dynamic Brands
+          colors: sidebarColors, 
+          sizes: sidebarSizes    // ✅ Dynamic Sizes
+        }} 
       />
 
       <main className="flex-1">
