@@ -3,21 +3,42 @@ import FilterContent from './FilterContent';
 import { HeroNav } from '@/app/components/Hero/HeroNav';
 import { MainCategory } from '@/types/navigation-menu';
 
-const demoProducts = Array.from({ length: 16 }).map((_, i) => ({
-  id: `p_${i + 1}`,
-  title: 'Vintage Leather Jacket Dog House',
-  price: '৳ 7,200',
-  image: '/img/product/p-1.png',
-}));
+// ✅ ডাটা ফেচিং ফাংশন
+async function getAllProducts() {
+  try {
+    // আপনার লাইভ ডোমেইন অথবা লোকালহোস্ট ব্যবহার করুন
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhandigital.com';
+    const res = await fetch(`${baseUrl}/api/v1/public/product`, {
+      cache: 'no-store', // রিয়েল-টাইম ডাটার জন্য
+    });
 
-const categoriesData: MainCategory[] = [];
+    if (!res.ok) {
+      throw new Error('Failed to fetch products');
+    }
 
-export default function ProductFilterPage() {
+    const data = await res.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    return [];
+  }
+}
+
+// ক্যাটাগরি ফেচিং (যদি থাকে, না থাকলে খালি অ্যারে)
+async function getCategories() {
+  return []; 
+}
+
+export default async function ProductFilterPage() {
+  const products = await getAllProducts();
+  const categoriesData: MainCategory[] = await getCategories();
+
   return (
     <>
       <HeroNav categories={categoriesData} />
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <FilterContent products={demoProducts} />
+        {/* ✅ রিয়েল ডাটা ক্লায়েন্ট কম্পোনেন্টে পাঠানো হচ্ছে */}
+        <FilterContent initialProducts={products} />
       </div>
     </>
   );
