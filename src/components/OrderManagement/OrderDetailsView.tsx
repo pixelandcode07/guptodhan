@@ -7,11 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Truck, CheckCircle2, Package, Download, ArrowLeft } from 'lucide-react';
+import { Truck, CheckCircle2, Package, Download, ArrowLeft, ShoppingBag } from 'lucide-react';
 import api from '@/lib/axios';
 import { generateInvoice } from './utils/invoiceGenerator';
 import Link from 'next/link';
+import Image from 'next/image';
 
+// ✅ ইন্টারফেস আপডেট করা হয়েছে 'items' সহ
 export interface OrderDetailsData {
   id: string;
   orderNo: string;
@@ -19,7 +21,7 @@ export interface OrderDetailsData {
   phone: string;
   email?: string;
   total: number;
-  deliveryCharge?: number;
+  deliveryCharge: number;
   payment: string;
   status: string;
   deliveryMethod?: string;
@@ -34,6 +36,18 @@ export interface OrderDetailsData {
     name?: string;
     id?: string;
   };
+  // ✅ এই অ্যারেটি প্রোডাক্ট দেখাবে
+  items: Array<{
+    id: string;
+    productId: string;
+    productTitle: string;
+    thumbnailImage: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    size?: string;
+    color?: string;
+  }>;
 }
 
 interface OrderDetailsViewProps {
@@ -64,75 +78,17 @@ export default function OrderDetailsView({
   }, [order]);
 
   const isCOD = useMemo(() => order.deliveryMethod?.toLowerCase() === 'cod', [order.deliveryMethod]);
-  const canShip = useMemo(
-    () => orderStatus === 'Processing' || orderStatus === 'Pending',
-    [orderStatus]
-  );
-  const isShipped = useMemo(
-    () => orderStatus === 'Shipped' || orderStatus === 'Delivered',
-    [orderStatus]
-  );
+  const isShipped = useMemo(() => orderStatus === 'Shipped' || orderStatus === 'Delivered', [orderStatus]);
 
   const handleStatusUpdate = async () => {
     try {
       setLoading(true);
-
-      const updateData = {
-        orderStatus: orderStatus,
-        trackingId: trackingId || undefined,
-        parcelId: parcelId || undefined,
-      };
-
+      const updateData = { orderStatus, trackingId: trackingId || undefined, parcelId: parcelId || undefined };
       await api.patch(`/product-order/${order.id}`, updateData);
-
       toast.success('Order status updated successfully!');
-      onOrderUpdate?.({
-        status: orderStatus,
-        trackingId: trackingId || undefined,
-        parcelId: parcelId || undefined,
-      });
+      onOrderUpdate?.({ status: orderStatus, trackingId, parcelId });
     } catch (error) {
-      console.error('Error updating order:', error);
       toast.error('Failed to update order status');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreateSteadfastShipment = async () => {
-    try {
-      setLoading(true);
-
-      const shipmentData = {
-        orderDetails: {
-          recipient_name: order.name,
-          recipient_phone: order.phone,
-          recipient_address: 'Customer Address',
-          amount_to_collect: order.total,
-          item_quantity: 1,
-          item_weight: 0.5,
-          item_description: `Order #${order.orderNo}`,
-        },
-      };
-
-      const response = await api.post('/product-order/steadfast', shipmentData);
-
-      if (response.data.success) {
-        const { parcelId: newParcelId, trackingId: newTrackingId } = response.data.data || {};
-        setParcelId(newParcelId || '');
-        setTrackingId(newTrackingId || '');
-        setOrderStatus('Shipped');
-
-        toast.success('Steadfast shipment created successfully!');
-        onOrderUpdate?.({
-          parcelId: newParcelId,
-          trackingId: newTrackingId,
-          status: 'Shipped',
-        });
-      }
-    } catch (error) {
-      console.error('Error creating Steadfast shipment:', error);
-      toast.error('Failed to create Steadfast shipment');
     } finally {
       setLoading(false);
     }
@@ -140,24 +96,9 @@ export default function OrderDetailsView({
 
   const handleDownloadInvoice = () => {
     try {
-      generateInvoice({
-        id: order.id,
-        orderNo: order.orderNo,
-        name: order.name,
-        phone: order.phone,
-        email: order.email,
-        total: order.total,
-        deliveryCharge: order.deliveryCharge,
-        payment: order.payment,
-        status: orderStatus,
-        deliveryMethod: order.deliveryMethod,
-        trackingId: trackingId || order.trackingId,
-        parcelId: parcelId || order.parcelId,
-        customer: order.customer,
-        store: order.store,
-      });
+      generateInvoice(order);
+      toast.success('Invoice generation started...');
     } catch (error) {
-      console.error('Error generating invoice:', error);
       toast.error('Failed to generate invoice');
     }
   };
@@ -166,171 +107,128 @@ export default function OrderDetailsView({
     <div className="space-y-6">
       {headerContent}
 
-      <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-        <div className="border-b border-gray-200 px-4 py-3">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold">Order Details</h2>
-              <p className="text-sm text-gray-500 font-mono">Order #{order.orderNo}</p>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span className="font-medium">Payment:</span>
-              <span
-                className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${
-                  order.payment.toLowerCase().includes('paid')
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}
-              >
-                {order.payment}
-              </span>
-            </div>
+      {/* ১. কাস্টমার ও অর্ডার বেসিক ইনফো */}
+      <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex flex-wrap justify-between items-center gap-2">
+          <div>
+            <h2 className="text-lg font-bold text-gray-800">Order Information</h2>
+            <p className="text-xs font-mono text-gray-500">Order ID: {order.orderNo}</p>
+          </div>
+          <div className="flex gap-2">
+            <span className={`px-3 py-1 rounded-full text-xs font-bold ${order.payment.toLowerCase().includes('paid') ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+              Payment: {order.payment}
+            </span>
           </div>
         </div>
-
-        <div className="grid gap-6 px-4 py-6 md:grid-cols-2">
-          <div className="space-y-4">
-            <div>
-              <Label className="text-sm font-medium text-gray-600">Customer</Label>
-              <p className="text-sm font-medium">{order.name}</p>
-              <p className="text-sm font-mono text-gray-600">{order.phone}</p>
-              {order.email && <p className="text-sm text-gray-600">{order.email}</p>}
-            </div>
-            {order.store?.name && (
-              <div>
-                <Label className="text-sm font-medium text-gray-600">Store</Label>
-                <p className="text-sm">{order.store.name}</p>
-              </div>
-            )}
+        
+        <div className="grid gap-6 p-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label className="text-xs uppercase text-gray-400 font-bold">Shipping Details</Label>
+            <p className="text-sm font-bold">{order.name}</p>
+            <p className="text-sm text-gray-600">{order.phone}</p>
+            {order.email && <p className="text-sm text-gray-600">{order.email}</p>}
           </div>
-
-          <div className="space-y-4">
-            <div>
-              <Label className="text-sm font-medium text-gray-600">Total Amount</Label>
-              <p className="text-xl font-semibold text-green-600">
-                ৳{order.total.toLocaleString('en-US')}
-              </p>
-              {typeof order.deliveryCharge === 'number' && (
-                <p className="text-xs text-gray-500">
-                  Delivery Charge: ৳{order.deliveryCharge.toLocaleString('en-US')}
-                </p>
-              )}
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-gray-600">Delivery Method</Label>
-              <span
-                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                  isCOD ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
-                }`}
-              >
-                {order.deliveryMethod || 'COD'}
-              </span>
-            </div>
+          <div className="space-y-2">
+            <Label className="text-xs uppercase text-gray-400 font-bold">Order Summary</Label>
+            <p className="text-xl font-black text-blue-600">৳{order.total.toLocaleString()}</p>
+            <p className="text-xs text-gray-500 font-medium">Delivery Charge: ৳{order.deliveryCharge}</p>
+            <p className="text-xs text-gray-500 font-medium font-mono">Method: {order.deliveryMethod}</p>
           </div>
         </div>
       </div>
 
+      {/* ✅ ২. প্রোডাক্ট লিস্ট টেবিল (নতুন যোগ করা হয়েছে) */}
+      <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex items-center gap-2">
+          <ShoppingBag className="h-4 w-4 text-gray-600" />
+          <h3 className="text-base font-bold text-gray-800">Ordered Products</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-gray-50 text-gray-600 text-xs uppercase font-bold">
+              <tr>
+                <th className="px-4 py-3 border-b">Product</th>
+                <th className="px-4 py-3 border-b">Variant</th>
+                <th className="px-4 py-3 border-b text-center">Qty</th>
+                <th className="px-4 py-3 border-b text-right">Unit Price</th>
+                <th className="px-4 py-3 border-b text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm divide-y divide-gray-100">
+              {order.items.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded border border-gray-200">
+                        <Image
+                          src={item.thumbnailImage || '/img/placeholder.png'}
+                          alt={item.productTitle}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <span className="font-bold text-gray-800 line-clamp-2 max-w-[200px]">
+                        {item.productTitle}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-xs space-y-1">
+                      {item.size && <p><span className="text-gray-400">Size:</span> {item.size}</p>}
+                      {item.color && <p><span className="text-gray-400">Color:</span> {item.color}</p>}
+                      {!item.size && !item.color && <span className="text-gray-400">N/A</span>}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-center font-medium">{item.quantity}</td>
+                  <td className="px-4 py-3 text-right text-gray-600">৳{item.unitPrice.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-right font-bold text-gray-900">৳{item.totalPrice.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ৩. অর্ডার ম্যানেজমেন্ট (স্ট্যাটাস আপডেট) */}
       <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
         <div className="border-b border-gray-200 px-4 py-3 flex items-center gap-2">
           <Truck className="h-4 w-4 text-gray-500" />
-          <h3 className="text-base font-semibold">Order Management</h3>
+          <h3 className="text-base font-bold">Action & Management</h3>
         </div>
 
         <div className="space-y-4 px-4 py-6">
-          <div>
-            <Label htmlFor="status">Order Status</Label>
-            <Select value={orderStatus} onValueChange={setOrderStatus}>
-              <SelectTrigger id="status">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Processing">Processing</SelectItem>
-                <SelectItem value="Shipped">Shipped</SelectItem>
-                <SelectItem value="Delivered">Delivered</SelectItem>
-                <SelectItem value="Cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="status" className="font-bold">Change Order Status</Label>
+              <Select value={orderStatus} onValueChange={setOrderStatus}>
+                <SelectTrigger id="status"><SelectValue placeholder="Select status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Processing">Processing</SelectItem>
+                  <SelectItem value="Shipped">Shipped</SelectItem>
+                  <SelectItem value="Delivered">Delivered</SelectItem>
+                  <SelectItem value="Cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {isShipped && (
             <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <Label htmlFor="trackingId">Tracking ID</Label>
-                <Input
-                  id="trackingId"
-                  value={trackingId}
-                  onChange={(e) => setTrackingId(e.target.value)}
-                  placeholder="Enter tracking ID"
-                />
-              </div>
-              <div>
-                <Label htmlFor="parcelId">Parcel ID</Label>
-                <Input
-                  id="parcelId"
-                  value={parcelId}
-                  onChange={(e) => setParcelId(e.target.value)}
-                  placeholder="Enter parcel ID"
-                />
-              </div>
+              <div><Label htmlFor="trackingId">Tracking ID</Label><Input id="trackingId" value={trackingId} onChange={(e) => setTrackingId(e.target.value)} /></div>
+              <div><Label htmlFor="parcelId">Parcel ID</Label><Input id="parcelId" value={parcelId} onChange={(e) => setParcelId(e.target.value)} /></div>
             </div>
           )}
 
-          <div>
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any notes about this order"
-              rows={3}
-            />
-          </div>
+          <div><Label htmlFor="notes">Admin Notes</Label><Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
         </div>
 
-        <div className="flex flex-wrap gap-3 px-4 py-4 border-t border-gray-200">
-          <Button
-            onClick={handleDownloadInvoice}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Download Invoice
-          </Button>
-
-          {canShip && isCOD && (
-            <Button
-              onClick={handleCreateSteadfastShipment}
-              disabled={loading}
-              className="flex items-center gap-2"
-            >
-              <Truck className="h-4 w-4" />
-              Create Steadfast Shipment
-            </Button>
-          )}
-
-          <Button onClick={handleStatusUpdate} disabled={loading} className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4" />
-            Update Status
-          </Button>
-
-          {backHref && !onClose && (
-            <Button asChild variant="outline" className="ml-auto">
-              <Link href={backHref} className="flex items-center gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Orders
-              </Link>
-            </Button>
-          )}
-
-          {onClose && (
-            <Button variant="outline" onClick={onClose}>
-              Close
-            </Button>
-          )}
+        <div className="flex flex-wrap items-center gap-3 px-4 py-4 border-t border-gray-200 bg-gray-50/50">
+          <Button onClick={handleDownloadInvoice} variant="outline" size="sm" className="gap-2 font-bold"><Download className="h-4 w-4" /> Invoice</Button>
+          <Button onClick={handleStatusUpdate} disabled={loading} size="sm" className="gap-2 font-bold bg-blue-600 hover:bg-blue-700"><CheckCircle2 className="h-4 w-4" /> Save Changes</Button>
+          {backHref && <Button asChild variant="ghost" size="sm" className="ml-auto font-bold"><Link href={backHref} className="gap-2"><ArrowLeft className="h-4 w-4" /> Back</Link></Button>}
         </div>
       </div>
     </div>
   );
 }
-
