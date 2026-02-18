@@ -4,306 +4,134 @@ export interface OrderInvoiceData {
   name: string;
   phone: string;
   email?: string;
+  address?: string;
   total: number;
-  deliveryCharge?: number;
+  deliveryCharge: number;
   payment: string;
   status: string;
   deliveryMethod?: string;
   trackingId?: string;
   parcelId?: string;
   orderDate?: string;
+  // ✅ টাইপ মিসম্যাচ দূর করতে এগুলো অপশনাল (?) করা হয়েছে
   customer?: {
-    name: string;
-    email: string;
-    phone: string;
+    name?: string;
+    email?: string;
+    phone?: string;
   };
   store?: {
-    name: string;
-    id: string;
+    name?: string;
+    id?: string;
   };
+  items: Array<{
+    productTitle: string;
+    thumbnailImage: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    size?: string;
+    color?: string;
+  }>;
 }
 
-export const generateInvoice = (order: OrderInvoiceData) => {
+// ইমেজকে Base64 এ রূপান্তরের হেল্পার (যাতে ডাউনলোড করার পর অফলাইনেও ছবি দেখা যায়)
+const toBase64 = (url: string): Promise<string> => 
+  fetch(url)
+    .then(res => res.blob())
+    .then(blob => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    })).catch(() => url);
+
+export const generateInvoice = async (order: OrderInvoiceData) => {
   const invoiceDate = order.orderDate || new Date().toLocaleDateString('en-GB');
-  const invoiceTime = new Date().toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
+  const invoiceTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  
+  const logoBase64 = await toBase64('/img/logo.png'); // ✅ লোগো পাথ ফিক্সড
+
+  const productRowsPromises = (order.items || []).map(async (item, index) => {
+    const imgBase64 = await toBase64(item.thumbnailImage || '/img/placeholder.png');
+    return `
+      <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 10px; text-align: center;">${index + 1}</td>
+          <td style="padding: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                  <img src="${imgBase64}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" alt="p" />
+                  <div>
+                      <div style="font-weight: bold; font-size: 12px;">${item.productTitle}</div>
+                      <div style="font-size: 10px; color: #777;">
+                        ${item.size && item.size !== '—' ? `Size: ${item.size}` : ''} 
+                        ${item.color && item.color !== '—' ? ` | Color: ${item.color}` : ''}
+                      </div>
+                  </div>
+              </div>
+          </td>
+          <td style="padding: 10px; text-align: center; font-weight: bold;">${item.quantity}</td>
+          <td style="padding: 10px; text-align: right;">৳${item.unitPrice.toLocaleString()}</td>
+          <td style="padding: 10px; text-align: right; font-weight: bold; color: #2563eb;">৳${item.totalPrice.toLocaleString()}</td>
+      </tr>`;
   });
 
-  const deliveryCharge = order.deliveryCharge || 0;
-  const subtotal = order.total - deliveryCharge;
+  const productRows = (await Promise.all(productRowsPromises)).join('');
 
   const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Invoice - ${order.orderNo}</title>
     <meta charset="utf-8">
+    <title>Invoice - ${order.orderNo}</title>
     <style>
-        @page {
-            margin: 1.5cm;
-            size: A4;
-        }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Arial', 'Helvetica', sans-serif;
-            font-size: 12px;
-            line-height: 1.6;
-            color: #333;
-            background: white;
-        }
-        .invoice-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .invoice-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 3px solid #1a1a1a;
-        }
-        .invoice-header-left h1 {
-            font-size: 28px;
-            color: #1a1a1a;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .invoice-header-left .company-name {
-            font-size: 14px;
-            color: #666;
-            margin-top: 5px;
-        }
-        .invoice-header-right {
-            text-align: right;
-        }
-        .invoice-header-right h2 {
-            font-size: 20px;
-            color: #1a1a1a;
-            margin-bottom: 10px;
-        }
-        .invoice-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-        .info-section {
-            background: #f9f9f9;
-            padding: 15px;
-            border-radius: 5px;
-        }
-        .info-section h3 {
-            font-size: 14px;
-            color: #1a1a1a;
-            margin-bottom: 10px;
-            border-bottom: 2px solid #ddd;
-            padding-bottom: 5px;
-        }
-        .info-section p {
-            margin: 5px 0;
-            font-size: 12px;
-            color: #555;
-        }
-        .info-section .label {
-            font-weight: bold;
-            color: #333;
-            display: inline-block;
-            width: 100px;
-        }
-        .order-details {
-            margin: 30px 0;
-        }
-        .order-details h3 {
-            font-size: 16px;
-            color: #1a1a1a;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #ddd;
-        }
-        .details-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        .details-table th {
-            background-color: #1a1a1a;
-            color: white;
-            font-weight: bold;
-            padding: 12px;
-            text-align: left;
-            border: 1px solid #333;
-        }
-        .details-table td {
-            padding: 10px 12px;
-            border: 1px solid #ddd;
-            vertical-align: top;
-        }
-        .details-table tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        .text-right {
-            text-align: right;
-        }
-        .text-center {
-            text-align: center;
-        }
-        .total-section {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f5f5f5;
-            border-radius: 5px;
-        }
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            font-size: 13px;
-        }
-        .total-row.final {
-            font-size: 18px;
-            font-weight: bold;
-            color: #1a1a1a;
-            border-top: 2px solid #1a1a1a;
-            padding-top: 15px;
-            margin-top: 10px;
-        }
-        .invoice-footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 2px solid #ddd;
-            text-align: center;
-            font-size: 10px;
-            color: #666;
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 11px;
-            font-weight: bold;
-            margin-top: 5px;
-        }
-        .status-pending {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        .status-processing {
-            background-color: #cfe2ff;
-            color: #084298;
-        }
-        .status-shipped {
-            background-color: #d1ecf1;
-            color: #055160;
-        }
-        .status-delivered {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .status-cancelled {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        .payment-paid {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .payment-pending {
-            background-color: #fff3cd;
-            color: #856404;
-        }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #333; }
+        .invoice-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #eee; box-shadow: 0 0 10px rgba(0,0,0,.05); background: #fff; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; }
+        .items-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .items-table th { background: #2563eb; color: white; padding: 12px; font-size: 11px; text-transform: uppercase; text-align: left; }
     </style>
 </head>
 <body>
-    <div class="invoice-container">
-        <div class="invoice-header">
-            <div class="invoice-header-left">
-                <h1>INVOICE</h1>
-                <div class="company-name">Guptodhan E-Commerce</div>
-            </div>
-            <div class="invoice-header-right">
-                <h2>Order #${order.orderNo}</h2>
-                <p style="font-size: 11px; color: #666; margin-top: 5px;">
-                    Date: ${invoiceDate}<br>
-                    Time: ${invoiceTime}
-                </p>
+    <div class="invoice-box">
+        <div class="header">
+            <img src="${logoBase64}" style="width: 130px;" alt="Guptodhan" />
+            <div style="text-align: right;">
+                <h2 style="margin: 0; color: #2563eb;">INVOICE</h2>
+                <p style="margin: 5px 0; font-size: 12px; font-weight: bold;">Order #${order.orderNo}</p>
+                <p style="margin: 0; font-size: 10px; color: #666;">${invoiceDate} | ${invoiceTime}</p>
             </div>
         </div>
-
-        <div class="invoice-info">
-            <div class="info-section">
-                <h3>Bill To</h3>
-                <p><span class="label">Name:</span> ${order.name}</p>
-                <p><span class="label">Phone:</span> ${order.phone}</p>
-                ${order.email ? `<p><span class="label">Email:</span> ${order.email}</p>` : ''}
-                ${order.customer?.email ? `<p><span class="label">Customer Email:</span> ${order.customer.email}</p>` : ''}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px; font-size: 12px;">
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px;">
+                <h4 style="margin: 0 0 5px 0; color: #2563eb;">Shipping Address</h4>
+                <p><strong>${order.name}</strong></p>
+                <p>${order.phone}</p>
+                <p style="color: #666; font-style: italic;">${order.address || 'N/A'}</p>
             </div>
-            <div class="info-section">
-                <h3>Order Information</h3>
-                <p><span class="label">Order No:</span> ${order.orderNo}</p>
-                <p><span class="label">Order Date:</span> ${invoiceDate}</p>
-                <p><span class="label">Status:</span> 
-                    <span class="status-badge status-${order.status.toLowerCase()}">${order.status}</span>
-                </p>
-                <p><span class="label">Payment:</span> 
-                    <span class="status-badge ${order.payment.toLowerCase().includes('paid') ? 'payment-paid' : 'payment-pending'}">${order.payment}</span>
-                </p>
-                ${order.deliveryMethod ? `<p><span class="label">Delivery:</span> ${order.deliveryMethod}</p>` : ''}
-                ${order.trackingId ? `<p><span class="label">Tracking ID:</span> ${order.trackingId}</p>` : ''}
-                ${order.parcelId ? `<p><span class="label">Parcel ID:</span> ${order.parcelId}</p>` : ''}
+            <div style="text-align: right; background: #f8fafc; padding: 15px; border-radius: 8px;">
+                <h4 style="margin: 0 0 5px 0; color: #2563eb;">Summary</h4>
+                <p>Status: <strong>${order.status}</strong></p>
+                <p>Payment: <strong>${order.payment}</strong></p>
             </div>
         </div>
-
-        <div class="order-details">
-            <h3>Order Summary</h3>
-            <table class="details-table">
-                <thead>
-                    <tr>
-                        <th style="width: 60%;">Description</th>
-                        <th class="text-center" style="width: 20%;">Quantity</th>
-                        <th class="text-right" style="width: 20%;">Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Order #${order.orderNo}</td>
-                        <td class="text-center">1</td>
-                        <td class="text-right">৳${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="total-section">
-            <div class="total-row">
-                <span>Subtotal:</span>
-                <span>৳${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-            </div>
-            <div class="total-row">
-                <span>Delivery Charge:</span>
-                <span>৳${deliveryCharge.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-            </div>
-            <div class="total-row final">
-                <span>Total Amount:</span>
-                <span>৳${order.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+        <table class="items-table">
+            <thead>
+                <tr><th style="width: 40px; text-align: center;">SL</th><th>Description</th><th style="width: 60px; text-align: center;">Qty</th><th style="width: 100px; text-align: right;">Price</th><th style="width: 100px; text-align: right;">Total</th></tr>
+            </thead>
+            <tbody>${productRows}</tbody>
+        </table>
+        <div style="float: right; width: 250px; background: #f8fafc; padding: 15px; border-radius: 8px; margin-top: 30px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Subtotal:</span><span>৳${(order.total - order.deliveryCharge).toLocaleString()}</span></div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span>Shipping:</span><span>৳${order.deliveryCharge.toLocaleString()}</span></div>
+            <div style="display: flex; justify-content: space-between; border-top: 1px solid #2563eb; padding-top: 10px; font-weight: bold; font-size: 16px; color: #2563eb;">
+                <span>Grand Total:</span><span>৳${order.total.toLocaleString()}</span>
             </div>
         </div>
-
-        <div class="invoice-footer">
-            <p>Thank you for your business!</p>
-            <p style="margin-top: 5px;">This is a computer-generated invoice. No signature required.</p>
-            <p style="margin-top: 5px;">Generated on ${new Date().toLocaleString('en-GB')}</p>
+        <div style="clear: both; margin-top: 60px; text-align: center; border-top: 1px solid #eee; padding-top: 20px; font-size: 11px; color: #94a3b8;">
+            <p>Thank you for shopping with <strong>Guptodhan Digital Marketplace</strong>!</p>
         </div>
     </div>
 </body>
-</html>
-  `;
+</html>`;
 
   const blob = new Blob([htmlContent], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
@@ -315,4 +143,3 @@ export const generateInvoice = (order: OrderInvoiceData) => {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 };
-
