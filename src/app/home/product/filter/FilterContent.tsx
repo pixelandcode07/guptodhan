@@ -13,6 +13,7 @@ export type Product = {
   brand?: { name: string };
   productOptions?: { color: string[]; size: string[] }[];
   status: string;
+  slug: string; // এখানে slug ফিল্ডটি নিশ্চিত করুন
 }
 
 // ✅ Backend Types

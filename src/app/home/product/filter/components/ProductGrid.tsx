@@ -1,5 +1,5 @@
 import React from 'react'
-import { Product } from '../FilterContent' // টাইপ ইম্পোর্ট
+import { Product } from '../FilterContent'
 import Link from 'next/link'
 
 export default function ProductGrid({ products }: { products: Product[] }) {
@@ -7,8 +7,9 @@ export default function ProductGrid({ products }: { products: Product[] }) {
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
       {products.map(p => (
         <div key={p._id} className="bg-white border rounded-lg overflow-hidden hover:shadow-md transition-shadow group">
-          {/* ইমেজ */}
-          <div className="relative h-48 w-full bg-gray-100 overflow-hidden">
+          
+          {/* ইমেজ সেকশনে ক্লিক করলে স্লাগ দিয়ে লিঙ্কে যাবে */}
+          <Link href={`/product/${p.slug}`} className="block relative h-48 w-full bg-gray-100 overflow-hidden">
             <img 
               src={p.thumbnailImage || '/img/placeholder.png'} 
               alt={p.productTitle} 
@@ -19,7 +20,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                 SALE
               </span>
             )}
-          </div>
+          </Link>
 
           <div className="p-3">
             {p.brand && (
@@ -28,7 +29,8 @@ export default function ProductGrid({ products }: { products: Product[] }) {
               </div>
             )}
             
-            <Link href={`/product/${p._id}`} className="text-sm font-medium text-gray-800 line-clamp-2 hover:text-blue-600 mb-2 min-h-[40px]">
+            {/* টাইটেল লিঙ্কেও স্লাগ ব্যবহার করা হয়েছে */}
+            <Link href={`/product/${p.slug}`} className="text-sm font-medium text-gray-800 line-clamp-2 hover:text-blue-600 mb-2 min-h-[40px]">
               {p.productTitle}
             </Link>
             
