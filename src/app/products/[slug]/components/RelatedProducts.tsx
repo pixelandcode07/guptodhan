@@ -48,7 +48,7 @@ export default function RelatedProducts({ products, categoryName, categorySlug }
           return (
             <Link
               key={product._id}
-              href={`/products/${product._id}`}
+              href={`/products/${product.slug}`}
               className="group bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full"
             >
               <div className="relative aspect-[4/5] bg-slate-50 p-2 overflow-hidden">
