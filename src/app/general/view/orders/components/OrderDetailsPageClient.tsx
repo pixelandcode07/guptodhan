@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import OrderDetailsSkeleton from './OrderDetailsSkeleton';
 
+// ✅ এপিআই থেকে আসা ডেটার প্রফেশনাল টাইপ ডিফিনিশন
 type ApiOrder = {
   _id: string;
   orderId?: string;
@@ -23,6 +24,23 @@ type ApiOrder = {
   shippingName?: string;
   shippingPhone?: string;
   shippingEmail?: string;
+  shippingStreetAddress?: string;
+  shippingCity?: string;
+  shippingDistrict?: string;
+  // এপিআই সার্ভিসে আপনার অ্যাগ্রিগেশন অনুযায়ী orderDetails একটি অ্যারে
+  orderDetails?: Array<{
+    _id: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    size?: string;
+    color?: string;
+    productId?: {
+      _id: string;
+      productTitle: string;
+      thumbnailImage: string;
+    };
+  }>;
   userId?:
     | {
         _id?: string;
@@ -39,11 +57,23 @@ type ApiOrder = {
     | string;
 };
 
+// ✅ এপিআই ডেটাকে ভিউ মেমোরি বা কম্পোনেন্টের উপযোগী ডেটায় ম্যাপ করার ফাংশন
 function mapApiOrderToDetails(order: ApiOrder): OrderDetailsData {
-  const user =
-    typeof order.userId === 'object' && order.userId !== null ? order.userId : undefined;
-  const store =
-    typeof order.storeId === 'object' && order.storeId !== null ? order.storeId : undefined;
+  const user = typeof order.userId === 'object' && order.userId !== null ? order.userId : undefined;
+  const store = typeof order.storeId === 'object' && order.storeId !== null ? order.storeId : undefined;
+
+  // ✅ backend-এর aggregation অনুযায়ী orderDetails থেকে ডাটা ম্যাপ করা
+  const items = (order.orderDetails || []).map((item: any) => ({
+    id: item._id,
+    productId: item.productId?._id || '',
+    productTitle: item.productId?.productTitle || 'Unknown Product',
+    thumbnailImage: item.productId?.thumbnailImage || '/img/placeholder.png', 
+    quantity: item.quantity,
+    unitPrice: item.unitPrice,
+    totalPrice: item.totalPrice,
+    size: item.size,
+    color: item.color,
+  }));
 
   return {
     id: order._id,
@@ -52,21 +82,15 @@ function mapApiOrderToDetails(order: ApiOrder): OrderDetailsData {
     phone: order.shippingPhone || user?.phoneNumber || 'N/A',
     email: order.shippingEmail || user?.email,
     total: typeof order.totalAmount === 'number' ? order.totalAmount : 0,
-    deliveryCharge: order.deliveryCharge,
+    deliveryCharge: order.deliveryCharge || 0,
     payment: order.paymentStatus || 'Pending',
     status: order.orderStatus || 'Pending',
     deliveryMethod: order.deliveryMethodId || 'COD',
     trackingId: order.trackingId,
     parcelId: order.parcelId,
-    customer: {
-      name: user?.name,
-      email: user?.email,
-      phone: user?.phoneNumber,
-    },
-    store: {
-      name: store?.storeName,
-      id: store?._id,
-    },
+    customer: { name: user?.name, email: user?.email, phone: user?.phoneNumber },
+    store: { name: store?.storeName, id: store?._id },
+    items: items, // ✅ এটি এখন উপরের টেবিলে ডাটা পাঠাবে
   };
 }
 
@@ -98,6 +122,7 @@ export default function OrderDetailsPageClient({ orderId }: { orderId: string })
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      // এপিআই কল
       const res = await api.get(`/product-order/${orderId}`, { headers });
       const data = (res.data?.data ?? null) as ApiOrder | null;
 
@@ -107,6 +132,7 @@ export default function OrderDetailsPageClient({ orderId }: { orderId: string })
         return;
       }
 
+      // ডেটা ম্যাপ করা হচ্ছে
       setOrder(mapApiOrderToDetails(data));
     } catch (err) {
       console.error('Failed to load order', err);
@@ -157,6 +183,7 @@ export default function OrderDetailsPageClient({ orderId }: { orderId: string })
         <div className="text-sm font-mono text-gray-500">Order #{order.orderNo}</div>
       </div>
 
+      {/* ✅ এখানে ডেটা পাস করা হচ্ছে */}
       <OrderDetailsView
         order={order}
         backHref="/general/view/orders"
@@ -165,4 +192,3 @@ export default function OrderDetailsPageClient({ orderId }: { orderId: string })
     </div>
   );
 }
-
