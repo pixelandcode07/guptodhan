@@ -60,35 +60,43 @@ const createOrderWithDetails = async (req: NextRequest) => {
       throw new Error('Invalid order data.');
     }
 
-    // 1. Fetch Real Product Data (Security & Grouping)
+    // ১. রিয়েল প্রোডাক্ট ডাটা নিয়ে আসা (সিকিউরিটি চেক)
     const productIds = products.map((p: any) => p.productId);
     const dbProducts = await VendorProductModel.find({ _id: { $in: productIds } });
 
-    // 2. Group Products by Vendor (Store ID)
+    // ২. ভেন্ডর অনুযায়ী প্রোডাক্ট গ্রুপিং (Multi-Vendor Core Rule)
     const orderGroups: Record<string, any[]> = {};
+    
     for (const item of products) {
       const dbProduct = dbProducts.find(p => p._id.toString() === item.productId);
       if (!dbProduct) continue;
+      
       const storeId = dbProduct.vendorStoreId.toString();
       if (!orderGroups[storeId]) orderGroups[storeId] = [];
+      
+      // ফ্রন্টএন্ডের size/color এবং ডাটাবেজের প্রাইস মার্জ করা হচ্ছে
       orderGroups[storeId].push({
-        ...item,
+        ...item, // এতে item.size এবং item.color আছে
         unitPrice: dbProduct.discountPrice || dbProduct.productPrice,
         originalProduct: dbProduct
       });
     }
 
-    // 3. Create Separate Orders for Each Vendor
     const createdOrders = [];
     const transactionGroupId = `TRX-${Date.now()}`;
 
+    // ৩. প্রতিটি ভেন্ডরের জন্য আলাদা অর্ডার তৈরি
     for (const storeId of Object.keys(orderGroups)) {
       const storeItems = orderGroups[storeId];
+      
+      // টোটাল ক্যালকুলেশন
       const itemsTotal = storeItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
       const deliveryCharge = calculateDeliveryCharge(shippingCity || 'Dhaka', storeItems.map(i => i.originalProduct));
       const totalAmount = itemsTotal + deliveryCharge;
+      
       const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
+      // মেইন অর্ডার পে-লোড
       const orderPayload = {
         orderId,
         userId: new Types.ObjectId(userId),
@@ -114,7 +122,7 @@ const createOrderWithDetails = async (req: NextRequest) => {
 
       const newOrder = await OrderModel.create(orderPayload);
 
-      // Create Order Details and Link
+      // ✅ অর্ডার ডিটেইলস তৈরি (সাইজ ও কালার লজিক)
       const detailDocs = storeItems.map(item => ({
         orderDetailsId: uuidv4().split('-')[0],
         orderId: newOrder._id,
@@ -123,34 +131,36 @@ const createOrderWithDetails = async (req: NextRequest) => {
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         totalPrice: item.unitPrice * item.quantity,
+        // ⚠️ ভেরিয়েন্ট রুল: যদি ভ্যালু থাকে তবেই সেভ হবে, না থাকলে undefined (DB তে ফিল্ড তৈরি হবে না)
+        size: item.size || undefined, 
+        color: item.color || undefined,
       }));
 
       const createdDetails = await OrderDetailsModel.insertMany(detailDocs);
+      
+      // অর্ডারের সাথে ডিটেইলস লিঙ্ক করা
       newOrder.orderDetails = createdDetails.map(d => d._id);
       await newOrder.save();
 
       createdOrders.push(newOrder);
 
-      // ==========================================
-      // ✅ SMS পাঠানোর লজিক এখানে যোগ করা হলো
-      // ==========================================
-      const smsMessage = `Dear ${shippingName}, your order ${orderId} has been placed successfully. Total: ${totalAmount} TK. Thank you for shopping with Guptodhan!`;
-      
-      // Async-এ SMS পাঠানো হচ্ছে যাতে ইউজারকে ওয়েট করতে না হয়
+      // SMS পাঠানো
+      const smsMessage = `Dear ${shippingName}, your order ${orderId} has been placed. Total: ${totalAmount} TK. Thank you for shopping with Guptodhan!`;
       sendSMS(shippingPhone, smsMessage).catch(err => console.error("SMS Error:", err));
     }
 
+    // ক্যাশ ক্লিয়ার করা
     await deleteCachePattern(`orders:user:${userId}*`);
 
     return sendResponse({
       success: true,
       statusCode: StatusCodes.CREATED,
-      message: `Order placed successfully! (${createdOrders.length} shipments created)`,
+      message: `Order placed successfully!`,
       data: createdOrders,
     });
 
   } catch (error: any) {
-    console.error('❌ Order Creation Failed:', error);
+    console.error('❌ Order Creation Error:', error);
     return sendResponse({
       success: false,
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
