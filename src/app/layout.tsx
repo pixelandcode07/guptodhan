@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-export const fetchCache = 'force-no-store';
 import type { Metadata } from 'next';
 import './globals.css';
 import SessionProviderWrapper from '@/Providers/SessionProviderWrapper';
@@ -10,18 +8,9 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import MessageIcon from './components/MessageIcon';
 import "@smastrom/react-rating/style.css";
 
-
-/**
- * ✅ SYSTEM FONTS - No Google Fonts warning
- * Using system fonts for better performance and instant load
- */
-const systemFonts = `
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 
-              'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 
-              'Helvetica Neue', 'Hind Siliguri', 'Kalpurush', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-`;
+// ✅ REMOVED: force-dynamic and force-no-store (এগুলো সব page কে slow করছিল)
+// export const dynamic = 'force-dynamic';
+// export const fetchCache = 'force-no-store';
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.guptodhan.com';
 const appName = 'Guptodhan';
@@ -29,13 +18,14 @@ const appDescription =
   'Guptodhan is Bangladesh\'s most trusted multi-vendor marketplace. Buy, sell, donate products, and access professional services all in one platform. Secure transactions, fast delivery, and quality assurance guaranteed.';
 
 /**
- * Fetch integrations from public API
+ * ✅ FIXED: Integrations fetch এ cache যোগ করা হয়েছে (আগে no-store ছিল)
+ * এখন 5 মিনিট cache থাকবে, প্রতি request এ API call হবে না
  */
 async function getIntegrations() {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const res = await fetch(`${apiUrl}/api/v1/public/integrations`, {
-      cache: 'no-store',
+      next: { revalidate: 300 }, // ✅ 5 মিনিট cache
     });
 
     if (!res.ok) {
@@ -72,49 +62,6 @@ export async function generateMetadata(): Promise<Metadata> {
       ? extractVerificationCode(integrations.googleSearchConsoleId)
       : 'your-google-site-verification-code';
 
-  const structuredData = {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: appName,
-    url: baseUrl,
-    description: appDescription,
-    image: `${baseUrl}/og-image.png`,
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: {
-        '@type': 'EntryPoint',
-        urlTemplate: `${baseUrl}/search?q={search_term_string}`,
-      },
-      'query-input': 'required name=search_term_string',
-    },
-  };
-
-  const organizationSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'Organization',
-    name: appName,
-    url: baseUrl,
-    logo: `${baseUrl}/logo.png`,
-    description: appDescription,
-    sameAs: [
-      'https://www.facebook.com/guptodhan',
-      'https://www.instagram.com/guptodhan',
-      'https://www.youtube.com/guptodhan',
-      'https://www.twitter.com/guptodhan',
-    ],
-    contactPoint: {
-      '@type': 'ContactPoint',
-      contactType: 'Customer Service',
-      telephone: '+880-1234-567890',
-      email: 'support@guptodhan.com',
-    },
-    address: {
-      '@type': 'PostalAddress',
-      addressCountry: 'BD',
-      addressRegion: 'Bangladesh',
-    },
-  };
-
   return {
     metadataBase: new URL(baseUrl),
     title: {
@@ -138,9 +85,6 @@ export async function generateMetadata(): Promise<Metadata> {
     creator: appName,
     publisher: appName,
 
-    /**
-     * Open Graph - Social Media Optimization
-     */
     openGraph: {
       title: `${appName} - Your Trusted Multi-Vendor Marketplace`,
       description: appDescription,
@@ -166,9 +110,6 @@ export async function generateMetadata(): Promise<Metadata> {
       type: 'website',
     },
 
-    /**
-     * Twitter Card - Twitter Optimization
-     */
     twitter: {
       card: 'summary_large_image',
       title: `${appName} - Multi-Vendor Marketplace`,
@@ -178,9 +119,6 @@ export async function generateMetadata(): Promise<Metadata> {
       site: '@guptodhan',
     },
 
-    /**
-     * Robots - Search Engine Indexing
-     */
     robots: {
       index: true,
       follow: true,
@@ -194,9 +132,6 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     },
 
-    /**
-     * Search Engine Verification
-     */
     verification: {
       google: verificationCode,
       other: {
@@ -205,9 +140,6 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     },
 
-    /**
-     * Alternate Language Links
-     */
     alternates: {
       canonical: baseUrl,
       languages: {
@@ -217,9 +149,6 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     },
 
-    /**
-     * Icons and App Configuration
-     */
     icons: {
       icon: [
         { url: '/icon.svg' },
@@ -231,10 +160,6 @@ export async function generateMetadata(): Promise<Metadata> {
       ],
     },
 
-
-    /**
-     * App Links and Web App Configuration
-     */
     appleWebApp: {
       capable: true,
       statusBarStyle: 'black-translucent',
@@ -279,14 +204,26 @@ export default async function RootLayout({
         <meta name="language" content="English, Bangla" />
 
         {/* ========================
-            SYSTEM FONTS - Hind Siliguri & Kalpurush for Bangla
+            ✅ FIXED: GOOGLE FONTS — Non-render-blocking
+            আগে এটি page render block করছিল
+            এখন media="print" trick দিয়ে async load হবে
             ======================== */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Kalpurush&family=Roboto:wght@300;400;500;700&display=swap"
           rel="stylesheet"
+          media="print"
+          // @ts-ignore
+          onLoad="this.media='all'"
         />
+        <noscript>
+          <link
+            href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Kalpurush&family=Roboto:wght@300;400;500;700&display=swap"
+            rel="stylesheet"
+          />
+        </noscript>
 
         {/* ========================
             GOOGLE ANALYTICS
@@ -390,7 +327,7 @@ fbq('track', 'PageView');`,
         {integrations?.googleRecaptchaEnabled && integrations?.recaptchaSiteKey && (
           <Script
             src={`https://www.google.com/recaptcha/api.js?render=${integrations.recaptchaSiteKey}`}
-            strategy="beforeInteractive"
+            strategy="lazyOnload"
           />
         )}
 
@@ -558,6 +495,8 @@ fbq('track', 'PageView');`,
         <link rel="dns-prefetch" href="https://www.google-analytics.com" />
         <link rel="dns-prefetch" href="https://connect.facebook.net" />
         <link rel="dns-prefetch" href="https://www.clarity.ms" />
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
       </head>
 
       <body
@@ -609,10 +548,11 @@ fbq('track', 'PageView');`,
               {/* Main Content */}
               {children}
 
-              {/* Google Maps API */}
+              {/* ✅ FIXED: Google Maps API — beforeInteractive → lazyOnload
+                  আগে এটি page render block করছিল */}
               <Script
                 src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
-                strategy="beforeInteractive"
+                strategy="lazyOnload"
               />
 
               {/* Toast Notifications */}

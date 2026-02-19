@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Package, Clock, CheckCircle, Truck, AlertCircle } from 'lucide-react'
 import axios from 'axios'
-import TrackingSkeleton from '@/app/home/product/tracking/components/TrackingSkeleton'
+import TrackingSkeleton from '@/app/home/products/tracking/components/TrackingSkeleton'
 
 interface TrackingData {
   orderId: string

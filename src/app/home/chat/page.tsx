@@ -101,7 +101,7 @@ export default function ChatPage() {
           {conversations.length === 0 ? (
             <Card className="m-4 p-8 text-center text-gray-500">
               <p>No conversations yet.</p>
-              <Link href="/home/buyandsell" className="text-blue-500 font-medium mt-2 block">
+              <Link href="/buy-sell" className="text-blue-500 font-medium mt-2 block">
                 Browse ads to start chatting
               </Link>
             </Card>

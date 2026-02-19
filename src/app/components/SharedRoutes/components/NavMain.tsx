@@ -272,7 +272,7 @@ export default function NavMain() {
                 {/* ... Mobile Menu Content (Same as before) ... */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                     <div className="grid grid-cols-2 gap-3 mb-4">
-                        <Link href="/home/buyandsell" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 transition">
+                        <Link href="/buy-sell" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 transition">
                             <ShoppingBag size={24} />
                             <span className="text-xs mt-1">Buy & Sell</span>
                         </Link>
