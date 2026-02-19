@@ -257,7 +257,7 @@ const nextConfig: NextConfig = {
   // TYPESCRIPT
   // ========================
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
 
   // ========================
