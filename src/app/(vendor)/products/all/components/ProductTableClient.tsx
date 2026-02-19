@@ -16,6 +16,7 @@ type ApiProduct = {
   _id: string;
   productId: string;
   productTitle: string;
+  slug?: string;
   category?: { _id?: string; name?: string } | string | null;
   vendorStoreId?: { _id?: string; storeName?: string } | string | null;
   vendorName?: string | null;
@@ -204,6 +205,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         image: p.thumbnailImage || "",
         category: categoryName,
         name: p.productTitle || "",
+        slug: p.slug || '', 
         store: storeName,
         price: p.productPrice != null ? String(p.productPrice) : "",
         offer_price: p.discountPrice != null ? String(p.discountPrice) : "",
