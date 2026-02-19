@@ -34,7 +34,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
 
   // ✅ FIX: সঠিক page route path ব্যবহার করছি
   // এটা `/products/[slug]` page route এর সাথে match করবে
-  const productUrl = product?.slug ? `/products/${product.slug}` : '#';
+  const productUrl = product?.slug ? `/product/${product.slug}` : '#';
 
   // Price Logic
   const originalPrice = product?.productPrice || 0;

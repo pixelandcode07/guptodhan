@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react' 
-import SteadfastTracking from '@/app/home/products/shoppinginfo/components/SteadfastTracking'
+import SteadfastTracking from '@/app/products/shoppinginfo/components/SteadfastTracking'
 import { HeroNav } from '@/app/components/Hero/HeroNav'
 import { MainCategory } from '@/types/navigation-menu'
 import TrackingSkeleton from './components/TrackingSkeleton'

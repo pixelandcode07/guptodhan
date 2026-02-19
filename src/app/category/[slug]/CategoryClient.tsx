@@ -98,7 +98,7 @@ function ProductCard({ product }: { product: Product }) {
     // ✅ URL Creation using SLUG
     // যদি কোনো কারণে slug না থাকে (যদিও এখন আছে), তবে সেফটির জন্য ID ব্যবহার হবে।
     // কিন্তু আপনার API ঠিক থাকায় এটি এখন স্ল্যাগই ব্যবহার করবে।
-    const productUrl = `/products/${product.slug || product._id}`;
+    const productUrl = `/product/${product.slug || product._id}`;
 
     const hasDiscount = product.discountPrice > 0 && product.discountPrice < product.productPrice;
     const discountPercent = hasDiscount

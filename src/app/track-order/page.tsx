@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react'
 import TrackOrderClient from './components/TrackOrderClient'
-import TrackingSkeleton from '@/app/home/products/tracking/components/TrackingSkeleton'
+import TrackingSkeleton from '@/app/products/tracking/components/TrackingSkeleton'
 
 export default function TrackOrderPage() {
   return (

@@ -228,7 +228,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
 
   const onView = useCallback((product: Product) => {
     if (product._id) {
-      router.push(`/products/${product._id}`);
+      router.push(`/product/${product.slug}`);
     } else {
       const originalProduct = products.find(p => p.productTitle === product.name);
       if (originalProduct) {

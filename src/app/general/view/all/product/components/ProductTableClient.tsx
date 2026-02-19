@@ -160,7 +160,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
 
   const onView = useCallback((product: Product) => {
     if (product._id) {
-      router.push(`/products/${product._id}`);
+      router.push(`/product/${product.slug}`);
     } else {
       toast.error('Product ID not found');
     }
