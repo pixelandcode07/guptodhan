@@ -92,6 +92,8 @@ const getSubCategoriesByCategoryFromDB = async (categoryId: string) => {
 // ================================================================
 // ✏️ UPDATE SUBCATEGORY
 // ================================================================
+// D:\Guptodhan Project\guptodhan\src\lib\modules\ecommerce-category\services\ecomSubCategory.service.ts
+
 const updateSubCategoryInDB = async (id: string, payload: Partial<ISubCategory>) => {
   // 🔍 1. Fetch existing subcategory to get the old slug before updating
   const existingSubCategory = await SubCategoryModel.findById(id);
@@ -115,6 +117,9 @@ const updateSubCategoryInDB = async (id: string, payload: Partial<ISubCategory>)
   // 🗑️ 3. Clear general category caches
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
   await deleteCacheKey(`subcategories:by-category:${result.category}`);
+  
+  // 🔥 CRITICAL FIX: Ei line ta oboshhoi add korben nahole table e image asbe na
+  await deleteCacheKey('subcategories:all');
 
   // 🔥 4. Clear products cache for the OLD slug
   if (oldSlug) {
