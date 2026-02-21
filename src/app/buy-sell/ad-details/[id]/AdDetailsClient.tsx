@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState } from 'react';
@@ -14,7 +12,6 @@ import {
   Phone,
   Shield,
   Share2,
-  Heart,
   Flag,
   MessageCircle,
   Home,
@@ -36,7 +33,7 @@ import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import ReportDialog from '@/components/ReusableComponents/ReportDialog';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 import {
   Dialog,
@@ -139,20 +136,34 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
     }
   };
 
-  // Animation variants
-  const containerVariants = {
+  // ✅ FIXED: Variants এ proper type দেওয়া হয়েছে
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.15, delayChildren: 0.2 } }
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.15, delayChildren: 0.2 },
+    },
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1, transition: { duration: 0.6, ease: 'easeOut' } }
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.6,
+        ease: 'easeOut' as const, // ✅ as const দিয়ে string literal type করা হয়েছে
+      },
+    },
   };
 
-  const imageVariants = {
+  const imageVariants: Variants = {
     hidden: { opacity: 0, scale: 0.96 },
-    visible: { opacity: 1, scale: 1, transition: { duration: 0.5 } }
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: { duration: 0.5 },
+    },
   };
 
   return (
@@ -270,10 +281,11 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                         whileHover={{ scale: 1.06 }}
                         whileTap={{ scale: 0.96 }}
                         onClick={() => setSelectedImage(i)}
-                        className={`relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0 rounded-xl overflow-hidden ring-4 transition-all ${selectedImage === i
-                          ? 'ring-green-500 shadow-lg shadow-green-500/30'
-                          : 'ring-transparent'
-                          }`}
+                        className={`relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0 rounded-xl overflow-hidden ring-4 transition-all ${
+                          selectedImage === i
+                            ? 'ring-green-500 shadow-lg shadow-green-500/30'
+                            : 'ring-transparent'
+                        }`}
                       >
                         <Image src={img} alt="" fill className="object-cover" />
                       </motion.button>
@@ -370,9 +382,6 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                 </div>
 
                 <div className="flex gap-3">
-                  {/* <Button variant="outline" className="flex-1">
-                    <Heart className="w-5 h-5 mr-2" /> Save
-                  </Button> */}
                   <Dialog open={openShareDialog} onOpenChange={setOpenShareDialog}>
                     <DialogTrigger asChild>
                       <Button variant="outline" className="flex-1">
@@ -396,11 +405,7 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                             className="h-10"
                           />
                         </div>
-                        <Button
-                          size="sm"
-                          className="px-3"
-                          onClick={handleCopyLink}
-                        >
+                        <Button size="sm" className="px-3" onClick={handleCopyLink}>
                           <span className="sr-only">Copy</span>
                           {copied ? (
                             <Check className="h-4 w-4 text-white" />
@@ -416,6 +421,7 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                       )}
                     </DialogContent>
                   </Dialog>
+
                   <ReportDialog
                     adId={ad._id}
                     adTitle={ad.title}
