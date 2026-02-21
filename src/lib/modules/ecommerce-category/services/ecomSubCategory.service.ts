@@ -93,18 +93,38 @@ const getSubCategoriesByCategoryFromDB = async (categoryId: string) => {
 // ✏️ UPDATE SUBCATEGORY
 // ================================================================
 const updateSubCategoryInDB = async (id: string, payload: Partial<ISubCategory>) => {
+  // 🔍 1. Fetch existing subcategory to get the old slug before updating
+  const existingSubCategory = await SubCategoryModel.findById(id);
+  
+  if (!existingSubCategory) {
+    throw new Error('SubCategory not found to update.');
+  }
+
+  const oldSlug = existingSubCategory.slug;
+
+  // 📝 2. Perform the update
   const result = await SubCategoryModel.findByIdAndUpdate(id, payload, { 
     new: true, 
     runValidators: true 
   });
 
   if (!result) {
-    throw new Error('SubCategory not found to update.');
+    throw new Error('Failed to update SubCategory.');
   }
 
-  // 🗑️ Clear caches
+  // 🗑️ 3. Clear general category caches
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
   await deleteCacheKey(`subcategories:by-category:${result.category}`);
+
+  // 🔥 4. Clear products cache for the OLD slug
+  if (oldSlug) {
+    await deleteCachePattern(`subcategory:${oldSlug}:products:*`);
+  }
+
+  // 🔥 5. Clear products cache for the NEW slug (if it was updated to a new one)
+  if (result.slug && result.slug !== oldSlug) {
+    await deleteCachePattern(`subcategory:${result.slug}:products:*`);
+  }
 
   return result;
 };
