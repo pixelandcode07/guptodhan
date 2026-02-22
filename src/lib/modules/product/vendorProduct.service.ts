@@ -698,13 +698,22 @@ const updateVendorProductInDB = async (
     ...getProductLookupPipeline(),
   ]);
 
-  // 🗑️ Clear cache
-  await deleteCacheKey(CacheKeys.PRODUCT.BY_ID(id));
-  await deleteCachePattern(CacheKeys.PATTERNS.PRODUCTS_ALL);
-
   if (!result || !result[0]) return null;
 
-  return await populateColorAndSizeNames(result[0]);
+  const updatedProduct = result[0];
+
+  // 🗑️ Clear ALL relevant caches (ID, Slug, and Lists)
+  await deleteCacheKey(CacheKeys.PRODUCT.BY_ID(id));
+  await deleteCachePattern(CacheKeys.PATTERNS.PRODUCTS_ALL);
+  
+  // 🔥 FIX: Slug এর ক্যাশ ডিলিট করা হচ্ছে যাতে ডিটেইলস পেজে আপডেট সাথে সাথে দেখা যায়
+  if (updatedProduct.slug) {
+    await deleteCacheKey(`product:details:${updatedProduct.slug}`);
+  }
+  // সেফটির জন্য আইডি দিয়েও যদি product:details ক্যাশ থাকে, সেটাও ডিলিট করে দিচ্ছি
+  await deleteCacheKey(`product:details:${id}`);
+
+  return await populateColorAndSizeNames(updatedProduct);
 };
 
 // ===================================
