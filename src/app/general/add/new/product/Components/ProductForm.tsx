@@ -542,7 +542,6 @@ export default function ProductForm({
       maxSizeMB: 1, 
       maxWidthOrHeight: 1920, 
       useWebWorker: true,
-      // PNG ফাইলের ট্রান্সপারেন্সি ঠিক রাখতে চাইলে নিচের লাইনটি রাখতে পারেন
       fileType: file.type 
     };
 
