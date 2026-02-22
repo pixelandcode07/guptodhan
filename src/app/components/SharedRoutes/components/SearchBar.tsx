@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"; // Assuming you have a utils file, usually in 
 
 interface Suggestion {
   _id: string;
+  slug?: string;
   productTitle: string;
   productImage?: string;
   price?: number;
@@ -69,10 +70,10 @@ export default function SearchBar() {
   }, [query, fetchSuggestions]);
 
   // When user clicks a single product
-  const goToProduct = (productId: string) => {
+  const goToProduct = (slug: string) => {
     setShowDropdown(false);
     setQuery("");
-    router.push(`/products/${productId}`);
+    router.push(`/products/${slug}`);
   };
 
   // Clear search
@@ -197,7 +198,7 @@ export default function SearchBar() {
                 {suggestions.map((item) => (
                   <li
                     key={item._id}
-                    onClick={() => goToProduct(item._id)}
+                    onClick={() => goToProduct(item.slug as string)}
                     className="group flex items-center gap-4 p-3 hover:bg-blue-50/50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors duration-150"
                   >
                     {/* Image Container */}
