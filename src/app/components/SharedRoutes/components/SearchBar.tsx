@@ -5,17 +5,16 @@ import { Search, Loader2, X, ShoppingBag, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import debounce from "lodash/debounce";
-import { cn } from "@/lib/utils"; // Assuming you have a utils file, usually in shadcn
+import { cn } from "@/lib/utils"; 
 
+// ১. এখানে slug যুক্ত করা হয়েছে
 interface Suggestion {
   _id: string;
-  slug?: string;
+  slug?: string; 
   productTitle: string;
   productImage?: string;
   price?: number;
   discountPrice?: number;
-
-  // These fields come from populate in the API
   category?: { slug: string };
   subCategory?: { slug: string };
   childCategory?: { slug: string };
@@ -69,11 +68,17 @@ export default function SearchBar() {
     fetchSuggestions(query);
   }, [query, fetchSuggestions]);
 
-  // When user clicks a single product
-  const goToProduct = (slug: string) => {
+  // ২. undefined সমস্যা সমাধানের জন্য ফাংশনটি আপডেট করা হয়েছে
+  const goToProduct = (item: Suggestion) => {
     setShowDropdown(false);
     setQuery("");
-    router.push(`/products/${slug}`);
+    
+    // সেফটি চেক: যদি slug না থাকে, তাহলে _id ব্যবহার করবে। এতে আর কখনোই undefined আসবে না।
+    const identifier = item.slug || item._id; 
+    
+    if (identifier) {
+      router.push(`/product/${identifier}`);
+    }
   };
 
   // Clear search
@@ -89,7 +94,6 @@ export default function SearchBar() {
 
     let targetUrl = "/search";
 
-    // If we have suggestions, try to be smart about the category
     if (suggestions.length > 0) {
       const first = suggestions[0];
       if (first.childCategory?.slug) {
@@ -151,7 +155,6 @@ export default function SearchBar() {
           onKeyDown={(e) => e.key === "Enter" && goToCategoryPage()}
         />
 
-        {/* Clear Button (Visible only when typing) */}
         {query && (
           <button
             onClick={clearSearch}
@@ -161,7 +164,6 @@ export default function SearchBar() {
           </button>
         )}
 
-        {/* Search Button */}
         <button
           onClick={goToCategoryPage}
           className="h-[calc(100%-8px)] mr-1 px-6 bg-[#00005E] hover:bg-[#000045] text-white rounded-full font-medium text-sm transition-colors flex items-center gap-2"
@@ -198,10 +200,10 @@ export default function SearchBar() {
                 {suggestions.map((item) => (
                   <li
                     key={item._id}
-                    onClick={() => goToProduct(item.slug as string)}
+                    // ৩. পুরো item অবজেক্টটি পাস করা হচ্ছে
+                    onClick={() => goToProduct(item)} 
                     className="group flex items-center gap-4 p-3 hover:bg-blue-50/50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors duration-150"
                   >
-                    {/* Image Container */}
                     <div className="relative w-12 h-12 flex-shrink-0 bg-white rounded-md border border-gray-200 overflow-hidden group-hover:border-blue-200">
                       {item.productImage ? (
                         <Image
@@ -217,7 +219,6 @@ export default function SearchBar() {
                       )}
                     </div>
 
-                    {/* Content */}
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                       <p className="text-sm font-medium text-gray-800 truncate group-hover:text-[#00005E] transition-colors">
                         {highlight(item.productTitle, query)}
@@ -232,12 +233,6 @@ export default function SearchBar() {
                             <span className="text-xs text-gray-400 line-through">
                               ৳{item.price?.toLocaleString()}
                             </span>
-                            {/* Discount Badge Logic (Optional) */}
-                            {item.price && (
-                                <span className="text-[10px] font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
-                                  {Math.round(((item.price - item.discountPrice) / item.price) * 100)}% OFF
-                                </span>
-                            )}
                           </>
                         ) : (
                           <span className="text-sm font-bold text-gray-700">
@@ -247,7 +242,6 @@ export default function SearchBar() {
                       </div>
                     </div>
                     
-                    {/* Arrow Icon on Hover */}
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity pr-2 text-[#00005E]">
                         <ArrowRight className="w-4 h-4" />
                     </div>
@@ -255,7 +249,6 @@ export default function SearchBar() {
                 ))}
               </ul>
 
-              {/* View All Footer */}
               <div
                 onClick={goToCategoryPage}
                 className="p-3 bg-gray-50 hover:bg-[#00005E] group cursor-pointer border-t border-gray-100 transition-colors duration-200 flex items-center justify-center gap-2"
