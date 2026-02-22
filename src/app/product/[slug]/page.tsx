@@ -13,6 +13,11 @@ import { ProductSizeServices } from '@/lib/modules/product-config/services/produ
 import ProductDetailsClient from './components/ProductDetailsClient';
 import { HeroNav } from '@/app/components/Hero/HeroNav';
 
+// 🔥 FIX: Next.js কে নির্দেশ দেওয়া হচ্ছে যেন এই পেজটি কখনোই স্ট্যাটিক ক্যাশ না করে। 
+// ফলে ব্যাকএন্ডে (Redis) ডাটা আপডেট হওয়া মাত্রই এখানে নতুন ডাটা চলে আসবে।
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
@@ -28,13 +33,13 @@ function toISOString(date: any): string {
   }
 }
 
-// ✅ FIXED: cache conflict সরানো হয়েছে — শুধু revalidate রাখা হয়েছে
 async function getRelatedProducts(categorySlug: string, currentProductId: string) {
   try {
     const url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/ecommerce-category/ecomCategory/slug/${categorySlug}`;
 
+    // 🔥 FIX: fetch এর ক্যাশ ও সম্পূর্ণ অফ করা হলো
     const res = await fetch(url, {
-      next: { revalidate: 60 }, // ✅ শুধু এটি — আগে cache: 'no-store' ও ছিল যা conflict করছিল
+      cache: 'no-store'
     });
 
     if (!res.ok) return [];
@@ -327,6 +332,3 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound();
   }
 }
-
-// ✅ 1 ঘণ্টা পর পর revalidate হবে
-export const revalidate = 3600;
