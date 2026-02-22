@@ -27,6 +27,7 @@ import ProductImageGallery from "./ProductImageGallery";
 import PricingInventory from "./PricingInventory";
 import TagInput from "./TagInput";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import imageCompression from 'browser-image-compression';
 
 // --- Helper Functions ---
 const getIdFromRef = (value: unknown): string => {
@@ -535,20 +536,42 @@ export default function ProductForm({
   };
 
   const uploadFile = async (file: File): Promise<string> => {
+  try {
+    // ১. ইমেজ কম্প্রেস করার অপশন
+    const options = {
+      maxSizeMB: 1, 
+      maxWidthOrHeight: 1920, 
+      useWebWorker: true,
+      // PNG ফাইলের ট্রান্সপারেন্সি ঠিক রাখতে চাইলে নিচের লাইনটি রাখতে পারেন
+      fileType: file.type 
+    };
+
+    // ২. ফাইল কম্প্রেস করা হচ্ছে
+    const compressedBlob = await imageCompression(file, options);
+    
+    // ৩. Blob কে আবার File অবজেক্টে রূপান্তর করা হচ্ছে
+    const compressedFile = new File([compressedBlob], file.name, {
+      type: file.type,
+      lastModified: Date.now(),
+    });
+
+    // ৪. এবার কম্প্রেসড ফাইলটি ব্যাকএন্ডে পাঠানো হচ্ছে
     const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const response = await axios.post("/api/v1/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return response.data?.url || "";
-    } catch (error) {
-      throw new Error(`Could not upload ${file.name}.`);
-    }
-  };
+    formData.append("file", compressedFile);
+
+    const response = await axios.post("/api/v1/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    return response.data?.url || "";
+  } catch (error) {
+    console.error("Upload error details:", error);
+    throw new Error(`Could not upload ${file.name}.`);
+  }
+};
 
   // --- SUBMIT ---
 
