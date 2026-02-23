@@ -204,9 +204,9 @@ export default async function RootLayout({
         <meta name="language" content="English, Bangla" />
 
         {/* ========================
-            ✅ FIXED: GOOGLE FONTS — Non-render-blocking
-            আগে এটি page render block করছিল
-            এখন media="print" trick দিয়ে async load হবে
+            ✅ FIXED: GOOGLE FONTS — Server Component Safe
+            onLoad এবং media="print" হ্যাক সরিয়ে দেওয়া হয়েছে 
+            যাতে Server Component এ কোনো Error না আসে।
             ======================== */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -214,16 +214,7 @@ export default async function RootLayout({
         <link
           href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Kalpurush&family=Roboto:wght@300;400;500;700&display=swap"
           rel="stylesheet"
-          media="print"
-          // @ts-ignore
-          onLoad="this.media='all'"
         />
-        <noscript>
-          <link
-            href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Kalpurush&family=Roboto:wght@300;400;500;700&display=swap"
-            rel="stylesheet"
-          />
-        </noscript>
 
         {/* ========================
             GOOGLE ANALYTICS
