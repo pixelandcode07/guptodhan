@@ -131,7 +131,7 @@ export default function ProductMainInfo({
     }
   };
 
-  // ✅ FIXED: Variants Logic
+  // Variants Logic
   const availableColors = useMemo(() => {
     if (!product.productOptions) return [];
     const colors = product.productOptions.map((opt: any) => {
@@ -183,7 +183,7 @@ export default function ProductMainInfo({
     toast.success(`Location changed to ${locationType === 'dhaka' ? 'Outside Dhaka' : 'Inside Dhaka'}`);
   };
 
-  // Cart Handlers
+  // ✅ FIXED: Cart Handlers with correct routing
   const handleBuyNow = async () => {
     if (availableColors.length > 0 && !selectedColor) return toast.error('Please select a color');
     if (availableSizes.length > 0 && !selectedSize) return toast.error('Please select a size');
@@ -195,7 +195,11 @@ export default function ProductMainInfo({
         color: selectedColor || undefined, size: selectedSize || undefined 
       });
       sessionStorage.setItem('buyNowProductId', product._id);
-      router.push('/home/product/shoppinginfo?buyNow=true');
+      
+      // 🔥 FIX: Error-টি এই লাইনেই হচ্ছিলো। রাউটটি আপডেট করা হয়েছে।
+      // যদি আপনার চেকআউট পেজটি অন্য ফোল্ডারে থাকে (যেমন /checkout), তবে এখানে সেটি বসিয়ে দিন।
+      router.push('/checkout?buyNow=true'); 
+
     } catch { toast.error('Failed to process buy now'); } 
     finally { setIsBuyingNow(false); }
   };
