@@ -15,7 +15,7 @@ export default function robots(): MetadataRoute.Robots {
           '/private/',
           '/general/',       // ✅ Admin panel pages — index হওয়া উচিত না
           '/home/UserProfile/', // ✅ User private pages
-          '/home/products/shopping-cart/',
+          '/products/shopping-cart/',
           '/home/product/shoppinginfo/',
           '/home/product/tracking/',
         ],

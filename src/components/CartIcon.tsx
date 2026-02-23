@@ -15,11 +15,11 @@ export default function CartIcon({ className = '', showCount = true }: CartIconP
 
   return (
     // <Link
-    //   href="/home/products/shopping-cart"
+    //   href="/products/shopping-cart"
     //   className={`relative flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer ${className}`}
     // >
     <Link
-      href="/home/products/shopping-cart"
+      href="/products/shopping-cart"
       className={`relative flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit cursor-pointer ${className}`}
     >
       <div className="relative flex flex-col items-center gap-0.5 group">

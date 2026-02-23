@@ -39,7 +39,7 @@ export default function ShoppingInfoClient() {
     try {
       await removeFromCart(itemId);
       if (displayItems.length <= 1) {
-        router.push('/home/products/shopping-cart');
+        router.push('/products/shopping-cart');
       }
     } catch {
       // toast handled in context
@@ -65,7 +65,7 @@ export default function ShoppingInfoClient() {
       description: 'Please add items to your cart before proceeding to checkout.',
       duration: 3000,
     });
-    router.push('/home/products/shopping-cart');
+    router.push('/products/shopping-cart');
     return null;
   }
 

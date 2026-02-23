@@ -124,7 +124,7 @@ export default function ProductDetails({ productId }: ProductDetailsProps) {
       });
 
       setTimeout(() => {
-        router.push('/home/products/shopping-cart');
+        router.push('/products/shopping-cart');
       }, 1500);
     }
   };
