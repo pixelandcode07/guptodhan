@@ -159,7 +159,7 @@ const deleteSubCategoryFromDB = async (id: string) => {
 
   return null;
 };
-
+ 
 // ================================================================
 // 🔍 GET PRODUCTS BY SUBCATEGORY SLUG WITH FILTERS (OPTIMIZED)
 // ================================================================
