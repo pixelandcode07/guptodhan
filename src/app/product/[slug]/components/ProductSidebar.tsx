@@ -195,7 +195,7 @@ export default function ProductMainInfo({
         color: selectedColor || undefined, size: selectedSize || undefined 
       });
       sessionStorage.setItem('buyNowProductId', product._id);
-      router.push('/products/checkout?buyNow=true');    
+      router.push('/products/shoppinginfo?buyNow=true');
     } catch { toast.error('Failed to process buy now'); } 
     finally { setIsBuyingNow(false); }
   };
