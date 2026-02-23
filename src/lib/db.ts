@@ -128,7 +128,7 @@ const opts: mongoose.ConnectOptions = {
     retryWrites: true,
     retryReads: true,
     
-    tls: true,
+    tls: false,
     tlsAllowInvalidCertificates: true,
     // ================================================================
     // Queue Management
