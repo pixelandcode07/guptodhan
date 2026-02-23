@@ -19,6 +19,7 @@ const createSubCategoryInDB = async (payload: Partial<ISubCategory>) => {
 
   // 🗑️ Clear caches
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+  await deleteCacheKey('subcategories:all'); // ✅ এই লাইনটা যোগ করো
 
   return result;
 };
@@ -154,6 +155,7 @@ const deleteSubCategoryFromDB = async (id: string) => {
 
   // 🗑️ Clear caches
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+  await deleteCacheKey('subcategories:all'); // ✅ এই লাইনটা যোগ করো
 
   return null;
 };
