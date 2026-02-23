@@ -16,7 +16,7 @@ export default function CartModalProvider() {
 
   const handleGoToCart = () => {
     closeAddToCartModal();
-    router.push('/home/product/shopping-cart');
+    router.push('/home/products/shopping-cart');
   };
 
   const handleCheckout = () => {
