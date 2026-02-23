@@ -136,7 +136,7 @@ export default function AddToCartModal({
                 Browse More Products
               </Link>
               <span>•</span>
-              <Link href="/home/product/shopping-cart" className="hover:text-blue-600 transition-colors">
+              <Link href="/home/products/shopping-cart" className="hover:text-blue-600 transition-colors">
                 Manage Cart
               </Link>
             </div>
