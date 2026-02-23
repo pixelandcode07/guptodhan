@@ -13,8 +13,8 @@ import Image from 'next/image';
 
 interface Conversation {
   _id: string;
-  ad: { title: string; images?: string[] };
-  participants: Array<{ _id: string; name: string; profilePicture?: string }>;
+  ad?: { title?: string; images?: string[] }; 
+  participants?: Array<{ _id: string; name: string; profilePicture?: string }>;
   lastMessage?: { content: string; createdAt: string };
   updatedAt: string;
 }
@@ -47,7 +47,7 @@ export default function ChatPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && Array.isArray(data.data)) {
         setConversations(data.data);
       }
     } catch (err) {
@@ -57,7 +57,6 @@ export default function ChatPage() {
     }
   };
 
-  // Mobile detection for chat view
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
@@ -68,7 +67,6 @@ export default function ChatPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // loading
   if (status === 'loading' || loading) {
     return <LoadingChat />
   }
@@ -85,7 +83,6 @@ export default function ChatPage() {
       >
         <div className='flex justify-between items-center border-b border-gray-200'>
           <div>
-            {/* Logo */}
             <Link href={'/'}>
               <Image src="/img/logo.png" width={130} height={44} alt="logo" />
             </Link>
@@ -108,7 +105,9 @@ export default function ChatPage() {
           ) : (
             <div className="divide-y divide-gray-100">
               {conversations.map((conv) => {
-                const otherUser = conv.participants.find((p) => p._id !== userId);
+                if (!conv) return null;
+                
+                const otherUser = conv.participants?.find((p) => p?._id !== userId);
                 if (!otherUser) return null;
 
                 return (
@@ -124,21 +123,24 @@ export default function ChatPage() {
                   >
                     <Avatar className="h-12 w-12 border">
                       <AvatarImage src={otherUser.profilePicture} />
-                      <AvatarFallback>{otherUser.name[0]}</AvatarFallback>
+                      <AvatarFallback>{otherUser.name?.[0] || 'U'}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-900 truncate">{otherUser.name}</h3>
+                      
+                      {/* ✅ 100% CRASH PROOF: conv?.ad?.title */}
                       <p className="text-sm text-blue-500 flex items-center gap-1">
-                        <ShoppingBag size={14} /> {conv.ad.title}
+                        <ShoppingBag size={14} /> {conv?.ad?.title || 'Deleted Ad'}
                       </p>
-                      {conv.lastMessage && (
+                      
+                      {conv?.lastMessage && (
                         <p className="text-xs text-gray-500 truncate mt-1">
                           {conv.lastMessage.content}
                         </p>
                       )}
                     </div>
                     <div className="text-right text-xs text-gray-400">
-                      {new Date(conv.updatedAt).toLocaleDateString()}
+                      {conv?.updatedAt ? new Date(conv.updatedAt).toLocaleDateString() : ''}
                     </div>
                   </div>
                 );
@@ -154,9 +156,12 @@ export default function ChatPage() {
           <ChatWindow
             conversationId={selectedConv._id}
             userId={userId}
-            receiverId={selectedConv.participants.find((p) => p._id !== userId)!._id}
-            userName={selectedConv.participants.find((p) => p._id !== userId)!.name}
-            adTitle={selectedConv.ad.title}
+            receiverId={selectedConv.participants?.find((p) => p._id !== userId)?._id || ''}
+            userName={selectedConv.participants?.find((p) => p._id !== userId)?.name || 'Unknown User'}
+            
+            // ✅ CRASH PROOF: selectedConv?.ad?.title
+            adTitle={selectedConv?.ad?.title || 'Deleted Ad'}
+            
             token={token}
             onBack={() => setShowChatOnly(false)}
             isMobileView={showChatOnly}
