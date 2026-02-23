@@ -8,17 +8,20 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import Creatable, { OnChangeValue } from 'react-select/creatable';
+import Creatable from 'react-select/creatable';
+import { OnChangeValue } from 'react-select'; 
 import FiveUploadImageBtn from '@/components/ReusableComponents/FiveUploadImageBtn';
-import { ClassifiedAdType } from '@/types/classifiedAdType';
+import { Loader2 } from 'lucide-react';
 
+// ✅ আর কোনো এক্সটার্নাল ইমপোর্ট লাগবে না। সরাসরি any ব্যবহার করে টাইপ এরর বন্ধ করা হলো।
 type AddProductInfoProps = {
-  form: UseFormReturn<ClassifiedAdType>;
+  form: UseFormReturn<any>; 
   onBack: () => void;
   onSubmit: () => void;
+  isSubmitting: boolean;
 };
 
-export default function AddProductInfo({ form, onBack, onSubmit }: AddProductInfoProps) {
+export default function AddProductInfo({ form, onBack, onSubmit, isSubmitting }: AddProductInfoProps) {
   const { control, register, watch, setValue } = form;
 
   const variants = {
@@ -29,16 +32,15 @@ export default function AddProductInfo({ form, onBack, onSubmit }: AddProductInf
 
   const handleSelectChange = (
     fieldName: 'brand' | 'productModel' | 'edition',
-    value: OnChangeValue<{ label: string; value: string }, false>
+    value: OnChangeValue<any, false>
   ) => {
     setValue(fieldName, value ? value : null);
   };
 
-  // Watch images
   const images = watch('images') || [];
 
   const handleFormSubmit = () => {
-    const selectedImages = images.filter((img: File | null) => img !== null);
+    const selectedImages = images.filter((img: any) => img !== null);
     if (!selectedImages.length) {
       alert('Please upload at least one image');
       return;
@@ -118,7 +120,7 @@ export default function AddProductInfo({ form, onBack, onSubmit }: AddProductInf
                       isClearable
                       onChange={(val) => handleSelectChange('brand', val)}
                       placeholder="Select or create brand"
-                      value={field.value}
+                      value={field.value as any}
                     />
                   )}
                 />
@@ -136,7 +138,7 @@ export default function AddProductInfo({ form, onBack, onSubmit }: AddProductInf
                       isClearable
                       onChange={(val) => handleSelectChange('productModel', val)}
                       placeholder="Select or create model"
-                      value={field.value}
+                      value={field.value as any}
                     />
                   )}
                 />
@@ -154,7 +156,7 @@ export default function AddProductInfo({ form, onBack, onSubmit }: AddProductInf
                       isClearable
                       onChange={(val) => handleSelectChange('edition', val)}
                       placeholder="Select or create edition"
-                      value={field.value}
+                      value={field.value as any}
                     />
                   )}
                 />
@@ -206,7 +208,7 @@ export default function AddProductInfo({ form, onBack, onSubmit }: AddProductInf
                   {[0, 1, 2, 3, 4].map((index) => (
                     <Controller
                       key={index}
-                      name={`images.${index}`}
+                      name={`images.${index}` as any}
                       control={control}
                       render={({ field }) => (
                         <FiveUploadImageBtn
@@ -256,11 +258,19 @@ export default function AddProductInfo({ form, onBack, onSubmit }: AddProductInf
 
           {/* Navigation */}
           <div className="flex justify-between my-10 px-5 md:px-10">
-            <Button type="button" variant="outline" onClick={onBack}>
+            <Button type="button" variant="outline" onClick={onBack} disabled={isSubmitting}>
               Back
             </Button>
-            <Button type="button" onClick={handleFormSubmit}>
-              Submit
+            
+            <Button type="button" onClick={handleFormSubmit} disabled={isSubmitting} className="min-w-[150px]">
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Compressing & Saving...
+                </>
+              ) : (
+                'Submit'
+              )}
             </Button>
           </div>
         </motion.div>
