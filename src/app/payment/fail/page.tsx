@@ -114,7 +114,7 @@ function FailContent() {
             size="lg"
             className="border-2"
           >
-            <Link href="/home/product/shopping-cart" className="flex items-center gap-2">
+            <Link href="/home/products/shopping-cart" className="flex items-center gap-2">
               <ArrowLeft className="w-5 h-5" />
               Back to Cart
             </Link>
