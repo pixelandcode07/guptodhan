@@ -11,8 +11,8 @@ interface Suggestion {
   _id: string;
   slug?: string; 
   productTitle: string;
-  productImage?: string;
-  price?: number;
+  thumbnailImage?: string; // ✅ FIX: matched with backend field
+  productPrice?: number;   // ✅ FIX: matched with backend field
   discountPrice?: number;
   category?: { slug: string };
   subCategory?: { slug: string };
@@ -27,11 +27,8 @@ export default function SearchBar() {
   const router = useRouter();
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
-  
-  // ✅ FIX 1: AbortController added to stop older requests from overwriting newer ones (Prevents "Ulta-Palta" results)
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
-  // Close dropdown when clicking outside
   React.useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
@@ -42,7 +39,6 @@ export default function SearchBar() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Fetch suggestions
   const fetchSuggestions = React.useCallback(
     debounce(async (q: string) => {
       const queryText = q.trim();
@@ -51,7 +47,6 @@ export default function SearchBar() {
         return;
       }
 
-      // Cancel previous pending request if a new one starts
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -67,9 +62,7 @@ export default function SearchBar() {
         const json = await res.json();
         setSuggestions(json.success ? json.data || [] : []);
       } catch (err: any) {
-        if (err.name === 'AbortError') {
-          console.log('Previous search request cancelled');
-        } else {
+        if (err.name !== 'AbortError') {
           console.error(err);
           setSuggestions([]);
         }
@@ -84,7 +77,6 @@ export default function SearchBar() {
 
   React.useEffect(() => {
     fetchSuggestions(query);
-    // Cleanup pending debounces and fetches on unmount
     return () => {
       fetchSuggestions.cancel();
       if (abortControllerRef.current) abortControllerRef.current.abort();
@@ -94,28 +86,22 @@ export default function SearchBar() {
   const goToProduct = (item: Suggestion) => {
     setShowDropdown(false);
     setQuery("");
-    
     const identifier = item.slug || item._id; 
-    
     if (identifier) {
-      // ✅ FIX 2: Corrected route to /products/
       router.push(`/products/${identifier}`);
     }
   };
 
-  // Clear search
   const clearSearch = () => {
     setQuery("");
     setSuggestions([]);
     inputRef.current?.focus();
   };
 
-  // When user clicks “View all results” or hits Enter
   const goToCategoryPage = () => {
     if (!query.trim()) return;
 
     let targetUrl = "/search";
-
     if (suggestions.length > 0) {
       const first = suggestions[0];
       if (first.childCategory?.slug) {
@@ -126,22 +112,15 @@ export default function SearchBar() {
         targetUrl = `/category/${first.category.slug}`;
       }
     }
-
     const params = new URLSearchParams({ q: query.trim() });
     router.push(`${targetUrl}?${params.toString()}`);
     setShowDropdown(false);
     setQuery("");
   };
 
-  // Highlight matching text
   const highlight = (text: string, term: string) => {
-    if (!term) return text;
-    
-    // ✅ FIX 3: Escape Regex special characters so the app doesn't crash when typing brackets or symbols
-    const escapeRegExp = (string: string) => {
-      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    };
-    
+    if (!term || !text) return text;
+    const escapeRegExp = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const safeTerm = escapeRegExp(term);
     const parts = text.split(new RegExp(`(${safeTerm})`, "gi"));
     
@@ -158,7 +137,6 @@ export default function SearchBar() {
 
   return (
     <div className="relative w-full max-w-3xl mx-auto z-50" ref={wrapperRef}>
-      {/* Search Input Container */}
       <div
         className={cn(
           "relative flex items-center w-full h-12 rounded-full border-2 transition-all duration-200 bg-white overflow-hidden",
@@ -202,7 +180,6 @@ export default function SearchBar() {
         </button>
       </div>
 
-      {/* Dropdown Results */}
       {showDropdown && query && (
         <div className="absolute top-full left-0 right-0 bg-white border-x-2 border-b-2 border-[#00005E] rounded-b-[20px] shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
           
@@ -219,13 +196,11 @@ export default function SearchBar() {
             </div>
           ) : (
             <>
-              {/* Header */}
               <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Top Suggestions</span>
                 <span className="text-xs text-gray-400">{suggestions.length} results</span>
               </div>
 
-              {/* List */}
               <ul className="max-h-[60vh] overflow-y-auto custom-scrollbar">
                 {suggestions.map((item) => (
                   <li
@@ -234,9 +209,9 @@ export default function SearchBar() {
                     className="group flex items-center gap-4 p-3 hover:bg-blue-50/50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors duration-150"
                   >
                     <div className="relative w-12 h-12 flex-shrink-0 bg-white rounded-md border border-gray-200 overflow-hidden group-hover:border-blue-200">
-                      {item.productImage ? (
+                      {item.thumbnailImage ? ( // ✅ FIX: used thumbnailImage
                         <Image
-                          src={item.productImage}
+                          src={item.thumbnailImage}
                           alt={item.productTitle}
                           fill
                           className="object-cover"
@@ -260,12 +235,12 @@ export default function SearchBar() {
                               ৳{item.discountPrice.toLocaleString()}
                             </span>
                             <span className="text-xs text-gray-400 line-through">
-                              ৳{item.price?.toLocaleString()}
+                              ৳{item.productPrice?.toLocaleString()} {/* ✅ FIX */}
                             </span>
                           </>
                         ) : (
                           <span className="text-sm font-bold text-gray-700">
-                            ৳{item.price?.toLocaleString()}
+                            ৳{item.productPrice?.toLocaleString() || 0} {/* ✅ FIX */}
                           </span>
                         )}
                       </div>
