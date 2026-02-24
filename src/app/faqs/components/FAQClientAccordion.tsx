@@ -24,20 +24,22 @@ export default function FAQClientAccordion({ faqs }: { faqs: FAQ[] }) {
         return (
           <div 
             key={faq._id} 
-            className={`border rounded-lg transition-all duration-200 overflow-hidden ${
-              isOpen ? 'border-blue-200 bg-blue-50/30' : 'border-gray-200 bg-white hover:border-blue-300'
+            className={`border rounded-xl transition-all duration-300 overflow-hidden ${
+              isOpen ? 'border-[#00005E]/20 bg-[#00005E]/5 shadow-sm' : 'border-gray-200 bg-white hover:border-[#00005E]/30'
             }`}
           >
             <button
               onClick={() => toggle(faq._id)}
-              className="w-full flex justify-between items-center p-5 text-left focus:outline-none"
+              className="w-full flex justify-between items-center p-5 md:p-6 text-left focus:outline-none"
             >
-              <span className={`font-semibold text-sm md:text-base pr-4 ${isOpen ? 'text-[#00005E]' : 'text-gray-800'}`}>
+              <span className={`font-semibold text-base md:text-lg pr-4 transition-colors ${isOpen ? 'text-[#00005E]' : 'text-gray-800'}`}>
                 {faq.question}
               </span>
-              <ChevronDown 
-                className={`w-5 h-5 text-gray-500 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 text-blue-600' : ''}`} 
-              />
+              <div className={`p-1 rounded-full transition-colors ${isOpen ? 'bg-[#00005E]/10' : 'bg-gray-100'}`}>
+                <ChevronDown 
+                  className={`w-5 h-5 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 text-[#00005E]' : 'text-gray-500'}`} 
+                />
+              </div>
             </button>
             
             <div 
@@ -45,8 +47,10 @@ export default function FAQClientAccordion({ faqs }: { faqs: FAQ[] }) {
                 isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
               }`}
             >
-              <div className="p-5 pt-0 text-gray-600 text-sm md:text-base leading-relaxed border-t border-gray-100/50">
-                {faq.answer}
+              <div className="px-5 md:px-6 pb-5 md:pb-6 pt-0 text-gray-600 text-sm md:text-base leading-relaxed">
+                <div className="h-px w-full bg-gray-200 mb-4 opacity-50"></div>
+                {/* HTML content handling (in case answer contains HTML from a rich text editor) */}
+                <div dangerouslySetInnerHTML={{ __html: faq.answer }} />
               </div>
             </div>
           </div>
