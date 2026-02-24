@@ -87,9 +87,7 @@ export default function NavMain() {
           <div className="flex md:hidden justify-end px-2">
             <button
               onClick={() => setMobileSearchOpen(true)}
-            // className="w-full bg-white rounded-lg px-4 py-2 flex items-center gap-2"
             >
-              {/* <SearchBarTrigger /> */}
               <Search className='text-white cursor-pointer' />
             </button>
           </div>
@@ -119,27 +117,53 @@ export default function NavMain() {
                 </li>
               )}
 
+              {/* Buy & Sell */}
+              <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
+                <Link href={'/buy-sell'} className="flex flex-col items-center gap-0.5 group">
+                  <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
+                    <ShoppingBag className="size-5 lg:size-6 text-[#00005E]" />
+                  </div>
+                  <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">Buy & Sell</span>
+                </Link>
+              </li>
+
+              {/* Donation */}
+              <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
+                <Link href={'/donation'} className="flex flex-col items-center gap-0.5 group">
+                  <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
+                    <HandCoins className="size-5 lg:size-6 text-[#00005E]" />
+                  </div>
+                  <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">Donation</span>
+                </Link>
+              </li>
+
+              {/* Job */}
+              <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
+                <Link href={'/jobs'} className="flex flex-col items-center gap-0.5 group">
+                  <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
+                    <Briefcase className="size-5 lg:size-6 text-[#00005E]" />
+                  </div>
+                  <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">Jobs</span>
+                </Link>
+              </li>
+
+              {/* Provider */}
+              <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
+                <Link href={'/join-as-provider'} className="flex flex-col items-center gap-0.5 group">
+                  <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
+                    <Wrench className="size-5 lg:size-6 text-[#00005E]" />
+                  </div>
+                  <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">Provider</span>
+                </Link>
+              </li>
+
               {/* Join As Vendor */}
               <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
                 <Link href={'/join-as-vendor'} className="flex flex-col items-center gap-0.5 group">
                   <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="#00005E" className="size-5 lg:size-6">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z" />
-                    </svg>
+                    <Store className="size-5 lg:size-6 text-[#00005E]" />
                   </div>
                   <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">Join Vendor</span>
-                </Link>
-              </li>
-
-              {/* Join As Provider - Desktop/Large Tablet only or Shorter Text */}
-              <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
-                <Link href={'/join-as-provider'} className="flex flex-col items-center gap-0.5 group">
-                  <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5 lg:size-6">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" />
-                    </svg>
-                  </div>
-                  <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">Provider</span>
                 </Link>
               </li>
 
@@ -149,14 +173,10 @@ export default function NavMain() {
 
               {/* Track Order */}
               <li className="flex flex-col justify-center items-center text-[#00005E] font-medium">
-                <Link href={'#'} className="flex flex-col items-center gap-1">
-                  <span>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-                    </svg>
-
-                  </span>
+                <Link href={'/track-order'} className="flex flex-col items-center gap-1">
+                  <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
+                    <Truck className="size-5 lg:size-6 text-[#00005E]" />
+                  </div>
                   <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">
                     Track Order
                   </span>
@@ -166,54 +186,6 @@ export default function NavMain() {
               {/* Profile / Auth */}
               {session ? (
                 <li className="flex flex-col justify-center items-center text-[#00005E] font-medium">
-                  {/* <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="flex flex-col items-center gap-0.5 outline-none group cursor-pointer">
-                        <Avatar className="h-6 w-6 lg:h-7 lg:w-7 border-2 border-transparent group-hover:border-blue-400 transition-all">
-                          <AvatarImage
-                            src={user?.image && user.image !== "undefined" ? user.image : undefined}
-                            alt={user?.name ?? "User"}
-                          />
-                          <AvatarFallback className="bg-[#00005E] text-white text-[10px]">
-                            {getInitials(user?.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-[#00005E] text-[10px] lg:text-[11px] font-medium">Account</span>
-                      </button>
-                    </DropdownMenuTrigger>
-
-                    <DropdownMenuContent align="end" className="w-56 mt-2 shadow-xl border-gray-100">
-                      <DropdownMenuLabel className="font-normal">
-                        <div className="flex flex-col space-y-1">
-                          <p className="text-sm font-medium leading-none text-[#00005E]">{user?.name}</p>
-                          <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
-                        </div>
-                      </DropdownMenuLabel>
-
-                      <DropdownMenuSeparator />
-
-                      <DropdownMenuItem asChild>
-                        <Link href="/home/UserProfile" className="cursor-pointer flex items-center w-full">
-                          <UserIcon className="mr-2 h-4 w-4" />
-                          <span>Profile Setting</span>
-                        </Link>
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem
-                        onClick={async () => {
-                          if (isLoggingOut) return;
-                          setIsLoggingOut(true);
-                          toast.loading("Logging out...");
-                          await signOut({ callbackUrl: "/" });
-                        }}
-                        className="text-red-600 focus:text-red-600 cursor-pointer"
-                        disabled={isLoggingOut}
-                      >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>{isLoggingOut ? "Logging out..." : "Log out"}</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu> */}
                   <Link href="/home/UserProfile" className="flex flex-col items-center gap-1">
                     <button className="flex flex-col items-center gap-0.5 outline-none group cursor-pointer">
                       <Avatar className="h-6 w-6 lg:h-7 lg:w-7 border-2 border-transparent group-hover:border-blue-400 transition-all">
@@ -262,47 +234,9 @@ export default function NavMain() {
                     </DropdownMenuItem>
 
                     <DropdownMenuItem asChild>
-                      <Link href="/home/UserProfile/wishlist" className="cursor-pointer flex items-center gap-3 py-2">
-                        <Heart size={18} className="text-pink-500" />
-                        <span className="font-medium text-gray-700">Wishlist</span>
-                      </Link>
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem asChild>
                       <Link href="/faqs" className="cursor-pointer flex items-center gap-3 py-2">
                         <HelpCircle size={18} className="text-orange-500" />
                         <span className="font-medium text-gray-700">FAQs</span>
-                      </Link>
-                    </DropdownMenuItem>
-
-                    <DropdownMenuSeparator />
-
-                    {/* Business Links */}
-                    <DropdownMenuItem asChild>
-                      <Link href="/join-as-vendor" className="cursor-pointer flex items-center gap-3 py-2">
-                        <UserPlus size={18} className="text-indigo-600" />
-                        <span className="font-medium text-gray-700">Vendor Register</span>
-                      </Link>
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem asChild>
-                      <Link href="/home/vendor-shops" className="cursor-pointer flex items-center gap-3 py-2">
-                        <Store size={18} className="text-emerald-600" />
-                        <span className="font-medium text-gray-700">Shops</span>
-                      </Link>
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem asChild>
-                      <Link href="/home/buyandsell" className="cursor-pointer flex items-center gap-3 py-2">
-                        <ShoppingBag size={18} className="text-blue-500" />
-                        <span className="font-medium text-gray-700">Buy & Sell</span>
-                      </Link>
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem asChild>
-                      <Link href="/home/donation" className="cursor-pointer flex items-center gap-3 py-2">
-                        <Gift size={18} className="text-red-500" />
-                        <span className="font-medium text-gray-700">Donation</span>
                       </Link>
                     </DropdownMenuItem>
 
@@ -516,8 +450,6 @@ export default function NavMain() {
     </div>
   );
 }
-
-
 
 function SearchBarTrigger() {
   return (
