@@ -41,7 +41,7 @@ const updateSubCategoryInDB = async (id: string, payload: Partial<IClassifiedSub
     throw new Error("Sub-category not found to update.");
   }
 
-  // যদি নতুন প্যারেন্ট ক্যাটাগরি পাঠানো হয়, তবে সেটি ভ্যালিড কিনা চেক করা হচ্ছে
+  // যদি নতুন প্যারেন্ট ক্যাটাগরি পাঠানো হয়, তবে সেটি ভ্যালিড কিনা চেক করা হচ্ছে
   if (payload.category) {
     const parentCategoryExists = await ClassifiedCategory.findById(payload.category);
     if (!parentCategoryExists) {
@@ -49,7 +49,7 @@ const updateSubCategoryInDB = async (id: string, payload: Partial<IClassifiedSub
     }
   }
   
-  // যদি নতুন আইকন আপলোড করা হয়, তাহলে ক্লাউডিনারি থেকে পুরোনো আইকন ডিলিট করা হচ্ছে
+  // যদি নতুন আইকন আপলোড করা হয়, তাহলে ক্লাউডিনারি থেকে পুরোনো আইকন ডিলিট করা হচ্ছে
   if (payload.icon && subCategoryToUpdate.icon) {
     await deleteFromCloudinary(subCategoryToUpdate.icon);
   }
