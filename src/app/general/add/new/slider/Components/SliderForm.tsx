@@ -1,4 +1,4 @@
-// src/app/general/add/new/slider/Components/SliderForm.tsx - FIXED VERSION
+// src/app/general/add/new/slider/Components/SliderForm.tsx
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -14,7 +14,6 @@ import { useRouter } from 'next/navigation';
 
 export type TextPosition = 'Left' | 'Right';
 
-// Proper type definition with optional properties
 interface SliderFormData {
   _id?: string;
   image?: string;
@@ -105,23 +104,22 @@ export default function SliderForm({ initialData }: SliderFormProps) {
     try {
       setIsSubmitting(true);
 
-      // Validation Checks
+      // Clean HTML tags from description (if using Rich Text Editor) to check if it's truly empty
+      const cleanDescription = description.replace(/(<([^>]+)>)/gi, "").trim();
+
+      // Frontend Validation Checks
       if (!image && !isEditMode && !initialData?.image) {
-        throw new Error('Please upload an image.');
+        throw new Error('Please upload a slider image.');
       }
       if (!textPosition) {
-        throw new Error('Please select text position.');
+        throw new Error('Text position is required.');
       }
-      if (!subTitle) {
-        throw new Error('Please provide sub title.');
+      if (!title.trim()) {
+        throw new Error('Slider title is required.');
       }
-      if (!title) {
-        throw new Error('Please provide slider title.');
+      if (!cleanDescription) {
+        throw new Error('Banner description is required.');
       }
-      if (!description) {
-        throw new Error('Please provide slider description.');
-      }
-      
       if (appRedirectType !== 'None' && !appRedirectValue.trim()) {
         throw new Error('Please select a target for Mobile App Navigation.');
       }
@@ -188,41 +186,36 @@ export default function SliderForm({ initialData }: SliderFormProps) {
       
       const json = await res.json();
       
-      // ✅ Throw entire backend response if failed so we can parse it below
       if (!res.ok || json?.success === false) {
-        throw new Error(json?.message || 'Failed to save slider');
+        // Pass the raw string/array from backend to the catch block
+        throw new Error(typeof json?.message === 'object' ? JSON.stringify(json.message) : json?.message || 'Failed to save slider');
       }
 
       toast.success(`Slider ${isEditMode ? 'updated' : 'created'} successfully!`);
       router.push('/general/view/all/sliders');
 
     } catch (error: any) {
-      console.error(error);
+      console.error("Save Error:", error);
       
       let errorMessage = 'Something went wrong. Please try again.';
       const rawMessage = error?.message;
 
       if (rawMessage) {
         try {
-          // If the message is a stringified JSON array from Zod
-          const parsedMessage = rawMessage.startsWith('[') 
-            ? JSON.parse(rawMessage) 
-            : rawMessage;
-
-          if (Array.isArray(parsedMessage) && parsedMessage.length > 0) {
-            // Extract the actual human readable message from the first Zod error object
-            errorMessage = parsedMessage[0].message || 'A required field is missing.';
+          // ✅ SMART PARSING: Check if the error is a Zod JSON Array
+          if (typeof rawMessage === 'string' && rawMessage.trim().startsWith('[')) {
+            const parsedMessage = JSON.parse(rawMessage);
+            if (Array.isArray(parsedMessage) && parsedMessage.length > 0) {
+              errorMessage = parsedMessage[0].message; // Extract "Banner description is required"
+            }
           } else {
-            // If it's a normal string error (like our custom throw Error)
-            errorMessage = typeof rawMessage === 'string' ? rawMessage : 'An error occurred.';
+            errorMessage = rawMessage;
           }
         } catch (parseError) {
-          // Fallback if parsing fails
           errorMessage = typeof rawMessage === 'string' ? rawMessage : errorMessage;
         }
       }
 
-      // Display the clean, readable error
       toast.error(errorMessage);
 
     } finally {
@@ -258,7 +251,6 @@ export default function SliderForm({ initialData }: SliderFormProps) {
             preview={initialData?.image} 
             onChange={handleImageChange}
           />
-          {/* ✅ Image size guidelines */}
           <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-[12px] text-gray-700 font-semibold mb-2">📐 Image Size Guidelines:</p>
             <div className="space-y-1.5">
