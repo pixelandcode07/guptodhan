@@ -53,6 +53,7 @@ const adminRoutes = [
   '/api/v1/service-section/service-banner',
   '/api/v1/service-section/provide-service/status/[id]',
   '/api/v1/service-section/provide-service/[id]',
+  '/api/v1/faq-category',
 ];
 
 // 🔥 Vendor Routes
