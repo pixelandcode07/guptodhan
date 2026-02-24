@@ -6,7 +6,9 @@ export const createPKSliderValidationSchema = z.object({
   textPosition: z.string().min(1, 'Text position is required'),
   
   sliderLink: z.string().url('Invalid web link URL'),
-  buttonLink: z.string().url('Invalid button link URL'),
+  
+  // ✅ Made Links and Text Optional, allowing empty strings
+  buttonLink: z.string().url('Invalid button link URL').optional().or(z.literal('')),
   
   appRedirectType: z.enum(['Product', 'Category', 'Brand', 'Shop', 'ExternalUrl', 'None']).default('None'),
   appRedirectId: z.string().optional().nullable(),
@@ -16,10 +18,10 @@ export const createPKSliderValidationSchema = z.object({
   category: z.string().optional().nullable(),
   store: z.string().optional().nullable(),
   
-  subTitleWithColor: z.string().min(1, 'Sub title is required'),
-  bannerTitleWithColor: z.string().min(1, 'Banner title is required'),
-  bannerDescriptionWithColor: z.string().min(1, 'Banner description is required'),
-  buttonWithColor: z.string().min(1, 'Button text is required'),
+  bannerTitleWithColor: z.string().min(1, 'Banner title is required'), // 🔴 Still Mandatory
+  subTitleWithColor: z.string().optional().or(z.literal('')),          // ✅ Optional
+  bannerDescriptionWithColor: z.string().optional().or(z.literal('')), // ✅ Optional
+  buttonWithColor: z.string().optional().or(z.literal('')),            // ✅ Optional
   
   status: z.enum(['active', 'inactive']).default('active'),
 });
