@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import debounce from "lodash/debounce";
 import { cn } from "@/lib/utils"; 
 
-// ১. এখানে slug যুক্ত করা হয়েছে
 interface Suggestion {
   _id: string;
   slug?: string; 
@@ -28,6 +27,9 @@ export default function SearchBar() {
   const router = useRouter();
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  
+  // ✅ FIX 1: AbortController added to stop older requests from overwriting newer ones (Prevents "Ulta-Palta" results)
+  const abortControllerRef = React.useRef<AbortController | null>(null);
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -43,22 +45,38 @@ export default function SearchBar() {
   // Fetch suggestions
   const fetchSuggestions = React.useCallback(
     debounce(async (q: string) => {
-      if (!q.trim()) {
+      const queryText = q.trim();
+      if (!queryText) {
         setSuggestions([]);
         return;
       }
+
+      // Cancel previous pending request if a new one starts
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       setLoading(true);
       try {
         const res = await fetch(
-          `/api/v1/product/liveSearch?q=${encodeURIComponent(q)}&type=suggestion`
+          `/api/v1/product/liveSearch?q=${encodeURIComponent(queryText)}&type=suggestion`,
+          { signal: controller.signal }
         );
         const json = await res.json();
         setSuggestions(json.success ? json.data || [] : []);
-      } catch (err) {
-        console.error(err);
-        setSuggestions([]);
+      } catch (err: any) {
+        if (err.name === 'AbortError') {
+          console.log('Previous search request cancelled');
+        } else {
+          console.error(err);
+          setSuggestions([]);
+        }
       } finally {
-        setLoading(false);
+        if (abortControllerRef.current === controller) {
+          setLoading(false);
+        }
       }
     }, 300),
     []
@@ -66,18 +84,22 @@ export default function SearchBar() {
 
   React.useEffect(() => {
     fetchSuggestions(query);
+    // Cleanup pending debounces and fetches on unmount
+    return () => {
+      fetchSuggestions.cancel();
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
   }, [query, fetchSuggestions]);
 
-  // ২. undefined সমস্যা সমাধানের জন্য ফাংশনটি আপডেট করা হয়েছে
   const goToProduct = (item: Suggestion) => {
     setShowDropdown(false);
     setQuery("");
     
-    // সেফটি চেক: যদি slug না থাকে, তাহলে _id ব্যবহার করবে। এতে আর কখনোই undefined আসবে না।
     const identifier = item.slug || item._id; 
     
     if (identifier) {
-      router.push(`/product/${identifier}`);
+      // ✅ FIX 2: Corrected route to /products/
+      router.push(`/products/${identifier}`);
     }
   };
 
@@ -114,7 +136,15 @@ export default function SearchBar() {
   // Highlight matching text
   const highlight = (text: string, term: string) => {
     if (!term) return text;
-    const parts = text.split(new RegExp(`(${term})`, "gi"));
+    
+    // ✅ FIX 3: Escape Regex special characters so the app doesn't crash when typing brackets or symbols
+    const escapeRegExp = (string: string) => {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    };
+    
+    const safeTerm = escapeRegExp(term);
+    const parts = text.split(new RegExp(`(${safeTerm})`, "gi"));
+    
     return parts.map((p, i) =>
       p.toLowerCase() === term.toLowerCase() ? (
         <span key={i} className="text-[#00005E] font-bold bg-yellow-100 px-0.5 rounded-sm">
@@ -200,7 +230,6 @@ export default function SearchBar() {
                 {suggestions.map((item) => (
                   <li
                     key={item._id}
-                    // ৩. পুরো item অবজেক্টটি পাস করা হচ্ছে
                     onClick={() => goToProduct(item)} 
                     className="group flex items-center gap-4 p-3 hover:bg-blue-50/50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors duration-150"
                   >
