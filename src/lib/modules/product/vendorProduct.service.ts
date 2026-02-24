@@ -847,18 +847,21 @@ const getLandingPageProductsFromDB = async () => {
 // ===================================
 
 const getLiveSuggestionsFromDB = async (searchTerm: string) => {
-  const regex = new RegExp(searchTerm.split(" ").join("|"), "i");
+  // ✅ FIX: Removed split and join("|"). Now it searches for the EXACT phrase the user typed.
+  // escapeRegExp is used so if a user types brackets or symbols, it won't crash the DB query.
+  const escapeRegExp = (text: string) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+  const regex = new RegExp(escapeRegExp(searchTerm), "i");
 
   // ✅ Use aggregation instead of populate
   const suggestions = await VendorProductModel.aggregate([
     {
       $match: {
         status: "active",
-        productTitle: { $regex: regex },
+        productTitle: { $regex: regex }, // Now it properly matches the full title
       },
     },
     { $sort: { createdAt: -1 } },
-    { $limit: 5 },
+    { $limit: 10 }, // Increased limit slightly to show better suggestions
     
     // Lookup category
     {
@@ -898,10 +901,11 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
       $project: {
         productTitle: 1,
         thumbnailImage: 1,
-        productPrice: 1,
+        productPrice: 1, // Make sure your frontend reads this (or change to 'price' in frontend)
         'category.slug': 1,
         'subCategory.slug': 1,
         'childCategory.slug': 1,
+        slug: 1 // Add slug here if your DB has it, otherwise _id is sent by default
       },
     },
   ]);
@@ -909,30 +913,25 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
   return suggestions;
 };
 
-// ===================================
-// 🔎 GET SEARCH RESULTS
-// ===================================
-
 const getSearchResultsFromDB = async (searchTerm: string) => {
   const cacheKey = CacheKeys.PRODUCT.SEARCH(searchTerm);
   
   return getCachedData(
     cacheKey,
     async () => {
-      const words = searchTerm
-        .split(" ")
-        .map((w) => w.trim())
-        .filter(Boolean);
-      const regexArr = words.map((w) => new RegExp(w, "i"));
+      // ✅ FIX: Same logic here. We want exact phrase matches, not just OR conditions for every word.
+      const escapeRegExp = (text: string) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+      const regex = new RegExp(escapeRegExp(searchTerm), "i");
 
       const results = await VendorProductModel.aggregate([
         {
           $match: {
             status: "active",
             $or: [
-              { productTitle: { $in: regexArr } },
-              { shortDescription: { $in: regexArr } },
-              { productTag: { $in: regexArr } },
+              { productTitle: { $regex: regex } },
+              { shortDescription: { $regex: regex } },
+              // If tags are arrays of strings, we check if any tag matches the exact regex
+              { productTag: { $regex: regex } }, 
             ],
           },
         },
