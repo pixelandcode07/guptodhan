@@ -15,10 +15,10 @@ export const routeConfig: Record<
     breadcrumb: ' Footer Settings',
     title: 'Footer Settings',
   },
-  '/general/website/theme/page': {
-    breadcrumb: 'Website Config',
-    title: 'Website Theme Color',
-  },
+  // '/general/website/theme/page': {
+  //   breadcrumb: 'Website Config',
+  //   title: 'Website Theme Color',
+  // },
   '/general/social/media/page': {
     breadcrumb: 'Website Config',
     title: 'Social Media Links',
