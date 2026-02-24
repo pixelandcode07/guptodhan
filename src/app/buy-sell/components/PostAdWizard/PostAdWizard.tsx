@@ -19,7 +19,6 @@ import { MoveLeft } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 
 // -------------------- Form Data Type --------------------
-// ✅ Omit ব্যবহার করে টাইপ কনফ্লিক্ট সমাধান করা হয়েছে
 export type WizardFormData = Omit<
   ClassifiedAdType,
   'division' | 'district' | 'upazila' | 'category' | 'subCategory' | 'brand' | 'productModel' | 'edition'
@@ -110,13 +109,19 @@ export default function PostAdWizard() {
 
   // -------------------- Submit Handler --------------------
   const onSubmit = async (data: WizardFormData) => {
+    // 💡 Frontend Validation before calling API
+    if (data.description && data.description.length < 20) {
+      toast.error('Description must be at least 20 characters long.');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       toast.loading('Compressing images and submitting... Please wait.', { id: 'submit-ad' });
 
       const formData = new FormData();
 
-      // -------------------- Append basic fields --------------------
+      // Append basic fields
       formData.append('title', data.title || '');
       if (data.category?._id) formData.append('category', data.category._id);
       if (data.subCategory?._id) formData.append('subCategory', data.subCategory._id);
@@ -127,7 +132,6 @@ export default function PostAdWizard() {
       formData.append('condition', data.condition || '');
       formData.append('authenticity', data.authenticity || '');
       
-      // ✅ Using helper function to avoid object to string casting errors
       formData.append('brand', getStringValue(data.brand));
       formData.append('productModel', getStringValue(data.productModel));
       formData.append('edition', getStringValue(data.edition));
@@ -136,11 +140,11 @@ export default function PostAdWizard() {
       formData.append('price', data.price?.toString() || '0');
       formData.append('isNegotiable', data.isNegotiable.toString());
 
-      // -------------------- Image Compression & Append --------------------
+      // Image Compression & Append
       const compressedImages = await Promise.all(
         data.images.map(async (img) => {
           if (img instanceof File) {
-            if (img.size > 1024 * 1024) { // > 1MB
+            if (img.size > 1024 * 1024) { 
               const options = {
                 maxSizeMB: 0.8,
                 maxWidthOrHeight: 1920,
@@ -163,13 +167,13 @@ export default function PostAdWizard() {
         if (img) formData.append('images', img);
       });
 
-      // -------------------- Contact Details --------------------
+      // Contact Details
       formData.append('contactDetails.name', data.contactDetails.name || '');
       if (data.contactDetails.email) formData.append('contactDetails.email', data.contactDetails.email);
       formData.append('contactDetails.phone', data.contactDetails.phone || '');
       formData.append('contactDetails.isPhoneHidden', data.contactDetails.isPhoneHidden.toString());
 
-      // -------------------- POST request --------------------
+      // POST request
       await axios.post('/api/v1/classifieds/ads', formData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -182,7 +186,31 @@ export default function PostAdWizard() {
       setActiveTab('step1');
     } catch (err: any) {
       console.error(err);
-      toast.error(err.response?.data?.message || 'Failed to submit ad. Please try again.', { id: 'submit-ad' });
+      
+      // ✅ Handle Zod JSON Error format from Backend
+      let errorMessage = 'Failed to submit ad. Please try again.';
+      const responseMessage = err.response?.data?.message;
+
+      if (responseMessage) {
+        // Zod array checking (যেহেতু আপনার ছবিতে অ্যারেকে স্ট্রিং হিসেবে দেখাচ্ছে)
+        if (responseMessage.includes('too_small') && responseMessage.includes('description')) {
+           errorMessage = 'Your description is too short. It must be at least 20 characters long.';
+        } 
+        else if (typeof responseMessage === 'string' && responseMessage.startsWith('[')) {
+          try {
+            const parsed = JSON.parse(responseMessage);
+            if (Array.isArray(parsed) && parsed[0]?.message) {
+              errorMessage = parsed[0].message; // Zod এর মেইন মেসেজ দেখাবে
+            }
+          } catch (e) {
+            errorMessage = responseMessage; // Parse না হলে সরাসরি দেখাবে
+          }
+        } else {
+          errorMessage = responseMessage;
+        }
+      }
+
+      toast.error(errorMessage, { id: 'submit-ad' });
     } finally {
       setIsSubmitting(false);
     }
