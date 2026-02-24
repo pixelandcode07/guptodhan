@@ -21,7 +21,6 @@ export default function NavMain() {
   const { data: session } = useSession();
   const user = session?.user;
   const role = (session?.user as any)?.role as string;
-  console.log('User Session:', session);
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -117,46 +116,6 @@ export default function NavMain() {
                 </li>
               )}
 
-              {/* Buy & Sell */}
-              <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
-                <Link href={'/buy-sell'} className="flex flex-col items-center gap-0.5 group">
-                  <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
-                    <ShoppingBag className="size-5 lg:size-6 text-[#00005E]" />
-                  </div>
-                  <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">Buy & Sell</span>
-                </Link>
-              </li>
-
-              {/* Donation */}
-              <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
-                <Link href={'/donation'} className="flex flex-col items-center gap-0.5 group">
-                  <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
-                    <HandCoins className="size-5 lg:size-6 text-[#00005E]" />
-                  </div>
-                  <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">Donation</span>
-                </Link>
-              </li>
-
-              {/* Job */}
-              <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
-                <Link href={'/jobs'} className="flex flex-col items-center gap-0.5 group">
-                  <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
-                    <Briefcase className="size-5 lg:size-6 text-[#00005E]" />
-                  </div>
-                  <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">Jobs</span>
-                </Link>
-              </li>
-
-              {/* Provider */}
-              <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
-                <Link href={'/join-as-provider'} className="flex flex-col items-center gap-0.5 group">
-                  <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
-                    <Wrench className="size-5 lg:size-6 text-[#00005E]" />
-                  </div>
-                  <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">Provider</span>
-                </Link>
-              </li>
-
               {/* Join As Vendor */}
               <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
                 <Link href={'/join-as-vendor'} className="flex flex-col items-center gap-0.5 group">
@@ -167,19 +126,37 @@ export default function NavMain() {
                 </Link>
               </li>
 
-              {/* Cart & Wishlist - Critical Icons */}
+              {/* Join As Provider */}
+              <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
+                <Link href={'/join-as-provider'} className="flex flex-col items-center gap-0.5 group">
+                  <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
+                    <Wrench className="size-5 lg:size-6 text-[#00005E]" />
+                  </div>
+                  <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">Provider</span>
+                </Link>
+              </li>
+
+              {/* Job (Restored to Desktop Nav) */}
+              <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
+                <Link href={'/jobs'} className="flex flex-col items-center gap-0.5 group">
+                  <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
+                    <Briefcase className="size-5 lg:size-6 text-[#00005E]" />
+                  </div>
+                  <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">Jobs</span>
+                </Link>
+              </li>
+
+              {/* Cart & Wishlist */}
               <li className="scale-90 lg:scale-100"><CartIcon /></li>
               <li className="scale-90 lg:scale-100"><WishlistIcon /></li>
 
-              {/* Track Order */}
-              <li className="flex flex-col justify-center items-center text-[#00005E] font-medium">
-                <Link href={'/track-order'} className="flex flex-col items-center gap-1">
+              {/* Track Order (Restored to Desktop Nav) */}
+              <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
+                <Link href={'/track-order'} className="flex flex-col items-center gap-0.5 group">
                   <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
                     <Truck className="size-5 lg:size-6 text-[#00005E]" />
                   </div>
-                  <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">
-                    Track Order
-                  </span>
+                  <span className="text-[#00005E] text-[10px] lg:text-[12px] whitespace-nowrap">Track Order</span>
                 </Link>
               </li>
 
@@ -212,7 +189,7 @@ export default function NavMain() {
                 </DialogTrigger>
               )}
 
-              {/* More*/}
+              {/* More Dropdown */}
               <li className="hidden xl:flex items-center">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -234,9 +211,48 @@ export default function NavMain() {
                     </DropdownMenuItem>
 
                     <DropdownMenuItem asChild>
+                      <Link href="/home/UserProfile/wishlist" className="cursor-pointer flex items-center gap-3 py-2">
+                        <Heart size={18} className="text-pink-500" />
+                        <span className="font-medium text-gray-700">Wishlist</span>
+                      </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem asChild>
                       <Link href="/faqs" className="cursor-pointer flex items-center gap-3 py-2">
                         <HelpCircle size={18} className="text-orange-500" />
                         <span className="font-medium text-gray-700">FAQs</span>
+                      </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator />
+
+                    {/* Business Links */}
+                    <DropdownMenuItem asChild>
+                      <Link href="/join-as-vendor" className="cursor-pointer flex items-center gap-3 py-2">
+                        <UserPlus size={18} className="text-indigo-600" />
+                        <span className="font-medium text-gray-700">Vendor Register</span>
+                      </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem asChild>
+                      <Link href="/home/vendor-shops" className="cursor-pointer flex items-center gap-3 py-2">
+                        <Store size={18} className="text-emerald-600" />
+                        <span className="font-medium text-gray-700">Shops</span>
+                      </Link>
+                    </DropdownMenuItem>
+
+                    {/* Buy & Sell and Donation restored exactly as they were in the Dropdown */}
+                    <DropdownMenuItem asChild>
+                      <Link href="/buy-sell" className="cursor-pointer flex items-center gap-3 py-2">
+                        <ShoppingBag size={18} className="text-blue-500" />
+                        <span className="font-medium text-gray-700">Buy & Sell</span>
+                      </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem asChild>
+                      <Link href="/donation" className="cursor-pointer flex items-center gap-3 py-2">
+                        <Gift size={18} className="text-red-500" />
+                        <span className="font-medium text-gray-700">Donation</span>
                       </Link>
                     </DropdownMenuItem>
 
