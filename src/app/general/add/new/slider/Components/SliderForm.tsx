@@ -1,4 +1,4 @@
-// src/app/general/add/new/slider/Components/SliderForm.tsx - FIXED VERSION (All TypeScript errors resolved)
+// src/app/general/add/new/slider/Components/SliderForm.tsx - FIXED VERSION
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 
 export type TextPosition = 'Left' | 'Right';
 
-// ✅ FIXED: Proper type definition with optional properties
+// Proper type definition with optional properties
 interface SliderFormData {
   _id?: string;
   image?: string;
@@ -57,17 +57,14 @@ export default function SliderForm({ initialData }: SliderFormProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // ✅ FIXED: Proper useMemo with null check for initialData
   const isEditMode = useMemo(
     () => !!initialData?._id,
     [initialData?._id]
   );
 
-  // ✅ FIXED: Proper useEffect with null safety checks
   useEffect(() => {
     if (!initialData) return;
     
-    // ✅ Safe optional chaining and nullish coalescing
     setTextPosition((initialData.textPosition as TextPosition) || '');
     setSliderLink(initialData.sliderLink || '');
     setSubTitle(initialData.subTitleWithColor || '');
@@ -79,7 +76,6 @@ export default function SliderForm({ initialData }: SliderFormProps) {
     setAppRedirectValue(initialData.appRedirectId || '');
   }, [initialData]);
 
-  // ✅ FIXED: useCallback with proper dependency array
   const handleImageChange = useCallback((name: string, file: File | null) => {
     if (file) {
       const fileSizeInMB = file.size / (1024 * 1024);
@@ -93,7 +89,6 @@ export default function SliderForm({ initialData }: SliderFormProps) {
     }
   }, []);
 
-  // ✅ FIXED: URL validation function
   const isValidUrl = useCallback((url: string): boolean => {
     if (!url || !url.trim()) return true; 
     try { 
@@ -104,14 +99,13 @@ export default function SliderForm({ initialData }: SliderFormProps) {
     }
   }, []);
 
-  // ✅ FIXED: Main save handler with complete dependency array
   const handleSave = useCallback(async () => {
     if (isSubmitting) return;
     
     try {
       setIsSubmitting(true);
 
-      // ✅ Validation Checks
+      // Validation Checks
       if (!image && !isEditMode && !initialData?.image) {
         throw new Error('Please upload an image.');
       }
@@ -132,7 +126,7 @@ export default function SliderForm({ initialData }: SliderFormProps) {
         throw new Error('Please select a target for Mobile App Navigation.');
       }
 
-      // ✅ URL Validation
+      // URL Validation
       if (sliderLink && !isValidUrl(sliderLink)) {
         throw new Error('Invalid slider URL');
       }
@@ -140,7 +134,6 @@ export default function SliderForm({ initialData }: SliderFormProps) {
         throw new Error('Invalid button URL');
       }
 
-      // ✅ FIXED: Safe null check for initialData?.image
       let imageUrl = initialData?.image || ''; 
 
       // Upload Image if changed
@@ -162,7 +155,6 @@ export default function SliderForm({ initialData }: SliderFormProps) {
         imageUrl = uploadData.url;
       }
 
-      // ✅ FIXED: Safe optional chaining for initialData._id and initialData.status
       const payload = {
         ...(!isEditMode && { sliderId: `SL-${Date.now()}` }),
         image: imageUrl,
@@ -195,14 +187,44 @@ export default function SliderForm({ initialData }: SliderFormProps) {
       });
       
       const json = await res.json();
+      
+      // ✅ Throw entire backend response if failed so we can parse it below
       if (!res.ok || json?.success === false) {
         throw new Error(json?.message || 'Failed to save slider');
       }
 
       toast.success(`Slider ${isEditMode ? 'updated' : 'created'} successfully!`);
       router.push('/general/view/all/sliders');
+
     } catch (error: any) {
-      toast.error(error?.message || 'Something went wrong');
+      console.error(error);
+      
+      let errorMessage = 'Something went wrong. Please try again.';
+      const rawMessage = error?.message;
+
+      if (rawMessage) {
+        try {
+          // If the message is a stringified JSON array from Zod
+          const parsedMessage = rawMessage.startsWith('[') 
+            ? JSON.parse(rawMessage) 
+            : rawMessage;
+
+          if (Array.isArray(parsedMessage) && parsedMessage.length > 0) {
+            // Extract the actual human readable message from the first Zod error object
+            errorMessage = parsedMessage[0].message || 'A required field is missing.';
+          } else {
+            // If it's a normal string error (like our custom throw Error)
+            errorMessage = typeof rawMessage === 'string' ? rawMessage : 'An error occurred.';
+          }
+        } catch (parseError) {
+          // Fallback if parsing fails
+          errorMessage = typeof rawMessage === 'string' ? rawMessage : errorMessage;
+        }
+      }
+
+      // Display the clean, readable error
+      toast.error(errorMessage);
+
     } finally {
       setIsSubmitting(false);
     }
