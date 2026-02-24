@@ -99,7 +99,6 @@ export default function PostAdWizard() {
     setActiveTab(tab);
   };
 
-  // ✅ Helper Function for object to string conversion
   const getStringValue = (val: any) => {
     if (!val) return '';
     if (typeof val === 'string') return val;
@@ -109,9 +108,9 @@ export default function PostAdWizard() {
 
   // -------------------- Submit Handler --------------------
   const onSubmit = async (data: WizardFormData) => {
-    // 💡 Frontend Validation before calling API
+    // 💡 Frontend Validation Check
     if (data.description && data.description.length < 20) {
-      toast.error('Description must be at least 20 characters long.');
+      toast.error('Description is too short. Please write at least 20 characters.');
       return;
     }
 
@@ -187,26 +186,38 @@ export default function PostAdWizard() {
     } catch (err: any) {
       console.error(err);
       
-      // ✅ Handle Zod JSON Error format from Backend
+      // ✅ SMART ERROR HANDLING FOR ZOD JSON ERRORS
       let errorMessage = 'Failed to submit ad. Please try again.';
-      const responseMessage = err.response?.data?.message;
+      const responseData = err.response?.data;
 
-      if (responseMessage) {
-        // Zod array checking (যেহেতু আপনার ছবিতে অ্যারেকে স্ট্রিং হিসেবে দেখাচ্ছে)
-        if (responseMessage.includes('too_small') && responseMessage.includes('description')) {
-           errorMessage = 'Your description is too short. It must be at least 20 characters long.';
-        } 
-        else if (typeof responseMessage === 'string' && responseMessage.startsWith('[')) {
-          try {
-            const parsed = JSON.parse(responseMessage);
-            if (Array.isArray(parsed) && parsed[0]?.message) {
-              errorMessage = parsed[0].message; // Zod এর মেইন মেসেজ দেখাবে
+      if (responseData && responseData.message) {
+        try {
+          // Check if the message is a JSON array string
+          const parsedMessage = typeof responseData.message === 'string' && responseData.message.startsWith('[')
+            ? JSON.parse(responseData.message)
+            : responseData.message;
+
+          if (Array.isArray(parsedMessage) && parsedMessage.length > 0) {
+            const errorObj = parsedMessage[0]; // Take the first error
+            const field = errorObj.path?.[0]; // e.g., "description"
+
+            // Custom user-friendly message for description length
+            if (field === 'description' && errorObj.code === 'too_small') {
+              errorMessage = 'Description is too short. Please write at least 20 characters.';
+            } 
+            // Fallback for other fields
+            else if (field) {
+              const fieldName = String(field).charAt(0).toUpperCase() + String(field).slice(1);
+              errorMessage = `${fieldName}: ${errorObj.message}`;
+            } else {
+              errorMessage = errorObj.message || 'Validation error occurred.';
             }
-          } catch (e) {
-            errorMessage = responseMessage; // Parse না হলে সরাসরি দেখাবে
+          } else {
+            errorMessage = typeof responseData.message === 'string' ? responseData.message : 'An error occurred.';
           }
-        } else {
-          errorMessage = responseMessage;
+        } catch (parseError) {
+          // If JSON parse fails, just show the plain string message
+          errorMessage = typeof responseData.message === 'string' ? responseData.message : errorMessage;
         }
       }
 
