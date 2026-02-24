@@ -71,7 +71,7 @@ const StoryFeed = ({ stories }: StoryFeedProps) => {
 
       if (productSlug) {
         // Redirect using slug instead of ID
-        router.push(`/products/${productSlug}`);
+        router.push(`/product/${productSlug}`);
       } else {
         console.log("Product slug not found");
         // Fallback: If slug is missing but we have an ID, you might want to handle it, 
