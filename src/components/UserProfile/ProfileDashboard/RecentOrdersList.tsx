@@ -21,35 +21,6 @@ interface RecentOrdersListProps {
 }
 
 export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps) {
-  // Default sample data
-  const defaultOrders: Order[] = [
-    {
-      id: '1',
-      seller: 'TechStore Pro',
-      sellerVerified: true,
-      status: 'cancelled',
-      productName: 'Braun Silk-épil 9 Cordless Epilator',
-      productImage: '/img/product/p-1.png',
-      size: 'XL',
-      color: 'Green',
-      price: '৳ 7,200',
-      quantity: 1,
-    },
-    {
-      id: '2',
-      seller: 'TechStore Pro',
-      sellerVerified: true,
-      status: 'delivered',
-      productName: 'Braun Silk-épil 9 Cordless Epilator',
-      productImage: '/img/product/p-2.png',
-      size: 'XL',
-      color: 'Green',
-      price: '৳ 7,200',
-      quantity: 1,
-    },
-  ]
-
-  const displayOrders = orders.length > 0 ? orders : defaultOrders
 
   const getStatusStyles = (status: Order['status']) => {
     switch (status) {
@@ -69,47 +40,52 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
   return (
     <div className="space-y-3 p-4">
       <h2 className="text-base font-semibold">Recent Orders</h2>
-      {displayOrders.map((order) => (
-        <div key={order.id} className="bg-white rounded-md border">
-          <div className="px-4 py-2 text-sm border-b flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="font-medium">{order.seller}</span>
-              {order.sellerVerified && (
-                <span className="text-blue-600 text-xs flex items-center gap-1">
-                  Verified Seller
-                  <CheckCircle className="h-3 w-3" />
-                </span>
-              )}
-            </div>
-            <span className={`text-xs px-2 py-0.5 rounded ${getStatusStyles(order.status)}`}>
-              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-            </span>
-          </div>
-          <Link href={`/home/UserProfile/orders/${order.id}`} className="p-4 flex gap-4 hover:bg-gray-50 transition-colors">
-            <Image 
-              src={order.productImage} 
-              alt="Product" 
-              width={64} 
-              height={64} 
-              className="rounded border" 
-            />
-            <div className="text-sm">
-              <div className="font-medium">{order.productName}</div>
-              {(order.size || order.color) && (
-                <div className="text-gray-600">
-                  {order.size && <span>Size: {order.size}</span>}
-                  {order.size && order.color && ' · '}
-                  {order.color && <span>Color: {order.color}</span>}
-                </div>
-              )}
-              <div className="text-blue-600 font-semibold">{order.price}</div>
-              <div className="text-xs text-gray-500">Qty {order.quantity}</div>
-            </div>
-          </Link>
+      
+      {orders.length === 0 ? (
+        <div className="bg-white rounded-md border p-8 text-center text-gray-500 text-sm">
+          No recent orders found.
         </div>
-      ))}
+      ) : (
+        orders.map((order) => (
+          <div key={order.id} className="bg-white rounded-md border shadow-sm">
+            <div className="px-4 py-2 text-sm border-b flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{order.seller}</span>
+                {order.sellerVerified && (
+                  <span className="text-blue-600 text-xs flex items-center gap-1">
+                    Verified Seller
+                    <CheckCircle className="h-3 w-3" />
+                  </span>
+                )}
+              </div>
+              <span className={`text-xs px-2 py-0.5 rounded font-medium ${getStatusStyles(order.status)}`}>
+                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+              </span>
+            </div>
+            <Link href={`/home/UserProfile/orders/${order.id}`} className="p-4 flex gap-4 hover:bg-gray-50 transition-colors">
+              <Image 
+                src={order.productImage} 
+                alt={order.productName} 
+                width={64} 
+                height={64} 
+                className="rounded border object-cover h-16 w-16" 
+              />
+              <div className="text-sm flex-1">
+                <div className="font-medium line-clamp-2">{order.productName}</div>
+                {(order.size || order.color) && (
+                  <div className="text-gray-500 mt-1 text-xs">
+                    {order.size && <span>Size: {order.size}</span>}
+                    {order.size && order.color && ' · '}
+                    {order.color && <span>Color: {order.color}</span>}
+                  </div>
+                )}
+                <div className="text-blue-600 font-semibold mt-1">{order.price}</div>
+                <div className="text-xs text-gray-500 mt-0.5">Qty {order.quantity}</div>
+              </div>
+            </Link>
+          </div>
+        ))
+      )}
     </div>
   )
 }
-
-
