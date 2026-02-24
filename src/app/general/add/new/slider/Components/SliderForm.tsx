@@ -1,4 +1,3 @@
-// src/app/general/add/new/slider/Components/SliderForm.tsx
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -104,10 +103,10 @@ export default function SliderForm({ initialData }: SliderFormProps) {
     try {
       setIsSubmitting(true);
 
-      // Clean HTML tags from description (if using Rich Text Editor) to check if it's truly empty
+      // Clean HTML tags from description
       const cleanDescription = description.replace(/(<([^>]+)>)/gi, "").trim();
 
-      // Frontend Validation Checks
+      // ✅ Validation Checks (Only important fields are mandatory now)
       if (!image && !isEditMode && !initialData?.image) {
         throw new Error('Please upload a slider image.');
       }
@@ -117,19 +116,16 @@ export default function SliderForm({ initialData }: SliderFormProps) {
       if (!title.trim()) {
         throw new Error('Slider title is required.');
       }
-      if (!cleanDescription) {
-        throw new Error('Banner description is required.');
-      }
       if (appRedirectType !== 'None' && !appRedirectValue.trim()) {
         throw new Error('Please select a target for Mobile App Navigation.');
       }
 
       // URL Validation
       if (sliderLink && !isValidUrl(sliderLink)) {
-        throw new Error('Invalid slider URL');
+        throw new Error('Invalid Web Slider URL');
       }
       if (buttonLink && !isValidUrl(buttonLink)) {
-        throw new Error('Invalid button URL');
+        throw new Error('Invalid Button URL');
       }
 
       let imageUrl = initialData?.image || ''; 
@@ -160,7 +156,7 @@ export default function SliderForm({ initialData }: SliderFormProps) {
         sliderLink,
         subTitleWithColor: subTitle,
         bannerTitleWithColor: title,
-        bannerDescriptionWithColor: description,
+        bannerDescriptionWithColor: description, // Now accepts empty
         buttonWithColor: buttonText,
         buttonLink,
         status: initialData?.status || 'active',
@@ -187,7 +183,6 @@ export default function SliderForm({ initialData }: SliderFormProps) {
       const json = await res.json();
       
       if (!res.ok || json?.success === false) {
-        // Pass the raw string/array from backend to the catch block
         throw new Error(typeof json?.message === 'object' ? JSON.stringify(json.message) : json?.message || 'Failed to save slider');
       }
 
@@ -202,11 +197,10 @@ export default function SliderForm({ initialData }: SliderFormProps) {
 
       if (rawMessage) {
         try {
-          // ✅ SMART PARSING: Check if the error is a Zod JSON Array
           if (typeof rawMessage === 'string' && rawMessage.trim().startsWith('[')) {
             const parsedMessage = JSON.parse(rawMessage);
             if (Array.isArray(parsedMessage) && parsedMessage.length > 0) {
-              errorMessage = parsedMessage[0].message; // Extract "Banner description is required"
+              errorMessage = parsedMessage[0].message; 
             }
           } else {
             errorMessage = rawMessage;
