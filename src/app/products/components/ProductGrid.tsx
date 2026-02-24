@@ -9,7 +9,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
         <div key={p._id} className="bg-white border rounded-lg overflow-hidden hover:shadow-md transition-shadow group">
           
           {/* ইমেজ সেকশনে ক্লিক করলে স্লাগ দিয়ে লিঙ্কে যাবে */}
-          <Link href={`/products/${p.slug}`} className="block relative h-48 w-full bg-gray-100 overflow-hidden">
+          <Link href={`/product/${p.slug}`} className="block relative h-48 w-full bg-gray-100 overflow-hidden">
             <img 
               src={p.thumbnailImage || '/img/placeholder.png'} 
               alt={p.productTitle} 
