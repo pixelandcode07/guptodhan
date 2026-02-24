@@ -31,14 +31,31 @@ import imageCompression from 'browser-image-compression';
 
 // --- Helper Functions ---
 const getIdFromRef = (value: unknown): string => {
+  // Handle null/undefined
   if (!value) return "";
-  if (typeof value === "string") return value.trim();
+  
+  // Handle direct string ID
+  if (typeof value === "string") {
+    // Return empty string if it's literally empty, otherwise return the string
+    return value.trim();
+  }
+  
+  // Handle object with _id or id property
   if (typeof value === "object" && value !== null) {
     const record = value as { _id?: unknown; id?: unknown };
     if (record._id) return String(record._id);
     if (record.id) return String(record.id);
   }
+  
   return "";
+};
+
+const normalizeToStringArray = (value: unknown): string[] => {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value.map((item) => getIdFromRef(item)).filter(Boolean);
+  }
+  return [];
 };
 
 export default function ProductForm({
@@ -79,16 +96,26 @@ export default function ProductForm({
   const [galleryImages, setGalleryImages] = useState<File[]>([]);
   const [existingGalleryUrls, setExistingGalleryUrls] = useState<string[]>([]);
   const [removedGalleryUrls, setRemovedGalleryUrls] = useState<string[]>([]);
-  const [initialThumbnailUrl, setInitialThumbnailUrl] = useState<string | null>(null);
-  const [removedThumbnailUrl, setRemovedThumbnailUrl] = useState<string | null>(null);
+  const [initialThumbnailUrl, setInitialThumbnailUrl] = useState<string | null>(
+    null,
+  );
+  const [removedThumbnailUrl, setRemovedThumbnailUrl] = useState<string | null>(
+    null,
+  );
 
   const [price, setPrice] = useState<number | undefined>(undefined);
-  const [discountPrice, setDiscountPrice] = useState<number | undefined>(undefined);
+  const [discountPrice, setDiscountPrice] = useState<number | undefined>(
+    undefined,
+  );
   const [stock, setStock] = useState<number | undefined>(undefined);
-  const [rewardPoints, setRewardPoints] = useState<number | undefined>(undefined);
+  const [rewardPoints, setRewardPoints] = useState<number | undefined>(
+    undefined,
+  );
   const [productCode, setProductCode] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
-  const [shippingCost, setShippingCost] = useState<number | undefined>(undefined);
+  const [shippingCost, setShippingCost] = useState<number | undefined>(
+    undefined,
+  );
 
   // --- Dropdown States ---
   const [store, setStore] = useState("");
@@ -119,8 +146,12 @@ export default function ProductForm({
   const [isLoadingProduct, setIsLoadingProduct] = useState(isEditMode);
   const [showDebug, setShowDebug] = useState(false);
 
+  // 🔁 Local state for variant options so we can safely add any missing
+  // storage/color/size/etc that exist on the product but are not present
+  // in the master list (e.g. inactive items).
   const [variantOptions, setVariantOptions] = useState(variantOptionsInitial);
 
+  // ✅ CRITICAL: Flag to prevent useEffects from overwriting initial data
   const isInitialLoad = useRef(true);
   const initialModelId = useRef<string | null>(null);
   const initialSubcategoryId = useRef<string | null>(null);
@@ -128,6 +159,7 @@ export default function ProductForm({
   // --- 1. LOAD PRODUCT DATA (AND FETCH DEPENDENT LISTS DIRECTLY) ---
   useEffect(() => {
     const fetchExistingProduct = async () => {
+      // Basic guards
       if (!isEditMode || !productId || !token) {
         setIsLoadingProduct(false);
         isInitialLoad.current = false;
@@ -142,10 +174,11 @@ export default function ProductForm({
         const p = res.data?.data;
         if (!p) {
           toast.error("Product data not found!");
-          setIsLoadingProduct(false);
+          setIsLoadingProduct(false); // Force stop loading
           return;
         }
 
+        // 1. Basic Information
         setTitle(p.productTitle || "");
         setShortDescription(p.shortDescription || "");
         setFullDescription(p.fullDescription || "");
@@ -153,6 +186,7 @@ export default function ProductForm({
         setWarrantyPolicy(p.warrantyPolicy || "");
         setProductTags(Array.isArray(p.productTag) ? p.productTag : []);
         
+        // SEO Information
         setMetaTitle(p.metaTitle || "");
         setMetaDescription(p.metaDescription || "");
         setMetaKeywordTags(
@@ -165,9 +199,12 @@ export default function ProductForm({
             : []
         );
 
+        // 2. Images & Pricing
         setThumbnailPreview(p.thumbnailImage || null);
         setInitialThumbnailUrl(p.thumbnailImage || null);
-        setExistingGalleryUrls(Array.isArray(p.photoGallery) ? p.photoGallery : []);
+        setExistingGalleryUrls(
+          Array.isArray(p.photoGallery) ? p.photoGallery : [],
+        );
         setPrice(p.productPrice);
         setDiscountPrice(p.discountPrice);
         setStock(p.stock);
@@ -176,8 +213,10 @@ export default function ProductForm({
         setShippingCost(p.shippingCost);
         setVideoUrl(p.videoUrl || "");
         
+        // Special Offer
         if (p.offerDeadline) {
           setSpecialOffer(true);
+          // Convert ISO date to datetime-local format (YYYY-MM-DDTHH:mm)
           const deadline = new Date(p.offerDeadline);
           const year = deadline.getFullYear();
           const month = String(deadline.getMonth() + 1).padStart(2, '0');
@@ -187,111 +226,111 @@ export default function ProductForm({
           setOfferEndTime(`${year}-${month}-${day}T${hours}:${minutes}`);
         }
 
+        // 3. IDs Extraction
         const catId = getIdFromRef(p.category);
         const subId = getIdFromRef(p.subCategory);
         const childId = getIdFromRef(p.childCategory);
         const brandIdRef = getIdFromRef(p.brand);
         const modelIdRef = getIdFromRef(p.productModel);
-        
+        // Store IDs in refs for potential later use by effects
         if (subId) initialSubcategoryId.current = subId;
         if (modelIdRef) initialModelId.current = modelIdRef;
 
+        // 4. Async Fetching of dependent lists
         const promises: Promise<void>[] = [];
         if (catId) {
           promises.push(
-            axios.get(`/api/v1/ecommerce-category/ecomSubCategory/category/${catId}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }).then((r) => setSubcategories(r.data?.data || [])).catch(() => {}),
+            axios
+              .get(
+                `/api/v1/ecommerce-category/ecomSubCategory/category/${catId}`,
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                },
+              )
+              .then((r) => {
+                const subs = r.data?.data || [];
+                setSubcategories(subs);
+              })
+              .catch(() => {}),
           );
         }
         if (subId) {
           promises.push(
-            axios.get(`/api/v1/ecommerce-category/ecomChildCategory?subCategoryId=${subId}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }).then((r) => setChildCategories(r.data?.data || [])).catch(() => {}),
+            axios
+              .get(
+                `/api/v1/ecommerce-category/ecomChildCategory?subCategoryId=${subId}`,
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                },
+              )
+              .then((r) => setChildCategories(r.data?.data || []))
+              .catch(() => {}),
           );
         }
         if (brandIdRef) {
           promises.push(
-            axios.get(`/api/v1/product-config/modelName?brandId=${brandIdRef}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }).then((r) => setModels(r.data?.data?.filter((m: any) => m.status === "active") || [])).catch(() => {}),
+            axios
+              .get(`/api/v1/product-config/modelName?brandId=${brandIdRef}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              })
+              .then((r) => {
+                const activeModels = r.data?.data?.filter((m: any) => m.status === "active") || [];
+                setModels(activeModels);
+              })
+              .catch((err) => {
+                console.error(err);
+              }),
           );
         }
 
+        // Wait for essential lists
         await Promise.all(promises);
 
+        // 5. Setting Main IDs (only set if they have values)
         const storeId = getIdFromRef(p.vendorStoreId);
         const flagId = getIdFromRef(p.flag);
         const unitId = getIdFromRef(p.weightUnit);
-        const warrantyIdMain = getIdFromRef(p.warranty);
+        const warrantyId = getIdFromRef(p.warranty);
         
         if (storeId) setStore(storeId);
         if (catId) setCategory(catId);
-        if (subId) setSubcategory(subId);
+        if (subId) setSubcategory(subId); // ✅ Pre-fill subcategory directly
         if (brandIdRef) setBrand(brandIdRef);
-        if (modelIdRef) setModel(modelIdRef); 
+        if (modelIdRef) setModel(modelIdRef); // ✅ Pre-fill model directly
         if (flagId) setFlag(flagId);
         if (unitId) setUnit(unitId);
-        if (warrantyIdMain) setWarranty(warrantyIdMain);
-        if (childId) setChildCategory(childId);
+        if (warrantyId) setWarranty(warrantyId);
 
-        // ✅ 7. Variants Missing Options Fix (Crucial for Select drop-downs to show populated data)
+        // 6. Set child category directly (doesn't need to wait for list)
+        if (childId) {
+          setChildCategory(childId);
+        }
+
+        // 7. Variants Fix (None shomossha samadhan)
         if (p.productOptions?.length > 0) {
           setHasVariant(true);
-          
-          const missingOptions = {
-            storageTypes: [] as any[],
-            colors: [] as any[],
-            sizes: [] as any[],
-            simTypes: [] as any[],
-            conditions: [] as any[],
-            warranties: [] as any[],
-          };
-
+          const missingStorageOptions: any[] = [];
           const mappedVariants = p.productOptions.map((opt: any, idx: number) => {
-            // Robust extraction just in case backend populates arrays or objects
-            const colorRaw = Array.isArray(opt.color) ? opt.color[0] : (opt.color || opt.productColor);
-            const colorId = getIdFromRef(colorRaw);
+            // Extract IDs for variant fields
+            const colorId = getIdFromRef(
+              Array.isArray(opt.color) ? opt.color[0] : opt.color,
+            );
+            const sizeId = getIdFromRef(
+              Array.isArray(opt.size) ? opt.size[0] : opt.size,
+            );
+            const storageId = getIdFromRef(opt.storage);
+            const simTypeId = getIdFromRef(
+              Array.isArray(opt.simType) ? opt.simType[0] : opt.simType,
+            );
+            const conditionId = getIdFromRef(
+              Array.isArray(opt.condition) ? opt.condition[0] : opt.condition,
+            );
+            const warrantyId = getIdFromRef(opt.warranty);
             
-            const sizeRaw = Array.isArray(opt.size) ? opt.size[0] : (opt.size || opt.productSize);
-            const sizeId = getIdFromRef(sizeRaw);
-            
-            const storageRaw = Array.isArray(opt.storage) ? opt.storage[0] : (opt.storage || opt.storageType);
-            const storageId = getIdFromRef(storageRaw);
-            
-            const simTypeRaw = Array.isArray(opt.simType) ? opt.simType[0] : (opt.simType || opt.productSimType);
-            const simTypeId = getIdFromRef(simTypeRaw);
-            
-            const conditionRaw = Array.isArray(opt.condition) ? opt.condition[0] : (opt.condition || opt.deviceCondition);
-            const conditionId = getIdFromRef(conditionRaw);
-            
-            const warrantyRaw = Array.isArray(opt.warranty) ? opt.warranty[0] : (opt.warranty || opt.productWarranty);
-            const warrantyId = getIdFromRef(warrantyRaw);
-
-            // Check if IDs are in our master lists. If not, inject fallbacks so Select component works
-            if (colorId && !variantOptionsInitial?.colors?.some((c: any) => String(c._id) === colorId)) {
-                missingOptions.colors.push({ _id: colorId, name: colorRaw?.name || colorRaw?.colorName || "Saved Color", colorCode: colorRaw?.colorCode || "#cccccc" });
-            }
-            if (sizeId && !variantOptionsInitial?.sizes?.some((s: any) => String(s._id) === sizeId)) {
-                missingOptions.sizes.push({ _id: sizeId, name: sizeRaw?.name || sizeRaw?.sizeName || "Saved Size" });
-            }
-            if (storageId && !variantOptionsInitial?.storageTypes?.some((s: any) => String(s._id) === storageId)) {
-                missingOptions.storageTypes.push({ _id: storageId, ram: storageRaw?.ram, rom: storageRaw?.rom, name: storageRaw?.name || "Saved Storage" });
-            }
-            if (simTypeId && !variantOptionsInitial?.simTypes?.some((s: any) => String(s._id) === simTypeId)) {
-                missingOptions.simTypes.push({ _id: simTypeId, name: simTypeRaw?.name || "Saved SimType" });
-            }
-            if (conditionId && !variantOptionsInitial?.conditions?.some((c: any) => String(c._id) === conditionId)) {
-                missingOptions.conditions.push({ _id: conditionId, name: conditionRaw?.name || "Saved Condition" });
-            }
-            if (warrantyId && !variantOptionsInitial?.warranties?.some((w: any) => String(w._id) === warrantyId)) {
-                missingOptions.warranties.push({ _id: warrantyId, warrantyName: warrantyRaw?.warrantyName || warrantyRaw?.name || "Saved Warranty" });
-            }
-
-            return {
+            const mappedVariant = {
               id: Date.now() + idx,
               imageUrl: opt.productImage || "",
+              // Only set values if they're not empty strings
               color: colorId || "",
               size: sizeId || "",
               storage: storageId || "",
@@ -302,34 +341,51 @@ export default function ProductForm({
               price: opt.price || 0,
               discountPrice: opt.discountPrice || 0,
             };
+            // Check if storage exists in available options
+            if (storageId) {
+              const storageExists = variantOptions?.storageTypes?.some(
+                (s: any) => String(s._id) === storageId
+              );
+              if (!storageExists) {
+                // Try to reuse any extra info if storage is an object,
+                // otherwise fall back to a generic label so the Select
+                // can still show a prefilled value.
+                const st = (opt.storage ?? {}) as { _id?: unknown; ram?: string; rom?: string; name?: string };
+                missingStorageOptions.push({
+                  _id: storageId,
+                  ram: st.ram,
+                  rom: st.rom,
+                  name: st.name || "Custom Storage",
+                });
+              }
+            }
+            
+            return mappedVariant;
           });
-
           setVariants(mappedVariants);
 
-          // Update lists with missing options so Dropdowns aren't empty
-          if (
-            missingOptions.colors.length > 0 ||
-            missingOptions.sizes.length > 0 ||
-            missingOptions.storageTypes.length > 0 ||
-            missingOptions.simTypes.length > 0 ||
-            missingOptions.conditions.length > 0 ||
-            missingOptions.warranties.length > 0
-          ) {
-            setVariantOptions((prev: any) => ({
-              ...prev,
-              colors: [...(prev?.colors || []), ...missingOptions.colors.filter((v, i, a) => a.findIndex(t => t._id === v._id) === i)],
-              sizes: [...(prev?.sizes || []), ...missingOptions.sizes.filter((v, i, a) => a.findIndex(t => t._id === v._id) === i)],
-              storageTypes: [...(prev?.storageTypes || []), ...missingOptions.storageTypes.filter((v, i, a) => a.findIndex(t => t._id === v._id) === i)],
-              simTypes: [...(prev?.simTypes || []), ...missingOptions.simTypes.filter((v, i, a) => a.findIndex(t => t._id === v._id) === i)],
-              conditions: [...(prev?.conditions || []), ...missingOptions.conditions.filter((v, i, a) => a.findIndex(t => t._id === v._id) === i)],
-              warranties: [...(prev?.warranties || []), ...missingOptions.warranties.filter((v, i, a) => a.findIndex(t => t._id === v._id) === i)],
-            }));
+          // ✅ If any storage options from the product are missing in the master list,
+          // add them so that the Storage select can show the correct pre-filled value.
+          if (missingStorageOptions.length > 0) {
+            setVariantOptions((prev: any) => {
+              const existing = prev?.storageTypes || [];
+              const existingIds = new Set(existing.map((s: any) => String(s._id)));
+              const merged = [
+                ...existing,
+                ...missingStorageOptions.filter((s) => !existingIds.has(String(s._id))),
+              ];
+              return {
+                ...prev,
+                storageTypes: merged,
+              };
+            });
           }
         }
       } catch (err: any) {
         console.error(err);
         toast.error("❌ Error loading data.");
       } finally {
+        // ✅ CRITICAL: Ei finally block nishchit korbe jate loading bondho hoy
         setIsLoadingProduct(false);
         setTimeout(() => {
           isInitialLoad.current = false;
@@ -338,11 +394,15 @@ export default function ProductForm({
     };
 
     fetchExistingProduct();
-  }, [isEditMode, productId, token, variantOptionsInitial]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode, productId, token]);
 
-  // --- 2. FETCH SUBCATEGORIES ---
+  // --- 2. FETCH SUBCATEGORIES (Only on User Change) ---
   useEffect(() => {
-    if (isInitialLoad.current) return;
+    if (isInitialLoad.current) {
+      return; // Skip if initial load
+    }
+
     const fetchSubcategories = async () => {
       if (category && token) {
         try {
@@ -351,10 +411,12 @@ export default function ProductForm({
             { headers: { Authorization: `Bearer ${token}` } },
           );
           setSubcategories(res.data?.data || []);
-          setSubcategory(""); 
+          setSubcategory(""); // Reset child
           setChildCategory("");
           setChildCategories([]);
-        } catch (error) { console.error(error); }
+        } catch (error) {
+          console.error(error);
+        }
       } else {
         setSubcategories([]);
         setSubcategory("");
@@ -363,9 +425,12 @@ export default function ProductForm({
     fetchSubcategories();
   }, [category, token]);
 
-  // --- 3. FETCH CHILD CATEGORIES ---
+  // --- 3. FETCH CHILD CATEGORIES (Only on User Change) ---
   useEffect(() => {
-    if (isInitialLoad.current) return;
+    if (isInitialLoad.current) {
+      return;
+    }
+
     const fetchChildCategories = async () => {
       if (subcategory && token) {
         try {
@@ -375,7 +440,9 @@ export default function ProductForm({
           );
           setChildCategories(res.data?.data || []);
           setChildCategory("");
-        } catch (error) { console.error(error); }
+        } catch (error) {
+          console.error(error);
+        }
       } else {
         setChildCategories([]);
         setChildCategory("");
@@ -384,9 +451,12 @@ export default function ProductForm({
     fetchChildCategories();
   }, [subcategory, token]);
 
-  // --- 4. FETCH MODELS ---
+  // --- 4. FETCH MODELS (Only on User Change) ---
   useEffect(() => {
-    if (isInitialLoad.current) return;
+    if (isInitialLoad.current) {
+      return;
+    }
+
     const fetchModels = async () => {
       if (brand && token) {
         try {
@@ -394,9 +464,13 @@ export default function ProductForm({
             `/api/v1/product-config/modelName?brandId=${brand}`,
             { headers: { Authorization: `Bearer ${token}` } },
           );
-          setModels(res.data?.data?.filter((m: any) => m.status === "active") || []);
+          setModels(
+            res.data?.data?.filter((m: any) => m.status === "active") || [],
+          );
           setModel("");
-        } catch (error) { console.error(error); }
+        } catch (error) {
+          console.error(error);
+        }
       } else {
         setModels([]);
         setModel("");
@@ -405,25 +479,32 @@ export default function ProductForm({
     fetchModels();
   }, [brand, token]);
 
-  // --- 5 & 6. Auto-fill models & subcategories in edit mode ---
+  // --- 5. SET MODEL AFTER MODELS LIST IS LOADED (Edit Mode Only) ---
   useEffect(() => {
     if (!isEditMode || !initialModelId.current) return;
+    
     if (models.length > 0 && !model) {
       const modelId = initialModelId.current;
-      if (models.some((m: any) => getIdFromRef(m) === modelId)) {
+      const modelExists = models.some((m: any) => getIdFromRef(m) === modelId);
+      
+      if (modelExists) {
         setModel(modelId);
-        initialModelId.current = null;
+        initialModelId.current = null; // Clear ref after setting
       }
     }
   }, [models, model, isEditMode]);
 
+  // --- 6. SET SUBCATEGORY AFTER SUBCATEGORIES LIST IS LOADED (Edit Mode Only) ---
   useEffect(() => {
     if (!isEditMode || !initialSubcategoryId.current) return;
+    
     if (subcategories.length > 0 && !subcategory) {
       const subId = initialSubcategoryId.current;
-      if (subcategories.some((s: any) => getIdFromRef(s) === subId)) {
+      const subExists = subcategories.some((s: any) => getIdFromRef(s) === subId);
+      
+      if (subExists) {
         setSubcategory(subId);
-        initialSubcategoryId.current = null;
+        initialSubcategoryId.current = null; // Clear ref after setting
       }
     }
   }, [subcategories, subcategory, isEditMode]);
@@ -445,7 +526,8 @@ export default function ProductForm({
     if (field === "shippingCost") setShippingCost(numVal);
   };
   const handlePricingNumberChange = (field: string, delta: number) => {
-    const updater = (prev: number | undefined) => Math.max(0, (prev || 0) + delta);
+    const updater = (prev: number | undefined) =>
+      Math.max(0, (prev || 0) + delta);
     if (field === "price") setPrice(updater);
     if (field === "discountPrice") setDiscountPrice(updater);
     if (field === "rewardPoints") setRewardPoints(updater);
@@ -454,31 +536,57 @@ export default function ProductForm({
   };
 
   const uploadFile = async (file: File): Promise<string> => {
-    try {
-      const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true, fileType: file.type };
-      const compressedBlob = await imageCompression(file, options);
-      const compressedFile = new File([compressedBlob], file.name, { type: file.type, lastModified: Date.now() });
-      const formData = new FormData();
-      formData.append("file", compressedFile);
-      const response = await axios.post("/api/v1/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` },
-      });
-      return response.data?.url || "";
-    } catch (error) {
-      console.error("Upload error details:", error);
-      throw new Error(`Could not upload ${file.name}.`);
-    }
-  };
+  try {
+    // ১. ইমেজ কম্প্রেস করার অপশন
+    const options = {
+      maxSizeMB: 1, 
+      maxWidthOrHeight: 1920, 
+      useWebWorker: true,
+      fileType: file.type 
+    };
+
+    // ২. ফাইল কম্প্রেস করা হচ্ছে
+    const compressedBlob = await imageCompression(file, options);
+    
+    // ৩. Blob কে আবার File অবজেক্টে রূপান্তর করা হচ্ছে
+    const compressedFile = new File([compressedBlob], file.name, {
+      type: file.type,
+      lastModified: Date.now(),
+    });
+
+    // ৪. এবার কম্প্রেসড ফাইলটি ব্যাকএন্ডে পাঠানো হচ্ছে
+    const formData = new FormData();
+    formData.append("file", compressedFile);
+
+    const response = await axios.post("/api/v1/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    return response.data?.url || "";
+  } catch (error) {
+    console.error("Upload error details:", error);
+    throw new Error(`Could not upload ${file.name}.`);
+  }
+};
 
   // --- SUBMIT ---
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!token) return toast.error("⚠️ Authentication required.");
-    if (!isEditMode && !thumbnail) return toast.error("⚠️ Thumbnail image is required.");
-    if (!title || !store || !category) return toast.error("⚠️ Please fill all required fields (*).");
-    if (!price || price <= 0) return toast.error("⚠️ Price is required and must be greater than 0.");
+    if (!isEditMode && !thumbnail)
+      return toast.error("⚠️ Thumbnail image is required.");
+    if (!title || !store || !category)
+      return toast.error("⚠️ Please fill all required fields (*).");
+    if (!price || price <= 0)
+      return toast.error("⚠️ Price is required and must be greater than 0.");
 
-    const selectedStore = listStores.find((s: any) => getIdFromRef(s) === store);
+    const selectedStore = listStores.find(
+      (s: any) => getIdFromRef(s) === store,
+    );
     const vendorName = selectedStore?.storeName || "";
 
     setIsSubmitting(true);
@@ -486,13 +594,17 @@ export default function ProductForm({
       let thumbnailUrl = thumbnailPreview;
       if (thumbnail) thumbnailUrl = await uploadFile(thumbnail);
 
-      const filteredExistingUrls = existingGalleryUrls.filter((url) => !removedGalleryUrls.includes(url));
+      const filteredExistingUrls = existingGalleryUrls.filter(
+        (url) => !removedGalleryUrls.includes(url),
+      );
       let newGalleryUrls: string[] = [];
       if (galleryImages.length > 0)
-        newGalleryUrls = (await Promise.all(galleryImages.map((file) => uploadFile(file)))).filter((u) => !!u);
-      
+        newGalleryUrls = (
+          await Promise.all(galleryImages.map((file) => uploadFile(file)))
+        ).filter((u) => !!u);
       const finalGalleryUrls = [...filteredExistingUrls, ...newGalleryUrls];
-      if (finalGalleryUrls.length === 0 && thumbnailUrl) finalGalleryUrls.push(thumbnailUrl as string);
+      if (finalGalleryUrls.length === 0 && thumbnailUrl)
+        finalGalleryUrls.push(thumbnailUrl as string);
 
       const productData = {
         productId: productCode || `PROD-${Date.now()}`,
@@ -507,7 +619,8 @@ export default function ProductForm({
         videoUrl: videoUrl || undefined,
         photoGallery: finalGalleryUrls,
         thumbnailImage: thumbnailUrl,
-        removedPhotoGallery: removedGalleryUrls.length > 0 ? removedGalleryUrls : undefined,
+        removedPhotoGallery:
+          removedGalleryUrls.length > 0 ? removedGalleryUrls : undefined,
         removeThumbnail: removedThumbnailUrl || undefined,
         productPrice: price || 0,
         discountPrice: discountPrice || undefined,
@@ -525,13 +638,17 @@ export default function ProductForm({
         weightUnit: unit || undefined,
         offerDeadline: offerEndTime ? new Date(offerEndTime) : undefined,
         metaTitle: metaTitle || undefined,
-        metaKeyword: metaKeywordTags.length > 0 ? metaKeywordTags.join(", ") : undefined,
+        metaKeyword:
+          metaKeywordTags.length > 0 ? metaKeywordTags.join(", ") : undefined,
         metaDescription: metaDescription || undefined,
         status: "active",
         productOptions: hasVariant
           ? await Promise.all(
               variants.map(async (variant) => {
-                const uploadedImage = variant.image ? await uploadFile(variant.image as File) : variant.imageUrl || "";
+                const uploadedImage = variant.image
+                  ? await uploadFile(variant.image as File)
+                  : variant.imageUrl || "";
+
                 return {
                   ...variant,
                   productImage: uploadedImage,
@@ -546,6 +663,15 @@ export default function ProductForm({
             )
           : [],
       };
+      console.log("📤 SENDING TO BACKEND:", productData);
+      console.log("📤 Product Details Being Sent:", {
+        brand: brand,
+        model: model,
+        category: category,
+        subcategory: subcategory,
+        childCategory: childCategory,
+      });
+      console.log("📤 Variant Options Being Sent:", productData.productOptions);
 
       if (isEditMode && productId) {
         await axios.patch(`/api/v1/product/${productId}`, productData, {
@@ -561,6 +687,7 @@ export default function ProductForm({
         router.push("/general/view/all/product");
       }
     } catch (error: any) {
+      console.error(error);
       const errMsg = error.response?.data?.message || error.message;
       if (errMsg.includes("duplicate") || errMsg.includes("E11000")) {
         toast.error(`⚠️ Duplicate Error: Product Title or SKU already exists.`);
@@ -595,30 +722,77 @@ export default function ProductForm({
       </div>
     );
 
+  // Debug Panel (only in development)
   const DebugPanel = () => {
     if (process.env.NODE_ENV !== 'development') return null;
+    
     if (!showDebug) {
       return (
         <Button
-          type="button" variant="outline" size="sm" onClick={() => setShowDebug(true)}
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setShowDebug(true)}
           className="fixed bottom-4 right-4 z-50 bg-yellow-100 hover:bg-yellow-200 border-yellow-400"
         >
           🐛 Debug
         </Button>
       );
     }
+    
     return (
       <div className="fixed bottom-4 right-4 z-50 bg-white border-2 border-yellow-400 rounded-lg shadow-xl p-4 max-w-md max-h-[80vh] overflow-auto">
         <div className="flex justify-between items-center mb-3 pb-2 border-b">
           <h3 className="font-bold text-sm">🐛 Debug Panel</h3>
-          <Button type="button" variant="ghost" size="sm" onClick={() => setShowDebug(false)}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowDebug(false)}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
+        
         <div className="space-y-2 text-xs">
           <div className="bg-gray-50 p-2 rounded">
+            <p className="font-semibold">Product Details:</p>
+            <p>Store: {store || "❌ Empty"}</p>
+            <p>Category: {category || "❌ Empty"}</p>
+            <p>Subcategory: {subcategory || "❌ Empty"} {initialSubcategoryId.current ? "⏳ Waiting" : ""}</p>
+            <p>Child Category: {childCategory || "❌ Empty"}</p>
+            <p>Brand: {brand || "❌ Empty"}</p>
+            <p>Model: {model || "❌ Empty"} {initialModelId.current ? "⏳ Waiting" : ""}</p>
+          </div>
+          
+          <div className="bg-gray-50 p-2 rounded">
+            <p className="font-semibold">Lists Loaded:</p>
+            <p>Subcategories: {subcategories.length}</p>
+            <p>Child Categories: {childCategories.length}</p>
+            <p>Models: {models.length}</p>
+            <p className="text-xs text-gray-500 mt-1">
+              {initialSubcategoryId.current && "⏳ Waiting to set subcategory..."}
+              {initialModelId.current && "⏳ Waiting to set model..."}
+            </p>
+          </div>
+          
+          <div className="bg-gray-50 p-2 rounded">
             <p className="font-semibold">Variants:</p>
+            <p>Has Variants: {hasVariant ? "✅ Yes" : "❌ No"}</p>
             <p>Count: {variants.length}</p>
+            {variants.length > 0 && (
+              <div className="mt-1 text-[10px]">
+                {variants.map((v, i) => (
+                  <div key={v.id} className="border-t pt-1 mt-1">
+                    <p className="font-semibold">Variant {i + 1}:</p>
+                    <p>Color: {v.color || "❌"}</p>
+                    <p>Size: {v.size || "❌"}</p>
+                    <p>Storage: {v.storage || "❌"}</p>
+                    <p>Warranty: {v.warranty || "❌"}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -630,7 +804,11 @@ export default function ProductForm({
       <DebugPanel />
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         <div className="flex justify-end gap-2 sticky top-4 z-10 bg-gray-50/80 backdrop-blur-sm py-2 px-4 rounded-lg shadow-sm -mt-4">
-        <Button type="button" variant="destructive" onClick={() => router.back()}>
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={() => router.back()}
+        >
           <X className="mr-2 h-4 w-4" /> Discard
         </Button>
         <Button type="submit" disabled={isSubmitting}>
@@ -650,13 +828,27 @@ export default function ProductForm({
             </CardHeader>
             <CardContent className="pt-6 space-y-5 flex-1">
               <div className="space-y-2">
-                <Label>Product Title <span className="text-red-500">*</span></Label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} required className="h-11" />
+                <Label>
+                  Product Title <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                  className="h-11"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Short Description (Max 255)</Label>
-                <Textarea value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} maxLength={255} className="min-h-[100px] resize-none" />
-                <div className="text-xs text-gray-500 text-right">{shortDescription.length}/255</div>
+                <Textarea
+                  value={shortDescription}
+                  onChange={(e) => setShortDescription(e.target.value)}
+                  maxLength={255}
+                  className="min-h-[100px] resize-none"
+                />
+                <div className="text-xs text-gray-500 text-right">
+                  {shortDescription.length}/255
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Product Tags</Label>
@@ -671,18 +863,35 @@ export default function ProductForm({
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 flex-1">
-              <label htmlFor="thumbnail-upload" className="cursor-pointer group block w-full h-full">
+              <label
+                htmlFor="thumbnail-upload"
+                className="cursor-pointer group block w-full h-full"
+              >
                 <div className="flex items-center justify-center w-full h-full min-h-[300px] border-2 border-dashed border-gray-300 rounded-lg p-4 transition-colors hover:border-blue-400 hover:bg-blue-50/50">
                   {thumbnailPreview ? (
                     <div className="relative w-full h-full min-h-[300px] rounded-md overflow-hidden">
-                      <Image src={thumbnailPreview} alt="Thumbnail" fill style={{ objectFit: "contain" }} className="rounded-md" />
+                      <Image
+                        src={thumbnailPreview}
+                        alt="Thumbnail"
+                        fill
+                        style={{ objectFit: "contain" }}
+                        className="rounded-md"
+                      />
                       <Button
-                        type="button" variant="destructive" size="icon"
+                        type="button"
+                        variant="destructive"
+                        size="icon"
                         className="absolute top-2 right-2 h-8 w-8 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
                         onClick={(e) => {
-                          e.preventDefault(); e.stopPropagation();
-                          if (!thumbnail && thumbnailPreview) setRemovedThumbnailUrl((prev) => prev ?? thumbnailPreview);
-                          setInitialThumbnailUrl(null); setThumbnail(null); setThumbnailPreview(null);
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (!thumbnail && thumbnailPreview)
+                            setRemovedThumbnailUrl(
+                              (prev) => prev ?? thumbnailPreview,
+                            );
+                          setInitialThumbnailUrl(null);
+                          setThumbnail(null);
+                          setThumbnailPreview(null);
                         }}
                       >
                         <X className="h-4 w-4" />
@@ -695,7 +904,13 @@ export default function ProductForm({
                     </div>
                   )}
                 </div>
-                <Input id="thumbnail-upload" type="file" className="hidden" onChange={handleThumbnailChange} accept="image/*" />
+                <Input
+                  id="thumbnail-upload"
+                  type="file"
+                  className="hidden"
+                  onChange={handleThumbnailChange}
+                  accept="image/*"
+                />
               </label>
             </CardContent>
           </Card>
@@ -709,20 +924,47 @@ export default function ProductForm({
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 flex-1">
-              <Tabs defaultValue="description" className="w-full h-full flex flex-col">
+              <Tabs
+                defaultValue="description"
+                className="w-full h-full flex flex-col"
+              >
                 <TabsList className="grid w-full grid-cols-3 bg-gray-50 h-auto p-1">
-                  <TabsTrigger value="description" className="text-xs sm:text-sm py-2.5">Description</TabsTrigger>
-                  <TabsTrigger value="specification" className="text-xs sm:text-sm py-2.5">Specification</TabsTrigger>
-                  <TabsTrigger value="warranty" className="text-xs sm:text-sm py-2.5">Warranty</TabsTrigger>
+                  <TabsTrigger
+                    value="description"
+                    className="text-xs sm:text-sm py-2.5"
+                  >
+                    Description
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="specification"
+                    className="text-xs sm:text-sm py-2.5"
+                  >
+                    Specification
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="warranty"
+                    className="text-xs sm:text-sm py-2.5"
+                  >
+                    Warranty
+                  </TabsTrigger>
                 </TabsList>
                 <TabsContent value="description" className="mt-4 flex-1">
-                  <RichTextEditor value={fullDescription} onChange={setFullDescription} />
+                  <RichTextEditor
+                    value={fullDescription}
+                    onChange={setFullDescription}
+                  />
                 </TabsContent>
                 <TabsContent value="specification" className="mt-4 flex-1">
-                  <RichTextEditor value={specification} onChange={setSpecification} />
+                  <RichTextEditor
+                    value={specification}
+                    onChange={setSpecification}
+                  />
                 </TabsContent>
                 <TabsContent value="warranty" className="mt-4 flex-1">
-                  <RichTextEditor value={warrantyPolicy} onChange={setWarrantyPolicy} />
+                  <RichTextEditor
+                    value={warrantyPolicy}
+                    onChange={setWarrantyPolicy}
+                  />
                 </TabsContent>
               </Tabs>
             </CardContent>
@@ -741,22 +983,32 @@ export default function ProductForm({
               />
               <div className="space-y-2">
                 <Label>Product Code (SKU)</Label>
-                <Input value={productCode} onChange={(e) => setProductCode(e.target.value)} className="h-11" />
+                <Input
+                  value={productCode}
+                  onChange={(e) => setProductCode(e.target.value)}
+                  className="h-11"
+                />
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Categorization & Gallery */}
-        <div className={`grid gap-4 sm:gap-6 ${hasVariant ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"}`}>
+        <div
+          className={`grid gap-4 sm:gap-6 ${hasVariant ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"}`}
+        >
           {!hasVariant && (
             <ProductImageGallery
               galleryImages={galleryImages}
               setGalleryImages={setGalleryImages}
               existingGalleryUrls={existingGalleryUrls}
               onRemoveExisting={(url) => {
-                setExistingGalleryUrls((prev) => prev.filter((item) => item !== url));
-                setRemovedGalleryUrls((prev) => prev.includes(url) ? prev : [...prev, url]);
+                setExistingGalleryUrls((prev) =>
+                  prev.filter((item) => item !== url),
+                );
+                setRemovedGalleryUrls((prev) =>
+                  prev.includes(url) ? prev : [...prev, url],
+                );
               }}
             />
           )}
@@ -769,26 +1021,51 @@ export default function ProductForm({
             <CardContent className="pt-6 flex-1">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Store <span className="text-red-500">*</span></Label>
+                  <Label>
+                    Store <span className="text-red-500">*</span>
+                  </Label>
                   <Select value={store} onValueChange={setStore}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Select store" /></SelectTrigger>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select store" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {listStores.map((s: any) => (<SelectItem key={getIdFromRef(s)} value={getIdFromRef(s)}>{s.storeName}</SelectItem>))}
+                      {listStores.map((s: any) => (
+                        <SelectItem
+                          key={getIdFromRef(s)}
+                          value={getIdFromRef(s)}
+                        >
+                          {s.storeName}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Category <span className="text-red-500">*</span></Label>
+                  <Label>
+                    Category <span className="text-red-500">*</span>
+                  </Label>
                   <Select
                     value={category}
                     onValueChange={(val) => {
                       setCategory(val);
-                      if (!isInitialLoad.current) { setSubcategory(""); setChildCategory(""); }
+                      if (!isInitialLoad.current) {
+                        setSubcategory("");
+                        setChildCategory("");
+                      }
                     }}
                   >
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Select category" /></SelectTrigger>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {listCategories.map((c: any) => (<SelectItem key={getIdFromRef(c)} value={getIdFromRef(c)}>{c.name}</SelectItem>))}
+                      {listCategories.map((c: any) => (
+                        <SelectItem
+                          key={getIdFromRef(c)}
+                          value={getIdFromRef(c)}
+                        >
+                          {c.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -798,22 +1075,46 @@ export default function ProductForm({
                     value={subcategory}
                     onValueChange={(val) => {
                       setSubcategory(val);
-                      if (!isInitialLoad.current) { setChildCategory(""); }
+                      if (!isInitialLoad.current) {
+                        setChildCategory("");
+                      }
                     }}
                     disabled={!category}
                   >
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Select subcategory" /></SelectTrigger>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select subcategory" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {subcategories.map((sc: any) => (<SelectItem key={getIdFromRef(sc)} value={getIdFromRef(sc)}>{sc.name}</SelectItem>))}
+                      {subcategories.map((sc: any) => (
+                        <SelectItem
+                          key={getIdFromRef(sc)}
+                          value={getIdFromRef(sc)}
+                        >
+                          {sc.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Child Category</Label>
-                  <Select value={childCategory} onValueChange={setChildCategory} disabled={!subcategory}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Select child category" /></SelectTrigger>
+                  <Select
+                    value={childCategory}
+                    onValueChange={setChildCategory}
+                    disabled={!subcategory}
+                  >
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select child category" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {childCategories.map((cc: any) => (<SelectItem key={getIdFromRef(cc)} value={getIdFromRef(cc)}>{cc.name}</SelectItem>))}
+                      {childCategories.map((cc: any) => (
+                        <SelectItem
+                          key={getIdFromRef(cc)}
+                          value={getIdFromRef(cc)}
+                        >
+                          {cc.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -823,67 +1124,133 @@ export default function ProductForm({
                     value={brand}
                     onValueChange={(val) => {
                       setBrand(val);
-                      if (!isInitialLoad.current) { setModel(""); }
+                      if (!isInitialLoad.current) {
+                        setModel("");
+                      }
                     }}
                   >
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Select brand" /></SelectTrigger>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select brand" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {listBrands.map((b: any) => (<SelectItem key={getIdFromRef(b)} value={getIdFromRef(b)}>{b.name}</SelectItem>))}
+                      {listBrands.map((b: any) => (
+                        <SelectItem
+                          key={getIdFromRef(b)}
+                          value={getIdFromRef(b)}
+                        >
+                          {b.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Model</Label>
-                  <Select value={model} onValueChange={setModel} disabled={!brand}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Select model" /></SelectTrigger>
+                  <Select
+                    value={model}
+                    onValueChange={setModel}
+                    disabled={!brand}
+                  >
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select model" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {models.map((m: any) => (<SelectItem key={getIdFromRef(m)} value={getIdFromRef(m)}>{m.modelName}</SelectItem>))}
+                      {models.map((m: any) => (
+                        <SelectItem
+                          key={getIdFromRef(m)}
+                          value={getIdFromRef(m)}
+                        >
+                          {m.modelName}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Flag</Label>
                   <Select value={flag} onValueChange={setFlag}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {listFlags.map((f: any) => (<SelectItem key={getIdFromRef(f)} value={getIdFromRef(f)}>{f.name}</SelectItem>))}
+                      {listFlags.map((f: any) => (
+                        <SelectItem
+                          key={getIdFromRef(f)}
+                          value={getIdFromRef(f)}
+                        >
+                          {f.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Unit</Label>
                   <Select value={unit} onValueChange={setUnit}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {listUnits.map((u: any) => (<SelectItem key={getIdFromRef(u)} value={getIdFromRef(u)}>{u.name}</SelectItem>))}
+                      {listUnits.map((u: any) => (
+                        <SelectItem
+                          key={getIdFromRef(u)}
+                          value={getIdFromRef(u)}
+                        >
+                          {u.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Warranty</Label>
                   <Select value={warranty} onValueChange={setWarranty}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Optional" /></SelectTrigger>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Optional" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {listWarranties.map((w: any) => (<SelectItem key={getIdFromRef(w)} value={getIdFromRef(w)}>{w.warrantyName}</SelectItem>))}
+                      {listWarranties.map((w: any) => (
+                        <SelectItem
+                          key={getIdFromRef(w)}
+                          value={getIdFromRef(w)}
+                        >
+                          {w.warrantyName}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Video URL</Label>
-                  <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} className="h-11" />
+                  <Input
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    className="h-11"
+                  />
                 </div>
               </div>
               <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100">
                 <div>
                   <Label>Special Offer</Label>
-                  <p className="text-xs text-gray-500 mt-0.5">Enable time-limited offers</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Enable time-limited offers
+                  </p>
                 </div>
-                <Switch checked={specialOffer} onCheckedChange={setSpecialOffer} />
+                <Switch
+                  checked={specialOffer}
+                  onCheckedChange={setSpecialOffer}
+                />
               </div>
               {specialOffer && (
                 <div className="space-y-2 pt-4 mt-4 border-t border-gray-100">
                   <Label>Offer End Time *</Label>
-                  <Input type="datetime-local" value={offerEndTime} onChange={(e) => setOfferEndTime(e.target.value)} required className="h-11" />
+                  <Input
+                    type="datetime-local"
+                    value={offerEndTime}
+                    onChange={(e) => setOfferEndTime(e.target.value)}
+                    required
+                    className="h-11"
+                  />
                 </div>
               )}
             </CardContent>
@@ -915,22 +1282,37 @@ export default function ProductForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Meta Title</Label>
-                <Input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} className="h-11" />
+                <Input
+                  value={metaTitle}
+                  onChange={(e) => setMetaTitle(e.target.value)}
+                  className="h-11"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Meta Keywords</Label>
-                <TagInput value={metaKeywordTags} onChange={setMetaKeywordTags} />
+                <TagInput
+                  value={metaKeywordTags}
+                  onChange={setMetaKeywordTags}
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label>Meta Description</Label>
-              <Textarea value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} className="min-h-[100px] resize-none" />
+              <Textarea
+                value={metaDescription}
+                onChange={(e) => setMetaDescription(e.target.value)}
+                className="min-h-[100px] resize-none"
+              />
             </div>
           </CardContent>
         </Card>
 
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="destructive" onClick={() => router.back()}>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => router.back()}
+          >
             <X className="mr-2 h-4 w-4" /> Discard
           </Button>
           <Button type="submit" disabled={isSubmitting}>
