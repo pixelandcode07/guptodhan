@@ -12,7 +12,7 @@ const getBaseUrl = () => {
 async function getFaqData() {
   try {
     const res = await fetch(`${getBaseUrl()}/api/v1/public/faq`, {
-      next: { revalidate: 3600 }, // ১ ঘন্টা ক্যাশ থাকবে (যেহেতু FAQ খুব বেশি চেঞ্জ হয় না)
+      next: { revalidate: 3600 }, 
     });
     
     if (!res.ok) throw new Error('Failed to fetch FAQs');
@@ -35,12 +35,13 @@ export default async function FAQPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
+      {/* ✅ Exactly aligned with NavMain */}
       <div className="md:max-w-[95vw] xl:container sm:px-8 mx-auto px-4">
         
         {/* Header Section */}
         <div className="text-center max-w-2xl mx-auto mb-12">
           <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <HelpCircle className="w-8 h-8 text-blue-600" />
+            <HelpCircle className="w-8 h-8 text-[#00005E]" />
           </div>
           <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">
             Frequently Asked Questions
@@ -56,7 +57,7 @@ export default async function FAQPage() {
             <div className="space-y-10">
               {faqData.map((categoryGroup: any) => (
                 <div key={categoryGroup._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
-                  <h2 className="text-xl font-bold text-[#00005E] mb-6 border-b border-gray-100 pb-4">
+                  <h2 className="text-xl md:text-2xl font-bold text-[#00005E] mb-6 border-b border-gray-100 pb-4">
                     {categoryGroup.categoryName}
                   </h2>
                   
@@ -67,7 +68,11 @@ export default async function FAQPage() {
             </div>
           ) : (
             <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
-              <p className="text-gray-500 font-medium">No FAQs available at the moment. Please check back later.</p>
+              <div className="bg-gray-50 h-20 w-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                 <HelpCircle className="h-10 w-10 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">No FAQs Found</h3>
+              <p className="mt-2 text-gray-500 font-medium">No FAQs available at the moment. Please check back later.</p>
             </div>
           )}
         </div>
