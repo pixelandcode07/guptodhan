@@ -12,7 +12,7 @@ const getBaseUrl = () => {
 async function getJobs(): Promise<IJob[]> {
   try {
     const res = await fetch(`${getBaseUrl()}/api/v1/public/job`, {
-      next: { revalidate: 60 }, // ISR: Cache for 60 seconds
+      cache: 'no-store', // 🔥 CRITICAL FIX: Disable caching so it always fetches fresh data with the 'status' field
     });
 
     if (!res.ok) {
@@ -22,7 +22,7 @@ async function getJobs(): Promise<IJob[]> {
     const json: ApiResponse<IJob[]> = await res.json();
     return json.data || [];
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching jobs:", error);
     return [];
   }
 }
@@ -30,13 +30,13 @@ async function getJobs(): Promise<IJob[]> {
 export default async function JobsPage() {
   const allJobs = await getJobs();
   
-  // ✅ Double check to ensure ONLY 'approved' jobs are shown on the frontend
+  // ✅ Only show jobs that have status 'approved'
   const approvedJobs = allJobs.filter((job) => job.status === 'approved');
 
   return (
     <div className="min-h-screen bg-gray-50 py-10">
-      {/* ✅ Aligned exactly with NavMain container classes */}
-      <div className="max-w-[95vw] xl:container sm:px-8 mx-auto px-4">
+      {/* ✅ Exact Alignment matching NavMain */}
+      <div className="md:max-w-[95vw] xl:container sm:px-8 mx-auto px-4">
         
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8">
