@@ -48,11 +48,11 @@ export const sidebarData = {
       icon: IconUsers,
     },
     { title: 'Home Page SEO', url: '/home-page-seo', icon: IconReport },
-    {
-      title: 'Custom CSS & JS',
-      url: '/custom-css-js',
-      icon: IconFileDescription,
-    },
+    // {
+    //   title: 'Custom CSS & JS',
+    //   url: '/custom-css-js',
+    //   icon: IconFileDescription,
+    // },
     {
       title: 'Social & Chat Scripts',
       url: '/social-chat-scripts',
