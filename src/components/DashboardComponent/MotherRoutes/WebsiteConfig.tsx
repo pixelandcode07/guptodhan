@@ -1,5 +1,5 @@
 import { SidebarGroupMenu } from "@/components/ReusableComponents/SidebarGroupMenu"
-import { Code, LayoutDashboard, MessageCircle, Palette, Search, Settings, Share2 } from "lucide-react"
+import { Code, LayoutDashboard, MessageCircle, Search, Share2 } from "lucide-react"
 const webConfig = [
   {
     title: 'General Info',
