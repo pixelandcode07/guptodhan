@@ -29,9 +29,10 @@ const createCategory = async (req: NextRequest) => {
     const name = formData.get('name') as string;
     const iconFile = formData.get('icon') as File | null;
 
+    // 🔥 ১. Slug জেনারেট করা হলো
     const slug = generateSlug(name);
 
-    const payload: { name: string; slug: string; icon?: string } = { name, slug };
+    const payload: any = { name };
 
     if (iconFile && iconFile.size > 0) {
         const buffer = Buffer.from(await iconFile.arrayBuffer());
@@ -39,8 +40,16 @@ const createCategory = async (req: NextRequest) => {
         payload.icon = uploadResult.secure_url;
     }
 
+    // ২. Zod দিয়ে ভ্যালিডেশন করা হলো (যাতে slug রিমুভ হলেও সমস্যা নেই)
     const validatedData = createCategoryValidationSchema.parse(payload);
-    const result = await ClassifiedCategoryServices.createCategoryInDB(validatedData);
+
+    // 🔥 ৩. ভ্যালিডেশনের পর ম্যানুয়ালি slug অ্যাড করে ডাটাবেসে পাঠানো হলো
+    const finalDataToSave = {
+        ...validatedData,
+        slug // Ensuring slug is passed to DB
+    };
+
+    const result = await ClassifiedCategoryServices.createCategoryInDB(finalDataToSave);
 
     return sendResponse({
         success: true,
@@ -74,16 +83,16 @@ const updateCategory = async (
     const payload: Partial<IClassifiedCategory> = {};
 
     const name = formData.get('name') as string | null;
-    const slug = formData.get('slug') as string | null;
+    let slug = formData.get('slug') as string | null;
     const status = formData.get('status') as 'active' | 'inactive' | null;
 
     if (name) {
         payload.name = name;
         if (!slug) {
-            payload.slug = generateSlug(name);
+            slug = generateSlug(name); // Generate if not provided
         }
     }
-    if (slug) payload.slug = slug;
+    
     if (status) payload.status = status;
 
     const iconFile = formData.get('icon') as File | null;
@@ -95,7 +104,16 @@ const updateCategory = async (
     }
 
     const validatedData = updateCategoryValidationSchema.parse(payload);
-    const result = await ClassifiedCategoryServices.updateCategoryInDB(id, validatedData);
+
+    // 🔥 Ensure slug is passed when updating
+    const finalDataToUpdate: any = {
+        ...validatedData,
+    };
+    if (slug) {
+        finalDataToUpdate.slug = slug;
+    }
+
+    const result = await ClassifiedCategoryServices.updateCategoryInDB(id, finalDataToUpdate);
 
     return sendResponse({
         success: true,
@@ -232,7 +250,7 @@ const reorderClassifiedCategory = async (req: NextRequest) => {
     });
 };
 
-// 🔥 NEW: Single API Controller for Category Page
+// Single API Controller for Category Page
 const getCategoryPageDataBySlug = async (req: NextRequest, { params }: { params: Promise<{ slug: string }> }) => {
     await dbConnect();
     const { slug } = await params;
@@ -241,7 +259,6 @@ const getCategoryPageDataBySlug = async (req: NextRequest, { params }: { params:
 
     const filters = {
         search: searchParams.get('search') || undefined,
-        // ✅ Handle Arrays correctly using getAll
         subCategory: searchParams.getAll('subCategory').length > 0 ? searchParams.getAll('subCategory') : undefined,
         brand: searchParams.getAll('brand').length > 0 ? searchParams.getAll('brand') : undefined,
         district: searchParams.getAll('district').length > 0 ? searchParams.getAll('district') : undefined,
