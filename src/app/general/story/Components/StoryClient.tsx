@@ -56,13 +56,10 @@ export default function StoryClient({ initialStories = [], productList: initialP
 
       // Product fetching
       try {
-        // ✅ FIX 1: Increase limit to get more products
         const productRes = await axios.get('/api/v1/product?limit=1000'); 
         if (productRes?.data?.success) {
           const receivedData = productRes.data.data;
           
-          // ✅ FIX 2: Handle Pagination Object Structure
-          // API returns { products: [], pagination: {} }, so we need to extract .products
           if (Array.isArray(receivedData)) {
              setProducts(receivedData);
           } else if (receivedData?.products && Array.isArray(receivedData.products)) {
@@ -293,10 +290,8 @@ export default function StoryClient({ initialStories = [], productList: initialP
 }
 
 const StoryFormFields = ({ isEdit, formData, onImageChange, imagePreview, productList }: any) => {
-  // Safe default
   const safeProductList = Array.isArray(productList) ? productList : [];
   
-  // Handle default value logic for product ID
   const defaultPid = formData?.productId 
     ? (typeof formData.productId === 'object' ? formData.productId._id : formData.productId) 
     : "";
@@ -312,9 +307,7 @@ const StoryFormFields = ({ isEdit, formData, onImageChange, imagePreview, produc
 
       <div className="grid gap-2">
         <Label>Link Product (Optional)</Label>
-        {/* Pass the safe list here */}
         <ProductCombobox productList={safeProductList} value={selectedPid} onChange={setSelectedPid} />
-        {/* Important: This input ensures the value is submitted in the formData */}
         <input type="hidden" name="productId" value={selectedPid} />
       </div>
 
@@ -375,7 +368,6 @@ const ProductCombobox = ({ productList, value, onChange }: any) => {
   const [open, setOpen] = useState(false);
   
   const safeList = Array.isArray(productList) ? productList : [];
-  
   const selectedProduct = safeList.find((p: any) => p._id === value);
 
   return (
@@ -395,18 +387,21 @@ const ProductCombobox = ({ productList, value, onChange }: any) => {
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0" align="start">
         <Command>
-          <CommandInput placeholder="Search product..." />
+          <CommandInput placeholder="Search product by title..." />
           <CommandList>
             <CommandEmpty>No product found.</CommandEmpty>
             <CommandGroup>
-              <CommandItem onSelect={() => { onChange(""); setOpen(false); }} className="text-xs">
+              {/* ✅ Added a valid search value for "None" */}
+              <CommandItem value="none remove link" onSelect={() => { onChange(""); setOpen(false); }} className="text-xs">
                 <Check className={cn("mr-2 h-3 w-3", !value ? "opacity-100" : "opacity-0")} />
                 None (Remove Link)
               </CommandItem>
+              
               {safeList.map((product: any) => (
                 <CommandItem 
                   key={product._id} 
-                  value={product.productTitle} // ✅ FIX 3: Added value prop for search
+                  // ✅ FIX: Combined Product Title and ID to ensure flawless searching and uniqueness
+                  value={`${product.productTitle} ${product._id}`} 
                   onSelect={() => { onChange(product._id); setOpen(false); }} 
                   className="text-xs"
                 >
