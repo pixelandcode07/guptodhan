@@ -614,15 +614,23 @@ export default function ProductForm({
                 const uploadedImage = variant.image
                   ? await uploadFile(variant.image as File)
                   : variant.imageUrl || "";
+
+                // ✅ CRITICAL FIX: শুধুমাত্র valid MongoDB ObjectId পাঠানো হবে
+                // Plain string (যেমন "Yellow", "4GB/64GB") পাঠালে backend CastError দেয়
+                const safeId = (val?: string) =>
+                  val && isObjectId(val) ? val : undefined;
+
                 return {
-                  ...variant,
                   productImage: uploadedImage,
-                  color: variant.color ? [variant.color] : [],
-                  size: variant.size ? [variant.size] : [],
-                  storage: variant.storage || undefined,
-                  simType: variant.simType ? [variant.simType] : [],
-                  condition: variant.condition ? [variant.condition] : [],
-                  warranty: variant.warranty || undefined,
+                  color: safeId(variant.color) ? [variant.color] : [],
+                  size: safeId(variant.size) ? [variant.size] : [],
+                  storage: safeId(variant.storage),
+                  simType: safeId(variant.simType) ? [variant.simType] : [],
+                  condition: safeId(variant.condition) ? [variant.condition] : [],
+                  warranty: safeId(variant.warranty),
+                  stock: variant.stock,
+                  price: variant.price,
+                  discountPrice: variant.discountPrice,
                 };
               })
             )
