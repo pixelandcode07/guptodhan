@@ -59,21 +59,24 @@ const StoryFeed = ({ stories }: StoryFeedProps) => {
     }
   }, [currentStoryIndex, activeStories.length]);
 
-  // ✅ PRODUCT NAVIGATION FUNCTION (FIXED URL)
+  // ✅ PRODUCT NAVIGATION FUNCTION (FIXED URL WITH SLUG)
   const handleNavigateToProduct = (e: React.MouseEvent, story: IStory) => {
     e.stopPropagation(); // Prevent modal from closing or sliding
 
     if (story.productId) {
-      // Extract ID safely whether it's populated (object) or raw string
-      const productId = typeof story.productId === 'object'
-        ? (story.productId as any)._id
-        : story.productId;
+      // Extract slug safely. We assume productId is populated with product details including slug.
+      const productSlug = typeof story.productId === 'object'
+        ? (story.productId as any).slug
+        : null;
 
-      if (productId) {
-        // 🔴 FIX: Changed '/product/' to '/products/' to match your folder structure
-        router.push(`/products/${productId}`);
+      if (productSlug) {
+        // Redirect using slug instead of ID
+        router.push(`/products/${productSlug}`);
       } else {
-        console.log("Product ID not found");
+        console.log("Product slug not found");
+        // Fallback: If slug is missing but we have an ID, you might want to handle it, 
+        // but since you removed ID based routing, we'll just log or fallback to shop
+        router.push('/shop');
       }
     } else {
       // Redirect to shop if no specific product linked
@@ -104,7 +107,6 @@ const StoryFeed = ({ stories }: StoryFeedProps) => {
 
   return (
     <>
-      {/* <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 py-2 md:py-10 relative"> */}
       <div className="bg-gray-100 py-2 md:py-2 relative ">
         <div className='container mx-auto'>
           <div className="max-w-[95vw] xl:container sm:px-10 mx-auto">
