@@ -29,6 +29,7 @@ export const getRedisClient = async (): Promise<RedisClient> => {
 
     const socketOptions = {
       connectTimeout: 5000,
+      keepAlive: 30000, // ✅ Redis connection জীবিত রাখবে
       reconnectStrategy: (retries: number) => {
         if (retries > 3) {
           console.error('❌ Redis: Max reconnection attempts reached');
