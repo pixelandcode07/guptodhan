@@ -46,7 +46,7 @@ async function getActiveBrands() {
     });
     if (!res.ok) return [];
     const data = await res.json();
-    return data.data || [];
+    return data.data || [];    
   } catch (error) {
     console.error('Error fetching brands:', error);
     return [];
