@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trash2 } from 'lucide-react';
+import Image from 'next/image';
 
-// ডেটার টাইপগুলো ডিফাইন করা
 interface DropdownOption {
     _id: string;
     name?: string;
@@ -32,7 +32,6 @@ export interface IProductOption {
     discountPrice?: number;
 }
 
-// Props এর ইন্টারফেস ডিফাইন করা
 interface ProductVariantFormProps {
     variants: IProductOption[];
     setVariants: React.Dispatch<React.SetStateAction<IProductOption[]>>;
@@ -46,8 +45,12 @@ interface ProductVariantFormProps {
     };
 }
 
+// ✅ empty string কে undefined বানায় — Shadcn Select placeholder দেখানোর জন্য
+const toSelectValue = (value?: string): string | undefined =>
+    value && value.trim() !== '' ? value.trim() : undefined;
+
 export default function ProductVariantForm({ variants, setVariants, variantData }: ProductVariantFormProps) {
-    
+
     const handleVariantChange = (index: number, field: keyof IProductOption, value: string | number | File | null) => {
         const updatedVariants = [...variants];
         updatedVariants[index] = { ...updatedVariants[index], [field]: value };
@@ -55,9 +58,9 @@ export default function ProductVariantForm({ variants, setVariants, variantData 
     };
 
     const addVariant = () => {
-        setVariants([...variants, { 
-            id: Date.now(), 
-            stock: 0, 
+        setVariants([...variants, {
+            id: Date.now(),
+            stock: 0,
             price: 0,
             color: '',
             size: '',
@@ -65,7 +68,7 @@ export default function ProductVariantForm({ variants, setVariants, variantData 
             simType: '',
             condition: '',
             warranty: '',
-            discountPrice: 0
+            discountPrice: 0,
         }]);
     };
 
@@ -92,79 +95,125 @@ export default function ProductVariantForm({ variants, setVariants, variantData 
                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Warranty</th>
                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Stock*</th>
                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Price*</th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Discount Price</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Discount</th>
                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Action</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white">
                         {variants.map((variant, index) => (
                             <tr key={variant.id} className="border-b">
-                                <td className="p-2"><Input type="file" className="w-32" onChange={(e) => handleVariantChange(index, 'image', e.target.files?.[0] ?? null)} /></td>
-                                
-                                <td className="p-2 min-w-[120px]">
-                                    <Select onValueChange={(v) => handleVariantChange(index, 'color', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Select Color"/></SelectTrigger>
+                                {/* Image */}
+                                <td className="p-2">
+                                    <div className="flex flex-col gap-1">
+                                        {variant.imageUrl && !variant.image && (
+                                            <div className="relative w-10 h-10 rounded overflow-hidden border">
+                                                <Image src={variant.imageUrl} alt="variant" fill className="object-cover" sizes="40px" />
+                                            </div>
+                                        )}
+                                        <Input
+                                            type="file"
+                                            className="w-32"
+                                            accept="image/*"
+                                            onChange={(e) => handleVariantChange(index, 'image', e.target.files?.[0] ?? null)}
+                                        />
+                                    </div>
+                                </td>
+
+                                {/* ✅ Color — value prop দিয়ে edit mode-এ prefill */}
+                                <td className="p-2 min-w-[130px]">
+                                    <Select
+                                        value={toSelectValue(variant.color)}
+                                        onValueChange={(v) => handleVariantChange(index, 'color', v)}
+                                    >
+                                        <SelectTrigger><SelectValue placeholder="Color" /></SelectTrigger>
                                         <SelectContent>
-                                            {/* ✅ পরিবর্তন: c.colorName ব্যবহার করা হয়েছে */}
-                                            {variantData?.colors?.map(c => <SelectItem key={c._id} value={c._id}>{c.colorName}</SelectItem>)}
+                                            {variantData?.colors?.map(c => (
+                                                <SelectItem key={c._id} value={c._id}>{c.colorName}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </td>
 
+                                {/* ✅ Size */}
                                 <td className="p-2 min-w-[120px]">
-                                    <Select onValueChange={(v) => handleVariantChange(index, 'size', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Select Size"/></SelectTrigger>
+                                    <Select
+                                        value={toSelectValue(variant.size)}
+                                        onValueChange={(v) => handleVariantChange(index, 'size', v)}
+                                    >
+                                        <SelectTrigger><SelectValue placeholder="Size" /></SelectTrigger>
                                         <SelectContent>
-                                            {variantData?.sizes?.map(s => <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>)}
+                                            {variantData?.sizes?.map(s => (
+                                                <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </td>
 
+                                {/* ✅ Storage */}
                                 <td className="p-2 min-w-[150px]">
-                                    <Select onValueChange={(v) => handleVariantChange(index, 'storage', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Select Storage"/></SelectTrigger>
+                                    <Select
+                                        value={toSelectValue(variant.storage)}
+                                        onValueChange={(v) => handleVariantChange(index, 'storage', v)}
+                                    >
+                                        <SelectTrigger><SelectValue placeholder="Storage" /></SelectTrigger>
                                         <SelectContent>
-                                            {/* ✅ পরিবর্তন: `${st.ram} / ${st.rom}` ব্যবহার করা হয়েছে */}
-                                            {variantData?.storageTypes?.map(st => <SelectItem key={st._id} value={st._id}>{`${st.ram} / ${st.rom}`}</SelectItem>)}
+                                            {variantData?.storageTypes?.map(st => (
+                                                <SelectItem key={st._id} value={st._id}>
+                                                    {st.ram && st.rom ? `${st.ram} / ${st.rom}` : st.name}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </td>
-                                
-                                <td className="p-2 min-w-[120px]">
-                                    <Select onValueChange={(v) => handleVariantChange(index, 'simType', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Select SIM"/></SelectTrigger>
+
+                                {/* ✅ SIM Type */}
+                                <td className="p-2 min-w-[130px]">
+                                    <Select
+                                        value={toSelectValue(variant.simType)}
+                                        onValueChange={(v) => handleVariantChange(index, 'simType', v)}
+                                    >
+                                        <SelectTrigger><SelectValue placeholder="SIM" /></SelectTrigger>
                                         <SelectContent>
-                                            {variantData?.simTypes?.length > 0 ? (
-                                                variantData.simTypes.map(sim => (
+                                            {variantData?.simTypes?.length > 0
+                                                ? variantData.simTypes.map(sim => (
                                                     <SelectItem key={sim._id} value={sim._id}>{sim.name}</SelectItem>
                                                 ))
-                                            ) : (
-                                                <div className="p-3 text-sm text-gray-500">No SIM types available</div>
-                                            )}
+                                                : <div className="p-3 text-sm text-gray-500">No SIM types available</div>
+                                            }
                                         </SelectContent>
                                     </Select>
                                 </td>
 
-                                <td className="p-2 min-w-[120px]">
-                                    <Select onValueChange={(v) => handleVariantChange(index, 'condition', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Select Condition"/></SelectTrigger>
+                                {/* ✅ Condition */}
+                                <td className="p-2 min-w-[130px]">
+                                    <Select
+                                        value={toSelectValue(variant.condition)}
+                                        onValueChange={(v) => handleVariantChange(index, 'condition', v)}
+                                    >
+                                        <SelectTrigger><SelectValue placeholder="Condition" /></SelectTrigger>
                                         <SelectContent>
-                                            {/* ✅ পরিবর্তন: cond.deviceCondition ব্যবহার করা হয়েছে */}
-                                            {variantData?.conditions?.map(cond => <SelectItem key={cond._id} value={cond._id}>{cond.deviceCondition}</SelectItem>)}
+                                            {variantData?.conditions?.map(cond => (
+                                                <SelectItem key={cond._id} value={cond._id}>{cond.deviceCondition}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </td>
 
-                                <td className="p-2 min-w-[120px]">
-                                    <Select onValueChange={(v) => handleVariantChange(index, 'warranty', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Select Warranty"/></SelectTrigger>
+                                {/* ✅ Warranty */}
+                                <td className="p-2 min-w-[130px]">
+                                    <Select
+                                        value={toSelectValue(variant.warranty)}
+                                        onValueChange={(v) => handleVariantChange(index, 'warranty', v)}
+                                    >
+                                        <SelectTrigger><SelectValue placeholder="Warranty" /></SelectTrigger>
                                         <SelectContent>
-                                            {/* ✅ পরিবর্তন: w.warrantyName ব্যবহার করা হয়েছে */}
-                                            {variantData?.warranties?.map(w => <SelectItem key={w._id} value={w._id}>{w.warrantyName}</SelectItem>)}
+                                            {variantData?.warranties?.map(w => (
+                                                <SelectItem key={w._id} value={w._id}>{w.warrantyName}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </td>
-                                
+
                                 <td className="p-2"><Input type="number" min="0" value={variant.stock} onChange={(e) => handleVariantChange(index, 'stock', Number(e.target.value))} required className="w-24 min-w-[100px]" /></td>
                                 <td className="p-2"><Input type="number" value={variant.price} onChange={(e) => handleVariantChange(index, 'price', Number(e.target.value))} required className="w-24 min-w-[100px]" /></td>
                                 <td className="p-2"><Input type="number" value={variant.discountPrice || 0} onChange={(e) => handleVariantChange(index, 'discountPrice', Number(e.target.value))} className="w-24 min-w-[100px]" /></td>
