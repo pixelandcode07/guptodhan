@@ -595,12 +595,28 @@ export default function VendorOrderDetailsClient({ order }: { order: OrderData }
                 <InfoRow label="Order ID" value={order.orderId} mono />
                 <InfoRow
                   label="Placed On"
-                  value={new Date(order.createdAt).toLocaleString('en-GB')}
+                  value={new Date(order.createdAt).toLocaleString('en-GB', {
+  timeZone: 'Asia/Dhaka',
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: true,
+})}
                 />
                 {order.orderDate && (
                   <InfoRow
                     label="Order Date"
-                    value={new Date(order.orderDate).toLocaleString('en-GB')}
+                    value={new Date(order.createdAt).toLocaleString('en-GB', {
+  timeZone: 'Asia/Dhaka',
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: true,
+})}
                   />
                 )}
               </div>
