@@ -695,50 +695,58 @@ const requestReturnInDB = async (orderId: string, reason: string) => {
 // ================================================================
 const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
   try {
-    const store = await StoreModel.findOne({ vendorId });
+    // ১. ভেন্ডর আইডিকে ObjectId তে রূপান্তর (এটিই ছিল মেইন সমস্যা)
+    const vId = new Types.ObjectId(vendorId);
+
+    // ২. প্রথমে স্টোর খুঁজে বের করা
+    const store = await StoreModel.findOne({ vendorId: vId });
 
     if (!store) {
       throw new Error('Store not found for this vendor');
     }
 
-    // Use aggregation
+    // ৩. ঐ স্টোরের সব অর্ডার এগ্রিগেশন করা
     const orders = await OrderModel.aggregate([
       { $match: { storeId: store._id } },
       { $sort: { createdAt: -1 } },
 
-      // Lookup user
+      // ইউজার ডিটেইলস নিয়ে আসা
       {
         $lookup: {
           from: 'users',
           localField: 'userId',
           foreignField: '_id',
-          as: 'userId',
+          as: 'user',
         },
       },
-      { $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
 
-      // Lookup order details
+      // অর্ডার আইটেম বা ডিটেইলস নিয়ে আসা
       {
         $lookup: {
           from: 'orderdetails',
           localField: 'orderDetails',
           foreignField: '_id',
-          as: 'orderDetails',
+          as: 'details',
         },
       },
 
-      // Project
+      // ফাইনাল ডাটা স্ট্রাকচার (যা ফ্রন্টএন্ডে দরকার)
       {
         $project: {
+          _id: 1,
           orderId: 1,
-          'userId.name': 1,
-          'userId.email': 1,
           orderStatus: 1,
           paymentStatus: 1,
           totalAmount: 1,
+          deliveryCharge: 1,
           orderDate: 1,
-          orderDetails: 1,
           createdAt: 1,
+          shippingName: 1,
+          shippingPhone: 1,
+          'user.name': 1,
+          'user.email': 1,
+          orderDetails: '$details', // ডিটেইলসগুলো এখানে পাঠিয়ে দিলাম
         },
       },
     ]);
@@ -748,7 +756,7 @@ const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
       orders,
     };
   } catch (error) {
-    console.error('❌ Error getting vendor store and orders:', error);
+    console.error('❌ Error getting vendor orders:', error);
     throw error;
   }
 };
