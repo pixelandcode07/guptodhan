@@ -12,6 +12,9 @@ const publicRoutes = [
   '/api/v1/user/resend-otp',
   '/api/auth',
   '/api/v1/public',
+  '/api/v1/auth/vendor-forgot-password/send-otp',
+  '/api/v1/auth/vendor-forgot-password/verify-otp',
+  '/api/v1/auth/vendor-forgot-password/reset',
 ];
 
 // ❗️ Admin Routes
