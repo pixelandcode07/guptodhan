@@ -27,10 +27,38 @@ export default function LogIn({
   setShowPin: Dispatch<SetStateAction<boolean>>
   loading?: boolean
 }) {
+  
+  // ✅ Form Submit Interceptor for formatting Phone Numbers & Emails correctly
+  const handlePreSubmit: SubmitHandler<LoginFormData> = (data) => {
+    let formattedIdentifier = data.identifier.trim()
+
+    // Check if it's NOT an email (meaning it's a phone number)
+    if (!formattedIdentifier.includes('@')) {
+      // Remove any unwanted spaces or dashes
+      formattedIdentifier = formattedIdentifier.replace(/[\s-]/g, '')
+
+      // If number starts with '01' (11 digits), prepend '+88'
+      if (formattedIdentifier.startsWith('01') && formattedIdentifier.length === 11) {
+        formattedIdentifier = '+88' + formattedIdentifier
+      } 
+      // If number starts with '8801' (13 digits), prepend '+'
+      else if (formattedIdentifier.startsWith('880') && formattedIdentifier.length === 13) {
+        formattedIdentifier = '+' + formattedIdentifier
+      }
+      // If it already starts with '+880', it will remain as it is
+    }
+
+    // Pass the perfectly formatted data to the parent handler
+    onSubmitLogin({
+      ...data,
+      identifier: formattedIdentifier,
+    })
+  }
+
   return (
     <div>
       {step === 'login' && (
-        <form onSubmit={handleSubmitLogin(onSubmitLogin)} className="space-y-4">
+        <form onSubmit={handleSubmitLogin(handlePreSubmit)} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="identifier" className="flex items-center text-[12px] font-medium text-gray-900">
               Phone number or Email <Asterisk className="h-3 w-3 text-red-500" />
@@ -61,7 +89,6 @@ export default function LogIn({
           </div>
 
           <div className="space-y-2">
-            {/* ✅ Updated Label to Password */}
             <label htmlFor="pin" className="flex items-center text-[12px] font-medium text-gray-900">
               Enter your Password <Asterisk className="h-3 w-3 text-red-500" />
             </label>
@@ -71,7 +98,6 @@ export default function LogIn({
                 type={showPin ? 'text' : 'password'}
                 placeholder="Enter your password"
                 disabled={loading}
-                // ✅ Updated Validation: Min 6 chars, removed maxLength
                 {...registerLogin('pin', {
                   required: 'Password is required',
                   minLength: {

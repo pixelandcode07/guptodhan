@@ -26,6 +26,7 @@ export interface IVendorProduct {
   vendorStoreId: Types.ObjectId;
   vendorName: string;
   shortDescription: string;
+  shippingCost?: number,
   fullDescription: string;
   specification?: string;
   warrantyPolicy?: string;
@@ -37,6 +38,7 @@ export interface IVendorProduct {
   discountPrice?: number;
   stock?: number;
   sku?: string;
+  slug: string;
   rewardPoints?: number;
   category: Types.ObjectId;
   subCategory?: Types.ObjectId;

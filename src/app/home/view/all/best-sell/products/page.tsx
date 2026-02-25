@@ -1,7 +1,6 @@
 import PageHeader from '@/components/ReusableComponents/PageHeader';
 import ProductGrid from '@/components/ReusableComponents/ProductGrid';
 import { fetchBestSellingData } from '@/lib/MainHomePage/fetchBestSellingData';
-// import { fetchLandingPageProducts } from '@/lib/MainHomePage/fetchLandingPageProducts';
 import { generateGuptodhanMetadata } from '@/lib/metadata/generateGuptodhanMetadata';
 
 export async function generateMetadata() {

@@ -72,7 +72,7 @@ export default function MobileFooter() {
                     <li>
                         <Link
                             href="/home/categories"
-                            className={`flex flex-col items-center gap-1 px-3 py-2 text-xs font-medium ${isActive("/home/buyandsell") ? "text-[#0097E9]" : "text-gray-600"
+                            className={`flex flex-col items-center gap-1 px-3 py-2 text-xs font-medium ${isActive("/buy-sell") ? "text-[#0097E9]" : "text-gray-600"
                                 }`}
                         >
                             <LayoutPanelTopIcon size={22} />
@@ -93,7 +93,7 @@ export default function MobileFooter() {
 
                     <li>
                         <Link
-                            href="/cart"
+                            href="/products/shopping-cart"
                             className={`flex flex-col items-center gap-1 px-3 py-2 text-xs font-medium ${isActive("/cart") ? "text-[#0097E9]" : "text-gray-600"
                                 }`}
                         >

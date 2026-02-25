@@ -19,6 +19,7 @@ const createSubCategoryInDB = async (payload: Partial<ISubCategory>) => {
 
   // 🗑️ Clear caches
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+  await deleteCacheKey('subcategories:all'); // ✅ এই লাইনটা যোগ করো
 
   return result;
 };
@@ -92,19 +93,44 @@ const getSubCategoriesByCategoryFromDB = async (categoryId: string) => {
 // ================================================================
 // ✏️ UPDATE SUBCATEGORY
 // ================================================================
+// D:\Guptodhan Project\guptodhan\src\lib\modules\ecommerce-category\services\ecomSubCategory.service.ts
+
 const updateSubCategoryInDB = async (id: string, payload: Partial<ISubCategory>) => {
+  // 🔍 1. Fetch existing subcategory to get the old slug before updating
+  const existingSubCategory = await SubCategoryModel.findById(id);
+  
+  if (!existingSubCategory) {
+    throw new Error('SubCategory not found to update.');
+  }
+
+  const oldSlug = existingSubCategory.slug;
+
+  // 📝 2. Perform the update
   const result = await SubCategoryModel.findByIdAndUpdate(id, payload, { 
     new: true, 
     runValidators: true 
   });
 
   if (!result) {
-    throw new Error('SubCategory not found to update.');
+    throw new Error('Failed to update SubCategory.');
   }
 
-  // 🗑️ Clear caches
+  // 🗑️ 3. Clear general category caches
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
   await deleteCacheKey(`subcategories:by-category:${result.category}`);
+  
+  // 🔥 CRITICAL FIX: Ei line ta oboshhoi add korben nahole table e image asbe na
+  await deleteCacheKey('subcategories:all');
+
+  // 🔥 4. Clear products cache for the OLD slug
+  if (oldSlug) {
+    await deleteCachePattern(`subcategory:${oldSlug}:products:*`);
+  }
+
+  // 🔥 5. Clear products cache for the NEW slug (if it was updated to a new one)
+  if (result.slug && result.slug !== oldSlug) {
+    await deleteCachePattern(`subcategory:${result.slug}:products:*`);
+  }
 
   return result;
 };
@@ -129,10 +155,11 @@ const deleteSubCategoryFromDB = async (id: string) => {
 
   // 🗑️ Clear caches
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+  await deleteCacheKey('subcategories:all'); // ✅ এই লাইনটা যোগ করো
 
   return null;
 };
-
+ 
 // ================================================================
 // 🔍 GET PRODUCTS BY SUBCATEGORY SLUG WITH FILTERS (OPTIMIZED)
 // ================================================================
@@ -235,7 +262,7 @@ const getProductsBySubCategorySlugWithFiltersFromDB = async (
       if (filters.sort === 'priceLowHigh') sortStage = { productPrice: 1 };
       if (filters.sort === 'priceHighLow') sortStage = { productPrice: -1 };
 
-      // ✅ Use aggregation instead of populate
+      // ✅ Use aggregation
       const products = await VendorProductModel.aggregate([
         { $match: matchStage },
         { $sort: sortStage },
@@ -306,7 +333,14 @@ const getProductsBySubCategorySlugWithFiltersFromDB = async (
         },
         { $unwind: { path: '$productModel', preserveNullAndEmptyArrays: true } },
 
-        // Project only needed fields
+        // ✅ SLUG SAFETY: Slug না থাকলে বানিয়ে নেবে
+        {
+          $addFields: {
+            slug: { $ifNull: ["$slug", { $concat: ["product-", { $toString: "$_id" }] }] }
+          }
+        },
+
+        // ✅ PROJECT STAGE (SLUG ADDED HERE)
         {
           $project: {
             'category.name': 1,
@@ -327,6 +361,9 @@ const getProductsBySubCategorySlugWithFiltersFromDB = async (
             status: 1,
             productOptions: 1,
             createdAt: 1,
+            
+            // 🔥 CRITICAL FIX: এই লাইনটি আগে মিসিং ছিল
+            slug: 1, 
           },
         },
       ]);

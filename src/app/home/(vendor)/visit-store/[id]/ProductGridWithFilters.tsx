@@ -40,6 +40,7 @@ interface CategoryInfo {
 
 interface Product {
     _id: string;
+    slug: string;
     productTitle: string;
     thumbnailImage: string;
     productPrice: number;

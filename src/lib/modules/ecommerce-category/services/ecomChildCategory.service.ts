@@ -119,20 +119,35 @@ const updateChildCategoryInDB = async (id: string, payload: Partial<IChildCatego
 // 🗑️ DELETE CHILD CATEGORY
 // ================================================================
 const deleteChildCategoryFromDB = async (id: string) => {
-  const existingModel = await ClassifiedAd.findOne({ children: new Types.ObjectId(id) });
+  if (!Types.ObjectId.isValid(id)) {
+    throw new Error(`Invalid ID format: ${id}`);
+  }
+
+  // ✅ Document না থাকলেও cache clear করে দাও
+  const existing = await ChildCategoryModel.findById(id).lean();
+  
+  if (!existing) {
+    // ✅ MongoDB তে নেই কিন্তু cache এ থাকতে পারে — cache clear করে দাও
+    await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+    await deleteCacheKey(CacheKeys.CHILDCATEGORY.ALL);
+    console.warn(`⚠️ Document not in MongoDB but clearing stale cache for ID: ${id}`);
+    return null; // ✅ Error throw না করে gracefully return
+  }
+
+  const existingModel = await ClassifiedAd.findOne({ 
+    children: new Types.ObjectId(id) 
+  });
 
   if (existingModel) {
-    throw new Error('Cannot delete this child category as it is used in a product model.');
+    throw new Error('Cannot delete: this child category is used in a classified ad.');
   }
 
   const result = await ChildCategoryModel.findByIdAndDelete(id);
 
-  if (!result) {
-    throw new Error('ChildCategory not found to delete.');
-  }
-
-  // 🗑️ Clear caches
+  // ✅ Delete এর পর সব related cache clear
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+  await deleteCacheKey(CacheKeys.CHILDCATEGORY.ALL);
+  await deleteCacheKey(CacheKeys.CHILDCATEGORY.BY_SUBCATEGORY(result!.subCategory.toString()));
 
   return null;
 };
@@ -166,47 +181,50 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
   return getCachedData(
     cacheKey,
     async () => {
-      // Get child category
+      // ✅ FIX 2: Case-insensitive Slug Search
       const childCategory = await ChildCategoryModel.findOne({ 
-        slug, 
+        slug: { $regex: new RegExp(`^${slug}$`, 'i') }, 
         status: 'active' 
       }).lean();
 
-      if (!childCategory) return null;
+      if (!childCategory) return null; 
 
       // ✅ Type-safe access
       const childCategoryData = childCategory as any;
 
-      // Build match stage
+      // Build match stage for Products
       const matchStage: any = {
-        childCategory: childCategoryData._id,
+        // ✅ FIX 3: Ensure ObjectId casting for Aggregation
+        childCategory: new Types.ObjectId(childCategoryData._id),
         status: 'active',
       };
 
-      // Filter: Brand
+      // Filter: Brand (Original logic kept)
       if (filters.brand) {
         const regex = createFlexibleRegex(filters.brand);
         const brandDoc = await BrandModel.findOne({ 
           name: { $regex: regex } 
         }).lean();
 
-        if (!brandDoc) {
-          return { childCategory: childCategoryData, products: [], totalProducts: 0 };
+        if (brandDoc) {
+           matchStage.brand = (brandDoc as any)._id;
+        } else {
+           return { childCategory: childCategoryData, products: [], totalProducts: 0 };
         }
-        matchStage.brand = (brandDoc as any)._id;
       }
 
-      // Filter: Size
+      // Filter: Size (Original logic kept)
       if (filters.size) {
         const regex = createFlexibleRegex(filters.size);
         const sizeDoc = await ProductSize.findOne({ 
           name: { $regex: regex } 
         }).lean();
 
-        if (!sizeDoc) {
-          return { childCategory: childCategoryData, products: [], totalProducts: 0 };
+        if (sizeDoc) {
+           matchStage['productOptions.size'] = (sizeDoc as any)._id;
+        } else {
+           return { childCategory: childCategoryData, products: [], totalProducts: 0 };
         }
-        matchStage['productOptions.size'] = (sizeDoc as any)._id;
       }
 
       // Filter: Search
@@ -239,7 +257,7 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
       if (filters.sort === 'priceLowHigh') sortStage = { productPrice: 1 };
       if (filters.sort === 'priceHighLow') sortStage = { productPrice: -1 };
 
-      // ✅ Use aggregation instead of populate
+      // ✅ Use aggregation
       const products = await VendorProductModel.aggregate([
         { $match: matchStage },
         { $sort: sortStage },
@@ -310,9 +328,18 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
         },
         { $unwind: { path: '$productModel', preserveNullAndEmptyArrays: true } },
 
-        // Project only needed fields
+        // ✅ SAFETY: Ensure slug exists (যদি DB তে না থাকে, তবে ID দিয়ে তৈরি হবে)
+        {
+          $addFields: {
+            slug: { $ifNull: ["$slug", { $concat: ["product-", { $toString: "$_id" }] }] }
+          }
+        },
+
+        // ✅ Project - UPDATED to include slug
         {
           $project: {
+            _id: 1, // ID অন্তর্ভুক্ত রাখা ভালো
+            slug: 1, // 🔥 এই লাইনটি যোগ করা হয়েছে যাতে আউটপুটে স্ল্যাগ আসে
             'category.name': 1,
             'category.slug': 1,
             'subCategory.name': 1,

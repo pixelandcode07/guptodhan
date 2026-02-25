@@ -60,7 +60,7 @@ export default function StoreInformation({
                         rules={{ required: 'Logo is required' }}
                         render={({ field }) => (
                             <UploadImageBtn
-                                value={field.value}
+                                value={field.value ?? null}
                                 onChange={field.onChange}
                                 onRemove={() => field.onChange(null)}
                                 fieldName="logo"
@@ -81,10 +81,10 @@ export default function StoreInformation({
                         rules={{ required: 'Banner is required' }}
                         render={({ field }) => (
                             <UploadImageBtn
-                                value={field.value}
+                                value={field.value ?? null}
                                 onChange={field.onChange}
                                 onRemove={() => field.onChange(null)}
-                                fieldName="banner" // এখানে
+                                fieldName="banner"
                             />
                         )}
                     />

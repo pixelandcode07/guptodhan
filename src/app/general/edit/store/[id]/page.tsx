@@ -1,6 +1,7 @@
 import { fetchStoreById } from "@/lib/MultiVendorApis/storeActions";
 import EditStoreForm from "../components/EditStoreForm";
 import { StoreInterface } from "@/types/StoreInterface";
+import { notFound } from "next/navigation";
 
 export default async function EditStorePage({
   params,
@@ -8,10 +9,14 @@ export default async function EditStorePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+
+  // ✅ 404 ফিক্স: আইডি না থাকলে বা undefined হলে সেফলি 404 পেজে পাঠাবে
+  if (!id || id === "undefined" || id.trim() === "") {
+    notFound();
+  }
+
   const stores = await fetchStoreById(id);
   const store: StoreInterface | null = Array.isArray(stores) ? stores[0] ?? null : (stores as unknown as StoreInterface);
-
-  // console.log("Store data==>", store)
 
   if (!store) {
     return <div className="p-6 text-yellow-600">Store not found.</div>;

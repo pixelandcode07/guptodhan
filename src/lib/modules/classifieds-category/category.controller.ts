@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 import { sendResponse } from '@/lib/utils/sendResponse';
@@ -8,10 +6,20 @@ import {
     createCategoryValidationSchema,
     updateCategoryValidationSchema,
 } from './category.validation';
-import { ClassifiedCategoryServices, reorderClassifiedCategoryService } from './category.service';
+import { ClassifiedCategoryServices } from './category.service';
 import dbConnect from '@/lib/db';
 import { IClassifiedCategory } from './category.interface';
 import { ClassifiedAdServices } from '../classifieds/ad.service';
+
+// Helper: Slug Generator
+const generateSlug = (name: string) => {
+    return name
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+};
 
 // Create Category
 const createCategory = async (req: NextRequest) => {
@@ -21,7 +29,10 @@ const createCategory = async (req: NextRequest) => {
     const name = formData.get('name') as string;
     const iconFile = formData.get('icon') as File | null;
 
-    const payload: { name: string; icon?: string } = { name };
+    // 🔥 ১. Slug জেনারেট করা হলো
+    const slug = generateSlug(name);
+
+    const payload: any = { name };
 
     if (iconFile && iconFile.size > 0) {
         const buffer = Buffer.from(await iconFile.arrayBuffer());
@@ -29,8 +40,16 @@ const createCategory = async (req: NextRequest) => {
         payload.icon = uploadResult.secure_url;
     }
 
+    // ২. Zod দিয়ে ভ্যালিডেশন করা হলো (যাতে slug রিমুভ হলেও সমস্যা নেই)
     const validatedData = createCategoryValidationSchema.parse(payload);
-    const result = await ClassifiedCategoryServices.createCategoryInDB(validatedData);
+
+    // 🔥 ৩. ভ্যালিডেশনের পর ম্যানুয়ালি slug অ্যাড করে ডাটাবেসে পাঠানো হলো
+    const finalDataToSave = {
+        ...validatedData,
+        slug // Ensuring slug is passed to DB
+    };
+
+    const result = await ClassifiedCategoryServices.createCategoryInDB(finalDataToSave);
 
     return sendResponse({
         success: true,
@@ -64,11 +83,16 @@ const updateCategory = async (
     const payload: Partial<IClassifiedCategory> = {};
 
     const name = formData.get('name') as string | null;
-    const slug = formData.get('slug') as string | null;
+    let slug = formData.get('slug') as string | null;
     const status = formData.get('status') as 'active' | 'inactive' | null;
 
-    if (name) payload.name = name;
-    if (slug) payload.slug = slug;
+    if (name) {
+        payload.name = name;
+        if (!slug) {
+            slug = generateSlug(name); // Generate if not provided
+        }
+    }
+    
     if (status) payload.status = status;
 
     const iconFile = formData.get('icon') as File | null;
@@ -80,7 +104,16 @@ const updateCategory = async (
     }
 
     const validatedData = updateCategoryValidationSchema.parse(payload);
-    const result = await ClassifiedCategoryServices.updateCategoryInDB(id, validatedData);
+
+    // 🔥 Ensure slug is passed when updating
+    const finalDataToUpdate: any = {
+        ...validatedData,
+    };
+    if (slug) {
+        finalDataToUpdate.slug = slug;
+    }
+
+    const result = await ClassifiedCategoryServices.updateCategoryInDB(id, finalDataToUpdate);
 
     return sendResponse({
         success: true,
@@ -147,12 +180,13 @@ const getCategoryById = async (
         data: result,
     });
 };
-// ✅ NEW: Get public categories with ad counts
+
+// Get public categories with ad counts
 const getPublicCategoriesWithCounts = async (req: NextRequest) => {
     await dbConnect();
 
     const { searchParams } = new URL(req.url);
-    const categoryId = searchParams.get('categoryId'); // UI থেকে পাঠাবে
+    const categoryId = searchParams.get('categoryId'); 
 
     const result = await ClassifiedCategoryServices.getPublicCategoriesWithCountsFromDB(categoryId || undefined);
 
@@ -166,14 +200,12 @@ const getPublicCategoriesWithCounts = async (req: NextRequest) => {
     });
 };
 
-
 const searchAds = async (req: NextRequest) => {
     await dbConnect();
     const { searchParams } = new URL(req.url);
 
     const filters: Record<string, any> = {};
 
-    // Read all possible filters from the URL query
     if (searchParams.get('category')) filters.category = searchParams.get('category');
     if (searchParams.get('subCategory')) filters.subCategory = searchParams.get('subCategory');
     if (searchParams.get('brand')) filters.brand = searchParams.get('brand');
@@ -193,14 +225,12 @@ const searchAds = async (req: NextRequest) => {
     });
 };
 
-
 // Reorder buy and sell (drag-and-drop)
 const reorderClassifiedCategory = async (req: NextRequest) => {
     await dbConnect();
     const body = await req.json();
     const { orderedIds } = body;
 
-    // Validate input
     if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
         return sendResponse({
             success: false,
@@ -210,8 +240,7 @@ const reorderClassifiedCategory = async (req: NextRequest) => {
         });
     }
 
-    // Call the reorder service
-    const result = await reorderClassifiedCategoryService(orderedIds);
+    const result = await ClassifiedCategoryServices.reorderClassifiedCategoryService(orderedIds);
 
     return sendResponse({
         success: true,
@@ -221,8 +250,32 @@ const reorderClassifiedCategory = async (req: NextRequest) => {
     });
 };
 
+// Single API Controller for Category Page
+const getCategoryPageDataBySlug = async (req: NextRequest, { params }: { params: Promise<{ slug: string }> }) => {
+    await dbConnect();
+    const { slug } = await params;
+    const decodedSlug = decodeURIComponent(slug);
+    const { searchParams } = new URL(req.url);
 
-// Export all controller functions
+    const filters = {
+        search: searchParams.get('search') || undefined,
+        subCategory: searchParams.getAll('subCategory').length > 0 ? searchParams.getAll('subCategory') : undefined,
+        brand: searchParams.getAll('brand').length > 0 ? searchParams.getAll('brand') : undefined,
+        district: searchParams.getAll('district').length > 0 ? searchParams.getAll('district') : undefined,
+        minPrice: searchParams.get('minPrice') || undefined,
+        maxPrice: searchParams.get('maxPrice') || undefined,
+        sort: searchParams.get('sort') || undefined,
+    };
+
+    const result = await ClassifiedCategoryServices.getCategoryPageDataBySlugFromDB(decodedSlug, filters);
+
+    if (!result) {
+        return sendResponse({ success: false, statusCode: StatusCodes.NOT_FOUND, message: 'Category not found', data: null });
+    }
+
+    return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Data retrieved', data: result });
+};
+
 export const ClassifiedCategoryController = {
     createCategory,
     getAllCategories,
@@ -233,6 +286,6 @@ export const ClassifiedCategoryController = {
     getCategoryById,
     getPublicCategoriesWithCounts,
     searchAds,
-
-    reorderClassifiedCategory
+    reorderClassifiedCategory,
+    getCategoryPageDataBySlug,
 };

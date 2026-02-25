@@ -37,22 +37,22 @@ export const sidebarData = {
     { title: 'Dashboard', url: '/home', icon: IconDashboard },
     { title: 'General Info', url: '/general/info', icon: IconListDetails },
     { title: 'Footer Settings', url: '/footer-settings', icon: IconSettings },
-    {
-      title: 'Website Theme Color',
-      url: '/general/website/theme/page',
-      icon: IconChartBar,
-    },
+    // {
+    //   title: 'Website Theme Color',
+    //   url: '/general/website/theme/page',
+    //   icon: IconChartBar,
+    // },
     {
       title: 'Social Media Links',
       url: '/social-media-links',
       icon: IconUsers,
     },
     { title: 'Home Page SEO', url: '/home-page-seo', icon: IconReport },
-    {
-      title: 'Custom CSS & JS',
-      url: '/custom-css-js',
-      icon: IconFileDescription,
-    },
+    // {
+    //   title: 'Custom CSS & JS',
+    //   url: '/custom-css-js',
+    //   icon: IconFileDescription,
+    // },
     {
       title: 'Social & Chat Scripts',
       url: '/social-chat-scripts',

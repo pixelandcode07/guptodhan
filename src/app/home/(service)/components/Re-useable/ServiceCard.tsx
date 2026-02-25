@@ -7,6 +7,7 @@ import { MapPin, Star, Clock, Calendar } from "lucide-react";
 import { ServiceData } from "@/types/ServiceDataType";
 import { cn } from "@/lib/utils";
 import ServiceBookingDialog from "../ServiceBookingDialog";
+import Link from "next/link";
 
 interface ServiceCardProps {
     service: ServiceData;
@@ -32,6 +33,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
     }, [images.length]);
 
     return (
+
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -40,40 +42,42 @@ export default function ServiceCard({ service }: ServiceCardProps) {
             className="group relative flex flex-col overflow-hidden rounded-2xl border bg-white shadow-sm hover:shadow-lg transition-all"
         >
             {/* Image Slider */}
-            <div className="relative h-44 w-full overflow-hidden bg-gray-100">
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={currentImage}
-                        initial={{ opacity: 0.4 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0.4 }}
-                        transition={{ duration: 0.6 }}
-                        className="absolute inset-0"
-                    >
-                        <Image
-                            src={images[currentImage]}
-                            alt={service.service_title}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 100vw, 33vw"
-                        />
-                    </motion.div>
-                </AnimatePresence>
+            <Link href={`/home/service-info/${service._id}`} className="group relative flex flex-col overflow-hidden rounded-t-2xl border bg-white shadow-sm hover:shadow-lg transition-all">
+                <div className="relative h-44 w-full overflow-hidden bg-gray-100">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={currentImage}
+                            initial={{ opacity: 0.4 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0.4 }}
+                            transition={{ duration: 0.6 }}
+                            className="absolute inset-0"
+                        >
+                            <Image
+                                src={images[currentImage]}
+                                alt={service.service_title}
+                                fill
+                                className="object-cover"
+                                sizes="(max-width: 768px) 100vw, 33vw"
+                            />
+                        </motion.div>
+                    </AnimatePresence>
 
-                {/* Status Badge */}
-                <span
-                    className={cn(
-                        "absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wide",
-                        service.service_status === "Active"
-                            ? "bg-green-100 text-green-700"
-                            : service.service_status === "Under Review"
-                                ? "bg-amber-100 text-amber-700"
-                                : "bg-red-100 text-red-700"
-                    )}
-                >
-                    {service.service_status}
-                </span>
-            </div>
+                    {/* Status Badge */}
+                    <span
+                        className={cn(
+                            "absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wide",
+                            service.service_status === "Active"
+                                ? "bg-green-100 text-green-700"
+                                : service.service_status === "Under Review"
+                                    ? "bg-amber-100 text-amber-700"
+                                    : "bg-red-100 text-red-700"
+                        )}
+                    >
+                        {service.service_status}
+                    </span>
+                </div>
+            </Link>
 
             {/* Content */}
             <div className="flex flex-1 flex-col gap-0.5 md:gap-3 p-1 md:p-4">
@@ -124,7 +128,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
 
                 {/* Take Service Button */}
                 <motion.button
-                onClick={() => setOpen(true)}
+                    onClick={() => setOpen(true)}
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     className="relative mt-1 md:mt-4 w-full overflow-hidden rounded-xl p-[2px]"

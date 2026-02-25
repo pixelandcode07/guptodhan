@@ -1,55 +1,83 @@
+import { VendorProductServices } from "../product/vendorProduct.service";
 import { ICart } from "./addToCart.interface";
 import { CartModel } from "./addToCart.model";
 import { Types } from "mongoose";
 
 const addToCartInDB = async (payload: Partial<ICart>) => {
-  // Build query to check if exact same product variant already exists
-  // Different variants (different color/size) should be separate cart items
+  // 1. Get Product with Populated Names (Color/Size IDs converted to Names)
+  const productIdStr = payload.productID ? payload.productID.toString() : null;
+
+  if (!productIdStr) {
+    throw new Error("Product ID is required!");
+  }
+
+  const product = await VendorProductServices.getVendorProductByIdFromDB(productIdStr);
+
+  if (!product) {
+    throw new Error("Product not found!");
+  }
+
+  // 2. Validate Variant Stock (Now comparing Name vs Name ✅)
+  if (payload.color || payload.size) {
+    const variant = product.productOptions.find((opt: any) => {
+      // Database এ color/size অ্যারে হতে পারে, আবার স্ট্রিংও হতে পারে। তাই সেফটি চেক:
+      const dbColor = Array.isArray(opt.color) ? opt.color : [opt.color];
+      const dbSize = Array.isArray(opt.size) ? opt.size : [opt.size];
+
+      // Check match
+      const colorMatch = payload.color ? dbColor.includes(payload.color) : true;
+      const sizeMatch = payload.size ? dbSize.includes(payload.size) : true;
+
+      return colorMatch && sizeMatch;
+    });
+    
+    if (!variant) throw new Error("Selected variant (Color/Size) not available!");
+    
+    // Check Stock
+    if ((variant.stock || 0) < (payload.quantity || 1)) {
+      throw new Error(`Insufficient stock! Only ${variant.stock} left.`);
+    }
+  } else {
+    // No variant selected, check main stock
+    if ((product.stock || 0) < (payload.quantity || 1)) {
+      throw new Error("Insufficient stock!");
+    }
+  }
+
+  // 3. Build Query to check existing cart item
   const query: Record<string, unknown> = {
     userID: new Types.ObjectId(payload.userID),
     productID: new Types.ObjectId(payload.productID),
+    color: payload.color || null,
+    size: payload.size || null,
   };
-  
-  // Include color and size in the query to differentiate variants
-  // This ensures different variants are treated as separate cart items
-  if (payload.color !== undefined) {
-    query.color = payload.color || null;
-  }
-  if (payload.size !== undefined) {
-    query.size = payload.size || null;
-  }
 
-  // Check if exact same product variant already exists
   const existingItem = await CartModel.findOne(query);
 
   if (existingItem) {
+    // Update quantity
     existingItem.quantity += payload.quantity || 1;
     existingItem.totalPrice = existingItem.quantity * (existingItem.unitPrice || 0);
     return await existingItem.save();
   }
 
-  // Create new cart item — backend auto generates cartID
+  // 4. Create New Item
   const newItem = await CartModel.create({
-    cartID:
-      "CID-" +
-      Array.from(
-        { length: 10 },
-        () =>
-          "abcdefghijklmnopqrstuvwxyz0123456789"[Math.floor(Math.random() * 36)]
-      ).join(""),
+    cartID: "CID-" + Date.now() + Math.floor(Math.random() * 1000),
     userID: payload.userID,
     userName: payload.userName,
     userEmail: payload.userEmail,
     productID: payload.productID,
-    storeName: payload.storeName,
+    // ✅ Store Name and Info correctly
+    storeName: product.vendorStoreId?.storeName || payload.storeName || "Unknown Store",
     color: payload.color,
     size: payload.size,
     warranty: payload.warranty,
-    productName: payload.productName,
-    productImage: payload.productImage,
+    productName: product.productTitle,
+    productImage: payload.productImage || product.thumbnailImage,
     quantity: payload.quantity || 1,
-    unitPrice: payload.unitPrice || 0,
-    totalPrice: (payload.quantity || 1) * (payload.unitPrice || 0),
+    unitPrice: payload.unitPrice || product.productPrice,
+    totalPrice: (payload.quantity || 1) * (payload.unitPrice || product.productPrice || 0),
   });
 
   return newItem;
@@ -118,6 +146,25 @@ const getCartItemByUserAndCartIdFromDB = async (
   return result;
 };
 
+const deleteSelectedCartItemsFromDB = async (
+  cartIds: string[],
+  userID: string
+) => {
+  const objectIds = cartIds.map((id) => new Types.ObjectId(id));
+
+  const result = await CartModel.deleteMany({
+    _id: { $in: objectIds },
+    userID: new Types.ObjectId(userID),
+  });
+
+  if (result.deletedCount === 0) {
+    throw new Error("No cart items found to delete.");
+  }
+
+  return result;
+};
+
+
 export const CartServices = {
   addToCartInDB,
   getAllCartItemsFromDB,
@@ -125,4 +172,5 @@ export const CartServices = {
   deleteCartItemFromDB,
   clearCartForUserInDB,
   getCartItemByUserAndCartIdFromDB,
+  deleteSelectedCartItemsFromDB,
 };

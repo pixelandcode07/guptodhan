@@ -189,17 +189,44 @@ const getOrdersByUserFromDB = async (userId: string) => {
           },
           { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
 
-          // Project
+          // Merge product docs into each orderDetail so productId is populated (productTitle, thumbnailImage, etc.)
           {
             $project: {
+              _id: 1,
               orderId: 1,
               orderStatus: 1,
               paymentStatus: 1,
               totalAmount: 1,
               orderDate: 1,
-              orderDetails: 1,
-              'storeId.storeName': 1,
+              storeId: 1,
               createdAt: 1,
+              orderDetails: {
+                $map: {
+                  input: '$orderDetails',
+                  as: 'd',
+                  in: {
+                    $mergeObjects: [
+                      '$$d',
+                      {
+                        productId: {
+                          $let: {
+                            vars: {
+                              found: {
+                                $filter: {
+                                  input: '$products',
+                                  as: 'p',
+                                  cond: { $eq: ['$$p._id', '$$d.productId'] },
+                                },
+                              },
+                            },
+                            in: { $arrayElemAt: ['$$found', 0] },
+                          },
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
             },
           },
         ]);
@@ -327,6 +354,62 @@ const getOrderByIdFromDB = async (id: string) => {
             },
           },
           { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
+
+          // Merge product docs into each orderDetail so productId is populated
+          {
+            $project: {
+              orderId: 1,
+              userId: 1,
+              storeId: 1,
+              deliveryMethodId: 1,
+              paymentMethod: 1,
+              shippingName: 1,
+              shippingPhone: 1,
+              shippingEmail: 1,
+              shippingStreetAddress: 1,
+              shippingCity: 1,
+              shippingDistrict: 1,
+              shippingPostalCode: 1,
+              shippingCountry: 1,
+              addressDetails: 1,
+              deliveryCharge: 1,
+              totalAmount: 1,
+              paymentStatus: 1,
+              orderStatus: 1,
+              orderDate: 1,
+              createdAt: 1,
+              trackingId: 1,
+              parcelId: 1,
+              couponId: 1,
+              orderDetails: {
+                $map: {
+                  input: '$orderDetails',
+                  as: 'd',
+                  in: {
+                    $mergeObjects: [
+                      '$$d',
+                      {
+                        productId: {
+                          $let: {
+                            vars: {
+                              found: {
+                                $filter: {
+                                  input: '$products',
+                                  as: 'p',
+                                  cond: { $eq: ['$$p._id', '$$d.productId'] },
+                                },
+                              },
+                            },
+                            in: { $arrayElemAt: ['$$found', 0] },
+                          },
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          },
         ]);
 
         return result[0] || null;

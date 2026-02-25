@@ -12,11 +12,14 @@ import { OrderDetailsModel } from '../orderDetails/orderDetails.model';
 import { IOrder } from './order.interface';
 import { IOrderDetails } from '../orderDetails/orderDetails.interface';
 import { OrderServices } from './order.service';
+import { deleteCachePattern } from '@/lib/redis/cache-helpers';
 
 // --- Import Models ---
 import "@/lib/modules/product/vendorProduct.model";
 import "@/lib/modules/vendor-store/vendorStore.model";
 import "@/lib/modules/promo-code/promoCode.model";
+import { VendorProductModel } from '@/lib/modules/product/vendorProduct.model';
+import { sendSMS } from '@/lib/utils/smsPortal';
 
 // --- Helper: ID Conversion ---
 const toObjectId = (id: string | any, label: string, options: { optional?: boolean } = {}) => {
@@ -30,108 +33,138 @@ const toObjectId = (id: string | any, label: string, options: { optional?: boole
   throw new Error(`Invalid ${label} format.`);
 };
 
-// --- 1. Create Order - WITHOUT TRANSACTIONS ---
+const calculateDeliveryCharge = (location: string, products: any[]) => {
+  // 1. Base Charge (Dhaka 60, Outside 120)
+  let charge = location.toLowerCase().includes('dhaka') ? 60 : 120;
+
+  // 2. Heavy Item Surcharge (Product Specific)
+  let extraCharge = 0;
+  products.forEach(p => {
+    if (p.shippingCost && p.shippingCost > 0) {
+      extraCharge += p.shippingCost; 
+    }
+  });
+
+  return charge + extraCharge;
+};
+
+// --- Create Order (Multi-Vendor Supported) ---
 const createOrderWithDetails = async (req: NextRequest) => {
   await dbConnect();
 
   try {
     const body = await req.json();
+    const { userId, products, shippingCity, paymentMethod, shippingName, shippingPhone } = body;
 
-    if (!body.userId || !body.products || !Array.isArray(body.products) || body.products.length === 0) {
-      throw new Error('Invalid order data: userId and products array required.');
+    if (!userId || !products || products.length === 0) {
+      throw new Error('Invalid order data.');
     }
 
-    const orderId = body.orderId || `ORD-${Date.now()}`;
+    // ১. রিয়েল প্রোডাক্ট ডাটা নিয়ে আসা (সিকিউরিটি চেক)
+    const productIds = products.map((p: any) => p.productId);
+    const dbProducts = await VendorProductModel.find({ _id: { $in: productIds } });
 
-    const orderDetailsDocs: Partial<IOrderDetails>[] = body.products.map(
-      (p: any) => ({
+    // ২. ভেন্ডর অনুযায়ী প্রোডাক্ট গ্রুপিং (Multi-Vendor Core Rule)
+    const orderGroups: Record<string, any[]> = {};
+    
+    for (const item of products) {
+      const dbProduct = dbProducts.find(p => p._id.toString() === item.productId);
+      if (!dbProduct) continue;
+      
+      const storeId = dbProduct.vendorStoreId.toString();
+      if (!orderGroups[storeId]) orderGroups[storeId] = [];
+      
+      // ফ্রন্টএন্ডের size/color এবং ডাটাবেজের প্রাইস মার্জ করা হচ্ছে
+      orderGroups[storeId].push({
+        ...item, // এতে item.size এবং item.color আছে
+        unitPrice: dbProduct.discountPrice || dbProduct.productPrice,
+        originalProduct: dbProduct
+      });
+    }
+
+    const createdOrders = [];
+    const transactionGroupId = `TRX-${Date.now()}`;
+
+    // ৩. প্রতিটি ভেন্ডরের জন্য আলাদা অর্ডার তৈরি
+    for (const storeId of Object.keys(orderGroups)) {
+      const storeItems = orderGroups[storeId];
+      
+      // টোটাল ক্যালকুলেশন
+      const itemsTotal = storeItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+      const deliveryCharge = calculateDeliveryCharge(shippingCity || 'Dhaka', storeItems.map(i => i.originalProduct));
+      const totalAmount = itemsTotal + deliveryCharge;
+      
+      const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+      // মেইন অর্ডার পে-লোড
+      const orderPayload = {
+        orderId,
+        userId: new Types.ObjectId(userId),
+        storeId: new Types.ObjectId(storeId),
+        deliveryMethodId: body.deliveryMethodId || 'Standard',
+        paymentMethod: paymentMethod || 'Cash On Delivery',
+        transactionId: paymentMethod === 'Online' ? transactionGroupId : undefined,
+        shippingName,
+        shippingPhone,
+        shippingEmail: body.shippingEmail,
+        shippingStreetAddress: body.shippingStreetAddress,
+        shippingCity,
+        shippingDistrict: body.shippingDistrict,
+        shippingPostalCode: body.shippingPostalCode,
+        shippingCountry: body.shippingCountry || 'Bangladesh',
+        deliveryCharge,
+        totalAmount,
+        paymentStatus: 'Pending',
+        orderStatus: 'Pending',
+        orderDate: new Date(),
+        orderDetails: []
+      };
+
+      const newOrder = await OrderModel.create(orderPayload);
+
+      // ✅ অর্ডার ডিটেইলস তৈরি (সাইজ ও কালার লজিক)
+      const detailDocs = storeItems.map(item => ({
         orderDetailsId: uuidv4().split('-')[0],
-        orderId: new Types.ObjectId(),
-        productId: toObjectId(p.productId, 'Product ID'),
-        vendorId: toObjectId(p.vendorId, 'Vendor ID'),
-        quantity: p.quantity,
-        unitPrice: p.unitPrice,
-        discountPrice: p.discountPrice,
-        totalPrice: p.discountPrice ? p.discountPrice * p.quantity : p.unitPrice * p.quantity,
-        size: p.size || undefined,
-        color: p.color || undefined,
-      })
-    );
+        orderId: newOrder._id,
+        productId: new Types.ObjectId(item.productId),
+        vendorId: new Types.ObjectId(storeId),
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.unitPrice * item.quantity,
+        // ⚠️ ভেরিয়েন্ট রুল: যদি ভ্যালু থাকে তবেই সেভ হবে, না থাকলে undefined (DB তে ফিল্ড তৈরি হবে না)
+        size: item.size || undefined, 
+        color: item.color || undefined,
+      }));
 
-    const productsTotal = orderDetailsDocs.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-    const totalAmount = productsTotal + (body.deliveryCharge || 0);
+      const createdDetails = await OrderDetailsModel.insertMany(detailDocs);
+      
+      // অর্ডারের সাথে ডিটেইলস লিঙ্ক করা
+      newOrder.orderDetails = createdDetails.map(d => d._id);
+      await newOrder.save();
 
-    let storeId: Types.ObjectId | undefined = undefined;
-    if (body.storeId) {
-      storeId = toObjectId(body.storeId, 'Store ID', { optional: true });
+      createdOrders.push(newOrder);
+
+      // SMS পাঠানো
+      const smsMessage = `Dear ${shippingName}, your order ${orderId} has been placed. Total: ${totalAmount} TK. Thank you for shopping with Guptodhan!`;
+      sendSMS(shippingPhone, smsMessage).catch(err => console.error("SMS Error:", err));
     }
 
-    if (!storeId && body.products.length > 0) {
-      try {
-        const { VendorProductModel } = await import('@/lib/modules/product/vendorProduct.model');
-        const firstProduct = await VendorProductModel.findById(toObjectId(body.products[0].productId, 'Product ID')).select('vendorStoreId');
-        if (firstProduct?.vendorStoreId) {
-          storeId = firstProduct.vendorStoreId as Types.ObjectId;
-        }
-      } catch (err) {
-        console.error('Error fetching store from product:', err);
-      }
-    }
-
-    if (!storeId) throw new Error('Store ID is required.');
-
-    const orderPayload: Partial<IOrder> = {
-      orderId,
-      userId: toObjectId(body.userId, 'User ID'),
-      storeId: storeId,
-      deliveryMethodId: body.deliveryMethodId,
-      paymentMethod: body.paymentMethod,
-      shippingName: body.shippingName || 'Guest',
-      shippingPhone: body.shippingPhone,
-      shippingEmail: body.shippingEmail,
-      shippingStreetAddress: body.shippingStreetAddress,
-      shippingCity: body.shippingCity,
-      shippingDistrict: body.shippingDistrict,
-      shippingPostalCode: body.shippingPostalCode,
-      shippingCountry: body.shippingCountry,
-      addressDetails: body.addressDetails,
-      deliveryCharge: body.deliveryCharge || 0,
-      totalAmount: totalAmount,
-      paymentStatus: body.paymentStatus || 'Pending',
-      orderStatus: body.orderStatus || 'Pending',
-      orderForm: body.orderForm || 'Website',
-      orderDate: new Date(),
-      deliveryDate: body.deliveryDate ? new Date(body.deliveryDate) : undefined,
-      parcelId: body.parcelId || undefined,
-      trackingId: body.trackingId || undefined,
-      couponId: body.couponId ? toObjectId(body.couponId, 'Coupon ID', { optional: true }) : undefined,
-    };
-
-    // ✅ Create order WITHOUT transaction
-    const orderDoc = await OrderModel.create(orderPayload);
-    if (!orderDoc) throw new Error('Failed to create order document.');
-
-    // ✅ Create order details WITHOUT transaction
-    orderDetailsDocs.forEach((item) => { item.orderId = orderDoc._id; });
-    const createdOrderDetails = await OrderDetailsModel.insertMany(orderDetailsDocs);
-
-    // ✅ Update order with order details
-    orderDoc.orderDetails = createdOrderDetails.map((d) => d._id) as any;
-    await orderDoc.save();
+    // ক্যাশ ক্লিয়ার করা
+    await deleteCachePattern(`orders:user:${userId}*`);
 
     return sendResponse({
       success: true,
       statusCode: StatusCodes.CREATED,
-      message: 'Order created successfully!',
-      data: { order: orderDoc, orderDetails: createdOrderDetails },
+      message: `Order placed successfully!`,
+      data: createdOrders,
     });
 
   } catch (error: any) {
-    console.error('❌ Error creating order:', error);
+    console.error('❌ Order Creation Error:', error);
     return sendResponse({
       success: false,
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-      message: error.message || 'Failed to create order',
+      message: error.message || 'Failed to place order.',
       data: null,
     });
   }

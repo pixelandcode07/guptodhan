@@ -19,6 +19,11 @@ export type SubCategory = {
   created_at: string
 }
 
+// ✅ Helper function: URL valid kina check korar jonno
+const isValidImageUrl = (url: any) => {
+  return typeof url === 'string' && url.trim().length > 5 && url.includes('http');
+};
+
 export const subcategory_columns: ColumnDef<SubCategory>[] = [
   { accessorKey: "id", header: "SL" },
   { accessorKey: "category", header: "Category" },
@@ -27,16 +32,24 @@ export const subcategory_columns: ColumnDef<SubCategory>[] = [
     accessorKey: "subCategoryIcon",
     header: "Icon",
     cell: ({ row }) => {
-      const url = row.getValue("subCategoryIcon") as string | undefined
-      return url ? <img src={url} alt="icon" className="w-6 h-6 object-cover rounded" /> : <span className="text-xs text-gray-500">-</span>
+      const url = row.getValue("subCategoryIcon");
+      return isValidImageUrl(url) ? (
+        <img src={url as string} alt="icon" className="w-8 h-8 object-cover rounded shadow-sm border border-gray-100" />
+      ) : (
+        <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded">No Icon</span>
+      )
     },
   },
   {
     accessorKey: "subCategoryBanner",
     header: "Image",
     cell: ({ row }) => {
-      const url = row.getValue("subCategoryBanner") as string | undefined
-      return url ? <img src={url} alt="banner" className="w-12 h-6 object-cover rounded" /> : <span className="text-xs text-gray-500">-</span>
+      const url = row.getValue("subCategoryBanner");
+      return isValidImageUrl(url) ? (
+        <img src={url as string} alt="banner" className="w-16 h-8 object-cover rounded shadow-sm border border-gray-100" />
+      ) : (
+        <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded">No Image</span>
+      )
     },
   },
   { accessorKey: "slug", header: "Slug" },

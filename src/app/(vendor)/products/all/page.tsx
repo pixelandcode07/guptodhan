@@ -1,16 +1,22 @@
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { fetchSingleVendorAds } from '@/lib/VendorApis/fetchSingleVendorAds';
-import { getServerSession } from 'next-auth';
-import ClientDataTable from './components/ClientDataTable';
-
-
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { fetchSingleVendorAds } from "@/lib/VendorApis/fetchSingleVendorAds";
+import { getServerSession } from "next-auth";
+import ClientDataTable from "./components/ClientDataTable";
 
 export default async function VendorProductPage() {
   const session = await getServerSession(authOptions);
   const vendorId = session?.user?.vendorId;
+
+  // ✅ vendorId না থাকলে early return
+  if (!vendorId) {
+    return (
+      <div>
+        <p className="text-red-500">Session expired. Please login again.</p>
+      </div>
+    );
+  }
+
   const vendorData = await fetchSingleVendorAds(vendorId);
-
-
 
   return (
     <div>
@@ -21,5 +27,5 @@ export default async function VendorProductPage() {
         <ClientDataTable vendorData={vendorData.products} />
       </main>
     </div>
-  )
+  );
 }

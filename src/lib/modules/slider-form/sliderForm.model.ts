@@ -8,7 +8,7 @@ const pkSliderSchema = new Schema<IPKSlider>(
     textPosition: { type: String, required: true },
     
     sliderLink: { type: String, required: true },
-    buttonLink: { type: String, required: true },
+    buttonLink: { type: String, default: '' }, // ✅ Made Optional
     
     appRedirectType: { 
       type: String, 
@@ -26,10 +26,10 @@ const pkSliderSchema = new Schema<IPKSlider>(
     category: { type: String, default: null },
     store: { type: String, default: null },
     
-    subTitleWithColor: { type: String, required: true },
-    bannerTitleWithColor: { type: String, required: true },
-    bannerDescriptionWithColor: { type: String, required: true },
-    buttonWithColor: { type: String, required: true },
+    subTitleWithColor: { type: String, default: '' }, // ✅ Made Optional
+    bannerTitleWithColor: { type: String, required: true }, // 🔴 Title should still be mandatory
+    bannerDescriptionWithColor: { type: String, default: '' }, // ✅ Made Optional
+    buttonWithColor: { type: String, default: '' }, // ✅ Made Optional
     
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
     orderCount: { type: Number, default: 0 },

@@ -43,7 +43,7 @@ export default function StoryClient({ initialStories = [], productList: initialP
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
 
-  // --- API Data Fetching (Fixed Logic) ---
+  // --- API Data Fetching ---
   const fetchData = useCallback(async () => {
     try {
       setIsLoadingData(true);
@@ -54,14 +54,22 @@ export default function StoryClient({ initialStories = [], productList: initialP
         setStories(storyRes.data.data || []);
       }
 
-      // Product fetching (Separated to handle 403/Forbidden without breaking stories)
+      // Product fetching
       try {
-        const productRes = await axios.get('/api/v1/product'); 
+        const productRes = await axios.get('/api/v1/product?limit=1000'); 
         if (productRes?.data?.success) {
-          setProducts(productRes.data.data || []);
+          const receivedData = productRes.data.data;
+          
+          if (Array.isArray(receivedData)) {
+             setProducts(receivedData);
+          } else if (receivedData?.products && Array.isArray(receivedData.products)) {
+             setProducts(receivedData.products);
+          } else {
+             setProducts([]);
+          }
         }
       } catch (pErr) {
-        console.error("Product access restricted or failed");
+        console.error("Product access restricted or failed", pErr);
         setProducts([]); 
       }
 
@@ -234,7 +242,7 @@ export default function StoryClient({ initialStories = [], productList: initialP
         </table>
       </div>
 
-      {/* --- CREATE MODAL (Sizing Fixed) --- */}
+      {/* --- CREATE MODAL --- */}
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
         <DialogContent className="sm:max-w-[600px] lg:max-w-[800px] w-[95vw] overflow-y-auto max-h-[90vh]">
           <DialogHeader><DialogTitle>Create New Story</DialogTitle></DialogHeader>
@@ -250,7 +258,7 @@ export default function StoryClient({ initialStories = [], productList: initialP
         </DialogContent>
       </Dialog>
 
-      {/* --- EDIT MODAL (Sizing Fixed) --- */}
+      {/* --- EDIT MODAL --- */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[600px] lg:max-w-[800px] w-[95vw] overflow-y-auto max-h-[90vh]">
           <DialogHeader><DialogTitle>Edit Story</DialogTitle></DialogHeader>
@@ -282,7 +290,13 @@ export default function StoryClient({ initialStories = [], productList: initialP
 }
 
 const StoryFormFields = ({ isEdit, formData, onImageChange, imagePreview, productList }: any) => {
-  const [selectedPid, setSelectedPid] = useState(formData?.productId?._id || formData?.productId || "");
+  const safeProductList = Array.isArray(productList) ? productList : [];
+  
+  const defaultPid = formData?.productId 
+    ? (typeof formData.productId === 'object' ? formData.productId._id : formData.productId) 
+    : "";
+
+  const [selectedPid, setSelectedPid] = useState(defaultPid);
 
   return (
     <div className="space-y-4">
@@ -293,7 +307,7 @@ const StoryFormFields = ({ isEdit, formData, onImageChange, imagePreview, produc
 
       <div className="grid gap-2">
         <Label>Link Product (Optional)</Label>
-        <ProductCombobox productList={productList} value={selectedPid} onChange={setSelectedPid} />
+        <ProductCombobox productList={safeProductList} value={selectedPid} onChange={setSelectedPid} />
         <input type="hidden" name="productId" value={selectedPid} />
       </div>
 
@@ -349,9 +363,12 @@ const StoryFormFields = ({ isEdit, formData, onImageChange, imagePreview, produc
   );
 };
 
+// 🔥 FIXED: ProductCombobox with Safe Array Handling and Search
 const ProductCombobox = ({ productList, value, onChange }: any) => {
   const [open, setOpen] = useState(false);
-  const selectedProduct = productList?.find((p: any) => p._id === value);
+  
+  const safeList = Array.isArray(productList) ? productList : [];
+  const selectedProduct = safeList.find((p: any) => p._id === value);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -370,22 +387,30 @@ const ProductCombobox = ({ productList, value, onChange }: any) => {
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0" align="start">
         <Command>
-          <CommandInput placeholder="Search product..." />
+          <CommandInput placeholder="Search product by title..." />
           <CommandList>
             <CommandEmpty>No product found.</CommandEmpty>
             <CommandGroup>
-              <CommandItem onSelect={() => { onChange(""); setOpen(false); }} className="text-xs">
+              {/* ✅ Added a valid search value for "None" */}
+              <CommandItem value="none remove link" onSelect={() => { onChange(""); setOpen(false); }} className="text-xs">
                 <Check className={cn("mr-2 h-3 w-3", !value ? "opacity-100" : "opacity-0")} />
                 None (Remove Link)
               </CommandItem>
-              {productList?.map((product: any) => (
-                <CommandItem key={product._id} onSelect={() => { onChange(product._id); setOpen(false); }} className="text-xs">
+              
+              {safeList.map((product: any) => (
+                <CommandItem 
+                  key={product._id} 
+                  // ✅ FIX: Combined Product Title and ID to ensure flawless searching and uniqueness
+                  value={`${product.productTitle} ${product._id}`} 
+                  onSelect={() => { onChange(product._id); setOpen(false); }} 
+                  className="text-xs"
+                >
                   <Check className={cn("mr-2 h-3 w-3", value === product._id ? "opacity-100" : "opacity-0")} />
                   <div className="flex items-center gap-2">
-                     <div className="w-6 h-6 relative rounded overflow-hidden border">
+                      <div className="w-6 h-6 relative rounded overflow-hidden border">
                         <Image src={product.thumbnailImage || '/placeholder.png'} alt="p" fill className="object-cover" />
-                     </div>
-                     <span className="truncate">{product.productTitle}</span>
+                      </div>
+                      <span className="truncate">{product.productTitle}</span>
                   </div>
                 </CommandItem>
               ))}

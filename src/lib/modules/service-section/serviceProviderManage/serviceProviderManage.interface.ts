@@ -3,14 +3,8 @@ import { Document, Types } from "mongoose";
 export interface IBooking extends Document {
   // Core Identifiers
   order_id: string;
-
-  // Customer Info
   customer_id: Types.ObjectId;
-
-  // Provider Info
   provider_id: Types.ObjectId;
-
-  // Service Info
   service_id: Types.ObjectId;
 
   // Booking Schedule
@@ -20,11 +14,18 @@ export interface IBooking extends Document {
   // Location
   location_details: string;
 
-  // Cost & Billing
+  // ✅ NEW: Contact Info (For communication)
+  contact_info: {
+    name: string;
+    phone: string;
+    email?: string;
+  };
+
+  // Cost
   estimated_cost: number;
   final_cost?: number;
 
-  // Status Tracking
+  // Status
   status:
     | "Pending Confirmation"
     | "Confirmed"
@@ -43,8 +44,6 @@ export interface IBooking extends Document {
   provider_notes?: string;
   cancellation_reason?: string;
   provider_rejection_message?: string;
-
-  
 
   // System
   createdAt: Date;

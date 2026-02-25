@@ -61,10 +61,16 @@ const deleteBlogFromDB = async (id: string) => {
   return null;
 };
 
+const getBlogByIdFromDB = async (id: string) => {
+  const result = await BlogModel.findById(id);
+  return result;
+};
+
 export const BlogServices = {
   createBlogInDB,
   getAllBlogsFromDB,
   getBlogsByCategoryFromDB,
   updateBlogInDB,
   deleteBlogFromDB,
+  getBlogByIdFromDB,
 };
