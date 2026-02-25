@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, FormEvent, useEffect } from 'react';
+import React, { useState, FormEvent, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
@@ -23,32 +23,27 @@ import TagInput from './TagInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 
+// ✅ ObjectId extract helper
 const getIdFromRef = (value: unknown): string => {
     if (!value) return '';
-    if (typeof value === 'string') return value;
+    if (typeof value === 'string') return value.trim();
     if (typeof value === 'object' && value !== null) {
         const record = value as { _id?: unknown; id?: unknown };
-        if (typeof record._id === 'string') return record._id;
-        if (typeof record.id === 'string') return record.id;
+        if (record._id) return String(record._id).trim();
+        if (record.id) return String(record.id).trim();
     }
     return '';
 };
 
-const normalizeToStringArray = (value: unknown): string[] => {
-    if (!value) return [];
-    if (Array.isArray(value)) {
-        return value
-            .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
-            .map((item) => item.trim());
-    }
-    if (typeof value === 'string' && value.trim().length > 0) {
-        return [value.trim()];
-    }
-    return [];
-};
+// ✅ Valid MongoDB ObjectId check (24-char hex)
+const isObjectId = (val: string): boolean =>
+    !!val && /^[a-f\d]{24}$/i.test(val.trim());
+
+// ✅ Only return value if it's a valid ObjectId, otherwise empty string
+const safeObjectId = (val?: string): string =>
+    val && isObjectId(val) ? val.trim() : '';
 
 export default function ProductForm({ initialData, productId: propProductId }: any) {
-    // console.log('Initial Data=====', initialData)
     const router = useRouter();
     const searchParams = useSearchParams();
     const productIdParam = searchParams?.get('id');
@@ -101,12 +96,17 @@ export default function ProductForm({ initialData, productId: propProductId }: a
     const [stock, setStock] = useState<number | undefined>(undefined);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoadingProduct, setIsLoadingProduct] = useState(isEditMode);
+
     const { data: session } = useSession();
-    // console.log('Check session=====', session)
     const token = (session as any)?.accessToken;
-    const [initialSubcategoryId, setInitialSubcategoryId] = useState<string>('');
-    const [initialChildCategoryId, setInitialChildCategoryId] = useState<string>('');
-    const [initialModelId, setInitialModelId] = useState<string>('');
+
+    // ✅ Refs to prevent useEffect race conditions
+    const isInitialLoad = useRef(true);
+    const initialModelIdRef = useRef<string>('');
+    const initialSubcategoryIdRef = useRef<string>('');
+    const initialChildCategoryIdRef = useRef<string>('');
+
     const pricingFormData = {
         price: price ?? '',
         discountPrice: discountPrice ?? '',
@@ -116,175 +116,256 @@ export default function ProductForm({ initialData, productId: propProductId }: a
 
     const handlePricingInputChange = (field: string, value: unknown) => {
         switch (field) {
-            case 'price':
-                setPrice(value === '' ? undefined : Number(value));
-                break;
-            case 'discountPrice':
-                setDiscountPrice(value === '' ? undefined : Number(value));
-                break;
-            case 'rewardPoints':
-                setRewardPoints(value === '' ? undefined : Number(value));
-                break;
-            case 'stock':
-                setStock(value === '' ? undefined : Number(value));
-                break;
+            case 'price': setPrice(value === '' ? undefined : Number(value)); break;
+            case 'discountPrice': setDiscountPrice(value === '' ? undefined : Number(value)); break;
+            case 'rewardPoints': setRewardPoints(value === '' ? undefined : Number(value)); break;
+            case 'stock': setStock(value === '' ? undefined : Number(value)); break;
         }
     };
 
     const handlePricingNumberChange = (field: string, delta: number) => {
         switch (field) {
-            case 'price':
-                setPrice(prev => Math.max(0, (prev || 0) + delta));
-                break;
-            case 'discountPrice':
-                setDiscountPrice(prev => Math.max(0, (prev || 0) + delta));
-                break;
-            case 'rewardPoints':
-                setRewardPoints(prev => Math.max(0, (prev || 0) + delta));
-                break;
-            case 'stock':
-                setStock(prev => Math.max(0, (prev || 0) + delta));
-                break;
+            case 'price': setPrice(prev => Math.max(0, (prev || 0) + delta)); break;
+            case 'discountPrice': setDiscountPrice(prev => Math.max(0, (prev || 0) + delta)); break;
+            case 'rewardPoints': setRewardPoints(prev => Math.max(0, (prev || 0) + delta)); break;
+            case 'stock': setStock(prev => Math.max(0, (prev || 0) + delta)); break;
         }
     };
 
+    // --- Fetch Subcategories (user change only) ---
     useEffect(() => {
-        const fetchSubcategories = async () => { if (category && token) { try { const res = await axios.get(`/api/v1/ecommerce-category/ecomSubCategory/category/${category}`, { headers: { Authorization: `Bearer ${token}` } }); setSubcategories(res.data?.data || []); setSubcategory(''); setChildCategories([]); setChildCategory(''); } catch (error) { console.error('Failed to fetch subcategories', error); } } else { setSubcategories([]); } }; fetchSubcategories();
+        if (isInitialLoad.current) return;
+        const fetchSubcategories = async () => {
+            if (category && token) {
+                try {
+                    const res = await axios.get(`/api/v1/ecommerce-category/ecomSubCategory/category/${category}`, { headers: { Authorization: `Bearer ${token}` } });
+                    setSubcategories(res.data?.data || []);
+                    setSubcategory('');
+                    setChildCategories([]);
+                    setChildCategory('');
+                } catch (error) { console.error(error); }
+            } else {
+                setSubcategories([]);
+            }
+        };
+        fetchSubcategories();
     }, [category, token]);
+
+    // --- Fetch Child Categories (user change only) ---
     useEffect(() => {
-        const fetchChildCategories = async () => { if (subcategory && token) { try { const res = await axios.get(`/api/v1/ecommerce-category/ecomChildCategory?subCategoryId=${subcategory}`, { headers: { Authorization: `Bearer ${token}` } }); setChildCategories(res.data?.data || []); setChildCategory(''); } catch (error) { console.error('Failed to fetch child categories', error); } } else { setChildCategories([]); } }; fetchChildCategories();
+        if (isInitialLoad.current) return;
+        const fetchChildCategories = async () => {
+            if (subcategory && token) {
+                try {
+                    const res = await axios.get(`/api/v1/ecommerce-category/ecomChildCategory?subCategoryId=${subcategory}`, { headers: { Authorization: `Bearer ${token}` } });
+                    setChildCategories(res.data?.data || []);
+                    setChildCategory('');
+                } catch (error) { console.error(error); }
+            } else {
+                setChildCategories([]);
+            }
+        };
+        fetchChildCategories();
     }, [subcategory, token]);
+
+    // --- Fetch Models (user change only) ---
     useEffect(() => {
+        if (isInitialLoad.current) return;
         const fetchModels = async () => {
             if (brand && token) {
                 try {
-                    // console.log('Fetching models for brand:', brand);
                     const res = await axios.get(`/api/v1/product-config/modelName?brandId=${brand}`, { headers: { Authorization: `Bearer ${token}` } });
-                    // console.log('Models API response:', res.data?.data);
-                    const filteredModels = res.data?.data?.filter((m: any) => m.status === 'active') || [];
-                    // console.log('Filtered models:', filteredModels);
-                    setModels(filteredModels);
-                    if (initialModelId) {
-                        setModel(initialModelId);
-                    }
-                } catch (error) {
-                    console.error('Failed to fetch models', error);
-                }
+                    setModels(res.data?.data?.filter((m: any) => m.status === 'active') || []);
+                    setModel('');
+                } catch (error) { console.error(error); }
             } else {
                 setModels([]);
             }
         };
         fetchModels();
-    }, [brand, token, initialModelId]);
+    }, [brand, token]);
 
+    // --- Set subcategory after list loads (edit mode) ---
     useEffect(() => {
-        if (initialSubcategoryId && subcategories.length > 0) {
-            setSubcategory(initialSubcategoryId);
+        if (!isEditMode || !initialSubcategoryIdRef.current) return;
+        if (subcategories.length > 0) {
+            const id = initialSubcategoryIdRef.current;
+            const exists = subcategories.some((s: any) => s._id === id);
+            if (exists) {
+                setSubcategory(id);
+                initialSubcategoryIdRef.current = '';
+            }
         }
-    }, [initialSubcategoryId, subcategories]);
+    }, [subcategories, isEditMode]);
 
+    // --- Set child category after list loads (edit mode) ---
     useEffect(() => {
-        if (initialChildCategoryId && childCategories.length > 0) {
-            setChildCategory(initialChildCategoryId);
+        if (!isEditMode || !initialChildCategoryIdRef.current) return;
+        if (childCategories.length > 0) {
+            const id = initialChildCategoryIdRef.current;
+            const exists = childCategories.some((c: any) => c._id === id);
+            if (exists) {
+                setChildCategory(id);
+                initialChildCategoryIdRef.current = '';
+            }
         }
-    }, [initialChildCategoryId, childCategories]);
+    }, [childCategories, isEditMode]);
 
+    // --- Set model after list loads (edit mode) ---
+    useEffect(() => {
+        if (!isEditMode || !initialModelIdRef.current) return;
+        if (models.length > 0) {
+            const id = initialModelIdRef.current;
+            const exists = models.some((m: any) => m._id === id);
+            if (exists) {
+                setModel(id);
+                initialModelIdRef.current = '';
+            }
+        }
+    }, [models, isEditMode]);
+
+    // --- Main: Load existing product ---
     useEffect(() => {
         const fetchExistingProduct = async () => {
-            if (!isEditMode || !productId || !token) return;
+            if (!isEditMode || !productId || !token) {
+                setIsLoadingProduct(false);
+                isInitialLoad.current = false;
+                return;
+            }
             try {
+                // ✅ /raw endpoint — ObjectId হিসেবে ফেরত দেয়, name string না
                 const res = await axios.get(`/api/v1/product/${productId}`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 const p = res.data?.data;
-                if (!p) return;
+                if (!p) {
+                    toast.error('Product data not found!');
+                    setIsLoadingProduct(false);
+                    return;
+                }
 
+                // Basic info
                 setTitle(p.productTitle || '');
                 setShortDescription(p.shortDescription || '');
                 setFullDescription(p.fullDescription || '');
                 setSpecification(p.specification || '');
                 setWarrantyPolicy(p.warrantyPolicy || '');
                 const parsedProductTags = Array.isArray(p.productTag)
-                    ? p.productTag.filter((tag: string) => typeof tag === 'string').map((tag: string) => tag.trim()).filter(Boolean)
+                    ? p.productTag.filter((t: string) => typeof t === 'string').map((t: string) => t.trim()).filter(Boolean)
                     : typeof p.productTag === 'string'
-                        ? p.productTag.split(',').map((tag: string) => tag.trim()).filter(Boolean)
+                        ? p.productTag.split(',').map((t: string) => t.trim()).filter(Boolean)
                         : [];
                 setProductTags(parsedProductTags);
 
+                // Images
                 setThumbnail(null);
                 setThumbnailPreview(p.thumbnailImage || null);
                 setInitialThumbnailUrl(p.thumbnailImage || null);
                 setRemovedThumbnailUrl(null);
                 setGalleryImages([]);
-                const existingUrls = Array.isArray(p.photoGallery) ? p.photoGallery : [];
-                setExistingGalleryUrls(existingUrls);
+                setExistingGalleryUrls(Array.isArray(p.photoGallery) ? p.photoGallery : []);
                 setRemovedGalleryUrls([]);
 
+                // Pricing
                 setPrice(typeof p.productPrice === 'number' ? p.productPrice : undefined);
                 setDiscountPrice(typeof p.discountPrice === 'number' ? p.discountPrice : undefined);
                 setStock(typeof p.stock === 'number' ? p.stock : undefined);
                 setProductCode(p.sku || '');
                 setRewardPoints(typeof p.rewardPoints === 'number' ? p.rewardPoints : undefined);
+                setVideoUrl(p.videoUrl || '');
+
+                // IDs
+                const catId = getIdFromRef(p.category);
+                const subId = getIdFromRef(p.subCategory);
+                const childId = getIdFromRef(p.childCategory);
+                const brandId = getIdFromRef(p.brand);
+                const modelId = getIdFromRef(p.productModel);
 
                 setStore(getIdFromRef(p.vendorStoreId));
-                setCategory(getIdFromRef(p.category));
-                setInitialSubcategoryId(getIdFromRef(p.subCategory));
-                setInitialChildCategoryId(getIdFromRef(p.childCategory));
-                setBrand(getIdFromRef(p.brand));
-                setInitialModelId(getIdFromRef(p.productModel));
                 setFlag(getIdFromRef(p.flag));
                 setWarranty(getIdFromRef(p.warranty));
                 setUnit(getIdFromRef(p.weightUnit));
 
+                // Store refs for dependent fetches
+                if (subId) initialSubcategoryIdRef.current = subId;
+                if (childId) initialChildCategoryIdRef.current = childId;
+                if (modelId) initialModelIdRef.current = modelId;
+
+                // Fetch dependent lists in parallel
+                const promises: Promise<void>[] = [];
+                if (catId) {
+                    promises.push(
+                        axios.get(`/api/v1/ecommerce-category/ecomSubCategory/category/${catId}`, { headers: { Authorization: `Bearer ${token}` } })
+                            .then(r => setSubcategories(r.data?.data || []))
+                            .catch(() => {})
+                    );
+                }
+                if (subId) {
+                    promises.push(
+                        axios.get(`/api/v1/ecommerce-category/ecomChildCategory?subCategoryId=${subId}`, { headers: { Authorization: `Bearer ${token}` } })
+                            .then(r => setChildCategories(r.data?.data || []))
+                            .catch(() => {})
+                    );
+                }
+                if (brandId) {
+                    promises.push(
+                        axios.get(`/api/v1/product-config/modelName?brandId=${brandId}`, { headers: { Authorization: `Bearer ${token}` } })
+                            .then(r => setModels(r.data?.data?.filter((m: any) => m.status === 'active') || []))
+                            .catch(() => {})
+                    );
+                }
+                await Promise.all(promises);
+
+                // Set main dropdowns
+                if (catId) setCategory(catId);
+                if (brandId) setBrand(brandId);
+
+                // Offer deadline
                 if (p.offerDeadline) {
                     setSpecialOffer(true);
                     const dt = new Date(p.offerDeadline);
-                    const isoLocal = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
-                        .toISOString()
-                        .slice(0, 16);
-                    setOfferEndTime(isoLocal);
+                    setOfferEndTime(new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 16));
                 } else {
                     setSpecialOffer(false);
                     setOfferEndTime('');
                 }
 
+                // SEO
                 setMetaTitle(p.metaTitle || '');
-                const parsedMetaKeywords = Array.isArray(p.metaKeyword)
-                    ? p.metaKeyword.filter((keyword: string) => typeof keyword === 'string').map((keyword: string) => keyword.trim()).filter(Boolean)
-                    : typeof p.metaKeyword === 'string'
-                        ? p.metaKeyword.split(',').map((keyword: string) => keyword.trim()).filter(Boolean)
-                        : [];
+                const parsedMetaKeywords = typeof p.metaKeyword === 'string'
+                    ? p.metaKeyword.split(',').map((k: string) => k.trim()).filter(Boolean)
+                    : Array.isArray(p.metaKeyword) ? p.metaKeyword : [];
                 setMetaKeywordTags(parsedMetaKeywords);
                 setMetaDescription(p.metaDescription || '');
 
+                // ✅ Variants — /raw endpoint থেকে ObjectId আসে সরাসরি
                 const opts = Array.isArray(p.productOptions) ? p.productOptions : [];
                 if (opts.length > 0) {
                     setHasVariant(true);
+                    const mapped = opts.map((opt: any, idx: number) => {
+                        // safeObjectId: valid 24-char hex ObjectId হলেই রাখো
+                        const colorId = safeObjectId(getIdFromRef(Array.isArray(opt.color) ? opt.color[0] : opt.color));
+                        const sizeId = safeObjectId(getIdFromRef(Array.isArray(opt.size) ? opt.size[0] : opt.size));
+                        const storageId = safeObjectId(getIdFromRef(opt.storage));
+                        const simTypeId = safeObjectId(getIdFromRef(Array.isArray(opt.simType) ? opt.simType[0] : opt.simType));
+                        const conditionId = safeObjectId(getIdFromRef(Array.isArray(opt.condition) ? opt.condition[0] : opt.condition));
+                        const warrantyId = safeObjectId(getIdFromRef(opt.warranty));
 
-                    const colorNameToIdMap = new Map<string, string>(
-                        initialData?.variantOptions?.colors?.map((c: any) => [c.colorName, c._id]) || []
-                    );
-                    const sizeNameToIdMap = new Map<string, string>(
-                        initialData?.variantOptions?.sizes?.map((s: any) => [s.name, s._id]) || []
-                    );
-
-                    const getFirstValue = (val: any) => Array.isArray(val) ? val[0] : val;
-                    const getNameToId = (name: string, map: Map<string, string>) => map.get(name) || name;
-
-                    const mapped = opts.map((opt: any, idx: number) => ({
-                        id: Date.now() + idx,
-                        image: null,
-                        imageUrl: opt.productImage || '',
-                        color: opt.color ? getNameToId(getFirstValue(opt.color), colorNameToIdMap) : '',
-                        size: opt.size ? getNameToId(getFirstValue(opt.size), sizeNameToIdMap) : '',
-                        storage: opt.storage || '',
-                        simType: opt.simType || '',
-                        condition: opt.condition || '',
-                        warranty: opt.warranty || '',
-                        stock: typeof opt.stock === 'number' ? opt.stock : 0,
-                        price: typeof opt.price === 'number' ? opt.price : 0,
-                        discountPrice: typeof opt.discountPrice === 'number' ? opt.discountPrice : 0,
-                    }));
+                        return {
+                            id: Date.now() + idx,
+                            image: null,
+                            imageUrl: opt.productImage || '',
+                            color: colorId,
+                            size: sizeId,
+                            storage: storageId,
+                            simType: simTypeId,
+                            condition: conditionId,
+                            warranty: warrantyId,
+                            stock: typeof opt.stock === 'number' ? opt.stock : 0,
+                            price: typeof opt.price === 'number' ? opt.price : 0,
+                            discountPrice: typeof opt.discountPrice === 'number' ? opt.discountPrice : 0,
+                        };
+                    });
                     setVariants(mapped);
                 } else {
                     setHasVariant(false);
@@ -292,16 +373,18 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 }
             } catch (err: any) {
                 console.error('Failed to load product for edit', err?.response?.data || err?.message);
-                const errorMessage = err?.response?.data?.message || 'Failed to load product details for editing';
-                toast.error(errorMessage);
-                if (err?.response?.status === 400 || !productId) {
-                    router.replace('/general/add/new/product');
-                }
+                toast.error(err?.response?.data?.message || 'Failed to load product details for editing');
+            } finally {
+                setIsLoadingProduct(false);
+                setTimeout(() => {
+                    isInitialLoad.current = false;
+                }, 300);
             }
         };
 
         fetchExistingProduct();
-    }, [isEditMode, productId, token, router]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isEditMode, productId, token]);
 
     const uploadFile = async (file: File): Promise<string> => {
         const formData = new FormData();
@@ -311,9 +394,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` },
             });
             const url = response.data?.url;
-            if (!url || typeof url !== 'string') {
-                throw new Error(`API did not return a valid URL for file: ${file.name}`);
-            }
+            if (!url || typeof url !== 'string') throw new Error(`API did not return a valid URL for: ${file.name}`);
             return url;
         } catch (error) {
             console.error(`Failed to upload file ${file.name}:`, error);
@@ -323,133 +404,89 @@ export default function ProductForm({ initialData, productId: propProductId }: a
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
-        if (!token) return toast.error("Authentication required.");
-
-        if (!isEditMode && !thumbnail) {
-            return toast.error("Thumbnail image is required.");
-        }
-        if (!title || !store || !category) {
-            return toast.error("Please fill all required fields (*).");
-        }
+        if (!token) return toast.error('Authentication required.');
+        if (!isEditMode && !thumbnail) return toast.error('Thumbnail image is required.');
+        if (!title || !store || !category) return toast.error('Please fill all required fields (*).');
 
         const selectedStore = initialData?.stores?.find((s: any) => s._id === store || s.id === store);
-        if (!selectedStore?.storeName) {
-            return toast.error("Unable to determine vendor name. Please select a valid store.");
-        }
+        if (!selectedStore?.storeName) return toast.error('Unable to determine vendor name. Please select a valid store.');
 
         const userVendorId = (session?.user as any)?.vendorId;
         if (userVendorId) {
             const storeVendorId = selectedStore?.vendorId;
-            if (storeVendorId && storeVendorId !== userVendorId) {
-                return toast.error("You are not authorized to add or update products for this store.");
-            }
+            if (storeVendorId && storeVendorId !== userVendorId) return toast.error('You are not authorized to manage products for this store.');
         }
 
-        if (!price || price <= 0) {
-            return toast.error("Price is required and must be greater than 0.");
-        }
+        if (!price || price <= 0) return toast.error('Price is required and must be greater than 0.');
 
         if (specialOffer) {
-            if (!offerEndTime) {
-                return toast.error("Offer end time is required when special offer is enabled.");
-            }
-            const offerDate = new Date(offerEndTime);
-            const now = new Date();
-            if (offerDate <= now) {
-                return toast.error("Offer end time must be in the future.");
-            }
+            if (!offerEndTime) return toast.error('Offer end time is required when special offer is enabled.');
+            if (new Date(offerEndTime) <= new Date()) return toast.error('Offer end time must be in the future.');
         }
 
         if (hasVariant) {
-            if (variants.length === 0) {
-                return toast.error("Please add at least one product variant.");
-            }
-
+            if (variants.length === 0) return toast.error('Please add at least one product variant.');
             for (let i = 0; i < variants.length; i++) {
-                const variant = variants[i];
-                if (variant.stock === undefined || variant.stock < 0) {
-                    return toast.error(`Variant ${i + 1}: Stock must be 0 or greater.`);
-                }
-                if (!variant.price || variant.price <= 0) {
-                    return toast.error(`Variant ${i + 1}: Price must be greater than 0.`);
-                }
-                if (variant.discountPrice && variant.discountPrice >= variant.price) {
-                    return toast.error(`Variant ${i + 1}: Discount price must be less than regular price.`);
-                }
+                const v = variants[i];
+                if (v.stock === undefined || v.stock < 0) return toast.error(`Variant ${i + 1}: Stock must be 0 or greater.`);
+                if (!v.price || v.price <= 0) return toast.error(`Variant ${i + 1}: Price must be greater than 0.`);
+                if (v.discountPrice && v.discountPrice >= v.price) return toast.error(`Variant ${i + 1}: Discount price must be less than regular price.`);
             }
         }
 
         setIsSubmitting(true);
 
         try {
-            if (!thumbnail && !thumbnailPreview) {
-                setIsSubmitting(false);
-                return toast.error("Thumbnail image is required.");
-            }
+            if (!thumbnail && !thumbnailPreview) { setIsSubmitting(false); return toast.error('Thumbnail image is required.'); }
 
             let thumbnailUrl = thumbnailPreview;
-            if (thumbnail) {
-                thumbnailUrl = await uploadFile(thumbnail);
-            }
-            if (!thumbnailUrl) {
-                setIsSubmitting(false);
-                return toast.error("Thumbnail image is required.");
-            }
+            if (thumbnail) thumbnailUrl = await uploadFile(thumbnail);
+            if (!thumbnailUrl) { setIsSubmitting(false); return toast.error('Thumbnail image is required.'); }
 
-            const filteredExistingUrls = existingGalleryUrls.filter(
-                (url) => !removedGalleryUrls.includes(url)
-            );
-
+            const filteredExistingUrls = existingGalleryUrls.filter(url => !removedGalleryUrls.includes(url));
             let newGalleryUrls: string[] = [];
             if (galleryImages.length > 0) {
-                const galleryUrls = await Promise.all(
-                    galleryImages.map(file => uploadFile(file))
-                );
-                newGalleryUrls = galleryUrls.filter(url => !!url);
+                newGalleryUrls = (await Promise.all(galleryImages.map(f => uploadFile(f)))).filter(Boolean);
             }
+            const finalGalleryUrls = [...filteredExistingUrls, ...newGalleryUrls];
+            if (finalGalleryUrls.length === 0) finalGalleryUrls.push(thumbnailUrl);
 
-            const combinedGalleryUrls = [...filteredExistingUrls, ...newGalleryUrls];
-            const finalGalleryUrls =
-                combinedGalleryUrls.length > 0 ? combinedGalleryUrls : [thumbnailUrl];
-
-            const selectedStore = initialData?.stores?.find((s: any) => s._id === store || s.id === store);
             const vendorName = selectedStore?.storeName || '';
 
             const productData = {
                 productId: productCode || `PROD-${Date.now()}`,
                 productTitle: title,
                 vendorStoreId: store,
-                vendorName: vendorName,
-                shortDescription: shortDescription,
-                fullDescription: fullDescription,
-                specification: specification,
-                warrantyPolicy: warrantyPolicy,
+                vendorName,
+                shortDescription,
+                fullDescription,
+                specification,
+                warrantyPolicy,
                 productTag: productTags,
                 videoUrl: videoUrl || undefined,
-
                 photoGallery: finalGalleryUrls,
                 thumbnailImage: thumbnailUrl,
                 removedPhotoGallery: removedGalleryUrls.length > 0 ? removedGalleryUrls : undefined,
                 removeThumbnail: removedThumbnailUrl || undefined,
-
                 productPrice: price || 0,
                 discountPrice: discountPrice || undefined,
                 stock: stock || 0,
                 sku: productCode || undefined,
                 rewardPoints: rewardPoints || 0,
-                category: category,
+                category,
                 subCategory: subcategory || undefined,
                 childCategory: childCategory || undefined,
                 brand: brand || undefined,
                 productModel: model || undefined,
                 flag: flag || undefined,
-                warranty: warranty,
+                warranty: warranty || undefined,
                 weightUnit: unit || undefined,
                 offerDeadline: offerEndTime ? new Date(offerEndTime) : undefined,
                 metaTitle: metaTitle || undefined,
                 metaKeyword: metaKeywordTags.length > 0 ? metaKeywordTags.join(', ') : undefined,
                 metaDescription: metaDescription || undefined,
                 status: 'active',
+                // ✅ FIXED: শুধু valid ObjectId পাঠাও — plain string পাঠালে CastError হয়
                 productOptions: hasVariant
                     ? await Promise.all(
                         variants.map(async (variant) => {
@@ -457,19 +494,19 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                                 ? await uploadFile(variant.image as File)
                                 : (variant.imageUrl || '');
 
-                            const {
-                                image,
-                                imageUrl,
-                                ...rest
-                            } = variant;
-
                             return {
-                                ...rest,
                                 productImage: uploadedImage,
-                                simType: normalizeToStringArray(variant.simType),
-                                condition: normalizeToStringArray(variant.condition),
-                                color: normalizeToStringArray(variant.color),
-                                size: normalizeToStringArray(variant.size),
+                                // Array fields: valid ObjectId থাকলে array, না হলে []
+                                color:     isObjectId(variant.color || '')     ? [variant.color]     : [],
+                                size:      isObjectId(variant.size || '')      ? [variant.size]      : [],
+                                simType:   isObjectId(variant.simType || '')   ? [variant.simType]   : [],
+                                condition: isObjectId(variant.condition || '') ? [variant.condition] : [],
+                                // Single ref fields: valid ObjectId থাকলে পাঠাও, না হলে undefined
+                                storage:   isObjectId(variant.storage || '')   ? variant.storage  : undefined,
+                                warranty:  isObjectId(variant.warranty || '')  ? variant.warranty : undefined,
+                                stock: variant.stock,
+                                price: variant.price,
+                                discountPrice: variant.discountPrice,
                             };
                         })
                     )
@@ -477,20 +514,16 @@ export default function ProductForm({ initialData, productId: propProductId }: a
             };
 
             if (isEditMode && productId) {
-                await axios.patch(`/api/v1/product/${productId}`, productData, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                toast.success("Product updated successfully!");
+                await axios.patch(`/api/v1/product/${productId}`, productData, { headers: { Authorization: `Bearer ${token}` } });
+                toast.success('Product updated successfully!');
                 router.push('/products/all');
             } else {
-                await axios.post('/api/v1/product', productData, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                toast.success("Product created successfully!");
+                await axios.post('/api/v1/product', productData, { headers: { Authorization: `Bearer ${token}` } });
+                toast.success('Product created successfully!');
                 router.push('/products/all');
             }
         } catch (error: any) {
-            console.error("Submission Error:", error.response?.data || error.message);
+            console.error('Submission Error:', error.response?.data || error.message);
             toast.error(error.response?.data?.message || error.message || `Failed to ${isEditMode ? 'update' : 'create'} product.`);
         } finally {
             setIsSubmitting(false);
@@ -500,10 +533,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
     const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            if (initialThumbnailUrl) {
-                setRemovedThumbnailUrl(initialThumbnailUrl);
-                setInitialThumbnailUrl(null);
-            }
+            if (initialThumbnailUrl) { setRemovedThumbnailUrl(initialThumbnailUrl); setInitialThumbnailUrl(null); }
             setThumbnail(file);
             setThumbnailPreview(URL.createObjectURL(file));
         } else {
@@ -512,18 +542,26 @@ export default function ProductForm({ initialData, productId: propProductId }: a
         }
     };
 
+    if (isLoadingProduct)
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <Loader2 className="animate-spin h-10 w-10 text-blue-500" />
+                <span className="ml-3 text-gray-600">Loading product data...</span>
+            </div>
+        );
+
     return (
         <form onSubmit={handleSubmit} className="max-w-7xl mx-auto">
-            {/* Fixed Action Bar – Always Visible at Bottom on Mobile */}
+            {/* Fixed Action Bar – Mobile */}
             <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg lg:hidden">
                 <div className="flex justify-end gap-3 p-4">
-                    <Button type="button" variant="outline" size="sm" className="flex-1 sm:flex-initial">
+                    <Button type="button" variant="outline" size="sm" className="flex-1 sm:flex-initial" onClick={() => router.back()}>
                         <X className="mr-2 h-4 w-4" /> Discard
                     </Button>
                     <Button type="submit" disabled={isSubmitting} size="sm" className="flex-1 sm:flex-initial">
                         {isSubmitting && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
                         <Save className="mr-2 h-4 w-4" />
-                        {isEditMode ? "Update Product" : "Save Product"}
+                        {isEditMode ? 'Update Product' : 'Save Product'}
                     </Button>
                 </div>
             </div>
@@ -531,90 +569,40 @@ export default function ProductForm({ initialData, productId: propProductId }: a
             <div className="space-y-8 pb-24 lg:pb-8">
                 {/* Section 1: Basic Info + Thumbnail */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Basic Information */}
                     <Card className="shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
                         <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
-                            <CardTitle className="text-xl font-bold text-gray-900">
-                                Basic Information
-                            </CardTitle>
+                            <CardTitle className="text-xl font-bold text-gray-900">Basic Information</CardTitle>
                             <p className="text-sm text-gray-600 mt-1">Core product details</p>
                         </CardHeader>
                         <CardContent className="pt-6 space-y-6">
                             <div className="space-y-2">
-                                <Label htmlFor="title" className="font-semibold">
-                                    Product Title <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                    id="title"
-                                    value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                    placeholder="e.g. Hybrid Car 2025 Edition"
-                                    required
-                                    className="h-12 text-base"
-                                />
+                                <Label htmlFor="title" className="font-semibold">Product Title <span className="text-red-500">*</span></Label>
+                                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Hybrid Car 2025 Edition" required className="h-12 text-base" />
                             </div>
-
                             <div className="space-y-2">
-                                <Label htmlFor="shortDescription" className="font-semibold">
-                                    Short Description
-                                    <span className="text-xs text-gray-500 ml-2">(Max 255 chars)</span>
-                                </Label>
-                                <Textarea
-                                    id="shortDescription"
-                                    value={shortDescription}
-                                    onChange={(e) => setShortDescription(e.target.value)}
-                                    maxLength={255}
-                                    placeholder="A powerful hybrid vehicle with advanced features..."
-                                    className="min-h-32 resize-none"
-                                />
+                                <Label htmlFor="shortDescription" className="font-semibold">Short Description <span className="text-xs text-gray-500 ml-2">(Max 255 chars)</span></Label>
+                                <Textarea id="shortDescription" value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} maxLength={255} placeholder="A powerful hybrid vehicle..." className="min-h-32 resize-none" />
                                 <p className="text-xs text-right text-gray-500">{shortDescription.length}/255</p>
                             </div>
-
                             <div className="space-y-2">
-                                <Label htmlFor="productTags" className="font-semibold">
-                                    Product Tags
-                                    <span className="text-xs text-gray-500 ml-2">(comma or enter)</span>
-                                </Label>
-                                <TagInput
-                                    value={productTags}
-                                    onChange={setProductTags}
-                                    placeholder="vehicle, hybrid, luxury..."
-                                />
+                                <Label htmlFor="productTags" className="font-semibold">Product Tags <span className="text-xs text-gray-500 ml-2">(comma or enter)</span></Label>
+                                <TagInput value={productTags} onChange={setProductTags} placeholder="vehicle, hybrid, luxury..." />
                             </div>
                         </CardContent>
                     </Card>
 
-                    {/* Thumbnail Upload */}
                     <Card className="shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
                         <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-t-lg">
-                            <CardTitle className="text-xl font-bold text-gray-900">
-                                Thumbnail Image <span className="text-red-500">*</span>
-                            </CardTitle>
+                            <CardTitle className="text-xl font-bold text-gray-900">Thumbnail Image <span className="text-red-500">*</span></CardTitle>
                         </CardHeader>
                         <CardContent className="pt-6">
                             <label htmlFor="thumbnail-upload" className="block cursor-pointer">
                                 <div className="border-3 border-dashed border-gray-300 rounded-xl p-8 hover:border-blue-500 hover:bg-blue-50/30 transition-all min-h-96 flex items-center justify-center">
                                     {thumbnailPreview ? (
                                         <div className="relative w-full h-96 group">
-                                            <Image
-                                                src={thumbnailPreview}
-                                                alt="Thumbnail"
-                                                fill
-                                                className="object-contain rounded-lg"
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="destructive"
-                                                size="icon"
-                                                className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity shadow-xl"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    setThumbnail(null);
-                                                    setThumbnailPreview(null);
-                                                    setInitialThumbnailUrl(null);
-                                                }}
-                                            >
+                                            <Image src={thumbnailPreview} alt="Thumbnail" fill className="object-contain rounded-lg" />
+                                            <Button type="button" variant="destructive" size="icon" className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity shadow-xl"
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setThumbnail(null); setThumbnailPreview(null); setInitialThumbnailUrl(null); }}>
                                                 <X className="h-5 w-5" />
                                             </Button>
                                         </div>
@@ -626,13 +614,7 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                                         </div>
                                     )}
                                 </div>
-                                <Input
-                                    id="thumbnail-upload"
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleThumbnailChange}
-                                    className="hidden"
-                                />
+                                <Input id="thumbnail-upload" type="file" accept="image/*" onChange={handleThumbnailChange} className="hidden" />
                             </label>
                         </CardContent>
                     </Card>
@@ -640,7 +622,6 @@ export default function ProductForm({ initialData, productId: propProductId }: a
 
                 {/* Section 2: Detailed Content + Pricing */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Rich Text Editors */}
                     <Card className="shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
                         <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-t-lg">
                             <CardTitle className="text-xl font-bold">Detailed Information</CardTitle>
@@ -652,48 +633,29 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                                     <TabsTrigger value="specification">Specification</TabsTrigger>
                                     <TabsTrigger value="warranty">Warranty Policy</TabsTrigger>
                                 </TabsList>
-                                <TabsContent value="description">
-                                    <RichTextEditor value={fullDescription} onChange={setFullDescription} />
-                                </TabsContent>
-                                <TabsContent value="specification">
-                                    <RichTextEditor value={specification} onChange={setSpecification} />
-                                </TabsContent>
-                                <TabsContent value="warranty">
-                                    <RichTextEditor value={warrantyPolicy} onChange={setWarrantyPolicy} />
-                                </TabsContent>
+                                <TabsContent value="description"><RichTextEditor value={fullDescription} onChange={setFullDescription} /></TabsContent>
+                                <TabsContent value="specification"><RichTextEditor value={specification} onChange={setSpecification} /></TabsContent>
+                                <TabsContent value="warranty"><RichTextEditor value={warrantyPolicy} onChange={setWarrantyPolicy} /></TabsContent>
                             </Tabs>
                         </CardContent>
                     </Card>
 
-                    {/* Pricing & Inventory */}
                     <Card className="shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
                         <CardHeader className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-t-lg">
                             <CardTitle className="text-xl font-bold">Pricing & Inventory</CardTitle>
                         </CardHeader>
                         <CardContent className="pt-6 space-y-6">
-                            <PricingInventory
-                                formData={pricingFormData}
-                                handleInputChange={handlePricingInputChange}
-                                handleNumberChange={handlePricingNumberChange}
-                            />
-
+                            <PricingInventory formData={pricingFormData} handleInputChange={handlePricingInputChange} handleNumberChange={handlePricingNumberChange} />
                             <div className="space-y-2">
                                 <Label htmlFor="sku" className="font-semibold">Product SKU</Label>
-                                <Input
-                                    id="sku"
-                                    value={productCode}
-                                    onChange={(e) => setProductCode(e.target.value)}
-                                    placeholder="e.g. HYBRID-2025-X"
-                                    className="h-12"
-                                />
+                                <Input id="sku" value={productCode} onChange={(e) => setProductCode(e.target.value)} placeholder="e.g. HYBRID-2025-X" className="h-12" />
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Section 3: Product Details + Gallery */}
+                {/* Section 3: Gallery + Product Details */}
                 <div className={`grid gap-8 ${hasVariant ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
-                    {/* Product Image Gallery (Hidden if has variant) */}
                     {!hasVariant && (
                         <ProductImageGallery
                             galleryImages={galleryImages}
@@ -706,244 +668,123 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                         />
                     )}
 
-                    {/* Product Details */}
                     <Card className="shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
                         <CardHeader className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-t-lg">
                             <CardTitle className="text-xl font-bold">Product Details</CardTitle>
                         </CardHeader>
-                        {/* <CardContent className="pt-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* All your Select fields remain the same */}
-                        {/* Store, Category, Subcategory, etc. */}
-                        {/* ... (kept unchanged for brevity) */}
-                        {/* </div> */}
                         <CardContent className="pt-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="store" className="text-sm font-medium text-gray-700">
-                                        Store <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Select value={store} onValueChange={setStore} required>
-                                        <SelectTrigger id="store" className="h-11 w-full">
-                                            <SelectValue placeholder="Select store" />
-                                        </SelectTrigger>
+                                    <Label className="text-sm font-medium text-gray-700">Store <span className="text-red-500">*</span></Label>
+                                    <Select value={store} onValueChange={setStore}>
+                                        <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Select store" /></SelectTrigger>
                                         <SelectContent>
-                                            {initialData?.stores
-                                                ?.filter((s: any) => {
-                                                    const userVendorId = (session?.user as any)?.vendorId;
-                                                    return !userVendorId || s.vendorId === userVendorId;
-                                                })
-                                                ?.map((s: any) => (
-                                                    <SelectItem key={s._id} value={s._id}>
-                                                        {s.storeName}
-                                                    </SelectItem>
-                                                ))}
+                                            {initialData?.stores?.filter((s: any) => { const vid = (session?.user as any)?.vendorId; return !vid || s.vendorId === vid; })
+                                                ?.map((s: any) => <SelectItem key={s._id} value={s._id}>{s.storeName}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="category" className="text-sm font-medium text-gray-700">
-                                        Category <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Select value={category} onValueChange={setCategory} required>
-                                        <SelectTrigger id="category" className="h-11 w-full">
-                                            <SelectValue placeholder="Select category" />
-                                        </SelectTrigger>
+                                    <Label className="text-sm font-medium text-gray-700">Category <span className="text-red-500">*</span></Label>
+                                    <Select value={category} onValueChange={(val) => { setCategory(val); if (!isInitialLoad.current) { setSubcategory(''); setChildCategory(''); } }}>
+                                        <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Select category" /></SelectTrigger>
                                         <SelectContent>
-                                            {initialData?.categories?.map((c: any) => (
-                                                <SelectItem key={c._id} value={c._id}>
-                                                    {c.name}
-                                                </SelectItem>
-                                            ))}
+                                            {initialData?.categories?.map((c: any) => <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="subcategory" className="text-sm font-medium text-gray-700">
-                                        Subcategory
-                                    </Label>
-                                    <Select
-                                        value={subcategory}
-                                        onValueChange={setSubcategory}
-                                        disabled={!category || subcategories.length === 0}
-                                    >
-                                        <SelectTrigger id="subcategory" className="h-11 w-full">
-                                            <SelectValue placeholder={!category ? "Select category first" : "Select subcategory"} />
-                                        </SelectTrigger>
+                                    <Label className="text-sm font-medium text-gray-700">Subcategory</Label>
+                                    <Select value={subcategory} onValueChange={(val) => { setSubcategory(val); if (!isInitialLoad.current) setChildCategory(''); }} disabled={!category || subcategories.length === 0}>
+                                        <SelectTrigger className="h-11 w-full"><SelectValue placeholder={!category ? 'Select category first' : 'Select subcategory'} /></SelectTrigger>
                                         <SelectContent>
-                                            {subcategories.map((sc: any) => (
-                                                <SelectItem key={sc._id} value={sc._id}>
-                                                    {sc.name}
-                                                </SelectItem>
-                                            ))}
+                                            {subcategories.map((sc: any) => <SelectItem key={sc._id} value={sc._id}>{sc.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="childCategory" className="text-sm font-medium text-gray-700">
-                                        Child Category
-                                    </Label>
-                                    <Select
-                                        value={childCategory}
-                                        onValueChange={setChildCategory}
-                                        disabled={!subcategory || childCategories.length === 0}
-                                    >
-                                        <SelectTrigger id="childCategory" className="h-11 w-full">
-                                            <SelectValue placeholder={!subcategory ? "Select subcategory first" : "Select child category"} />
-                                        </SelectTrigger>
+                                    <Label className="text-sm font-medium text-gray-700">Child Category</Label>
+                                    <Select value={childCategory} onValueChange={setChildCategory} disabled={!subcategory || childCategories.length === 0}>
+                                        <SelectTrigger className="h-11 w-full"><SelectValue placeholder={!subcategory ? 'Select subcategory first' : 'Select child category'} /></SelectTrigger>
                                         <SelectContent>
-                                            {childCategories.map((cc: any) => (
-                                                <SelectItem key={cc._id} value={cc._id}>
-                                                    {cc.name}
-                                                </SelectItem>
-                                            ))}
+                                            {childCategories.map((cc: any) => <SelectItem key={cc._id} value={cc._id}>{cc.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="brand" className="text-sm font-medium text-gray-700">
-                                        Brand
-                                    </Label>
-                                    <Select value={brand} onValueChange={setBrand}>
-                                        <SelectTrigger id="brand" className="h-11 w-full">
-                                            <SelectValue placeholder="Select brand" />
-                                        </SelectTrigger>
+                                    <Label className="text-sm font-medium text-gray-700">Brand</Label>
+                                    <Select value={brand} onValueChange={(val) => { setBrand(val); if (!isInitialLoad.current) setModel(''); }}>
+                                        <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Select brand" /></SelectTrigger>
                                         <SelectContent>
-                                            {initialData?.brands?.map((b: any) => (
-                                                <SelectItem key={b._id} value={b._id}>
-                                                    {b.name}
-                                                </SelectItem>
-                                            ))}
+                                            {initialData?.brands?.map((b: any) => <SelectItem key={b._id} value={b._id}>{b.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="model" className="text-sm font-medium text-gray-700">
-                                        Model
-                                    </Label>
-                                    <Select
-                                        value={model}
-                                        onValueChange={setModel}
-                                        disabled={!brand || models.length === 0}
-                                    >
-                                        <SelectTrigger id="model" className="h-11 w-full">
-                                            <SelectValue placeholder={!brand ? "Select brand first" : "Select model"} />
-                                        </SelectTrigger>
+                                    <Label className="text-sm font-medium text-gray-700">Model</Label>
+                                    <Select value={model} onValueChange={setModel} disabled={!brand || models.length === 0}>
+                                        <SelectTrigger className="h-11 w-full"><SelectValue placeholder={!brand ? 'Select brand first' : 'Select model'} /></SelectTrigger>
                                         <SelectContent>
-                                            {models.map((m: any) => (
-                                                <SelectItem key={m._id} value={m._id}>
-                                                    {m.modelName}
-                                                </SelectItem>
-                                            ))}
+                                            {models.map((m: any) => <SelectItem key={m._id} value={m._id}>{m.modelName}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="flag" className="text-sm font-medium text-gray-700">
-                                        Flag
-                                    </Label>
+                                    <Label className="text-sm font-medium text-gray-700">Flag</Label>
                                     <Select value={flag} onValueChange={setFlag}>
-                                        <SelectTrigger id="flag" className="h-11 w-full">
-                                            <SelectValue placeholder="Select" />
-                                        </SelectTrigger>
+                                        <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Select" /></SelectTrigger>
                                         <SelectContent>
-                                            {initialData?.flags?.map((f: any) => (
-                                                <SelectItem key={f._id} value={f._id}>
-                                                    {f.name}
-                                                </SelectItem>
-                                            ))}
+                                            {initialData?.flags?.map((f: any) => <SelectItem key={f._id} value={f._id}>{f.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="unit" className="text-sm font-medium text-gray-700">
-                                        Unit
-                                    </Label>
+                                    <Label className="text-sm font-medium text-gray-700">Unit</Label>
                                     <Select value={unit} onValueChange={setUnit}>
-                                        <SelectTrigger id="unit" className="h-11 w-full">
-                                            <SelectValue placeholder="Select" />
-                                        </SelectTrigger>
+                                        <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Select" /></SelectTrigger>
                                         <SelectContent>
-                                            {initialData?.units?.map((u: any) => (
-                                                <SelectItem key={u._id} value={u._id}>
-                                                    {u.name}
-                                                </SelectItem>
-                                            ))}
+                                            {initialData?.units?.map((u: any) => <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="warranty" className="text-sm font-medium text-gray-700">
-                                        Warranty
-                                    </Label>
+                                    <Label className="text-sm font-medium text-gray-700">Warranty</Label>
                                     <Select value={warranty} onValueChange={setWarranty}>
-                                        <SelectTrigger id="warranty" className="h-11 w-full">
-                                            <SelectValue placeholder="Select warranty" />
-                                        </SelectTrigger>
+                                        <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Select warranty" /></SelectTrigger>
                                         <SelectContent>
-                                            {initialData?.warranties?.map((w: any) => (
-                                                <SelectItem key={w._id} value={w._id}>
-                                                    {w.warrantyName}
-                                                </SelectItem>
-                                            ))}
+                                            {initialData?.warranties?.map((w: any) => <SelectItem key={w._id} value={w._id}>{w.warrantyName}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="videoUrl" className="text-sm font-medium text-gray-700">
-                                        Video URL
-                                    </Label>
-                                    <Input
-                                        id="videoUrl"
-                                        value={videoUrl}
-                                        onChange={(e) => setVideoUrl(e.target.value)}
-                                        placeholder="https://..."
-                                        className="h-11"
-                                    />
+                                    <Label className="text-sm font-medium text-gray-700">Video URL</Label>
+                                    <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://..." className="h-11" />
                                 </div>
                             </div>
 
                             <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100">
                                 <div>
-                                    <Label htmlFor="specialOffer" className="text-sm font-medium text-gray-700 cursor-pointer">
-                                        Special Offer
-                                    </Label>
+                                    <Label className="text-sm font-medium text-gray-700 cursor-pointer">Special Offer</Label>
                                     <p className="text-xs text-gray-500 mt-0.5">Enable time-limited offers</p>
                                 </div>
-                                <Switch
-                                    id="specialOffer"
-                                    checked={specialOffer}
-                                    onCheckedChange={setSpecialOffer}
-                                />
+                                <Switch checked={specialOffer} onCheckedChange={setSpecialOffer} />
                             </div>
-
                             {specialOffer && (
                                 <div className="space-y-2 pt-4 mt-4 border-t border-gray-100">
-                                    <Label htmlFor="offerEndTime" className="text-sm font-medium text-gray-700">
-                                        Offer End Time <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Input
-                                        id="offerEndTime"
-                                        type="datetime-local"
-                                        value={offerEndTime}
-                                        onChange={(e) => setOfferEndTime(e.target.value)}
-                                        min={new Date().toISOString().slice(0, 16)}
-                                        required
-                                        className="h-11"
-                                    />
+                                    <Label className="text-sm font-medium text-gray-700">Offer End Time <span className="text-red-500">*</span></Label>
+                                    <Input type="datetime-local" value={offerEndTime} onChange={(e) => setOfferEndTime(e.target.value)} min={new Date().toISOString().slice(0, 16)} required className="h-11" />
                                 </div>
                             )}
                         </CardContent>
-
                         <Separator className="my-8" />
                     </Card>
                 </div>
@@ -952,15 +793,8 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                 <Card className="shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
                     <CardContent className="p-8">
                         <div className="flex items-center justify-center gap-4 mb-8">
-                            <Label htmlFor="hasVariantSwitch" className="text-lg font-semibold">
-                                Does this product have variants? (Color, Size, etc.)
-                            </Label>
-                            <Switch
-                                id="hasVariantSwitch"
-                                checked={hasVariant}
-                                onCheckedChange={setHasVariant}
-                                className="scale-125"
-                            />
+                            <Label className="text-lg font-semibold">Does this product have variants? (Color, Size, etc.)</Label>
+                            <Switch checked={hasVariant} onCheckedChange={setHasVariant} className="scale-125" />
                         </div>
                         {hasVariant && (
                             <div className="mt-6">
@@ -984,43 +818,29 @@ export default function ProductForm({ initialData, productId: propProductId }: a
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <Label className="font-semibold">Meta Title</Label>
-                                <Input
-                                    value={metaTitle}
-                                    onChange={(e) => setMetaTitle(e.target.value)}
-                                    placeholder="Hybrid Car 2025 - Best Price in Bangladesh"
-                                    className="h-12"
-                                />
+                                <Input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder="Product - Best Price" className="h-12" />
                             </div>
                             <div className="space-y-2">
                                 <Label className="font-semibold">Meta Keywords</Label>
-                                <TagInput
-                                    value={metaKeywordTags}
-                                    onChange={setMetaKeywordTags}
-                                    placeholder="hybrid car, electric vehicle, bangladesh..."
-                                />
+                                <TagInput value={metaKeywordTags} onChange={setMetaKeywordTags} placeholder="keyword1, keyword2..." />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <Label className="font-semibold">Meta Description</Label>
-                            <Textarea
-                                value={metaDescription}
-                                onChange={(e) => setMetaDescription(e.target.value)}
-                                placeholder="Buy the latest hybrid car at the best price..."
-                                className="min-h-32"
-                            />
+                            <Textarea value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} placeholder="Product description for SEO..." className="min-h-32" />
                         </div>
                     </CardContent>
                 </Card>
 
                 {/* Desktop Action Buttons */}
                 <div className="hidden lg:flex justify-end gap-4 pt-6">
-                    <Button type="button" variant="outline" size="lg">
+                    <Button type="button" variant="outline" size="lg" onClick={() => router.back()}>
                         <X className="mr-2 h-5 w-5" /> Discard Changes
                     </Button>
                     <Button type="submit" disabled={isSubmitting} size="lg" className="min-w-48">
                         {isSubmitting && <Loader2 className="animate-spin mr-2 h-5 w-5" />}
                         <Save className="mr-2 h-5 w-5" />
-                        {isEditMode ? "Update Product" : "Save Product"}
+                        {isEditMode ? 'Update Product' : 'Save Product'}
                     </Button>
                 </div>
             </div>
