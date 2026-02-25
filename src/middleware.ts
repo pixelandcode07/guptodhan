@@ -42,12 +42,12 @@ const adminRoutes = [
   '/api/v1/crm-modules/support-ticket',
   '/api/v1/slider-form',
   '/api/v1/slider-form/[id]',
-  "/api/v1/donation-configs",
+  '/api/v1/donation-configs',
   '/api/v1/classifieds/ads/[id]',
   '/api/v1/social_links',
   '/api/v1/vendors/[id]',
   '/api/v1/shipping-policy',
-  '/api/v1/ecommerce-category/ecomSubCategory', // Admin route for POST/PUT/DELETE
+  '/api/v1/ecommerce-category/ecomSubCategory',
   '/api/v1/service-section/service-provider',
   '/api/v1/service-section/service-category',
   '/api/v1/service-section/service-banner',
@@ -71,7 +71,7 @@ const vendorRoutes = [
   '/api/v1/vendors',
   '/api/v1/vendor-store/store-with-product/[id]',
   '/v1/vendor-store/review',
-  '/api/v1/vendor-store/vendorOrder'
+  '/api/v1/vendor-store/vendorOrder',
 ];
 
 // ❗️ Protected Routes
@@ -84,7 +84,7 @@ const protectedApiRoutes = [
   '/api/otp/verify-phone',
   '/api/v1/auth/set-password',
   '/api/v1/profile/me',
-  '/api/v1/users', 
+  '/api/v1/users',
   '/api/v1/classifieds/ads',
   '/api/v1/classifieds/ads/[id]',
   '/api/v1/classifieds-banners',
@@ -119,7 +119,7 @@ const protectedApiRoutes = [
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
-  // ✅ ২. Public Route Check (সবার আগে চেক করবে)
+  // ✅ Public Route — সবার আগে allow
   if (publicRoutes.some((route) => path.startsWith(route))) {
     return NextResponse.next();
   }
@@ -127,44 +127,61 @@ export async function middleware(req: NextRequest) {
   // 🛠️ Route type checks
   let isAdminRoute = adminRoutes.some((route) => path.startsWith(route));
   const isVendorRoute = vendorRoutes.some((route) => path.startsWith(route));
-  const isProtectedApi = protectedApiRoutes.some((route) => path.startsWith(route));
+  const isProtectedApi = protectedApiRoutes.some((route) =>
+    path.startsWith(route)
+  );
 
-  // 🔥 Professional Fix: Allow GET requests for Categories/Subcategories to bypass Admin strictness
-  // যদি রিকোয়েস্টটি 'GET' হয়, তবে ভেন্ডররা বা ইউজাররা ক্যাটাগরিগুলো ফেচ করার এক্সেস পাবে।
+  // ✅ GET requests for categories — vendor/user access allow
   if (
-    req.method === 'GET' && 
-    (path.startsWith('/api/v1/ecommerce-category/ecomSubCategory') || 
-     path.startsWith('/api/v1/ecommerce-category/ecomChildCategory') ||
-     path.startsWith('/api/v1/vendor-category'))
+    req.method === 'GET' &&
+    (path.startsWith('/api/v1/ecommerce-category/ecomSubCategory') ||
+      path.startsWith('/api/v1/ecommerce-category/ecomChildCategory') ||
+      path.startsWith('/api/v1/vendor-category'))
   ) {
-    isAdminRoute = false; 
+    isAdminRoute = false;
   }
 
-  // পাবলিক route → allow (যদি লিস্টে না থাকে এবং protected ও না হয়)
+  // ✅ Protected না হলে allow
   if (!isAdminRoute && !isVendorRoute && !isProtectedApi) {
     return NextResponse.next();
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let tokenPayload: any = null;
-  let token = null;
+  let token: string | null = null;
 
-  // ১. প্রথমে Header চেক করুন
+  // ১. Header থেকে token নিন
   const authHeader = req.headers.get('authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     token = authHeader.split(' ')[1];
   }
-  // ২. যদি হেডার না থাকে, তাহলে Cookie চেক করুন
+  // ২. Cookie থেকে token নিন
   else {
-    token = req.cookies.get('accessToken')?.value || req.cookies.get('refreshToken')?.value;
+    token =
+      req.cookies.get('accessToken')?.value ||
+      req.cookies.get('refreshToken')?.value ||
+      null;
   }
 
+  // ✅ JWT token verify করুন
   if (token) {
     try {
-      const secret = new TextEncoder().encode(process.env.JWT_ACCESS_SECRET!);
+      const secret = new TextEncoder().encode(
+        process.env.JWT_ACCESS_SECRET!
+      );
       const { payload } = await jwtVerify(token, secret);
       tokenPayload = payload;
-    } catch (err: any) {
-      console.warn(`[Middleware] Token verification failed: ${err.message}`);
+    } catch (err: unknown) {
+      // ✅ Signature error — silent, log করব না (এটা স্বাভাবিক public request)
+      // শুধু unexpected error হলে log করব
+      const message = err instanceof Error ? err.message : 'unknown';
+      if (
+        message !== 'signature verification failed' &&
+        message !== 'invalid signature' &&
+        message !== 'jwt expired'
+      ) {
+        console.warn(`[Middleware] Unexpected token error: ${message}`);
+      }
     }
   }
 
@@ -183,39 +200,58 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // ❌ No Token Found
+  // ❌ Token নেই
   if (!tokenPayload) {
-    if (path.startsWith('/general') || path.startsWith('/dashboard')) {
+    if (
+      path.startsWith('/general') ||
+      path.startsWith('/dashboard')
+    ) {
       return NextResponse.redirect(new URL('/', req.url));
     }
     return NextResponse.json(
-      { success: false, message: 'Unauthorized: No valid token provided' },
-      { status: StatusCodes.UNAUTHORIZED },
+      {
+        success: false,
+        message: 'Unauthorized: No valid token provided',
+      },
+      { status: StatusCodes.UNAUTHORIZED }
     );
   }
 
   // 🔹 Admin Check
   if (isAdminRoute && tokenPayload.role !== 'admin') {
     return NextResponse.json(
-      { success: false, message: 'Forbidden: You do not have permission (Admin only).' },
-      { status: StatusCodes.FORBIDDEN },
+      {
+        success: false,
+        message: 'Forbidden: Admin only.',
+      },
+      { status: StatusCodes.FORBIDDEN }
     );
   }
 
   // 🔥 Vendor Check
-  if (isVendorRoute && tokenPayload.role !== 'vendor' && !isAdminRoute) {
+  if (
+    isVendorRoute &&
+    tokenPayload.role !== 'vendor' &&
+    !isAdminRoute
+  ) {
     if (path.startsWith('/dashboard')) {
       return NextResponse.redirect(new URL('/', req.url));
     }
     return NextResponse.json(
-      { success: false, message: 'Forbidden: You do not have permission (Vendor only).' },
-      { status: StatusCodes.FORBIDDEN },
+      {
+        success: false,
+        message: 'Forbidden: Vendor only.',
+      },
+      { status: StatusCodes.FORBIDDEN }
     );
   }
 
-  // ✅ Attach headers
+  // ✅ Headers attach করুন
   const requestHeaders = new Headers(req.headers);
-  requestHeaders.set('x-user-id', tokenPayload.userId || tokenPayload.id);
+  requestHeaders.set(
+    'x-user-id',
+    tokenPayload.userId || tokenPayload.id
+  );
   requestHeaders.set('x-user-role', tokenPayload.role);
 
   return NextResponse.next({ request: { headers: requestHeaders } });
