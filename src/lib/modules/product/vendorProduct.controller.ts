@@ -142,6 +142,7 @@ const getAllVendorProducts = async (req: NextRequest) => {
 
 
 const getAllVendorProductsWithPagination = async (req: NextRequest) => {
+  await dbConnect();
   const { searchParams } = new URL(req.url);
 
   const params = {
