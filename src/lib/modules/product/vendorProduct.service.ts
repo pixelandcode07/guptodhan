@@ -256,26 +256,119 @@ const getAllVendorProductsFromDB = async (page = 1, limit = 20) => {
 };
 
 
-const getAllVendorProductsNoPaginationFromDB = async () => {
-  // Unique Cache Key (Jate pagination er sathe mix na hoy)
-  const cacheKey = "product:all:no-pagination"; 
+// ================================================================
+// 📋 GET ALL PRODUCTS WITH PAGINATION + FILTERS
+// ================================================================
+const getAllVendorProductsWithPaginationFromDB = async (params: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  brand?: string;
+  color?: string;
+  size?: string;
+  priceMin?: number;
+  priceMax?: number;
+  sortBy?: string;
+}) => {
+  const {
+    page = 1,
+    limit = 10,
+    search,
+    brand,
+    color,
+    size,
+    priceMin,
+    priceMax,
+    sortBy = 'createdAt',
+  } = params;
 
-  return getCachedData(
-    cacheKey,
-    async () => {
-      const products = await VendorProductModel.aggregate([
-        { $sort: { createdAt: -1 } },
-        // Ekhane kono $skip ba $limit nai
-        ...getProductLookupPipeline(),
-      ]);
+  const skip = (page - 1) * limit;
 
-      const populatedProducts = await populateColorAndSizeNamesForProducts(products);
-      
-      // Direct array return korchi, kono meta data chara
-      return populatedProducts;
+  // ✅ Match stage build করুন
+  const matchStage: any = { status: 'active' };
+
+  if (search) {
+    matchStage.productTitle = { $regex: search, $options: 'i' };
+  }
+  if (priceMin || priceMax) {
+    matchStage.discountPrice = {};
+    if (priceMin) matchStage.discountPrice.$gte = priceMin;
+    if (priceMax) matchStage.discountPrice.$lte = priceMax;
+  }
+
+  // ✅ Sort stage
+  const sortStage: any = {};
+  if (sortBy === 'price_low') sortStage.discountPrice = 1;
+  else if (sortBy === 'price_high') sortStage.discountPrice = -1;
+  else if (sortBy === 'popularity') sortStage.sellCount = -1;
+  else sortStage.createdAt = -1;
+
+  // ✅ Total count (pagination এর জন্য)
+  const totalCount = await VendorProductModel.countDocuments(matchStage);
+
+  const products = await VendorProductModel.aggregate([
+    { $match: matchStage },
+    { $sort: sortStage },
+    { $skip: skip },
+    { $limit: limit },
+    ...getProductLookupPipeline(),
+
+    // Brand filter — lookup এর পরে
+    ...(brand ? [{ $match: { 'brand.name': brand } }] : []),
+
+    // Color filter
+    ...(color
+      ? [{
+          $match: {
+            'productOptions.color': {
+              $elemMatch: { $regex: color, $options: 'i' },
+            },
+          },
+        }]
+      : []),
+
+    // Size filter
+    ...(size
+      ? [{ $match: { 'productOptions.size': size } }]
+      : []),
+
+    // Review data
+    {
+      $lookup: {
+        from: 'reviews',
+        localField: '_id',
+        foreignField: 'productId',
+        as: 'reviewData',
+      },
     },
-    CacheTTL.PRODUCT_LIST
-  );
+    {
+      $addFields: {
+        totalReviews: { $size: '$reviewData' },
+        averageRating: {
+          $cond: [
+            { $gt: [{ $size: '$reviewData' }, 0] },
+            { $avg: '$reviewData.rating' },
+            0,
+          ],
+        },
+      },
+    },
+    { $project: { reviewData: 0 } },
+  ]);
+
+  const populatedProducts = await populateColorAndSizeNamesForProducts(products);
+
+  return {
+    products: populatedProducts,
+    meta: {
+      total: totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit),
+      hasNext: page < Math.ceil(totalCount / limit),
+      hasPrev: page > 1,
+    },
+  };
 };
 
 // ===================================
@@ -1004,43 +1097,39 @@ const getOfferProductsFromDB = async () => {
 
 const getBestSellingProductsFromDB = async () => {
   const cacheKey = CacheKeys.PRODUCT.BEST_SELLING;
-  
+
   return getCachedData(
     cacheKey,
     async () => {
       const products = await VendorProductModel.aggregate([
-        { $match: { status: "active" } },
+        { $match: { status: 'active' } },
         { $sort: { sellCount: -1 } },
         { $limit: 6 },
         ...getProductLookupPipeline(),
-      ]);
-
-      const productIds = products.map((p) => p._id);
-      const reviewStats = await ReviewModel.aggregate([
-        { $match: { productId: { $in: productIds } } },
         {
-          $group: {
-            _id: "$productId",
-            totalReviews: { $sum: 1 },
-            averageRating: { $avg: "$rating" },
+          $lookup: {
+            from: 'reviews',
+            localField: '_id',
+            foreignField: 'productId',
+            as: 'reviewData',
           },
         },
+        {
+          $addFields: {
+            totalReviews: { $size: '$reviewData' },
+            averageRating: {
+              $cond: [
+                { $gt: [{ $size: '$reviewData' }, 0] },
+                { $avg: '$reviewData.rating' },
+                0,
+              ],
+            },
+          },
+        },
+        { $project: { reviewData: 0 } },
       ]);
 
-      const reviewMap = new Map(
-        reviewStats.map((r) => [String(r._id), r])
-      );
-
-      const productsWithReviews = products.map((product) => {
-        const stats = reviewMap.get(String(product._id));
-        return {
-          ...product,
-          totalReviews: stats?.totalReviews || 0,
-          averageRating: stats?.averageRating || 0,
-        };
-      });
-
-      return await populateColorAndSizeNamesForProducts(productsWithReviews);
+      return await populateColorAndSizeNamesForProducts(products);
     },
     CacheTTL.PRODUCT_BEST_SELLING
   );
@@ -1052,43 +1141,43 @@ const getBestSellingProductsFromDB = async () => {
 
 const getForYouProductsFromDB = async () => {
   const cacheKey = CacheKeys.PRODUCT.FOR_YOU;
-  
+
   return getCachedData(
     cacheKey,
     async () => {
       const products = await VendorProductModel.aggregate([
-        { $match: { status: "active" } },
+        { $match: { status: 'active' } },
         { $sort: { createdAt: -1 } },
         { $limit: 12 },
         ...getProductLookupPipeline(),
-      ]);
 
-      const productIds = products.map((p) => p._id);
-      const reviewStats = await ReviewModel.aggregate([
-        { $match: { productId: { $in: productIds } } },
+        // ✅ Review আলাদা query না করে এখানেই করুন
         {
-          $group: {
-            _id: "$productId",
-            totalReviews: { $sum: 1 },
-            averageRating: { $avg: "$rating" },
+          $lookup: {
+            from: 'reviews',
+            localField: '_id',
+            foreignField: 'productId',
+            as: 'reviewData',
           },
+        },
+        {
+          $addFields: {
+            totalReviews: { $size: '$reviewData' },
+            averageRating: {
+              $cond: [
+                { $gt: [{ $size: '$reviewData' }, 0] },
+                { $avg: '$reviewData.rating' },
+                0,
+              ],
+            },
+          },
+        },
+        {
+          $project: { reviewData: 0 }, // reviewData array বাদ দিন
         },
       ]);
 
-      const reviewMap = new Map(
-        reviewStats.map((r) => [String(r._id), r])
-      );
-
-      const productsWithReviews = products.map((product) => {
-        const stats = reviewMap.get(String(product._id));
-        return {
-          ...product,
-          totalReviews: stats?.totalReviews || 0,
-          averageRating: stats?.averageRating || 0,
-        };
-      });
-
-      return await populateColorAndSizeNamesForProducts(productsWithReviews);
+      return await populateColorAndSizeNamesForProducts(products);
     },
     CacheTTL.PRODUCT_LIST
   );
@@ -1428,6 +1517,6 @@ export const VendorProductServices = {
   getVendorStoreAndProductsFromDB,
   getVendorStoreAndProductsFromDBVendorDashboard,
   getVendorStoreProductsWithReviewsFromDB,
-  getAllVendorProductsNoPaginationFromDB,
+  getAllVendorProductsWithPaginationFromDB,
   getVendorProductBySlugFromDB,
 };
