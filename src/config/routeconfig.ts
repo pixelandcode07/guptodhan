@@ -15,10 +15,10 @@ export const routeConfig: Record<
     breadcrumb: ' Footer Settings',
     title: 'Footer Settings',
   },
-  '/general/website/theme/page': {
-    breadcrumb: 'Website Config',
-    title: 'Website Theme Color',
-  },
+  // '/general/website/theme/page': {
+  //   breadcrumb: 'Website Config',
+  //   title: 'Website Theme Color',
+  // },
   '/general/social/media/page': {
     breadcrumb: 'Website Config',
     title: 'Social Media Links',
@@ -27,10 +27,10 @@ export const routeConfig: Record<
     breadcrumb: 'Website Config',
     title: 'SEO for HomePage',
   },
-  '/general/custom/css/js': {
-    breadcrumb: ' Content Module',
-    title: 'Custom CSS & JS',
-  },
+  // '/general/custom/css/js': {
+  //   breadcrumb: ' Content Module',
+  //   title: 'Custom CSS & JS',
+  // },
   '/general/social/chat/script/page': {
     breadcrumb: 'Website Config',
     title: 'Social Login & Chat Scripts',

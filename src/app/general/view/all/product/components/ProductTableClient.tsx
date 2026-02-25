@@ -17,6 +17,7 @@ type ApiProduct = {
   _id: string;
   productId: string;
   productTitle: string;
+  slug?: string;
   category?: { _id?: string; name?: string } | string | null;
   vendorStoreId?: { _id?: string; storeName?: string } | string | null;
   vendorName?: string | null;
@@ -132,6 +133,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       return {
         id: idx + 1,
         _id: p._id,
+        slug: p.slug || "",
         image: p.thumbnailImage || "",
         category: categoryName,
         name: p.productTitle || "",
@@ -160,7 +162,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
 
   const onView = useCallback((product: Product) => {
     if (product._id) {
-      router.push(`/products/${product._id}`);
+      router.push(`/product/${product.slug}`);
     } else {
       toast.error('Product ID not found');
     }

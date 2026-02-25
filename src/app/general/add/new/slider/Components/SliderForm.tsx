@@ -1,4 +1,3 @@
-// src/app/general/add/new/slider/Components/SliderForm.tsx - FIXED VERSION (All TypeScript errors resolved)
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -14,7 +13,6 @@ import { useRouter } from 'next/navigation';
 
 export type TextPosition = 'Left' | 'Right';
 
-// ✅ FIXED: Proper type definition with optional properties
 interface SliderFormData {
   _id?: string;
   image?: string;
@@ -28,6 +26,7 @@ interface SliderFormData {
   status?: string;
   appRedirectType?: string;
   appRedirectId?: string;
+  data?: any; // Added for safely catching nested API responses
 }
 
 interface SliderFormProps {
@@ -57,29 +56,31 @@ export default function SliderForm({ initialData }: SliderFormProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // ✅ FIXED: Proper useMemo with null check for initialData
-  const isEditMode = useMemo(
-    () => !!initialData?._id,
-    [initialData?._id]
-  );
-
-  // ✅ FIXED: Proper useEffect with null safety checks
-  useEffect(() => {
-    if (!initialData) return;
-    
-    // ✅ Safe optional chaining and nullish coalescing
-    setTextPosition((initialData.textPosition as TextPosition) || '');
-    setSliderLink(initialData.sliderLink || '');
-    setSubTitle(initialData.subTitleWithColor || '');
-    setTitle(initialData.bannerTitleWithColor || '');
-    setDescription(initialData.bannerDescriptionWithColor || '');
-    setButtonText(initialData.buttonWithColor || '');
-    setButtonLink(initialData.buttonLink || '');
-    setAppRedirectType((initialData.appRedirectType as AppRedirectType) || 'None');
-    setAppRedirectValue(initialData.appRedirectId || '');
+  // ✅ FIX: Extract data safely whether it's wrapped in `data` object or not
+  const sliderData = useMemo(() => {
+    return initialData?.data || initialData;
   }, [initialData]);
 
-  // ✅ FIXED: useCallback with proper dependency array
+  const isEditMode = useMemo(
+    () => !!sliderData?._id,
+    [sliderData]
+  );
+
+  // ✅ FIX: Load data correctly for Edit Mode
+  useEffect(() => {
+    if (!sliderData || Object.keys(sliderData).length === 0) return;
+    
+    setTextPosition((sliderData.textPosition as TextPosition) || '');
+    setSliderLink(sliderData.sliderLink || '');
+    setSubTitle(sliderData.subTitleWithColor || '');
+    setTitle(sliderData.bannerTitleWithColor || '');
+    setDescription(sliderData.bannerDescriptionWithColor || '');
+    setButtonText(sliderData.buttonWithColor || '');
+    setButtonLink(sliderData.buttonLink || '');
+    setAppRedirectType((sliderData.appRedirectType as AppRedirectType) || 'None');
+    setAppRedirectValue(sliderData.appRedirectId || '');
+  }, [sliderData]);
+
   const handleImageChange = useCallback((name: string, file: File | null) => {
     if (file) {
       const fileSizeInMB = file.size / (1024 * 1024);
@@ -93,7 +94,6 @@ export default function SliderForm({ initialData }: SliderFormProps) {
     }
   }, []);
 
-  // ✅ FIXED: URL validation function
   const isValidUrl = useCallback((url: string): boolean => {
     if (!url || !url.trim()) return true; 
     try { 
@@ -104,44 +104,38 @@ export default function SliderForm({ initialData }: SliderFormProps) {
     }
   }, []);
 
-  // ✅ FIXED: Main save handler with complete dependency array
   const handleSave = useCallback(async () => {
     if (isSubmitting) return;
     
     try {
       setIsSubmitting(true);
 
-      // ✅ Validation Checks
-      if (!image && !isEditMode && !initialData?.image) {
-        throw new Error('Please upload an image.');
+      // Clean HTML tags from description (safe check)
+      const cleanDescription = description ? description.replace(/(<([^>]+)>)/gi, "").trim() : "";
+
+      // ✅ Frontend Validation Checks
+      if (!image && !isEditMode && !sliderData?.image) {
+        throw new Error('Please upload a slider image.');
       }
-      if (!textPosition) {
-        throw new Error('Please select text position.');
+      if (!textPosition?.trim()) {
+        throw new Error('Text position is required.');
       }
-      if (!subTitle) {
-        throw new Error('Please provide sub title.');
+      if (!title?.trim()) {
+        throw new Error('Slider title is required.');
       }
-      if (!title) {
-        throw new Error('Please provide slider title.');
-      }
-      if (!description) {
-        throw new Error('Please provide slider description.');
-      }
-      
-      if (appRedirectType !== 'None' && !appRedirectValue.trim()) {
+      if (appRedirectType !== 'None' && !appRedirectValue?.trim()) {
         throw new Error('Please select a target for Mobile App Navigation.');
       }
 
-      // ✅ URL Validation
+      // URL Validation
       if (sliderLink && !isValidUrl(sliderLink)) {
-        throw new Error('Invalid slider URL');
+        throw new Error('Invalid Web Slider URL');
       }
       if (buttonLink && !isValidUrl(buttonLink)) {
-        throw new Error('Invalid button URL');
+        throw new Error('Invalid Button URL');
       }
 
-      // ✅ FIXED: Safe null check for initialData?.image
-      let imageUrl = initialData?.image || ''; 
+      let imageUrl = sliderData?.image || ''; 
 
       // Upload Image if changed
       if (image) {
@@ -162,7 +156,6 @@ export default function SliderForm({ initialData }: SliderFormProps) {
         imageUrl = uploadData.url;
       }
 
-      // ✅ FIXED: Safe optional chaining for initialData._id and initialData.status
       const payload = {
         ...(!isEditMode && { sliderId: `SL-${Date.now()}` }),
         image: imageUrl,
@@ -170,16 +163,16 @@ export default function SliderForm({ initialData }: SliderFormProps) {
         sliderLink,
         subTitleWithColor: subTitle,
         bannerTitleWithColor: title,
-        bannerDescriptionWithColor: description,
+        bannerDescriptionWithColor: description, // Now correctly sends the description
         buttonWithColor: buttonText,
         buttonLink,
-        status: initialData?.status || 'active',
+        status: sliderData?.status || 'active',
         appRedirectType,
         appRedirectId: appRedirectValue || null,
       };
 
       const url = isEditMode 
-        ? `/api/v1/slider-form/${initialData?._id}` 
+        ? `/api/v1/slider-form/${sliderData?._id}` 
         : '/api/v1/slider-form';
       
       const method = isEditMode ? 'PATCH' : 'POST';
@@ -195,21 +188,48 @@ export default function SliderForm({ initialData }: SliderFormProps) {
       });
       
       const json = await res.json();
+      
       if (!res.ok || json?.success === false) {
-        throw new Error(json?.message || 'Failed to save slider');
+        // Pass the raw string/array from backend to the catch block
+        throw new Error(typeof json?.message === 'object' ? JSON.stringify(json.message) : json?.message || 'Failed to save slider');
       }
 
       toast.success(`Slider ${isEditMode ? 'updated' : 'created'} successfully!`);
       router.push('/general/view/all/sliders');
+
     } catch (error: any) {
-      toast.error(error?.message || 'Something went wrong');
+      console.error("Save Error:", error);
+      
+      let errorMessage = error?.message || 'Something went wrong. Please try again.';
+
+      // ✅ SMART ERROR PARSER: No more confusing JSON format for the user
+      if (typeof errorMessage === 'string') {
+        try {
+          // If the message is a stringified JSON array from Zod
+          const cleanMessageString = errorMessage.replace(/\\n/g, '').trim();
+          
+          if (cleanMessageString.startsWith('[')) {
+            const parsedMessage = JSON.parse(cleanMessageString);
+            if (Array.isArray(parsedMessage) && parsedMessage.length > 0) {
+              // Extract the actual human-readable message from the Zod array
+              errorMessage = parsedMessage[0].message || 'A required field is missing.';
+            }
+          }
+        } catch (parseError) {
+          // Fallback if parsing fails, it stays as it is
+        }
+      }
+
+      // Display the clean, readable error
+      toast.error(errorMessage);
+
     } finally {
       setIsSubmitting(false);
     }
   }, [
     isSubmitting,
     isEditMode,
-    initialData,
+    sliderData,
     image,
     textPosition,
     subTitle,
@@ -233,10 +253,9 @@ export default function SliderForm({ initialData }: SliderFormProps) {
           <UploadImage 
             name="sliderImage"
             label={<span>Slider Image <span className="text-red-500">*</span></span> as any} 
-            preview={initialData?.image} 
+            preview={sliderData?.image} 
             onChange={handleImageChange}
           />
-          {/* ✅ Image size guidelines */}
           <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-[12px] text-gray-700 font-semibold mb-2">📐 Image Size Guidelines:</p>
             <div className="space-y-1.5">

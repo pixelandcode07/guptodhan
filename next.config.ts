@@ -16,7 +16,6 @@ const nextConfig: NextConfig = {
   // CORE PERFORMANCE
   // ========================
   reactStrictMode: false,
-  // swcMinify: true, // REMOVED: Default in newer versions
   productionBrowserSourceMaps: false,
   compress: true,
   poweredByHeader: false,
@@ -115,13 +114,11 @@ const nextConfig: NextConfig = {
   // ========================
   webpack: (config: WebpackConfig, { isServer }: { isServer: boolean }) => {
     if (!isServer) {
-      // Client-side webpack optimization
       config.optimization = {
         ...config.optimization,
         splitChunks: {
           chunks: 'all',
           cacheGroups: {
-            // Vendor libraries (node_modules)
             vendor: {
               test: /[\\/]node_modules[\\/]/,
               name: 'vendors',
@@ -129,7 +126,6 @@ const nextConfig: NextConfig = {
               reuseExistingChunk: true,
               enforce: true,
             },
-            // React and related libraries
             react: {
               test: /[\\/]node_modules[\\/](react|react-dom|next)[\\/]/,
               name: 'react-vendors',
@@ -137,7 +133,6 @@ const nextConfig: NextConfig = {
               reuseExistingChunk: true,
               enforce: true,
             },
-            // Common code shared between multiple chunks
             common: {
               minChunks: 2,
               priority: 5,
@@ -215,6 +210,16 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // ✅ PUBLIC PAGES — 1 মিনিট cache (আগে কোনো cache ছিল না)
+      {
+        source: '/((?!api|_next|general|auth).*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=60, stale-while-revalidate=300',
+          },
+        ],
+      },
       // API RESPONSES - No cache
       {
         source: '/api/:path*',
@@ -254,9 +259,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  
-  // eslint config block removed to fix TS error
-  
+
   // ========================
   // MISC OPTIMIZATIONS
   // ========================

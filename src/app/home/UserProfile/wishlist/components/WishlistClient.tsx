@@ -216,7 +216,7 @@ function WishlistGrid({
         <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
         <h2 className="text-xl font-semibold text-gray-900 mb-2">Your wishlist is empty</h2>
         <p className="text-gray-600 mb-6">Start adding products you love to your wishlist</p>
-        <Link href="/home/product/filter">
+        <Link href="/products">
           <Button>Browse Products</Button>
         </Link>
       </div>

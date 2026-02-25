@@ -2,93 +2,88 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SteadfastService, SteadfastOrderData } from '@/lib/services/SteadfastService'; 
 import dbConnect from '@/lib/db';
 import { OrderModel } from '@/lib/modules/product-order/order/order.model';
+import { sendSMS } from '@/lib/utils/smsPortal';
+import { Types } from 'mongoose';
 
 export async function POST(req: NextRequest) {
     try {
-        const { orderId } = await req.json();
+        await dbConnect();
+        const body = await req.json();
+        const { orderId } = body; // ফ্রন্টএন্ড থেকে পাঠানো ID
 
         if (!orderId) {
-            return NextResponse.json(
-                { success: false, message: 'Order ID is required' },
-                { status: 400 }
-            );
+            return NextResponse.json({ success: false, message: 'Order ID is missing' }, { status: 400 });
         }
 
-        await dbConnect();
-
-        // Fetch order details from database
-        const order = await OrderModel.findOne({ orderId }).populate('userId');
+        // ১. অর্ডার খোঁজা (ObjectId অথবা String ID দুইটাই চেক করবে)
+        let order;
+        if (Types.ObjectId.isValid(orderId)) {
+            order = await OrderModel.findById(orderId);
+        } else {
+            order = await OrderModel.findOne({ orderId: orderId });
+        }
 
         if (!order) {
-            return NextResponse.json(
-                { success: false, message: 'Order not found' },
-                { status: 404 }
-            );
+            return NextResponse.json({ success: false, message: 'Order not found in DB' }, { status: 404 });
         }
 
-        // Prepare Steadfast order data according to official API documentation
-        const steadfastOrderData: SteadfastOrderData = {
-            invoice: order.orderId, // Must be unique
+        // ২. ডাটা ভ্যালিডেশন (কোনো ফিল্ড খালি থাকলে Steadfast 500 দিবে না)
+        if (!order.shippingPhone || !order.shippingName) {
+            return NextResponse.json({ success: false, message: 'Customer phone or name is missing in order record' }, { status: 400 });
+        }
+
+        // ৩. এড্রেস ক্লিনআপ (ডুপ্লিকেট রিমুভ করা)
+        const rawAddress = [
+            order.shippingStreetAddress,
+            order.shippingCity,
+            order.shippingDistrict
+        ].filter(Boolean);
+        const cleanAddress = Array.from(new Set(rawAddress)).join(', ') || 'Address not provided';
+
+        // ৪. Steadfast API ডাটা
+        const steadfastData = {
+            invoice: order.orderId || `INV-${Date.now()}`, 
             recipient_name: order.shippingName,
             recipient_phone: order.shippingPhone,
-            recipient_email: order.shippingEmail,
-            recipient_address: `${order.shippingStreetAddress}, ${order.shippingCity}, ${order.shippingDistrict}`,
-            cod_amount: order.totalAmount,
-            note: `Order from Guptodhan - ${order.orderId}`,
-            item_description: `Order ${order.orderId} - ${order.orderDetails?.length || 1} items`,
-            total_lot: order.orderDetails?.length || 1,
-            delivery_type: 0, // Home delivery
+            recipient_address: cleanAddress,
+            cod_amount: order.totalAmount || 0,
+            note: `Order: ${order.orderId}`,
+            item_description: `Order Items`,
+            delivery_type: 0, // Home Delivery
         };
 
-        // Create Steadfast order
-        // This line now correctly calls the static method on the imported class
-        const steadfastResponse = await SteadfastService.createOrder(steadfastOrderData);
+        // ৫. এপিআই কল
+        const response = await SteadfastService.createOrder(steadfastData);
 
-        if (steadfastResponse.status === 200 && steadfastResponse.consignment) {
-            // Update order with Steadfast details
-            await OrderModel.findOneAndUpdate(
-                { orderId },
-                {
-                    parcelId: steadfastResponse.consignment.consignment_id.toString(),
-                    trackingId: steadfastResponse.consignment.tracking_code,
-                    orderStatus: 'Processing',
-                    updatedAt: new Date(),
-                }
-            );
+        if (response.status === 200 && response.consignment) {
+            const trackCode = response.consignment.tracking_code;
+            const parcelId = response.consignment.consignment_id.toString();
+
+            // ✅ ডাটাবেজ আপডেট
+            await OrderModel.findByIdAndUpdate(order._id, {
+                parcelId: parcelId,
+                trackingId: trackCode,
+                orderStatus: 'Shipped',
+                updatedAt: new Date(),
+            });
+
+            // ✅ Guptodhan এর নিজস্ব ট্র্যাকিং লিঙ্কসহ SMS পাঠানো
+            const smsMessage = `Dear ${order.shippingName}, your order ${order.orderId} is shipped! Tracking Code: ${trackCode}. Track here: https://www.guptodhandigital.com/track-order. Thank you!`;
+            
+            sendSMS(order.shippingPhone, smsMessage).catch(e => console.error("SMS Sync Error:", e));
 
             return NextResponse.json({
                 success: true,
-                message: 'Steadfast order created successfully',
-                data: {
-                    consignmentId: steadfastResponse.consignment.consignment_id,
-                    trackingCode: steadfastResponse.consignment.tracking_code,
-                    status: steadfastResponse.consignment.status,
-                },
+                message: 'Shipment Created Successfully!',
+                data: { parcelId, trackingId: trackCode }
             });
         } else {
-            // Update order status to indicate Steadfast creation failed
-            await OrderModel.findOneAndUpdate(
-                { orderId },
-                {
-                    orderStatus: 'Cancelled',
-                    updatedAt: new Date(),
-                }
-            );
-
-            return NextResponse.json({
-                success: false,
-                message: steadfastResponse.message || 'Failed to create Steadfast order',
-            }, { status: 500 });
+            return NextResponse.json({ success: false, message: response.message || 'Courier error' }, { status: 500 });
         }
 
-    } catch (error: unknown) {
-        console.error('❌ Steadfast order creation error:', error);
-
-        return NextResponse.json({
-            success: false,
-            message: 'Failed to create Steadfast order',
-            error: error instanceof Error ? error.message : 'Unknown error',
-        }, { status: 500 });
+    } catch (error: any) {
+        console.error('❌ Final Route Error:', error.message);
+        return NextResponse.json({ success: false, message: 'Internal Server Error', error: error.message }, { status: 500 });
     }
 }
 

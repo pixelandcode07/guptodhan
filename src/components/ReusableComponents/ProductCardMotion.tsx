@@ -38,7 +38,7 @@ export default function ProductCardMotion({ product, index = 0 }: ProductCardMot
     const [isAdding, setIsAdding] = useState(false);
 
     // ✅ FIXED: Using Slug for URL
-    const productUrl = `/products/${product.slug || product._id}`;
+    const productUrl = `/product/${product.slug || product._id}`;
 
     const discountPercent =
         product.discountPrice && product.discountPrice < product.productPrice

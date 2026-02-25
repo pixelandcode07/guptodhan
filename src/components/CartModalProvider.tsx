@@ -16,12 +16,12 @@ export default function CartModalProvider() {
 
   const handleGoToCart = () => {
     closeAddToCartModal();
-    router.push('/home/product/shopping-cart');
+    router.push('/products/shopping-cart');
   };
 
   const handleCheckout = () => {
     closeAddToCartModal();
-    router.push('/home/product/shoppinginfo');
+    router.push('/products/checkout');
   };
 
   if (!lastAddedProduct || !showAddToCartModal) return null;

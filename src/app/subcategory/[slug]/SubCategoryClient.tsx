@@ -87,7 +87,7 @@ function ProductCard({ product }: { product: Product }) {
     const [isAdding, setIsAdding] = useState(false);
 
     // ✅ FIXED: Using Slug for Product URL
-    const productUrl = `/products/${product.slug || product._id}`;
+    const productUrl = `/product/${product.slug || product._id}`;
 
     const hasDiscount = product.discountPrice > 0 && product.discountPrice < product.productPrice;
     const discountPercent = hasDiscount

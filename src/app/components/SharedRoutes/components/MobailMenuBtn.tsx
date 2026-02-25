@@ -57,12 +57,12 @@ export default function MobailMenuBtn() {
           {/* Buy & Sale + Donation buttons */}
           <div className="flex flex-col px-4 py-3 gap-2">
             <Link
-              href="/home/buyandsell"
+              href="/buy-sell"
               className="bg-blue-500 text-white text-center py-2 rounded-md hover:bg-blue-600 transition">
               🏠 Buy & Sale
             </Link>
             <Link
-              href="/home/donation"
+              href="/donation"
               className="bg-green-500 text-white text-center py-2 rounded-md hover:bg-green-600 transition">
               💰 Donation
             </Link>

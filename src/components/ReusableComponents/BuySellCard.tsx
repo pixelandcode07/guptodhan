@@ -31,7 +31,7 @@
 //             whileHover={{ y: -8, transition: { duration: 0.2 } }}
 //             className="group"
 //         >
-//             <Link href={`/home/buyandsell/ad-details/${ad._id}`}>
+//             <Link href={`/buy-sell/ad-details/${ad._id}`}>
 //                 <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 border border-gray-200 hover:border-gray-300 h-full flex flex-col">
 //                     {/* Image */}
 //                     <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
@@ -164,7 +164,7 @@ export default function BuySellCard({ ad, index = 0 }: AdCardProps) {
       whileHover={{ y: -6, transition: { duration: 0.18 } }}
       className="group h-full"
     >
-      <Link href={`/home/buyandsell/ad-details/${ad._id}`} className="block h-full">
+      <Link href={`/buy-sell/ad-details/${ad._id}`} className="block h-full">
         <Card
           className={`
             overflow-hidden 

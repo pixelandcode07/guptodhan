@@ -119,20 +119,35 @@ const updateChildCategoryInDB = async (id: string, payload: Partial<IChildCatego
 // 🗑️ DELETE CHILD CATEGORY
 // ================================================================
 const deleteChildCategoryFromDB = async (id: string) => {
-  const existingModel = await ClassifiedAd.findOne({ children: new Types.ObjectId(id) });
+  if (!Types.ObjectId.isValid(id)) {
+    throw new Error(`Invalid ID format: ${id}`);
+  }
+
+  // ✅ Document না থাকলেও cache clear করে দাও
+  const existing = await ChildCategoryModel.findById(id).lean();
+  
+  if (!existing) {
+    // ✅ MongoDB তে নেই কিন্তু cache এ থাকতে পারে — cache clear করে দাও
+    await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+    await deleteCacheKey(CacheKeys.CHILDCATEGORY.ALL);
+    console.warn(`⚠️ Document not in MongoDB but clearing stale cache for ID: ${id}`);
+    return null; // ✅ Error throw না করে gracefully return
+  }
+
+  const existingModel = await ClassifiedAd.findOne({ 
+    children: new Types.ObjectId(id) 
+  });
 
   if (existingModel) {
-    throw new Error('Cannot delete this child category as it is used in a product model.');
+    throw new Error('Cannot delete: this child category is used in a classified ad.');
   }
 
   const result = await ChildCategoryModel.findByIdAndDelete(id);
 
-  if (!result) {
-    throw new Error('ChildCategory not found to delete.');
-  }
-
-  // 🗑️ Clear caches
+  // ✅ Delete এর পর সব related cache clear
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+  await deleteCacheKey(CacheKeys.CHILDCATEGORY.ALL);
+  await deleteCacheKey(CacheKeys.CHILDCATEGORY.BY_SUBCATEGORY(result!.subCategory.toString()));
 
   return null;
 };

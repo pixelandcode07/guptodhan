@@ -219,6 +219,7 @@ const deleteChildCategory = async (
 ) => {
   await dbConnect();
   const { id } = await params;
+   console.log('DELETE id:', id); 
   await ChildCategoryServices.deleteChildCategoryFromDB(id);
 
   return sendResponse({

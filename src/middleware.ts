@@ -7,18 +7,17 @@ import { jwtVerify } from 'jose';
 const publicRoutes = [
   '/api/v1/auth/login',
   '/api/v1/user/register',
-  '/api/v1/user/verify-otp', // 🔥 Critical for your error
-  '/api/v1/otp/verify',      // 🔥 Critical for your error
+  '/api/v1/user/verify-otp',
+  '/api/v1/otp/verify',
   '/api/v1/user/resend-otp',
-  '/api/auth',               // NextAuth default routes
-  '/api/v1/public',          // যদি অন্য কোনো পাবলিক ফোল্ডার থাকে
+  '/api/auth',
+  '/api/v1/public',
 ];
 
 // ❗️ Admin Routes
 const adminRoutes = [
   '/general',
   '/api/v1/users',
-  '/api/v1/job',
   '/api/v1/donation-users',
   '/api/v1/donation-stats/dashboard',
   '/api/v1/classifieds-banners',
@@ -48,13 +47,14 @@ const adminRoutes = [
   '/api/v1/social_links',
   '/api/v1/vendors/[id]',
   '/api/v1/shipping-policy',
-  '/api/v1/ecommerce-category/ecomSubCategory/[id]',
+  '/api/v1/ecommerce-category/ecomSubCategory', // Admin route for POST/PUT/DELETE
   '/api/v1/service-section/service-provider',
   '/api/v1/service-section/service-category',
   '/api/v1/service-section/service-banner',
   '/api/v1/service-section/provide-service/status/[id]',
   '/api/v1/service-section/provide-service/[id]',
-
+  '/api/v1/faq-category',
+  '/api/v1/faq',
 ];
 
 // 🔥 Vendor Routes
@@ -83,7 +83,7 @@ const protectedApiRoutes = [
   '/api/otp/verify-phone',
   '/api/v1/auth/set-password',
   '/api/v1/profile/me',
-  '/api/v1/users', // Note: This matches /api/v1/user/ if not careful with startWith
+  '/api/v1/users', 
   '/api/v1/classifieds/ads',
   '/api/v1/classifieds/ads/[id]',
   '/api/v1/classifieds-banners',
@@ -113,24 +113,33 @@ const protectedApiRoutes = [
   '/api/v1/vendor-category',
   '/api/v1/service-section/provide-service',
   '/api/v1/service-section/service-provider-manage/userId/[id]',
-  // '/api/v1/service-section/service-provider-manage',
 ];
-
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
   // ✅ ২. Public Route Check (সবার আগে চেক করবে)
-  // যদি পাবলিক রাউট হয়, তাহলে সরাসরি যেতে দাও (টোকেন চেক করার দরকার নেই)
   if (publicRoutes.some((route) => path.startsWith(route))) {
     return NextResponse.next();
   }
 
-  const isAdminRoute = adminRoutes.some((route) => path.startsWith(route));
+  // 🛠️ Route type checks
+  let isAdminRoute = adminRoutes.some((route) => path.startsWith(route));
   const isVendorRoute = vendorRoutes.some((route) => path.startsWith(route));
   const isProtectedApi = protectedApiRoutes.some((route) => path.startsWith(route));
 
-  // পাবলিক route → allow (যদি লিস্টে না থাকে এবং protected ও না হয়)
+  // 🔥 Professional Fix: Allow GET requests for Categories/Subcategories to bypass Admin strictness
+  // যদি রিকোয়েস্টটি 'GET' হয়, তবে ভেন্ডররা বা ইউজাররা ক্যাটাগরিগুলো ফেচ করার এক্সেস পাবে।
+  if (
+    req.method === 'GET' && 
+    (path.startsWith('/api/v1/ecommerce-category/ecomSubCategory') || 
+     path.startsWith('/api/v1/ecommerce-category/ecomChildCategory') ||
+     path.startsWith('/api/v1/vendor-category'))
+  ) {
+    isAdminRoute = false; 
+  }
+
+  // পাবলিক route → allow (যদি লিস্টে না থাকে এবং protected ও না হয়)
   if (!isAdminRoute && !isVendorRoute && !isProtectedApi) {
     return NextResponse.next();
   }
@@ -143,7 +152,6 @@ export async function middleware(req: NextRequest) {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     token = authHeader.split(' ')[1];
   }
-
   // ২. যদি হেডার না থাকে, তাহলে Cookie চেক করুন
   else {
     token = req.cookies.get('accessToken')?.value || req.cookies.get('refreshToken')?.value;
@@ -156,7 +164,6 @@ export async function middleware(req: NextRequest) {
       tokenPayload = payload;
     } catch (err: any) {
       console.warn(`[Middleware] Token verification failed: ${err.message}`);
-      // টোকেন ভুল হলে এবং রাউটটি প্রটেক্টেড হলে এক্সেস ডিনাই করা হবে নিচে
     }
   }
 
@@ -175,7 +182,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // ❌ No Token Found (Public রাউটগুলো আগেই pass হয়ে গেছে, তাই এখানে আসলে মানে টোকেন লাগবেই)
+  // ❌ No Token Found
   if (!tokenPayload) {
     if (path.startsWith('/general') || path.startsWith('/dashboard')) {
       return NextResponse.redirect(new URL('/', req.url));
