@@ -695,22 +695,32 @@ const requestReturnInDB = async (orderId: string, reason: string) => {
 // ================================================================
 const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
   try {
-    // ১. ভেন্ডর আইডিকে ObjectId তে রূপান্তর (এটিই ছিল মেইন সমস্যা)
-    const vId = new Types.ObjectId(vendorId);
-
-    // ২. প্রথমে স্টোর খুঁজে বের করা
-    const store = await StoreModel.findOne({ vendorId: vId });
-
-    if (!store) {
-      throw new Error('Store not found for this vendor');
+    if (!Types.ObjectId.isValid(vendorId)) {
+      throw new Error('Invalid Vendor ID format.');
     }
 
-    // ৩. ঐ স্টোরের সব অর্ডার এগ্রিগেশন করা
+    const vId = new Types.ObjectId(vendorId);
+
+    // ১. প্রথমে সরাসরি vendorId দিয়ে স্টোর খোঁজা
+    let store = await StoreModel.findOne({ vendorId: vId });
+
+    // ২. যদি না পাওয়া যায়, তবে চেক করা এই আইডিটি কি ইউজারের? 
+    // যদি ইউজারের হয়, তবে তার প্রোফাইল থেকে vendorInfo (Vendor ID) নিয়ে স্টোর খোঁজা।
+    if (!store) {
+      const userWithVendor = await User.findById(vId).select('vendorInfo');
+      if (userWithVendor && userWithVendor.vendorInfo) {
+        store = await StoreModel.findOne({ vendorId: userWithVendor.vendorInfo });
+      }
+    }
+
+    if (!store) {
+      throw new Error('Store not found for this vendor account.');
+    }
+
+    // ৩. অর্ডারের এগ্রিগেশন (সব স্ট্যাটাসের অর্ডার আসবে)
     const orders = await OrderModel.aggregate([
       { $match: { storeId: store._id } },
       { $sort: { createdAt: -1 } },
-
-      // ইউজার ডিটেইলস নিয়ে আসা
       {
         $lookup: {
           from: 'users',
@@ -720,8 +730,6 @@ const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
         },
       },
       { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
-
-      // অর্ডার আইটেম বা ডিটেইলস নিয়ে আসা
       {
         $lookup: {
           from: 'orderdetails',
@@ -730,8 +738,6 @@ const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
           as: 'details',
         },
       },
-
-      // ফাইনাল ডাটা স্ট্রাকচার (যা ফ্রন্টএন্ডে দরকার)
       {
         $project: {
           _id: 1,
@@ -739,24 +745,19 @@ const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
           orderStatus: 1,
           paymentStatus: 1,
           totalAmount: 1,
-          deliveryCharge: 1,
-          orderDate: 1,
           createdAt: 1,
           shippingName: 1,
           shippingPhone: 1,
           'user.name': 1,
           'user.email': 1,
-          orderDetails: '$details', // ডিটেইলসগুলো এখানে পাঠিয়ে দিলাম
+          orderDetails: '$details',
         },
       },
     ]);
 
-    return {
-      store,
-      orders,
-    };
-  } catch (error) {
-    console.error('❌ Error getting vendor orders:', error);
+    return { store, orders };
+  } catch (error: any) {
+    console.error('Error fetching vendor orders:', error.message);
     throw error;
   }
 };
