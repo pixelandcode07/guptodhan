@@ -3,23 +3,6 @@
 import { getRedisClient } from './client';
 export { CacheKeys, CacheTTL } from './cache-keys';
 
-// ✅ Redis timeout wrapper
-async function withRedisTimeout<T>(
-  fn: () => Promise<T>,
-  timeoutMs = 3000,
-  fallback: T | null = null
-): Promise<T | null> {
-  return Promise.race([
-    fn(),
-    new Promise<T | null>((resolve) =>
-      setTimeout(() => {
-        console.warn('⚠️ Redis timeout — falling back to DB');
-        resolve(fallback);
-      }, timeoutMs)
-    ),
-  ]);
-}
-
 /**
  * 🎯 Generic Cache Get/Set Helper
  */
@@ -30,12 +13,7 @@ export async function getCachedData<T>(
 ): Promise<T> {
   try {
     const redis = await getRedisClient();
-
-    const cached = await withRedisTimeout(
-      () => redis.get(key),
-      3000,
-      null
-    );
+    const cached = await redis.get(key);
 
     if (cached) {
       console.log(`✅ Cache HIT: ${key}`);
@@ -45,6 +23,7 @@ export async function getCachedData<T>(
     console.log(`❌ Cache MISS: ${key}`);
     const fresh = await fetchFn();
 
+    // ✅ Fire and forget — response block করবে না
     setImmediate(() => {
       redis
         .setEx(key, ttl, JSON.stringify(fresh))
@@ -55,13 +34,14 @@ export async function getCachedData<T>(
 
     return fresh;
   } catch (error) {
-    console.error(`⚠️ Redis unavailable for key ${key}, using DB directly`);
+    // ✅ Redis down থাকলে সরাসরি DB থেকে আনো
+    console.error(`⚠️ Redis unavailable for key ${key}, using DB`);
     return fetchFn();
   }
 }
 
 /**
- * 🎯 Batch Cache Get — pipeline ব্যবহার করে
+ * 🎯 Batch Cache Get — mGet ব্যবহার করে
  */
 export async function getBatchCachedData<T>(
   keys: string[],
@@ -71,15 +51,11 @@ export async function getBatchCachedData<T>(
 ): Promise<T[]> {
   try {
     const redis = await getRedisClient();
-
-    // ✅ mGet দিয়ে একসাথে সব key আনো — pipeline এর চেয়ে সহজ এবং type-safe
     const results = await redis.mGet(keys);
 
     const missing: number[] = [];
     const data: (T | null)[] = results.map((result, i) => {
-      if (result) {
-        return JSON.parse(result) as T;
-      }
+      if (result) return JSON.parse(result) as T;
       missing.push(i);
       return null;
     });
@@ -88,15 +64,10 @@ export async function getBatchCachedData<T>(
       const freshAll = await fetchFn();
 
       setImmediate(() => {
-        // ✅ mSet এর জন্য array of [key, value] pairs
-        const pairs: [string, string][] = freshAll.map((item) => [
-          getKey(item),
-          JSON.stringify(item),
-        ]);
-
-        // ✅ একসাথে সব set করো তারপর TTL set করো
         Promise.all(
-          pairs.map(([k, v]) => redis.setEx(k, ttl, v))
+          freshAll.map((item) =>
+            redis.setEx(getKey(item), ttl, JSON.stringify(item))
+          )
         ).catch((err) =>
           console.error('⚠️ Batch cache set failed:', err)
         );
@@ -133,7 +104,6 @@ export async function deleteCachePattern(pattern: string): Promise<void> {
     const redis = await getRedisClient();
 
     const keysToDelete: string[] = [];
-    // ✅ cursor type string হওয়া উচিত Redis v4 এ
     let cursor = '0';
 
     do {
@@ -146,7 +116,6 @@ export async function deleteCachePattern(pattern: string): Promise<void> {
     } while (cursor !== '0');
 
     if (keysToDelete.length > 0) {
-      // ✅ batch এ delete করো
       await redis.del(keysToDelete);
       console.log(
         `🗑️ Cache DELETED pattern: ${pattern} (${keysToDelete.length} keys)`
@@ -183,7 +152,6 @@ export async function setBatchCacheData<T>(
   try {
     const redis = await getRedisClient();
 
-    // ✅ Promise.all দিয়ে সব একসাথে set করো
     await Promise.all(
       items.map(({ key, data, ttl = 3600 }) =>
         redis.setEx(key, ttl, JSON.stringify(data))
