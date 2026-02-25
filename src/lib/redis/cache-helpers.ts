@@ -3,6 +3,27 @@
 import { getRedisClient } from './client';
 export { CacheKeys, CacheTTL } from './cache-keys';
 
+// ✅ Smart Redis timeout wrapper
+async function withRedisTimeout<T>(
+  fn: () => Promise<T>,
+  timeoutMs = 3000,
+  fallback: T | null = null,
+  context: string = 'operation'
+): Promise<T | null> {
+  return Promise.race([
+    fn().catch((err) => {
+      console.warn(`⚠️ Redis error during ${context}: ${err.message}`);
+      return fallback;
+    }),
+    new Promise<T | null>((resolve) =>
+      setTimeout(() => {
+        console.warn(`⚠️ Redis timeout (${timeoutMs}ms) during ${context} — falling back to DB`);
+        resolve(fallback);
+      }, timeoutMs)
+    ),
+  ]);
+}
+
 /**
  * 🎯 Generic Cache Get/Set Helper
  */
@@ -13,7 +34,18 @@ export async function getCachedData<T>(
 ): Promise<T> {
   try {
     const redis = await getRedisClient();
-    const cached = await redis.get(key);
+
+    // ✅ If Redis is not open, skip wait and hit DB instantly
+    if (!redis.isOpen) {
+      return fetchFn();
+    }
+
+    const cached = await withRedisTimeout(
+      () => redis.get(key),
+      3000,
+      null,
+      `get(${key})`
+    );
 
     if (cached) {
       console.log(`✅ Cache HIT: ${key}`);
@@ -23,25 +55,25 @@ export async function getCachedData<T>(
     console.log(`❌ Cache MISS: ${key}`);
     const fresh = await fetchFn();
 
-    // ✅ Fire and forget — response block করবে না
-    setImmediate(() => {
-      redis
-        .setEx(key, ttl, JSON.stringify(fresh))
-        .catch((err) =>
-          console.error(`⚠️ Redis setEx failed for ${key}:`, err)
-        );
-    });
+    // ✅ Fire and forget for setting cache
+    if (redis.isOpen) {
+      setImmediate(() => {
+        redis
+          .setEx(key, ttl, JSON.stringify(fresh))
+          .catch((err) =>
+            console.error(`⚠️ Redis setEx failed for ${key}:`, err.message)
+          );
+      });
+    }
 
     return fresh;
   } catch (error) {
-    // ✅ Redis down থাকলে সরাসরি DB থেকে আনো
-    console.error(`⚠️ Redis unavailable for key ${key}, using DB`);
     return fetchFn();
   }
 }
 
 /**
- * 🎯 Batch Cache Get — mGet ব্যবহার করে
+ * 🎯 Batch Cache Get — pipeline/mGet
  */
 export async function getBatchCachedData<T>(
   keys: string[],
@@ -51,11 +83,28 @@ export async function getBatchCachedData<T>(
 ): Promise<T[]> {
   try {
     const redis = await getRedisClient();
-    const results = await redis.mGet(keys);
+
+    if (!redis.isOpen) {
+      return fetchFn();
+    }
+
+    // ✅ Use timeout for mGet as well
+    const results = await withRedisTimeout(
+      () => redis.mGet(keys),
+      4000,
+      null,
+      'mGet'
+    );
+
+    if (!results) {
+      return fetchFn();
+    }
 
     const missing: number[] = [];
     const data: (T | null)[] = results.map((result, i) => {
-      if (result) return JSON.parse(result) as T;
+      if (result) {
+        return JSON.parse(result) as T;
+      }
       missing.push(i);
       return null;
     });
@@ -63,22 +112,26 @@ export async function getBatchCachedData<T>(
     if (missing.length > 0) {
       const freshAll = await fetchFn();
 
-      setImmediate(() => {
-        Promise.all(
-          freshAll.map((item) =>
-            redis.setEx(getKey(item), ttl, JSON.stringify(item))
-          )
-        ).catch((err) =>
-          console.error('⚠️ Batch cache set failed:', err)
-        );
-      });
+      if (redis.isOpen) {
+        setImmediate(() => {
+          const pairs: [string, string][] = freshAll.map((item) => [
+            getKey(item),
+            JSON.stringify(item),
+          ]);
+
+          Promise.all(
+            pairs.map(([k, v]) => redis.setEx(k, ttl, v))
+          ).catch((err) =>
+            console.error('⚠️ Batch cache set failed:', err.message)
+          );
+        });
+      }
 
       return freshAll;
     }
 
     return data.filter((item): item is T => item !== null);
   } catch (error) {
-    console.error('⚠️ Batch cache failed, using DB directly');
     return fetchFn();
   }
 }
@@ -89,19 +142,22 @@ export async function getBatchCachedData<T>(
 export async function deleteCacheKey(key: string): Promise<void> {
   try {
     const redis = await getRedisClient();
-    await redis.del(key);
-    console.log(`🗑️ Cache DELETED: ${key}`);
-  } catch (error) {
-    console.error(`⚠️ Redis delete error for key ${key}:`, error);
+    if (redis.isOpen) {
+      await redis.del(key);
+      console.log(`🗑️ Cache DELETED: ${key}`);
+    }
+  } catch (error: any) {
+    console.error(`⚠️ Redis delete error for key ${key}:`, error.message);
   }
 }
 
 /**
- * 🗑️ Delete multiple keys by pattern — SCAN ব্যবহার করে
+ * 🗑️ Delete multiple keys by pattern — SCAN
  */
 export async function deleteCachePattern(pattern: string): Promise<void> {
   try {
     const redis = await getRedisClient();
+    if (!redis.isOpen) return;
 
     const keysToDelete: string[] = [];
     let cursor = '0';
@@ -121,8 +177,8 @@ export async function deleteCachePattern(pattern: string): Promise<void> {
         `🗑️ Cache DELETED pattern: ${pattern} (${keysToDelete.length} keys)`
       );
     }
-  } catch (error) {
-    console.error(`⚠️ Redis pattern delete error for ${pattern}:`, error);
+  } catch (error: any) {
+    console.error(`⚠️ Redis pattern delete error for ${pattern}:`, error.message);
   }
 }
 
@@ -136,10 +192,12 @@ export async function setCacheData<T>(
 ): Promise<void> {
   try {
     const redis = await getRedisClient();
-    await redis.setEx(key, ttl, JSON.stringify(data));
-    console.log(`💾 Cache SET: ${key} (TTL: ${ttl}s)`);
-  } catch (error) {
-    console.error(`⚠️ Redis set error for key ${key}:`, error);
+    if (redis.isOpen) {
+      await redis.setEx(key, ttl, JSON.stringify(data));
+      console.log(`💾 Cache SET: ${key} (TTL: ${ttl}s)`);
+    }
+  } catch (error: any) {
+    console.error(`⚠️ Redis set error for key ${key}:`, error.message);
   }
 }
 
@@ -151,6 +209,7 @@ export async function setBatchCacheData<T>(
 ): Promise<void> {
   try {
     const redis = await getRedisClient();
+    if (!redis.isOpen) return;
 
     await Promise.all(
       items.map(({ key, data, ttl = 3600 }) =>
@@ -159,7 +218,7 @@ export async function setBatchCacheData<T>(
     );
 
     console.log(`💾 Batch Cache SET: ${items.length} keys`);
-  } catch (error) {
-    console.error('⚠️ Batch cache set error:', error);
+  } catch (error: any) {
+    console.error('⚠️ Batch cache set error:', error.message);
   }
 }
