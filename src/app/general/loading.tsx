@@ -1,34 +1,101 @@
 'use client';
 
 import React from 'react';
-import { ShoppingBag } from 'lucide-react';
 
-const FancyLoadingPage: React.FC = () => {
+const GeneralLoadingSkeleton: React.FC = () => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800 relative overflow-hidden">
-      {/* Rotating gradient ring with icon */}
-      <div className="relative w-24 h-24 flex items-center justify-center">
-        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-yellow-500 via-amber-400 to-orange-500 animate-spin blur-[1px]"></div>
-        <div className="absolute inset-[6px] rounded-full bg-gray-900 flex items-center justify-center">
-          <ShoppingBag className="text-yellow-400 w-8 h-8 animate-bounce" />
-        </div>
+    <div className="min-h-screen bg-gray-100 flex">
+      
+      {/* Sidebar Skeleton */}
+      <div className="w-64 bg-white shadow-sm p-4 flex flex-col gap-4">
+        {/* Logo */}
+        <div className="h-10 bg-gray-200 rounded-lg animate-pulse mb-4" />
+        
+        {/* Menu items */}
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="w-5 h-5 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 bg-gray-200 rounded flex-1 animate-pulse" />
+          </div>
+        ))}
       </div>
 
-      {/* Brand Name */}
-      <h1 className="mt-8 text-3xl md:text-4xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-amber-300 to-orange-400 tracking-wide">
-        Guptodhan
-      </h1>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        
+        {/* Topbar Skeleton */}
+        <div className="h-16 bg-white shadow-sm px-6 flex items-center justify-between">
+          <div className="h-5 w-40 bg-gray-200 rounded animate-pulse" />
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
+            <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
+            <div className="w-24 h-8 bg-gray-200 rounded-lg animate-pulse" />
+          </div>
+        </div>
 
-      {/* Loading text */}
-      <p className="mt-3 text-gray-300 text-sm md:text-base tracking-wide animate-pulse">
-        Unlocking your treasures...
-      </p>
+        {/* Page Content */}
+        <div className="p-6 flex flex-col gap-6">
 
-      {/* Background glowing gradients */}
-      <div className="absolute w-[400px] h-[400px] bg-gradient-to-r from-yellow-500 to-orange-400 opacity-10 rounded-full blur-3xl animate-pulse -top-20 -right-20"></div>
-      <div className="absolute w-[300px] h-[300px] bg-gradient-to-r from-amber-500 to-yellow-400 opacity-10 rounded-full blur-3xl animate-pulse bottom-0 left-0"></div>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-xl p-5 shadow-sm flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                  <div className="w-9 h-9 bg-gray-200 rounded-lg animate-pulse" />
+                </div>
+                <div className="h-7 w-20 bg-gray-200 rounded animate-pulse" />
+                <div className="h-3 w-32 bg-gray-200 rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
+
+          {/* Chart + Side Panel */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Chart */}
+            <div className="lg:col-span-2 bg-white rounded-xl p-5 shadow-sm">
+              <div className="h-5 w-32 bg-gray-200 rounded animate-pulse mb-4" />
+              <div className="h-56 bg-gray-100 rounded-lg animate-pulse" />
+            </div>
+            {/* Side */}
+            <div className="bg-white rounded-xl p-5 shadow-sm flex flex-col gap-4">
+              <div className="h-5 w-28 bg-gray-200 rounded animate-pulse" />
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
+                  <div className="flex-1 flex flex-col gap-1">
+                    <div className="h-3 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-3 w-2/3 bg-gray-200 rounded animate-pulse" />
+                  </div>
+                  <div className="h-4 w-12 bg-gray-200 rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="bg-white rounded-xl p-5 shadow-sm">
+            <div className="h-5 w-36 bg-gray-200 rounded animate-pulse mb-4" />
+            {/* Table Header */}
+            <div className="grid grid-cols-5 gap-4 mb-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" />
+              ))}
+            </div>
+            {/* Table Rows */}
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="grid grid-cols-5 gap-4 py-3 border-t border-gray-100">
+                {Array.from({ length: 5 }).map((_, j) => (
+                  <div key={j} className="h-4 bg-gray-100 rounded animate-pulse" />
+                ))}
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 };
 
-export default FancyLoadingPage;
+export default GeneralLoadingSkeleton;
