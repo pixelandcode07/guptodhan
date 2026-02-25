@@ -1,26 +1,49 @@
 import axios from 'axios';
+import type {
+  VendorOrdersApiResponse,
+  Store,
+  VendorOrder,
+} from '@/types/VendorOrderTypes';
 
-export const fetchVendorOrders = async (vendorId: string, token?: string) => {
-  // VPS এ সরাসরি ডোমেইন ব্যবহার করা নিরাপদ
+export const fetchVendorOrders = async (
+  vendorId: string,
+  token?: string
+): Promise<{ store: Store; orders: VendorOrder[] }> => {
+  
+  // ✅ VPS Optimization: Use Public Base URL or Fallback to domain
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guptodhandigital.com';
 
+  if (!vendorId) {
+    throw new Error('Vendor ID is required');
+  }
+
   try {
-    const response = await axios.get(
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await axios.get<VendorOrdersApiResponse>(
       `${baseUrl}/api/v1/vendor-store/vendorOrder/${vendorId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+      { headers, timeout: 15000 }
     );
 
     if (!response.data.success) {
-      throw new Error(response.data.message || 'Failed to fetch orders');
+      throw new Error(response.data.message || 'Failed to fetch vendor orders');
     }
 
-    return response.data.data;
+    const data = response.data.data;
+
+    return {
+      store: data?.store || ({} as Store),
+      orders: data?.orders || [],
+    };
   } catch (error: any) {
-    console.error('API Error:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.message || 'Failed to load vendor orders');
+    console.error('❌ [API Error]: fetchVendorOrders failed', error.message);
+    throw new Error(
+      error.response?.data?.message ||
+      error.message ||
+      'অর্ডারগুলো লোড করতে সমস্যা হচ্ছে।'
+    );
   }
 };
