@@ -11,6 +11,7 @@ import '@/lib/modules/promo-code/promoCode.model';
 // ✅ Redis Cache Imports
 import { getCachedData, deleteCacheKey, deleteCachePattern } from '@/lib/redis/cache-helpers';
 import { CacheKeys, CacheTTL } from '@/lib/redis/cache-keys';
+import { User } from '../../user/user.model';
 
 // ================================================================
 // 📝 CREATE ORDER (WITHOUT TRANSACTIONS) ✅ FIXED
@@ -695,29 +696,32 @@ const requestReturnInDB = async (orderId: string, reason: string) => {
 // ================================================================
 const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
   try {
+    // ১. আইডি ভ্যালিড কি না চেক করা
     if (!Types.ObjectId.isValid(vendorId)) {
-      throw new Error('Invalid Vendor ID format.');
+      throw new Error('আইডির ফরম্যাট সঠিক নয়।');
     }
 
     const vId = new Types.ObjectId(vendorId);
 
-    // ১. প্রথমে সরাসরি vendorId দিয়ে স্টোর খোঁজা
+    // ২. প্রথমে সরাসরি vendorId দিয়ে স্টোর খোঁজা
     let store = await StoreModel.findOne({ vendorId: vId });
 
-    // ২. যদি না পাওয়া যায়, তবে চেক করা এই আইডিটি কি ইউজারের? 
+    // ৩. যদি না পাওয়া যায়, তবে চেক করা এই আইডিটি কি ইউজারের? 
     // যদি ইউজারের হয়, তবে তার প্রোফাইল থেকে vendorInfo (Vendor ID) নিয়ে স্টোর খোঁজা।
     if (!store) {
+      // User এখন ডিফাইন করা আছে, তাই আর এরর দিবে না
       const userWithVendor = await User.findById(vId).select('vendorInfo');
       if (userWithVendor && userWithVendor.vendorInfo) {
         store = await StoreModel.findOne({ vendorId: userWithVendor.vendorInfo });
       }
     }
 
+    // ৪. স্টোর না পাওয়া গেলে এরর থ্রো করা
     if (!store) {
-      throw new Error('Store not found for this vendor account.');
+      throw new Error('আপনার অ্যাকাউন্টের বিপরীতে কোনো স্টোর খুঁজে পাওয়া যায়নি।');
     }
 
-    // ৩. অর্ডারের এগ্রিগেশন (সব স্ট্যাটাসের অর্ডার আসবে)
+    // ৫. অর্ডারের এগ্রিগেশন (সব স্ট্যাটাসের অর্ডার আসবে)
     const orders = await OrderModel.aggregate([
       { $match: { storeId: store._id } },
       { $sort: { createdAt: -1 } },
@@ -757,7 +761,7 @@ const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
 
     return { store, orders };
   } catch (error: any) {
-    console.error('Error fetching vendor orders:', error.message);
+    console.error('❌ Error fetching vendor orders:', error.message);
     throw error;
   }
 };
