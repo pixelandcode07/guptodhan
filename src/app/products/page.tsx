@@ -1,99 +1,93 @@
 import React from 'react';
 import FilterContent from './FilterContent';
 import { HeroNav } from '@/app/components/Hero/HeroNav';
-import { MainCategory } from '@/types/navigation-menu';
 
-// ✅ Product Data Fetching
-async function getAllProducts() {
+async function getProducts(searchParams: any) {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhandigital.com';
-    const res = await fetch(`${baseUrl}/api/v1/public/product`, {
+
+    const params = new URLSearchParams({
+      page:  searchParams?.page  || '1',
+      limit: '10',
+      ...(searchParams?.search   && { search:   searchParams.search }),
+      ...(searchParams?.brand    && { brand:    searchParams.brand }),
+      ...(searchParams?.color    && { color:    searchParams.color }),
+      ...(searchParams?.size     && { size:     searchParams.size }),
+      ...(searchParams?.priceMin && { priceMin: searchParams.priceMin }),
+      ...(searchParams?.priceMax && { priceMax: searchParams.priceMax }),
+      ...(searchParams?.sortBy   && { sortBy:   searchParams.sortBy }),
+    });
+
+    const res = await fetch(`${baseUrl}/api/v1/public/product?${params}`, {
       cache: 'no-store',
     });
 
-    if (!res.ok) throw new Error('Failed to fetch products');
+    if (!res.ok) return { products: [], meta: null };
     const data = await res.json();
-    return data.data || [];
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    return [];
+    return data.data || { products: [], meta: null };
+  } catch {
+    return { products: [], meta: null };
   }
 }
 
-// ✅ Active Colors Fetching
 async function getActiveColors() {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhandigital.com';
     const res = await fetch(`${baseUrl}/api/v1/public/product-config/product-color/active`, {
-      cache: 'no-store',
+      cache: 'force-cache',
     });
     if (!res.ok) return [];
     const data = await res.json();
     return data.data || [];
-  } catch (error) {
-    console.error('Error fetching colors:', error);
-    return [];
-  }
+  } catch { return []; }
 }
 
-// ✅ Active Brands Fetching
 async function getActiveBrands() {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhandigital.com';
-    // Adjust route if needed based on your backend routes file
     const res = await fetch(`${baseUrl}/api/v1/public/product-config/brand/active`, {
-      cache: 'no-store',
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.data || [];    
-  } catch (error) {
-    console.error('Error fetching brands:', error);
-    return [];
-  }
-}
-
-// ✅ Active Sizes Fetching
-async function getActiveSizes() {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhandigital.com';
-    // Adjust route if needed based on your backend routes file
-    const res = await fetch(`${baseUrl}/api/v1/public/product-config/product-size/active`, {
-      cache: 'no-store',
+      cache: 'force-cache',
     });
     if (!res.ok) return [];
     const data = await res.json();
     return data.data || [];
-  } catch (error) {
-    console.error('Error fetching sizes:', error);
-    return [];
-  }
+  } catch { return []; }
 }
 
-async function getCategories() {
-  return []; 
+async function getActiveSizes() {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhandigital.com';
+    const res = await fetch(`${baseUrl}/api/v1/public/product-config/product-size/active`, {
+      cache: 'force-cache',
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.data || [];
+  } catch { return []; }
 }
 
-export default async function ProductFilterPage() {
-  // Parallel Data Fetching
-  const [products, colors, brands, sizes, categoriesData] = await Promise.all([
-    getAllProducts(),
+export default async function ProductFilterPage({
+  searchParams,
+}: {
+  searchParams: any;
+}) {
+  const [{ products, meta }, colors, brands, sizes] = await Promise.all([
+    getProducts(searchParams),
     getActiveColors(),
     getActiveBrands(),
     getActiveSizes(),
-    getCategories()
   ]);
 
   return (
     <>
-      <HeroNav categories={categoriesData} />
+      <HeroNav categories={[]} />
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* ✅ Passing all dynamic data to client component */}
-        <FilterContent 
-          initialProducts={products} 
-          initialColors={colors} 
+        <FilterContent
+          initialProducts={products}
+          initialColors={colors}
           initialBrands={brands}
           initialSizes={sizes}
+          meta={meta}
         />
       </div>
     </>
