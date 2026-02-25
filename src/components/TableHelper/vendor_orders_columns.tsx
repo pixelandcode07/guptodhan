@@ -252,13 +252,4 @@ export const vendorOrdersColumns: ColumnDef<VendorOrderRow>[] = [
     header: 'Action',
     cell: ({ row }) => <ActionButtons order={row.original} />,
   },
-  {
-    id: 'edit',
-    header: 'Edit',
-    cell: () => (
-      <button className="p-1.5 rounded-md border border-blue-200 bg-white text-blue-600 hover:bg-blue-600 hover:text-white transition-all">
-        <Edit size={13} />
-      </button>
-    ),
-  },
 ];
