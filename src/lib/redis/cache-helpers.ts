@@ -1,5 +1,24 @@
 // src/lib/redis/cache-helpers.ts
+
 import { getRedisClient } from './client';
+export { CacheKeys, CacheTTL } from './cache-keys';
+
+// ✅ Redis operation এ timeout — ২ সেকেন্ডের বেশি wait করব না
+async function withRedisTimeout<T>(
+  fn: () => Promise<T>,
+  timeoutMs = 2000,
+  fallback: T | null = null
+): Promise<T | null> {
+  return Promise.race([
+    fn(),
+    new Promise<T | null>((resolve) =>
+      setTimeout(() => {
+        console.warn('⚠️ Redis timeout — falling back to DB');
+        resolve(fallback);
+      }, timeoutMs)
+    ),
+  ]);
+}
 
 /**
  * 🎯 Generic Cache Get/Set Helper
@@ -11,26 +30,36 @@ export async function getCachedData<T>(
 ): Promise<T> {
   try {
     const redis = await getRedisClient();
-    
-    // 1. Try to get from cache
-    const cached = await redis.get(key);
-    
+
+    // ✅ Cache get with timeout
+    const cached = await withRedisTimeout(
+      () => redis.get(key),
+      2000,
+      null
+    );
+
     if (cached) {
       console.log(`✅ Cache HIT: ${key}`);
       return JSON.parse(cached) as T;
     }
 
-    // 2. Cache miss - fetch fresh data
+    // ✅ Cache miss — DB থেকে আনো
     console.log(`❌ Cache MISS: ${key}`);
     const fresh = await fetchFn();
 
-    // 3. Store in cache
-    await redis.setEx(key, ttl, JSON.stringify(fresh));
-    
+    // ✅ Fire and forget — response দেরি করবে না
+    redis
+      .setEx(key, ttl, JSON.stringify(fresh))
+      .catch((err) =>
+        console.error(`⚠️ Redis setEx failed for ${key}:`, err)
+      );
+
     return fresh;
   } catch (error) {
-    // 4. Redis error - fallback to direct fetch
-    console.error(`⚠️ Redis error for key ${key}:`, error);
+    // ✅ Redis down থাকলে সরাসরি DB থেকে আনো
+    console.error(
+      `⚠️ Redis unavailable for key ${key}, using DB directly`
+    );
     return fetchFn();
   }
 }
@@ -55,18 +84,23 @@ export async function deleteCachePattern(pattern: string): Promise<void> {
   try {
     const redis = await getRedisClient();
     const keys = await redis.keys(pattern);
-    
+
     if (keys.length > 0) {
       await redis.del(keys);
-      console.log(`🗑️ Cache DELETED (pattern): ${pattern} (${keys.length} keys)`);
+      console.log(
+        `🗑️ Cache DELETED pattern: ${pattern} (${keys.length} keys)`
+      );
     }
   } catch (error) {
-    console.error(`⚠️ Redis pattern delete error for ${pattern}:`, error);
+    console.error(
+      `⚠️ Redis pattern delete error for ${pattern}:`,
+      error
+    );
   }
 }
 
 /**
- * ⏱️ Set cache with specific TTL
+ * 💾 Set cache with specific TTL
  */
 export async function setCacheData<T>(
   key: string,
@@ -81,6 +115,3 @@ export async function setCacheData<T>(
     console.error(`⚠️ Redis set error for key ${key}:`, error);
   }
 }
-
-// ✅ Re-export CacheKeys and CacheTTL
-export { CacheKeys, CacheTTL } from './cache-keys';
