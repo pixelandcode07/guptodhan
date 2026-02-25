@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Mail, Lock, CheckCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Mail, Lock, CheckCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,30 +18,42 @@ export default function VendorForgotPassword() {
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // ✅ পাসওয়ার্ড দেখার স্টেট
 
   const [resetToken, setResetToken] = useState<string>("");
+
+  // ✅ সাধারণ ইউজারের জন্য সুন্দর এরর হ্যান্ডলিং ফাংশন
+  const handleError = (err: any) => {
+    console.error("Error details:", err);
+    // যদি এরর মেসেজটা একটা অ্যারে হয় (Zod এরর), তবে প্রথম মেসেজটা দেখাবে
+    if (Array.isArray(err.response?.data)) {
+      return toast.error(err.response.data[0]?.message || "Invalid input data");
+    }
+    // অন্য সব ক্ষেত্রে নরমাল মেসেজ
+    toast.error(err.response?.data?.message || "Something went wrong. Please try again.");
+  };
 
   // Step 1: Send OTP
   const sendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return toast.error("Please enter your email");
+    if (!email) return toast.error("Please enter your registered email address.");
 
     setIsLoading(true);
     try {
       await axios.post("/api/v1/auth/vendor-forgot-password/send-otp", { email });
-      toast.success("OTP sent to your email!");
+      toast.success("A 6-digit OTP has been sent to your email!");
       setStep("otp");
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to send OTP");
+      handleError(err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Step 2: Verify OTP → এখানে resetToken পাবো!
+  // Step 2: Verify OTP
   const verifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otp || otp.length !== 6) return toast.error("Enter valid 6-digit OTP");
+    if (!otp || otp.length !== 6) return toast.error("Please enter the 6-digit valid code.");
 
     setIsLoading(true);
     try {
@@ -52,21 +64,22 @@ export default function VendorForgotPassword() {
       const tokenFromBackend = res.data.data.resetToken;
       setResetToken(tokenFromBackend);
 
-      toast.success("OTP verified successfully!");
+      toast.success("OTP verified! You can now set a new password.");
       setStep("reset");
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Invalid or expired OTP");
+      handleError(err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Step 3: Reset Password → এখন JWT token পাঠাবো, OTP না!
+  // Step 3: Reset Password
   const resetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword.length < 6) return toast.error("Password must be 6+ characters");
+    if (newPassword.length < 8) return toast.error("Password must be at least 8 characters long.");
+    
     if (!resetToken) {
-      toast.error("Session expired. Please try again from start.");
+      toast.error("Session expired. Please start again from the email step.");
       setStep("email");
       return;
     }
@@ -83,9 +96,8 @@ export default function VendorForgotPassword() {
         window.location.href = "/vendor-singin";
       }, 2000);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to reset password");
-      if (err.response?.data?.message.includes("expired")) {
-        toast.info("Please request a new OTP");
+      handleError(err);
+      if (err.response?.data?.message?.toLowerCase().includes("expired")) {
         setStep("email");
         setResetToken("");
       }
@@ -105,34 +117,34 @@ export default function VendorForgotPassword() {
               <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-tr from-emerald-500 to-sky-500 flex items-center justify-center text-white text-4xl font-extrabold shadow-xl">
                 G
               </div>
-              <h2 className="text-3xl font-extrabold text-slate-800">
-                {step === "email" && "Forgot Password?"}
-                {step === "otp" && "Verify OTP"}
+              <h2 className="text-2xl font-bold text-slate-800">
+                {step === "email" && "Recover Account"}
+                {step === "otp" && "Verification Code"}
                 {step === "reset" && "Set New Password"}
               </h2>
-              <p className="text-slate-600 mt-2">
-                {step === "email" && "Enter your email to receive OTP"}
-                {step === "otp" && "Check your email for 6-digit code"}
-                {step === "reset" && "Create a strong new password"}
+              <p className="text-slate-600 mt-2 text-sm">
+                {step === "email" && "Enter your email to receive a recovery code"}
+                {step === "otp" && "We've sent a 6-digit code to your email"}
+                {step === "reset" && "Ensure your new password is secure"}
               </p>
             </div>
 
-            <Card className="bg-white/70 backdrop-blur-sm border border-white/40 shadow-xl">
-              <div className="p-8">
+            <Card className="bg-white/70 backdrop-blur-sm border border-white/40 shadow-xl overflow-hidden">
+              <div className="p-6 md:p-8">
 
-                {/* Step 1: Email */}
+                {/* Step 1: Email Form */}
                 {step === "email" && (
                   <form onSubmit={sendOtp} className="space-y-6">
                     <div className="space-y-2">
                       <Label className="text-slate-700 font-medium flex items-center gap-2">
-                        <Mail size={18} /> Business Email
+                        <Mail size={16} /> Business Email
                       </Label>
                       <Input
                         type="email"
                         placeholder="vendor@yourstore.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="h-14 text-lg rounded-xl border-white/40 bg-white/80 shadow-inner"
+                        className="h-12 rounded-xl border-white/40 bg-white/80"
                         required
                       />
                     </div>
@@ -140,35 +152,29 @@ export default function VendorForgotPassword() {
                     <Button
                       type="submit"
                       disabled={isLoading}
-                      className="w-full h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-600 hover:to-sky-600 text-white shadow-lg"
+                      className="w-full h-12 text-base font-bold rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 hover:opacity-90 text-white transition-all"
                     >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 animate-spin" /> Sending OTP...
-                        </>
-                      ) : (
-                        "Send OTP"
-                      )}
+                      {isLoading ? <Loader2 className="animate-spin" /> : "Send OTP"}
                     </Button>
                   </form>
                 )}
 
-                {/* Step 2: OTP */}
+                {/* Step 2: OTP Form */}
                 {step === "otp" && (
                   <form onSubmit={verifyOtp} className="space-y-6">
                     <div className="space-y-2">
-                      <Label className="text-slate-700 font-medium">Enter 6-digit OTP</Label>
+                      <Label className="text-slate-700 font-medium">OTP Code</Label>
                       <Input
                         type="text"
                         maxLength={6}
-                        placeholder="000000"
+                        placeholder="• • • • • •"
                         value={otp}
                         onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                        className="h-14 text-2xl tracking-widest text-center font-mono rounded-xl border-white/40 bg-white/80 shadow-inner"
+                        className="h-12 text-2xl tracking-[0.5em] text-center font-mono rounded-xl border-white/40 bg-white/80 shadow-inner"
                         required
                       />
-                      <p className="text-sm text-slate-600 text-center">
-                        Sent to <span className="font-semibold">{email}</span>
+                      <p className="text-xs text-slate-500 text-center mt-1">
+                        Code sent to: <span className="text-emerald-600 font-medium">{email}</span>
                       </p>
                     </div>
 
@@ -176,18 +182,15 @@ export default function VendorForgotPassword() {
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => {
-                          setStep("email");
-                          setOtp("");
-                        }}
-                        className="flex-1"
+                        onClick={() => setStep("email")}
+                        className="flex-1 h-11 rounded-xl"
                       >
                         Back
                       </Button>
                       <Button
                         type="submit"
                         disabled={isLoading || otp.length !== 6}
-                        className="flex-1 h-12 bg-gradient-to-r from-emerald-500 to-sky-500 text-white"
+                        className="flex-[2] h-11 bg-gradient-to-r from-emerald-500 to-sky-500 text-white rounded-xl"
                       >
                         {isLoading ? <Loader2 className="animate-spin" /> : "Verify OTP"}
                       </Button>
@@ -195,34 +198,43 @@ export default function VendorForgotPassword() {
                   </form>
                 )}
 
-                {/* Step 3: New Password */}
+                {/* Step 3: New Password Form */}
                 {step === "reset" && (
                   <form onSubmit={resetPassword} className="space-y-6">
                     <div className="space-y-2">
                       <Label className="text-slate-700 font-medium flex items-center gap-2">
-                        <Lock size={18} /> New Password
+                        <Lock size={16} /> New Password
                       </Label>
-                      <Input
-                        type="password"
-                        placeholder="Minimum 6 characters"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        className="h-14 text-lg rounded-xl border-white/40 bg-white/80 shadow-inner"
-                        required
-                        minLength={6}
-                      />
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"} // ✅ পাসওয়ার্ড দেখার জন্য টাইপ চেঞ্জ
+                          placeholder="Min. 8 characters"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="h-12 rounded-xl border-white/40 bg-white/80 pr-12"
+                          required
+                        />
+                        {/* ✅ Eye Button */}
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500 transition-colors"
+                        >
+                          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                      </div>
                     </div>
 
                     <Button
                       type="submit"
                       disabled={isLoading}
-                      className="w-full h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-600 hover:to-sky-600 text-white shadow-lg flex items-center justify-center gap-2"
+                      className="w-full h-12 text-base font-bold rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 text-white flex items-center justify-center gap-2"
                     >
                       {isLoading ? (
                         <Loader2 className="animate-spin" />
                       ) : (
                         <>
-                          <CheckCircle size={20} /> Reset Password
+                          <CheckCircle size={18} /> Update Password
                         </>
                       )}
                     </Button>
@@ -233,13 +245,9 @@ export default function VendorForgotPassword() {
 
             {/* Footer */}
             <div className="mt-8 text-center">
-              <p className="text-slate-600">
-                <ArrowLeft size={14} className="inline mr-1" />
-                Back to{" "}
-                <Link href="/vendor-singin" className="text-emerald-600 font-bold hover:underline">
-                  Sign In
-                </Link>
-              </p>
+              <Link href="/vendor-singin" className="text-slate-500 hover:text-emerald-600 text-sm font-medium transition-colors flex items-center justify-center gap-1">
+                <ArrowLeft size={14} /> Back to Sign In
+              </Link>
             </div>
           </div>
         </div>
