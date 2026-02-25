@@ -47,12 +47,12 @@ interface ProductVariantFormProps {
   };
 }
 
-// ✅ FIXED: _id এবং id দুটোই handle করে
+// ✅ _id এবং id দুটোই handle করে
 const getOptionId = (item: VariantOption): string => {
   return String(item._id || item.id || '');
 };
 
-// ✅ FIXED: empty string কে undefined বানায় Select এর জন্য
+// ✅ empty string কে undefined বানায় Select placeholder এর জন্য
 const toSelectValue = (value: string | undefined): string | undefined => {
   if (!value || value.trim() === '') return undefined;
   return value;
@@ -61,7 +61,6 @@ const toSelectValue = (value: string | undefined): string | undefined => {
 export default function ProductVariantForm({ variants, setVariants, variantData }: ProductVariantFormProps) {
   const [previewImages, setPreviewImages] = useState<{ [key: number]: string }>({});
 
-  // ✅ FIXED: getOptionId ব্যবহার করে map বানানো হচ্ছে
   const colorMap = useMemo(() => {
     return new Map(variantData.colors?.map(c => [getOptionId(c), c.colorName]) || []);
   }, [variantData.colors]);
@@ -256,7 +255,6 @@ const VariantCard = React.memo(({
       </div>
 
       <div className="flex flex-col md:flex-row gap-5">
-
         {/* Left: Image */}
         <div className="w-full md:w-28 flex-shrink-0 flex flex-col gap-2">
           <Label className="text-[11px] font-semibold text-slate-500 uppercase">Photo</Label>
@@ -287,59 +285,42 @@ const VariantCard = React.memo(({
         {/* Right: Inputs Grid */}
         <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
 
-          {/* ✅ FIXED Color Select */}
+          {/* Color */}
           <div>
             <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Color</Label>
-            <Select
-              value={toSelectValue(variant.color)}
-              onValueChange={handleColorChange}
-            >
+            <Select value={toSelectValue(variant.color)} onValueChange={handleColorChange}>
               <SelectTrigger className="h-8 text-xs bg-white">
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
               <SelectContent>
                 {variantData.colors?.map(c => {
                   const id = getOptionId(c);
-                  return (
-                    <SelectItem key={id} value={id} className="text-xs">
-                      {c.colorName}
-                    </SelectItem>
-                  );
+                  return <SelectItem key={id} value={id} className="text-xs">{c.colorName}</SelectItem>;
                 })}
               </SelectContent>
             </Select>
           </div>
 
-          {/* ✅ FIXED Size Select */}
+          {/* Size */}
           <div>
             <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Size</Label>
-            <Select
-              value={toSelectValue(variant.size)}
-              onValueChange={handleSizeChange}
-            >
+            <Select value={toSelectValue(variant.size)} onValueChange={handleSizeChange}>
               <SelectTrigger className="h-8 text-xs bg-white">
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
               <SelectContent>
                 {variantData.sizes?.map(s => {
                   const id = getOptionId(s);
-                  return (
-                    <SelectItem key={id} value={id} className="text-xs">
-                      {s.name}
-                    </SelectItem>
-                  );
+                  return <SelectItem key={id} value={id} className="text-xs">{s.name}</SelectItem>;
                 })}
               </SelectContent>
             </Select>
           </div>
 
-          {/* ✅ FIXED Storage Select */}
+          {/* Storage */}
           <div>
             <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Storage</Label>
-            <Select
-              value={toSelectValue(variant.storage)}
-              onValueChange={handleStorageChange}
-            >
+            <Select value={toSelectValue(variant.storage)} onValueChange={handleStorageChange}>
               <SelectTrigger className="h-8 text-xs bg-white">
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
@@ -356,107 +337,70 @@ const VariantCard = React.memo(({
             </Select>
           </div>
 
-          {/* ✅ FIXED SIM Type Select */}
+          {/* SIM Type */}
           <div>
             <Label className="text-[11px] font-medium text-slate-700 mb-1 block">SIM Type</Label>
-            <Select
-              value={toSelectValue(variant.simType)}
-              onValueChange={handleSimTypeChange}
-            >
+            <Select value={toSelectValue(variant.simType)} onValueChange={handleSimTypeChange}>
               <SelectTrigger className="h-8 text-xs bg-white">
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
               <SelectContent>
                 {variantData.simTypes?.map(s => {
                   const id = getOptionId(s);
-                  return (
-                    <SelectItem key={id} value={id} className="text-xs">
-                      {s.name}
-                    </SelectItem>
-                  );
+                  return <SelectItem key={id} value={id} className="text-xs">{s.name}</SelectItem>;
                 })}
               </SelectContent>
             </Select>
           </div>
 
-          {/* ✅ FIXED Condition Select */}
+          {/* Condition */}
           <div>
             <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Condition</Label>
-            <Select
-              value={toSelectValue(variant.condition)}
-              onValueChange={handleConditionChange}
-            >
+            <Select value={toSelectValue(variant.condition)} onValueChange={handleConditionChange}>
               <SelectTrigger className="h-8 text-xs bg-white">
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
               <SelectContent>
                 {variantData.conditions?.map(c => {
                   const id = getOptionId(c);
-                  return (
-                    <SelectItem key={id} value={id} className="text-xs">
-                      {c.deviceCondition}
-                    </SelectItem>
-                  );
+                  return <SelectItem key={id} value={id} className="text-xs">{c.deviceCondition}</SelectItem>;
                 })}
               </SelectContent>
             </Select>
           </div>
 
-          {/* ✅ FIXED Warranty Select */}
+          {/* Warranty */}
           <div>
             <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Warranty</Label>
-            <Select
-              value={toSelectValue(variant.warranty)}
-              onValueChange={handleWarrantyChange}
-            >
+            <Select value={toSelectValue(variant.warranty)} onValueChange={handleWarrantyChange}>
               <SelectTrigger className="h-8 text-xs bg-white">
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
               <SelectContent>
                 {variantData.warranties?.map(w => {
                   const id = getOptionId(w);
-                  return (
-                    <SelectItem key={id} value={id} className="text-xs">
-                      {w.warrantyName}
-                    </SelectItem>
-                  );
+                  return <SelectItem key={id} value={id} className="text-xs">{w.warrantyName}</SelectItem>;
                 })}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Pricing */}
+          {/* Stock */}
           <div>
             <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Stock</Label>
-            <Input
-              type="number"
-              value={variant.stock}
-              onChange={handleStockChange}
-              className="h-8 text-xs bg-white"
-              placeholder="0"
-            />
+            <Input type="number" value={variant.stock} onChange={handleStockChange} className="h-8 text-xs bg-white" placeholder="0" />
           </div>
 
+          {/* Price */}
           <div>
             <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Price</Label>
-            <Input
-              type="number"
-              value={variant.price}
-              onChange={handlePriceChange}
-              className="h-8 text-xs bg-white"
-              placeholder="0"
-            />
+            <Input type="number" value={variant.price} onChange={handlePriceChange} className="h-8 text-xs bg-white" placeholder="0" />
           </div>
 
+          {/* Discount */}
           <div>
             <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Discount</Label>
-            <Input
-              type="number"
-              value={variant.discountPrice}
-              onChange={handleDiscountChange}
-              className="h-8 text-xs bg-white"
-              placeholder="0"
-            />
+            <Input type="number" value={variant.discountPrice} onChange={handleDiscountChange} className="h-8 text-xs bg-white" placeholder="0" />
           </div>
         </div>
       </div>
