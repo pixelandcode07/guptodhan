@@ -90,7 +90,7 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
 
   const handleTrackOrder = () => {
     if (order.trackingId && order.trackingId !== '-') {
-      window.open(`/home/product/tracking?trackingId=${order.trackingId}`, '_blank')
+      window.open(`/products/tracking?trackingId=${order.trackingId}`, '_blank')
     } else {
       toast.error('No tracking ID available for this order')
     }
