@@ -238,20 +238,22 @@ const getProductsByChildCategorySlug = async (
   { params }: { params: Promise<{ slug: string }> }
 ) => {
   await dbConnect();
-  
-  // ✅ FIX 1: Decode Slug (e.g. "men%20fashion" -> "men fashion")
+
   const { slug } = await params;
   const decodedSlug = decodeURIComponent(slug);
 
   const { searchParams } = new URL(req.url);
-  
+
   const filters = {
-    search: searchParams.get("search") || undefined,
-    brand: searchParams.get("brand") || undefined,
-    size: searchParams.get("size") || undefined,
-    priceMin: searchParams.get("priceMin") ? Number(searchParams.get("priceMin")) : undefined,
-    priceMax: searchParams.get("priceMax") ? Number(searchParams.get("priceMax")) : undefined,
-    sort: searchParams.get("sort") || undefined,
+    search:   searchParams.get('search')   || undefined,
+    brand:    searchParams.get('brand')    || undefined,
+    size:     searchParams.get('size')     || undefined,
+    priceMin: searchParams.get('priceMin') ? Number(searchParams.get('priceMin')) : undefined,
+    priceMax: searchParams.get('priceMax') ? Number(searchParams.get('priceMax')) : undefined,
+    sort:     searchParams.get('sort')     || undefined,
+    // ✅ নতুন
+    page:     searchParams.get('page')  ? Number(searchParams.get('page'))  : 1,
+    limit:    searchParams.get('limit') ? Number(searchParams.get('limit')) : 12,
   };
 
   const result = await ChildCategoryServices.getProductsByChildCategorySlugWithFiltersFromDB(
@@ -263,27 +265,35 @@ const getProductsByChildCategorySlug = async (
     return sendResponse({
       success: false,
       statusCode: StatusCodes.NOT_FOUND,
-      message: 'Child category not found (Check slug or status)',
+      message: 'Child category not found',
       data: null,
     });
   }
 
-  // ✅ Type-safe access
   const childCategory = result.childCategory as any;
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: `Products for child category "${childCategory.name}" retrieved successfully!`,
+    message: `Products for "${childCategory.name}" retrieved!`,
     data: {
       childCategory: {
         name: childCategory.name,
         slug: childCategory.slug,
         childCategoryId: childCategory.childCategoryId,
-        icon: childCategory.icon
+        icon: childCategory.icon,
       },
-      products: result.products,
+      products:      result.products,
       totalProducts: result.totalProducts,
+      // ✅ নতুন meta
+      meta: {
+        total:      result.totalProducts,
+        page:       result.page,
+        limit:      result.limit,
+        totalPages: result.totalPages,
+        hasNext:    result.hasNext,
+        hasPrev:    result.hasPrev,
+      },
     },
   });
 };
