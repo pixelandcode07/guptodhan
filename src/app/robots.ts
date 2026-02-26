@@ -17,7 +17,7 @@ export default function robots(): MetadataRoute.Robots {
           '/home/UserProfile/', // ✅ User private pages
           '/products/shopping-cart/',
           '/home/product/shoppinginfo/',
-          '/home/product/tracking/',
+          '/products/tracking/',
         ],
       },
       {
