@@ -195,7 +195,7 @@ export default function UserSidebar() {
       console.log('🧹 Step 5: Clearing NextAuth session...')
       await signOut({
         redirect: false,
-        callbackUrl: '/components/LogInAndRegister',
+        callbackUrl: '/',
       })
 
       // ========================================
@@ -246,7 +246,7 @@ export default function UserSidebar() {
       
       // Hard redirect যাতে ব্রাউজার সম্পূর্ণভাবে রিফ্রেশ হয়
       setTimeout(() => {
-        window.location.href = '/components/LogInAndRegister'
+        window.location.href = '/'
       }, 500)
 
     } catch (error: any) {
@@ -265,7 +265,7 @@ export default function UserSidebar() {
 
       // Force logout anyway
       setTimeout(() => {
-        window.location.href = '/components/LogInAndRegister'
+        window.location.href = '/'
       }, 1000)
 
     } finally {
