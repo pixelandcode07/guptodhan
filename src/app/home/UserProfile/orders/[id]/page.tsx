@@ -242,7 +242,7 @@ export default function OrderDetailsPage() {
                   )}
                   {orderData?.deliveryMethodId === 'steadfast' && orderData?.trackingId && item === order.items[0] && (
                     <Link 
-                      href={`/home/product/tracking?trackingId=${orderData.trackingId}`}
+                      href={`/products/tracking?trackingId=${orderData.trackingId}`}
                       className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium underline-offset-4 hover:underline"
                     >
                       <Package className="h-3 w-3" />
