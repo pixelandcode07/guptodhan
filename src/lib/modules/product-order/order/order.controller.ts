@@ -60,11 +60,9 @@ const createOrderWithDetails = async (req: NextRequest) => {
       throw new Error('Invalid order data.');
     }
 
-    // ১. রিয়েল প্রোডাক্ট ডাটা নিয়ে আসা (সিকিউরিটি চেক)
     const productIds = products.map((p: any) => p.productId);
     const dbProducts = await VendorProductModel.find({ _id: { $in: productIds } });
 
-    // ২. ভেন্ডর অনুযায়ী প্রোডাক্ট গ্রুপিং (Multi-Vendor Core Rule)
     const orderGroups: Record<string, any[]> = {};
     
     for (const item of products) {
@@ -74,9 +72,8 @@ const createOrderWithDetails = async (req: NextRequest) => {
       const storeId = dbProduct.vendorStoreId.toString();
       if (!orderGroups[storeId]) orderGroups[storeId] = [];
       
-      // ফ্রন্টএন্ডের size/color এবং ডাটাবেজের প্রাইস মার্জ করা হচ্ছে
       orderGroups[storeId].push({
-        ...item, // এতে item.size এবং item.color আছে
+        ...item, 
         unitPrice: dbProduct.discountPrice || dbProduct.productPrice,
         originalProduct: dbProduct
       });
@@ -85,18 +82,15 @@ const createOrderWithDetails = async (req: NextRequest) => {
     const createdOrders = [];
     const transactionGroupId = `TRX-${Date.now()}`;
 
-    // ৩. প্রতিটি ভেন্ডরের জন্য আলাদা অর্ডার তৈরি
     for (const storeId of Object.keys(orderGroups)) {
       const storeItems = orderGroups[storeId];
       
-      // টোটাল ক্যালকুলেশন
       const itemsTotal = storeItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
       const deliveryCharge = calculateDeliveryCharge(shippingCity || 'Dhaka', storeItems.map(i => i.originalProduct));
       const totalAmount = itemsTotal + deliveryCharge;
       
       const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-      // মেইন অর্ডার পে-লোড
       const orderPayload = {
         orderId,
         userId: new Types.ObjectId(userId),
@@ -112,11 +106,13 @@ const createOrderWithDetails = async (req: NextRequest) => {
         shippingDistrict: body.shippingDistrict,
         shippingPostalCode: body.shippingPostalCode,
         shippingCountry: body.shippingCountry || 'Bangladesh',
+        addressDetails: body.addressDetails,
         deliveryCharge,
         totalAmount,
         paymentStatus: 'Pending',
         orderStatus: 'Pending',
         orderDate: new Date(),
+        orderForm: body.orderForm || 'Website',
         orderDetails: []
       };
 
