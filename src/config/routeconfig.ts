@@ -132,10 +132,10 @@ export const routeConfig: Record<
     breadcrumb: ' Withdraw',
     title: 'View All Withdraws',
   },
-  '/general/create/new/withdraw': {
-    breadcrumb: ' Withdraw',
-    title: 'Create New Vendor',
-  },
+  // '/general/create/new/withdraw': {
+  //   breadcrumb: ' Withdraw',
+  //   title: 'Create New Vendor',
+  // },
   '/general/view/withdraw/requests': {
     breadcrumb: '  Withdraw Requests',
     title: 'View All Withdraw Requests',

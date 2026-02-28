@@ -21,6 +21,7 @@ const publicRoutes = [
 const adminRoutes = [
   '/general',
   '/api/v1/users',
+  '/api/v1/withdrawal',  
   '/api/v1/donation-users',
   '/api/v1/donation-stats/dashboard',
   '/api/v1/classifieds-banners',
@@ -233,10 +234,11 @@ export async function middleware(req: NextRequest) {
 
   // 🔥 Vendor Check
   if (
-    isVendorRoute &&
-    tokenPayload.role !== 'vendor' &&
-    !isAdminRoute
-  ) {
+  isVendorRoute &&
+  tokenPayload.role !== 'vendor' &&
+  tokenPayload.role !== 'admin' &&  // ← এই line টা add করুন
+  !isAdminRoute
+) {
     if (path.startsWith('/dashboard')) {
       return NextResponse.redirect(new URL('/', req.url));
     }
