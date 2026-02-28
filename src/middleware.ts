@@ -224,10 +224,8 @@ export async function middleware(req: NextRequest) {
   // 🔹 Admin Check
 if (isAdminRoute && tokenPayload.role !== 'admin') {
 
-  // ✅ এই exception টা add করুন — vendor history route allow করতে
   const isVendorHistoryRoute = path.startsWith('/api/v1/withdrawal/vendor/');
   if (isVendorHistoryRoute && tokenPayload.role === 'vendor') {
-    // vendor নিজের history দেখতে পারবে — block করবো না
   } else {
     return NextResponse.json(
       {
@@ -243,7 +241,7 @@ if (isAdminRoute && tokenPayload.role !== 'admin') {
   if (
   isVendorRoute &&
   tokenPayload.role !== 'vendor' &&
-  tokenPayload.role !== 'admin' &&  // ← এই line টা add করুন
+  tokenPayload.role !== 'admin' &&
   !isAdminRoute
 ) {
     if (path.startsWith('/dashboard')) {
