@@ -12,6 +12,17 @@ export interface IStore extends Document {
   vendorShortDescription: string;
   fullDescription: string;
   commission: number;
+  availableBalance: number;
+  totalEarned: number;    
+  totalWithdrawn: number;
+  paymentInfo?: {
+    bkash?: string;
+    nagad?: string;
+    rocket?: string;
+    bankName?: string;
+    bankAccount?: string;
+    bankBranch?: string;
+  };
   storeSocialLinks: {
     facebook?: string;
     whatsapp?: string;
