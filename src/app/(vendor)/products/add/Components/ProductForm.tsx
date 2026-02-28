@@ -78,9 +78,21 @@ export default function ProductForm({
   const isEditMode = !!productId;
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
+  const currentUser = (session as any)?.user;
+  const currentVendorId = currentUser?.vendorId || currentUser?._id || currentUser?.id;
 
   // --- LISTS FROM PROPS ---
-  const listStores = initialData?.stores || [];
+  const rawListStores = initialData?.stores || [];
+  
+  // ✅ শুধু লগইন করা ভেন্ডরের স্টোর ফিল্টার করা হচ্ছে
+  const vendorStores = rawListStores.filter((s: any) => {
+    if (!currentVendorId) return false;
+    const sVendorId = getIdFromRef(s.vendorId);
+    return sVendorId === String(currentVendorId);
+  });
+  // যদি ফিল্টার করার পর ডাটা পাওয়া যায় তবে সেটি, নাহলে ব্যাকএন্ড থেকে আসা ডাটা যদি ১টি থাকে তবে সেটিই নিবে।
+  const listStores = vendorStores.length > 0 ? vendorStores : (rawListStores.length === 1 ? rawListStores : []);
+
   const listCategories = initialData?.categories || [];
   const listBrands = initialData?.brands || [];
   const listFlags = initialData?.flags || [];
@@ -143,6 +155,13 @@ export default function ProductForm({
   const isInitialLoad = useRef(true);
   const initialModelId = useRef<string | null>(null);
   const initialSubcategoryId = useRef<string | null>(null);
+
+  // --- 0. AUTO-SELECT VENDOR STORE ---
+  useEffect(() => {
+    if (!isEditMode && listStores.length > 0 && !store) {
+      setStore(getIdFromRef(listStores[0]));
+    }
+  }, [listStores, store, isEditMode]);
 
   // --- 1. LOAD PRODUCT DATA ---
   useEffect(() => {
@@ -809,7 +828,8 @@ export default function ProductForm({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Store <span className="text-red-500">*</span></Label>
-                    <Select value={store} onValueChange={setStore}>
+                    {/* ✅ লিস্টে ১টির বেশি স্টোর না থাকলে ড্রপডাউন ডিজেবলড হয়ে থাকবে */}
+                    <Select value={store} onValueChange={setStore} disabled={listStores.length <= 1}>
                       <SelectTrigger className="h-11"><SelectValue placeholder="Select store" /></SelectTrigger>
                       <SelectContent>
                         {listStores.map((s: any) => (
