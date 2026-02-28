@@ -5,7 +5,7 @@ export const createWithdrawalSchema = z.object({
   storeId: z.string().min(1, 'Store ID is required'),
   amount: z.number().min(100, 'Minimum withdrawal amount is 100'),
   paymentMethod: z.enum(['bKash', 'Nagad', 'Rocket', 'Bank']), // ✅ Rocket
-  accountDetails: z.string().min(5, 'Account details are required'),
+  accountDetails: z.string().min(1, 'Account details are required'),
 });
 
 export const updateWithdrawalStatusSchema = z.object({
