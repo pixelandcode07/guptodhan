@@ -9,8 +9,6 @@ import dbConnect from '@/lib/db';
 import { sendResponse } from '@/lib/utils/sendResponse';
 import { OrderModel } from './order.model';
 import { OrderDetailsModel } from '../orderDetails/orderDetails.model';
-import { IOrder } from './order.interface';
-import { IOrderDetails } from '../orderDetails/orderDetails.interface';
 import { OrderServices } from './order.service';
 import { deleteCachePattern } from '@/lib/redis/cache-helpers';
 
