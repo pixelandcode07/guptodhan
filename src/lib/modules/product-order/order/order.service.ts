@@ -245,17 +245,68 @@ const getOrdersByUserFromDB = async (userId: string) => {
 // ================================================================
 // ✏️ UPDATE ORDER
 // ================================================================
+// ================================================================
+// ✏️ UPDATE ORDER (WITH WALLET BALANCE LOGIC)
+// ================================================================
 const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
   try {
-    const result = await OrderModel.findByIdAndUpdate(id, payload, { new: true });
-    
-    if (!result) {
+    // ১. আপডেট করার আগে বর্তমান অর্ডারটি ডাটাবেস থেকে নিয়ে আসা
+    const existingOrder = await OrderModel.findById(id);
+    if (!existingOrder) {
       throw new Error('Order not found to update.');
     }
 
+    // ২. ডেলিভারড হলে ভেন্ডরের ব্যালেন্স যোগ করার লজিক
+    if (
+      payload.orderStatus === 'Delivered' && 
+      existingOrder.orderStatus !== 'Delivered'
+    ) {
+      const store = await StoreModel.findById(existingOrder.storeId);
+      if (store) {
+        // কমিশন হিসাব করা
+        const commissionRate = store.commission || 0;
+        const adminCommission = (existingOrder.totalAmount * commissionRate) / 100;
+        const vendorEarning = existingOrder.totalAmount - adminCommission;
+
+        // স্টোরের ব্যালেন্স আপডেট করা
+        await StoreModel.findByIdAndUpdate(existingOrder.storeId, {
+          $inc: {
+            availableBalance: vendorEarning,
+            totalEarned: vendorEarning
+          }
+        });
+        console.log(`💰 Added ৳${vendorEarning} to Store ${store.storeName} balance.`);
+      }
+    }
+
+    // ৩. রিফান্ড বা ক্যানসেল হলে ব্যালেন্স মাইনাস করার লজিক (Security Feature)
+    if (
+      existingOrder.orderStatus === 'Delivered' && 
+      (payload.orderStatus === 'Returned' || payload.orderStatus === 'Cancelled')
+    ) {
+      const store = await StoreModel.findById(existingOrder.storeId);
+      if (store) {
+        const commissionRate = store.commission || 0;
+        const adminCommission = (existingOrder.totalAmount * commissionRate) / 100;
+        const vendorEarning = existingOrder.totalAmount - adminCommission;
+
+        // স্টোরের ব্যালেন্স থেকে টাকা কেটে নেওয়া
+        await StoreModel.findByIdAndUpdate(existingOrder.storeId, {
+          $inc: {
+            availableBalance: -vendorEarning,
+            totalEarned: -vendorEarning
+          }
+        });
+        console.log(`📉 Deducted ৳${vendorEarning} from Store ${store.storeName} due to Return/Cancel.`);
+      }
+    }
+
+    // ৪. ফাইনালি অর্ডার আপডেট করা
+    const result = await OrderModel.findByIdAndUpdate(id, payload, { new: true });
+    
     // 🗑️ Clear caches
     await deleteCacheKey(CacheKeys.ORDER.BY_ID(id));
-    if (result.userId) {
+    if (result?.userId) {
       await deleteCachePattern(`orders:user:${result.userId}*`);
     }
     await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
