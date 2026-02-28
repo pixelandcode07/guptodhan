@@ -39,6 +39,27 @@ const storeSchema = new Schema<IStore>(
 
     commission: { type: Number, default: 0 },
 
+    availableBalance: { 
+      type: Number, 
+      default: 0 
+    },
+    totalEarned: { 
+      type: Number, 
+      default: 0 
+    },
+    totalWithdrawn: { 
+      type: Number, 
+      default: 0 
+    },
+    paymentInfo: {
+      bkash: { type: String, trim: true },
+      nagad: { type: String, trim: true },
+      rocket: { type: String, trim: true },
+      bankName: { type: String, trim: true },
+      bankAccount: { type: String, trim: true },
+      bankBranch: { type: String, trim: true },
+    },
+
     storeSocialLinks: {
       facebook: { type: String },
       whatsapp: { type: String },
