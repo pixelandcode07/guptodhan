@@ -222,7 +222,13 @@ export async function middleware(req: NextRequest) {
   }
 
   // 🔹 Admin Check
-  if (isAdminRoute && tokenPayload.role !== 'admin') {
+if (isAdminRoute && tokenPayload.role !== 'admin') {
+
+  // ✅ এই exception টা add করুন — vendor history route allow করতে
+  const isVendorHistoryRoute = path.startsWith('/api/v1/withdrawal/vendor/');
+  if (isVendorHistoryRoute && tokenPayload.role === 'vendor') {
+    // vendor নিজের history দেখতে পারবে — block করবো না
+  } else {
     return NextResponse.json(
       {
         success: false,
@@ -231,6 +237,7 @@ export async function middleware(req: NextRequest) {
       { status: StatusCodes.FORBIDDEN }
     );
   }
+}
 
   // 🔥 Vendor Check
   if (
