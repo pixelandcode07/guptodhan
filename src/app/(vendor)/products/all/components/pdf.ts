@@ -5,9 +5,8 @@ export async function downloadProductsPDF(rows: any[]) {
     if (rows.length === 0) return false;
 
     const doc = new jsPDF();
-    doc.text('Vendor Products Report', 14, 15);
 
-    // ইমেজ লোড করার Helper function
+    // Image fetch korar Helper function
     const fetchImage = (url: string): Promise<HTMLImageElement | null> => {
         return new Promise((resolve) => {
             const img = new Image();
@@ -18,7 +17,34 @@ export async function downloadProductsPDF(rows: any[]) {
         });
     };
 
-    // ডাটাবেস থেকে thumbnailImage ফেচ করা
+    // Prothom product theke Vendor er nam ar logo ber kora
+    const firstRow = rows[0];
+    const vendorName = firstRow?.vendorStoreId?.storeName || firstRow?.vendorName || 'Vendor';
+    const vendorLogoUrl = firstRow?.vendorStoreId?.storeLogo;
+
+    let startYForTable = 20;
+
+    // Logo jodi thake tahole set korbo
+    if (vendorLogoUrl) {
+        const logoImg = await fetchImage(vendorLogoUrl);
+        if (logoImg) {
+            // Logo bosanor size (x: 14, y: 10, width: 15, height: 15)
+            doc.addImage(logoImg, 'JPEG', 14, 10, 15, 15); 
+            doc.setFontSize(16);
+            doc.text(`${vendorName} - Products Report`, 32, 20);
+            startYForTable = 32; // Logo thakle table ektu nich theke shuru hobe
+        } else {
+            doc.setFontSize(16);
+            doc.text(`${vendorName} - Products Report`, 14, 18);
+            startYForTable = 25;
+        }
+    } else {
+        doc.setFontSize(16);
+        doc.text(`${vendorName} - Products Report`, 14, 18);
+        startYForTable = 25;
+    }
+
+    // Database theke product er thumbnailImage fetch kora
     const imagePromises = rows.map((p) => {
         const imgUrl = p.thumbnailImage || p.photoGallery?.[0]; 
         return imgUrl ? fetchImage(imgUrl) : Promise.resolve(null);
@@ -26,14 +52,14 @@ export async function downloadProductsPDF(rows: any[]) {
 
     const images = await Promise.all(imagePromises);
 
+    // Table Create kora
     autoTable(doc, {
-        startY: 20,
-        // ✅ হেডারে Category বাদ দিয়ে Current Price এবং Update Price দেওয়া হলো
+        startY: startYForTable, // Dynamically set hobe
         head: [['ID', 'Product Name', 'Current Price', 'Update Price', 'Stock', 'Image']],
         body: rows.map((p) => [
             p.productId || p._id || '-',
             p.productTitle || '-', 
-            `${p.productPrice || 0} Tk`,
+            `${p.productPrice || 0} Tk`, 
             '', 
             p.stock || 0,
             '', 
@@ -53,6 +79,6 @@ export async function downloadProductsPDF(rows: any[]) {
         },
     });
 
-    doc.save(`products_report_${new Date().toISOString().split('T')[0]}.pdf`);
+    doc.save(`${vendorName}_products_report.pdf`);
     return true;
 }
