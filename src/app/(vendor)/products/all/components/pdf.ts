@@ -6,7 +6,7 @@ export async function downloadProductsPDF(rows: any[]) {
 
     const doc = new jsPDF();
 
-    // Image fetch korar Helper function
+    // ইমেজ লোড করার Helper function
     const fetchImage = (url: string): Promise<HTMLImageElement | null> => {
         return new Promise((resolve) => {
             const img = new Image();
@@ -17,22 +17,21 @@ export async function downloadProductsPDF(rows: any[]) {
         });
     };
 
-    // Prothom product theke Vendor er nam ar logo ber kora
+    // প্রথম প্রোডাক্ট থেকে ভেন্ডরের নাম ও লোগো বের করা
     const firstRow = rows[0];
-    const vendorName = firstRow?.vendorStoreId?.storeName || firstRow?.vendorName || 'Vendor';
-    const vendorLogoUrl = firstRow?.vendorStoreId?.storeLogo;
+    const vendorName = firstRow?.store || firstRow?.vendorName || 'Vendor';
+    const vendorLogoUrl = firstRow?.storeLogo || firstRow?.vendorStoreId?.storeLogo;
 
     let startYForTable = 20;
 
-    // Logo jodi thake tahole set korbo
+    // লোগো বসানোর লজিক
     if (vendorLogoUrl) {
         const logoImg = await fetchImage(vendorLogoUrl);
         if (logoImg) {
-            // Logo bosanor size (x: 14, y: 10, width: 15, height: 15)
             doc.addImage(logoImg, 'JPEG', 14, 10, 15, 15); 
             doc.setFontSize(16);
             doc.text(`${vendorName} - Products Report`, 32, 20);
-            startYForTable = 32; // Logo thakle table ektu nich theke shuru hobe
+            startYForTable = 32; 
         } else {
             doc.setFontSize(16);
             doc.text(`${vendorName} - Products Report`, 14, 18);
@@ -44,23 +43,23 @@ export async function downloadProductsPDF(rows: any[]) {
         startYForTable = 25;
     }
 
-    // Database theke product er thumbnailImage fetch kora
+    // প্রোডাক্টের ইমেজ ফেচ করা
     const imagePromises = rows.map((p) => {
-        const imgUrl = p.thumbnailImage || p.photoGallery?.[0]; 
+        const imgUrl = p.image || p.thumbnailImage || p.photoGallery?.[0]; 
         return imgUrl ? fetchImage(imgUrl) : Promise.resolve(null);
     });
 
     const images = await Promise.all(imagePromises);
 
-    // Table Create kora
+    // টেবিল ড্র করা
     autoTable(doc, {
-        startY: startYForTable, // Dynamically set hobe
+        startY: startYForTable,
         head: [['ID', 'Product Name', 'Current Price', 'Update Price', 'Stock', 'Image']],
         body: rows.map((p) => [
-            p.productId || p._id || '-',
-            p.productTitle || '-', 
-            `${p.productPrice || 0} Tk`, 
-            '', 
+            p.id || p._id || '-',
+            p.name || p.productTitle || '-', 
+            `${p.price || p.productPrice || 0} Tk`, 
+            '', // Update Price এর ঘর ফাঁকা
             p.stock || 0,
             '', 
         ]),
