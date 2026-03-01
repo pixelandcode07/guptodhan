@@ -33,6 +33,7 @@ import {
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  setData?: React.Dispatch<React.SetStateAction<any>>; // ✅ TS Error Fixed
 }
 
 export function DataTable<TData, TValue>({
@@ -67,10 +68,8 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="w-full space-y-3">
-
       {/* ===== Top Controls ===== */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-white px-4 py-3 rounded-xl border border-gray-200 shadow-sm">
-        {/* Show entries */}
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <span>Show</span>
           <select
@@ -89,14 +88,13 @@ export function DataTable<TData, TValue>({
           <span>entries</span>
         </div>
 
-        {/* Search */}
         <div className="relative w-full sm:w-64">
           <Search
             size={14}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
           />
           <Input
-            placeholder="Search orders..."
+            placeholder="Search products..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
             className="h-9 pl-8 border-gray-300 focus:ring-blue-500 text-sm"
@@ -108,8 +106,6 @@ export function DataTable<TData, TValue>({
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
           <Table className="min-w-[1400px] w-full border-collapse">
-
-            {/* Header */}
             <TableHeader>
               {table.getHeaderGroups().map((hg) => (
                 <TableRow
@@ -145,7 +141,6 @@ export function DataTable<TData, TValue>({
               ))}
             </TableHeader>
 
-            {/* Body */}
             <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row, i) => (
@@ -177,7 +172,7 @@ export function DataTable<TData, TValue>({
                     colSpan={columns.length}
                     className="h-32 text-center text-gray-400 italic text-sm"
                   >
-                    No orders found.
+                    No entries found.
                   </TableCell>
                 </TableRow>
               )}
@@ -188,7 +183,6 @@ export function DataTable<TData, TValue>({
 
       {/* ===== Bottom Controls ===== */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white px-4 py-3 rounded-xl border border-gray-200 shadow-sm">
-        {/* Info */}
         <div className="text-sm text-gray-500">
           {totalRows > 0 ? (
             <>
@@ -209,7 +203,6 @@ export function DataTable<TData, TValue>({
           )}
         </div>
 
-        {/* Pagination buttons */}
         <div className="flex items-center gap-1">
           <Button
             variant="outline"
@@ -231,7 +224,6 @@ export function DataTable<TData, TValue>({
             Previous
           </Button>
 
-          {/* Page numbers */}
           {Array.from({ length: Math.min(pageCount, 5) }, (_, i) => {
             let pageNum: number;
             if (pageCount <= 5) {
