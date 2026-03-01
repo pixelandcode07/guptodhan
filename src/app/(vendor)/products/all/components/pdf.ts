@@ -28,11 +28,11 @@ export async function downloadProductsPDF(rows: any[]) {
 
     autoTable(doc, {
         startY: 20,
-        head: [['ID', 'Product Name', 'Category', 'Price', 'Stock', 'Image']],
+        head: [['ID', 'Product Name', 'Update Price', 'Price', 'Stock', 'Image']],
         body: rows.map((p) => [
             p.productId || p._id || '-',
             p.productTitle || '-', // ডাটাবেসের productTitle
-            p.category?.name || '-', // ডাটাবেসের category.name
+            p.category?.name || '-',
             `${p.productPrice || 0} Tk`, // ডাটাবেসের productPrice
             p.stock || 0,
             '', // ইমেজের জায়গা
