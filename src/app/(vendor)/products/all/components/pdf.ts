@@ -20,7 +20,7 @@ export async function downloadProductsPDF(rows: any[]) {
 
     // ডাটাবেস থেকে thumbnailImage ফেচ করা
     const imagePromises = rows.map((p) => {
-        const imgUrl = p.thumbnailImage || p.photoGallery?.[0]; // আপনার স্কিমার ইমেজ ফিল্ড
+        const imgUrl = p.thumbnailImage || p.photoGallery?.[0]; 
         return imgUrl ? fetchImage(imgUrl) : Promise.resolve(null);
     });
 
@@ -28,14 +28,15 @@ export async function downloadProductsPDF(rows: any[]) {
 
     autoTable(doc, {
         startY: 20,
-        head: [['ID', 'Product Name', 'Update Price', 'Price', 'Stock', 'Image']],
+        // ✅ হেডারে Category বাদ দিয়ে Current Price এবং Update Price দেওয়া হলো
+        head: [['ID', 'Product Name', 'Current Price', 'Update Price', 'Stock', 'Image']],
         body: rows.map((p) => [
             p.productId || p._id || '-',
-            p.productTitle || '-', // ডাটাবেসের productTitle
-            p.category?.name || '-',
-            `${p.productPrice || 0} Tk`, // ডাটাবেসের productPrice
+            p.productTitle || '-', 
+            `${p.productPrice || 0} Tk`,
+            '', 
             p.stock || 0,
-            '', // ইমেজের জায়গা
+            '', 
         ]),
         headStyles: { fillColor: [41, 128, 185], textColor: 255 },
         bodyStyles: { minCellHeight: 18, valign: 'middle' },
