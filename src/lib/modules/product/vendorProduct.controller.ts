@@ -141,16 +141,28 @@ const getAllVendorProducts = async (req: NextRequest) => {
 };
 
 
-const getAllVendorProductsNoPagination = async (req: NextRequest) => {
+const getAllVendorProductsWithPagination = async (req: NextRequest) => {
   await dbConnect();
-  
-  // Direct Service call (No params needed)
-  const result = await VendorProductServices.getAllVendorProductsNoPaginationFromDB();
+  const { searchParams } = new URL(req.url);
+
+  const params = {
+    page:     Number(searchParams.get('page'))     || 1,
+    limit:    Number(searchParams.get('limit'))    || 10,
+    search:   searchParams.get('search')           || undefined,
+    brand:    searchParams.get('brand')            || undefined,
+    color:    searchParams.get('color')            || undefined,
+    size:     searchParams.get('size')             || undefined,
+    priceMin: Number(searchParams.get('priceMin')) || undefined,
+    priceMax: Number(searchParams.get('priceMax')) || undefined,
+    sortBy:   searchParams.get('sortBy')           || 'createdAt',
+  };
+
+  const result = await VendorProductServices.getAllVendorProductsWithPaginationFromDB(params);
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: "All vendor products retrieved successfully (No Pagination)!",
+    message: 'Products retrieved!',
     data: result,
   });
 };
@@ -925,7 +937,7 @@ export const VendorProductController = {
   getBestSellingProducts,
   getForYouProducts,
   getVendorProductBySlug,
-  getAllVendorProductsNoPagination,
+  getAllVendorProductsWithPagination,
   getVendorStoreAndProducts,
   getVendorStoreAndProductsVendorDashboard,
   getVendorStoreProductsWithReviews,

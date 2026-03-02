@@ -57,9 +57,10 @@ const getAllDeliveryCharges = async (req: NextRequest) => {
 // ✅ Get Delivery Charges by Division
 const getDeliveryChargesByDivision = async (
   _req: NextRequest,
-  { params }: { params: { divisionName: string } }
+  context: any // ✅ Changed to any/context to handle Next.js Promise params
 ) => {
   await dbConnect();
+  const params = await context.params; // ✅ Await is mandatory in Next.js 15+
   const { divisionName } = params;
 
   const result = await DeliveryChargeServices.getDeliveryChargesByDivisionFromDB(divisionName);
@@ -75,9 +76,10 @@ const getDeliveryChargesByDivision = async (
 // ✅ Update Delivery Charge by ID
 const updateDeliveryCharge = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: any // ✅ Changed to handle Promise params
 ) => {
   await dbConnect();
+  const params = await context.params; // ✅ Await is mandatory in Next.js 15+
   const { id } = params;
   const body = await req.json();
 
@@ -96,9 +98,10 @@ const updateDeliveryCharge = async (
 // ✅ Delete Delivery Charge by ID
 const deleteDeliveryCharge = async (
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  context: any // ✅ Changed to handle Promise params
 ) => {
   await dbConnect();
+  const params = await context.params; // ✅ Await is mandatory in Next.js 15+
   const { id } = params;
 
   await DeliveryChargeServices.deleteDeliveryChargeFromDB(id);

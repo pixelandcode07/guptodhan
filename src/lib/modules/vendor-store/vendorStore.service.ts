@@ -131,12 +131,14 @@ const getActiveStoresFromDB = async (): Promise<IStore[]> => {
 
 const updateStoreInDB = async (id: string, payload: Partial<IStore>): Promise<IStore | null> => {
   try {
-    // ✅ Using lean() for performance + type casting
-    const result = (await StoreModel.findByIdAndUpdate(id, payload, { 
-      new: true,
-      runValidators: true 
-    })
-      .lean()) as unknown as IStore | null;
+    const result = (await StoreModel.findByIdAndUpdate(
+      id,
+      { $set: payload }, 
+      { 
+        new: true,
+        runValidators: true 
+      }
+    ).lean()) as unknown as IStore | null;
 
     if (!result) {
       throw new Error("Store not found to update.");

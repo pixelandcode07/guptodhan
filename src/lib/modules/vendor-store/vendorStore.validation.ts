@@ -10,6 +10,14 @@ const socialLinksSchema = z.object({
   tiktok: z.string().url().optional().nullable(),
 });
 
+const paymentInfoSchema = z.object({
+  bkash: z.string().optional().nullable(),
+  nagad: z.string().optional().nullable(),
+  rocket: z.string().optional().nullable(),
+  bankName: z.string().optional().nullable(),
+  bankAccount: z.string().optional().nullable(),
+  bankBranch: z.string().optional().nullable(),
+});
 
 export const createStoreValidationSchema = z.object({
 
@@ -52,6 +60,10 @@ export const updateStoreValidationSchema = z.object({
   vendorShortDescription: z.string().optional(),
   fullDescription: z.string().optional(),
   commission: z.coerce.number().min(0).max(100).optional(),
+  availableBalance: z.coerce.number().min(0).optional(),
+  totalEarned: z.coerce.number().min(0).optional(),
+  totalWithdrawn: z.coerce.number().min(0).optional(),
+  paymentInfo: paymentInfoSchema.optional(),
 
   storeSocialLinks: socialLinksSchema.optional(),
   storeMetaTitle: z.string().optional(),

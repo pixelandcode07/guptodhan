@@ -1,5 +1,3 @@
-// src/lib/VendorApis/fetchVendorOrders.ts
-
 import axios from 'axios';
 import type {
   VendorOrdersApiResponse,
@@ -11,49 +9,41 @@ export const fetchVendorOrders = async (
   vendorId: string,
   token?: string
 ): Promise<{ store: Store; orders: VendorOrder[] }> => {
-  const baseUrl = process.env.NEXTAUTH_URL;
-
-  if (!baseUrl) {
-    console.error('API base URL is not configured');
-    return {
-      store: {} as Store,
-      orders: [],
-    };
-  }
+  
+  // ✅ VPS Optimization: Use Public Base URL or Fallback to domain
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guptodhandigital.com';
 
   if (!vendorId) {
-    throw new Error('vendorId is required');
+    throw new Error('Vendor ID is required');
   }
 
   try {
     const headers: Record<string, string> = {};
-
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
 
     const response = await axios.get<VendorOrdersApiResponse>(
       `${baseUrl}/api/v1/vendor-store/vendorOrder/${vendorId}`,
-      { headers }
+      { headers, timeout: 15000 }
     );
 
     if (!response.data.success) {
       throw new Error(response.data.message || 'Failed to fetch vendor orders');
     }
 
-    const { store, orders } = response.data.data;
+    const data = response.data.data;
 
     return {
-      store,
-      orders: orders || [],
+      store: data?.store || ({} as Store),
+      orders: data?.orders || [],
     };
   } catch (error: any) {
-    console.error('Axios Error: Failed to fetch vendor orders', error.message || error);
-
+    console.error('❌ [API Error]: fetchVendorOrders failed', error.message);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to fetch vendor orders'
+      error.message ||
+      'অর্ডারগুলো লোড করতে সমস্যা হচ্ছে।'
     );
   }
 };
