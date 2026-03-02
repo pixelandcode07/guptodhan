@@ -25,6 +25,6 @@ export const POST = catchAsync(async (req) => {
     success: true,
     statusCode: StatusCodes.OK,
     message: 'Device registered successfully!',
-    data: deviceData, // এখানে ডাটা পাঠানো হয়েছে
+    data: deviceData, 
   });
 });
