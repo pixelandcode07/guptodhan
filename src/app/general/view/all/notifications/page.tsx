@@ -1,55 +1,62 @@
+// D:\Guptodhan Project\guptodhan\src\app\general\view\all\notifications\page.tsx
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import { DataTable } from "@/components/TableHelper/data-table";
-import { Notification, notification_columns } from "@/components/TableHelper/notification_columns";
+import { notification_columns } from "@/components/TableHelper/notification_columns";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
-
-function getData(): Notification[] {
-  return [
-    {
-      id: 1,
-      notification_channel: "/topics/example",
-      notification_title: "Test Notify",
-      notification_description: "Hello Everyone Do you need something",
-      sent_at: "2025-02-03 05:51:42 pm"
-    },
-    {
-      id: 2,
-      notification_channel: "/topics/promotions",
-      notification_title: "Special Offer",
-      notification_description: "Get 50% off on all electronics this weekend",
-      sent_at: "2025-02-02 10:30:15 am"
-    },
-    {
-      id: 3,
-      notification_channel: "/topics/updates",
-      notification_title: "System Maintenance",
-      notification_description: "Scheduled maintenance will occur tonight from 2 AM to 4 AM",
-      sent_at: "2025-02-01 08:45:30 pm"
-    }
-  ];
-}
+import { Trash2, Loader2 } from "lucide-react";
 
 export default function ViewAllNotificationsPage() {
-  const data = getData();
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch('/api/v1/notifications/my-notifications');
+      const result = await response.json();
+      if (result.success) {
+        setData(result.data);
+      }
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
   return (
-    <div className="m-5 p-5 border ">
-      <div>
-        <h1 className="text-lg font-semibold border-l-2 border-blue-500">
-          <span className="pl-5">View All Previous Push Notifications</span>
+    <div className="m-5 p-5 border bg-white shadow-sm">
+      <div className="mb-6">
+        <h1 className="text-lg font-semibold border-l-4 border-blue-500 pl-4">
+          View All Previous Push Notifications
         </h1>
       </div>
-      <div className="flex items-center justify-end gap-4 mb-4">
-        <span className="flex items-center gap-2">
-          <span>Search:</span>
-          <Input type="text" className="border border-gray-500" />
-        </span>
-        <Button variant="destructive" className="bg-red-600 hover:bg-red-700">
+      
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <span className="text-sm font-medium">Search:</span>
+          <Input type="text" className="border border-gray-300" placeholder="Search title..." />
+        </div>
+        
+        <Button variant="destructive" className="bg-red-600 hover:bg-red-700 w-full md:w-auto">
           <Trash2 className="w-4 h-4 mr-2" />
-          Remove All Notifications Before 15 days
+          Remove Old Notifications
         </Button>
       </div>
-      <DataTable columns={notification_columns} data={data} />
+
+      {loading ? (
+        <div className="flex justify-center p-10">
+          <Loader2 className="animate-spin text-blue-500" size={32} />
+        </div>
+      ) : (
+        <DataTable columns={notification_columns} data={data} />
+      )}
     </div>
   );
 }
