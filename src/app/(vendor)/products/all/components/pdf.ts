@@ -6,7 +6,6 @@ export async function downloadProductsPDF(rows: any[]) {
 
     const doc = new jsPDF();
 
-    // ইমেজ লোড করার Helper function
     const fetchImage = (url: string): Promise<HTMLImageElement | null> => {
         return new Promise((resolve) => {
             const img = new Image();
@@ -17,14 +16,12 @@ export async function downloadProductsPDF(rows: any[]) {
         });
     };
 
-    // প্রথম প্রোডাক্ট থেকে ভেন্ডরের নাম ও লোগো বের করা
     const firstRow = rows[0];
     const vendorName = firstRow?.store || firstRow?.vendorName || 'Vendor';
     const vendorLogoUrl = firstRow?.storeLogo || firstRow?.vendorStoreId?.storeLogo;
 
     let startYForTable = 20;
 
-    // লোগো বসানোর লজিক
     if (vendorLogoUrl) {
         const logoImg = await fetchImage(vendorLogoUrl);
         if (logoImg) {
@@ -43,7 +40,6 @@ export async function downloadProductsPDF(rows: any[]) {
         startYForTable = 25;
     }
 
-    // প্রোডাক্টের ইমেজ ফেচ করা
     const imagePromises = rows.map((p) => {
         const imgUrl = p.image || p.thumbnailImage || p.photoGallery?.[0]; 
         return imgUrl ? fetchImage(imgUrl) : Promise.resolve(null);
@@ -51,17 +47,14 @@ export async function downloadProductsPDF(rows: any[]) {
 
     const images = await Promise.all(imagePromises);
 
-    // টেবিল ড্র করা
     autoTable(doc, {
         startY: startYForTable,
-        // ✅ হেডারে ID এর বদলে SL দেওয়া হলো
         head: [['SL', 'Product Name', 'Current Price', 'Update Price', 'Stock', 'Image']],
-        // ✅ এখানে (index + 1) দিয়ে সিরিয়াল নাম্বার বসানো হয়েছে
         body: rows.map((p, index) => [
             index + 1,
             p.name || p.productTitle || '-', 
             `${p.price || p.productPrice || 0} Tk`, 
-            '', // Update Price এর ঘর ফাঁকা
+            '', 
             p.stock || 0,
             '', 
         ]),
