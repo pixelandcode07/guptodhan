@@ -433,6 +433,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
     return (
       <div className="min-h-screen bg-[#f2f4f8]">
+        {/* ✅ SEO: Product thumbnail — Server-side render করা হচ্ছে
+            crawler এই image দেখবে, chat icon নয়
+            Tailwind sr-only দিয়ে visually hidden কিন্তু HTML এ আছে */}
+        {productImages[0] && (
+          <link rel="preload" as="image" href={productImages[0]} />
+        )}
         {/* ✅ JSON-LD — 3টি schema */}
         <script
           type="application/ld+json"
