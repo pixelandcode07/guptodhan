@@ -5,7 +5,6 @@ export function downloadProductsCSV(rows: any[]) {
         'SL', 'Product Name', 'Category', 'Store', 'Price', 'Offer Price', 'Stock', 'Status'
     ];
 
-    // ✅ এখানে p.id এর বদলে (index + 1) ব্যবহার করা হয়েছে সিরিয়াল নাম্বারের জন্য
     const csvData = rows.map((p, index) => [
         index + 1, 
         p.name || p.productTitle || '', 
