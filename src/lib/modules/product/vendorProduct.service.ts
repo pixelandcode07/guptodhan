@@ -10,7 +10,6 @@ import { StorageType } from "../product-config/models/storageType.model";
 import { DeviceConditionModel } from "../product-config/models/deviceCondition.model";
 import { ProductSimTypeModel } from "../product-config/models/productSimType.model";
 import { ProductWarrantyModel } from "../product-config/models/warranty.model";
-import { Types } from 'mongoose';
 
 // ✅ Import Redis cache helpers
 import { getCachedData, deleteCacheKey, deleteCachePattern } from '@/lib/redis/cache-helpers';
