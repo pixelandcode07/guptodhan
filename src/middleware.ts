@@ -221,12 +221,14 @@ export async function middleware(req: NextRequest) {
     );
   }
 
-  // 🔹 Admin Check
+// 🔹 Admin Check
 if (isAdminRoute && tokenPayload.role !== 'admin') {
-
-  const isVendorHistoryRoute = path.startsWith('/api/v1/withdrawal/vendor/');
-  if (isVendorHistoryRoute && tokenPayload.role === 'vendor') {
-  } else {
+  if (isVendorRoute && tokenPayload.role === 'vendor') {
+    (NextResponse.next())
+  } 
+  else if (path.startsWith('/api/v1/withdrawal/vendor/') && tokenPayload.role === 'vendor') {
+  } 
+  else {
     return NextResponse.json(
       {
         success: false,
