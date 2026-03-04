@@ -25,8 +25,8 @@ export default function OrderTracking() {
   const handleInternalTrack = () => {
     if (trackingInfo?.trackingId) {
       // এটি ইউজারকে আপনার SteadfastTracking কম্পোনেন্ট যেখানে আছে সেখানে নিয়ে যাবে
-      // পাথটি আপনার ফোল্ডার স্ট্রাকচার অনুযায়ী চেক করে নিবেন (আমি /home/product/shoppinginfo ধরে নিচ্ছি)
-      router.push(`/home/product/shoppinginfo?trackingId=${trackingInfo.trackingId}`)
+      // পাথটি আপনার ফোল্ডার স্ট্রাকচার অনুযায়ী চেক করে নিবেন (আমি /products/shoppinginfo ধরে নিচ্ছি)
+      router.push(`/products/shoppinginfo?trackingId=${trackingInfo.trackingId}`)
     }
   }
 
