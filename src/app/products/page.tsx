@@ -6,19 +6,20 @@ async function getProducts(searchParams: any) {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhandigital.com';
 
-    const params = new URLSearchParams({
-      page: searchParams?.page || '1',
-      limit: '10',
-      ...(searchParams?.search && { search: searchParams.search }),
-      ...(searchParams?.brand && { brand: searchParams.brand }),
-      ...(searchParams?.color && { color: searchParams.color }),
-      ...(searchParams?.size && { size: searchParams.size }),
-      ...(searchParams?.priceMin && { priceMin: searchParams.priceMin }),
-      ...(searchParams?.priceMax && { priceMax: searchParams.priceMax }),
-      ...(searchParams?.sortBy && { sortBy: searchParams.sortBy }),
-    });
+    // ✅ FIX 1: Safe query parameter generation
+    const params = new URLSearchParams();
+    params.set('page', searchParams?.page || '1');
+    params.set('limit', '10');
+    
+    if (searchParams?.search) params.set('search', searchParams.search);
+    if (searchParams?.brand) params.set('brand', searchParams.brand);
+    if (searchParams?.color) params.set('color', searchParams.color);
+    if (searchParams?.size) params.set('size', searchParams.size);
+    if (searchParams?.priceMin) params.set('priceMin', searchParams.priceMin);
+    if (searchParams?.priceMax) params.set('priceMax', searchParams.priceMax);
+    if (searchParams?.sortBy) params.set('sortBy', searchParams.sortBy);
 
-    const res = await fetch(`${baseUrl}/api/v1/public/product?${params}`, {
+    const res = await fetch(`${baseUrl}/api/v1/public/product?${params.toString()}`, {
       cache: 'no-store',
     });
 
@@ -71,7 +72,6 @@ export default async function ProductFilterPage({
 }: {
   searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
-  // ✅ FIX: Next.js 15 requires awaiting searchParams before using them
   const resolvedSearchParams = await searchParams;
 
   const [{ products, meta }, colors, brands, sizes] = await Promise.all([
