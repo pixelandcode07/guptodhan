@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Truck, CreditCard, ChevronRight, Info } from 'lucide-react';
 import { toast } from 'sonner';
-import type { CartItem } from './components/ShoppingInfoClient';
+import { CartItem } from '../ShoppingInfoContent';
 
 interface ShoppingInfoContentProps {
   cartItems: CartItem[];
@@ -11,7 +11,7 @@ interface ShoppingInfoContentProps {
   onRemoveItem: (id: string) => void;
 }
 
-export default function ShoppingInfoContent({ cartItems }: ShoppingInfoContentProps) {
+export default function ShoppingInfoClient({ cartItems }: ShoppingInfoContentProps) {
   const [agreed, setAgreed] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
 
