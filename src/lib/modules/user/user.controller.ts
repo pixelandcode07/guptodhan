@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import { ZodError } from 'zod';
 import { StatusCodes } from 'http-status-codes';
 import dbConnect from '@/lib/db';
 import { UserServices } from './user.service';
