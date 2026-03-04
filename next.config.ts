@@ -17,32 +17,11 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
 
   // ========================
-  // ✅ 301 REDIRECTS — Server 0% → Fix
-  // www/non-www duplicate content আর পুরানো domain redirect
+  // ✅ REDIRECTS REMOVED
   // ========================
   async redirects() {
-    return [
-      // ✅ guptodhandigital.com → guptodhan.com (পুরানো domain)
-      {
-        source: '/:path*',
-        has: [{ type: 'host', value: 'guptodhandigital.com' }],
-        destination: 'https://www.guptodhan.com/:path*',
-        permanent: true, // 301
-      },
-      {
-        source: '/:path*',
-        has: [{ type: 'host', value: 'www.guptodhandigital.com' }],
-        destination: 'https://www.guptodhan.com/:path*',
-        permanent: true,
-      },
-      // ✅ non-www → www (duplicate content fix)
-      {
-        source: '/:path*',
-        has: [{ type: 'host', value: 'guptodhan.com' }],
-        destination: 'https://www.guptodhan.com/:path*',
-        permanent: true,
-      },
-    ];
+    // Purono domain redirect remove kora hoyeche jate mobile app thikmoto kaj kore
+    return [];
   },
 
   // ========================
@@ -50,11 +29,10 @@ const nextConfig: NextConfig = {
   // ========================
   images: {
     remotePatterns: [
-      // ✅ নতুন domain যোগ
       { protocol: 'https', hostname: 'www.guptodhan.com', pathname: '/**' },
       { protocol: 'https', hostname: 'guptodhan.com', pathname: '/**' },
       { protocol: 'https', hostname: 'app-area.guptodhan.com', pathname: '/**' },
-      // পুরানো domain (backward compat)
+      // Purono domain (backward compat)
       { protocol: 'https', hostname: 'guptodhandigital.com', pathname: '/**' },
       { protocol: 'https', hostname: 'www.guptodhandigital.com', pathname: '/**' },
       // Image hosts
@@ -145,7 +123,6 @@ const nextConfig: NextConfig = {
         headers: [{ key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' }],
       },
       {
-        // ✅ Product pages — 60 sec cache, stale-while-revalidate
         source: '/product/:path*',
         headers: [
           { key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=300' },
@@ -154,9 +131,6 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // ========================
-  // EXPERIMENTAL
-  // ========================
   experimental: {
     optimizePackageImports: ['lucide-react', '@tanstack/react-table', 'recharts'],
     esmExternals: true,
