@@ -168,11 +168,33 @@ const vendorResetPassword = async (req: NextRequest) => {
 // --- Refresh Token ---
 const refreshToken = async (req: NextRequest) => {
   await dbConnect();
-  const token = req.cookies.get('refreshToken')?.value;
+
+  // ১. টোকেন খোঁজার ৩টি ধাপ (Priority based)
+  let token = req.cookies.get('refreshToken')?.value; // ১ নম্বর পছন্দ: কুকি
+
+  if (!token) {
+    // ২ নম্বর পছন্দ: অথরাইজেশন হেডার (Bearer <token>)
+    const authHeader = req.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
+  }
+
+  if (!token) {
+    // ৩ নম্বর পছন্দ: রিকোয়েস্ট বডি
+    try {
+      const body = await req.json();
+      token = body?.refreshToken;
+    } catch (err) {
+      token = undefined;
+    }
+  }
+
+  // ২. এখন ভ্যালিডেশন চেক করলে আর এরর আসবে না
   const validatedData = refreshTokenValidationSchema.parse({ refreshToken: token });
+
   const result = await AuthServices.refreshToken(validatedData.refreshToken);
 
-  // নতুন অ্যাক্সেস টোকেন জেনারেট হলে সেটা কুকিতেও আপডেট করে দেওয়া ভালো
   const response = sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
@@ -180,10 +202,11 @@ const refreshToken = async (req: NextRequest) => {
     data: result,
   });
 
+  // ৩. নতুন টোকেনটি কুকিতে সেট করা
   response.cookies.set('accessToken', result.accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60,
+    maxAge: 20 * 24 * 60 * 60, // ২০ দিন
     path: '/',
   });
 
