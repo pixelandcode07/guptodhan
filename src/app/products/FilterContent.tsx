@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useTransition } from 'react';
+import React from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import FilterSidebar, { type FilterState } from './components/FilterSidebar';
 import ProductGrid from './components/ProductGrid';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export type Product = {
   _id: string;
@@ -66,16 +66,11 @@ export default function FilterContent({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
 
-  // ✅ Current filters from URL
+  // Current filters from URL
   const currentFilters: FilterState = {
-    priceMin: searchParams.get('priceMin')
-      ? Number(searchParams.get('priceMin'))
-      : undefined,
-    priceMax: searchParams.get('priceMax')
-      ? Number(searchParams.get('priceMax'))
-      : undefined,
+    priceMin: searchParams.get('priceMin') ? Number(searchParams.get('priceMin')) : undefined,
+    priceMax: searchParams.get('priceMax') ? Number(searchParams.get('priceMax')) : undefined,
     brand:  searchParams.get('brand')  || undefined,
     color:  searchParams.get('color')  || undefined,
     size:   searchParams.get('size')   || undefined,
@@ -84,19 +79,21 @@ export default function FilterContent({
   const currentSort = searchParams.get('sortBy') || 'createdAt';
   const currentPage = Number(searchParams.get('page')) || 1;
 
-  // ✅ URL update helper with smooth transition
-  const updateURL = (updates: Record<string, string | undefined>) => {
+  // ✅ FIX 2: Fast URL updating without transition block
+  const updateURL = (updates: Record<string, string | string[] | undefined>) => {
     const params = new URLSearchParams(searchParams.toString());
 
-    Object.entries(updates).forEach(([key, value]) => {
-      if (value) params.set(key, value);
-      else params.delete(key);
+    Object.keys(updates).forEach((key) => {
+      const val = updates[key];
+      if (val !== undefined && val !== null && val !== '') {
+        // Handle array formatting just in case FilterSidebar sends an array
+        params.set(key, Array.isArray(val) ? val.join(',') : String(val));
+      } else {
+        params.delete(key);
+      }
     });
 
-    startTransition(() => {
-      // scroll: false ensures window.scrollTo works smoothly below
-      router.push(`${pathname}?${params.toString()}`, { scroll: false });
-    });
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
   const handleFilterChange = (newFilters: FilterState) => {
@@ -104,9 +101,9 @@ export default function FilterContent({
       page:     '1',
       priceMin: newFilters.priceMin?.toString(),
       priceMax: newFilters.priceMax?.toString(),
-      brand:    newFilters.brand,
-      color:    newFilters.color,
-      size:     newFilters.size,
+      brand:    newFilters.brand as string | string[] | undefined,
+      color:    newFilters.color as string | string[] | undefined,
+      size:     newFilters.size as string | string[] | undefined,
     });
   };
 
@@ -139,10 +136,9 @@ export default function FilterContent({
       />
 
       <main className="flex-1">
-        {/* ===== Top Bar ===== */}
+        {/* Top Bar */}
         <div className="bg-white border rounded-md px-4 py-3 mb-6 flex flex-wrap items-center justify-between gap-4 shadow-sm">
           <div className="flex items-center gap-3 text-sm text-gray-600 font-medium">
-            {isPending && <Loader2 size={16} className="animate-spin text-blue-600" />}
             {meta
               ? <span>Showing <span className="text-gray-900 font-bold">{(currentPage - 1) * meta.limit + 1}–{Math.min(currentPage * meta.limit, meta.total)}</span> of <span className="text-gray-900 font-bold">{meta.total}</span> products</span>
               : <span>{initialProducts.length} products found</span>}
@@ -162,8 +158,8 @@ export default function FilterContent({
           </div>
         </div>
 
-        {/* ===== Product Grid ===== */}
-        <div className={`transition-opacity duration-300 ${isPending ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+        {/* Product Grid */}
+        <div className="transition-opacity duration-300">
           {initialProducts.length > 0 ? (
             <ProductGrid products={initialProducts} />
           ) : (
@@ -177,21 +173,19 @@ export default function FilterContent({
           )}
         </div>
 
-        {/* ===== Pagination ===== */}
+        {/* Pagination */}
         {meta && meta.totalPages > 1 && (
           <div className="mt-10 mb-6 flex flex-col sm:flex-row items-center justify-center gap-4">
             <div className="flex items-center gap-2">
-              {/* Prev */}
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
-                disabled={!meta.hasPrev || isPending}
+                disabled={!meta.hasPrev}
                 className="flex items-center justify-center gap-1 h-10 px-4 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed transition-all"
               >
                 <ChevronLeft size={16} />
                 <span className="hidden sm:inline">Previous</span>
               </button>
 
-              {/* Page Numbers */}
               <div className="flex items-center gap-1.5">
                 {Array.from({ length: meta.totalPages }, (_, i) => i + 1)
                   .filter((p) => {
@@ -216,12 +210,11 @@ export default function FilterContent({
                       <button
                         key={p}
                         onClick={() => handlePageChange(p as number)}
-                        disabled={isPending}
                         className={`w-10 h-10 rounded-lg text-sm font-semibold transition-all ${
                           currentPage === p
                             ? 'bg-blue-600 text-white shadow-md shadow-blue-200 border-transparent'
                             : 'border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400'
-                        } disabled:opacity-50`}
+                        }`}
                       >
                         {p}
                       </button>
@@ -229,10 +222,9 @@ export default function FilterContent({
                   )}
               </div>
 
-              {/* Next */}
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
-                disabled={!meta.hasNext || isPending}
+                disabled={!meta.hasNext}
                 className="flex items-center justify-center gap-1 h-10 px-4 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-white disabled:cursor-not-allowed transition-all"
               >
                 <span className="hidden sm:inline">Next</span>
@@ -240,7 +232,6 @@ export default function FilterContent({
               </button>
             </div>
             
-            {/* Page info (Mobile only) */}
             <p className="sm:hidden text-center text-xs text-gray-500 font-medium">
               Page {currentPage} of {meta.totalPages}
             </p>
