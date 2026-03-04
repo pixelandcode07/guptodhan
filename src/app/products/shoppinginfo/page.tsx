@@ -1,7 +1,7 @@
 import React from 'react';
-import ShoppingInfoClient from './components/ShoppingInfoClient';
 import { HeroNav } from '@/app/components/Hero/HeroNav';
 import { MainCategory } from '@/types/navigation-menu';
+import ShoppingInfoClient from './components/ShoppingInfoClient';
 
 export default function ShoppingInfoPage() {
     const categoriesData: MainCategory[] = [];
