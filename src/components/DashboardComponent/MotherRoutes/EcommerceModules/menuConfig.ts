@@ -15,7 +15,6 @@ import {
   Settings,
   ShoppingCart,
   Truck,
-  UserX, // ✅ নতুন আইকন যুক্ত করা হয়েছে
 } from 'lucide-react';
 import { MenuConfig } from './types';
 
@@ -169,11 +168,6 @@ export const MENU_CONFIG: MenuConfig = {
     items: [],
     url: '/general/view/all/customers',
   },
-  'Deletion Requests': { // ✅ নতুন সেকশন যুক্ত করা হয়েছে
-    icon: UserX,
-    items: [],
-    url: '/general/view/account-deletion',
-  },
   'Story Management': {
     icon: BookOpenText,
     items: [],
@@ -203,4 +197,20 @@ export const MENU_CONFIG: MenuConfig = {
     icon: Printer,
     items: [{ title: 'Sales Report', url: '/general/sales/report' }],
   },
+  // 'Download Backup': {
+  //   icon: CloudDownload,
+  //   items: [
+  //     { title: 'Database Backup', url: '/general/backup/database' },
+  //     { title: 'Product Images Backup', url: '/general/backup/product-images' },
+  //     { title: 'User Images Backup', url: '/general/backup/user-images' },
+  //     { title: 'Banner Images Backup', url: '/general/backup/banner-images' },
+  //     { title: 'Category Icon Backup', url: '/general/backup/category-icons' },
+  //     { title: 'Subcategory Backup', url: '/general/backup/subcategory' },
+  //     { title: 'Flag Icon Backup', url: '/general/backup/flag-icons' },
+  //     { title: 'Ticket Files Backup', url: '/general/backup/ticket-files' },
+  //     { title: 'Blog Files Backup', url: '/general/backup/blog-files' },
+  //     { title: 'Other Images Backup', url: '/general/backup/other-images' },
+  //   ],
+  // },
 };
+
