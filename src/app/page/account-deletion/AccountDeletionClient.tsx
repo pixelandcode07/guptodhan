@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertTriangle, Trash2, CheckCircle, Loader2, Mail, Phone } from 'lucide-react';
-import { signOut } from 'next-auth/react';
+import { AlertTriangle, Send, CheckCircle, Loader2, Mail, Phone } from 'lucide-react';
 
 export default function AccountDeletionClient() {
   const [identifier, setIdentifier] = useState('');
@@ -17,7 +16,7 @@ export default function AccountDeletionClient() {
   // The button will only be active if identifier is provided and user types 'DELETE'
   const isConfirmed = confirmationText === 'DELETE' && identifier.trim().length > 0;
 
-  const handleDeleteAccount = async (e: React.FormEvent) => {
+  const handleDeleteRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isConfirmed) return;
 
@@ -25,11 +24,9 @@ export default function AccountDeletionClient() {
     setMessage('');
 
     try {
-      // Sending DELETE request
-      // Note: We are sending the identifier and reason in the body. 
-      // Ensure your backend controller handles this if you want to save the reason.
-      const response = await fetch('/api/v1/profile/me', {
-        method: 'DELETE',
+      // Sending POST request to the public API route
+      const response = await fetch('/api/v1/account-deletion', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -43,16 +40,15 @@ export default function AccountDeletionClient() {
 
       if (response.ok) {
         setStatus('success');
-        setMessage('Your account has been deleted successfully.');
+        setMessage('Your account deletion request has been submitted successfully. Our team will process it soon.');
         
-        // Clear session and redirect to home after 2 seconds
-        setTimeout(async () => {
-          await signOut({ redirect: false });
+        // Redirect to home page after 3 seconds
+        setTimeout(() => {
           window.location.href = '/'; 
-        }, 2000);
+        }, 3000);
       } else {
         setStatus('error');
-        setMessage(data.message || 'Failed to delete account. Are you sure you are logged in?');
+        setMessage(data.message || 'Something went wrong. Please try again.');
       }
     } catch (error) {
       setStatus('error');
@@ -64,7 +60,7 @@ export default function AccountDeletionClient() {
     return (
       <div className="flex flex-col items-center justify-center p-8 bg-green-50 border border-green-200 rounded-2xl text-center shadow-sm">
         <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
-        <h3 className="text-2xl font-bold text-green-800 mb-2">Account Deleted!</h3>
+        <h3 className="text-2xl font-bold text-green-800 mb-2">Request Submitted!</h3>
         <p className="text-green-700">{message}</p>
         <p className="text-sm text-green-600 mt-4 animate-pulse">Redirecting to home...</p>
       </div>
@@ -79,15 +75,15 @@ export default function AccountDeletionClient() {
           <AlertTriangle className="w-6 h-6 text-red-600" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-red-800">Account Deletion Warning</h2>
+          <h2 className="text-xl font-bold text-red-800">Account Deletion Request</h2>
           <p className="text-red-600 mt-1 text-sm">
-            Once you delete your account, your profile, order history, and all data will be permanently removed. This action cannot be undone.
+            Submit a request to delete your account. Once processed, your profile, order history, and all associated data will be permanently removed.
           </p>
         </div>
       </div>
 
       {/* Form Section */}
-      <form onSubmit={handleDeleteAccount} className="p-6 space-y-5">
+      <form onSubmit={handleDeleteRequest} className="p-6 space-y-5">
         {status === 'error' && (
           <div className="p-4 bg-red-50 text-red-700 text-sm rounded-lg border border-red-200 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -162,12 +158,12 @@ export default function AccountDeletionClient() {
           {status === 'loading' ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              Processing...
+              Sending Request...
             </>
           ) : (
             <>
-              <Trash2 className="w-5 h-5" />
-              Permanently Delete Account
+              <Send className="w-5 h-5" />
+              Submit Deletion Request
             </>
           )}
         </button>
