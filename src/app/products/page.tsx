@@ -7,15 +7,15 @@ async function getProducts(searchParams: any) {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhandigital.com';
 
     const params = new URLSearchParams({
-      page:  searchParams?.page  || '1',
+      page: searchParams?.page || '1',
       limit: '10',
-      ...(searchParams?.search   && { search:   searchParams.search }),
-      ...(searchParams?.brand    && { brand:    searchParams.brand }),
-      ...(searchParams?.color    && { color:    searchParams.color }),
-      ...(searchParams?.size     && { size:     searchParams.size }),
+      ...(searchParams?.search && { search: searchParams.search }),
+      ...(searchParams?.brand && { brand: searchParams.brand }),
+      ...(searchParams?.color && { color: searchParams.color }),
+      ...(searchParams?.size && { size: searchParams.size }),
       ...(searchParams?.priceMin && { priceMin: searchParams.priceMin }),
       ...(searchParams?.priceMax && { priceMax: searchParams.priceMax }),
-      ...(searchParams?.sortBy   && { sortBy:   searchParams.sortBy }),
+      ...(searchParams?.sortBy && { sortBy: searchParams.sortBy }),
     });
 
     const res = await fetch(`${baseUrl}/api/v1/public/product?${params}`, {
@@ -69,10 +69,13 @@ async function getActiveSizes() {
 export default async function ProductFilterPage({
   searchParams,
 }: {
-  searchParams: any;
+  searchParams: Promise<{ [key: string]: string | undefined }>;
 }) {
+  // ✅ FIX: Next.js 15 requires awaiting searchParams before using them
+  const resolvedSearchParams = await searchParams;
+
   const [{ products, meta }, colors, brands, sizes] = await Promise.all([
-    getProducts(searchParams),
+    getProducts(resolvedSearchParams),
     getActiveColors(),
     getActiveBrands(),
     getActiveSizes(),
