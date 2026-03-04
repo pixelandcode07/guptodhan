@@ -5,7 +5,6 @@ import { Toaster } from '@/components/ui/sonner';
 import Script from 'next/script';
 import PathnameDetector from '@/Providers/PathnameDetector';
 import { AuthProvider } from '@/contexts/AuthContext';
-import MessageIcon from './components/MessageIcon';
 import "@smastrom/react-rating/style.css";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.guptodhan.com';
@@ -375,9 +374,6 @@ s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();`,
         <SessionProviderWrapper>
           <AuthProvider>
             <PathnameDetector>
-              <div className="fixed bottom-6 right-6 z-50">
-                <MessageIcon />
-              </div>
 
               {children}
 
