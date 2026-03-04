@@ -23,6 +23,7 @@ const adminRoutes = [
   '/api/v1/users',
   '/api/v1/withdrawal',  
   '/api/v1/donation-users',
+  '/api/v1/admin/account-deletion',
   '/api/v1/donation-stats/dashboard',
   '/api/v1/classifieds-banners',
   '/api/v1/classifieds-subcategories',
