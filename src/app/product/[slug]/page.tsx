@@ -1,7 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import dbConnect from '@/lib/db';
-import { VendorProductServices } from '@/lib/modules/product/vendorProduct.service';
 import { CategoryServices } from '@/lib/modules/ecommerce-category/services/ecomCategory.service';
 import { StoreServices } from '@/lib/modules/vendor-store/vendorStore.service';
 import { BrandServices } from '@/lib/modules/brand/brand.service';
@@ -13,7 +12,7 @@ import { ProductSizeServices } from '@/lib/modules/product-config/services/produ
 import ProductDetailsClient from './components/ProductDetailsClient';
 import { HeroNav } from '@/app/components/Hero/HeroNav';
 
-// ✅ Force dynamic — Redis cache update হলে নতুন data আসবে
+// ✅ Force dynamic — SSR নিশ্চিত করার জন্য
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -23,36 +22,47 @@ interface ProductPageProps {
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.guptodhan.com';
 
+// ─── API Fetch Function (Professional Next.js Fetch API for SSR) ──────────────
+// ✅ সরাসরি সার্ভিসের বদলে এই ফাংশনটি API থেকে ডাটা আনবে
+async function getProductBySlugFromAPI(slug: string) {
+  try {
+    const res = await fetch(`${BASE_URL}/api/v1/public/product/slug/${slug}`, {
+      cache: 'no-store', // ✅ SSR নিশ্চিত করবে এবং সবসময় ফ্রেশ ডাটা আনবে
+    });
+    
+    if (!res.ok) return null;
+    
+    const json = await res.json();
+    if (json.success && json.data) {
+      return json.data;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching product from API:', error);
+    return null;
+  }
+}
+
 // ─── Image URL absolute করা ────────────────────────────────────────────────
-// ✅ এটাই wrong image এর মূল সমাধান
-// thumbnailImage relative হলে absolute URL বানাবে
-// Cloudinary/ibb.co/external URL হলে সেটাই রাখবে
 function toAbsoluteUrl(url?: string | null): string | null {
   if (!url) return null;
   const trimmed = url.trim();
-  // Already absolute
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
   if (trimmed.startsWith('//')) return `https:${trimmed}`;
-  // Relative path
   return `${BASE_URL}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
 }
 
 // ─── Product এর সব image collect করা ─────────────────────────────────────────
 function getProductImages(product: any): string[] {
   const images: string[] = [];
-
-  // thumbnailImage প্রথমে (main image)
   const thumb = toAbsoluteUrl(product.thumbnailImage);
   if (thumb) images.push(thumb);
-
-  // photoGallery থেকে বাকিগুলো
   if (Array.isArray(product.photoGallery)) {
     for (const img of product.photoGallery) {
       const abs = toAbsoluteUrl(img);
       if (abs && !images.includes(abs)) images.push(abs);
     }
   }
-
   return images;
 }
 
@@ -63,31 +73,27 @@ function toISOString(date: any): string {
   try { return new Date(date).toISOString(); } catch { return new Date().toISOString(); }
 }
 
-// ─── priceValidUntil — সবসময় future date ────────────────────────────────────
+// ─── priceValidUntil ────────────────────────────────────
 function getValidPriceUntil(offerDeadline?: any): string {
   const deadline = offerDeadline ? new Date(offerDeadline) : null;
   const now = new Date();
   if (deadline && deadline > now) {
     return deadline.toISOString().split('T')[0];
   }
-  // 90 দিন future
   return new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 }
 
 // ─── Clean meta description ───────────────────────────────────────────────────
 function buildMetaDescription(product: any): string {
-  // metaDescription ভালো হলে সেটা ব্যবহার করো
   const raw = product.metaDescription?.trim() ?? '';
   const isGood = raw.length > 50 && !raw.includes('\n') && raw.split(',').length < 8;
   if (isGood) return raw.slice(0, 160);
 
-  // shortDescription থেকে
   if (product.shortDescription) {
     const clean = product.shortDescription.replace(/\n/g, ' ').trim();
     if (clean.length > 50) return clean.slice(0, 160);
   }
 
-  // Auto-generate
   const brand = product.brand?.name || product.brand?.brandName || '';
   const category = product.category?.name || '';
   const price = product.discountPrice || product.productPrice;
@@ -103,9 +109,7 @@ function buildMetaDescription(product: any): string {
 
 // ─── Page title ───────────────────────────────────────────────────────────────
 function buildPageTitle(product: any): string {
-  // metaTitle থাকলে সেটা, নইলে auto-build
   if (product.metaTitle?.trim()) {
-    // Template: %s | Guptodhan → layout এ যোগ হবে
     return product.metaTitle.trim().slice(0, 60);
   }
 
@@ -119,7 +123,6 @@ function buildPageTitle(product: any): string {
   if (price) parts.push(`৳${price}`);
   if (discountPct > 0) parts.push(`${discountPct}% Off`);
 
-  // 60 char এর মধ্যে রাখো
   const title = parts.join(' - ');
   return title.length > 60 ? title.slice(0, 57) + '...' : title;
 }
@@ -150,7 +153,8 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     await dbConnect();
     const { slug } = await params;
 
-    const product = await VendorProductServices.getVendorProductBySlugFromDB(slug);
+    // ✅ DB সার্ভিসের বদলে API কল করা হলো
+    const product = await getProductBySlugFromAPI(slug);
 
     if (!product) {
       return {
@@ -162,10 +166,8 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
     const pageTitle = buildPageTitle(product);
     const description = buildMetaDescription(product);
-    // ✅ Canonical: /product/ (singular) — actual route এর সাথে match
     const canonicalUrl = `${BASE_URL}/product/${slug}`;
 
-    // ✅ Product এর নিজের image — absolute URL নিশ্চিত
     const images = getProductImages(product);
     const primaryImage = images[0] || `${BASE_URL}/og-image.jpg`;
 
@@ -181,15 +183,10 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     ].filter(Boolean).join(', ');
 
     return {
-      // ✅ %s | Guptodhan → layout template এ যাবে
       title: pageTitle,
       description,
       keywords,
-
-      alternates: {
-        canonical: canonicalUrl,
-      },
-
+      alternates: { canonical: canonicalUrl },
       robots: {
         index: product.status === 'active',
         follow: true,
@@ -201,8 +198,6 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
           'max-video-preview': -1,
         },
       },
-
-      // ✅ Product এর thumbnailImage — layout এর default image replace হবে
       openGraph: {
         title: pageTitle,
         description,
@@ -217,8 +212,6 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
           alt: product.productTitle,
         })),
       },
-
-      // ✅ Twitter card — product এর নিজের image
       twitter: {
         card: 'summary_large_image',
         title: pageTitle,
@@ -244,7 +237,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     await dbConnect();
     const { slug } = await params;
 
-    // ✅ Parallel data fetching — সব একসাথে
+    // ✅ Parallel data fetching — DB সার্ভিসের বদলে API কল অ্যাড করা হলো
     const [
       rawProduct,
       categoriesData,
@@ -256,7 +249,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       colorsData,
       sizesData,
     ] = await Promise.all([
-      VendorProductServices.getVendorProductBySlugFromDB(slug),
+      getProductBySlugFromAPI(slug), // ✅ Updated to use Next.js fetch API
       CategoryServices.getAllCategoriesFromDB(),
       StoreServices.getAllStoresFromDB(),
       BrandServices.getAllBrandsFromDB(),
@@ -316,7 +309,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
     const totalReviews = rawProduct.ratingStats?.[0]?.totalReviews || 0;
     const productUrl = `${BASE_URL}/product/${slug}`;
 
-    // ✅ Product images — absolute URL নিশ্চিত
     const productImages = getProductImages(rawProduct);
 
     // ─── Product Schema (JSON-LD) ─────────────────────────────────────
@@ -324,7 +316,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
       '@context': 'https://schema.org/',
       '@type': 'Product',
       name: rawProduct.productTitle,
-      // ✅ Product এর নিজের image list — absolute URL
       image: productImages,
       description: buildMetaDescription(rawProduct),
       sku: rawProduct.sku || rawProduct.productId || rawProduct._id?.toString(),
@@ -433,13 +424,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
     return (
       <div className="min-h-screen bg-[#f2f4f8]">
-        {/* ✅ SEO: Product thumbnail — Server-side render করা হচ্ছে
-            crawler এই image দেখবে, chat icon নয়
-            Tailwind sr-only দিয়ে visually hidden কিন্তু HTML এ আছে */}
         {productImages[0] && (
           <link rel="preload" as="image" href={productImages[0]} />
         )}
-        {/* ✅ JSON-LD — 3টি schema */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
