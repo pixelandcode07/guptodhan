@@ -773,7 +773,6 @@ const getVendorProductsByBrandFromDB = async (
 // ===================================
 // ✏️ UPDATE PRODUCT (NO POPULATE)
 // ===================================
-
 const updateVendorProductInDB = async (
   id: string,
   payload: Partial<IVendorProduct>
@@ -798,11 +797,16 @@ const updateVendorProductInDB = async (
   await deleteCacheKey(CacheKeys.PRODUCT.BY_ID(id));
   await deleteCachePattern(CacheKeys.PATTERNS.PRODUCTS_ALL);
   
-  // 🔥 FIX: Slug এর ক্যাশ ডিলিট করা হচ্ছে যাতে ডিটেইলস পেজে আপডেট সাথে সাথে দেখা যায়
+  // 🔥 FIX: হোম পেজের সব ক্যাশ ক্লিয়ার করে দিন যাতে নতুন ডাটা ফেচ হয়
+  await deleteCacheKey(CacheKeys.PRODUCT.LANDING_PAGE);
+  await deleteCacheKey(CacheKeys.PRODUCT.OFFERS);
+  await deleteCacheKey(CacheKeys.PRODUCT.BEST_SELLING);
+  await deleteCacheKey(CacheKeys.PRODUCT.FOR_YOU);
+  
+  // 🔥 FIX: Slug এর ক্যাশ ডিলিট করা হচ্ছে
   if (updatedProduct.slug) {
     await deleteCacheKey(`product:details:${updatedProduct.slug}`);
   }
-  // সেফটির জন্য আইডি দিয়েও যদি product:details ক্যাশ থাকে, সেটাও ডিলিট করে দিচ্ছি
   await deleteCacheKey(`product:details:${id}`);
 
   return await populateColorAndSizeNames(updatedProduct);
