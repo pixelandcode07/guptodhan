@@ -3,13 +3,9 @@ import dbConnect from '@/lib/db';
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.guptodhan.com';
 
-// ─── Products — সরাসরি DB থেকে ───────────────────────────────────────────────
-// ✅ API call করা হচ্ছে না
-// কারণ: sitemap generate হওয়ার সময় API running নাও থাকতে পারে (build time / cold start)
 async function getAllActiveProducts() {
   try {
     await dbConnect();
-    // ✅ Mongoose Model সরাসরি — শুধু slug ও updatedAt নেওয়া হচ্ছে (fast)
     const { VendorProductModel } = await import('@/lib/modules/product/vendorProduct.model');
     const products = await VendorProductModel
       .find(
@@ -25,7 +21,6 @@ async function getAllActiveProducts() {
   }
 }
 
-// ─── Categories — সরাসরি DB থেকে ─────────────────────────────────────────────
 async function getAllActiveCategories() {
   try {
     await dbConnect();
@@ -44,7 +39,6 @@ async function getAllActiveCategories() {
   }
 }
 
-// ─── Main Sitemap ─────────────────────────────────────────────────────────────
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     { url: BASE_URL, lastModified: new Date(), changeFrequency: 'daily', priority: 1.0 },
@@ -64,7 +58,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const categories = await getAllActiveCategories();
   const categoryPages: MetadataRoute.Sitemap = categories.map((cat: any) => ({
     url: `${BASE_URL}/category/${cat.slug}`,
-    lastModified: cat.updatedAt ? new Date(cat.updatedAt) : new Date(),
+    lastModified: cat.updatedAt && !isNaN(new Date(cat.updatedAt).getTime()) ? new Date(cat.updatedAt) : new Date(),
     changeFrequency: 'weekly' as const,
     priority: 0.8,
   }));
@@ -74,7 +68,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .filter((p: any) => p.slug)
     .map((p: any) => ({
       url: `${BASE_URL}/product/${p.slug}`,
-      lastModified: p.updatedAt ? new Date(p.updatedAt) : new Date(),
+      lastModified: p.updatedAt && !isNaN(new Date(p.updatedAt).getTime()) ? new Date(p.updatedAt) : new Date(),
       changeFrequency: 'weekly' as const,
       priority: 0.8,
     }));
