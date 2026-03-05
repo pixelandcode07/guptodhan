@@ -99,13 +99,23 @@ export default function ProductMainInfo({
     checkWishlistStatus();
   }, [product?._id, isInWishlist, session?.user]);
 
-  // Wishlist Handler
+  // ==========================================
+  // ✅ UPDATE: Wishlist Handler (Modal Trigger)
+  // ==========================================
   const handleWishlist = async () => {
     if (!session?.user) {
       toast.error('Please login to add to wishlist');
-      router.push('/auth/login');
+      
+      // ✅ মডাল ওপেন করার লজিক
+      const loginButton = document.getElementById('login-modal-btn');
+      if (loginButton) {
+        loginButton.click();
+      } else {
+        toast.info("Please click the Login button at the top.");
+      }
       return;
     }
+
     if (!product?._id) return;
     setIsWishlistToggling(true);
     try {
@@ -182,27 +192,31 @@ export default function ProductMainInfo({
   };
 
   // ==========================================
-  // ✅ UPDATE: Cart & Buy Now Handlers
+  // ✅ UPDATE: Buy Now Handler (Modal Trigger & Auto Redirect)
   // ==========================================
   const handleBuyNow = async () => {
     if (availableColors.length > 0 && !selectedColor) return toast.error('Please select a color');
     if (availableSizes.length > 0 && !selectedSize) return toast.error('Please select a size');
     
-    // ✅ ১. চেক করা হচ্ছে ইউজার লগইন করা আছে কিনা
+    // ✅ ইউজার লগইন না থাকলে এই ব্লক কাজ করবে
     if (!session?.user) {
       toast.error('Please login to complete your purchase');
       
-      // ✅ ২. লগইন হওয়ার পর ইউজারকে সরাসরি এই লিংকে পাঠিয়ে দেবে
+      // ✅ লগইন হওয়ার পর অটোমেটিক কোথায় যাবে সেটা সেট করা হলো
       localStorage.setItem('redirectAfterLogin', '/products/shoppinginfo?buyNow=true');
-      
-      // ✅ ৩. প্রোডাক্ট আইডিটা সেভ রাখা হচ্ছে যাতে চেকআউট পেজ বুঝতে পারে কোনটা কিনবে
       sessionStorage.setItem('buyNowProductId', product._id);
       
-      // ✅ ৪. লগইন মডাল/পেজে পাঠানো হচ্ছে (উইশলিস্টের মতো)
-      router.push('/auth/login'); 
+      // ✅ মডাল ওপেন করার লজিক
+      const loginButton = document.getElementById('login-modal-btn');
+      if (loginButton) {
+        loginButton.click();
+      } else {
+        toast.info("Please click the Login button at the top right.");
+      }
       return;
     }
 
+    // ✅ লগইন থাকলে সরাসরি চেকআউট পেজে যাবে
     setIsBuyingNow(true);
     try {
       await addToCart(product._id, quantity, { 
@@ -221,16 +235,6 @@ export default function ProductMainInfo({
   const handleAddToCart = async () => {
     if (availableColors.length > 0 && !selectedColor) return toast.error('Please select a color');
     if (availableSizes.length > 0 && !selectedSize) return toast.error('Please select a size');
-    
-    // ✅ Add To Cart এর ক্ষেত্রেও যদি লগইন বাধ্যতামূলক করতে চান, তাহলে নিচের অংশটুকু আনকমেন্ট করে নিতে পারেন:
-    /*
-    if (!session?.user) {
-      toast.error('Please login to add to cart');
-      localStorage.setItem('redirectAfterLogin', window.location.pathname);
-      router.push('/auth/login');
-      return;
-    }
-    */
     
     await addToCart(product._id, quantity, {
       color: selectedColor || undefined,
