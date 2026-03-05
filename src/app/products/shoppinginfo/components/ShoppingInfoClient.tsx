@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import ShoppingInfoContent from '../ShoppingInfoContent';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
@@ -14,14 +14,24 @@ export default function ShoppingInfoClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isBuyNow = searchParams?.get('buyNow') === 'true';
+  
+  // ✅ ১. একটি মাউন্টেড স্টেট ব্যবহার করছি যাতে সাথে সাথে রিডাইরেক্ট না হয়
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    // মাউন্ট হওয়ার পর ডাটা চেক করার জন্য অল্প একটু সময় দিচ্ছি
+    const timer = setTimeout(() => {
+      setIsReady(true);
+    }, 800); // ৮০০ মিলি-সেকেন্ড অপেক্ষা করবে ডাটা স্ট্যাবল হওয়ার জন্য
+    return () => clearTimeout(timer);
+  }, []);
 
   const displayItems = useMemo(() => {
     if (!Array.isArray(cartItems)) return [];
     if (isBuyNow) {
       const buyNowProductId = typeof window !== 'undefined' ? sessionStorage.getItem('buyNowProductId') : null;
       if (buyNowProductId) {
-        const filtered = cartItems.filter((item: CartItem) => item.product.id === buyNowProductId);
-        return filtered;
+        return cartItems.filter((item: CartItem) => item.product.id === buyNowProductId);
       }
     }
     return cartItems;
@@ -30,8 +40,13 @@ export default function ShoppingInfoClient() {
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
     try {
       await updateQuantity(itemId, newQuantity);
-    } catch {
-      // toast handled in context
+      toast.success('Quantity updated successfully');
+    } catch (error) {
+      console.error('Update quantity error:', error);
+      toast.error('Could not update quantity', {
+        description: 'Something went wrong while updating the product quantity. Please try again.',
+        duration: 4000,
+      });
     }
   };
 
@@ -41,23 +56,28 @@ export default function ShoppingInfoClient() {
       if (displayItems.length <= 1) {
         router.push('/products/shopping-cart');
       }
-    } catch {
-      // toast handled in context
+      toast.success('Item removed from checkout');
+    } catch (error) {
+      console.error('Remove item error:', error);
+      toast.error('Failed to remove item', {
+        description: 'We encountered an issue removing this item from your cart. Please refresh and try again.',
+        duration: 4000,
+      });
     }
   };
 
-  if (isLoading && cartItems.length === 0) {
+  if (isLoading || !isReady) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[60vh] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your cart...</p>
+          <p className="text-gray-600 font-medium">Checking your items...</p>
         </div>
       </div>
     );
   }
 
-  if (displayItems.length === 0) {
+  if (isReady && displayItems.length === 0) {
     if (isBuyNow && typeof window !== 'undefined') {
       sessionStorage.removeItem('buyNowProductId');
     }
