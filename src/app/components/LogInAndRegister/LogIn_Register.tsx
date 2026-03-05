@@ -134,9 +134,11 @@ export default function LogInRegister() {
         await update()
         
         // ✅ FIX: Use window.location.href for guaranteed hard redirect after Auth
-        const redirectPath = localStorage.getItem('redirectAfterLogin') || '/'
-        localStorage.removeItem('redirectAfterLogin')
-        window.location.href = redirectPath
+        const savedUrl = localStorage.getItem('redirectAfterLogin');
+        const redirectPath = savedUrl || window.location.pathname; 
+        
+        localStorage.removeItem('redirectAfterLogin');
+        window.location.href = redirectPath;
       }
     } catch (error: any) {
       toast.dismiss('login-toast')
