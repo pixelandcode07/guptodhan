@@ -777,13 +777,11 @@ const updateVendorProductInDB = async (
   id: string,
   payload: Partial<IVendorProduct>
 ) => {
-  // Update the product
   await VendorProductModel.findByIdAndUpdate(id, payload, {
     new: true,
     runValidators: true,
   });
 
-  // ✅ Use aggregation to get updated product
   const result = await VendorProductModel.aggregate([
     { $match: { _id: new mongoose.Types.ObjectId(id) } },
     ...getProductLookupPipeline(),
@@ -793,19 +791,17 @@ const updateVendorProductInDB = async (
 
   const updatedProduct = result[0];
 
-  // 🗑️ Clear ALL relevant caches (ID, Slug, and Lists)
   await deleteCacheKey(CacheKeys.PRODUCT.BY_ID(id));
   await deleteCachePattern(CacheKeys.PATTERNS.PRODUCTS_ALL);
   
-  // 🔥 FIX: হোম পেজের সব ক্যাশ ক্লিয়ার করে দিন যাতে নতুন ডাটা ফেচ হয়
   await deleteCacheKey(CacheKeys.PRODUCT.LANDING_PAGE);
   await deleteCacheKey(CacheKeys.PRODUCT.OFFERS);
   await deleteCacheKey(CacheKeys.PRODUCT.BEST_SELLING);
   await deleteCacheKey(CacheKeys.PRODUCT.FOR_YOU);
   
-  // 🔥 FIX: Slug এর ক্যাশ ডিলিট করা হচ্ছে
   if (updatedProduct.slug) {
-    await deleteCacheKey(`product:details:${updatedProduct.slug}`);
+    const cleanSlug = decodeURIComponent(updatedProduct.slug.trim());
+    await deleteCacheKey(`product:details:${cleanSlug}`);
   }
   await deleteCacheKey(`product:details:${id}`);
 
