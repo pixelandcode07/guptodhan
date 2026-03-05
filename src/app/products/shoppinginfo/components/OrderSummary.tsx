@@ -17,6 +17,7 @@ interface OrderSummaryProps {
   selectedDelivery: DeliveryOption
   appliedCoupon: AppliedCoupon | null
   onCouponApplied: (coupon: AppliedCoupon | null) => void
+  totalItems: number // ✅ NEW PROP
 }
 
 export default function OrderSummary({
@@ -26,7 +27,8 @@ export default function OrderSummary({
   onPlaceOrder,
   selectedDelivery,
   appliedCoupon,
-  onCouponApplied
+  onCouponApplied,
+  totalItems // ✅ NEW PROP
 }: OrderSummaryProps) {
   const [payment, setPayment] = React.useState<'cod' | 'card'>('cod')
   const [open, setOpen] = React.useState(false)
@@ -241,9 +243,8 @@ export default function OrderSummary({
         <div className="border-t pt-2">
           <div className="flex justify-between">
             <span className="text-gray-600">Total Items</span>
-            <span className="text-gray-900">
-              {subtotal > 0 ? Math.ceil(subtotal / 100) : 0} items
-            </span>
+            {/* ✅ FIXED: এখন সঠিকভাবে cart-এর মোট quantity দেখাবে */}
+            <span className="text-gray-900">{totalItems} items</span>
           </div>
         </div>
       </div>
