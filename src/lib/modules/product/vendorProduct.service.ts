@@ -800,10 +800,10 @@ const updateVendorProductInDB = async (
   await deleteCacheKey(CacheKeys.PRODUCT.FOR_YOU);
   
   if (updatedProduct.slug) {
-    const cleanSlug = decodeURIComponent(updatedProduct.slug.trim());
+    const cleanSlug = decodeURIComponent(updatedProduct.slug.trim()).toLowerCase();
     await deleteCacheKey(`product:details:${cleanSlug}`);
   }
-  await deleteCacheKey(`product:details:${id}`);
+  await deleteCacheKey(`product:details:${id}`)
 
   return await populateColorAndSizeNames(updatedProduct);
 };
@@ -1424,7 +1424,7 @@ const getVendorStoreProductsWithReviewsFromDB = async (vendorId: string) => {
 
 const getVendorProductBySlugFromDB = async (slugOrId: string) => {
   const cleanInput = decodeURIComponent(slugOrId.trim());
-    const cacheKey = `product:details:${cleanInput}`;
+  const cacheKey = `product:details:${cleanInput.toLowerCase()}`;
   
   return getCachedData(
     cacheKey,
