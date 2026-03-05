@@ -1,50 +1,48 @@
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
 
-  import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
+const UPLOAD_DIR = '/var/www/uploads';
+const CDN_BASE = 'https://cdn.guptodhan.com/uploads';
 
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-  });
+export const uploadToCloudinary = async (
+  buffer: Buffer,
+  folder: string,
+): Promise<any> => {
+  try {
+    const ext = 'jpg';
+    const filename = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
 
+    const uploadFolder = path.join(UPLOAD_DIR, folder);
+    await mkdir(uploadFolder, { recursive: true });
 
-  export const uploadToCloudinary = async (
-    buffer: Buffer,
-    folder: string,
-  ): Promise<UploadApiResponse> => {
-    return new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          resource_type: 'auto',
-          folder: folder,
-        },
-        (error, result) => {
-          if (error) {
-            console.error('Cloudinary upload error:', error);
-            return reject(new Error('Failed to upload file to Cloudinary.'));
-          }
-          if (result) {
-            resolve(result);
-          }
-        },
-      );
+    const filePath = path.join(uploadFolder, filename);
+    await writeFile(filePath, buffer);
 
-      stream.end(buffer);
-    });
-  };
+    const url = `${CDN_BASE}/${folder}/${filename}`;
 
+    return {
+      secure_url: url,
+      public_id: `${folder}/${filename}`,
+      url: url,
+      format: ext,
+      resource_type: 'image',
+    };
+  } catch (error) {
+    console.error('VPS upload error:', error);
+    throw new Error('Failed to upload file to VPS.');
+  }
+};
 
-  export const deleteFromCloudinary = async (url: string): Promise<void> => {
-    try {
-      const regex = /\/v\d+\/(.+)\.\w+$/;
-      const match = url.match(regex);
+export const deleteFromCloudinary = async (url: string): Promise<void> => {
+  try {
+    if (!url || !url.includes('cdn.guptodhan.com')) return;
 
-      if (match && match[1]) {
-        const public_id = match[1];
-        await cloudinary.uploader.destroy(public_id);
-        console.log(`✅ File ${public_id} deleted from Cloudinary.`);
-      }
-    } catch (error) {
-      console.error('❌ Cloudinary image deletion failed:', error);
-    }
-  };
+    const { unlink } = await import('fs/promises');
+    const urlPath = url.replace(CDN_BASE, '');
+    const filePath = path.join(UPLOAD_DIR, urlPath);
+    await unlink(filePath);
+    console.log(`✅ File deleted from VPS: ${filePath}`);
+  } catch (error) {
+    console.error('❌ VPS image deletion failed:', error);
+  }
+};
