@@ -198,24 +198,18 @@ export default function ProductMainInfo({
     if (availableColors.length > 0 && !selectedColor) return toast.error('Please select a color');
     if (availableSizes.length > 0 && !selectedSize) return toast.error('Please select a size');
     
-    // ✅ ইউজার লগইন না থাকলে এই ব্লক কাজ করবে
     if (!session?.user) {
       toast.error('Please login to complete your purchase');
       
-      // ✅ লগইন হওয়ার পর অটোমেটিক কোথায় যাবে সেটা সেট করা হলো
+      // ✅ জাস্ট নরমাল ডিফল্ট স্টোরেজেই লিংকটা সেভ করবো
       localStorage.setItem('redirectAfterLogin', '/products/shoppinginfo?buyNow=true');
       sessionStorage.setItem('buyNowProductId', product._id);
       
-      // ✅ মডাল ওপেন করার লজিক
-      const loginButton = document.getElementById('login-modal-btn');
-      if (loginButton) {
-        loginButton.click();
-      } else {
-        toast.info("Please click the Login button at the top right.");
-      }
+      // মডাল ওপেন হবে
+      const loginButton = document.getElementById('login-modal-btn') || document.getElementById('login-modal-btn-mobile');
+      if (loginButton) loginButton.click();
       return;
     }
-
     // ✅ লগইন থাকলে সরাসরি চেকআউট পেজে যাবে
     setIsBuyingNow(true);
     try {
