@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react' // ✅ useRef যুক্ত করা হয়েছে
 import OrderSummary from './components/OrderSummary'
 import DeliveryOptions, { DeliveryOption } from './components/DeliveryOptions'
 import ItemsList from './components/ItemsList'
@@ -33,7 +33,7 @@ export type CartItem = {
         price: number;
         originalPrice: number;
         quantity: number;
-        shippingCost?: number; // ✅ Custom Shipping Cost Field
+        shippingCost?: number; 
     };
 };
 
@@ -81,8 +81,6 @@ export default function ShoppingInfoContent({
     const { data: session } = useSession()
 
     const { geoData, geoLoading } = useGeoData()
-    
-    // ✅ District Charge (Base Charge)
     const { deliveryCharge: baseDistrictCharge } = useDeliveryCharge(formData.district, formData.upazila)
     const { upazilas } = useUpazilas(formData.district)
 
@@ -91,15 +89,19 @@ export default function ShoppingInfoContent({
     const [errorModalOpen, setErrorModalOpen] = useState(false)
     const [errorMessage, setErrorMessage] = useState('')
     const [lastPaymentMethod, setLastPaymentMethod] = useState<'cod' | 'card'>('cod')
-    
     const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null)
 
-    // ✅ Fetch fresh product data to get latest shippingCost
+    // ✅ State for items
     const [enrichedCartItems, setEnrichedCartItems] = useState<CartItem[]>(cartItems);
+    
+    // ✅ ১. একটি Ref ব্যবহার করা হচ্ছে যাতে ট্যাব পাল্টানোর সময় বারবার এপিআই কল না হয়
+    const isFetchedRef = useRef(false);
 
+    // ✅ ২. রিলোড সমস্যা সমাধানের মূল ফিক্স (Effect Logic)
     useEffect(() => {
         const fetchLatestProductDetails = async () => {
-            if (cartItems.length === 0) return;
+            // যদি কার্ট খালি থাকে অথবা অলরেডি একবার ফেচ করা হয়ে থাকে তবে আর ফেচ করবে না
+            if (cartItems.length === 0 || isFetchedRef.current) return;
             
             try {
                 const updatedItems = await Promise.all(cartItems.map(async (item) => {
@@ -120,32 +122,25 @@ export default function ShoppingInfoContent({
                     }
                 }));
                 setEnrichedCartItems(updatedItems);
+                isFetchedRef.current = true; // একবার সফলভাবে ফেচ হলে লক করে দেওয়া হলো
             } catch (error) {
                 console.error("Failed to refresh cart items", error);
             }
         };
         fetchLatestProductDetails();
-    }, [cartItems]);
+    }, [cartItems.length]); // ✅ পুরো অ্যারের বদলে শুধু length ব্যবহার করা হয়েছে
 
     const subtotal = enrichedCartItems.reduce((sum, item) => sum + (item.product.price * item.product.quantity), 0)
     const totalSavings = enrichedCartItems.reduce((sum, item) => sum + ((item.product.originalPrice - item.product.price) * item.product.quantity), 0)
     
-    // ✅✅✅ MAIN FIX: DELIVERY CHARGE CALCULATION ✅✅✅
     const calculateTotalDeliveryCharge = () => {
-        // 1. Calculate total Custom Shipping Cost from all products
         const customChargeTotal = enrichedCartItems.reduce((sum, item) => {
-            // Assuming shippingCost is per unit. If per item, remove * quantity
             return sum + ((item.product.shippingCost || 0) * item.product.quantity);
         }, 0);
 
-        // 2. Override Logic: 
-        // যদি কাস্টম চার্জ ১ টাকাও থাকে, তাহলে জেলার চার্জ ইগনোর হবে।
-        // আর যদি কাস্টম চার্জ ০ হয়, তাহলেই শুধু জেলার চার্জ বসবে।
         if (customChargeTotal > 0) {
             return customChargeTotal;
         }
-
-        // 3. Fallback to District Charge
         return baseDistrictCharge;
     };
 
@@ -176,7 +171,7 @@ export default function ShoppingInfoContent({
             try {
                 await axios.delete(`/api/v1/add-to-cart/get-cart/${userProfile._id}`)
             } catch (error) {
-                console.error('Error clearing cart from database:', error)
+                console.error('Error clearing cart:', error)
             }
         }
     }
@@ -223,7 +218,7 @@ export default function ShoppingInfoContent({
     const validateCODOrder = (paymentMethod: 'cod' | 'card') => {
         const errors: string[] = []
         if (!session?.user) errors.push('User must be logged in to place order')
-        if (!userProfile?._id) errors.push('User profile information is missing. Please complete your profile.')
+        if (!userProfile?._id) errors.push('User profile information is missing.')
         if (!formData.name || !formData.phone || !formData.email || !formData.district || !formData.upazila || !formData.address || !formData.city || !formData.postalCode || !formData.country) {
             errors.push('Please fill in all required delivery information')
         }
@@ -279,18 +274,13 @@ export default function ShoppingInfoContent({
                 shippingPostalCode: formData.postalCode || '1000',
                 shippingCountry: formData.country || 'Bangladesh',
                 addressDetails: `${formData.address}, ${formData.upazila}, ${formData.district}`,
-                
-                // ✅ Send Correct Calculated Charge (Override applied)
                 deliveryCharge: finalDeliveryCharge,
                 totalAmount: subtotal - couponDiscount + finalDeliveryCharge,
-                
                 paymentStatus: 'Pending' as const,
                 orderStatus: 'Pending' as const,
                 orderForm: 'Website' as const,
                 orderDate: new Date(),
-                deliveryDate: new Date(Date.now() + (selectedDelivery === 'steadfast' ? 2 : 3) * 24 * 60 * 60 * 1000),
-                ...(selectedDelivery === 'steadfast' && { parcelId: null, trackingId: null }),
-                
+                deliveryDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
                 products: enrichedCartItems.map(item => ({
                     productId: item.product.id,
                     vendorId: item.id,
@@ -318,9 +308,7 @@ export default function ShoppingInfoContent({
                     return
                 } catch (err: any) {
                     toast.dismiss('payment-init')
-                    const msg = err?.message || 'Failed to initialize payment gateway.'
-                    toast.error('Payment failed', { description: msg })
-                    showError(msg)
+                    showError(err?.message || 'Failed to initialize payment.')
                     return
                 }
             }
@@ -328,13 +316,7 @@ export default function ShoppingInfoContent({
             const response = await axios.post('/api/v1/product-order', orderData)
             
             if (response.data.success) {
-                const createdOrders = response.data.data;
-                const primaryOrder = Array.isArray(createdOrders) ? createdOrders[0] : createdOrders;
-                
-                if (!primaryOrder || !primaryOrder.orderId) {
-                    throw new Error("Order ID missing in response");
-                }
-
+                const primaryOrder = Array.isArray(response.data.data) ? response.data.data[0] : response.data.data;
                 const currentOrderId = primaryOrder.orderId;
 
                 if (selectedDelivery === 'steadfast') {
@@ -342,36 +324,25 @@ export default function ShoppingInfoContent({
                         const steadfastResponse = await axios.post('/api/v1/product-order/steadfast', { 
                             orderId: currentOrderId 
                         })
-                        
                         if (steadfastResponse.data.success) {
-                            const consignmentId = steadfastResponse.data.data.consignmentId
-                            const trackingCode = steadfastResponse.data.data.trackingCode
                             localStorage.setItem('lastOrderTracking', JSON.stringify({
                                 orderId: currentOrderId,
-                                parcelId: consignmentId,
-                                trackingId: trackingCode,
-                                trackingUrl: `https://portal.packzy.com/track/${trackingCode}`,
+                                trackingId: steadfastResponse.data.data.trackingCode,
+                                trackingUrl: `https://portal.packzy.com/track/${steadfastResponse.data.data.trackingCode}`,
                             }))
                         }
                     } catch (error) {
                         console.error('Courier sync failed:', error)
-                        toast.warning("Order placed! Courier sync pending.");
                     }
                 }
-                
                 showSuccessModal(currentOrderId)
-                
             } else {
-                const errorMsg = response.data.message || 'Order failed'
-                toast.error(errorMsg)
-                showError(errorMsg)
+                showError(response.data.message || 'Order failed')
             }
 
         } catch (error) {
             console.error('Error placing order:', error)
-            const errorMsg = 'Failed to place order.'
-            toast.error(errorMsg)
-            showError(errorMsg)
+            showError('Failed to place order.')
         }
     }
 
@@ -447,9 +418,7 @@ export default function ShoppingInfoContent({
                 open={errorModalOpen}
                 onOpenChange={setErrorModalOpen}
                 errorMessage={errorMessage}
-                onRetry={() => {
-                    handlePlaceOrder(lastPaymentMethod)
-                }}
+                onRetry={() => handlePlaceOrder(lastPaymentMethod)}
             />
         </div>
     )
