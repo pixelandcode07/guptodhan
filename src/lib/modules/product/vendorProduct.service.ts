@@ -1427,22 +1427,18 @@ const getVendorStoreProductsWithReviewsFromDB = async (vendorId: string) => {
 };
 
 const getVendorProductBySlugFromDB = async (slugOrId: string) => {
-  const cacheKey = `product:details:${slugOrId}`;
+  const cleanInput = decodeURIComponent(slugOrId.trim());
+    const cacheKey = `product:details:${cleanInput}`;
   
   return getCachedData(
     cacheKey,
     async () => {
       let matchQuery: any = {};
       
-      // ✅ Step 1: Trim এবং decode
-      const cleanInput = decodeURIComponent(slugOrId.trim());
-
-      // ✅ Step 2: Check valid MongoDB ID
       if (mongoose.Types.ObjectId.isValid(cleanInput)) {
         matchQuery = { _id: new mongoose.Types.ObjectId(cleanInput) };
         console.log('🔍 Searching by ID:', cleanInput);
       } else {
-        // ✅ Step 3: Case-insensitive slug search
         matchQuery = { 
           slug: {
             $regex: `^${cleanInput}$`,
@@ -1452,7 +1448,6 @@ const getVendorProductBySlugFromDB = async (slugOrId: string) => {
         console.log('🔍 Searching by slug:', cleanInput);
       }
 
-      // ✅ Step 4: Execute aggregation
       const productResult = await VendorProductModel.aggregate([
         { $match: matchQuery }, 
         ...getProductLookupPipeline(),
@@ -1467,7 +1462,6 @@ const getVendorProductBySlugFromDB = async (slugOrId: string) => {
       
       const transformedProduct = await populateColorAndSizeNames(productResult[0]);
 
-      // Reviews, QnA, Rating আনা
       const productId = productResult[0]._id;
       const [reviews, qna, ratingStats] = await Promise.all([
         ReviewModel.find({ productId }).lean(),
