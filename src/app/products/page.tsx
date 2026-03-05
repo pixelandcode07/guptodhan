@@ -1,7 +1,4 @@
-import React from 'react';
 import FilterContent from './FilterContent';
-import { HeroNav } from '@/app/components/Hero/HeroNav';
-
 async function getProducts(searchParams: any) {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhandigital.com';
@@ -83,7 +80,6 @@ export default async function ProductFilterPage({
 
   return (
     <>
-      <HeroNav categories={[]} />
       <div className="max-w-7xl mx-auto px-4 py-6">
         <FilterContent
           initialProducts={products}
