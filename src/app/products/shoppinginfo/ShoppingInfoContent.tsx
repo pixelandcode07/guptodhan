@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react' // ✅ useRef যুক্ত করা হয়েছে
+import { useState, useEffect, useRef } from 'react' // ✅ useRef যুক্ত করা হয়েছে
 import OrderSummary from './components/OrderSummary'
 import DeliveryOptions, { DeliveryOption } from './components/DeliveryOptions'
 import ItemsList from './components/ItemsList'
@@ -94,13 +94,13 @@ export default function ShoppingInfoContent({
     // ✅ State for items
     const [enrichedCartItems, setEnrichedCartItems] = useState<CartItem[]>(cartItems);
     
-    // ✅ ১. একটি Ref ব্যবহার করা হচ্ছে যাতে ট্যাব পাল্টানোর সময় বারবার এপিআই কল না হয়
+    // ✅ ১. একটি Ref ব্যবহার করা হচ্ছে যাতে ট্যাব পাল্টানোর সময় বারবার এপিআই কল না হয়
     const isFetchedRef = useRef(false);
 
-    // ✅ ২. রিলোড সমস্যা সমাধানের মূল ফিক্স (Effect Logic)
+    // ✅ ২. রিলোড সমস্যা সমাধানের মূল ফিক্স (Effect Logic)
     useEffect(() => {
         const fetchLatestProductDetails = async () => {
-            // যদি কার্ট খালি থাকে অথবা অলরেডি একবার ফেচ করা হয়ে থাকে তবে আর ফেচ করবে না
+            // যদি কার্ট খালি থাকে অথবা অলরেডি একবার ফেচ করা হয়ে থাকে তবে আর ফেচ করবে না
             if (cartItems.length === 0 || isFetchedRef.current) return;
             
             try {
@@ -122,16 +122,19 @@ export default function ShoppingInfoContent({
                     }
                 }));
                 setEnrichedCartItems(updatedItems);
-                isFetchedRef.current = true; // একবার সফলভাবে ফেচ হলে লক করে দেওয়া হলো
+                isFetchedRef.current = true; // একবার সফলভাবে ফেচ হলে লক করে দেওয়া হলো
             } catch (error) {
                 console.error("Failed to refresh cart items", error);
             }
         };
         fetchLatestProductDetails();
-    }, [cartItems.length]); // ✅ পুরো অ্যারের বদলে শুধু length ব্যবহার করা হয়েছে
+    }, [cartItems.length]); // ✅ পুরো অ্যারের বদলে শুধু length ব্যবহার করা হয়েছে
 
     const subtotal = enrichedCartItems.reduce((sum, item) => sum + (item.product.price * item.product.quantity), 0)
     const totalSavings = enrichedCartItems.reduce((sum, item) => sum + ((item.product.originalPrice - item.product.price) * item.product.quantity), 0)
+    
+    // ✅ FIXED: সঠিকভাবে cart-এর মোট quantity গণনা করা হচ্ছে
+    const totalItems = enrichedCartItems.reduce((sum, item) => sum + item.product.quantity, 0)
     
     const calculateTotalDeliveryCharge = () => {
         const customChargeTotal = enrichedCartItems.reduce((sum, item) => {
@@ -404,6 +407,7 @@ export default function ShoppingInfoContent({
                         selectedDelivery={selectedDelivery}
                         appliedCoupon={appliedCoupon}
                         onCouponApplied={setAppliedCoupon}
+                        totalItems={totalItems} // ✅ FIXED: সঠিক item count পাঠানো হচ্ছে
                     />
                 </div>
             </div>
