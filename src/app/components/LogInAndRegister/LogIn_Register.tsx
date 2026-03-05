@@ -19,7 +19,7 @@ import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import { signIn } from 'next-auth/react'
-import { useSession } from 'next-auth/react' // ✅ Added for session management
+import { useSession } from 'next-auth/react'
 
 export interface LoginFormData {
   identifier: string
@@ -51,7 +51,7 @@ export type FormStep =
 export default function LogInRegister() {
   useRedirectAfterLogin()
   const router = useRouter()
-  const { update } = useSession() // ✅ For session updates without full reload
+  const { update } = useSession()
 
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -86,13 +86,14 @@ export default function LogInRegister() {
 
   const [showPin, setShowPin] = useState<boolean>(false)
 
-  // ✅ OPTIMIZED: Login Submit Handler
+  // ==========================================
+  // ✅ OPTIMIZED: Login Submit Handler (Fixed Redirect)
+  // ==========================================
   const onSubmitLogin = async (data: LoginFormData) => {
     try {
       setLoading(true)
       toast.loading('Logging in...', { id: 'login-toast' })
 
-      // 1. Call Backend API - Single request
       const res = await axios.post('/api/v1/auth/login', {
         identifier: data.identifier,
         password: data.pin,
@@ -101,7 +102,6 @@ export default function LogInRegister() {
       if (res.data.success) {
         const { user, accessToken } = res.data.data
 
-        // 2. ✅ Create NextAuth session
         const result = await signIn('credentials', {
           redirect: false,
           userId: user._id,
@@ -124,7 +124,6 @@ export default function LogInRegister() {
           return
         }
 
-        // 3. ✅ Success handling
         toast.success('Welcome back!', {
           description: 'Login successful',
           duration: 3000,
@@ -132,20 +131,17 @@ export default function LogInRegister() {
 
         closeButtonRef.current?.click()
 
-        // 4. ✅ Update session without full reload (faster)
         await update()
         
-        // 5. ✅ Soft navigation instead of hard reload
+        // ✅ FIX: Use window.location.href for guaranteed hard redirect after Auth
         const redirectPath = localStorage.getItem('redirectAfterLogin') || '/'
         localStorage.removeItem('redirectAfterLogin')
-        router.push(redirectPath)
-        router.refresh() // Soft refresh
+        window.location.href = redirectPath
       }
     } catch (error: any) {
       toast.dismiss('login-toast')
       console.error('Login Error:', error)
 
-      // ✅ Better error messages
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.error ||
@@ -160,7 +156,9 @@ export default function LogInRegister() {
     }
   }
 
-  // ✅ OPTIMIZED: Handle Account Created (Auto Login)
+  // ==========================================
+  // ✅ OPTIMIZED: Handle Account Created (Fixed Auto Redirect)
+  // ==========================================
   const handleAccountCreated = async (phone: string, pin: string) => {
     try {
       toast.loading('Setting up your account...', { id: 'setup-toast' })
@@ -169,7 +167,6 @@ export default function LogInRegister() {
         ? phone
         : '0' + phone.replace('+88', '')
 
-      // 1. Backend login
       const loginRes = await axios.post('/api/v1/auth/login', {
         identifier: cleanPhone,
         password: pin,
@@ -178,7 +175,6 @@ export default function LogInRegister() {
       if (loginRes.data.success) {
         const { user, accessToken } = loginRes.data.data
 
-        // 2. ✅ Create NextAuth session
         const result = await signIn('credentials', {
           redirect: false,
           userId: user._id,
@@ -202,7 +198,6 @@ export default function LogInRegister() {
           return
         }
 
-        // 3. ✅ Success
         toast.success('Welcome to Guptodhan! 🎉', {
           description: 'Your account is ready',
           duration: 6000,
@@ -210,10 +205,12 @@ export default function LogInRegister() {
 
         closeButtonRef.current?.click()
 
-        // 4. ✅ Update session and navigate
         await update()
-        router.push('/')
-        router.refresh()
+
+        // ✅ FIX: Auto Redirect even after new account creation
+        const redirectPath = localStorage.getItem('redirectAfterLogin') || '/'
+        localStorage.removeItem('redirectAfterLogin')
+        window.location.href = redirectPath
       }
     } catch (err: any) {
       toast.dismiss('setup-toast')
@@ -237,7 +234,6 @@ export default function LogInRegister() {
           className="absolute right-4 top-4 text-3xl font-light text-gray-500 hover:text-gray-800 focus:outline-none"
           aria-label="Close"
         >
-          {/* × */}
         </button>
       </DialogClose>
 
@@ -264,7 +260,7 @@ export default function LogInRegister() {
               showPin={showPin}
               setShowPin={setShowPin}
               setStep={setStep}
-              loading={loading} // ✅ Pass loading state
+              loading={loading}
             />
           )}
 
