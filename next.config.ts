@@ -37,6 +37,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'www.guptodhandigital.com', pathname: '/**' },
       // Image hosts
       { protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' },
+      { protocol: 'http', hostname: '76.13.191.238', pathname: '/**' },
       { protocol: 'https', hostname: 'i.ibb.co', pathname: '/**' },
       { protocol: 'https', hostname: 'i.ibb.co.com', pathname: '/**' },
       { protocol: 'https', hostname: 'i.imgur.com', pathname: '/**' },
