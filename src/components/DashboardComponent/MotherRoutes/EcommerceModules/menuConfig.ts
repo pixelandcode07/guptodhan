@@ -129,15 +129,6 @@ export const MENU_CONFIG: MenuConfig = {
       },
     ],
   },
-  // ✅ NEW: Service Management
-  'Service Management': {
-    icon: Wrench,
-    items: [
-      { title: 'All Service Requests', url: '/general/(service)/all-service-request' },
-      { title: 'All Service Bookings', url: '/general/all-bookings' },
-      { title: 'Service Banners', url: '/general/(service)/(banner-part)/view-service-banner' },
-    ],
-  },
   'Promo Codes': {
     icon: Gift,
     items: [
