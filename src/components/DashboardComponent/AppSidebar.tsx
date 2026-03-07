@@ -42,7 +42,6 @@ const data = {
     { title: 'Child Category' },
     { title: 'Manage Products' },
     { title: 'Manage Orders' },
-    { title: 'Service Management' }, // ✅ NEW
     { title: 'Promo Codes' },
     { title: 'Push Notification' },
     { title: 'SMS Service' },
