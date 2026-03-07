@@ -27,7 +27,7 @@ import DemoProducts from './MotherRoutes/DemoProducts';
 import Logout from './MotherRoutes/Logout';
 import UserRolePermision from './MotherRoutes/UserRolePermision';
 import ServiceModule from './MotherRoutes/ServiceModule';
-import JobModule from './MotherRoutes/JobModule'; // ✅ ADDED JOB MODULE IMPORT
+import JobModule from './MotherRoutes/JobModule';
 
 const data = {
   user: {
@@ -42,6 +42,7 @@ const data = {
     { title: 'Child Category' },
     { title: 'Manage Products' },
     { title: 'Manage Orders' },
+    { title: 'Service Management' }, // ✅ NEW
     { title: 'Promo Codes' },
     { title: 'Push Notification' },
     { title: 'SMS Service' },
@@ -52,6 +53,7 @@ const data = {
     { title: 'Delivery Charges' },
     { title: 'Upazila & Thana' },
     { title: 'Payment History' },
+    { title: 'Account Deletion' }, // ✅ NEW
     { title: 'Generate Reports' },
     { title: 'Download Backup' },
   ],
@@ -67,7 +69,6 @@ export default function AppSidebar() {
   const pathname = usePathname() ?? '';
   const isDashboardActive = pathname === '/general/home' || pathname.startsWith('/general/home/');
 
-  // Scroll active item into view after scroll position is restored
   useEffect(() => {
     const timer = setTimeout(() => {
       const sidebarContent = document.querySelector('[data-sidebar="content"]') as HTMLElement;
@@ -88,7 +89,7 @@ export default function AppSidebar() {
           });
         }
       }
-    }, 300); 
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [pathname]);
@@ -124,7 +125,7 @@ export default function AppSidebar() {
         <Multivendor />
         <BuySell />
         <ServiceModule />
-        <JobModule /> {/* ✅ ADDED JOB MODULE HERE */}
+        <JobModule />
         <Donation />
         <WebsiteConfig />
         <CRMModules />
