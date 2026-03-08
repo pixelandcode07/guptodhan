@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { SITE_CONFIG } from "@/lib/config/siteConfig";
 
 const getFriendlyError = (serverMessage: string, status?: number): string => {
   if (status === 404) return 'No account found with this email address.';
@@ -208,10 +209,10 @@ export default function VendorSignInPage() {
               </p>
               <p className="text-slate-600">
                 <ArrowLeft className="inline w-4 h-4 mr-1" />
-                Back to{" "}
-                <Link href="/" className="text-emerald-600 font-medium hover:underline">
-                  Homepage
-                </Link>
+              Back to{" "}
+              <Link href={SITE_CONFIG.mainUrl} className="text-emerald-600 font-medium hover:underline">
+                Homepage
+              </Link>
               </p>
             </div>
 
