@@ -29,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Eye, EyeOff } from "lucide-react";
+import { SITE_CONFIG } from "@/lib/config/siteConfig";
 
 type CategoryOption = { value: string; label: string };
 
@@ -337,9 +338,9 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
               </div>
               <div className="mt-8 text-center text-sm">
                 Go back to{" "}
-                <Link href="/" className="text-emerald-600 font-semibold">
-                  Home Page
-                </Link>
+                <Link href={SITE_CONFIG.mainUrl} className="text-emerald-600 font-semibold">
+                Home Page
+              </Link>
               </div>
 
             </div>
