@@ -1,7 +1,7 @@
 import FilterContent from './FilterContent';
 async function getProducts(searchParams: any) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhandigital.com';
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhan.com';
 
     // ✅ FIX 1: Safe query parameter generation
     const params = new URLSearchParams();
@@ -30,7 +30,7 @@ async function getProducts(searchParams: any) {
 
 async function getActiveColors() {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhandigital.com';
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhan.com';
     const res = await fetch(`${baseUrl}/api/v1/public/product-config/product-color/active`, {
       cache: 'force-cache',
     });
@@ -42,7 +42,7 @@ async function getActiveColors() {
 
 async function getActiveBrands() {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhandigital.com';
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhan.com';
     const res = await fetch(`${baseUrl}/api/v1/public/product-config/brand/active`, {
       cache: 'force-cache',
     });
@@ -54,7 +54,7 @@ async function getActiveBrands() {
 
 async function getActiveSizes() {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhandigital.com';
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhan.com';
     const res = await fetch(`${baseUrl}/api/v1/public/product-config/product-size/active`, {
       cache: 'force-cache',
     });
