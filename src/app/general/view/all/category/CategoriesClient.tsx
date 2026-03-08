@@ -20,7 +20,8 @@ type ApiCategory = {
   isNavbar: boolean;
   slug: string;
   status: "active" | "inactive";
-  createdAt: string;
+  createdAt?: string;
+  created_at?: string;
 };
 
 export default function CategoriesClient() {
@@ -37,7 +38,7 @@ export default function CategoriesClient() {
 
   const fetchRows = useCallback(async () => {
     try {
-      const res = await axios.get("/api/v1/ecommerce-category/ecomCategory", {
+      const res = await axios.get("/api/v1/ecommerce-category/ecomCategory/mainCategory", {
         params: { _ts: Date.now() },
       });
       const items: ApiCategory[] = res.data.data || [];
@@ -52,7 +53,7 @@ export default function CategoriesClient() {
         isFeatured: it.isFeatured,
         isNavbar: it.isNavbar,
         status: it.status === "active" ? "Active" : "Inactive",
-        created_at: it.createdAt,
+        created_at: it.createdAt || it.created_at || "",
       }));
       setRows(mapped);
     } catch (e: unknown) {
@@ -66,7 +67,6 @@ export default function CategoriesClient() {
   useEffect(() => { fetchRows(); }, [fetchRows]);
 
   const onDelete = useCallback((row: Category) => {
-    // Security check - only allow admin users to delete
     if (userRole !== 'admin') {
       toast.error('Access denied: Admin privileges required');
       return;
@@ -77,15 +77,14 @@ export default function CategoriesClient() {
 
   const confirmDelete = useCallback(async () => {
     if (!deleting?._id) return;
-    
-    // Security check - only allow admin users
+
     if (userRole !== 'admin') {
       toast.error('Access denied: Admin privileges required');
       setDeleteOpen(false);
       setDeleting(null);
       return;
     }
-    
+
     const id = deleting._id;
     const prev = rows;
     setDeleteLoading(true);
@@ -109,9 +108,9 @@ export default function CategoriesClient() {
     }
   }, [deleting, rows, token, userRole]);
 
-  const columns = useMemo(() => getCategoryColumns({ 
-    onEdit: () => {}, 
-    onDelete 
+  const columns = useMemo(() => getCategoryColumns({
+    onEdit: () => {},
+    onDelete
   }), [onDelete]);
 
   const filtered = useMemo(() => {
@@ -145,5 +144,3 @@ export default function CategoriesClient() {
     </div>
   );
 }
-
-
