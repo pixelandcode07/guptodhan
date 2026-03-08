@@ -18,12 +18,9 @@ export default async function EditCategoryPage({
   const token = (session as any)?.accessToken as (string | undefined);
   const userRole = (session as any)?.user?.role as (string | undefined);
 
+  // Fetch category details by _id; fall back to scanning all if needed
   const all = await CategoryServices.getAllCategoriesFromDB();
-
-  // _id অথবা categoryId দুইটা দিয়েই search করবে
-  const category = (all as any[]).find((c: any) =>
-    String(c._id) === String(id) || String(c.categoryId) === String(id)
-  );
+  const category = all.find((c: any) => String(c._id) === String(id));
 
   if (!category) {
     return (
@@ -53,8 +50,11 @@ export default async function EditCategoryPage({
             </Link>
           </div>
         </div>
+
         <EditCategoryForm category={JSON.parse(JSON.stringify(category))} token={token} userRole={userRole} />
       </div>
     </div>
   );
 }
+
+
