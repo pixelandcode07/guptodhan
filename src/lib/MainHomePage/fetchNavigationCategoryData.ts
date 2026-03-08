@@ -1,14 +1,27 @@
+
 import { ApiResponse, MainCategory } from '@/types/navigation-menu';
+import axios from 'axios';
+
+
 
 export async function fetchNavigationCategoryData(): Promise<MainCategory[]> {
-  const baseUrl = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL;
-  try {
-    const res = await fetch(`${baseUrl}/api/v1/ecommerce-category/ecomCategory/mainCategory`, { cache: 'no-store' });
-    if (!res.ok) return [];
-    const json: ApiResponse = await res.json();
-    return json?.success && Array.isArray(json.data) ? json.data : [];
-  } catch (error) {
-    console.error('❌ Failed to fetch Main Category data:', error);
-    return [];
-  }
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+
+    try {
+        const res = await axios.get<ApiResponse>(
+            `${baseUrl}/api/v1/ecommerce-category/ecomCategory/mainCategory`,
+            {
+                headers: { 'Cache-Control': 'no-store' },
+            }
+        );
+
+        if (res.data?.success && Array.isArray(res.data.data)) {
+            return res.data.data;
+        }
+
+        return [];
+    } catch (error) {
+        console.error('❌ Failed to fetch Main Category data:', error);
+        return [];
+    }
 }
