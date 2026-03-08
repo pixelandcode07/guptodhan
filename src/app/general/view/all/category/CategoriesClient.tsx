@@ -61,15 +61,16 @@ export default function CategoriesClient() {
     } catch (e: unknown) {
       console.error("Error fetching categories:", e);
       const err = e as { response?: { data?: { message?: string } }, message?: string };
-      const msg = err?.response?.data?.message || err?.message || "Failed to fetch categories";
-      toast.error(msg);
+      toast.error(err?.response?.data?.message || err?.message || "Failed to fetch categories");
     }
   }, []);
 
   useEffect(() => { fetchRows(); }, [fetchRows]);
 
   const onEdit = useCallback((row: Category) => {
-    router.push(`/general/edit/category/${row._id}?name=${encodeURIComponent(row.name)}`);
+    // _id অথবা categoryId যেটা পাওয়া যায় সেটা use করবে
+    const id = (row as any)._id || row.categoryId;
+    router.push(`/general/edit/category/${id}?name=${encodeURIComponent(row.name)}`);
   }, [router]);
 
   const onDelete = useCallback((row: Category) => {
@@ -82,19 +83,17 @@ export default function CategoriesClient() {
   }, [userRole]);
 
   const confirmDelete = useCallback(async () => {
-    if (!deleting?._id) return;
-
+    if (!deleting) return;
     if (userRole !== 'admin') {
       toast.error('Access denied: Admin privileges required');
       setDeleteOpen(false);
       setDeleting(null);
       return;
     }
-
-    const id = deleting._id;
+    const id = (deleting as any)._id || deleting.categoryId;
     const prev = rows;
     setDeleteLoading(true);
-    setRows((r) => r.filter((x) => x._id !== id).map((x, idx) => ({ ...x, id: idx + 1 })));
+    setRows((r) => r.filter((x) => (x as any)._id !== id && x.categoryId !== id).map((x, idx) => ({ ...x, id: idx + 1 })));
     try {
       await axios.delete(`/api/v1/ecommerce-category/ecomCategory/${id}`, {
         headers: {
@@ -138,7 +137,6 @@ export default function CategoriesClient() {
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <DataTable columns={columns} data={filtered} />
         </div>
-
         <DeleteCategoryDialog
           open={deleteOpen}
           onOpenChange={setDeleteOpen}
