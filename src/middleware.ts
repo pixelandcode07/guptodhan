@@ -21,7 +21,7 @@ const publicRoutes = [
 const adminRoutes = [
   '/general',
   '/api/v1/users',
-  '/api/v1/withdrawal',  
+  '/api/v1/withdrawal',
   '/api/v1/donation-users',
   '/api/v1/admin/account-deletion',
   '/api/v1/donation-stats/dashboard',
@@ -123,6 +123,16 @@ const protectedApiRoutes = [
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
+  const hostname = req.headers.get('host') || '';
+
+  // ✅ vendor.guptodhan.com — API ছাড়া সব request pass through
+  if (
+    hostname.startsWith('vendor.') &&
+    !path.startsWith('/api') &&
+    !path.startsWith('/_next')
+  ) {
+    return NextResponse.next();
+  }
 
   // ✅ Public Route — সবার আগে allow
   if (publicRoutes.some((route) => path.startsWith(route))) {
@@ -177,8 +187,6 @@ export async function middleware(req: NextRequest) {
       const { payload } = await jwtVerify(token, secret);
       tokenPayload = payload;
     } catch (err: unknown) {
-      // ✅ Signature error — silent, log করব না (এটা স্বাভাবিক public request)
-      // শুধু unexpected error হলে log করব
       const message = err instanceof Error ? err.message : 'unknown';
       if (
         message !== 'signature verification failed' &&
@@ -222,31 +230,31 @@ export async function middleware(req: NextRequest) {
     );
   }
 
-// 🔹 Admin Check
-if (isAdminRoute && tokenPayload.role !== 'admin') {
-  if (isVendorRoute && tokenPayload.role === 'vendor') {
-    (NextResponse.next())
-  } 
-  else if (path.startsWith('/api/v1/withdrawal/vendor/') && tokenPayload.role === 'vendor') {
-  } 
-  else {
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Forbidden: Admin only.',
-      },
-      { status: StatusCodes.FORBIDDEN }
-    );
+  // 🔹 Admin Check
+  if (isAdminRoute && tokenPayload.role !== 'admin') {
+    if (isVendorRoute && tokenPayload.role === 'vendor') {
+      (NextResponse.next())
+    }
+    else if (path.startsWith('/api/v1/withdrawal/vendor/') && tokenPayload.role === 'vendor') {
+    }
+    else {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Forbidden: Admin only.',
+        },
+        { status: StatusCodes.FORBIDDEN }
+      );
+    }
   }
-}
 
   // 🔥 Vendor Check
   if (
-  isVendorRoute &&
-  tokenPayload.role !== 'vendor' &&
-  tokenPayload.role !== 'admin' &&
-  !isAdminRoute
-) {
+    isVendorRoute &&
+    tokenPayload.role !== 'vendor' &&
+    tokenPayload.role !== 'admin' &&
+    !isAdminRoute
+  ) {
     if (path.startsWith('/dashboard')) {
       return NextResponse.redirect(new URL('/', req.url));
     }
