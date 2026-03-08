@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { DataTable } from "@/components/TableHelper/data-table";
 import { getCategoryColumns, type Category } from "@/components/TableHelper/category_columns";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import CategoriesHeader from "./CategoriesHeader";
 import CategoriesFilters from "./CategoriesFilters";
 import DeleteCategoryDialog from "./DeleteCategoryDialog";
@@ -21,13 +20,11 @@ type ApiCategory = {
   isNavbar: boolean;
   slug: string;
   status: "active" | "inactive";
-  createdAt?: string;
-  created_at?: string;
+  createdAt: string;
 };
 
 export default function CategoriesClient() {
   const { data: session } = useSession();
-  const router = useRouter();
   const s = session as (undefined | { accessToken?: string; user?: { role?: string } });
   const token = s?.accessToken;
   const userRole = s?.user?.role;
@@ -40,7 +37,7 @@ export default function CategoriesClient() {
 
   const fetchRows = useCallback(async () => {
     try {
-      const res = await axios.get("/api/v1/ecommerce-category/ecomCategory/mainCategory", {
+      const res = await axios.get("/api/v1/ecommerce-category/ecomCategory", {
         params: { _ts: Date.now() },
       });
       const items: ApiCategory[] = res.data.data || [];
@@ -55,25 +52,21 @@ export default function CategoriesClient() {
         isFeatured: it.isFeatured,
         isNavbar: it.isNavbar,
         status: it.status === "active" ? "Active" : "Inactive",
-        created_at: it.createdAt || it.created_at || "",
+        created_at: it.createdAt,
       }));
       setRows(mapped);
     } catch (e: unknown) {
       console.error("Error fetching categories:", e);
       const err = e as { response?: { data?: { message?: string } }, message?: string };
-      toast.error(err?.response?.data?.message || err?.message || "Failed to fetch categories");
+      const msg = err?.response?.data?.message || err?.message || "Failed to fetch categories";
+      toast.error(msg);
     }
   }, []);
 
   useEffect(() => { fetchRows(); }, [fetchRows]);
 
-  const onEdit = useCallback((row: Category) => {
-    // _id অথবা categoryId যেটা পাওয়া যায় সেটা use করবে
-    const id = (row as any)._id || row.categoryId;
-    router.push(`/general/edit/category/${id}?name=${encodeURIComponent(row.name)}`);
-  }, [router]);
-
   const onDelete = useCallback((row: Category) => {
+    // Security check - only allow admin users to delete
     if (userRole !== 'admin') {
       toast.error('Access denied: Admin privileges required');
       return;
@@ -83,17 +76,20 @@ export default function CategoriesClient() {
   }, [userRole]);
 
   const confirmDelete = useCallback(async () => {
-    if (!deleting) return;
+    if (!deleting?._id) return;
+    
+    // Security check - only allow admin users
     if (userRole !== 'admin') {
       toast.error('Access denied: Admin privileges required');
       setDeleteOpen(false);
       setDeleting(null);
       return;
     }
-    const id = (deleting as any)._id || deleting.categoryId;
+    
+    const id = deleting._id;
     const prev = rows;
     setDeleteLoading(true);
-    setRows((r) => r.filter((x) => (x as any)._id !== id && x.categoryId !== id).map((x, idx) => ({ ...x, id: idx + 1 })));
+    setRows((r) => r.filter((x) => x._id !== id).map((x, idx) => ({ ...x, id: idx + 1 })));
     try {
       await axios.delete(`/api/v1/ecommerce-category/ecomCategory/${id}`, {
         headers: {
@@ -113,10 +109,10 @@ export default function CategoriesClient() {
     }
   }, [deleting, rows, token, userRole]);
 
-  const columns = useMemo(() => getCategoryColumns({
-    onEdit,
-    onDelete,
-  }), [onEdit, onDelete]);
+  const columns = useMemo(() => getCategoryColumns({ 
+    onEdit: () => {}, 
+    onDelete 
+  }), [onDelete]);
 
   const filtered = useMemo(() => {
     const byStatus = (r: Category) => statusFilter === "all" || r.status === statusFilter;
@@ -137,6 +133,7 @@ export default function CategoriesClient() {
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <DataTable columns={columns} data={filtered} />
         </div>
+
         <DeleteCategoryDialog
           open={deleteOpen}
           onOpenChange={setDeleteOpen}
@@ -148,3 +145,5 @@ export default function CategoriesClient() {
     </div>
   );
 }
+
+
