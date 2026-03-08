@@ -33,8 +33,8 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'guptodhan.com', pathname: '/**' },
       { protocol: 'https', hostname: 'app-area.guptodhan.com', pathname: '/**' },
       // Purono domain (backward compat)
-      { protocol: 'https', hostname: 'guptodhandigital.com', pathname: '/**' },
-      { protocol: 'https', hostname: 'www.guptodhandigital.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'guptodhan.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'www.guptodhan.com', pathname: '/**' },
       // Image hosts
       { protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' },
       { protocol: 'http', hostname: '76.13.191.238', pathname: '/**' },
