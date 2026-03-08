@@ -52,7 +52,7 @@ const data = {
     { title: 'Delivery Charges' },
     { title: 'Upazila & Thana' },
     { title: 'Payment History' },
-    { title: 'Account Deletion' }, // ✅ NEW
+    { title: 'Account Deletion' },
     { title: 'Generate Reports' },
     { title: 'Download Backup' },
   ],
