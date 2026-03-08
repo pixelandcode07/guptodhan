@@ -1,25 +1,15 @@
 import { ApiResponse } from '@/types/FeaturedCategoryType';
-import axios from 'axios';
 import { IStory } from '../modules/story/story.interface';
 
 export async function fetchStory(): Promise<IStory[]> {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-
-    try {
-        const res = await axios.get<ApiResponse<IStory[]>>(
-            `${baseUrl}/api/v1/story`,
-            {
-                headers: { 'Cache-Control': 'no-store' },
-            }
-        );
-
-        if (res.data?.success && Array.isArray(res.data.data)) {
-            return res.data.data;
-        }
-
-        return [];
-    } catch (error) {
-        console.error('❌ Failed to fetch Featured Categories:', error);
-        return [];
-    }
+  const baseUrl = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL;
+  try {
+    const res = await fetch(`${baseUrl}/api/v1/story`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const json: ApiResponse<IStory[]> = await res.json();
+    return json?.success && Array.isArray(json.data) ? json.data : [];
+  } catch (error) {
+    console.error('❌ Failed to fetch Story:', error);
+    return [];
+  }
 }
