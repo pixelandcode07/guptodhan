@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { DataTable } from "@/components/TableHelper/data-table";
 import { getCategoryColumns, type Category } from "@/components/TableHelper/category_columns";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import CategoriesHeader from "./CategoriesHeader";
 import CategoriesFilters from "./CategoriesFilters";
 import DeleteCategoryDialog from "./DeleteCategoryDialog";
@@ -26,6 +27,7 @@ type ApiCategory = {
 
 export default function CategoriesClient() {
   const { data: session } = useSession();
+  const router = useRouter();
   const s = session as (undefined | { accessToken?: string; user?: { role?: string } });
   const token = s?.accessToken;
   const userRole = s?.user?.role;
@@ -65,6 +67,10 @@ export default function CategoriesClient() {
   }, []);
 
   useEffect(() => { fetchRows(); }, [fetchRows]);
+
+  const onEdit = useCallback((row: Category) => {
+    router.push(`/general/edit/category/${row._id}?name=${encodeURIComponent(row.name)}`);
+  }, [router]);
 
   const onDelete = useCallback((row: Category) => {
     if (userRole !== 'admin') {
@@ -109,9 +115,9 @@ export default function CategoriesClient() {
   }, [deleting, rows, token, userRole]);
 
   const columns = useMemo(() => getCategoryColumns({
-    onEdit: () => {},
-    onDelete
-  }), [onDelete]);
+    onEdit,
+    onDelete,
+  }), [onEdit, onDelete]);
 
   const filtered = useMemo(() => {
     const byStatus = (r: Category) => statusFilter === "all" || r.status === statusFilter;
