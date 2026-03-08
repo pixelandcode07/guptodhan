@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import axios from "axios";
+import { SITE_CONFIG } from "@/lib/config/siteConfig";
 
 type Step = "email" | "otp" | "reset";
 
@@ -18,26 +19,20 @@ export default function VendorForgotPassword() {
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // ✅ পাসওয়ার্ড দেখার স্টেট
-
+  const [showPassword, setShowPassword] = useState(false);
   const [resetToken, setResetToken] = useState<string>("");
 
-  // ✅ সাধারণ ইউজারের জন্য সুন্দর এরর হ্যান্ডলিং ফাংশন
   const handleError = (err: any) => {
     console.error("Error details:", err);
-    // যদি এরর মেসেজটা একটা অ্যারে হয় (Zod এরর), তবে প্রথম মেসেজটা দেখাবে
     if (Array.isArray(err.response?.data)) {
       return toast.error(err.response.data[0]?.message || "Invalid input data");
     }
-    // অন্য সব ক্ষেত্রে নরমাল মেসেজ
     toast.error(err.response?.data?.message || "Something went wrong. Please try again.");
   };
 
-  // Step 1: Send OTP
   const sendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return toast.error("Please enter your registered email address.");
-
     setIsLoading(true);
     try {
       await axios.post("/api/v1/auth/vendor-forgot-password/send-otp", { email });
@@ -50,20 +45,14 @@ export default function VendorForgotPassword() {
     }
   };
 
-  // Step 2: Verify OTP
   const verifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!otp || otp.length !== 6) return toast.error("Please enter the 6-digit valid code.");
-
     setIsLoading(true);
     try {
-      const res = await axios.post("/api/v1/auth/vendor-forgot-password/verify-otp", {
-        email,
-        otp,
-      });
+      const res = await axios.post("/api/v1/auth/vendor-forgot-password/verify-otp", { email, otp });
       const tokenFromBackend = res.data.data.resetToken;
       setResetToken(tokenFromBackend);
-
       toast.success("OTP verified! You can now set a new password.");
       setStep("reset");
     } catch (err: any) {
@@ -73,27 +62,23 @@ export default function VendorForgotPassword() {
     }
   };
 
-  // Step 3: Reset Password
   const resetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword.length < 8) return toast.error("Password must be at least 8 characters long.");
-    
     if (!resetToken) {
       toast.error("Session expired. Please start again from the email step.");
       setStep("email");
       return;
     }
-
     setIsLoading(true);
     try {
       await axios.post("/api/v1/auth/vendor-forgot-password/reset", {
         token: resetToken,
         newPassword,
       });
-
       toast.success("Password reset successful! Redirecting to login...");
       setTimeout(() => {
-        window.location.href = "/vendor-singin";
+        window.location.href = `${SITE_CONFIG.vendorUrl}/vendor-singin`;
       }, 2000);
     } catch (err: any) {
       handleError(err);
@@ -112,7 +97,6 @@ export default function VendorForgotPassword() {
         <div className="rounded-3xl p-1 bg-gradient-to-r from-emerald-200 via-white/40 to-sky-200 shadow-2xl">
           <div className="bg-white/30 backdrop-blur-md rounded-3xl p-8 border border-white/30">
 
-            {/* Header */}
             <div className="text-center mb-8">
               <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-tr from-emerald-500 to-sky-500 flex items-center justify-center text-white text-4xl font-extrabold shadow-xl">
                 G
@@ -132,7 +116,6 @@ export default function VendorForgotPassword() {
             <Card className="bg-white/70 backdrop-blur-sm border border-white/40 shadow-xl overflow-hidden">
               <div className="p-6 md:p-8">
 
-                {/* Step 1: Email Form */}
                 {step === "email" && (
                   <form onSubmit={sendOtp} className="space-y-6">
                     <div className="space-y-2">
@@ -148,7 +131,6 @@ export default function VendorForgotPassword() {
                         required
                       />
                     </div>
-
                     <Button
                       type="submit"
                       disabled={isLoading}
@@ -159,7 +141,6 @@ export default function VendorForgotPassword() {
                   </form>
                 )}
 
-                {/* Step 2: OTP Form */}
                 {step === "otp" && (
                   <form onSubmit={verifyOtp} className="space-y-6">
                     <div className="space-y-2">
@@ -177,14 +158,8 @@ export default function VendorForgotPassword() {
                         Code sent to: <span className="text-emerald-600 font-medium">{email}</span>
                       </p>
                     </div>
-
                     <div className="flex gap-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setStep("email")}
-                        className="flex-1 h-11 rounded-xl"
-                      >
+                      <Button type="button" variant="outline" onClick={() => setStep("email")} className="flex-1 h-11 rounded-xl">
                         Back
                       </Button>
                       <Button
@@ -198,7 +173,6 @@ export default function VendorForgotPassword() {
                   </form>
                 )}
 
-                {/* Step 3: New Password Form */}
                 {step === "reset" && (
                   <form onSubmit={resetPassword} className="space-y-6">
                     <div className="space-y-2">
@@ -207,14 +181,13 @@ export default function VendorForgotPassword() {
                       </Label>
                       <div className="relative">
                         <Input
-                          type={showPassword ? "text" : "password"} // ✅ পাসওয়ার্ড দেখার জন্য টাইপ চেঞ্জ
+                          type={showPassword ? "text" : "password"}
                           placeholder="Min. 8 characters"
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           className="h-12 rounded-xl border-white/40 bg-white/80 pr-12"
                           required
                         />
-                        {/* ✅ Eye Button */}
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
@@ -224,28 +197,20 @@ export default function VendorForgotPassword() {
                         </button>
                       </div>
                     </div>
-
                     <Button
                       type="submit"
                       disabled={isLoading}
                       className="w-full h-12 text-base font-bold rounded-xl bg-gradient-to-r from-emerald-500 to-sky-500 text-white flex items-center justify-center gap-2"
                     >
-                      {isLoading ? (
-                        <Loader2 className="animate-spin" />
-                      ) : (
-                        <>
-                          <CheckCircle size={18} /> Update Password
-                        </>
-                      )}
+                      {isLoading ? <Loader2 className="animate-spin" /> : <><CheckCircle size={18} /> Update Password</>}
                     </Button>
                   </form>
                 )}
               </div>
             </Card>
 
-            {/* Footer */}
             <div className="mt-8 text-center">
-              <Link href="/vendor-singin" className="text-slate-500 hover:text-emerald-600 text-sm font-medium transition-colors flex items-center justify-center gap-1">
+              <Link href={`${SITE_CONFIG.vendorUrl}/vendor-singin`} className="text-slate-500 hover:text-emerald-600 text-sm font-medium transition-colors flex items-center justify-center gap-1">
                 <ArrowLeft size={14} /> Back to Sign In
               </Link>
             </div>
