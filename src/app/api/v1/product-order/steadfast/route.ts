@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
             });
 
             // ✅ Guptodhan এর নিজস্ব ট্র্যাকিং লিঙ্কসহ SMS পাঠানো
-            const smsMessage = `Dear ${order.shippingName}, your order ${order.orderId} is shipped! Tracking Code: ${trackCode}. Track here: https://www.guptodhandigital.com/track-order. Thank you!`;
+            const smsMessage = `Dear ${order.shippingName}, your order ${order.orderId} is shipped! Tracking Code: ${trackCode}. Track here: https://www.guptodhan.com/track-order. Thank you!`;
             
             sendSMS(order.shippingPhone, smsMessage).catch(e => console.error("SMS Sync Error:", e));
 
