@@ -11,7 +11,7 @@ export const fetchVendorOrders = async (
 ): Promise<{ store: Store; orders: VendorOrder[] }> => {
   
   // ✅ VPS Optimization: Use Public Base URL or Fallback to domain
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guptodhandigital.com';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guptodhan.com';
 
   if (!vendorId) {
     throw new Error('Vendor ID is required');

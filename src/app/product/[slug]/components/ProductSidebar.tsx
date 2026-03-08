@@ -99,13 +99,23 @@ export default function ProductMainInfo({
     checkWishlistStatus();
   }, [product?._id, isInWishlist, session?.user]);
 
-  // Wishlist Handler
+  // ==========================================
+  // ✅ UPDATE: Wishlist Handler (Modal Trigger)
+  // ==========================================
   const handleWishlist = async () => {
     if (!session?.user) {
       toast.error('Please login to add to wishlist');
-      router.push('/auth/login');
+      
+      // ✅ মডাল ওপেন করার লজিক
+      const loginButton = document.getElementById('login-modal-btn');
+      if (loginButton) {
+        loginButton.click();
+      } else {
+        toast.info("Please click the Login button at the top.");
+      }
       return;
     }
+
     if (!product?._id) return;
     setIsWishlistToggling(true);
     try {
@@ -131,7 +141,6 @@ export default function ProductMainInfo({
     }
   };
 
-  // ✅ FIXED: Variants Logic
   const availableColors = useMemo(() => {
     if (!product.productOptions) return [];
     const colors = product.productOptions.map((opt: any) => {
@@ -173,7 +182,6 @@ export default function ProductMainInfo({
   const finalPrice = variantDiscountPrice || variantPrice || 0;
   const discountPercent = calculateDiscountPercent(variantPrice, variantDiscountPrice);
 
-  // Delivery Info
   const deliveryCharge = locationType === 'dhaka' ? 70 : 130;
   const deliveryTime = locationType === 'dhaka' ? '1 - 4 day(s)' : '4 - 7 day(s)';
   const locationText = locationType === 'dhaka' ? 'Dhaka, Dhaka North, Banani Road No. 12 - 19' : 'Outside Dhaka, Sadar, Chattogram';
@@ -183,11 +191,26 @@ export default function ProductMainInfo({
     toast.success(`Location changed to ${locationType === 'dhaka' ? 'Outside Dhaka' : 'Inside Dhaka'}`);
   };
 
-  // Cart Handlers
+  // ==========================================
+  // ✅ UPDATE: Buy Now Handler (Modal Trigger & Auto Redirect)
+  // ==========================================
   const handleBuyNow = async () => {
     if (availableColors.length > 0 && !selectedColor) return toast.error('Please select a color');
     if (availableSizes.length > 0 && !selectedSize) return toast.error('Please select a size');
     
+    if (!session?.user) {
+      toast.error('Please login to complete your purchase');
+      
+      // ✅ জাস্ট নরমাল ডিফল্ট স্টোরেজেই লিংকটা সেভ করবো
+      localStorage.setItem('redirectAfterLogin', '/products/shoppinginfo?buyNow=true');
+      sessionStorage.setItem('buyNowProductId', product._id);
+      
+      // মডাল ওপেন হবে
+      const loginButton = document.getElementById('login-modal-btn') || document.getElementById('login-modal-btn-mobile');
+      if (loginButton) loginButton.click();
+      return;
+    }
+    // ✅ লগইন থাকলে সরাসরি চেকআউট পেজে যাবে
     setIsBuyingNow(true);
     try {
       await addToCart(product._id, quantity, { 
@@ -196,8 +219,11 @@ export default function ProductMainInfo({
       });
       sessionStorage.setItem('buyNowProductId', product._id);
       router.push('/products/shoppinginfo?buyNow=true');
-    } catch { toast.error('Failed to process buy now'); } 
-    finally { setIsBuyingNow(false); }
+    } catch { 
+      toast.error('Failed to process buy now'); 
+    } finally { 
+      setIsBuyingNow(false); 
+    }
   };
 
   const handleAddToCart = async () => {
@@ -308,7 +334,7 @@ export default function ProductMainInfo({
               </div>
             </div>
 
-            {/* Action Buttons - Stack on super small screens if needed, otherwise Row */}
+            {/* Action Buttons */}
             <div className="flex gap-3 w-full">
               <Button onClick={handleBuyNow} disabled={isBuyingNow || variantStock === 0} className="flex-1 h-12 bg-[#00005E] hover:bg-[#000040] text-white font-bold rounded-md shadow-lg shadow-blue-900/10 uppercase tracking-wide text-xs sm:text-sm">
                 <Zap size={18} className="mr-2" /> Buy Now
@@ -330,7 +356,6 @@ export default function ProductMainInfo({
         </div>
 
         {/* RIGHT SIDE: Sidebar (Responsive) */}
-        {/* On Mobile: Full width, Border Top. On Desktop: Fixed Width, Border Left */}
         <div className="w-full lg:w-[320px] xl:w-[350px] shrink-0 flex flex-col gap-4 border-t lg:border-t-0 lg:border-l lg:pl-8 border-gray-100 pt-6 lg:pt-0">
           
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">

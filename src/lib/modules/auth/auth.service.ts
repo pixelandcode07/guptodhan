@@ -230,22 +230,65 @@ const vendorVerifyForgotPasswordOtpFromEmail = async (email: string, otp: string
 
 
 const refreshToken = async (token: string) => {
+  // ১. রিফ্রেশ সিক্রেট কি চেক করা
   const refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
-  if (!refreshTokenSecret) throw new Error('JWT refresh secret not configured');
+  if (!refreshTokenSecret) {
+    throw new Error('JWT refresh secret not configured in environment variables.');
+  }
 
-  const decoded = verifyToken(token, refreshTokenSecret) as { userId?: string };
-  if (!decoded || !decoded.userId) throw new Error('Invalid refresh token');
+  // ২. টোকেনটি ভেরিফাই করা (এটি REFRESH_SECRET দিয়ে হবে)
+  let decoded: any;
+  try {
+    decoded = verifyToken(token, refreshTokenSecret);
+  } catch (error) {
+    throw new Error('Invalid or expired refresh token. Please login again.');
+  }
 
-  const user = await User.findById(decoded.userId);
-  if (!user || user.isDeleted) throw new Error('User not found or deleted');
+  // ৩. ডিকোড করা ডেটা থেকে ইউজার আইডি নেওয়া
+  const { userId } = decoded;
+  if (!userId) {
+    throw new Error('Invalid token payload.');
+  }
 
-  const jwtPayload = { userId: user._id.toString(), email: user.email, role: user.role };
+  // ৪. ডাটাবেসে ইউজার আছে কি না এবং একটিভ কি না তা চেক করা
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error('User not found!');
+  }
+
+  if (user.isDeleted) {
+    throw new Error('This account has been deleted.');
+  }
+
+  if (!user.isActive) {
+    throw new Error('User account is inactive.');
+  }
+
+  // ৫. নতুন এক্সেস টোকেনের জন্য পেলোড তৈরি
+  const jwtPayload = {
+    userId: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  };
+
+  // ৬. নতুন এক্সেস টোকেন জেনারেট করা (এটি ACCESS_SECRET দিয়ে হবে)
   const accessTokenSecret = process.env.JWT_ACCESS_SECRET;
   const accessTokenExpiresIn = process.env.JWT_ACCESS_EXPIRES_IN;
-  if (!accessTokenSecret || !accessTokenExpiresIn) throw new Error('JWT access secret not configured');
 
-  const accessToken = generateToken(jwtPayload, accessTokenSecret, accessTokenExpiresIn);
-  return { accessToken };
+  if (!accessTokenSecret || !accessTokenExpiresIn) {
+    throw new Error('JWT access configuration missing.');
+  }
+
+  const accessToken = generateToken(
+    jwtPayload,
+    accessTokenSecret,
+    accessTokenExpiresIn
+  );
+
+  // ৭. শুধুমাত্র নতুন এক্সেস টোকেনটি রিটার্ন করা
+  return {
+    accessToken,
+  };
 };
 
 const changePassword = async (userId: string, payload: TChangePassword) => {

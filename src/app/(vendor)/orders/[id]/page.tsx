@@ -5,7 +5,7 @@ import VendorOrderDetailsClient from './components/VendorOrderDetailsClient';
 
 async function getOrderById(orderId: string, token?: string) {
   const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL || 'https://guptodhandigital.com';
+    process.env.NEXT_PUBLIC_BASE_URL || 'https://guptodhan.com';
 
   try {
     const res = await fetch(`${baseUrl}/api/v1/product-order/${orderId}`, {

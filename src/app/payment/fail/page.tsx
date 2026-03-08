@@ -103,7 +103,7 @@ function FailContent() {
             size="lg" 
             className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
           >
-            <Link href="/home/product/shoppinginfo" className="flex items-center gap-2">
+            <Link href="/products/shoppinginfo" className="flex items-center gap-2">
               <RefreshCw className="w-5 h-5" />
               Try Again
             </Link>

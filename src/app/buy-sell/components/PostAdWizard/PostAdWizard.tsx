@@ -192,20 +192,17 @@ export default function PostAdWizard() {
 
       if (responseData && responseData.message) {
         try {
-          // Check if the message is a JSON array string
           const parsedMessage = typeof responseData.message === 'string' && responseData.message.startsWith('[')
             ? JSON.parse(responseData.message)
             : responseData.message;
 
           if (Array.isArray(parsedMessage) && parsedMessage.length > 0) {
-            const errorObj = parsedMessage[0]; // Take the first error
-            const field = errorObj.path?.[0]; // e.g., "description"
+            const errorObj = parsedMessage[0];
+            const field = errorObj.path?.[0];
 
-            // Custom user-friendly message for description length
             if (field === 'description' && errorObj.code === 'too_small') {
               errorMessage = 'Description is too short. Please write at least 20 characters.';
             } 
-            // Fallback for other fields
             else if (field) {
               const fieldName = String(field).charAt(0).toUpperCase() + String(field).slice(1);
               errorMessage = `${fieldName}: ${errorObj.message}`;
@@ -216,7 +213,6 @@ export default function PostAdWizard() {
             errorMessage = typeof responseData.message === 'string' ? responseData.message : 'An error occurred.';
           }
         } catch (parseError) {
-          // If JSON parse fails, just show the plain string message
           errorMessage = typeof responseData.message === 'string' ? responseData.message : errorMessage;
         }
       }
@@ -228,11 +224,16 @@ export default function PostAdWizard() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-10 min-h-screen">
-      <h1 className="text-3xl font-bold text-center mb-10 md:hidden">Post Your Ad</h1>
-      <div className='flex justify-between items-center mb-10 px-10'>
-        <h1 className="text-3xl font-bold hidden md:block"> Post Your Ad</h1>
-        <Button variant={'BlueBtn'} className='hidden md:block'>
+    // ✅ Fix: Added pb-28 for mobile and px-4 for responsiveness
+    <div className="max-w-6xl mx-auto py-6 md:py-10 px-4 md:px-10 min-h-screen pb-28 md:pb-12">
+      
+      {/* Mobile Title */}
+      <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6 md:hidden">Post Your Ad</h1>
+      
+      {/* Desktop Title & Back Button */}
+      <div className='hidden md:flex justify-between items-center mb-10'>
+        <h1 className="text-3xl font-bold"> Post Your Ad</h1>
+        <Button variant={'BlueBtn'}>
           <Link href="/buy-sell" className='flex justify-center items-center gap-2'>
             <MoveLeft className='w-4 h-4 text-gray-100' /> 
             <span>Back to Buy & Sell</span>
@@ -243,10 +244,11 @@ export default function PostAdWizard() {
       <form onSubmit={handleSubmit(onSubmit)}>
         <Tabs value={activeTab} onValueChange={handleTabChange as any} className="space-y-6">
           <div className="flex justify-center items-center">
-            <TabsList className="grid grid-cols-3 mb-6">
-              <TabsTrigger value="step1">Category</TabsTrigger>
-              <TabsTrigger value="step2">Location</TabsTrigger>
-              <TabsTrigger value="step3">Product Info</TabsTrigger>
+            {/* ✅ Fix: Added overflow-x-auto for very small mobile screens if needed */}
+            <TabsList className="grid grid-cols-3 mb-6 w-full max-w-md">
+              <TabsTrigger value="step1" className="text-xs sm:text-sm">Category</TabsTrigger>
+              <TabsTrigger value="step2" className="text-xs sm:text-sm">Location</TabsTrigger>
+              <TabsTrigger value="step3" className="text-xs sm:text-sm">Product Info</TabsTrigger>
             </TabsList>
           </div>
 

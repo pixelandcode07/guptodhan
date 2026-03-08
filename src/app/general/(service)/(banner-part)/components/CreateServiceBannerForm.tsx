@@ -28,11 +28,11 @@ import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
-// Zod Schema (as provided)
 const createServiceBannerValidationSchema = z.object({
-    bannerImage: z.instanceof(File).refine((file) => file.size > 0, {
-        message: 'Banner image is required',
-    }),
+    bannerImage: z.instanceof(File)
+        .refine((file) => file.size > 0, { message: 'Banner image is required' })
+        .refine((file) => file.size <= 500 * 1024, { message: 'Image size must be under 500KB' })
+        .refine((file) => ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type), { message: 'Only JPG, PNG or WebP allowed' }),
     bannerLink: z.string().url('Must be a valid URL').optional().or(z.literal('')),
     subTitle: z.string().optional(),
     bannerTitle: z.string().min(1, 'Banner title is required'),
@@ -45,24 +45,22 @@ type FormValues = z.infer<typeof createServiceBannerValidationSchema>;
 const toastStyle = {
     style: {
         background: '#ffffff',
-        // text: '#fffff',
         color: '#000000',
         border: '1px solid #e2e8f0'
     }
 };
 
 export default function CreateServiceBannerForm() {
-    const session = useSession()
+    const session = useSession();
     const token = (session as any)?.accessToken;
     const [previewImage, setPreviewImage] = useState<string | undefined>(undefined);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const router = useRouter()
+    const router = useRouter();
 
     const {
         register,
         handleSubmit,
         setValue,
-        watch,
         formState: { errors },
         reset,
     } = useForm<FormValues>({
@@ -87,7 +85,6 @@ export default function CreateServiceBannerForm() {
 
         try {
             const formData = new FormData();
-
             formData.append('bannerImage', data.bannerImage);
             formData.append('bannerTitle', data.bannerTitle);
             if (data.subTitle) formData.append('subTitle', data.subTitle);
@@ -131,7 +128,10 @@ export default function CreateServiceBannerForm() {
                         Create Service Banner
                     </CardTitle>
                     <CardDescription>
-                        Add a new promotional banner for the service section
+                        Add a new promotional banner for the service section.
+                        <span className="block mt-1 text-orange-500 font-medium">
+                            ⚠️ Recommended size: 1920x500px | Max 500KB | JPG, PNG or WebP only
+                        </span>
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -142,7 +142,7 @@ export default function CreateServiceBannerForm() {
                             <div className="mt-2">
                                 <UploadImage
                                     name="bannerImage"
-                                    label="Upload banner image (recommended: 1920x600)"
+                                    label="Upload banner image (1920x500px | Max 500KB | JPG/PNG/WebP)"
                                     preview={previewImage}
                                     onChange={handleImageChange}
                                 />

@@ -1,7 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import dbConnect from '@/lib/db';
-import { VendorProductServices } from '@/lib/modules/product/vendorProduct.service';
 import { CategoryServices } from '@/lib/modules/ecommerce-category/services/ecomCategory.service';
 import { StoreServices } from '@/lib/modules/vendor-store/vendorStore.service';
 import { BrandServices } from '@/lib/modules/brand/brand.service';
@@ -13,7 +12,7 @@ import { ProductSizeServices } from '@/lib/modules/product-config/services/produ
 import ProductDetailsClient from './components/ProductDetailsClient';
 import { HeroNav } from '@/app/components/Hero/HeroNav';
 
-// 🔥 Force dynamic — Redis cache update সাথে সাথে নতুন data আসবে
+// ✅ Force dynamic — SSR নিশ্চিত করার জন্য
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -21,48 +20,80 @@ interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
 
-// ✅ Helper: Date কে ISO string এ convert করা
-function toISOString(date: any): string {
-  if (!date) return new Date().toISOString();
-  if (typeof date === 'string') return date;
-  if (date instanceof Date) return date.toISOString();
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.guptodhan.com';
+
+// ─── API Fetch Function (Professional Next.js Fetch API for SSR) ──────────────
+// ✅ সরাসরি সার্ভিসের বদলে এই ফাংশনটি API থেকে ডাটা আনবে
+async function getProductBySlugFromAPI(slug: string) {
   try {
-    return new Date(date).toISOString();
-  } catch {
-    return new Date().toISOString();
+    const res = await fetch(`${BASE_URL}/api/v1/public/product/slug/${slug}`, {
+      cache: 'no-store', // ✅ SSR নিশ্চিত করবে এবং সবসময় ফ্রেশ ডাটা আনবে
+    });
+    
+    if (!res.ok) return null;
+    
+    const json = await res.json();
+    if (json.success && json.data) {
+      return json.data;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching product from API:', error);
+    return null;
   }
 }
 
-// ✅ Helper: priceValidUntil — সর্বদা ভবিষ্যতের date দেবে
+// ─── Image URL absolute করা ────────────────────────────────────────────────
+function toAbsoluteUrl(url?: string | null): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+  if (trimmed.startsWith('//')) return `https:${trimmed}`;
+  return `${BASE_URL}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
+}
+
+// ─── Product এর সব image collect করা ─────────────────────────────────────────
+function getProductImages(product: any): string[] {
+  const images: string[] = [];
+  const thumb = toAbsoluteUrl(product.thumbnailImage);
+  if (thumb) images.push(thumb);
+  if (Array.isArray(product.photoGallery)) {
+    for (const img of product.photoGallery) {
+      const abs = toAbsoluteUrl(img);
+      if (abs && !images.includes(abs)) images.push(abs);
+    }
+  }
+  return images;
+}
+
+// ─── Date helper ──────────────────────────────────────────────────────────────
+function toISOString(date: any): string {
+  if (!date) return new Date().toISOString();
+  if (date instanceof Date) return date.toISOString();
+  try { return new Date(date).toISOString(); } catch { return new Date().toISOString(); }
+}
+
+// ─── priceValidUntil ────────────────────────────────────
 function getValidPriceUntil(offerDeadline?: any): string {
   const deadline = offerDeadline ? new Date(offerDeadline) : null;
   const now = new Date();
-  // Offer deadline যদি ভবিষ্যতে থাকে তাহলে সেটা, নইলে আজ থেকে 90 দিন পর
   if (deadline && deadline > now) {
     return deadline.toISOString().split('T')[0];
   }
-  const fallback = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
-  return fallback.toISOString().split('T')[0];
+  return new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 }
 
-// ✅ Helper: Clean meta description — keyword stuffing এড়াতে
+// ─── Clean meta description ───────────────────────────────────────────────────
 function buildMetaDescription(product: any): string {
-  // metaDescription যদি থাকে এবং সেটা শুধু tag list না হয়
-  if (
-    product.metaDescription &&
-    product.metaDescription.length > 50 &&
-    !product.metaDescription.includes('\n') // নতুন লাইন মানে সাধারণত keyword list
-  ) {
-    return product.metaDescription.slice(0, 160);
-  }
+  const raw = product.metaDescription?.trim() ?? '';
+  const isGood = raw.length > 50 && !raw.includes('\n') && raw.split(',').length < 8;
+  if (isGood) return raw.slice(0, 160);
 
-  // shortDescription থেকে description বানাও
   if (product.shortDescription) {
     const clean = product.shortDescription.replace(/\n/g, ' ').trim();
     if (clean.length > 50) return clean.slice(0, 160);
   }
 
-  // Fallback: price সহ auto-generate
   const brand = product.brand?.name || product.brand?.brandName || '';
   const category = product.category?.name || '';
   const price = product.discountPrice || product.productPrice;
@@ -71,24 +102,45 @@ function buildMetaDescription(product: any): string {
     brand ? `by ${brand}` : '',
     category ? `in ${category}` : '',
     price ? `at ৳${price}` : '',
-    'in Bangladesh. Cash on Delivery available. Free delivery on eligible orders.',
+    '— Guptodhan Bangladesh. Cash on Delivery. Fast delivery guaranteed.',
   ].filter(Boolean);
   return parts.join(' ').slice(0, 160);
 }
 
-// ✅ Helper: Related products fetch
+// ─── Page title ───────────────────────────────────────────────────────────────
+function buildPageTitle(product: any): string {
+  if (product.metaTitle?.trim()) {
+    return product.metaTitle.trim().slice(0, 60);
+  }
+
+  const price = product.discountPrice || product.productPrice;
+  const discountPct =
+    product.productPrice && product.discountPrice
+      ? Math.round(((product.productPrice - product.discountPrice) / product.productPrice) * 100)
+      : 0;
+
+  const parts: string[] = [product.productTitle];
+  if (price) parts.push(`৳${price}`);
+  if (discountPct > 0) parts.push(`${discountPct}% Off`);
+
+  const title = parts.join(' - ');
+  return title.length > 60 ? title.slice(0, 57) + '...' : title;
+}
+
+// ─── Related products ─────────────────────────────────────────────────────────
 async function getRelatedProducts(categorySlug: string, currentProductId: string) {
   try {
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/ecommerce-category/ecomCategory/slug/${categorySlug}`;
-    const res = await fetch(url, { cache: 'no-store' });
+    const res = await fetch(
+      `${BASE_URL}/api/v1/ecommerce-category/ecomCategory/slug/${categorySlug}`,
+      { cache: 'no-store' }
+    );
     if (!res.ok) return [];
     const json = await res.json();
     if (!json.success || !json.data?.products) return [];
     return (json.data.products as any[]).filter(
       (p) => p._id?.toString() !== currentProductId
     );
-  } catch (error) {
-    console.error('Error fetching related products:', error);
+  } catch {
     return [];
   }
 }
@@ -101,98 +153,40 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     await dbConnect();
     const { slug } = await params;
 
-    const product = await VendorProductServices.getVendorProductBySlugFromDB(slug);
+    // ✅ DB সার্ভিসের বদলে API কল করা হলো
+    const product = await getProductBySlugFromAPI(slug);
 
     if (!product) {
       return {
-        title: 'Product Not Found | Guptodhan',
-        description: 'The product you are looking for does not exist.',
+        title: 'Product Not Found',
+        description: 'This product does not exist.',
         robots: { index: false, follow: false },
       };
     }
 
-    // ─── Title ────────────────────────────────────────────────────────
-    // metaTitle থাকলে সেটা ব্যবহার করো, নইলে auto-build করো
-    let title: string;
-    if (product.metaTitle && product.metaTitle.trim().length > 0) {
-      title = `${product.metaTitle.trim()} | Guptodhan`;
-    } else {
-      const discountPct =
-        product.productPrice && product.discountPrice
-          ? Math.round(
-              ((product.productPrice - product.discountPrice) / product.productPrice) * 100
-            )
-          : 0;
-      const parts = [product.productTitle];
-      if (product.discountPrice) {
-        parts.push(`৳${product.discountPrice}`);
-        if (discountPct > 0) parts.push(`(${discountPct}% Off)`);
-      } else if (product.productPrice) {
-        parts.push(`৳${product.productPrice}`);
-      }
-      parts.push('| Guptodhan');
-      title = parts.join(' ');
-    }
-
-    // ─── Description ─────────────────────────────────────────────────
+    const pageTitle = buildPageTitle(product);
     const description = buildMetaDescription(product);
+    const canonicalUrl = `${BASE_URL}/product/${slug}`;
 
-    // ─── Images ──────────────────────────────────────────────────────
-    const images =
-      product.photoGallery?.length > 0
-        ? product.photoGallery
-        : product.thumbnailImage
-        ? [product.thumbnailImage]
-        : [];
+    const images = getProductImages(product);
+    const primaryImage = images[0] || `${BASE_URL}/og-image.jpg`;
 
-    // ─── Keywords ────────────────────────────────────────────────────
     const keywords = [
       product.productTitle,
       product.brand?.name || product.brand?.brandName,
       product.category?.name,
+      product.subCategory?.name,
       'Bangladesh',
-      'online shopping',
       'Guptodhan',
-      ...(product.productTag || []),
-    ]
-      .filter(Boolean)
-      .join(', ');
-
-    // ─── Canonical URL ────────────────────────────────────────────────
-    // ⚠️ FIX: /products/ → /product/ (singular) — actual route এর সাথে match করো
-    const canonicalUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/product/${slug}`;
+      'buy online BD',
+      ...(product.productTag || []).slice(0, 5),
+    ].filter(Boolean).join(', ');
 
     return {
-      title,
+      title: pageTitle,
       description,
       keywords,
-
-      openGraph: {
-        title,
-        description,
-        url: canonicalUrl,
-        siteName: 'Guptodhan',
-        images: images.map((img: string) => ({
-          url: img,
-          width: 1200,
-          height: 630,
-          alt: product.productTitle,
-        })),
-        locale: 'bn_BD',         // ✅ Bangladesh locale
-        type: 'website',
-      },
-
-      twitter: {
-        card: 'summary_large_image',
-        title,
-        description,
-        images,
-      },
-
-      alternates: {
-        canonical: canonicalUrl,
-      },
-
+      alternates: { canonical: canonicalUrl },
       robots: {
         index: product.status === 'active',
         follow: true,
@@ -204,25 +198,46 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
           'max-video-preview': -1,
         },
       },
+      openGraph: {
+        title: pageTitle,
+        description,
+        url: canonicalUrl,
+        siteName: 'Guptodhan',
+        locale: 'en_US',
+        type: 'website',
+        images: images.slice(0, 4).map((img) => ({
+          url: img,
+          width: 1200,
+          height: 630,
+          alt: product.productTitle,
+        })),
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: pageTitle,
+        description,
+        images: [primaryImage],
+        site: '@guptodhan',
+      },
     };
   } catch (error) {
-    console.error('Error generating metadata:', error);
+    console.error('Metadata error:', error);
     return {
       title: 'Product | Guptodhan',
-      description: 'Shop quality products at Guptodhan',
+      description: 'Shop quality products at Guptodhan Bangladesh.',
     };
   }
 }
 
 // =====================================================================
-// ✅ MAIN PAGE COMPONENT
+// ✅ PAGE COMPONENT
 // =====================================================================
 export default async function ProductPage({ params }: ProductPageProps) {
   try {
     await dbConnect();
     const { slug } = await params;
 
-    // ✅ Parallel Data Fetching
+    // ✅ Parallel data fetching — DB সার্ভিসের বদলে API কল অ্যাড করা হলো
     const [
       rawProduct,
       categoriesData,
@@ -234,7 +249,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       colorsData,
       sizesData,
     ] = await Promise.all([
-      VendorProductServices.getVendorProductBySlugFromDB(slug),
+      getProductBySlugFromAPI(slug), // ✅ Updated to use Next.js fetch API
       CategoryServices.getAllCategoriesFromDB(),
       StoreServices.getAllStoresFromDB(),
       BrandServices.getAllBrandsFromDB(),
@@ -247,16 +262,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
     if (!rawProduct) notFound();
 
-    // ✅ Related products
+    // Related products
     let relatedProducts: any[] = [];
-    if (rawProduct.category && typeof rawProduct.category === 'object') {
-      const categorySlug = (rawProduct.category as any).slug;
-      if (categorySlug) {
-        relatedProducts = await getRelatedProducts(
-          categorySlug,
-          rawProduct._id.toString()
-        );
-      }
+    const categorySlug = (rawProduct.category as any)?.slug;
+    if (categorySlug) {
+      relatedProducts = await getRelatedProducts(categorySlug, rawProduct._id.toString());
     }
 
     const productData = {
@@ -278,57 +288,43 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
     const categoriesInfo = JSON.parse(JSON.stringify(categoriesData || []))
       .filter((cat: any) => cat?._id)
-      .map((cat: any, index: number) => ({
+      .map((cat: any, i: number) => ({
         ...cat,
-        mainCategoryId: cat._id || `temp-cat-${index}`,
+        mainCategoryId: cat._id || `temp-cat-${i}`,
         subCategories: (cat.subCategories || [])
           .filter((sub: any) => sub?._id)
-          .map((sub: any, subIndex: number) => ({
+          .map((sub: any, si: number) => ({
             ...sub,
-            subCategoryId: sub._id || `temp-sub-${index}-${subIndex}`,
+            subCategoryId: sub._id || `temp-sub-${i}-${si}`,
             children: (sub.children || [])
               .filter((child: any) => child?._id)
-              .map((child: any, childIndex: number) => ({
+              .map((child: any, ci: number) => ({
                 ...child,
-                childCategoryId:
-                  child._id || `temp-child-${index}-${subIndex}-${childIndex}`,
+                childCategoryId: child._id || `temp-child-${i}-${si}-${ci}`,
               })),
           })),
       }));
 
     const averageRating = rawProduct.ratingStats?.[0]?.averageRating || 0;
     const totalReviews = rawProduct.ratingStats?.[0]?.totalReviews || 0;
+    const productUrl = `${BASE_URL}/product/${slug}`;
 
-    // ─── Canonical URL (Schema) ───────────────────────────────────────
-    // ⚠️ FIX: /products/ → /product/ (singular)
-    const productUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/product/${slug}`;
+    const productImages = getProductImages(rawProduct);
 
     // ─── Product Schema (JSON-LD) ─────────────────────────────────────
     const productSchema = {
       '@context': 'https://schema.org/',
       '@type': 'Product',
       name: rawProduct.productTitle,
-      image:
-        rawProduct.photoGallery?.length > 0
-          ? rawProduct.photoGallery
-          : [rawProduct.thumbnailImage].filter(Boolean),
-      description:
-        rawProduct.shortDescription?.replace(/\n/g, ' ').slice(0, 500) ||
-        rawProduct.fullDescription?.replace(/<[^>]+>/g, '').slice(0, 500) ||
-        rawProduct.productTitle,
-      sku: rawProduct.sku || rawProduct.productId || rawProduct._id,
-      mpn: rawProduct.productId || rawProduct._id,
+      image: productImages,
+      description: buildMetaDescription(rawProduct),
+      sku: rawProduct.sku || rawProduct.productId || rawProduct._id?.toString(),
+      mpn: rawProduct.productId || rawProduct._id?.toString(),
       brand: {
         '@type': 'Brand',
-        name:
-          rawProduct.brand?.name ||
-          rawProduct.brand?.brandName ||
-          rawProduct.vendorName ||
-          'Guptodhan',
+        name: rawProduct.brand?.name || rawProduct.brand?.brandName || 'Guptodhan',
       },
-      ...(rawProduct.category?.name && {
-        category: rawProduct.category.name,
-      }),
+      ...(rawProduct.category?.name && { category: rawProduct.category.name }),
       ...(totalReviews > 0 && {
         aggregateRating: {
           '@type': 'AggregateRating',
@@ -342,18 +338,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
         '@type': 'Offer',
         url: productUrl,
         priceCurrency: 'BDT',
-        price: rawProduct.discountPrice || rawProduct.productPrice || 0,
-        // ✅ FIX: Expired deadline হলে fallback date ব্যবহার করো
+        price: (rawProduct.discountPrice || rawProduct.productPrice || 0).toString(),
         priceValidUntil: getValidPriceUntil(rawProduct.offerDeadline),
         availability:
-          (rawProduct.stock || 0) > 0
+          (rawProduct.stock || rawProduct.stockQuantity || 0) > 0
             ? 'https://schema.org/InStock'
             : 'https://schema.org/OutOfStock',
         itemCondition: 'https://schema.org/NewCondition',
         seller: {
           '@type': 'Organization',
           name: 'Guptodhan',
-          url: process.env.NEXT_PUBLIC_BASE_URL,
+          url: BASE_URL,
         },
         shippingDetails: {
           '@type': 'OfferShippingDetails',
@@ -390,19 +385,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        {
-          '@type': 'ListItem',
-          position: 1,
-          name: 'Home',
-          item: process.env.NEXT_PUBLIC_BASE_URL,
-        },
+        { '@type': 'ListItem', position: 1, name: 'Home', item: BASE_URL },
         {
           '@type': 'ListItem',
           position: 2,
           name: rawProduct.category?.name || 'Products',
           item: rawProduct.category?.slug
-            ? `${process.env.NEXT_PUBLIC_BASE_URL}/category/${rawProduct.category.slug}`
-            : `${process.env.NEXT_PUBLIC_BASE_URL}/products`,
+            ? `${BASE_URL}/category/${rawProduct.category.slug}`
+            : `${BASE_URL}/products`,
         },
         {
           '@type': 'ListItem',
@@ -421,21 +411,22 @@ export default async function ProductPage({ params }: ProductPageProps) {
       url: productUrl,
       name: rawProduct.metaTitle || rawProduct.productTitle,
       description: buildMetaDescription(rawProduct),
-      inLanguage: 'bn-BD',
+      inLanguage: 'en',
       isPartOf: {
         '@type': 'WebSite',
-        '@id': `${process.env.NEXT_PUBLIC_BASE_URL}/#website`,
-        url: process.env.NEXT_PUBLIC_BASE_URL,
+        '@id': `${BASE_URL}/#website`,
+        url: BASE_URL,
         name: 'Guptodhan',
       },
       datePublished: toISOString(rawProduct.createdAt),
       dateModified: toISOString(rawProduct.updatedAt),
-      breadcrumb: { '@id': `${productUrl}#breadcrumb` },
     };
 
     return (
       <div className="min-h-screen bg-[#f2f4f8]">
-        {/* ✅ JSON-LD Structured Data */}
+        {productImages[0] && (
+          <link rel="preload" as="image" href={productImages[0]} />
+        )}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
@@ -457,7 +448,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       </div>
     );
   } catch (error) {
-    console.error('Fatal error in ProductPage:', error);
+    console.error('ProductPage error:', error);
     notFound();
   }
 }

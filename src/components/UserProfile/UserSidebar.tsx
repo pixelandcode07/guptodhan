@@ -19,6 +19,7 @@ import {
   Gift,
   Hand,
   LucideWorkflow,
+  UserX, // ✅ Added UserX icon for Delete Account
 } from 'lucide-react'
 import api from '@/lib/axios'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
@@ -38,6 +39,7 @@ const items = [
   { title: 'Support Tickets', url: '/home/UserProfile/support-tickets', icon: Headset },
   { title: 'Saved Address', url: '/home/UserProfile/addresses', icon: MapPin },
   { title: 'Change Password', url: '/home/UserProfile/change-password', icon: KeyRound },
+  { title: 'Delete Account', url: '/page/account-deletion', icon: UserX }, // ✅ Added Delete Account link
 ]
 
 export default function UserSidebar() {

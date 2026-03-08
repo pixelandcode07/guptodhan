@@ -7,12 +7,17 @@ import {
 } from './serviceBanner.validation';
 import { ServiceBannerServices } from './serviceBanner.service';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
+import { deleteCacheKey } from '@/lib/redis/cache-helpers';
 import dbConnect from '@/lib/db';
 
-// convert File to Buffer
 const fileToBuffer = async (file: File): Promise<Buffer> => {
   const arrayBuffer = await file.arrayBuffer();
   return Buffer.from(arrayBuffer);
+};
+
+const clearBannerCache = async () => {
+  await deleteCacheKey('service-banners:active');
+  await deleteCacheKey('service-banners:all');
 };
 
 // Create service banner
@@ -52,6 +57,9 @@ const createServiceBanner = async (req: NextRequest) => {
     };
 
     const result = await ServiceBannerServices.createServiceBannerInDB(payload);
+
+    // ✅ Cache clear
+    await clearBannerCache();
 
     return sendResponse({
       success: true,
@@ -163,6 +171,9 @@ const updateServiceBanner = async (
 
   const result = await ServiceBannerServices.updateServiceBannerInDB(id, payload);
 
+  // ✅ Cache clear
+  await clearBannerCache();
+
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
@@ -180,6 +191,9 @@ const deleteServiceBanner = async (
   const { id } = await params;
 
   await ServiceBannerServices.deleteServiceBannerFromDB(id);
+
+  // ✅ Cache clear
+  await clearBannerCache();
 
   return sendResponse({
     success: true,

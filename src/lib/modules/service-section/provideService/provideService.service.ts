@@ -1,6 +1,5 @@
 import { IService } from "./provideService.interface";
 import { ServiceModel } from "./provideService.model";
-import mongoose from "mongoose";
 
 // --- Create a new service ---
 const createServiceInDB = async (payload: Partial<IService>) => {
@@ -16,10 +15,34 @@ const getProviderServicesFromDB = async (provider_id: string) => {
   return { total_services, services };
 };
 
-// --- Admin: Get all services (with filters) ---
-const getAllServicesFromDB = async (filters?: Partial<IService>) => {
-  const query = filters ? { ...filters } : {};
-  const services = await ServiceModel.find(query).sort({ createdAt: -1 });
+// --- Admin: Get all services ---
+const getAllServicesFromDB = async () => {
+  const services = await ServiceModel.aggregate([
+    { $sort: { createdAt: -1 } },
+    {
+      $lookup: {
+        from: 'users',
+        let: { providerId: '$provider_id' },
+        pipeline: [
+          {
+            $match: {
+              $expr: { $eq: ['$_id', { $toObjectId: '$$providerId' }] }
+            }
+          },
+          {
+            $project: { name: 1, email: 1, phoneNumber: 1, profilePicture: 1 }
+          }
+        ],
+        as: 'providerInfo'
+      }
+    },
+    {
+      $addFields: {
+        providerInfo: { $arrayElemAt: ['$providerInfo', 0] }
+      }
+    }
+  ]);
+
   const total_services = services.length;
   return { total_services, services };
 };
@@ -36,8 +59,8 @@ const updateServiceInDB = async (
   id: string,
   payload: Partial<IService>
 ) => {
-  const service = await ServiceModel.findOneAndUpdate(
-    { id },
+  const service = await ServiceModel.findByIdAndUpdate(
+    id,
     payload,
     { new: true }
   );
@@ -51,8 +74,8 @@ const changeServiceStatusInDB = async (
   status: "Draft" | "Active" | "Under Review" | "Disabled",
   is_visible_to_customers?: boolean
 ) => {
-  const service = await ServiceModel.findOneAndUpdate(
-    { _id: id },
+  const service = await ServiceModel.findByIdAndUpdate(
+    id,
     { service_status: status, is_visible_to_customers },
     { new: true }
   );
@@ -61,22 +84,19 @@ const changeServiceStatusInDB = async (
 };
 
 // --- Get only visible services for customers ---
-const getVisibleServicesFromDB = async (filters?: Partial<IService>) => {
-  const query = {
+const getVisibleServicesFromDB = async () => {
+  const services = await ServiceModel.find({
     service_status: "Active",
     is_visible_to_customers: true,
-    ...filters,
-  };
-  const services = await ServiceModel.find(query).sort({ createdAt: -1 });
+  }).sort({ createdAt: -1 });
   const total_services = services.length;
   return { total_services, services };
 };
 
 // --- Delete a service (Provider) ---
 const deleteServiceInDB = async (id: string, provider_id: string) => {
-  // Optional: soft delete by status
-  const service = await ServiceModel.findOneAndUpdate(
-    { id, provider_id },
+  const service = await ServiceModel.findByIdAndUpdate(
+    id,
     { service_status: "Disabled", is_visible_to_customers: false },
     { new: true }
   );
@@ -84,8 +104,6 @@ const deleteServiceInDB = async (id: string, provider_id: string) => {
   if (!service) throw new Error("Service not found or not owned by provider.");
   return service;
 };
-
-
 
 export const ServiceServices = {
   createServiceInDB,

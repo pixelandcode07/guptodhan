@@ -10,7 +10,6 @@ import { StorageType } from "../product-config/models/storageType.model";
 import { DeviceConditionModel } from "../product-config/models/deviceCondition.model";
 import { ProductSimTypeModel } from "../product-config/models/productSimType.model";
 import { ProductWarrantyModel } from "../product-config/models/warranty.model";
-import { Types } from 'mongoose';
 
 // ✅ Import Redis cache helpers
 import { getCachedData, deleteCacheKey, deleteCachePattern } from '@/lib/redis/cache-helpers';
@@ -272,7 +271,7 @@ const getAllVendorProductsWithPaginationFromDB = async (params: {
 }) => {
   const {
     page = 1,
-    limit = 10,
+    limit = 12,
     search,
     brand,
     color,
@@ -774,18 +773,15 @@ const getVendorProductsByBrandFromDB = async (
 // ===================================
 // ✏️ UPDATE PRODUCT (NO POPULATE)
 // ===================================
-
 const updateVendorProductInDB = async (
   id: string,
   payload: Partial<IVendorProduct>
 ) => {
-  // Update the product
   await VendorProductModel.findByIdAndUpdate(id, payload, {
     new: true,
     runValidators: true,
   });
 
-  // ✅ Use aggregation to get updated product
   const result = await VendorProductModel.aggregate([
     { $match: { _id: new mongoose.Types.ObjectId(id) } },
     ...getProductLookupPipeline(),
@@ -795,16 +791,19 @@ const updateVendorProductInDB = async (
 
   const updatedProduct = result[0];
 
-  // 🗑️ Clear ALL relevant caches (ID, Slug, and Lists)
   await deleteCacheKey(CacheKeys.PRODUCT.BY_ID(id));
   await deleteCachePattern(CacheKeys.PATTERNS.PRODUCTS_ALL);
   
-  // 🔥 FIX: Slug এর ক্যাশ ডিলিট করা হচ্ছে যাতে ডিটেইলস পেজে আপডেট সাথে সাথে দেখা যায়
+  await deleteCacheKey(CacheKeys.PRODUCT.LANDING_PAGE);
+  await deleteCacheKey(CacheKeys.PRODUCT.OFFERS);
+  await deleteCacheKey(CacheKeys.PRODUCT.BEST_SELLING);
+  await deleteCacheKey(CacheKeys.PRODUCT.FOR_YOU);
+  
   if (updatedProduct.slug) {
-    await deleteCacheKey(`product:details:${updatedProduct.slug}`);
+    const cleanSlug = decodeURIComponent(updatedProduct.slug.trim()).toLowerCase();
+    await deleteCacheKey(`product:details:${cleanSlug}`);
   }
-  // সেফটির জন্য আইডি দিয়েও যদি product:details ক্যাশ থাকে, সেটাও ডিলিট করে দিচ্ছি
-  await deleteCacheKey(`product:details:${id}`);
+  await deleteCacheKey(`product:details:${id}`)
 
   return await populateColorAndSizeNames(updatedProduct);
 };
@@ -1424,22 +1423,18 @@ const getVendorStoreProductsWithReviewsFromDB = async (vendorId: string) => {
 };
 
 const getVendorProductBySlugFromDB = async (slugOrId: string) => {
-  const cacheKey = `product:details:${slugOrId}`;
+  const cleanInput = decodeURIComponent(slugOrId.trim());
+  const cacheKey = `product:details:${cleanInput.toLowerCase()}`;
   
   return getCachedData(
     cacheKey,
     async () => {
       let matchQuery: any = {};
       
-      // ✅ Step 1: Trim এবং decode
-      const cleanInput = decodeURIComponent(slugOrId.trim());
-
-      // ✅ Step 2: Check valid MongoDB ID
       if (mongoose.Types.ObjectId.isValid(cleanInput)) {
         matchQuery = { _id: new mongoose.Types.ObjectId(cleanInput) };
         console.log('🔍 Searching by ID:', cleanInput);
       } else {
-        // ✅ Step 3: Case-insensitive slug search
         matchQuery = { 
           slug: {
             $regex: `^${cleanInput}$`,
@@ -1449,7 +1444,6 @@ const getVendorProductBySlugFromDB = async (slugOrId: string) => {
         console.log('🔍 Searching by slug:', cleanInput);
       }
 
-      // ✅ Step 4: Execute aggregation
       const productResult = await VendorProductModel.aggregate([
         { $match: matchQuery }, 
         ...getProductLookupPipeline(),
@@ -1464,7 +1458,6 @@ const getVendorProductBySlugFromDB = async (slugOrId: string) => {
       
       const transformedProduct = await populateColorAndSizeNames(productResult[0]);
 
-      // Reviews, QnA, Rating আনা
       const productId = productResult[0]._id;
       const [reviews, qna, ratingStats] = await Promise.all([
         ReviewModel.find({ productId }).lean(),
