@@ -16,26 +16,51 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
 
-  // ========================
-  // ✅ REDIRECTS REMOVED
-  // ========================
   async redirects() {
-    // Purono domain redirect remove kora hoyeche jate mobile app thikmoto kaj kore
-    return [];
+    const VENDOR_DOMAIN = 'https://vendor.guptodhan.com';
+    const MAIN_HOST = 'www.guptodhan.com';
+
+    const vendorPages = [
+      '/vendor-singin',
+      '/vendor-singup',
+      '/join-as-vendor',
+      '/vendor/forgot-password',
+    ];
+
+    const vendorDashboardPages = [
+      '/dashboard',
+      '/dashboard/:path*',
+      '/products/:path*',
+      '/orders/:path*',
+      '/withdrawal/:path*',
+      '/store/:path*',
+      '/reviews/:path*',
+    ];
+
+    const simpleRedirects = vendorPages.map((page) => ({
+      source: page,
+      has: [{ type: 'host' as const, value: MAIN_HOST }],
+      destination: `${VENDOR_DOMAIN}${page}`,
+      permanent: true,
+    }));
+
+    const dashboardRedirects = vendorDashboardPages.map((page) => ({
+      source: page,
+      has: [{ type: 'host' as const, value: MAIN_HOST }],
+      destination: `${VENDOR_DOMAIN}${page}`,
+      permanent: false,
+    }));
+
+    return [...simpleRedirects, ...dashboardRedirects];
   },
 
-  // ========================
-  // IMAGE OPTIMIZATION
-  // ========================
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'www.guptodhan.com', pathname: '/**' },
       { protocol: 'https', hostname: 'guptodhan.com', pathname: '/**' },
       { protocol: 'https', hostname: 'app-area.guptodhan.com', pathname: '/**' },
-      // Purono domain (backward compat)
       { protocol: 'https', hostname: 'guptodhandigital.com', pathname: '/**' },
       { protocol: 'https', hostname: 'www.guptodhandigital.com', pathname: '/**' },
-      // Image hosts
       { protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' },
       { protocol: 'http', hostname: '76.13.191.238', pathname: '/**' },
       { protocol: 'https', hostname: 'cdn.guptodhan.com', pathname: '/**' },
@@ -56,9 +81,6 @@ const nextConfig: NextConfig = {
     dangerouslyAllowSVG: true,
   },
 
-  // ========================
-  // WEBPACK OPTIMIZATION
-  // ========================
   webpack: (config: WebpackConfig, { isServer }: { isServer: boolean }) => {
     if (!isServer) {
       config.optimization = {
@@ -92,9 +114,6 @@ const nextConfig: NextConfig = {
     return config;
   },
 
-  // ========================
-  // SECURITY & CACHE HEADERS
-  // ========================
   async headers() {
     return [
       {
