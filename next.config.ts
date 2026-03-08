@@ -16,30 +16,26 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
 
+  // ========================
+  // ✅ REDIRECTS REMOVED
+  // ========================
   async redirects() {
-    return [
-      {
-        source: '/:path*',
-        has: [{ type: 'host' as const, value: 'guptodhandigital.com' }],
-        destination: 'https://www.guptodhan.com/:path*',
-        permanent: true,
-      },
-      {
-        source: '/:path*',
-        has: [{ type: 'host' as const, value: 'www.guptodhandigital.com' }],
-        destination: 'https://www.guptodhan.com/:path*',
-        permanent: true,
-      },
-    ];
+    // Purono domain redirect remove kora hoyeche jate mobile app thikmoto kaj kore
+    return [];
   },
 
+  // ========================
+  // IMAGE OPTIMIZATION
+  // ========================
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'www.guptodhan.com', pathname: '/**' },
       { protocol: 'https', hostname: 'guptodhan.com', pathname: '/**' },
       { protocol: 'https', hostname: 'app-area.guptodhan.com', pathname: '/**' },
+      // Purono domain (backward compat)
       { protocol: 'https', hostname: 'guptodhandigital.com', pathname: '/**' },
       { protocol: 'https', hostname: 'www.guptodhandigital.com', pathname: '/**' },
+      // Image hosts
       { protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' },
       { protocol: 'http', hostname: '76.13.191.238', pathname: '/**' },
       { protocol: 'https', hostname: 'cdn.guptodhan.com', pathname: '/**' },
@@ -60,6 +56,9 @@ const nextConfig: NextConfig = {
     dangerouslyAllowSVG: true,
   },
 
+  // ========================
+  // WEBPACK OPTIMIZATION
+  // ========================
   webpack: (config: WebpackConfig, { isServer }: { isServer: boolean }) => {
     if (!isServer) {
       config.optimization = {
@@ -93,6 +92,9 @@ const nextConfig: NextConfig = {
     return config;
   },
 
+  // ========================
+  // SECURITY & CACHE HEADERS
+  // ========================
   async headers() {
     return [
       {
