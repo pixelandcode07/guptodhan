@@ -358,7 +358,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
               Admin will review your request soon.
             </DialogDescription>
           </DialogHeader>
-          <Button onClick={() => router.push("/")}>Go Home</Button>
+          <Button onClick={() => window.location.href = SITE_CONFIG.mainUrl}>Go Home</Button>
         </DialogContent>
       </Dialog>
     </>
