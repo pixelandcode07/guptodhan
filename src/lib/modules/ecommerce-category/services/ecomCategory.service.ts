@@ -215,9 +215,11 @@ export const getAllSubCategoriesWithChildren = async () => {
 
       const mainIds = mainCategories.map((cat: any) => cat._id);
 
+      // ✅ এরকম করো — isNavbar: true যোগ করো
       const allSubCategories = await SubCategoryModel.find({
         category: { $in: mainIds },
-        status: 'active'
+        status: 'active',
+        isNavbar: true  // ✅ এই লাইনটাই ছিল না
       }).lean();
 
       const subIds = allSubCategories.map((sub: any) => sub._id);
