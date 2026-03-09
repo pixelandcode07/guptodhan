@@ -1,19 +1,21 @@
 import { ApiResponse, FeaturedCategory } from '@/types/FeaturedCategoryType';
-import axios from 'axios';
 
 export async function fetchFeaturedCategories(): Promise<FeaturedCategory[]> {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
     try {
-        const res = await axios.get<ApiResponse<FeaturedCategory[]>>(
-            `${baseUrl}/api/v1/ecommerce-category/ecomCategory/featured`,
-            {
-                headers: { 'Cache-Control': 'no-store' },
-            }
-        );
+        const res = await fetch(`${baseUrl}/api/v1/ecommerce-category/ecomCategory/featured`, {
+            cache: 'no-store',
+        });
 
-        if (res.data?.success && Array.isArray(res.data.data)) {
-            return res.data.data;
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
+        const data: ApiResponse<FeaturedCategory[]> = await res.json();
+
+        if (data?.success && Array.isArray(data.data)) {
+            return data.data;
         }
 
         return [];
