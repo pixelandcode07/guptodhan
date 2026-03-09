@@ -8,6 +8,7 @@ import {
 import { CategoryServices } from '../services/ecomCategory.service';
 import dbConnect from '@/lib/db';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
+import { CacheKeys, deleteCacheKey } from '@/lib/redis/cache-helpers';
 
 // ================================================================
 // 📝 CREATE CATEGORY
@@ -215,11 +216,13 @@ const deleteCategory = async (
 // ================================================================
 // 🌳 GET ALL CATEGORIES WITH HIERARCHY (NAVBAR)
 // ================================================================
-const getAllSubCategories = async (req: NextRequest) => { // ✅ Extra 'export' removed
+const getAllSubCategories = async (req: NextRequest) => {
   await dbConnect();
 
-  // ✅ Used CategoryServices. instead of direct import
-  const allCategories = await CategoryServices.getAllSubCategoriesWithChildren(); 
+  // ✅ Cache clear করা হচ্ছে যাতে পুরনো data না আসে
+  await deleteCacheKey(CacheKeys.CATEGORY.WITH_HIERARCHY);
+
+  const allCategories = await CategoryServices.getAllSubCategoriesWithChildren();
 
   return sendResponse({
     success: true,
