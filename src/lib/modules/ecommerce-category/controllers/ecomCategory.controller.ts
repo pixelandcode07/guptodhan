@@ -5,7 +5,7 @@ import {
   createCategoryValidationSchema, 
   updateCategoryValidationSchema 
 } from '../validations/ecomCategory.validation';
-import { CategoryServices, getAllSubCategoriesWithChildren, reorderMainCategoriesService } from '../services/ecomCategory.service';
+import { CategoryServices } from '../services/ecomCategory.service';
 import dbConnect from '@/lib/db';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 
@@ -100,7 +100,7 @@ const getAllCategories = async () => {
 // ================================================================
 // 🔍 GET PRODUCT IDS BY CATEGORY
 // ================================================================
-export const getProductIdsByCategory = async (
+const getProductIdsByCategory = async ( // ✅ Extra 'export' removed
   req: NextRequest, 
   { params }: { params: Promise<{ id: string }> }
 ) => {
@@ -215,10 +215,11 @@ const deleteCategory = async (
 // ================================================================
 // 🌳 GET ALL CATEGORIES WITH HIERARCHY (NAVBAR)
 // ================================================================
-export const getAllSubCategories = async (req: NextRequest) => {
+const getAllSubCategories = async (req: NextRequest) => { // ✅ Extra 'export' removed
   await dbConnect();
 
-  const allCategories = await getAllSubCategoriesWithChildren();
+  // ✅ Used CategoryServices. instead of direct import
+  const allCategories = await CategoryServices.getAllSubCategoriesWithChildren(); 
 
   return sendResponse({
     success: true,
@@ -245,7 +246,8 @@ const reorderMainCategories = async (req: NextRequest) => {
     });
   }
 
-  const result = await reorderMainCategoriesService(orderedIds);
+  // ✅ Used CategoryServices. instead of direct import
+  const result = await CategoryServices.reorderMainCategoriesService(orderedIds);
 
   return sendResponse({
     success: true,
@@ -292,7 +294,6 @@ const getProductsByCategorySlug = async(
     });
   }
 
-  // ✅ FIX: Type-safe category access
   const category = result.category as any;
   
   return sendResponse({
