@@ -38,6 +38,9 @@ const createCategoryInDB = async (payload: Partial<ICategory>) => {
 
   // 🗑️ Clear category caches
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+  await deleteCacheKey(CacheKeys.CATEGORY.WITH_HIERARCHY);
+  await deleteCacheKey('featured:all-categories'); // ✅ Added
+  await deleteCachePattern('featured:*'); // ✅ Added
 
   return result;
 };
@@ -73,12 +76,9 @@ const getFeaturedEverythingFromDB = async () => {
       const [mainCategories, subCategories] = await Promise.all([
         CategoryModel.find({ isFeatured: true, status: 'active' }).lean(),
         SubCategoryModel.find({ isFeatured: true, status: 'active' }).lean(),
-        // নোট: আপনার ChildCategory মডেলে isFeatured ফিল্ড নেই, 
-        // যদি যোগ করেন তবে নিচের লাইনটি আনকমেন্ট করবেন।
-        // ChildCategoryModel.find({ isFeatured: true, status: 'active' }).lean(),
       ]);
 
-      // সবগুলোকে একটি ফরম্যাটে সাজানো যাতে ফ্রন্টএন্ডে সমস্যা না হয়
+      // সবগুলোকে একটি ফরম্যাটে সাজানো যাতে ফ্রন্টএন্ডে সমস্যা না হয়
       const formattedMain = mainCategories.map((item: any) => ({
         _id: item._id,
         name: item.name,
@@ -90,7 +90,7 @@ const getFeaturedEverythingFromDB = async () => {
       const formattedSub = subCategories.map((item: any) => ({
         _id: item._id,
         name: item.name,
-        categoryIcon: item.subCategoryIcon, // এখানে subCategoryIcon কে categoryIcon হিসেবে পাঠানো হচ্ছে
+        categoryIcon: item.subCategoryIcon, 
         slug: item.slug,
         type: 'sub-category'
       }));
@@ -158,6 +158,9 @@ const updateCategoryInDB = async (id: string, payload: Partial<ICategory>) => {
   // 🗑️ Clear caches
   await deleteCacheKey(CacheKeys.CATEGORY.BY_ID(result.categoryId));
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+  await deleteCacheKey(CacheKeys.CATEGORY.WITH_HIERARCHY); // ✅ Nav Menu update korbe
+  await deleteCacheKey('featured:all-categories'); // ✅ Featured update korbe
+  await deleteCachePattern('featured:*'); // ✅ Added
 
   return result;
 };
@@ -184,6 +187,9 @@ const deleteCategoryFromDB = async (id: string) => {
 
   // 🗑️ Clear caches
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+  await deleteCacheKey(CacheKeys.CATEGORY.WITH_HIERARCHY); // ✅ Added
+  await deleteCacheKey('featured:all-categories'); // ✅ Added
+  await deleteCachePattern('featured:*'); // ✅ Added
 
   return null;
 };
@@ -277,6 +283,7 @@ export const reorderMainCategoriesService = async (orderedIds: string[]) => {
 
   // 🗑️ Clear all category caches
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+  await deleteCacheKey(CacheKeys.CATEGORY.WITH_HIERARCHY); // ✅ Added
 
   return { message: "Main categories reordered successfully!" };
 };
