@@ -63,22 +63,41 @@ const getAllCategoriesFromDB = async () => {
 // ================================================================
 // ⭐ GET FEATURED CATEGORIES (WITH CACHE)
 // ================================================================
-const getFeaturedCategoriesFromDB = async () => {
-  const cacheKey = CacheKeys.CATEGORY.FEATURED;
+const getFeaturedEverythingFromDB = async () => {
+  const cacheKey = 'featured:all-categories';
 
   return getCachedData(
     cacheKey,
     async () => {
-      const result = await CategoryModel.find({
-        isFeatured: true,
-        status: "active",
-      })
-        .select("name categoryIcon isFeatured status slug categoryId")
-        .sort({ name: 1 })
-        .lean();
-      return result;
+      // একসাথে তিনটি টেবিল থেকে ডাটা ফেচ করা হচ্ছে
+      const [mainCategories, subCategories] = await Promise.all([
+        CategoryModel.find({ isFeatured: true, status: 'active' }).lean(),
+        SubCategoryModel.find({ isFeatured: true, status: 'active' }).lean(),
+        // নোট: আপনার ChildCategory মডেলে isFeatured ফিল্ড নেই, 
+        // যদি যোগ করেন তবে নিচের লাইনটি আনকমেন্ট করবেন।
+        // ChildCategoryModel.find({ isFeatured: true, status: 'active' }).lean(),
+      ]);
+
+      // সবগুলোকে একটি ফরম্যাটে সাজানো যাতে ফ্রন্টএন্ডে সমস্যা না হয়
+      const formattedMain = mainCategories.map((item: any) => ({
+        _id: item._id,
+        name: item.name,
+        categoryIcon: item.categoryIcon,
+        slug: item.slug,
+        type: 'main-category'
+      }));
+
+      const formattedSub = subCategories.map((item: any) => ({
+        _id: item._id,
+        name: item.name,
+        categoryIcon: item.subCategoryIcon, // এখানে subCategoryIcon কে categoryIcon হিসেবে পাঠানো হচ্ছে
+        slug: item.slug,
+        type: 'sub-category'
+      }));
+
+      return [...formattedMain, ...formattedSub];
     },
-    CacheTTL.CATEGORY_FEATURED
+    CacheTTL.CATEGORY_LIST
   );
 };
 
@@ -507,7 +526,7 @@ const getProductsByCategorySlugWithFiltersFromDB = async (
 export const CategoryServices = {
   createCategoryInDB,
   getAllCategoriesFromDB,
-  getFeaturedCategoriesFromDB,
+  getFeaturedEverythingFromDB,
   getCategoryByIdFromDB,
   updateCategoryInDB,
   deleteCategoryFromDB,
