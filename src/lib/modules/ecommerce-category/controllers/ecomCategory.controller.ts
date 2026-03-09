@@ -124,12 +124,12 @@ export const getProductIdsByCategory = async (
 // ================================================================
 const getFeaturedCategories = async () => {
   await dbConnect();
-  const result = await CategoryServices.getFeaturedCategoriesFromDB();
+  const result = await CategoryServices.getFeaturedEverythingFromDB();
 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Featured categories retrieved successfully!',
+    message: 'All featured categories retrieved successfully!',
     data: result,
   });
 };
