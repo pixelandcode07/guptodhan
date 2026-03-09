@@ -18,11 +18,10 @@ export async function fetchNavigationCategoryData(): Promise<MainCategory[]> {
 
         const data = await res.json();
 
+        // 🔥 CRITICAL FIX: ব্যাকএন্ড আগে থেকেই isNavbar: true ফিল্টার করে পাঠায়। 
+        // তাই ফ্রন্টএন্ডে ফিল্টার করার আর কোনো প্রয়োজন নেই। সরাসরি রিটার্ন করুন।
         if (data?.success && Array.isArray(data.data)) {
-            const navbarCategories = data.data.filter(
-                (category: any) => category.isNavbar === true
-            );
-            return navbarCategories;
+            return data.data;
         }
 
         return [];
