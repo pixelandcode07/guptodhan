@@ -4,10 +4,11 @@ export async function fetchNavigationCategoryData(): Promise<MainCategory[]> {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
     try {
+        // ১. ক্যাশ না ধরার জন্য fetch এবং 'no-store' ব্যবহার
         const res = await fetch(
             `${baseUrl}/api/v1/ecommerce-category/ecomCategory/mainCategory`,
             {
-                cache: 'no-store',
+                cache: 'no-store', 
             }
         );
 
@@ -15,10 +16,13 @@ export async function fetchNavigationCategoryData(): Promise<MainCategory[]> {
             throw new Error(`HTTP error! status: ${res.status}`);
         }
 
-        const data: ApiResponse = await res.json();
+        const data = await res.json();
 
         if (data?.success && Array.isArray(data.data)) {
-            return data.data;
+            const navbarCategories = data.data.filter(
+                (category: any) => category.isNavbar === true
+            );
+            return navbarCategories;
         }
 
         return [];
