@@ -203,32 +203,30 @@ export const getAllSubCategoriesWithChildren = async () => {
   return getCachedData(
     cacheKey,
     async () => {
-      // ✅ Step 1: Get all navbar main categories
-      const mainCategories = await CategoryModel.find({ isNavbar: true })
+      // ✅ শুধু isNavbar: true গুলো আনবে
+      const mainCategories = await CategoryModel.find({ 
+        isNavbar: true,
+        status: 'active'  // ✅ status: active যোগ করা হলো
+      })
         .sort({ orderCount: 1 })
         .lean();
 
       if (!mainCategories || mainCategories.length === 0) return [];
 
-      // ✅ Type-safe: Extract IDs
       const mainIds = mainCategories.map((cat: any) => cat._id);
 
-      // ✅ Step 2: Get all subcategories in ONE query
       const allSubCategories = await SubCategoryModel.find({
         category: { $in: mainIds },
         status: 'active'
       }).lean();
 
-      // ✅ Type-safe: Extract sub IDs
       const subIds = allSubCategories.map((sub: any) => sub._id);
 
-      // ✅ Step 3: Get all child categories in ONE query
       const allChildCategories = await ChildCategoryModel.find({
         subCategory: { $in: subIds },
         status: 'active'
       }).lean();
 
-      // ✅ Step 4: Build hierarchy in JavaScript (Type-safe)
       const result = mainCategories.map((main: any) => {
         const subCategoriesOfThisMain = allSubCategories.filter(
           (sub: any) => sub.category?.toString() === main._id?.toString()
