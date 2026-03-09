@@ -7,6 +7,9 @@ import BestSell from './components/BestSell/BestSell';
 import JustForYouWrapper from './components/JustForYou/JustForYouWrapper';
 // import { Skeleton } from "@/components/ui/skeleton";
 
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 function SkeletonHero() {
   return <div className="h-[320px] bg-gray-200 rounded-lg animate-pulse" />;
 }
