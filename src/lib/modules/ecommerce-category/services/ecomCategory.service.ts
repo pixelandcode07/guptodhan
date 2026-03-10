@@ -203,10 +203,9 @@ export const getAllSubCategoriesWithChildren = async () => {
   return getCachedData(
     cacheKey,
     async () => {
-      // ✅ শুধু isNavbar: true গুলো আনবে
       const mainCategories = await CategoryModel.find({ 
         isNavbar: true,
-        status: 'active'  // ✅ status: active যোগ করা হলো
+        status: 'active'
       })
         .sort({ orderCount: 1 })
         .lean();
@@ -215,11 +214,10 @@ export const getAllSubCategoriesWithChildren = async () => {
 
       const mainIds = mainCategories.map((cat: any) => cat._id);
 
-      // ✅ এরকম করো — isNavbar: true যোগ করো
       const allSubCategories = await SubCategoryModel.find({
         category: { $in: mainIds },
         status: 'active',
-        isNavbar: true  // ✅ এই লাইনটাই ছিল না
+        isNavbar: true 
       }).lean();
 
       const subIds = allSubCategories.map((sub: any) => sub._id);
