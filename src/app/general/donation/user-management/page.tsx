@@ -142,10 +142,10 @@ export default function UserManagementPage() {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                            <DropdownMenuContent align="end">
-    <DropdownMenuItem className="text-gray-500 italic cursor-not-allowed">
-        Coming Soon...
-    </DropdownMenuItem>
-</DropdownMenuContent>
+                                            <DropdownMenuItem className="text-gray-500 italic cursor-not-allowed">
+                                                Coming Soon...
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>
                                 </TableRow>
