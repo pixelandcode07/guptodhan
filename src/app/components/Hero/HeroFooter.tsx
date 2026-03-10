@@ -15,121 +15,96 @@ export default async function HeroFooter() {
     console.error('Failed to load service categories in HeroFooter:', error);
   }
 
+  // Common styles for desktop cards to ensure 100% same size
+  const desktopCardClass = "group relative flex h-[54px] w-full items-center justify-start rounded-lg gap-2 xl:gap-3 border border-sky-900 bg-sky-300 px-2 xl:px-3 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg";
+  const iconWrapperClass = "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white transition-transform duration-300 group-hover:scale-110 overflow-hidden";
+  const textClass = "text-[11px] xl:text-[13px] font-bold uppercase tracking-wide text-black truncate";
+
   return (
     <>
-      {/* Desktop Version */}
-      {/* নেভবারের সাথে অ্যালাইনমেন্ট ঠিক রাখার জন্য w-full, max-w-[95vw] এবং xl:container ব্যবহার করা হয়েছে */}
-      <div className="w-full md:max-w-[95vw] xl:container sm:px-8 mx-auto mt-5 hidden lg:flex flex-wrap justify-center items-center gap-4 py-2 rounded-md">
+      {/* Desktop Version - Grid Layout for EXACT same sizing */}
+      <div className="w-full md:max-w-[95vw] xl:container sm:px-8 mx-auto mt-5 hidden lg:grid lg:grid-cols-6 gap-3 xl:gap-4 py-2">
         
-        {/* ১. Get Training Button (সবার বামে) */}
+        {/* 1. Get Training Button */}
         <TrainingModalButton />
 
         {categories.length === 0 ? (
-          <p className="py-8 text-gray-600">No service categories available</p>
+          <div className="col-span-3 py-3 text-gray-600">No service categories available</div>
         ) : (
           <>
-            {/* সার্ভিস ক্যাটাগরিগুলো */}
+            {/* 2 & 3. Service Categories */}
             {categories.slice(0, 2).map((item) => (
-              <Link
-                key={item._id}
-                href={`/services/${item.slug}`}
-                className="group relative flex items-center gap-4 rounded-lg  border border-sky-900 bg-sky-300 px-2 py-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
-              >
-                <div className="flex h-8 w-8 items-center rounded-full justify-center bg-white transition-transform duration-300 group-hover:scale-110">
-                  <Image
-                    src={item.icon_url}
-                    alt={item.name}
-                    width={28}
-                    height={28}
-                    className="object-contain rounded-full"
-                  />
+              <Link key={item._id} href={`/services/${item.slug}`} className={desktopCardClass}>
+                <div className={iconWrapperClass}>
+                  <Image src={item.icon_url} alt={item.name} width={28} height={28} className="object-contain rounded-full" />
                 </div>
-                <span className="text-sm font-semibold uppercase tracking-wide text-black md:text-base">
+                <span className={textClass} title={item.name}>
                   {item.name}
                 </span>
               </Link>
             ))}
 
-            {categories[2] && (
-              <Link
-                href={`/services/${categories[2].slug}`}
-                className="group relative flex items-center rounded-lg gap-4 border border-sky-900 bg-sky-300 px-2 py-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white transition-transform duration-300 group-hover:scale-110">
-                  <Image
-                    src={categories[2].icon_url}
-                    alt={categories[2].name}
-                    width={28}
-                    height={28}
-                    className="object-contain w-full rounded-full"
-                  />
+            {/* 4. Third Service Category */}
+            {categories[2] ? (
+              <Link href={`/services/${categories[2].slug}`} className={desktopCardClass}>
+                <div className={iconWrapperClass}>
+                  <Image src={categories[2].icon_url} alt={categories[2].name} width={28} height={28} className="object-contain rounded-full" />
                 </div>
-                <span className="text-sm font-semibold uppercase tracking-wide text-black md:text-base">
+                <span className={textClass} title={categories[2].name}>
                   {categories[2].name}
                 </span>
               </Link>
+            ) : (
+                <div className="hidden lg:block"></div> /* Empty space fallback if < 3 categories */
             )}
 
-            {/* See All Services Button */}
-            <Link
-              href={"/home/service"}
-              className="group relative flex items-center rounded-lg gap-4 border border-sky-900 bg-sky-300 px-2 py-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white transition-transform duration-300 group-hover:scale-110">
-                <SquareDashedMousePointer
-                  size={18}
-                  className="text-gray-600 transition-all duration-300 group-hover:text-purple-600"
-                />
+            {/* 5. See All Services Button */}
+            <Link href={"/home/service"} className={desktopCardClass}>
+              <div className={iconWrapperClass}>
+                <SquareDashedMousePointer size={18} className="text-gray-600 transition-all duration-300 group-hover:text-purple-600" />
               </div>
-              <span className="text-sm font-semibold uppercase tracking-wide text-black md:text-base">
+              <span className={textClass}>
                  See All Services
               </span>
             </Link>
 
-            {/* ২. Jobs Button (সবার ডানে) */}
-            <Link
-              href={"/jobs"}
-              className="group relative flex items-center rounded-lg gap-4 border border-sky-900 bg-sky-300 px-2 py-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white transition-transform duration-300 group-hover:scale-110">
-                <Briefcase
-                  size={18}
-                  className="text-gray-600 transition-all duration-300 group-hover:text-green-600"
-                />
+            {/* 6. Jobs Button */}
+            <Link href={"/jobs"} className={desktopCardClass}>
+              <div className={iconWrapperClass}>
+                <Briefcase size={18} className="text-gray-600 transition-all duration-300 group-hover:text-green-600" />
               </div>
-              <span className="text-sm font-semibold uppercase tracking-wide text-black md:text-base">
+              <span className={textClass}>
                  Jobs
               </span>
             </Link>
-
           </>
         )}
       </div>
 
       {/* Mobile Version */}
-      <div className="lg:hidden flex justify-start sm:justify-center items-center gap-3 py-3 px-4 bg-white rounded-md overflow-x-auto snap-x">
+      <div className="lg:hidden flex justify-start sm:justify-center items-center gap-3 py-3 px-4 bg-white rounded-md overflow-x-auto snap-x no-scrollbar">
         <TrainingModalButton isMobile={true} />
         
-        <Link href={'/buy-sell'} className="snap-center">
+        <Link href={'/buy-sell'} className="snap-center shrink-0">
           <Button variant={'HomeBuy'} size={'lg'} className="rounded-lg md:min-w-[120px]">
             <House size={28} className="hidden md:block" />
             <span className="text-sm font-medium">Buy & Sale</span>
           </Button>
         </Link>
-        <Link href={'/donation'} className="snap-center">
+        <Link href={'/donation'} className="snap-center shrink-0">
           <Button variant={'HomeDoante'} size={'lg'} className="rounded-lg md:min-w-[120px]">
             <HandCoins size={28} className="hidden md:block" />
             <span className="text-sm font-medium">Donation</span>
           </Button>
         </Link>
-        <Link href={'/home/service'} className="snap-center">
+        <Link href={'/home/service'} className="snap-center shrink-0">
           <Button variant={'HomeServices'} size={'lg'} className="rounded-lg md:min-w-[120px]">
             <HeartHandshake size={28} className="hidden md:block" />
             <span className="text-sm font-medium">Services</span>
           </Button>
         </Link>
         
-        <Link href={'/jobs'} className="snap-center">
+        <Link href={'/jobs'} className="snap-center shrink-0">
           <Button variant={'outline'} size={'lg'} className="rounded-lg md:min-w-[120px] bg-sky-50 border-sky-900 hover:bg-sky-100">
             <Briefcase size={28} className="hidden md:block" />
             <span className="text-sm font-medium text-black">Jobs</span>
