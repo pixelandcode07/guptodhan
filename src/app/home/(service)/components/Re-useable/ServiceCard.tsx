@@ -28,14 +28,14 @@ export default function ServiceCard({ service }: ServiceCardProps) {
         if (images.length <= 1) return;
         const interval = setInterval(() => {
             setCurrentImage((prev) => (prev + 1) % images.length);
-        }, 5000); // Changed to 5s for better UX, 10s is a bit too long
+        }, 5000); 
         return () => clearInterval(interval);
     }, [images.length]);
 
     const handleBookNow = (e: React.MouseEvent) => {
-        e.preventDefault(); // Link click er sathe conflict na korar jonno
+        e.preventDefault(); 
         if (!session) {
-            const loginButton = document.getElementById('login-modal-btn-service');
+            const loginButton = document.getElementById('login-modal-btn');
             if (loginButton) {
                 loginButton.click();
             } else {
@@ -47,7 +47,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
     };
 
     return (
-        <div className="w-full"> {/* Parent wrapper jate alignment thik thake */}
+        <div className="w-full h-full flex flex-col">
             {/* ===================== */}
             {/* MOBILE: Vertical Card */}
             {/* ===================== */}
@@ -55,11 +55,11 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="md:hidden flex w-full flex-col overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300"
+                className="md:hidden flex w-full h-full flex-col overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300"
             >
                 {/* Image */}
-                <Link href={`/home/service-info/${service._id}`}>
-                    <div className="relative h-48 w-full overflow-hidden bg-gray-100 rounded-t-2xl group">
+                <Link href={`/home/service-info/${service._id}`} className="block w-full">
+                    <div className="relative h-48 w-full overflow-hidden bg-gray-100 group">
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={currentImage}
@@ -87,7 +87,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                             }}
                             className="absolute top-3 right-3 z-10 p-2 bg-white/80 backdrop-blur-md rounded-full hover:bg-white transition-colors shadow-sm"
                         >
-                            <Bookmark className="w-4 h-4 text-gray-600 hover:text-orange-500 transition-colors" />
+                            <Bookmark className="w-4 h-4 text-gray-600 hover:text-[#0097E9] transition-colors" />
                         </button>
 
                         {/* Status */}
@@ -105,8 +105,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                 </Link>
 
                 {/* Content */}
-                <div className="p-4 flex flex-col gap-3">
-                    {/* Title + Rating */}
+                <div className="p-4 flex flex-col flex-grow gap-3">
                     <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
                             <h3 className="text-base font-bold text-gray-900 line-clamp-2 leading-tight">
@@ -124,11 +123,9 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                         </div>
                     </div>
 
-                    {/* Divider */}
                     <div className="h-px w-full bg-gray-100" />
 
-                    {/* Info */}
-                    <div className="flex flex-col gap-2 text-xs text-gray-600 font-medium">
+                    <div className="flex flex-col gap-2 text-xs text-gray-600 font-medium flex-grow">
                         <div className="flex items-center gap-2">
                             <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
                             <span className="truncate">{service.service_area.thana}, {service.service_area.city}</span>
@@ -139,8 +136,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                         </div>
                     </div>
 
-                    {/* Price + Button */}
-                    <div className="flex items-end justify-between mt-2 pt-2 border-t border-gray-50">
+                    <div className="flex items-end justify-between mt-2 pt-3 border-t border-gray-50">
                         <div>
                             <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Starts from</p>
                             <p className="text-lg font-black text-gray-900">
@@ -154,7 +150,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                             onClick={handleBookNow}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-orange-200"
+                            className="px-5 py-2.5 bg-[#ff6b00] hover:bg-[#e66000] text-white text-xs font-bold rounded-xl transition-all shadow-md"
                         >
                             Book Now
                         </motion.button>
@@ -169,12 +165,12 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="hidden md:flex w-full h-[220px] overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 group"
+                className="hidden md:flex w-full min-h-[220px] overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 group"
             >
                 {/* Image - Left Side */}
                 <Link
                     href={`/home/service-info/${service._id}`}
-                    className="relative w-64 h-full flex-shrink-0 overflow-hidden bg-gray-100"
+                    className="relative w-[30%] min-w-[240px] max-w-[280px] h-auto flex-shrink-0 overflow-hidden bg-gray-100"
                 >
                     <AnimatePresence mode="wait">
                         <motion.div
@@ -190,7 +186,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                                 alt={service.service_title}
                                 fill
                                 className="object-cover group-hover:scale-105 transition-transform duration-700 ease-in-out"
-                                sizes="256px"
+                                sizes="280px"
                             />
                         </motion.div>
                     </AnimatePresence>
@@ -201,7 +197,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                             e.preventDefault();
                             toast.success("Added to bookmarks!");
                         }}
-                        className="absolute top-4 right-4 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white hover:text-orange-500 transition-all shadow-sm"
+                        className="absolute top-4 right-4 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white hover:text-[#0097E9] transition-all shadow-sm"
                     >
                         <Bookmark className="w-4 h-4 text-gray-600 transition-colors" />
                     </button>
@@ -220,12 +216,11 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                 </Link>
 
                 {/* Content - Right Side */}
-                <div className="flex flex-1 flex-col justify-between p-6 bg-white">
-                    {/* Top: Title + Rating */}
+                <div className="flex flex-1 flex-col justify-between p-6 bg-white w-full">
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                             <Link href={`/home/service-info/${service._id}`}>
-                                <h3 className="text-xl font-bold text-gray-900 hover:text-orange-600 transition-colors line-clamp-1">
+                                <h3 className="text-xl font-bold text-gray-900 hover:text-[#0097E9] transition-colors line-clamp-2">
                                     {service.service_title}
                                 </h3>
                             </Link>
@@ -241,8 +236,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                         </div>
                     </div>
 
-                    {/* Middle: Info */}
-                    <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-gray-600 font-medium py-2">
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-gray-600 font-medium py-3">
                         <div className="flex items-center gap-2">
                             <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
                             <span>{service.service_area.thana}, {service.service_area.city}</span>
@@ -260,8 +254,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                         </div>
                     </div>
 
-                    {/* Bottom: Price + Button */}
-                    <div className="flex items-end justify-between pt-3 border-t border-gray-100">
+                    <div className="flex items-end justify-between pt-4 border-t border-gray-100 mt-auto">
                         <div>
                             <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-0.5">Start from</p>
                             <p className="text-2xl font-black text-gray-900">
@@ -275,7 +268,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                             onClick={handleBookNow}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-orange-200/50"
+                            className="px-8 py-3 bg-[#ff6b00] hover:bg-[#e66000] text-white text-sm font-bold rounded-xl transition-all shadow-md shadow-orange-200"
                         >
                             Book Now
                         </motion.button>
