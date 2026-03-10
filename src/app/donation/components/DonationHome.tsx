@@ -2,7 +2,6 @@
 
 import DonationModal from './DonationModal'
 import React, { useState, useEffect } from 'react'
-import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import DonationClaimModal from './DonationClaimModal'
 import { Badge } from '@/components/ui/badge'
@@ -11,6 +10,7 @@ import Link from 'next/link'
 import { Package, RefreshCw, LayoutGrid } from 'lucide-react'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 
 interface DonationCampaign {
     _id: string;
@@ -110,25 +110,23 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
 
                     {/* Category Buttons */}
                     <div className="w-full overflow-x-auto scrollbar-hide pb-2">
-                        <div className="flex gap-3 min-w-max px-1">
+                        <div className="flex gap-4 min-w-max px-1">
 
                             {/* All Button */}
                             <motion.button
                                 whileHover={{ scale: 1.03 }}
                                 whileTap={{ scale: 0.97 }}
                                 onClick={() => setCategory('all')}
-                                className={`flex flex-col items-center justify-center gap-2 rounded-2xl px-6 py-4 min-w-[110px] transition-all duration-200 border
+                                className={`flex flex-col items-center justify-center gap-3 rounded-2xl px-8 py-5 min-w-[140px] transition-all duration-200 border
                                     ${category === 'all'
                                         ? "bg-[#00005E] text-white border-[#00005E] shadow-lg shadow-blue-900/20"
                                         : "bg-[#eef0f8] text-[#00005E] border-transparent hover:border-[#00005E]/20 hover:shadow-md"
                                     }`}
                             >
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center
-                                    ${category === 'all' ? "bg-white/20" : "bg-white"}`}
-                                >
-                                    <LayoutGrid className={`w-5 h-5 ${category === 'all' ? "text-white" : "text-[#00005E]"}`} />
+                                <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-white">
+                                    <LayoutGrid className="w-7 h-7 text-[#00005E]" />
                                 </div>
-                                <span className="text-xs font-bold whitespace-nowrap">All</span>
+                                <span className="text-sm font-bold whitespace-nowrap">All</span>
                             </motion.button>
 
                             {/* Dynamic Category Buttons */}
@@ -140,24 +138,23 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                         whileHover={{ scale: 1.03 }}
                                         whileTap={{ scale: 0.97 }}
                                         onClick={() => setCategory(isSelected ? 'all' : cat._id)}
-                                        className={`flex flex-col items-center justify-center gap-2 rounded-2xl px-6 py-4 min-w-[110px] transition-all duration-200 border
+                                        className={`flex flex-col items-center justify-center gap-3 rounded-2xl px-8 py-5 min-w-[140px] transition-all duration-200 border
                                             ${isSelected
                                                 ? "bg-[#00005E] text-white border-[#00005E] shadow-lg shadow-blue-900/20"
                                                 : "bg-[#eef0f8] text-[#00005E] border-transparent hover:border-[#00005E]/20 hover:shadow-md"
                                             }`}
                                     >
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden
-                                            ${isSelected ? "bg-white/20" : "bg-white"}`}
-                                        >
-                                            <Image
+                                        {/* ✅ সবসময় bg-white, icon কখনো invert হবে না */}
+                                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden bg-white">
+                                            <img
                                                 src={cat.icon}
                                                 alt={cat.name}
-                                                width={28}
-                                                height={28}
-                                                className={`object-contain transition-all duration-200 ${isSelected ? "brightness-0 invert" : ""}`}
+                                                width={36}
+                                                height={36}
+                                                className="object-contain"
                                             />
                                         </div>
-                                        <span className="text-xs font-bold whitespace-nowrap line-clamp-1 max-w-[90px] text-center">
+                                        <span className="text-sm font-bold whitespace-nowrap line-clamp-1 max-w-[120px] text-center">
                                             {cat.name}
                                         </span>
                                     </motion.button>
