@@ -200,7 +200,7 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                         {/* ======================== */}
                                         {/* Image Section            */}
                                         {/* ======================== */}
-                                        <Link href={`/donation/${camp._id}`} className="relative w-full overflow-hidden block" style={{ aspectRatio: '16/10' }}>
+                                       <Link href={`/donation/${camp._id}`} className="relative w-full overflow-hidden block aspect-[4/3]">
                                             <Image
                                                 src={camp.images?.[0] || '/img/placeholder.png'}
                                                 alt={camp.title}
