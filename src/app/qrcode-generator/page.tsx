@@ -13,8 +13,8 @@ Trading Brand Name : N/A
 Old BIN : N/A
 e-TIN : 330624150501
 Registration : Registered for VAT
-Date of Issue : 19/02/2023
-Date of Effect : 02/2023
+Date of Issue : 19/02/2025
+Date of Effect : 02/2025
 Address: Palong Modho Bazar; Palong PS; Shariatpur-8000; Bangladesh
 Type of Ownership: Proprietorship
 Major Area of Economic Activity: Services`;
