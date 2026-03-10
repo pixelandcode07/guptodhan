@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import ServiceBookingDialog from "../ServiceBookingDialog";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 interface ServiceCardProps {
     service: ServiceData;
@@ -32,11 +33,16 @@ export default function ServiceCard({ service }: ServiceCardProps) {
     }, [images.length]);
 
     const handleBookNow = () => {
-        if (!session) {
-            document.getElementById("login-modal-btn")?.click();
-            return;
+    if (!session) {
+        const loginButton = document.getElementById('login-modal-btn');
+        if (loginButton) {
+            loginButton.click();
+        } else {
+            toast.info("Please click the Login button at the top.");
         }
-        setOpen(true);
+        return;
+    }
+    setOpen(true);
     };
 
     return (
@@ -51,43 +57,48 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                 className="md:hidden flex flex-col overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200"
             >
                 {/* Image */}
-                <div className="relative h-44 w-full overflow-hidden bg-gray-100 rounded-t-2xl">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={currentImage}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.4 }}
-                            className="absolute inset-0"
+                <Link href={`/home/service-info/${service._id}`}>
+                    <div className="relative h-44 w-full overflow-hidden bg-gray-100 rounded-t-2xl">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={currentImage}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className="absolute inset-0"
+                            >
+                                <Image
+                                    src={images[currentImage]}
+                                    alt={service.service_title}
+                                    fill
+                                    className="object-cover"
+                                    sizes="100vw"
+                                />
+                            </motion.div>
+                        </AnimatePresence>
+
+                        {/* Bookmark */}
+                        <button
+                            onClick={(e) => e.preventDefault()}
+                            className="absolute top-3 right-3 z-10 p-1.5 bg-white/80 backdrop-blur-sm rounded-lg hover:bg-white transition-colors"
                         >
-                            <Image
-                                src={images[currentImage]}
-                                alt={service.service_title}
-                                fill
-                                className="object-cover"
-                                sizes="100vw"
-                            />
-                        </motion.div>
-                    </AnimatePresence>
+                            <Bookmark className="w-4 h-4 text-gray-500" />
+                        </button>
 
-                    {/* Bookmark */}
-                    <button className="absolute top-3 right-3 z-10 p-1.5 bg-white/80 backdrop-blur-sm rounded-lg hover:bg-white transition-colors">
-                        <Bookmark className="w-4 h-4 text-gray-500" />
-                    </button>
-
-                    {/* Status */}
-                    <span className={cn(
-                        "absolute top-3 left-3 z-10 px-2 py-0.5 rounded-full text-[10px] font-semibold",
-                        service.service_status === "Active"
-                            ? "bg-green-100 text-green-700"
-                            : service.service_status === "Under Review"
-                                ? "bg-amber-100 text-amber-700"
-                                : "bg-red-100 text-red-700"
-                    )}>
-                        {service.service_status}
-                    </span>
-                </div>
+                        {/* Status */}
+                        <span className={cn(
+                            "absolute top-3 left-3 z-10 px-2 py-0.5 rounded-full text-[10px] font-semibold",
+                            service.service_status === "Active"
+                                ? "bg-green-100 text-green-700"
+                                : service.service_status === "Under Review"
+                                    ? "bg-amber-100 text-amber-700"
+                                    : "bg-red-100 text-red-700"
+                        )}>
+                            {service.service_status}
+                        </span>
+                    </div>
+                </Link>
 
                 {/* Content */}
                 <div className="p-4 flex flex-col gap-2">
@@ -101,7 +112,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                                 {service.service_category}
                             </p>
                         </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
+                        <div className="flex items-center gap-1 flex-shrink-0 bg-amber-50 px-2 py-1 rounded-lg">
                             <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
                             <span className="text-xs font-bold text-gray-700">
                                 {service.average_rating.toFixed(1)}/5
@@ -166,7 +177,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                 {/* Image - Left Side */}
                 <Link
                     href={`/home/service-info/${service._id}`}
-                    className="relative w-52 flex-shrink-0 overflow-hidden bg-gray-100"
+                    className="relative w-52 flex-shrink-0 overflow-hidden bg-gray-100 rounded-l-2xl"
                 >
                     <AnimatePresence mode="wait">
                         <motion.div
@@ -188,7 +199,10 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                     </AnimatePresence>
 
                     {/* Bookmark */}
-                    <button className="absolute top-3 right-3 z-10 p-1.5 bg-white/80 backdrop-blur-sm rounded-lg hover:bg-white transition-colors">
+                    <button
+                        onClick={(e) => e.preventDefault()}
+                        className="absolute top-3 right-3 z-10 p-1.5 bg-white/80 backdrop-blur-sm rounded-lg hover:bg-white transition-colors"
+                    >
                         <Bookmark className="w-4 h-4 text-gray-500" />
                     </button>
                 </Link>
@@ -232,8 +246,6 @@ export default function ServiceCard({ service }: ServiceCardProps) {
                                 {service.working_days.length > 3 && "..."}
                             </span>
                         </div>
-
-                        {/* Status */}
                         <span className={cn(
                             "px-2 py-0.5 rounded-full text-[10px] font-semibold",
                             service.service_status === "Active"
