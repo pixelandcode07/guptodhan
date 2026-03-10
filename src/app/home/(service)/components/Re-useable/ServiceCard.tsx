@@ -35,7 +35,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
     const handleBookNow = (e: React.MouseEvent) => {
         e.preventDefault(); // Link click er sathe conflict na korar jonno
         if (!session) {
-            const loginButton = document.getElementById('login-modal-btn');
+            const loginButton = document.getElementById('login-modal-btn-service');
             if (loginButton) {
                 loginButton.click();
             } else {
