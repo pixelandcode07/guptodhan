@@ -200,12 +200,12 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                         {/* ======================== */}
                                         {/* Image Section            */}
                                         {/* ======================== */}
-                                       <Link href={`/donation/${camp._id}`} className="relative w-full overflow-hidden block aspect-[4/3]">
+                                       <Link href={`/donation/${camp._id}`} className="relative w-full overflow-hidden block aspect-[4/3] bg-gray-100">
                                             <Image
                                                 src={camp.images?.[0] || '/img/placeholder.png'}
                                                 alt={camp.title}
                                                 fill
-                                                className="object-cover group-hover:scale-105 transition-transform duration-700"
+                                                className="object-contain group-hover:scale-105 transition-transform duration-700"
                                             />
 
                                             {/* Dark gradient overlay */}
