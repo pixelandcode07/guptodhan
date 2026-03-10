@@ -12,7 +12,7 @@ export default async function ServiceCards() {
             </div>
 
             {/* Mobile: 2 column grid | Desktop: 1 column list */}
-            <div className="px-2 grid gap-4 grid-cols-2 md:grid-cols-1 lg:max-w-4xl lg:mx-auto">
+            <div className="grid grid-cols-2 lg:grid-cols-2 gap-6 w-full">
                 {serviceCard.map((service) => (
                     <ServiceCard key={service._id} service={service} />
                 ))}
