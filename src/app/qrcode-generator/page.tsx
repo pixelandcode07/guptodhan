@@ -8,24 +8,24 @@ import { Button } from "@/components/ui/button";
 export default function QRCodeGeneratorPage() {
     const defaultText = `Business Identification Number (BIN) Details
 BIN :  005393046-0811
-Name of the Entity : Guptodhan Digital 
+Name of the Entity : GUPTODHAN DIGITAL
 Trading Brand Name : N/A
 Old BIN : N/A
 e-TIN : 330624150501
 Registration : Registered for VAT
 Date of Issue : 19/02/2023
 Date of Effect : 02/2023
-Address: Palong Modho Bazar, Palong PS, Shariatpur`;
+Address: Palong Modho Bazar; Palong PS; Shariatpur-8000; Bangladesh
+Type of Ownership: Proprietorship
+Major Area of Economic Activity: Services`;
 
     const [text, setText] = useState(defaultText);
     const qrRef = useRef<HTMLDivElement>(null);
 
-    // QR কোড ইমেজ হিসেবে ডাউনলোড করার ফাংশন
     const downloadQRCode = () => {
         if (!qrRef.current) return;
         const canvas = qrRef.current.querySelector("canvas");
         if (canvas) {
-            // ক্যানভাস থেকে ইমেজ ডেটা বের করে ডাউনলোড লিংক তৈরি করা
             const pngUrl = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
             const downloadLink = document.createElement("a");
             downloadLink.href = pngUrl;
