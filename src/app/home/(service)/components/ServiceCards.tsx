@@ -8,16 +8,15 @@ export default async function ServiceCards() {
     return (
         <>
             <div className='flex justify-center items-center'>
-                <PageHeader
-                title="Our Services"
-                />
+                <PageHeader title="Our Services" />
             </div>
-            <div className="px-2 grid gap-6 grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
+            {/* Mobile: 2 column grid | Desktop: 1 column list */}
+            <div className="px-2 grid gap-4 grid-cols-2 md:grid-cols-1 lg:max-w-4xl lg:mx-auto">
                 {serviceCard.map((service) => (
                     <ServiceCard key={service._id} service={service} />
                 ))}
             </div>
         </>
-
     )
 }
