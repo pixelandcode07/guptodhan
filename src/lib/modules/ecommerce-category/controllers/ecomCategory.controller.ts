@@ -219,7 +219,6 @@ const deleteCategory = async (
 const getAllSubCategories = async (req: NextRequest) => {
   await dbConnect();
 
-  // ✅ Cache clear করা হচ্ছে যাতে পুরনো data না আসে
   await deleteCacheKey(CacheKeys.CATEGORY.WITH_HIERARCHY);
 
   const allCategories = await CategoryServices.getAllSubCategoriesWithChildren();
