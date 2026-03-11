@@ -74,8 +74,6 @@ const updateProfile = async (data: { name?: string; phoneNumber?: string; addres
           duration: 4000,
         })
       }
-
-      toast.error('Failed to update profile')
       return false
     } finally {
       setSaving(false)
@@ -108,7 +106,6 @@ const updateProfile = async (data: { name?: string; phoneNumber?: string; addres
       return false
     } catch (error) {
       console.error('Error updating profile picture:', error)
-      toast.error('Failed to update profile picture')
       return false
     } finally {
       setSaving(false)
