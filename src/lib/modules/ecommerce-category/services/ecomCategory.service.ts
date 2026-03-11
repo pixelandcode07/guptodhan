@@ -38,6 +38,9 @@ const createCategoryInDB = async (payload: Partial<ICategory>) => {
 
   // 🗑️ Clear category caches
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+  await deleteCacheKey(CacheKeys.CATEGORY.WITH_HIERARCHY);
+  await deleteCacheKey('featured:all-categories'); // ✅ Added
+  await deleteCachePattern('featured:*'); // ✅ Added
 
   return result;
 };
@@ -63,22 +66,38 @@ const getAllCategoriesFromDB = async () => {
 // ================================================================
 // ⭐ GET FEATURED CATEGORIES (WITH CACHE)
 // ================================================================
-const getFeaturedCategoriesFromDB = async () => {
-  const cacheKey = CacheKeys.CATEGORY.FEATURED;
+const getFeaturedEverythingFromDB = async () => {
+  const cacheKey = 'featured:all-categories';
 
   return getCachedData(
     cacheKey,
     async () => {
-      const result = await CategoryModel.find({
-        isFeatured: true,
-        status: "active",
-      })
-        .select("name categoryIcon isFeatured status slug categoryId")
-        .sort({ name: 1 })
-        .lean();
-      return result;
+      // একসাথে তিনটি টেবিল থেকে ডাটা ফেচ করা হচ্ছে
+      const [mainCategories, subCategories] = await Promise.all([
+        CategoryModel.find({ isFeatured: true, status: 'active' }).lean(),
+        SubCategoryModel.find({ isFeatured: true, status: 'active' }).lean(),
+      ]);
+
+      // সবগুলোকে একটি ফরম্যাটে সাজানো যাতে ফ্রন্টএন্ডে সমস্যা না হয়
+      const formattedMain = mainCategories.map((item: any) => ({
+        _id: item._id,
+        name: item.name,
+        categoryIcon: item.categoryIcon,
+        slug: item.slug,
+        type: 'main-category'
+      }));
+
+      const formattedSub = subCategories.map((item: any) => ({
+        _id: item._id,
+        name: item.name,
+        categoryIcon: item.subCategoryIcon, 
+        slug: item.slug,
+        type: 'sub-category'
+      }));
+
+      return [...formattedMain, ...formattedSub];
     },
-    CacheTTL.CATEGORY_FEATURED
+    CacheTTL.CATEGORY_LIST
   );
 };
 
@@ -139,6 +158,9 @@ const updateCategoryInDB = async (id: string, payload: Partial<ICategory>) => {
   // 🗑️ Clear caches
   await deleteCacheKey(CacheKeys.CATEGORY.BY_ID(result.categoryId));
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+  await deleteCacheKey(CacheKeys.CATEGORY.WITH_HIERARCHY); // ✅ Nav Menu update korbe
+  await deleteCacheKey('featured:all-categories'); // ✅ Featured update korbe
+  await deleteCachePattern('featured:*'); // ✅ Added
 
   return result;
 };
@@ -165,6 +187,9 @@ const deleteCategoryFromDB = async (id: string) => {
 
   // 🗑️ Clear caches
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+  await deleteCacheKey(CacheKeys.CATEGORY.WITH_HIERARCHY); // ✅ Added
+  await deleteCacheKey('featured:all-categories'); // ✅ Added
+  await deleteCachePattern('featured:*'); // ✅ Added
 
   return null;
 };
@@ -178,32 +203,30 @@ export const getAllSubCategoriesWithChildren = async () => {
   return getCachedData(
     cacheKey,
     async () => {
-      // ✅ Step 1: Get all navbar main categories
-      const mainCategories = await CategoryModel.find({ isNavbar: true })
+      const mainCategories = await CategoryModel.find({ 
+        isNavbar: true,
+        status: 'active'
+      })
         .sort({ orderCount: 1 })
         .lean();
 
       if (!mainCategories || mainCategories.length === 0) return [];
 
-      // ✅ Type-safe: Extract IDs
       const mainIds = mainCategories.map((cat: any) => cat._id);
 
-      // ✅ Step 2: Get all subcategories in ONE query
       const allSubCategories = await SubCategoryModel.find({
         category: { $in: mainIds },
-        status: 'active'
+        status: 'active',
+        isNavbar: true 
       }).lean();
 
-      // ✅ Type-safe: Extract sub IDs
       const subIds = allSubCategories.map((sub: any) => sub._id);
 
-      // ✅ Step 3: Get all child categories in ONE query
       const allChildCategories = await ChildCategoryModel.find({
         subCategory: { $in: subIds },
         status: 'active'
       }).lean();
 
-      // ✅ Step 4: Build hierarchy in JavaScript (Type-safe)
       const result = mainCategories.map((main: any) => {
         const subCategoriesOfThisMain = allSubCategories.filter(
           (sub: any) => sub.category?.toString() === main._id?.toString()
@@ -258,6 +281,7 @@ export const reorderMainCategoriesService = async (orderedIds: string[]) => {
 
   // 🗑️ Clear all category caches
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+  await deleteCacheKey(CacheKeys.CATEGORY.WITH_HIERARCHY); // ✅ Added
 
   return { message: "Main categories reordered successfully!" };
 };
@@ -507,7 +531,7 @@ const getProductsByCategorySlugWithFiltersFromDB = async (
 export const CategoryServices = {
   createCategoryInDB,
   getAllCategoriesFromDB,
-  getFeaturedCategoriesFromDB,
+  getFeaturedEverythingFromDB,
   getCategoryByIdFromDB,
   updateCategoryInDB,
   deleteCategoryFromDB,

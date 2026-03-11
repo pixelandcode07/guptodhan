@@ -9,12 +9,24 @@ import {
 } from "@/components/ui/carousel";
 import Image from "next/image";
 import Link from "next/link";
-import { FeatureProps } from "@/types/FeaturedCategoryType";
+import { FeatureProps, FeaturedCategory } from "@/types/FeaturedCategoryType";
 
 export function ShopByCategory({ featuredData }: FeatureProps) {
   if (!featuredData || featuredData.length === 0) {
     return null;
   }
+
+  // 👇 এই ফাংশনটি নির্ধারণ করবে লিংক কোথায় যাবে 👇
+  const getCategoryUrl = (category: FeaturedCategory) => {
+    if (category.type === "sub-category") {
+      return `/subcategory/${category.slug}`;
+    } else if (category.type === "child-category") {
+      return `/childcategory/${category.slug}`;
+    } else {
+      // ডিফল্ট বা মেইন ক্যাটাগরির জন্য
+      return `/category/${category.slug}`;
+    }
+  };
 
   return (
     <section className="w-full md:max-w-[95vw] xl:container mx-auto px-4 md:px-12 py-1">
@@ -31,11 +43,12 @@ export function ShopByCategory({ featuredData }: FeatureProps) {
               key={category._id}
               className="pl-2 md:pl-4 basis-1/3 sm:basis-1/4 md:basis-1/5 lg:basis-1/6 xl:basis-[12.5%]"
             >
-              <Link href={`/feature/${category.slug}`} className="group block">
+              {/* 👇 এখানে getCategoryUrl ফাংশনটি ব্যবহার করা হয়েছে 👇 */}
+              <Link href={getCategoryUrl(category)} className="group block">
                 <div className="flex flex-col items-center gap-2 md:gap-3 rounded-xl border bg-white p-2 md:p-4 shadow-sm transition-all duration-300 hover:shadow-md md:hover:shadow-lg hover:-translate-y-1">
                   <div className="flex items-center justify-center w-14 h-14 md:w-20 md:h-20 ">
                     <Image
-                      src={category.categoryIcon}
+                      src={category.categoryIcon || '/placeholder.png'}
                       alt={category.name}
                       width={64}
                       height={64}

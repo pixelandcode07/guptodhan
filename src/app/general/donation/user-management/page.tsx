@@ -141,10 +141,11 @@ export default function UserManagementPage() {
                                                     <MoreHorizontal className="h-4 w-4" />
                                                 </Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem>View Details</DropdownMenuItem>
-                                                <DropdownMenuItem className="text-red-600">Block User</DropdownMenuItem>
-                                            </DropdownMenuContent>
+                                           <DropdownMenuContent align="end">
+                                            <DropdownMenuItem className="text-gray-500 italic cursor-not-allowed">
+                                                Coming Soon...
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>
                                 </TableRow>

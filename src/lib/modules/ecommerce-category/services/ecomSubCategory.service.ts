@@ -122,6 +122,10 @@ const updateSubCategoryInDB = async (id: string, payload: Partial<ISubCategory>)
   // 🔥 CRITICAL FIX: Ei line ta oboshhoi add korben nahole table e image asbe na
   await deleteCacheKey('subcategories:all');
 
+  // 🚀 NEW FIX: Sub Category Featured korle jeno Home Page e cache na dhore rakhe!
+  await deleteCacheKey('featured:all-categories');
+  await deleteCachePattern('featured:*'); // সেফটির জন্য রিলেটেড সব ফিচার্ড ক্যাশ ক্লিয়ার
+
   // 🔥 4. Clear products cache for the OLD slug
   if (oldSlug) {
     await deleteCachePattern(`subcategory:${oldSlug}:products:*`);
