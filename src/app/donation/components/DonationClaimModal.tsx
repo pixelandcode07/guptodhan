@@ -98,8 +98,13 @@ export default function DonationClaimModal({ open, onOpenChange, item }: Donatio
 
   const handleSubmit = async () => {
     if (!session) {
-      toast.error("Please login first to submit a request")
       onOpenChange(false)
+      setTimeout(() => {
+        const loginButton = document.getElementById('login-modal-btn-service')
+        if (loginButton) {
+          loginButton.click()
+        }
+      }, 200) // modal close হওয়ার পর click করবে
       return
     }
 
