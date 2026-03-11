@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button'
 import DonationClaimModal from './DonationClaimModal'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
-import { Package, RefreshCw, LayoutGrid, MapPin, Heart, HandHeart } from 'lucide-react'
+import { Package, RefreshCw, LayoutGrid, MapPin, Heart, HandHeart, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
+import { Dialog } from '@/components/ui/dialog'
+import LogInRegister from '@/app/components/LogInAndRegister/LogIn_Register'
 
 interface DonationCampaign {
     _id: string;
@@ -44,6 +46,7 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
     const [category, setCategory] = useState<string>('all')
     const [displayCount, setDisplayCount] = useState<number>(8)
     const [claimOpen, setClaimOpen] = useState<boolean>(false)
+    const [loginOpen, setLoginOpen] = useState<boolean>(false) // ✅ Login modal state added
     const [selectedItem, setSelectedItem] = useState<{ id: string, title: string, image: string, type: string } | undefined>(undefined)
     const [loading, setLoading] = useState(false)
 
@@ -81,10 +84,67 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
 
     const hasMoreItems = displayCount < filteredItems.length;
 
+    // ✅ Handle Request Click with Login Check
+    const handleRequestClick = (camp: DonationCampaign) => {
+        if (!session) {
+            setLoginOpen(true);
+            return;
+        }
+        setSelectedItem({
+            id: camp._id,
+            title: camp.title,
+            image: camp.images?.[0] || '',
+            type: camp.item
+        });
+        setClaimOpen(true);
+    };
+
     return (
         <div className='md:max-w-[95vw] xl:container mx-auto px-4 md:px-8'>
+            
+            {/* ✅ Login Modal — fixed overlay for unauthenticated users */}
+            <AnimatePresence>
+                {loginOpen && (
+                    <div className="fixed inset-0 z-[999] flex items-center justify-center px-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setLoginOpen(false)}
+                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            transition={{ duration: 0.2 }}
+                            className="relative z-10 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <button
+                                onClick={() => setLoginOpen(false)}
+                                className="absolute top-3 right-3 z-20 p-1.5 bg-white/80 hover:bg-white rounded-full shadow transition-colors"
+                            >
+                                <X size={16} className="text-gray-600" />
+                            </button>
+                            
+                            <Dialog open={true} onOpenChange={setLoginOpen}>
+                                <LogInRegister />
+                            </Dialog>
+                            
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
             <DonationModal categories={initialCategories} onSuccess={refreshCampaigns} />
-            <DonationClaimModal open={claimOpen} onOpenChange={setClaimOpen} item={selectedItem} />
+            <DonationClaimModal 
+                open={claimOpen} 
+                onOpenChange={setClaimOpen} 
+                item={selectedItem} 
+                // Passed down just in case your DonationClaimModal uses it internally
+                onLoginRequired={() => setLoginOpen(true)} 
+            />
 
             <section id='browse-items' className='mt-6'>
 
@@ -308,15 +368,7 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                                     whileHover={{ scale: 1.02 }}
                                                     whileTap={{ scale: 0.98 }}
                                                     className='w-full py-2.5 bg-[#00005E] hover:bg-[#000045] text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm shadow-blue-900/20'
-                                                    onClick={() => {
-                                                        setSelectedItem({
-                                                            id: camp._id,
-                                                            title: camp.title,
-                                                            image: camp.images?.[0] || '',
-                                                            type: camp.item
-                                                        });
-                                                        setClaimOpen(true);
-                                                    }}
+                                                    onClick={() => handleRequestClick(camp)} // ✅ Added login checking logic here
                                                 >
                                                     <HandHeart className="w-4 h-4" />
                                                     {camp.item === 'money' ? 'Request Fund' : 'Request Item'}
