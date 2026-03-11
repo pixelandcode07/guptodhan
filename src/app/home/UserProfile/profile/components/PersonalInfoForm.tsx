@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
+import { toast } from 'sonner'
 
 interface PersonalInfoFormProps {
   initialName: string
   initialPhone: string
   initialAddress?: string
-  onSave?: (data: { name: string; phoneNumber: string; address?: string }) => void
+  onSave?: (data: { name: string; phoneNumber: string; address?: string }) => Promise<void> | void
   isLoading?: boolean
 }
 
@@ -22,16 +23,34 @@ export default function PersonalInfoForm({
   const [phone, setPhone] = useState(initialPhone)
   const [address, setAddress] = useState(initialAddress)
 
-  // Update local state when initial props change (after save)
   useEffect(() => {
     setName(initialName)
     setPhone(initialPhone)
     setAddress(initialAddress)
   }, [initialName, initialPhone, initialAddress])
 
-  const handleSave = () => {
-    if (onSave) {
-      onSave({ name, phoneNumber: phone, address })
+  const handleSave = async () => {
+    if (!onSave) return
+    try {
+      await onSave({ name, phoneNumber: phone, address })
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error)
+
+      if (
+        message.includes('E11000') ||
+        message.includes('duplicate key') ||
+        message.includes('phoneNumber')
+      ) {
+        toast.error('Phone number already in use', {
+          description: 'Please try a different phone number.',
+          duration: 4000,
+        })
+      } else {
+        toast.error('Something went wrong', {
+          description: 'Please try again.',
+          duration: 4000,
+        })
+      }
     }
   }
 
@@ -80,4 +99,3 @@ export default function PersonalInfoForm({
     </div>
   )
 }
-
