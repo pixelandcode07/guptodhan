@@ -35,7 +35,7 @@ export const useProfile = () => {
   }
 
   // Update profile data
-  const updateProfile = async (data: { name?: string; phoneNumber?: string; address?: string }) => {
+const updateProfile = async (data: { name?: string; phoneNumber?: string; address?: string }) => {
     try {
       setSaving(true)
       
@@ -50,21 +50,31 @@ export const useProfile = () => {
         },
       })
 
-      console.log('Profile update response:', response.data)
-      
       if (response.data?.success && response.data?.data) {
         setProfile(response.data.data)
-        console.log('Updated profile:', response.data.data)
         toast.success('Profile updated successfully!')
-        
-        // Dispatch event to update sidebar
         window.dispatchEvent(new Event('profileUpdated'))
-        
         return true
       }
       return false
-    } catch (error) {
-      console.error('Error updating profile:', error)
+    } catch (error: unknown) {
+      // Extract the actual server error message
+      const message =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (error as any)?.response?.data?.message ||
+        (error instanceof Error ? error.message : String(error))
+
+      if (
+        message.includes('E11000') ||
+        message.includes('duplicate key') ||
+        message.includes('phoneNumber')
+      ) {
+        toast.error('Phone number already registered', {
+          description: 'This number is linked to another account. Please use a different one.',
+          duration: 4000,
+        })
+      }
+
       toast.error('Failed to update profile')
       return false
     } finally {
