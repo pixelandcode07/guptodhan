@@ -125,7 +125,7 @@ export default function ServiceNavMain() {
                             ) : (
                                 <DialogTrigger asChild>
                                     <button
-                                        id="service-nav-login-btn"
+                                        id="login-modal-btn-service"
                                         className="flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer"
                                     >
                                         <User size={20} />
