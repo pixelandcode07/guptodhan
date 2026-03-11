@@ -16,8 +16,8 @@ export default function HomeNavbar() {
         setMounted(true);
     }, []);
 
-    const isBuyAndSell = pathname?.startsWith("/home/buyandsell");
-    const isDonation = pathname?.startsWith("/home/donation");
+    const isBuyAndSell = pathname?.startsWith("/buy-sell");
+    const isDonation = pathname?.startsWith("/donation");
     const isService = pathname?.startsWith("/home/service");
 
     if (!mounted) return null;

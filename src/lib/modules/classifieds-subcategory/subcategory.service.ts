@@ -1,9 +1,13 @@
-
 import { IClassifiedSubCategory } from './subcategory.interface';
 import { ClassifiedSubCategory } from './subcategory.model';
-import { ClassifiedCategory } from '../classifieds-category/category.model'; // <-- Parent Category মডেল ইম্পোর্ট করুন
+import { ClassifiedCategory } from '../classifieds-category/category.model'; 
 import { Types } from 'mongoose';
 import { ClassifiedAd } from '../classifieds/ad.model';
+import { deleteFromCloudinary } from '@/lib/utils/cloudinary'; // ✅ Missing import fixed
+
+// ✅ Redis Cache Imports
+import { deleteCachePattern } from '@/lib/redis/cache-helpers';
+import { CacheKeys } from '@/lib/redis/cache-keys';
 
 const createSubCategoryInDB = async (payload: Partial<IClassifiedSubCategory>) => {
   const parentCategory = await ClassifiedCategory.findById(payload.category);
@@ -13,6 +17,10 @@ const createSubCategoryInDB = async (payload: Partial<IClassifiedSubCategory>) =
   }
   
   const result = await ClassifiedSubCategory.create(payload);
+
+  // 🗑️ Clear caches (কারণ সাব-ক্যাটাগরি অ্যাড হলে মেইন ক্যাটাগরির ডেটাও চেঞ্জ হয়)
+  await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+
   return result;
 };
 
@@ -33,7 +41,7 @@ const updateSubCategoryInDB = async (id: string, payload: Partial<IClassifiedSub
     throw new Error("Sub-category not found to update.");
   }
 
-  // যদি নতুন প্যারেন্ট ক্যাটাগরি পাঠানো হয়, তবে সেটি ভ্যালিড কিনা চেক করা হচ্ছে
+  // যদি নতুন প্যারেন্ট ক্যাটাগরি পাঠানো হয়, তবে সেটি ভ্যালিড কিনা চেক করা হচ্ছে
   if (payload.category) {
     const parentCategoryExists = await ClassifiedCategory.findById(payload.category);
     if (!parentCategoryExists) {
@@ -41,18 +49,22 @@ const updateSubCategoryInDB = async (id: string, payload: Partial<IClassifiedSub
     }
   }
   
-  // যদি নতুন আইকন আপলোড করা হয়, তাহলে ক্লাউডিনারি থেকে পুরোনো আইকন ডিলিট করা হচ্ছে
+  // যদি নতুন আইকন আপলোড করা হয়, তাহলে ক্লাউডিনারি থেকে পুরোনো আইকন ডিলিট করা হচ্ছে
   if (payload.icon && subCategoryToUpdate.icon) {
     await deleteFromCloudinary(subCategoryToUpdate.icon);
   }
 
   // ডেটাবেসে সাব-ক্যাটাগরিটি আপডেট করা হচ্ছে
   const result = await ClassifiedSubCategory.findByIdAndUpdate(id, payload, { new: true });
+
+  // 🗑️ Clear caches
+  await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+
   return result;
 };
 
 
-// নতুন: সাব-ক্যাটাগরি ডিলিট করার জন্য সার্ভিস
+// সাব-ক্যাটাগরি ডিলিট করার জন্য সার্ভিস
 const deleteSubCategoryFromDB = async (id: string) => {
   // Bonus Check: ডিলিট করার আগে চেক করা হচ্ছে কোনো বিজ্ঞাপন এই সাব-ক্যাটাগরিটি ব্যবহার করছে কিনা
   const existingAd = await ClassifiedAd.findOne({ subCategory: new Types.ObjectId(id) });
@@ -64,7 +76,11 @@ const deleteSubCategoryFromDB = async (id: string) => {
   if (!result) {
     throw new Error("Sub-category not found to delete.");
   }
-  return null; // সফলভাবে ডিলিট হলে কোনো ডেটা পাঠানোর প্রয়োজন নেই
+
+  // 🗑️ Clear caches
+  await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+
+  return null;
 };
 
 export const ClassifiedSubCategoryServices = {

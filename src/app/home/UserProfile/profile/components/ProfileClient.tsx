@@ -15,13 +15,13 @@ interface ProfileClientProps {
 export default function ProfileClient({ 
   userName, 
   userImage, 
-  userPhone = '+8801700 000000' 
+  userPhone
 }: ProfileClientProps) {
   const { profile, saving, updateProfile, updateProfilePicture } = useProfile()
   const [currentImage, setCurrentImage] = useState(userImage)
   const [currentData, setCurrentData] = useState({
     name: userName,
-    phone: userPhone,
+    phone: userPhone || '',
     address: ''
   })
 
@@ -29,7 +29,7 @@ export default function ProfileClient({
     if (profile) {
       setCurrentData({
         name: profile.name || userName,
-        phone: profile.phoneNumber || userPhone || '+8801700 000000',
+        phone: profile.phoneNumber ?? userPhone ?? '',
         address: profile.address || ''
       })
       if (profile.profilePicture) {
@@ -66,7 +66,7 @@ export default function ProfileClient({
         userName={currentData.name}
         userImage={currentImage}
         userPhone={currentData.phone}
-        onRemoveClick={handleRemoveImage}
+        // onRemoveClick={handleRemoveImage}
         onChangeImageClick={handleChangeImage}
       />
 

@@ -14,7 +14,7 @@ const productOptionSchema = new Schema(
       ref: 'ProductSize'
     }],
     storage: { 
-      type: Schema.Types.ObjectId, 
+      type: Schema.Types.ObjectId,
       ref: 'StorageType'
     },
     unit: [{ type: String }],
@@ -55,6 +55,12 @@ const vendorProductSchema = new Schema<IVendorProduct>(
     discountPrice: { type: Number },
     stock: { type: Number },
     sku: { type: String },
+    slug: { 
+      type: String, 
+      trim: true, 
+      unique: true, // Slug অবশ্যই ইউনিক হতে হবে
+      index: true   // ফাস্ট সার্চের জন্য ইনডেক্স করা হলো
+    },
     rewardPoints: { type: Number },
     
     // ✅ NEW: Shipping Cost Field Added

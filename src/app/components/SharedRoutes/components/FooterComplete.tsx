@@ -9,12 +9,12 @@ import {
     Youtube,
     Linkedin,
     Mail,
-    MessageCircle,
     Smartphone,
     Send,
     Film,
     PhoneCall,
-    MessageSquareHeart
+    MessageSquareHeart,
+    MessageCircle
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,6 @@ interface SocialLinksData {
     twitter?: string;
     instagram?: string;
     linkedin?: string;
-    messenger?: string;
     whatsapp?: string;
     telegram?: string;
     youtube?: string;
@@ -36,10 +35,72 @@ interface SocialLinksData {
     viber?: string;
 }
 
+interface SettingsData {
+    companyName?: string;
+    phoneNumber?: string;
+    companyEmail?: string;
+    shortDescription?: string;
+    companyAddress?: string;
+    companyMapLink?: string;
+    tradeLicenseNo?: string;
+    tinNo?: string;
+    binNo?: string;
+    footerCopyrightText?: string;
+    secondaryLogoDark?: string; // Footer logo
+    paymentBanner?: string;
+}
+
 export default function FooterComplete() {
     const [socialLinks, setSocialLinks] = useState<SocialLinksData>({});
-    
-    // সোশ্যাল মিডিয়া কনফিগারেশন (আইকন এবং কালার ম্যাপিং)
+    const [settings, setSettings] = useState<SettingsData | null>(null);
+    const TikTokIcon = ({ size = 16 }: { size?: number }) => {
+    return (
+        <div style={{ width: size, height: size }} className="relative flex items-center justify-center">
+            <Image 
+                src="/img/tiktok.png"  // আপনার পাবলিক ফোল্ডারের পাথ
+                alt="TikTok" 
+                width={size} 
+                height={size} 
+                className="object-contain" 
+                // যদি আপনার আইকন কালো হয় এবং ব্যাকগ্রাউন্ড কালো হওয়ায় দেখা না যায়, 
+                // তবে নিচের ক্লাসটি ব্যবহার করে সাদা করতে পারেন:
+                // className="object-contain brightness-0 invert" 
+            />
+        </div>
+    );
+};
+    const PinterestIcons = ({ size = 16 }: { size?: number }) => {
+    return (
+        <div style={{ width: size, height: size }} className="relative flex items-center justify-center">
+            <Image 
+                src="/img/pinterest.png"  
+                alt="TikTok" 
+                width={size} 
+                height={size} 
+                className="object-contain" 
+                // যদি আপনার আইকন কালো হয় এবং ব্যাকগ্রাউন্ড কালো হওয়ায় দেখা না যায়, 
+                // তবে নিচের ক্লাসটি ব্যবহার করে সাদা করতে পারেন:
+                // className="object-contain brightness-0 invert" 
+            />
+        </div>
+    );
+};
+    const TelegramIcon = ({ size = 16 }: { size?: number }) => {
+    return (
+        <div style={{ width: size, height: size }} className="relative flex items-center justify-center">
+            <Image 
+                src="/img/telegram.png"  
+                alt="TikTok" 
+                width={size} 
+                height={size} 
+                className="object-contain" 
+                // যদি আপনার আইকন কালো হয় এবং ব্যাকগ্রাউন্ড কালো হওয়ায় দেখা না যায়, 
+                // তবে নিচের ক্লাসটি ব্যবহার করে সাদা করতে পারেন:
+                // className="object-contain brightness-0 invert" 
+            />
+        </div>
+    );
+};
     const socialMediaConfig = [
         { key: 'facebook', Icon: Facebook, color: "bg-[#3b5998]" },
         { key: 'twitter', Icon: Twitter, color: "bg-[#00acee]" },
@@ -47,26 +108,32 @@ export default function FooterComplete() {
         { key: 'youtube', Icon: Youtube, color: "bg-[#FF0000]" },
         { key: 'linkedin', Icon: Linkedin, color: "bg-[#0072b1]" },
         { key: 'whatsapp', Icon: Smartphone, color: "bg-[#25D366]" },
-        { key: 'telegram', Icon: Send, color: "bg-[#0088cc]" },
-        { key: 'tiktok', Icon: Film, color: "bg-[#000000]" },
-        { key: 'pinterest', Icon: MessageSquareHeart, color: "bg-[#E60023]" },
+        { key: 'telegram', Icon: TelegramIcon, color: "bg-[#0088cc]" },
+        { key: 'tiktok', Icon: TikTokIcon, color: "bg-white" }, // এখানে পরিবর্তন করা হয়েছে
+        { key: 'pinterest', Icon: PinterestIcons, color: "bg-[#E60023]" },
         { key: 'viber', Icon: PhoneCall, color: "bg-[#665CAC]" },
     ];
 
     useEffect(() => {
-        const fetchSocialLinks = async () => {
+        const fetchData = async () => {
             try {
-                // আপনার পাবলিক API রাউট কল করা হচ্ছে
-                const { data } = await axios.get('/api/v1/public/social_links');
-                if (data.success && data.data) {
-                    setSocialLinks(data.data);
+                // ১. সোশ্যাল লিংক ফেচ
+                const socialRes = await axios.get('/api/v1/public/social_links');
+                if (socialRes.data.success && socialRes.data.data) {
+                    setSocialLinks(socialRes.data.data);
+                }
+
+                // ২. জেনারেল সেটিংস ফেচ
+                const settingsRes = await axios.get('/api/v1/public/settings');
+                if (settingsRes.data.success) {
+                    setSettings(settingsRes.data.data);
                 }
             } catch (error) {
-                console.error("Error fetching social links:", error);
+                console.error("Error fetching footer data:", error);
             }
         };
 
-        fetchSocialLinks();
+        fetchData();
     }, []);
 
     return (
@@ -75,7 +142,14 @@ export default function FooterComplete() {
             <div className="md:max-w-[95vw] xl:container sm:px-8 mx-auto py-4 md:py-10 border-b border-gray-100">
                 <div className="flex flex-col xl:flex-row items-center justify-center xl:justify-between gap-6">
                     <Link href="/">
-                        <Image src="/img/logo.png" alt="Guptodhan" width={160} height={50} className="h-auto w-auto" />
+                        {/* Dynamic Footer Logo */}
+                        <Image 
+                            src={settings?.secondaryLogoDark || "/img/logo.png"} 
+                            alt={settings?.companyName || "Guptodhan"} 
+                            width={160} 
+                            height={50} 
+                            className="h-auto w-auto max-h-12" 
+                        />
                     </Link>
                     <div className="flex flex-col sm:flex-row items-center text-center sm:text-left gap-4">
                         <div className="bg-gray-50 p-4 rounded-full">
@@ -111,32 +185,41 @@ export default function FooterComplete() {
 
                         <div className="space-y-1">
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Got Question? Call us 24/7</p>
-                            {/* WhatsApp লিংক ডাইনামিক করা হয়েছে যদি ডাটা থাকে, না থাকলে ডিফল্ট */}
+                            {/* Dynamic Phone Number */}
                             <Link
-                                href={socialLinks.whatsapp || "https://wa.me/8801816500600"}
+                                href={socialLinks.whatsapp || `tel:${settings?.phoneNumber}`}
                                 target="_blank"
                                 className="block group"
                             >
                                 <p className="text-2xl font-bold text-[#00005E] group-hover:text-green-600 transition-colors">
-                                    01816500600
+                                    {settings?.phoneNumber || "01816500600"}
                                 </p>
                                 <span className="text-[10px] text-green-600 font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <MessageCircle size={12} /> Click to Chat on WhatsApp
+                                    <MessageCircle size={12} /> Click to Chat
                                 </span>
                             </Link>
                         </div>
-                        <p className="text-sm font-semibold text-[#00005E]">guptodhan24@gmail.com</p>
+                        
+                        {/* Dynamic Email */}
+                        <p className="text-sm font-semibold text-[#00005E]">{settings?.companyEmail || "guptodhan24@gmail.com"}</p>
+                        
+                        {/* Dynamic Description */}
                         <p className="text-sm text-gray-500 leading-relaxed max-w-xs">
-                            Guptodhan Bangladesh is online version of Guptodhan situated at Dhaka since 2024
+                            {settings?.shortDescription || "Guptodhan Bangladesh is online version of Guptodhan situated at Dhaka since 2024"}
                         </p>
+
+                        {/* Legal Info (Trade License, etc.) - Optional Display */}
+                        {(settings?.tradeLicenseNo || settings?.binNo) && (
+                            <div className="text-xs text-gray-400 space-y-0.5 pt-2">
+                                {settings.tradeLicenseNo && <p>Trade License: {settings.tradeLicenseNo}</p>}
+                                {settings.binNo && <p>BIN: {settings.binNo}</p>}
+                            </div>
+                        )}
                         
                         {/* --- Dynamic Social Media Links --- */}
                         <div className="flex flex-wrap gap-2 pt-2">
                             {socialMediaConfig.map((social, i) => {
-                                // চেক করছি এই প্লাটফর্মের লিংক ডাটাবেজে আছে কিনা
                                 const linkUrl = socialLinks[social.key as keyof SocialLinksData];
-                                
-                                // যদি লিংক থাকে, শুধুমাত্র তখনই আইকন রেন্ডার হবে
                                 if (!linkUrl) return null;
 
                                 return (
@@ -157,16 +240,10 @@ export default function FooterComplete() {
                     <div className="md:pl-4">
                         <h4 className="font-bold text-[#00005E] mb-6 uppercase text-sm tracking-widest border-b-2 border-blue-50 pb-2 inline-block">Company</h4>
                         <ul className="space-y-3 text-sm text-gray-600">
-                            <li>
-                                <a href="#navbar" className="hover:text-blue-600 transition-colors">Home</a>
-                            </li>
+                            <li><a href="#navbar" className="hover:text-blue-600 transition-colors">Home</a></li>
                             <li><Link href="/about-us" className="hover:text-blue-600 transition-colors">About Us</Link></li>
-                            <li><Link href="/contact-us"
-                                target="_blank"
-                                className="block group hover:text-blue-600 transition-colors">Contact Us</Link></li>
-                            <li>
-                                <Link href="/home/vendor-shops" className="hover:text-blue-600 transition-colors">Vendor Shops</Link>
-                            </li>
+                            <li><Link href="/contact-us" target="_blank" className="block group hover:text-blue-600 transition-colors">Contact Us</Link></li>
+                            <li><Link href="/home/vendor-shops" className="hover:text-blue-600 transition-colors">Vendor Shops</Link></li>
                         </ul>
                     </div>
 
@@ -212,20 +289,20 @@ export default function FooterComplete() {
             <div className="bg-[#00005E] text-white py-5">
                 <div className="md:max-w-[95vw] xl:container sm:px-8 mx-auto px-4 flex flex-col lg:flex-row items-center justify-between gap-8">
                     <div className="text-sm text-center lg:text-left space-y-1">
-                        <p className="opacity-90">Copyright © 2026 GuptoDhan. All Rights Reserved.</p>
+                        <p className="opacity-90">{settings?.footerCopyrightText || "Copyright © 2026 GuptoDhan. All Rights Reserved."}</p>
                         <p className="text-blue-300 text-xs mt-1 tracking-wide">
                             Powered by <Link href="http://pixelandcode.agency/" target="_blank" className="text-blue-600 hover:underline">Pixel & Code</Link>
                         </p>
                     </div>
 
                     <div className="flex flex-wrap justify-center items-center gap-2">
-                        {/* Payment Icons */}
+                        {/* Dynamic Payment Banner */}
                         <Image
-                            src="/img/footer-payment-options.png"
+                            src={settings?.paymentBanner || "/img/footer-payment-options.png"}
                             alt="Payment Methods"
                             width={1200}
                             height={40}
-                            className=""
+                            className="h-8 w-auto object-contain"
                         />
                     </div>
                 </div>

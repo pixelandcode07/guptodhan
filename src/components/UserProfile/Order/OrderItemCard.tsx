@@ -74,10 +74,13 @@ export default function OrderItemCard({ order, onReturnClick }: OrderItemCardPro
             </div>
           </div>
           
-          <div className="text-xs text-gray-500 mt-1">
-            Size: <span className="text-gray-700">{firstItem?.size ?? 'N/A'}</span>, 
-            Color: <span className="text-gray-700">{firstItem?.color ?? 'N/A'}</span>
-          </div>
+          {(firstItem?.size || firstItem?.color) && (
+            <div className="text-xs text-gray-500 mt-1">
+              {firstItem?.size && <span>Size: <span className="text-gray-700">{firstItem.size}</span></span>}
+              {firstItem?.size && firstItem?.color && ' · '}
+              {firstItem?.color && <span>Color: <span className="text-gray-700">{firstItem.color}</span></span>}
+            </div>
+          )}
           
           <div className="flex justify-between items-end mt-2">
             <div className="text-xs text-gray-500">

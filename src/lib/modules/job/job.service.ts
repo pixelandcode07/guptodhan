@@ -3,7 +3,7 @@ import { Job } from './job.model';
 import { IJob } from './job.interface';
 
 // 🔥🔥🔥 CRITICAL FIX 🔥🔥🔥
-// এই লাইনটি থাকতেই হবে, নাহলে populate করার সময় "Schema hasn't been registered" এরর আসবে।
+// এই লাইনটি থাকতেই হবে, নাহলে populate করার সময় "Schema hasn't been registered" এরর আসবে।
 import "@/lib/modules/user/user.model"; 
 
 const createJobIntoDB = async (payload: IJob) => {
@@ -17,7 +17,7 @@ const getApprovedJobsFromDB = async () => {
     { $sort: { createdAt: -1 } },
     {
       $lookup: {
-        from: 'users', // MongoDB তে collection নাম always lowercase plural হয়
+        from: 'users', // MongoDB তে collection নাম always lowercase plural হয়
         localField: 'postedBy',
         foreignField: '_id',
         as: 'postedByDetails'
@@ -33,11 +33,14 @@ const getApprovedJobsFromDB = async () => {
       $project: {
         _id: 1,
         title: 1,
+        description: 1,   // ✅ FIXED: Missing Description Added
         companyName: 1,
         location: 1,
         category: 1,
         salaryRange: 1,
+        status: 1,        // ✅ FIXED: Status Added (এটি না থাকায় ফ্রন্টএন্ডে শো করছিল না)
         createdAt: 1,
+        updatedAt: 1,
         postedBy: {
           _id: '$postedByDetails._id',
           name: '$postedByDetails.name',
@@ -92,6 +95,7 @@ const getSingleJobByIdFromDB = async (id: string) => {
         category: 1,
         salaryRange: 1,
         description: 1,
+        status: 1,
         createdAt: 1,
         contactEmail: 1,
         contactPhone: 1,

@@ -37,8 +37,8 @@ export default function StoreForm({ store }: EditStoreFormProps) {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
 
-
-  const cleanedStore = {
+  // ✅ টাইপস্ক্রিপ্ট ফিক্স ১: Social Links এর টাইপ ঠিক করা হলো
+  const cleanedStore: Partial<StoreInterface> = {
     ...store,
     storeLogo: store.storeLogo || undefined,
     storeBanner: store.storeBanner || undefined,
@@ -46,38 +46,37 @@ export default function StoreForm({ store }: EditStoreFormProps) {
     storeEmail: store.storeEmail ?? "",
     storeAddress: store.storeAddress ?? "",
     storeMetaTitle: store.storeMetaTitle ?? "",
-    storeMetaKeywords: store.storeMetaKeywords ?? [],
-    storeSocialLinks: Object.fromEntries(
-      Object.entries(store.storeSocialLinks).map(([key, val]) => [
-        key,
-        val ?? "",
-      ])
-    ),
+    storeMetaKeywords: Array.isArray(store.storeMetaKeywords) ? store.storeMetaKeywords : [],
+    storeSocialLinks: {
+      facebook: store.storeSocialLinks?.facebook ?? "",
+      whatsapp: store.storeSocialLinks?.whatsapp ?? "",
+      linkedIn: store.storeSocialLinks?.linkedIn ?? "",
+      tiktok: store.storeSocialLinks?.tiktok ?? "",
+      twitter: store.storeSocialLinks?.twitter ?? "",
+      instagram: store.storeSocialLinks?.instagram ?? "",
+    },
   };
 
   const form = useForm<StoreInterface>({
-    defaultValues: cleanedStore,
+    defaultValues: cleanedStore as StoreInterface,
   });
 
   const router = useRouter();
-
 
   const onSubmit = async (values: StoreInterface) => {
     console.log('Edit from------->', values)
     try {
       values._id = store._id;
-      // FIX: convert commission → number
-      values.commission = values.commission
-        ? Number(values.commission)
-        : 0;
+      values.commission = values.commission ? Number(values.commission) : 0;
 
-      // FIX: clean social links
+      // ✅ টাইপস্ক্রিপ্ট ফিক্স ২: Object.fromEntries কে টাইপ কাস্ট করা হলো
       values.storeSocialLinks = Object.fromEntries(
-        Object.entries(values.storeSocialLinks).map(([key, val]) => [
+        Object.entries(values.storeSocialLinks || {}).map(([key, val]) => [
           key,
           val?.trim() ? (val.startsWith("http") ? val : `https://${val}`) : null,
         ])
-      );
+      ) as StoreInterface["storeSocialLinks"];
+      
       await toast.promise(
         updateStore(store._id, values, {
           logo: logoFile || undefined,
@@ -105,7 +104,6 @@ export default function StoreForm({ store }: EditStoreFormProps) {
       >
         <div className="grid grid-cols-1 md:grid-rows-2 gap-5">
           <div>
-            {/* Store Logo Upload */}
             <FormField
               control={form.control}
               name="storeLogo"
@@ -125,7 +123,6 @@ export default function StoreForm({ store }: EditStoreFormProps) {
             />
           </div>
           <div>
-            {/* Store Banner Upload */}
             <FormField
               control={form.control}
               name="storeBanner"
@@ -145,7 +142,7 @@ export default function StoreForm({ store }: EditStoreFormProps) {
             />
           </div>
         </div>
-        {/* Store Name */}
+        
         <FormField
           control={form.control}
           name="storeName"
@@ -160,7 +157,6 @@ export default function StoreForm({ store }: EditStoreFormProps) {
           )}
         />
 
-        {/* Store Address */}
         <FormField
           control={form.control}
           name="storeAddress"
@@ -174,7 +170,6 @@ export default function StoreForm({ store }: EditStoreFormProps) {
           )}
         />
 
-        {/* Phone */}
         <FormField
           control={form.control}
           name="storePhone"
@@ -188,7 +183,6 @@ export default function StoreForm({ store }: EditStoreFormProps) {
           )}
         />
 
-        {/* Email */}
         <FormField
           control={form.control}
           name="storeEmail"
@@ -202,7 +196,6 @@ export default function StoreForm({ store }: EditStoreFormProps) {
           )}
         />
 
-        {/* Short Description */}
         <FormField
           control={form.control}
           name="vendorShortDescription"
@@ -211,13 +204,11 @@ export default function StoreForm({ store }: EditStoreFormProps) {
               <FormLabel>Short Description</FormLabel>
               <FormControl>
                 <Textarea rows={3} {...field} />
-
               </FormControl>
             </FormItem>
           )}
         />
 
-        {/* Full Description */}
         <FormField
           control={form.control}
           name="fullDescription"
@@ -225,15 +216,16 @@ export default function StoreForm({ store }: EditStoreFormProps) {
             <FormItem>
               <FormLabel>Full Description (HTML)</FormLabel>
               <FormControl>
+                {/* ✅ টাইপস্ক্রিপ্ট ফিক্স ৩: undefined এড়ানোর জন্য fallback string */}
                 <RichTextEditor
-                  value={field.value}
+                  value={field.value ?? ""}
                   onChange={field.onChange}
                 />
               </FormControl>
             </FormItem>
           )}
         />
-        {/* Commision */}
+        
         <FormField
           control={form.control}
           name="commission"
@@ -247,9 +239,8 @@ export default function StoreForm({ store }: EditStoreFormProps) {
           )}
         />
 
-        {/* Social Links */}
         <div className="grid grid-cols-2 gap-4">
-          {Object.keys(store.storeSocialLinks).map((key) => (
+          {Object.keys(store.storeSocialLinks || {}).map((key) => (
             <FormField
               key={key}
               control={form.control}
@@ -258,7 +249,7 @@ export default function StoreForm({ store }: EditStoreFormProps) {
                 <FormItem>
                   <FormLabel className="capitalize">{key}</FormLabel>
                   <FormControl>
-                    <Input placeholder={`Enter ${key} link`} {...field} />
+                    <Input placeholder={`Enter ${key} link`} {...field} value={field.value ?? ""} />
                   </FormControl>
                 </FormItem>
               )}
@@ -266,7 +257,6 @@ export default function StoreForm({ store }: EditStoreFormProps) {
           ))}
         </div>
 
-        {/* Meta Title */}
         <FormField
           control={form.control}
           name="storeMetaTitle"
@@ -280,7 +270,6 @@ export default function StoreForm({ store }: EditStoreFormProps) {
           )}
         />
 
-        {/* Meta Keywords */}
         <FormField
           control={form.control}
           name="storeMetaKeywords"
@@ -288,12 +277,13 @@ export default function StoreForm({ store }: EditStoreFormProps) {
             <FormItem>
               <FormLabel>Meta Keywords (comma separated)</FormLabel>
               <FormControl>
+                {/* ✅ টাইপস্ক্রিপ্ট ফিক্স ৪: Array ঠিকভাবে handle করা হলো */}
                 <Input
                   placeholder="keyword1, keyword2"
-                  value={field.value.join(", ")}
+                  value={Array.isArray(field.value) ? field.value.join(", ") : ""}
                   onChange={(e) =>
                     field.onChange(
-                      e.target.value.split(",").map((s) => s.trim())
+                      e.target.value.split(",").map((s) => s.trim()).filter(Boolean)
                     )
                   }
                 />
@@ -302,7 +292,6 @@ export default function StoreForm({ store }: EditStoreFormProps) {
           )}
         />
 
-        {/* Status */}
         <FormField
           control={form.control}
           name="status"
@@ -320,7 +309,6 @@ export default function StoreForm({ store }: EditStoreFormProps) {
                   <SelectContent>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
-                    {/* <SelectItem value="pending">Pending</SelectItem> */}
                   </SelectContent>
                 </Select>
               </FormControl>
@@ -328,7 +316,6 @@ export default function StoreForm({ store }: EditStoreFormProps) {
           )}
         />
 
-        {/* Submit Button */}
         <Button type="submit" className="w-full">
           Save Changes
         </Button>

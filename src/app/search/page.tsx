@@ -27,7 +27,7 @@ export default async function SearchPage({
             {result.success && result.data.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {result.data.map((product: any) => (
-                        <Link href={`/products/${product._id}`} key={product._id}>
+                        <Link href={`/product/${product.slug}`} key={product._id}>
                             <div className="border rounded-lg overflow-hidden hover:shadow-lg transition">
                                 <img src={product.thumbnailImage || product.productImage} alt="" className="w-full h-48 object-cover" />
                                 <div className="p-4">

@@ -59,7 +59,7 @@ const orderDetailsSchema = new Schema<IOrderDetails>(
 
 // ✅ Create indexes
 orderDetailsSchema.index({ orderId: 1, createdAt: -1 });
-orderDetailsSchema.index({ productId: 1 });
+// orderDetailsSchema.index({ productId: 1 });
 orderDetailsSchema.index({ vendorId: 1 });
 
 // ✅ Properly export the model

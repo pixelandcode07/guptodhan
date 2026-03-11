@@ -51,14 +51,14 @@ const updateSubCategory = async (req: NextRequest, { params }: { params: Promise
     
     const payload: Record<string, any> = {};
 
-    // FormData থেকে টেক্সট ফিল্ডগুলো নেওয়া হচ্ছে
+    // FormData থেকে টেক্সট ফিল্ডগুলো নেওয়া হচ্ছে
     for (const [key, value] of formData.entries()) {
         if (typeof value === 'string' && value) {
             payload[key] = value;
         }
     }
 
-    // যদি নতুন আইকন ফাইল পাঠানো হয়, তবে সেটি আপলোড করা হচ্ছে
+    // যদি নতুন আইকন ফাইল পাঠানো হয়, তবে সেটি আপলোড করা হচ্ছে
     const iconFile = formData.get('icon') as File | null;
     if (iconFile && iconFile.size > 0) {
         const buffer = Buffer.from(await iconFile.arrayBuffer());
@@ -68,7 +68,7 @@ const updateSubCategory = async (req: NextRequest, { params }: { params: Promise
     
     const validatedData = updateSubCategoryValidationSchema.parse(payload);
 
-    // যদি নতুন প্যারেন্ট ক্যাটাগরি পাঠানো হয়, সেটিকে ObjectId-তে রূপান্তর করা হচ্ছে
+    // যদি নতুন প্যারেন্ট ক্যাটাগরি পাঠানো হয়, সেটিকে ObjectId-তে রূপান্তর করা হচ্ছে
     const payloadForService: any = { ...validatedData };
     if (validatedData.category) {
         payloadForService.category = new Types.ObjectId(validatedData.category);
@@ -121,9 +121,10 @@ const getPublicSubCategoriesByParent = async (_req: NextRequest, { params }: { p
 };
 
 
-const deleteSubCategory = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const deleteSubCategory = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
+    
     await ClassifiedSubCategoryServices.deleteSubCategoryFromDB(id);
 
     return sendResponse({

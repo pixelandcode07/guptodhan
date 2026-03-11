@@ -1,61 +1,115 @@
 import { NextRequest } from 'next/server';
 import { sendResponse } from '@/lib/utils/sendResponse';
 import { StatusCodes } from 'http-status-codes';
-import { firebaseAdmin } from '@/lib/firebaseAdmin'; // আপনার বানানো ফাইল
+import { firebaseAdmin } from '@/lib/firebaseAdmin';
 import { Notification } from './notification.model';
+import { Device } from '../device/device.model';
 import dbConnect from '@/lib/db';
 
-const sendBroadcastNotification = async (req: NextRequest) => {
+const sendToSpecificDevice = async (req: NextRequest) => {
   await dbConnect();
-  const body = await req.json();
-  const { title, message, image } = body;
+  const { fcmToken, title, message, image } = await req.json();
 
-  if (!title || !message) {
-    throw new Error('Title and Message are required');
+  if (!fcmToken || !title || !message) {
+    throw new Error('Token, Title, and Message are required');
   }
 
-  // ১. Firebase Payload তৈরি
   const payload = {
-    notification: {
-      title: title,
-      body: message,
-      ...(image && { imageUrl: image }), // ইমেজ থাকলে অ্যাড হবে
-    },
-    // 🔥 অ্যাপ ডেভেলপারকে বলবেন অ্যাপ ওপেন হলে যেন 'all_users' টপিকে সাবস্ক্রাইব করে।
-    topic: 'all_users', 
+    notification: { title, body: message, ...(image && { imageUrl: image }) },
+    token: fcmToken,
   };
 
   try {
-    // ২. ফায়ারবেসে পাঠানো
     const response = await firebaseAdmin.messaging().send(payload);
-
-    // ৩. ডাটাবেসে হিস্ট্রি সেভ করা
-    await Notification.create({
-      title,
-      message,
-      image,
-      type: 'broadcast',
-      status: 'sent'
+    
+    await Notification.create({ 
+        title, 
+        message, 
+        image, 
+        type: 'individual', 
+        status: 'sent' 
     });
 
     return sendResponse({
       success: true,
       statusCode: StatusCodes.OK,
-      message: 'Notification sent successfully to all users!',
+      message: 'Notification sent successfully!',
       data: response,
     });
-
   } catch (error: any) {
-    console.error('FCM Error:', error);
     return sendResponse({
       success: false,
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-      message: 'Failed to send notification',
-      data: error.message,
+      message: error.message,
+      data: null, // ✅ Error Fix: Data field added
     });
   }
 };
 
+const sendToAllDevices = async (req: NextRequest) => {
+  await dbConnect();
+  const { title, message, image } = await req.json();
+
+  const devices = await Device.find({ isActive: true }).distinct('fcmToken');
+
+  if (devices.length === 0) {
+      return sendResponse({
+          success: false,
+          statusCode: StatusCodes.NOT_FOUND,
+          message: 'No active devices found',
+          data: null // ✅ Error Fix: Data field added
+      });
+  }
+
+  const payload = {
+    notification: { title, body: message, ...(image && { imageUrl: image }) },
+    tokens: devices,
+  };
+
+  try {
+    const response = await firebaseAdmin.messaging().sendEachForMulticast(payload);
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: `Sent to ${response.successCount} devices!`,
+      data: response,
+    });
+  } catch (error: any) {
+    return sendResponse({ 
+        success: false, 
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR, 
+        message: error.message,
+        data: null // ✅ Error Fix: Data field added
+    });
+  }
+};
+
+
+const getUserNotifications = async (req: NextRequest) => {
+  await dbConnect();
+  
+  const { searchParams } = new URL(req.url);
+  const userId = searchParams.get('userId');
+
+  const query = {
+    $or: [
+      { type: 'broadcast' },
+      { userId: userId }
+    ]
+  };
+
+  const notifications = await Notification.find(query).sort({ sentAt: -1 });
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Notifications retrieved successfully!',
+    data: notifications,
+  });
+};
+
 export const NotificationController = {
-  sendBroadcastNotification,
+  sendToSpecificDevice,
+  sendToAllDevices,
+  getUserNotifications,
 };

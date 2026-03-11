@@ -4,7 +4,6 @@ import { sendResponse } from '@/lib/utils/sendResponse';
 import { createFAQValidationSchema, updateFAQValidationSchema } from './faq.validation';
 import { FAQServices } from './faq.service';
 import dbConnect from '@/lib/db';
-import { Types } from 'mongoose';
 
 // Create a new FAQ
 const createFAQ = async (req: NextRequest) => {
@@ -39,10 +38,13 @@ const getAllFAQs = async () => {
     });
 };
 
-// Update FAQ
-const updateFAQ = async (req: NextRequest, { params }: { params: { id: string } }) => {
+// Update FAQ (✅ FIXED: params is a Promise)
+const updateFAQ = async (req: NextRequest, context: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    
+    // ✅ Next.js 15 requires awaiting params
+    const { id } = await context.params;
+    
     const body = await req.json();
     const validatedData = updateFAQValidationSchema.parse(body);
 
@@ -60,10 +62,13 @@ const updateFAQ = async (req: NextRequest, { params }: { params: { id: string } 
     });
 };
 
-// Delete FAQ
-const deleteFAQ = async (req: NextRequest, { params }: { params: { id: string } }) => {
+// Delete FAQ (✅ FIXED: params is a Promise)
+const deleteFAQ = async (req: NextRequest, context: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    
+    // ✅ Next.js 15 requires awaiting params
+    const { id } = await context.params;
+    
     await FAQServices.deleteFAQFromDB(id);
 
     return sendResponse({

@@ -33,9 +33,9 @@ export default function BuySellNavMain() {
 
     const handlePostAdClick = () => {
         if (isLoggedIn) {
-            router.push("/home/buyandsell/select/category");
+            router.push("/buy-sell/select/category");
         } else {
-            localStorage.setItem("redirectAfterLogin", "/home/buyandsell/select/category");
+            localStorage.setItem("redirectAfterLogin", "/buy-sell/select/category");
             setOpenLoginDialog(true);
         }
     };

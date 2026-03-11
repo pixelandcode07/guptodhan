@@ -4,6 +4,7 @@ import BreadcrumbNav from '../ReusableComponents/BreadcrumbNav';
 import { Button } from '../ui/button';
 import { SidebarTrigger } from '../ui/sidebar';
 import UserDropdown from './Components/UserDropdown';
+import { SITE_CONFIG } from '@/lib/config/siteConfig';
 
 export default function DashNavbar() {
   return (
@@ -19,7 +20,7 @@ export default function DashNavbar() {
         <div className="block">
           <Button variant={'VisitWeb'}>
             <Send className="mr-1" />
-            <Link href={'/'}>Visit Website</Link>
+            <Link href={SITE_CONFIG.mainUrl}>Visit Website</Link>
           </Button>
         </div>
 

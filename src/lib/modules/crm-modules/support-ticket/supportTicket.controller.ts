@@ -97,10 +97,6 @@ const getTicketById = async (req: NextRequest, { params }: { params: Promise<{ i
   });
 };
 
-/**
- * @description অ্যাডমিন কর্তৃক টিকেটের স্ট্যাটাস (Pending, Solved) আপডেট করে।
- * @method PATCH
- */
 const updateTicketStatus = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
   const { id } = await params;

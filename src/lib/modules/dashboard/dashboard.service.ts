@@ -1,5 +1,6 @@
 // src/lib/modules/dashboard/dashboard.service.ts
 import { OrderModel, VendorProductModel, VendorStoreModel, UserModel } from '@/lib/models-index';
+import mongoose from 'mongoose';
 
 const getDashboardAnalyticsFromDB = async () => {
   const today = new Date();
@@ -168,7 +169,7 @@ const getDashboardAnalyticsFromDB = async () => {
       .limit(5)
       .lean();
 
-    // --- 13. Top Selling Products ---
+    // --- 13. Top Selling Products (FIXED) ---
     const topProducts = await OrderModel.aggregate([
       {
         $match: { paymentStatus: 'Paid' },
@@ -176,9 +177,10 @@ const getDashboardAnalyticsFromDB = async () => {
       {
         $unwind: '$orderDetails',
       },
+      // 1. OrderDetails Lookup
       {
         $lookup: {
-          from: 'orderdetails',
+          from: 'orderdetails', // আপনার ডাম্প লগ অনুযায়ী কালেকশন নাম
           localField: 'orderDetails',
           foreignField: '_id',
           as: 'productDetails',
@@ -187,6 +189,7 @@ const getDashboardAnalyticsFromDB = async () => {
       {
         $unwind: { path: '$productDetails', preserveNullAndEmptyArrays: true },
       },
+      // 2. Group by Product ID
       {
         $group: {
           _id: '$productDetails.productId',
@@ -200,10 +203,18 @@ const getDashboardAnalyticsFromDB = async () => {
       {
         $limit: 5,
       },
+      // 3. FIX: ID Conversion (String to ObjectId)
+      // VendorProductModel এর _id হলো ObjectId, কিন্তু এখানে _id স্ট্রিং হতে পারে
+      {
+        $addFields: {
+          convertedProductId: { $toObjectId: "$_id" }
+        }
+      },
+      // 4. Product Info Lookup (Vendor Product)
       {
         $lookup: {
-          from: 'vendorproducts',
-          localField: '_id',
+          from: 'vendorproductmodels', // ⚠️ আপনার ডাম্প লগ অনুযায়ী কালেকশন নাম 'vendorproductmodels'
+          localField: 'convertedProductId',
           foreignField: '_id',
           as: 'productInfo',
         },

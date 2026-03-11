@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import OrderDetailsSkeleton from './OrderDetailsSkeleton';
 
+// ✅ JSON অনুযায়ী টাইপ ডিফিনিশন
 type ApiOrder = {
   _id: string;
   orderId?: string;
@@ -23,27 +24,50 @@ type ApiOrder = {
   shippingName?: string;
   shippingPhone?: string;
   shippingEmail?: string;
-  userId?:
-    | {
-        _id?: string;
-        name?: string;
-        email?: string;
-        phoneNumber?: string;
-      }
-    | string;
-  storeId?:
-    | {
-        _id?: string;
-        storeName?: string;
-      }
-    | string;
+  shippingStreetAddress?: string;
+  shippingCity?: string;
+  shippingDistrict?: string;
+  shippingCountry?: string;
+  orderDetails?: Array<{
+    _id: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    size?: string;
+    color?: string;
+    productId: {
+      _id: string;
+      productTitle: string;
+      thumbnailImage: string;
+    };
+  }>;
+  userId?: any;
+  storeId?: any;
 };
 
 function mapApiOrderToDetails(order: ApiOrder): OrderDetailsData {
-  const user =
-    typeof order.userId === 'object' && order.userId !== null ? order.userId : undefined;
-  const store =
-    typeof order.storeId === 'object' && order.storeId !== null ? order.storeId : undefined;
+  const user = typeof order.userId === 'object' && order.userId !== null ? order.userId : {};
+  const store = typeof order.storeId === 'object' && order.storeId !== null ? order.storeId : {};
+
+  // ✅ এড্রেস স্ট্রিং তৈরি (Street, City, District মিলিয়ে)
+  const fullAddress = [
+    order.shippingStreetAddress,
+    order.shippingCity,
+    order.shippingDistrict,
+    order.shippingCountry
+  ].filter(Boolean).join(', ');
+
+  // ✅ প্রোডাক্ট লিস্ট ম্যাপ করা (ইমেজ ও টাইটেল সহ)
+  const items = (order.orderDetails || []).map((item) => ({
+    id: item._id,
+    productTitle: item.productId?.productTitle || 'Unknown Product',
+    thumbnailImage: item.productId?.thumbnailImage || '/img/placeholder.png', 
+    quantity: item.quantity,
+    unitPrice: item.unitPrice,
+    totalPrice: item.totalPrice,
+    size: item.size,
+    color: item.color,
+  }));
 
   return {
     id: order._id,
@@ -51,8 +75,9 @@ function mapApiOrderToDetails(order: ApiOrder): OrderDetailsData {
     name: order.shippingName || user?.name || 'Customer',
     phone: order.shippingPhone || user?.phoneNumber || 'N/A',
     email: order.shippingEmail || user?.email,
+    address: fullAddress, // ✅ এই এড্রেসটি এখন ভিউতে শো করবে
     total: typeof order.totalAmount === 'number' ? order.totalAmount : 0,
-    deliveryCharge: order.deliveryCharge,
+    deliveryCharge: order.deliveryCharge || 0,
     payment: order.paymentStatus || 'Pending',
     status: order.orderStatus || 'Pending',
     deliveryMethod: order.deliveryMethodId || 'COD',
@@ -65,8 +90,9 @@ function mapApiOrderToDetails(order: ApiOrder): OrderDetailsData {
     },
     store: {
       name: store?.storeName,
-      id: store?._id,
+      id: typeof store === 'object' ? store?._id : undefined,
     },
+    items: items, // ✅ প্রোডাক্ট লিস্ট ভিউতে পাস করা হচ্ছে
   };
 }
 
@@ -85,18 +111,11 @@ export default function OrderDetailsPageClient({ orderId }: { orderId: string })
     try {
       setLoading(true);
       setError(null);
-
-      if (!userId) {
-        throw new Error('User session not found. Please sign in again.');
-      }
+      if (!userId) throw new Error('User session not found.');
 
       const headers: Record<string, string> = { 'x-user-id': userId };
-      if (userRole) {
-        headers['x-user-role'] = userRole;
-      }
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      if (userRole) headers['x-user-role'] = userRole;
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const res = await api.get(`/product-order/${orderId}`, { headers });
       const data = (res.data?.data ?? null) as ApiOrder | null;
@@ -109,13 +128,7 @@ export default function OrderDetailsPageClient({ orderId }: { orderId: string })
 
       setOrder(mapApiOrderToDetails(data));
     } catch (err) {
-      console.error('Failed to load order', err);
-      const message =
-        err instanceof Error && err.message
-          ? err.message
-          : 'Failed to load order details.';
-      setError(message);
-      setOrder(null);
+      setError('Failed to load order details.');
     } finally {
       setLoading(false);
     }
@@ -130,9 +143,7 @@ export default function OrderDetailsPageClient({ orderId }: { orderId: string })
     setOrder((prev) => (prev ? { ...prev, ...updates } : prev));
   };
 
-  if (loading) {
-    return <OrderDetailsSkeleton />;
-  }
+  if (loading) return <OrderDetailsSkeleton />;
 
   if (error || !order) {
     return (
@@ -141,9 +152,7 @@ export default function OrderDetailsPageClient({ orderId }: { orderId: string })
           <p className="text-lg font-semibold text-red-600">Unable to load order</p>
           <p className="text-sm text-gray-500">{error || 'Order not found.'}</p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/general/view/orders">Back to Orders</Link>
-        </Button>
+        <Button asChild variant="outline"><Link href="/general/view/orders">Back to Orders</Link></Button>
       </div>
     );
   }
@@ -165,4 +174,3 @@ export default function OrderDetailsPageClient({ orderId }: { orderId: string })
     </div>
   );
 }
-

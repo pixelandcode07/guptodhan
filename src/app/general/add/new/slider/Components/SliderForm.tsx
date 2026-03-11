@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
@@ -13,21 +13,24 @@ import { useRouter } from 'next/navigation';
 
 export type TextPosition = 'Left' | 'Right';
 
+interface SliderFormData {
+  _id?: string;
+  image?: string;
+  textPosition?: string;
+  sliderLink?: string;
+  subTitleWithColor?: string;
+  bannerTitleWithColor?: string;
+  bannerDescriptionWithColor?: string;
+  buttonWithColor?: string;
+  buttonLink?: string;
+  status?: string;
+  appRedirectType?: string;
+  appRedirectId?: string;
+  data?: any; // Added for safely catching nested API responses
+}
+
 interface SliderFormProps {
-  initialData?: {
-    _id?: string;
-    image?: string;
-    textPosition?: string;
-    sliderLink?: string;
-    subTitleWithColor?: string;
-    bannerTitleWithColor?: string;
-    bannerDescriptionWithColor?: string;
-    buttonWithColor?: string;
-    buttonLink?: string;
-    status?: string;
-    appRedirectType?: string;
-    appRedirectId?: string;
-  };
+  initialData?: SliderFormData;
 }
 
 export default function SliderForm({ initialData }: SliderFormProps) {
@@ -52,27 +55,33 @@ export default function SliderForm({ initialData }: SliderFormProps) {
   const [appRedirectValue, setAppRedirectValue] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const isEditMode = !!initialData?._id;
-
-  // Load Data on Edit (এই অংশটি ডাটা সেট করে)
-  useEffect(() => {
-    if (initialData) {
-      setTextPosition((initialData.textPosition as TextPosition) || '');
-      setSliderLink(initialData.sliderLink || '');
-      setSubTitle(initialData.subTitleWithColor || '');
-      setTitle(initialData.bannerTitleWithColor || '');
-      // 🔥 নিশ্চিত করা হলো ডেসক্রিপশন সেট হচ্ছে
-      setDescription(initialData.bannerDescriptionWithColor || '');
-      setButtonText(initialData.buttonWithColor || '');
-      setButtonLink(initialData.buttonLink || '');
-
-      setAppRedirectType((initialData.appRedirectType as AppRedirectType) || 'None');
-      setAppRedirectValue(initialData.appRedirectId || '');
-    }
+  
+  // ✅ FIX: Extract data safely whether it's wrapped in `data` object or not
+  const sliderData = useMemo(() => {
+    return initialData?.data || initialData;
   }, [initialData]);
 
-  // Image Validation (1 MB Limit)
-  const handleImageChange = (name: string, file: File | null) => {
+  const isEditMode = useMemo(
+    () => !!sliderData?._id,
+    [sliderData]
+  );
+
+  // ✅ FIX: Load data correctly for Edit Mode
+  useEffect(() => {
+    if (!sliderData || Object.keys(sliderData).length === 0) return;
+    
+    setTextPosition((sliderData.textPosition as TextPosition) || '');
+    setSliderLink(sliderData.sliderLink || '');
+    setSubTitle(sliderData.subTitleWithColor || '');
+    setTitle(sliderData.bannerTitleWithColor || '');
+    setDescription(sliderData.bannerDescriptionWithColor || '');
+    setButtonText(sliderData.buttonWithColor || '');
+    setButtonLink(sliderData.buttonLink || '');
+    setAppRedirectType((sliderData.appRedirectType as AppRedirectType) || 'None');
+    setAppRedirectValue(sliderData.appRedirectId || '');
+  }, [sliderData]);
+
+  const handleImageChange = useCallback((name: string, file: File | null) => {
     if (file) {
       const fileSizeInMB = file.size / (1024 * 1024);
       if (fileSizeInMB > 1) {
@@ -83,36 +92,52 @@ export default function SliderForm({ initialData }: SliderFormProps) {
     } else {
       setImage(null);
     }
-  };
+  }, []);
 
-  const handleSave = async () => {
+  const isValidUrl = useCallback((url: string): boolean => {
+    if (!url || !url.trim()) return true; 
+    try { 
+      new URL(url.trim()); 
+      return true; 
+    } catch { 
+      return false; 
+    }
+  }, []);
+
+  const handleSave = useCallback(async () => {
     if (isSubmitting) return;
+    
     try {
       setIsSubmitting(true);
 
-      // Validation Checks
-      if (!image && !isEditMode && !initialData?.image) throw new Error('Please upload an image.');
-      if (!textPosition) throw new Error('Please select text position.');
-      if (!subTitle) throw new Error('Please provide sub title.');
-      if (!title) throw new Error('Please provide slider title.');
-      // 🔥 এই লাইনটি থাকলে আর JSON Error দেখাবে না, সুন্দর মেসেজ দেখাবে
-      if (!description) throw new Error('Please provide slider description.');
-      
-      if (appRedirectType !== 'None' && !appRedirectValue.trim()) {
+      // Clean HTML tags from description (safe check)
+      const cleanDescription = description ? description.replace(/(<([^>]+)>)/gi, "").trim() : "";
+
+      // ✅ Frontend Validation Checks
+      if (!image && !isEditMode && !sliderData?.image) {
+        throw new Error('Please upload a slider image.');
+      }
+      if (!textPosition?.trim()) {
+        throw new Error('Text position is required.');
+      }
+      if (!title?.trim()) {
+        throw new Error('Slider title is required.');
+      }
+      if (appRedirectType !== 'None' && !appRedirectValue?.trim()) {
         throw new Error('Please select a target for Mobile App Navigation.');
       }
 
       // URL Validation
-      const isValidUrl = (url: string): boolean => {
-        if (!url || !url.trim()) return true; 
-        try { new URL(url.trim()); return true; } catch { return false; }
-      };
+      if (sliderLink && !isValidUrl(sliderLink)) {
+        throw new Error('Invalid Web Slider URL');
+      }
+      if (buttonLink && !isValidUrl(buttonLink)) {
+        throw new Error('Invalid Button URL');
+      }
 
-      if (sliderLink && !isValidUrl(sliderLink)) throw new Error('Invalid slider URL');
-      if (buttonLink && !isValidUrl(buttonLink)) throw new Error('Invalid button URL');
+      let imageUrl = sliderData?.image || ''; 
 
-      let imageUrl = initialData?.image || ''; 
-
+      // Upload Image if changed
       if (image) {
         const formData = new FormData();
         formData.append('file', image);
@@ -138,16 +163,16 @@ export default function SliderForm({ initialData }: SliderFormProps) {
         sliderLink,
         subTitleWithColor: subTitle,
         bannerTitleWithColor: title,
-        bannerDescriptionWithColor: description,
+        bannerDescriptionWithColor: description, // Now correctly sends the description
         buttonWithColor: buttonText,
         buttonLink,
-        status: initialData?.status || 'active',
+        status: sliderData?.status || 'active',
         appRedirectType,
         appRedirectId: appRedirectValue || null,
       };
 
       const url = isEditMode 
-        ? `/api/v1/slider-form/${initialData._id}` 
+        ? `/api/v1/slider-form/${sliderData?._id}` 
         : '/api/v1/slider-form';
       
       const method = isEditMode ? 'PATCH' : 'POST';
@@ -163,28 +188,72 @@ export default function SliderForm({ initialData }: SliderFormProps) {
       });
       
       const json = await res.json();
+      
       if (!res.ok || json?.success === false) {
-        throw new Error(json?.message || 'Failed to save slider');
+        // Pass the raw string/array from backend to the catch block
+        throw new Error(typeof json?.message === 'object' ? JSON.stringify(json.message) : json?.message || 'Failed to save slider');
       }
 
       toast.success(`Slider ${isEditMode ? 'updated' : 'created'} successfully!`);
       router.push('/general/view/all/sliders');
+
     } catch (error: any) {
-      toast.error(error?.message || 'Something went wrong');
+      console.error("Save Error:", error);
+      
+      let errorMessage = error?.message || 'Something went wrong. Please try again.';
+
+      // ✅ SMART ERROR PARSER: No more confusing JSON format for the user
+      if (typeof errorMessage === 'string') {
+        try {
+          // If the message is a stringified JSON array from Zod
+          const cleanMessageString = errorMessage.replace(/\\n/g, '').trim();
+          
+          if (cleanMessageString.startsWith('[')) {
+            const parsedMessage = JSON.parse(cleanMessageString);
+            if (Array.isArray(parsedMessage) && parsedMessage.length > 0) {
+              // Extract the actual human-readable message from the Zod array
+              errorMessage = parsedMessage[0].message || 'A required field is missing.';
+            }
+          }
+        } catch (parseError) {
+          // Fallback if parsing fails, it stays as it is
+        }
+      }
+
+      // Display the clean, readable error
+      toast.error(errorMessage);
+
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [
+    isSubmitting,
+    isEditMode,
+    sliderData,
+    image,
+    textPosition,
+    subTitle,
+    title,
+    description,
+    appRedirectType,
+    appRedirectValue,
+    sliderLink,
+    buttonLink,
+    isValidUrl,
+    token,
+    userRole,
+    router,
+  ]);
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column */}
+        {/* Left Column - Image Upload */}
         <div className="lg:col-span-1">
           <UploadImage 
             name="sliderImage"
             label={<span>Slider Image <span className="text-red-500">*</span></span> as any} 
-            preview={initialData?.image} 
+            preview={sliderData?.image} 
             onChange={handleImageChange}
           />
           <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
@@ -207,7 +276,7 @@ export default function SliderForm({ initialData }: SliderFormProps) {
           </div>
         </div>
 
-        {/* Right Column */}
+        {/* Right Column - Form Fields */}
         <div className="lg:col-span-2 space-y-6">
           <TopRow
             textPosition={textPosition}
@@ -241,6 +310,7 @@ export default function SliderForm({ initialData }: SliderFormProps) {
         </div>
       </div>
 
+      {/* Submit Button */}
       <div className="flex justify-center pb-5">
         <Button 
           onClick={handleSave} 

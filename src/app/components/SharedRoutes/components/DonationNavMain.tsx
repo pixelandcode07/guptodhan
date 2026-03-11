@@ -77,7 +77,7 @@ export default function DonationNavMain() {
                                             size="sm"
                                             className="h-9 px-4 text-xs sm:text-sm font-semibold shadow-md"
                                             type='button' 
-                                            onClick={() => router.push('/home/donation?donate=1')}
+                                            onClick={() => router.push('/donation?donate=1')}
                                         >
                                             Donate
                                         </Button>

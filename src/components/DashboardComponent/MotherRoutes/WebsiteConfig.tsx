@@ -1,5 +1,5 @@
 import { SidebarGroupMenu } from "@/components/ReusableComponents/SidebarGroupMenu"
-import { Code, LayoutDashboard, MessageCircle, Palette, Search, Settings, Share2 } from "lucide-react"
+import { Code, LayoutDashboard, MessageCircle, Search, Share2 } from "lucide-react"
 const webConfig = [
   {
     title: 'General Info',
@@ -11,11 +11,11 @@ const webConfig = [
   //   url: '/general/view/footer/widget/1',
   //   icon: Settings,
   // },
-  {
-    title: 'Website Theme Color',
-    url: '/general/website/theme/page',
-    icon: Palette,
-  },
+  // {
+  //   title: 'Website Theme Color',
+  //   url: '/general/website/theme/page',
+  //   icon: Palette,
+  // },
   {
     title: 'Social Media Links',
     url: '/general/social/media/page',

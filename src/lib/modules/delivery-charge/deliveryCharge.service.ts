@@ -2,7 +2,8 @@ import { IDeliveryCharge } from './deliveryCharge.interface';
 import { DeliveryChargeModel } from './deliveryCharge.model';
 
 // ✅ Bulk create (insert many delivery charges)
-const createDeliveryChargeInDB = async (payload: IDeliveryCharge[]) => {
+// এখানে IDeliveryCharge[] এর জায়গায় Partial<IDeliveryCharge>[] দেওয়া হয়েছে
+const createDeliveryChargeInDB = async (payload: Partial<IDeliveryCharge>[]) => {
   if (!payload || payload.length === 0) {
     throw new Error('No delivery charge data provided for bulk upload.');
   }

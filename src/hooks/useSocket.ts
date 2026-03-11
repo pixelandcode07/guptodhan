@@ -11,7 +11,7 @@ export const useSocket = () => {
     // 🔴 OLD RENDER LINK REMOVED
     // ✅ NEW VPS DOMAIN (সরাসরি তোমার ডোমেইন ব্যবহার করবে)
     // অথবা .env থেকে NEXT_PUBLIC_SOCKET_URL নিবে
-    const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "https://guptodhandigital.com";
+    const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "https://guptodhan.com";
 
     if (!socketRef.current) {
       console.log('🔌 Connecting to Socket Server at:', SOCKET_URL);

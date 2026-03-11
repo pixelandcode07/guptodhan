@@ -5,6 +5,7 @@ import ProductGrid from '@/components/ReusableComponents/ProductGrid';
 import PageHeader from '@/components/ReusableComponents/PageHeader';
 import { Product } from '@/types/ProductType';
 import axios from 'axios';
+import Link from 'next/link'; // ✅ Link ইম্পোর্ট করা হয়েছে
 
 interface Props {
   initialProducts: Product[];
@@ -19,7 +20,7 @@ export function JustForYou({ initialProducts }: Props) {
   const observer = useRef<IntersectionObserver | null>(null);
   const lastProductRef = useRef<HTMLDivElement>(null);
 
-  // Infinite Scroll Logic
+  // Infinite Scroll Logic (আপনার আগের লজিক হুবহু রাখা হয়েছে)
   useEffect(() => {
     if (loading || !hasMore) return;
 
@@ -71,7 +72,6 @@ export function JustForYou({ initialProducts }: Props) {
 
   return (
     <section className="max-w-[95vw] xl:container mx-auto px-2 md:px-8 py-4">
-      {/* bg-gradient-to-b from-purple-50 to-white */}
       <PageHeader title="Just For You" />
 
       {/* Product Grid */}
@@ -84,13 +84,18 @@ export function JustForYou({ initialProducts }: Props) {
         </div>
       )}
 
-      {/* No More Data */}
-      {!hasMore && products.length > 0 && (
-        <p className="text-center text-gray-500 py-6">No more products to show.</p>
-      )}
-
       {/* Invisible trigger for IntersectionObserver */}
       {hasMore && <div ref={lastProductRef} className="h-1" />}
+
+      {/* ✅ নতুন বাটন যোগ করা হয়েছে (আপনার রিকোয়ারমেন্ট অনুযায়ী) */}
+      <div className="flex justify-center mt-8 pt-4 border-t border-gray-100">
+        <Link 
+          href="/products"
+          className="px-6 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-all shadow-md"
+        >
+          View More Products
+        </Link>
+      </div>
     </section>
   );
 }

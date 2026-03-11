@@ -119,20 +119,35 @@ const updateChildCategoryInDB = async (id: string, payload: Partial<IChildCatego
 // 🗑️ DELETE CHILD CATEGORY
 // ================================================================
 const deleteChildCategoryFromDB = async (id: string) => {
-  const existingModel = await ClassifiedAd.findOne({ children: new Types.ObjectId(id) });
+  if (!Types.ObjectId.isValid(id)) {
+    throw new Error(`Invalid ID format: ${id}`);
+  }
+
+  // ✅ Document না থাকলেও cache clear করে দাও
+  const existing = await ChildCategoryModel.findById(id).lean();
+  
+  if (!existing) {
+    // ✅ MongoDB তে নেই কিন্তু cache এ থাকতে পারে — cache clear করে দাও
+    await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+    await deleteCacheKey(CacheKeys.CHILDCATEGORY.ALL);
+    console.warn(`⚠️ Document not in MongoDB but clearing stale cache for ID: ${id}`);
+    return null; // ✅ Error throw না করে gracefully return
+  }
+
+  const existingModel = await ClassifiedAd.findOne({ 
+    children: new Types.ObjectId(id) 
+  });
 
   if (existingModel) {
-    throw new Error('Cannot delete this child category as it is used in a product model.');
+    throw new Error('Cannot delete: this child category is used in a classified ad.');
   }
 
   const result = await ChildCategoryModel.findByIdAndDelete(id);
 
-  if (!result) {
-    throw new Error('ChildCategory not found to delete.');
-  }
-
-  // 🗑️ Clear caches
+  // ✅ Delete এর পর সব related cache clear
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+  await deleteCacheKey(CacheKeys.CHILDCATEGORY.ALL);
+  await deleteCacheKey(CacheKeys.CHILDCATEGORY.BY_SUBCATEGORY(result!.subCategory.toString()));
 
   return null;
 };
@@ -157,98 +172,86 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
     priceMin?: number;
     priceMax?: number;
     sort?: string;
+    page?: number;   // ✅ নতুন
+    limit?: number;  // ✅ নতুন
   }
 ) => {
-  // ✅ Create cache key
+  const {
+    page = 1,
+    limit = 12,
+    ...restFilters
+  } = filters;
+
+  const skip = (page - 1) * limit;
+
   const filterHash = JSON.stringify(filters);
   const cacheKey = CacheKeys.CHILDCATEGORY.PRODUCTS_BY_SLUG(slug, filterHash);
 
   return getCachedData(
     cacheKey,
     async () => {
-      // ✅ FIX 2: Case-insensitive Slug Search
-      const childCategory = await ChildCategoryModel.findOne({ 
-        slug: { $regex: new RegExp(`^${slug}$`, 'i') }, 
-        status: 'active' 
+      const childCategory = await ChildCategoryModel.findOne({
+        slug: { $regex: new RegExp(`^${slug}$`, 'i') },
+        status: 'active',
       }).lean();
 
-      if (!childCategory) return null; // ❌ এই লাইনের কারণেই আপনার "Not Found" আসছিল
+      if (!childCategory) return null;
 
-      // ✅ Type-safe access
       const childCategoryData = childCategory as any;
 
-      // Build match stage for Products
       const matchStage: any = {
-        // ✅ FIX 3: Ensure ObjectId casting for Aggregation
         childCategory: new Types.ObjectId(childCategoryData._id),
         status: 'active',
       };
 
-      // Filter: Brand
-      if (filters.brand) {
-        const regex = createFlexibleRegex(filters.brand);
-        const brandDoc = await BrandModel.findOne({ 
-          name: { $regex: regex } 
-        }).lean();
-
-        if (brandDoc) {
-           matchStage.brand = (brandDoc as any)._id;
-        } else {
-           // ব্র্যান্ড না পেলে খালি রেজাল্ট রিটার্ন করুন, 404 নয়
-           return { childCategory: childCategoryData, products: [], totalProducts: 0 };
-        }
+      if (restFilters.brand) {
+        const regex = createFlexibleRegex(restFilters.brand);
+        const brandDoc = await BrandModel.findOne({ name: { $regex: regex } }).lean();
+        if (brandDoc) matchStage.brand = (brandDoc as any)._id;
+        else return { childCategory: childCategoryData, products: [], totalProducts: 0, totalPages: 0, page };
       }
 
-      // Filter: Size
-      if (filters.size) {
-        const regex = createFlexibleRegex(filters.size);
-        const sizeDoc = await ProductSize.findOne({ 
-          name: { $regex: regex } 
-        }).lean();
-
-        if (sizeDoc) {
-           matchStage['productOptions.size'] = (sizeDoc as any)._id;
-        } else {
-           return { childCategory: childCategoryData, products: [], totalProducts: 0 };
-        }
+      if (restFilters.size) {
+        const regex = createFlexibleRegex(restFilters.size);
+        const sizeDoc = await ProductSize.findOne({ name: { $regex: regex } }).lean();
+        if (sizeDoc) matchStage['productOptions.size'] = (sizeDoc as any)._id;
+        else return { childCategory: childCategoryData, products: [], totalProducts: 0, totalPages: 0, page };
       }
 
-      // Filter: Search
-      if (filters.search) {
-        const searchRegex = { $regex: filters.search, $options: 'i' };
+      if (restFilters.search) {
+        const searchRegex = { $regex: restFilters.search, $options: 'i' };
         matchStage.$or = [
           { productTitle: searchRegex },
           { productTag: { $in: [searchRegex] } },
         ];
       }
 
-      // Filter: Price
-      if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
+      if (restFilters.priceMin !== undefined || restFilters.priceMax !== undefined) {
         const priceCondition: any = {};
-        if (filters.priceMin !== undefined) priceCondition.$gte = filters.priceMin;
-        if (filters.priceMax !== undefined) priceCondition.$lte = filters.priceMax;
-
+        if (restFilters.priceMin !== undefined) priceCondition.$gte = restFilters.priceMin;
+        if (restFilters.priceMax !== undefined) priceCondition.$lte = restFilters.priceMax;
         if (!matchStage.$or) matchStage.$or = [];
-        
         matchStage.$or.push(
           { productPrice: priceCondition },
           { discountPrice: priceCondition },
-          { 'productOptions.price': priceCondition },
-          { 'productOptions.discountPrice': priceCondition }
         );
       }
 
-      // Sorting
       let sortStage: any = { createdAt: -1 };
-      if (filters.sort === 'priceLowHigh') sortStage = { productPrice: 1 };
-      if (filters.sort === 'priceHighLow') sortStage = { productPrice: -1 };
+      if (restFilters.sort === 'priceLowHigh') sortStage = { productPrice: 1 };
+      if (restFilters.sort === 'priceHighLow') sortStage = { productPrice: -1 };
 
-      // ✅ Use aggregation
+      // ✅ Total count
+      const totalProducts = await VendorProductModel.countDocuments(matchStage);
+      const totalPages = Math.ceil(totalProducts / limit);
+
       const products = await VendorProductModel.aggregate([
         { $match: matchStage },
         { $sort: sortStage },
+        { $skip: skip },   // ✅
+        { $limit: limit }, // ✅
 
-        // Lookup category
+        // ... বাকি সব lookup আগের মতোই থাকবে
         {
           $lookup: {
             from: 'categorymodels',
@@ -258,8 +261,6 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
           },
         },
         { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
-
-        // Lookup subcategory
         {
           $lookup: {
             from: 'subcategorymodels',
@@ -269,8 +270,6 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
           },
         },
         { $unwind: { path: '$subCategory', preserveNullAndEmptyArrays: true } },
-
-        // Lookup child category
         {
           $lookup: {
             from: 'childcategorymodels',
@@ -280,8 +279,6 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
           },
         },
         { $unwind: { path: '$childCategory', preserveNullAndEmptyArrays: true } },
-
-        // Lookup brand
         {
           $lookup: {
             from: 'brandmodels',
@@ -291,8 +288,6 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
           },
         },
         { $unwind: { path: '$brand', preserveNullAndEmptyArrays: true } },
-
-        // Lookup vendor store
         {
           $lookup: {
             from: 'storemodels',
@@ -302,8 +297,6 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
           },
         },
         { $unwind: { path: '$vendorStoreId', preserveNullAndEmptyArrays: true } },
-
-        // Lookup product model
         {
           $lookup: {
             from: 'productmodels',
@@ -313,10 +306,17 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
           },
         },
         { $unwind: { path: '$productModel', preserveNullAndEmptyArrays: true } },
-
-        // Project only needed fields
+        {
+          $addFields: {
+            slug: {
+              $ifNull: ['$slug', { $concat: ['product-', { $toString: '$_id' }] }],
+            },
+          },
+        },
         {
           $project: {
+            _id: 1,
+            slug: 1,
             'category.name': 1,
             'category.slug': 1,
             'subCategory.name': 1,
@@ -342,7 +342,12 @@ const getProductsByChildCategorySlugWithFiltersFromDB = async (
       return {
         childCategory: childCategoryData,
         products,
-        totalProducts: products.length,
+        totalProducts,
+        totalPages,
+        page,
+        limit,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
       };
     },
     CacheTTL.CHILDCATEGORY_PRODUCTS

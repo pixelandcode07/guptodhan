@@ -456,7 +456,14 @@ const getProductsByCategorySlugWithFiltersFromDB = async (
         },
         { $unwind: { path: '$productModel', preserveNullAndEmptyArrays: true } },
 
-        // Project only needed fields
+        // ⚠️ SAFETY: Ensure slug exists (যদি ডাটাবেসে মিসিং থাকে)
+        {
+          $addFields: {
+            slug: { $ifNull: ["$slug", { $concat: ["product-", { $toString: "$_id" }] }] }
+          }
+        },
+
+        // ✅ Project only needed fields (slug: 1 added here)
         {
           $project: {
             'category.name': 1,
@@ -477,6 +484,9 @@ const getProductsByCategorySlugWithFiltersFromDB = async (
             status: 1,
             productOptions: 1,
             createdAt: 1,
+            
+            // 🔥 CRITICAL FIX: এই লাইনটি মিসিং ছিল
+            slug: 1, 
           },
         },
       ]);

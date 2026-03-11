@@ -7,19 +7,23 @@ import { jwtVerify } from 'jose';
 const publicRoutes = [
   '/api/v1/auth/login',
   '/api/v1/user/register',
-  '/api/v1/user/verify-otp', // 🔥 Critical for your error
-  '/api/v1/otp/verify',      // 🔥 Critical for your error
+  '/api/v1/user/verify-otp',
+  '/api/v1/otp/verify',
   '/api/v1/user/resend-otp',
-  '/api/auth',               // NextAuth default routes
-  '/api/v1/public',          // যদি অন্য কোনো পাবলিক ফোল্ডার থাকে
+  '/api/auth',
+  '/api/v1/public',
+  '/api/v1/auth/vendor-forgot-password/send-otp',
+  '/api/v1/auth/vendor-forgot-password/verify-otp',
+  '/api/v1/auth/vendor-forgot-password/reset',
 ];
 
 // ❗️ Admin Routes
 const adminRoutes = [
   '/general',
   '/api/v1/users',
-  '/api/v1/job',
+  '/api/v1/withdrawal',
   '/api/v1/donation-users',
+  '/api/v1/admin/account-deletion',
   '/api/v1/donation-stats/dashboard',
   '/api/v1/classifieds-banners',
   '/api/v1/classifieds-subcategories',
@@ -43,18 +47,20 @@ const adminRoutes = [
   '/api/v1/crm-modules/support-ticket',
   '/api/v1/slider-form',
   '/api/v1/slider-form/[id]',
-  "/api/v1/donation-configs",
+  '/api/v1/donation-configs',
   '/api/v1/classifieds/ads/[id]',
   '/api/v1/social_links',
   '/api/v1/vendors/[id]',
   '/api/v1/shipping-policy',
-  '/api/v1/ecommerce-category/ecomSubCategory/[id]',
+  '/api/v1/ecommerce-category/ecomSubCategory',
   '/api/v1/service-section/service-provider',
   '/api/v1/service-section/service-category',
   '/api/v1/service-section/service-banner',
   '/api/v1/service-section/provide-service/status/[id]',
   '/api/v1/service-section/provide-service/[id]',
-
+  '/api/v1/faq-category',
+  '/api/v1/faq',
+  '/api/v1/delivery-charge/',
 ];
 
 // 🔥 Vendor Routes
@@ -70,7 +76,7 @@ const vendorRoutes = [
   '/api/v1/vendors',
   '/api/v1/vendor-store/store-with-product/[id]',
   '/v1/vendor-store/review',
-  '/api/v1/vendor-store/vendorOrder'
+  '/api/v1/vendor-store/vendorOrder',
 ];
 
 // ❗️ Protected Routes
@@ -83,7 +89,7 @@ const protectedApiRoutes = [
   '/api/otp/verify-phone',
   '/api/v1/auth/set-password',
   '/api/v1/profile/me',
-  '/api/v1/users', // Note: This matches /api/v1/user/ if not careful with startWith
+  '/api/v1/users',
   '/api/v1/classifieds/ads',
   '/api/v1/classifieds/ads/[id]',
   '/api/v1/classifieds-banners',
@@ -113,50 +119,82 @@ const protectedApiRoutes = [
   '/api/v1/vendor-category',
   '/api/v1/service-section/provide-service',
   '/api/v1/service-section/service-provider-manage/userId/[id]',
-  // '/api/v1/service-section/service-provider-manage',
 ];
-
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
+  const hostname = req.headers.get('host') || '';
 
-  // ✅ ২. Public Route Check (সবার আগে চেক করবে)
-  // যদি পাবলিক রাউট হয়, তাহলে সরাসরি যেতে দাও (টোকেন চেক করার দরকার নেই)
+  // ✅ vendor.guptodhan.com — API ছাড়া সব request pass through
+  if (
+    hostname.startsWith('vendor.') &&
+    !path.startsWith('/api') &&
+    !path.startsWith('/_next')
+  ) {
+    return NextResponse.next();
+  }
+
+  // ✅ Public Route — সবার আগে allow
   if (publicRoutes.some((route) => path.startsWith(route))) {
     return NextResponse.next();
   }
 
-  const isAdminRoute = adminRoutes.some((route) => path.startsWith(route));
+  // 🛠️ Route type checks
+  let isAdminRoute = adminRoutes.some((route) => path.startsWith(route));
   const isVendorRoute = vendorRoutes.some((route) => path.startsWith(route));
-  const isProtectedApi = protectedApiRoutes.some((route) => path.startsWith(route));
+  const isProtectedApi = protectedApiRoutes.some((route) =>
+    path.startsWith(route)
+  );
 
-  // পাবলিক route → allow (যদি লিস্টে না থাকে এবং protected ও না হয়)
+  // ✅ GET requests for categories — vendor/user access allow
+  if (
+    req.method === 'GET' &&
+    (path.startsWith('/api/v1/ecommerce-category/ecomSubCategory') ||
+      path.startsWith('/api/v1/ecommerce-category/ecomChildCategory') ||
+      path.startsWith('/api/v1/vendor-category'))
+  ) {
+    isAdminRoute = false;
+  }
+
+  // ✅ Protected না হলে allow
   if (!isAdminRoute && !isVendorRoute && !isProtectedApi) {
     return NextResponse.next();
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let tokenPayload: any = null;
-  let token = null;
+  let token: string | null = null;
 
-  // ১. প্রথমে Header চেক করুন
+  // ১. Header থেকে token নিন
   const authHeader = req.headers.get('authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     token = authHeader.split(' ')[1];
   }
-
-  // ২. যদি হেডার না থাকে, তাহলে Cookie চেক করুন
+  // ২. Cookie থেকে token নিন
   else {
-    token = req.cookies.get('accessToken')?.value || req.cookies.get('refreshToken')?.value;
+    token =
+      req.cookies.get('accessToken')?.value ||
+      req.cookies.get('refreshToken')?.value ||
+      null;
   }
 
+  // ✅ JWT token verify করুন
   if (token) {
     try {
-      const secret = new TextEncoder().encode(process.env.JWT_ACCESS_SECRET!);
+      const secret = new TextEncoder().encode(
+        process.env.JWT_ACCESS_SECRET!
+      );
       const { payload } = await jwtVerify(token, secret);
       tokenPayload = payload;
-    } catch (err: any) {
-      console.warn(`[Middleware] Token verification failed: ${err.message}`);
-      // টোকেন ভুল হলে এবং রাউটটি প্রটেক্টেড হলে এক্সেস ডিনাই করা হবে নিচে
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'unknown';
+      if (
+        message !== 'signature verification failed' &&
+        message !== 'invalid signature' &&
+        message !== 'jwt expired'
+      ) {
+        console.warn(`[Middleware] Unexpected token error: ${message}`);
+      }
     }
   }
 
@@ -175,39 +213,66 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // ❌ No Token Found (Public রাউটগুলো আগেই pass হয়ে গেছে, তাই এখানে আসলে মানে টোকেন লাগবেই)
+  // ❌ Token নেই
   if (!tokenPayload) {
-    if (path.startsWith('/general') || path.startsWith('/dashboard')) {
+    if (
+      path.startsWith('/general') ||
+      path.startsWith('/dashboard')
+    ) {
       return NextResponse.redirect(new URL('/', req.url));
     }
     return NextResponse.json(
-      { success: false, message: 'Unauthorized: No valid token provided' },
-      { status: StatusCodes.UNAUTHORIZED },
+      {
+        success: false,
+        message: 'Unauthorized: No valid token provided',
+      },
+      { status: StatusCodes.UNAUTHORIZED }
     );
   }
 
   // 🔹 Admin Check
   if (isAdminRoute && tokenPayload.role !== 'admin') {
-    return NextResponse.json(
-      { success: false, message: 'Forbidden: You do not have permission (Admin only).' },
-      { status: StatusCodes.FORBIDDEN },
-    );
+    if (isVendorRoute && tokenPayload.role === 'vendor') {
+      (NextResponse.next())
+    }
+    else if (path.startsWith('/api/v1/withdrawal/vendor/') && tokenPayload.role === 'vendor') {
+    }
+    else {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Forbidden: Admin only.',
+        },
+        { status: StatusCodes.FORBIDDEN }
+      );
+    }
   }
 
   // 🔥 Vendor Check
-  if (isVendorRoute && tokenPayload.role !== 'vendor' && !isAdminRoute) {
+  if (
+    isVendorRoute &&
+    tokenPayload.role !== 'vendor' &&
+    tokenPayload.role !== 'admin' &&
+    !isAdminRoute
+  ) {
     if (path.startsWith('/dashboard')) {
       return NextResponse.redirect(new URL('/', req.url));
     }
     return NextResponse.json(
-      { success: false, message: 'Forbidden: You do not have permission (Vendor only).' },
-      { status: StatusCodes.FORBIDDEN },
+      {
+        success: false,
+        message: 'Forbidden: Vendor only.',
+      },
+      { status: StatusCodes.FORBIDDEN }
     );
   }
 
-  // ✅ Attach headers
+  // ✅ Headers attach করুন
   const requestHeaders = new Headers(req.headers);
-  requestHeaders.set('x-user-id', tokenPayload.userId || tokenPayload.id);
+  requestHeaders.set(
+    'x-user-id',
+    tokenPayload.userId || tokenPayload.id
+  );
   requestHeaders.set('x-user-role', tokenPayload.role);
 
   return NextResponse.next({ request: { headers: requestHeaders } });

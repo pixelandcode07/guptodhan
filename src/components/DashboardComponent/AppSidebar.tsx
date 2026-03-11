@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import {
   Sidebar,
@@ -27,6 +27,7 @@ import DemoProducts from './MotherRoutes/DemoProducts';
 import Logout from './MotherRoutes/Logout';
 import UserRolePermision from './MotherRoutes/UserRolePermision';
 import ServiceModule from './MotherRoutes/ServiceModule';
+import JobModule from './MotherRoutes/JobModule';
 
 const data = {
   user: {
@@ -51,6 +52,7 @@ const data = {
     { title: 'Delivery Charges' },
     { title: 'Upazila & Thana' },
     { title: 'Payment History' },
+    { title: 'Account Deletion' },
     { title: 'Generate Reports' },
     { title: 'Download Backup' },
   ],
@@ -66,9 +68,7 @@ export default function AppSidebar() {
   const pathname = usePathname() ?? '';
   const isDashboardActive = pathname === '/general/home' || pathname.startsWith('/general/home/');
 
-  // Scroll active item into view after scroll position is restored (only if not visible)
   useEffect(() => {
-    // Wait for scroll position to restore from sessionStorage first
     const timer = setTimeout(() => {
       const sidebarContent = document.querySelector('[data-sidebar="content"]') as HTMLElement;
       const activeElement = document.querySelector('[data-active="true"]') as HTMLElement;
@@ -80,7 +80,6 @@ export default function AppSidebar() {
         const containerTop = container.scrollTop;
         const containerBottom = containerTop + container.clientHeight;
 
-        // Only scroll if the active element is not already visible
         if (elementTop < containerTop || elementBottom > containerBottom) {
           activeElement.scrollIntoView({
             behavior: 'smooth',
@@ -89,7 +88,7 @@ export default function AppSidebar() {
           });
         }
       }
-    }, 300); // Wait for scroll restoration
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [pathname]);
@@ -125,6 +124,7 @@ export default function AppSidebar() {
         <Multivendor />
         <BuySell />
         <ServiceModule />
+        <JobModule />
         <Donation />
         <WebsiteConfig />
         <CRMModules />

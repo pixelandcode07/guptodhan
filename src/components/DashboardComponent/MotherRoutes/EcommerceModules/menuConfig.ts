@@ -15,6 +15,8 @@ import {
   Settings,
   ShoppingCart,
   Truck,
+  Wrench,
+  Trash2,
 } from 'lucide-react';
 import { MenuConfig } from './types';
 
@@ -142,6 +144,7 @@ export const MENU_CONFIG: MenuConfig = {
         title: 'Previous Notifications',
         url: '/general/view/all/notifications',
       },
+      { title: 'Registered Devices', url: '/general/view/all/devices' },
     ],
   },
   'SMS Service': {
@@ -192,6 +195,12 @@ export const MENU_CONFIG: MenuConfig = {
     items: [],
     url: '/general/view/payment/history',
   },
+  // ✅ NEW: Account Deletion
+  'Account Deletion': {
+    icon: Trash2,
+    items: [],
+    url: '/general/view/account-deletion',
+  },
   'Generate Reports': {
     icon: Printer,
     items: [{ title: 'Sales Report', url: '/general/sales/report' }],
@@ -212,4 +221,3 @@ export const MENU_CONFIG: MenuConfig = {
   //   ],
   // },
 };
-

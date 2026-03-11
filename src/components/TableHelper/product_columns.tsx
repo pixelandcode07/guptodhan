@@ -9,6 +9,7 @@ export type Product = {
   _id?: string  // MongoDB product ID for navigation
   image: string
   category: string
+  slug?: string;
   name: string
   store: string
   price: string

@@ -9,15 +9,15 @@ import dbConnect from '@/lib/db';
 import { sendResponse } from '@/lib/utils/sendResponse';
 import { OrderModel } from './order.model';
 import { OrderDetailsModel } from '../orderDetails/orderDetails.model';
-import { IOrder } from './order.interface';
-import { IOrderDetails } from '../orderDetails/orderDetails.interface';
 import { OrderServices } from './order.service';
+import { deleteCachePattern } from '@/lib/redis/cache-helpers';
 
 // --- Import Models ---
 import "@/lib/modules/product/vendorProduct.model";
 import "@/lib/modules/vendor-store/vendorStore.model";
 import "@/lib/modules/promo-code/promoCode.model";
 import { VendorProductModel } from '@/lib/modules/product/vendorProduct.model';
+import { sendSMS } from '@/lib/utils/smsPortal';
 
 // --- Helper: ID Conversion ---
 const toObjectId = (id: string | any, label: string, options: { optional?: boolean } = {}) => {
@@ -52,90 +52,71 @@ const createOrderWithDetails = async (req: NextRequest) => {
 
   try {
     const body = await req.json();
-    const { userId, products, shippingCity, paymentMethod, shippingAddress } = body;
+    const { userId, products, shippingCity, paymentMethod, shippingName, shippingPhone } = body;
 
     if (!userId || !products || products.length === 0) {
       throw new Error('Invalid order data.');
     }
 
-    // 1. Fetch Real Product Data form DB (Security & Grouping)
     const productIds = products.map((p: any) => p.productId);
     const dbProducts = await VendorProductModel.find({ _id: { $in: productIds } });
 
-    if (dbProducts.length !== products.length) {
-       // Some products might be missing/deleted
-    }
-
-    // 2. Group Products by Vendor (Store ID)
     const orderGroups: Record<string, any[]> = {};
-
+    
     for (const item of products) {
       const dbProduct = dbProducts.find(p => p._id.toString() === item.productId);
       if (!dbProduct) continue;
-
+      
       const storeId = dbProduct.vendorStoreId.toString();
-
-      if (!orderGroups[storeId]) {
-        orderGroups[storeId] = [];
-      }
-
-      // Add item with Verified Data
+      if (!orderGroups[storeId]) orderGroups[storeId] = [];
+      
       orderGroups[storeId].push({
-        ...item,
-        vendorId: storeId, // Store ID is the Vendor reference
-        unitPrice: dbProduct.discountPrice || dbProduct.productPrice, // Use DB Price
-        originalProduct: dbProduct // Keep ref for checking shipping cost later
+        ...item, 
+        unitPrice: dbProduct.discountPrice || dbProduct.productPrice,
+        originalProduct: dbProduct
       });
     }
 
-    // 3. Create Separate Orders for Each Vendor
     const createdOrders = [];
-    const transactionGroupId = `TRX-${Date.now()}`; // Single Payment Reference
+    const transactionGroupId = `TRX-${Date.now()}`;
 
     for (const storeId of Object.keys(orderGroups)) {
       const storeItems = orderGroups[storeId];
       
-      // Calculate Totals for THIS store
       const itemsTotal = storeItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
-      
-      // Delivery Charge Logic (Specific to this shipment)
       const deliveryCharge = calculateDeliveryCharge(shippingCity || 'Dhaka', storeItems.map(i => i.originalProduct));
-      
       const totalAmount = itemsTotal + deliveryCharge;
-
-      // Generate Order ID
+      
       const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-      // Create Order Document
       const orderPayload = {
         orderId,
         userId: new Types.ObjectId(userId),
-        storeId: new Types.ObjectId(storeId), // Specific Store
+        storeId: new Types.ObjectId(storeId),
         deliveryMethodId: body.deliveryMethodId || 'Standard',
         paymentMethod: paymentMethod || 'Cash On Delivery',
         transactionId: paymentMethod === 'Online' ? transactionGroupId : undefined,
-        
-        // Shipping Info
-        shippingName: body.shippingName,
-        shippingPhone: body.shippingPhone,
+        shippingName,
+        shippingPhone,
         shippingEmail: body.shippingEmail,
         shippingStreetAddress: body.shippingStreetAddress,
-        shippingCity: shippingCity,
+        shippingCity,
         shippingDistrict: body.shippingDistrict,
         shippingPostalCode: body.shippingPostalCode,
         shippingCountry: body.shippingCountry || 'Bangladesh',
-        
+        addressDetails: body.addressDetails,
         deliveryCharge,
         totalAmount,
         paymentStatus: 'Pending',
         orderStatus: 'Pending',
         orderDate: new Date(),
-        orderDetails: [] // Will update after creating details
+        orderForm: body.orderForm || 'Website',
+        orderDetails: []
       };
 
       const newOrder = await OrderModel.create(orderPayload);
 
-      // Create Order Details Documents
+      // ✅ অর্ডার ডিটেইলস তৈরি (সাইজ ও কালার লজিক)
       const detailDocs = storeItems.map(item => ({
         orderDetailsId: uuidv4().split('-')[0],
         orderId: newOrder._id,
@@ -144,28 +125,36 @@ const createOrderWithDetails = async (req: NextRequest) => {
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         totalPrice: item.unitPrice * item.quantity,
-        size: item.size,
-        color: item.color,
+        // ⚠️ ভেরিয়েন্ট রুল: যদি ভ্যালু থাকে তবেই সেভ হবে, না থাকলে undefined (DB তে ফিল্ড তৈরি হবে না)
+        size: item.size || undefined, 
+        color: item.color || undefined,
       }));
 
       const createdDetails = await OrderDetailsModel.insertMany(detailDocs);
-
-      // Link Details to Order
+      
+      // অর্ডারের সাথে ডিটেইলস লিঙ্ক করা
       newOrder.orderDetails = createdDetails.map(d => d._id);
       await newOrder.save();
 
       createdOrders.push(newOrder);
+
+      // SMS পাঠানো
+      const smsMessage = `Dear ${shippingName}, your order ${orderId} has been placed. Total: ${totalAmount} TK. Thank you for shopping with Guptodhan!`;
+      sendSMS(shippingPhone, smsMessage).catch(err => console.error("SMS Error:", err));
     }
+
+    // ক্যাশ ক্লিয়ার করা
+    await deleteCachePattern(`orders:user:${userId}*`);
 
     return sendResponse({
       success: true,
       statusCode: StatusCodes.CREATED,
-      message: `Order placed successfully! (${createdOrders.length} shipments created)`,
+      message: `Order placed successfully!`,
       data: createdOrders,
     });
 
   } catch (error: any) {
-    console.error('❌ Order Creation Failed:', error);
+    console.error('❌ Order Creation Error:', error);
     return sendResponse({
       success: false,
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,

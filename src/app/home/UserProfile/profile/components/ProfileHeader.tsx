@@ -6,8 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 interface ProfileHeaderProps {
   userName: string
   userImage: string | null
-  userPhone: string
-  onRemoveClick?: () => void
+  userPhone?: string
   onChangeImageClick?: () => void
 }
 
@@ -15,7 +14,6 @@ export default function ProfileHeader({
   userName, 
   userImage, 
   userPhone,
-  onRemoveClick,
   onChangeImageClick
 }: ProfileHeaderProps) {
   const initials = userName
@@ -27,23 +25,25 @@ export default function ProfileHeader({
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border rounded-md p-4">
       <div className="flex items-center gap-4">
-        <Avatar className="size-16">
+        <Avatar className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24">
           <AvatarImage src={userImage ?? undefined} alt={userName} />
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
         <div>
           <h2 className="text-xl font-medium">{userName}</h2>
-          <div className="text-sm text-gray-500">{userPhone}</div>
+          <div className="text-sm text-gray-500">
+            {userPhone && userPhone.trim().length > 0 ? userPhone : 'Add your phone number'}
+          </div>
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        <button 
+        {/* <button 
           onClick={onRemoveClick}
           className="bg-white text-[#0084CB] border border-[#0084CB] rounded-full px-4 py-2 hover:bg-blue-50"
         >
           Remove
-        </button>
+        </button> */}
         <button 
           onClick={onChangeImageClick}
           className="bg-blue-600 text-white rounded-full px-4 py-2 hover:bg-blue-700"

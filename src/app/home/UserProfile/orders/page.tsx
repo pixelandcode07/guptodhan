@@ -129,8 +129,8 @@ export default function UserOrdersPage() {
             thumbnailUrl: productImage,
             priceFormatted: `৳ ${productPrice.toLocaleString('en-US')}`,
             quantity: detail.quantity || 1,
-            size: detail.size || 'Standard',
-            color: detail.color || 'Default',
+            size: detail.size?.trim() && detail.size !== '—' ? detail.size : '',
+            color: detail.color?.trim() && detail.color !== '—' ? detail.color : '',
           }
         })
         
@@ -141,8 +141,8 @@ export default function UserOrdersPage() {
           thumbnailUrl: '/img/product/p-1.png',
           priceFormatted: `৳ ${(order.totalAmount || 0).toLocaleString('en-US')}`,
           quantity: 1,
-          size: 'Standard',
-          color: 'Default',
+          size: '',
+          color: '',
         }]
         
         return {

@@ -89,7 +89,7 @@ function CancelContent() {
             size="lg" 
             className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
           >
-            <Link href="/home/product/shoppinginfo" className="flex items-center gap-2">
+            <Link href="/products/shoppinginfo" className="flex items-center gap-2">
               <ShoppingCart className="w-5 h-5" />
               Return to Checkout
             </Link>
@@ -100,7 +100,7 @@ function CancelContent() {
             size="lg"
             className="border-2"
           >
-            <Link href="/home/product/shopping-cart" className="flex items-center gap-2">
+            <Link href="/products/shopping-cart" className="flex items-center gap-2">
               <ArrowLeft className="w-5 h-5" />
               View Cart
             </Link>

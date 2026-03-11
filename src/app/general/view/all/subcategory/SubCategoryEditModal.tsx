@@ -46,8 +46,11 @@ export default function SubCategoryEditModal({ open, onOpenChange, data, onSaved
   const [isFeatured, setIsFeatured] = useState("no");
   const [isNavbar, setIsNavbar] = useState("no");
   const [status, setStatus] = useState("active");
-  const [iconFile, setIconFile] = useState<File | null>(null);
-  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  
+  // ✅ Updated state to accept string (existing image URL) or File (new image)
+  const [iconFile, setIconFile] = useState<File | string | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | string | null>(null);
+  
   const [categoryId, setCategoryId] = useState<string>("");
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(false);
@@ -70,8 +73,11 @@ export default function SubCategoryEditModal({ open, onOpenChange, data, onSaved
       setIsFeatured(data.isFeatured ? "yes" : "no");
       setIsNavbar(data.isNavbar ? "yes" : "no");
       setStatus((data.status || "Active").toLowerCase());
-      setIconFile(null);
-      setBannerFile(null);
+      
+      // ✅ Set existing images if they exist
+      setIconFile(data.subCategoryIcon || null);
+      setBannerFile(data.subCategoryBanner || null);
+      
       if (data.categoryId) {
         setCategoryId(data.categoryId);
       } else {
@@ -93,8 +99,10 @@ export default function SubCategoryEditModal({ open, onOpenChange, data, onSaved
       formData.append("isFeatured", isFeatured === "yes" ? "true" : "false");
       formData.append("isNavbar", isNavbar === "yes" ? "true" : "false");
       if (categoryId) formData.append("category", categoryId);
-      if (iconFile) formData.append("subCategoryIcon", iconFile);
-      if (bannerFile) formData.append("subCategoryBanner", bannerFile);
+      
+      // ✅ Only append if it's a new File object
+      if (iconFile instanceof File) formData.append("subCategoryIcon", iconFile);
+      if (bannerFile instanceof File) formData.append("subCategoryBanner", bannerFile);
 
       const res = await fetch(`/api/v1/ecommerce-category/ecomSubCategory/${data._id}`, {
         method: "PATCH",
@@ -235,12 +243,24 @@ export default function SubCategoryEditModal({ open, onOpenChange, data, onSaved
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700">Icon</Label>
-                <UploadImageBtn value={iconFile} onChange={setIconFile} />
+                {/* ✅ Added fieldName and onRemove */}
+                <UploadImageBtn 
+                  value={iconFile} 
+                  onChange={setIconFile} 
+                  fieldName="subCategoryIcon"
+                  onRemove={() => setIconFile(null)}
+                />
               </div>
               
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700">Banner</Label>
-                <UploadImageBtn value={bannerFile} onChange={setBannerFile} />
+                {/* ✅ Added fieldName and onRemove */}
+                <UploadImageBtn 
+                  value={bannerFile} 
+                  onChange={setBannerFile} 
+                  fieldName="subCategoryBanner"
+                  onRemove={() => setBannerFile(null)}
+                />
               </div>
             </div>
           </div>
@@ -268,5 +288,3 @@ export default function SubCategoryEditModal({ open, onOpenChange, data, onSaved
     </Dialog>
   );
 }
-
-
