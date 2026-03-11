@@ -9,10 +9,11 @@ import { Label } from '@/components/ui/label'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
-import { AlertCircle, CheckCircle2, Loader2, Package, DollarSign, Heart, Users, TrendingUp, Phone, Mail, User, ChevronLeft, ChevronRight, Calendar, HandHeart } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Loader2, Package, DollarSign, Heart, Users, TrendingUp, Phone, Mail, User, ChevronLeft, ChevronRight, Calendar, HandHeart, X } from 'lucide-react'
 import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import LogInRegister from '@/app/components/LogInAndRegister/LogIn_Register'
 
 interface DonationItem {
   id: string
@@ -25,6 +26,7 @@ interface DonationClaimModalProps {
   open: boolean
   onOpenChange: (v: boolean) => void
   item?: DonationItem
+  onLoginRequired: () => void
 }
 
 interface IDonationCampaign {
@@ -47,7 +49,7 @@ interface DonationDetailsClientProps {
   campaign: IDonationCampaign
 }
 
-function DonationClaimModal({ open, onOpenChange, item }: DonationClaimModalProps) {
+function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: DonationClaimModalProps) {
   const { data: session } = useSession()
   const token = (session as any)?.accessToken
   const [loading, setLoading] = useState(false)
@@ -88,7 +90,11 @@ function DonationClaimModal({ open, onOpenChange, item }: DonationClaimModalProp
   }
 
   const handleSubmit = async () => {
-    if (!session) { toast.error('Please login first'); onOpenChange(false); return }
+    if (!session) {
+      onOpenChange(false)
+      setTimeout(() => onLoginRequired(), 200)
+      return
+    }
     if (!validateForm()) { toast.error('Please fill all required fields correctly'); return }
     try {
       setLoading(true)
@@ -120,7 +126,6 @@ function DonationClaimModal({ open, onOpenChange, item }: DonationClaimModalProp
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] sm:w-full max-w-lg p-0 max-h-[92vh] overflow-hidden rounded-2xl flex flex-col">
-        {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isMoney ? 'bg-emerald-50' : 'bg-blue-50'}`}>
@@ -137,10 +142,7 @@ function DonationClaimModal({ open, onOpenChange, item }: DonationClaimModalProp
           </div>
         </DialogHeader>
 
-        {/* Scrollable Content */}
         <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
-
-          {/* Item Preview */}
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
             <div className="h-12 w-12 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0 bg-white">
               {item?.image
@@ -156,7 +158,6 @@ function DonationClaimModal({ open, onOpenChange, item }: DonationClaimModalProp
             </div>
           </div>
 
-          {/* Personal Info */}
           <div className="space-y-4">
             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Personal Information</h3>
             <div className="grid grid-cols-2 gap-3">
@@ -178,7 +179,6 @@ function DonationClaimModal({ open, onOpenChange, item }: DonationClaimModalProp
             </div>
           </div>
 
-          {/* Money Fields */}
           {isMoney && (
             <div className="space-y-4 p-4 bg-emerald-50 rounded-xl border border-emerald-100">
               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Payment Details</h3>
@@ -209,7 +209,6 @@ function DonationClaimModal({ open, onOpenChange, item }: DonationClaimModalProp
             </div>
           )}
 
-          {/* Reason */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-gray-700">Your Situation <span className="text-red-500">*</span></Label>
             <Textarea
@@ -222,14 +221,12 @@ function DonationClaimModal({ open, onOpenChange, item }: DonationClaimModalProp
             {errors.reason && <p className="text-[11px] text-red-500">{errors.reason}</p>}
           </div>
 
-          {/* Info */}
           <div className="flex gap-2.5 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-800">
             <AlertCircle className="text-blue-500 flex-shrink-0 mt-0.5" size={14} />
             <p>All requests are reviewed manually. You will be contacted for verification. Processing time: 2-3 business days.</p>
           </div>
         </div>
 
-        {/* Footer */}
         <div className="px-6 pb-5 pt-3 border-t bg-white flex-shrink-0">
           <Button onClick={handleSubmit} disabled={loading}
             className="w-full h-11 bg-[#00005E] hover:bg-[#000045] text-white font-bold rounded-xl text-sm">
@@ -244,6 +241,7 @@ function DonationClaimModal({ open, onOpenChange, item }: DonationClaimModalProp
 export default function DonationDetailsClient({ campaign }: DonationDetailsClientProps) {
   const { data: session } = useSession()
   const [claimOpen, setClaimOpen] = useState(false)
+  const [loginOpen, setLoginOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<DonationItem | undefined>(undefined)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
@@ -251,8 +249,12 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
   const progress = campaign.goalAmount && campaign.goalAmount > 0
     ? Math.round((campaign.raisedAmount || 0) / campaign.goalAmount * 100) : 0
 
+  // ✅ Here is the logic: if not logged in, show Login Modal
   const handleRequestClick = () => {
-    if (!session) { toast.error('Please login first to request this item'); return }
+    if (!session) {
+      setLoginOpen(true)
+      return
+    }
     setSelectedItem({ id: campaign._id, title: campaign.title, image: campaign.images?.[0] || '', type: campaign.item })
     setClaimOpen(true)
   }
@@ -264,8 +266,50 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
 
   return (
     <div className="min-h-screen bg-gray-50">
+
+      {/* ✅ Login Modal — fixed overlay, Dialog এর উপর নির্ভর করে না */}
+      {/* Note: Wrapped LogInRegister inside Dialog so shadcn UI doesn't crash */}
+      <AnimatePresence>
+        {loginOpen && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center px-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setLoginOpen(false)}
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="relative z-10 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setLoginOpen(false)}
+                className="absolute top-3 right-3 z-20 p-1.5 bg-white/80 hover:bg-white rounded-full shadow transition-colors"
+              >
+                <X size={16} className="text-gray-600" />
+              </button>
+              
+              <Dialog open={true} onOpenChange={setLoginOpen}>
+                <LogInRegister />
+              </Dialog>
+              
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <div className="md:max-w-[95vw] xl:container mx-auto px-4 md:px-8 py-8">
-        <DonationClaimModal open={claimOpen} onOpenChange={setClaimOpen} item={selectedItem} />
+        <DonationClaimModal
+          open={claimOpen}
+          onOpenChange={setClaimOpen}
+          item={selectedItem}
+          onLoginRequired={() => setLoginOpen(true)}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
 
@@ -279,13 +323,11 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
               <div className="relative w-full bg-gray-100" style={{ aspectRatio: '16/10' }}>
                 {campaign.images?.length > 0 ? (
                   <>
-                    {/* ✅ object-contain — পুরো image দেখাবে */}
                     <img
                       src={campaign.images[currentImageIndex]}
                       alt={campaign.title}
                       className="w-full h-full object-contain"
                     />
-
                     {campaign.images.length > 1 && (
                       <>
                         <button
@@ -320,7 +362,6 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                 )}
               </div>
 
-              {/* Thumbnail strip */}
               {campaign.images?.length > 1 && (
                 <div className="flex gap-2 p-3 border-t border-gray-100 overflow-x-auto">
                   {campaign.images.map((img, idx) => (
@@ -336,8 +377,6 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
 
             {/* Campaign Details */}
             <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 space-y-5">
-
-              {/* Badges */}
               <div className="flex flex-wrap gap-2">
                 {campaign.category && (
                   <span className="text-xs font-semibold px-3 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-100">
@@ -355,12 +394,10 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                 )}
               </div>
 
-              {/* Title */}
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
                 {campaign.title}
               </h1>
 
-              {/* Meta */}
               {campaign.createdAt && (
                 <div className="flex items-center gap-1.5 text-sm text-gray-400">
                   <Calendar size={14} />
@@ -368,16 +405,13 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                 </div>
               )}
 
-              {/* Divider */}
               <div className="h-px bg-gray-100" />
 
-              {/* Description */}
               <div
                 dangerouslySetInnerHTML={{ __html: campaign.description || '<p>No description available.</p>' }}
                 className="text-sm sm:text-base text-gray-600 leading-relaxed prose prose-sm max-w-none"
               />
 
-              {/* Creator */}
               {campaign.creator && (
                 <>
                   <div className="h-px bg-gray-100" />
@@ -407,7 +441,6 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
           <div className="space-y-4">
             <div className="bg-white rounded-2xl p-5 border border-gray-100 space-y-5 sticky top-4">
 
-              {/* Money Progress */}
               {campaign.item === 'money' && campaign.goalAmount && campaign.goalAmount > 0 && (
                 <div className="space-y-4">
                   <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
@@ -446,7 +479,6 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                 </div>
               )}
 
-              {/* Non-money stats */}
               {campaign.item !== 'money' && (
                 <div className="text-center py-2 space-y-2">
                   <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto">
@@ -460,7 +492,6 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                 </div>
               )}
 
-              {/* Action Button */}
               {isOwner ? (
                 <button disabled className="w-full py-3 bg-gray-50 text-gray-400 text-sm font-semibold rounded-xl cursor-not-allowed border border-gray-100">
                   ✓ Your Campaign
@@ -469,7 +500,7 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={handleRequestClick}
+                  onClick={handleRequestClick} // This securely redirects to Login if not signed in
                   className="w-full py-3 bg-[#00005E] hover:bg-[#000045] text-white font-bold rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
                 >
                   <HandHeart size={16} />
@@ -477,7 +508,6 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                 </motion.button>
               )}
 
-              {/* How it works */}
               <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 space-y-2.5">
                 <p className="text-xs font-bold text-gray-700">How it works</p>
                 {[
@@ -494,7 +524,6 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                 ))}
               </div>
 
-              {/* Verified badge */}
               <div className="flex items-center justify-center gap-2 text-xs text-emerald-600 font-semibold">
                 <CheckCircle2 size={14} />
                 All requests are manually verified
