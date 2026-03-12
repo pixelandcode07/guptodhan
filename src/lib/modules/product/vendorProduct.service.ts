@@ -225,23 +225,24 @@ const createVendorProductInDB = async (payload: Partial<IVendorProduct>) => {
 // ===================================
 
 const getAllVendorProductsFromDB = async (page = 1, limit = 20) => {
-  const cacheKey = CacheKeys.PRODUCT.ALL(page);
-  
+
+  const cacheKey = `${CacheKeys.PRODUCT.ALL(page)}:limit:${limit}`;
+ 
   return getCachedData(
     cacheKey,
     async () => {
       const skip = (page - 1) * limit;
-      
+ 
       const products = await VendorProductModel.aggregate([
         { $sort: { createdAt: -1 } },
         { $skip: skip },
         { $limit: limit },
         ...getProductLookupPipeline(),
       ]);
-      
+ 
       const total = await VendorProductModel.countDocuments();
       const populatedProducts = await populateColorAndSizeNamesForProducts(products);
-      
+ 
       return {
         products: populatedProducts,
         pagination: {
