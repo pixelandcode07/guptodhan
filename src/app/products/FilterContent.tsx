@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import FilterSidebar, { type FilterState } from './components/FilterSidebar';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -51,7 +50,7 @@ interface Meta {
   hasPrev: boolean;
 }
 
-// ─── Product Card ───────────────────────────────────────────────────────────
+// ─── Product Card ─────────────────────────────────────────────────────────────
 function ProductCard({ product }: { product: Product }) {
   const discount =
     product.discountPrice && product.productPrice
@@ -63,7 +62,6 @@ function ProductCard({ product }: { product: Product }) {
       href={`/product/${product.slug || product._id}`}
       className="group bg-white rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col"
     >
-      {/* Image */}
       <div className="relative bg-gray-50 overflow-hidden" style={{ aspectRatio: '1 / 1' }}>
         {discount && (
           <span className="absolute top-2 left-2 z-10 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
@@ -76,13 +74,9 @@ function ProductCard({ product }: { product: Product }) {
           fill
           className="object-contain p-3 group-hover:scale-105 transition-transform duration-300"
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = '/img/demo_products_img.png';
-          }}
+          onError={(e) => { (e.target as HTMLImageElement).src = '/img/demo_products_img.png'; }}
         />
       </div>
-
-      {/* Info */}
       <div className="p-3 flex flex-col flex-1 gap-1">
         {product.brand?.name && (
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
@@ -113,7 +107,7 @@ function ProductCard({ product }: { product: Product }) {
   );
 }
 
-// ─── Main FilterContent ──────────────────────────────────────────────────────
+// ─── Main FilterContent ───────────────────────────────────────────────────────
 export default function FilterContent({
   initialProducts,
   initialColors,
@@ -127,27 +121,29 @@ export default function FilterContent({
   initialSizes: BackendSize[];
   meta: Meta | null;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
+  const router       = useRouter();
+  const pathname     = usePathname();
   const searchParams = useSearchParams();
 
-  const currentFilters: FilterState = {
-    priceMin: searchParams.get('priceMin') ? Number(searchParams.get('priceMin')) : undefined,
-    priceMax: searchParams.get('priceMax') ? Number(searchParams.get('priceMax')) : undefined,
-    brand: searchParams.get('brand') || undefined,
-    color: searchParams.get('color') || undefined,
-    size:  searchParams.get('size')  || undefined,
+  // ── URL থেকে multi-select values parse (comma-separated) ──────────────────
+  const parseMulti = (key: string): string[] => {
+    const val = searchParams.get(key);
+    if (!val) return [];
+    return val.split(',').map((v) => v.trim()).filter(Boolean);
   };
 
-  const currentSort  = searchParams.get('sortBy') || 'createdAt';
-  const currentPage  = Number(searchParams.get('page')) || 1;
+  const selectedBrands = parseMulti('brand');  // e.g. ['Asus', 'TpLink']
+  const selectedColors = parseMulti('color');  // e.g. ['Brown', 'Red']
+  const currentSize    = searchParams.get('size') || undefined;
+  const currentSort    = searchParams.get('sortBy') || 'createdAt';
+  const currentPage    = Number(searchParams.get('page')) || 1;
 
-  const updateURL = (updates: Record<string, string | string[] | undefined>) => {
+  // ── URL update helper ──────────────────────────────────────────────────────
+  const updateURL = (updates: Record<string, string | undefined>) => {
     const params = new URLSearchParams(searchParams.toString());
-    Object.keys(updates).forEach((key) => {
-      const val = updates[key];
-      if (val !== undefined && val !== null && val !== '') {
-        params.set(key, Array.isArray(val) ? val.join(',') : String(val));
+    Object.entries(updates).forEach(([key, val]) => {
+      if (val !== undefined && val !== '') {
+        params.set(key, val);
       } else {
         params.delete(key);
       }
@@ -155,42 +151,215 @@ export default function FilterContent({
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  const handleFilterChange = (newFilters: FilterState) => {
-    updateURL({
-      page:     '1',
-      priceMin: newFilters.priceMin?.toString(),
-      priceMax: newFilters.priceMax?.toString(),
-      brand:    newFilters.brand as string | undefined,
-      color:    newFilters.color as string | undefined,
-      size:     newFilters.size  as string | undefined,
-    });
+  // ── Brand toggle ───────────────────────────────────────────────────────────
+  const toggleBrand = (name: string) => {
+    const next = selectedBrands.includes(name)
+      ? selectedBrands.filter((b) => b !== name)   // click again = unselect
+      : [...selectedBrands, name];
+    updateURL({ brand: next.length > 0 ? next.join(',') : undefined, page: '1' });
   };
 
-  const handleSortChange   = (sortBy: string) => updateURL({ sortBy, page: '1' });
-  const handlePageChange   = (page: number) => {
+  // ── Color toggle ───────────────────────────────────────────────────────────
+  const toggleColor = (name: string) => {
+    const next = selectedColors.includes(name)
+      ? selectedColors.filter((c) => c !== name)   // click again = unselect
+      : [...selectedColors, name];
+    updateURL({ color: next.length > 0 ? next.join(',') : undefined, page: '1' });
+  };
+
+  // ── Size toggle (single select) ────────────────────────────────────────────
+  const toggleSize = (name: string) => {
+    updateURL({ size: currentSize === name ? undefined : name, page: '1' });
+  };
+
+  // ── Sort ───────────────────────────────────────────────────────────────────
+  const handleSortChange = (sortBy: string) => updateURL({ sortBy, page: '1' });
+
+  // ── Page ───────────────────────────────────────────────────────────────────
+  const handlePageChange = (page: number) => {
     updateURL({ page: page.toString() });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const sidebarColors = initialColors.map((c) => ({ name: c.colorName, hex: c.colorCode }));
-  const sidebarBrands = initialBrands.map((b) => b.name);
-  const sidebarSizes  = initialSizes.map((s) => s.name);
+  // ── Reset ──────────────────────────────────────────────────────────────────
+  const handleReset = () => router.push(pathname, { scroll: false });
+
+  const hasActiveFilters =
+    selectedBrands.length > 0 ||
+    selectedColors.length > 0 ||
+    !!currentSize ||
+    !!searchParams.get('priceMin') ||
+    !!searchParams.get('priceMax');
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
-      {/* ── Sidebar ── */}
+      {/* ═══ SIDEBAR ════════════════════════════════════════════════════════ */}
       <aside className="w-full lg:w-64 xl:w-72 flex-shrink-0">
-        <FilterSidebar
-          value={currentFilters}
-          onChange={handleFilterChange}
-          options={{ brands: sidebarBrands, colors: sidebarColors, sizes: sidebarSizes }}
-        />
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sticky top-4">
+
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+              </svg>
+              Filters
+            </h2>
+            {hasActiveFilters && (
+              <button
+                onClick={handleReset}
+                className="text-xs text-red-500 hover:text-red-600 font-medium border border-red-200 hover:border-red-300 rounded-full px-2.5 py-1 transition-all"
+              >
+                Reset ×
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-5 divide-y divide-gray-100">
+
+            {/* ── BRAND (multi-select checkboxes) ── */}
+            <div>
+              <div className="flex items-center justify-between mb-2.5">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Brand</h3>
+                {selectedBrands.length > 0 && (
+                  <span className="text-[10px] bg-blue-100 text-blue-600 font-bold rounded-full px-2 py-0.5">
+                    {selectedBrands.length}
+                  </span>
+                )}
+              </div>
+              <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                {initialBrands.map((b) => {
+                  const active = selectedBrands.includes(b.name);
+                  return (
+                    <label
+                      key={b._id}
+                      className="flex items-center gap-2.5 cursor-pointer group"
+                      onClick={() => toggleBrand(b.name)}
+                    >
+                      {/* Custom checkbox */}
+                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                        active ? 'bg-blue-600 border-blue-600' : 'border-gray-300 group-hover:border-blue-400'
+                      }`}>
+                        {active && (
+                          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className={`text-sm transition-colors ${
+                        active ? 'text-blue-600 font-semibold' : 'text-gray-600 group-hover:text-gray-900'
+                      }`}>
+                        {b.name}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ── COLOR (multi-select color swatches) ── */}
+            <div className="pt-4">
+              <div className="flex items-center justify-between mb-2.5">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Color</h3>
+                {selectedColors.length > 0 && (
+                  <span className="text-[10px] bg-blue-100 text-blue-600 font-bold rounded-full px-2 py-0.5">
+                    {selectedColors.length}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {initialColors.map((c) => {
+                  const active = selectedColors.includes(c.colorName);
+                  return (
+                    <button
+                      key={c._id}
+                      onClick={() => toggleColor(c.colorName)}
+                      title={c.colorName}
+                      className={`relative w-7 h-7 rounded-full border-2 transition-all hover:scale-110 ${
+                        active
+                          ? 'border-blue-600 scale-110 shadow-md ring-2 ring-blue-300 ring-offset-1'
+                          : 'border-gray-200 hover:border-gray-400'
+                      }`}
+                      style={{ backgroundColor: c.colorCode }}
+                    >
+                      {active && (
+                        <span className="absolute inset-0 flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedColors.length > 0 && (
+                <p className="text-xs text-gray-400 italic">{selectedColors.join(', ')}</p>
+              )}
+            </div>
+
+            {/* ── SIZE (single select, click again = deselect) ── */}
+            {initialSizes.length > 0 && (
+              <div className="pt-4">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5">Size</h3>
+                <div className="flex flex-wrap gap-2">
+                  {initialSizes.map((s) => {
+                    const active = currentSize === s.name;
+                    return (
+                      <button
+                        key={s._id}
+                        onClick={() => toggleSize(s.name)}
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                          active
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                            : 'border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50'
+                        }`}
+                      >
+                        {s.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── PRICE ── */}
+            <div className="pt-4">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5">Price Range</h3>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="number"
+                  placeholder="Min ৳"
+                  defaultValue={searchParams.get('priceMin') || ''}
+                  onBlur={(e) => updateURL({
+                    priceMin: e.target.value || undefined,
+                    page: '1',
+                  })}
+                  className="w-full h-8 border border-gray-200 rounded-lg px-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <span className="text-gray-400 flex-shrink-0">–</span>
+                <input
+                  type="number"
+                  placeholder="Max ৳"
+                  defaultValue={searchParams.get('priceMax') || ''}
+                  onBlur={(e) => updateURL({
+                    priceMax: e.target.value || undefined,
+                    page: '1',
+                  })}
+                  className="w-full h-8 border border-gray-200 rounded-lg px-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+              </div>
+            </div>
+
+          </div>
+        </div>
       </aside>
 
-      {/* ── Main ── */}
+      {/* ═══ MAIN ═══════════════════════════════════════════════════════════ */}
       <main className="flex-1 min-w-0">
         {/* Top bar */}
-        <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 mb-5 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+        <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 mb-5 flex flex-wrap items-center gap-3 shadow-sm">
           <p className="text-sm text-gray-600">
             {meta ? (
               <>
@@ -206,12 +375,53 @@ export default function FilterContent({
             )}
           </p>
 
-          <div className="flex items-center gap-2">
+          {/* Active filter pills */}
+          {(selectedBrands.length > 0 || selectedColors.length > 0 || currentSize) && (
+            <div className="flex flex-wrap gap-1.5 flex-1">
+              {selectedBrands.map((b) => (
+                <button
+                  key={b}
+                  onClick={() => toggleBrand(b)}
+                  className="flex items-center gap-1 text-xs bg-blue-50 text-blue-600 border border-blue-200 rounded-full px-2.5 py-1 hover:bg-blue-100 transition-all"
+                >
+                  {b}
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              ))}
+              {selectedColors.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => toggleColor(c)}
+                  className="flex items-center gap-1 text-xs bg-purple-50 text-purple-600 border border-purple-200 rounded-full px-2.5 py-1 hover:bg-purple-100 transition-all"
+                >
+                  {c}
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              ))}
+              {currentSize && (
+                <button
+                  onClick={() => toggleSize(currentSize)}
+                  className="flex items-center gap-1 text-xs bg-green-50 text-green-600 border border-green-200 rounded-full px-2.5 py-1 hover:bg-green-100 transition-all"
+                >
+                  {currentSize}
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 ml-auto">
             <span className="text-sm text-gray-500">Sort by:</span>
             <select
               value={currentSort}
               onChange={(e) => handleSortChange(e.target.value)}
-              className="h-9 border border-gray-200 rounded-lg px-3 text-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
+              className="h-9 border border-gray-200 rounded-lg px-3 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
               <option value="createdAt">Newest Arrivals</option>
               <option value="popularity">Most Popular</option>
@@ -221,9 +431,9 @@ export default function FilterContent({
           </div>
         </div>
 
-        {/* ── Product Grid ── */}
+        {/* Product Grid */}
         {initialProducts.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
             {initialProducts.map((product) => (
               <ProductCard key={product._id} product={product} />
             ))}
@@ -239,7 +449,7 @@ export default function FilterContent({
           </div>
         )}
 
-        {/* ── Pagination ── */}
+        {/* Pagination */}
         {meta && meta.totalPages > 1 && (
           <div className="mt-10 mb-6 flex flex-col sm:flex-row items-center justify-center gap-4">
             <div className="flex items-center gap-2">
@@ -274,7 +484,7 @@ export default function FilterContent({
                         onClick={() => handlePageChange(p as number)}
                         className={`w-10 h-10 rounded-lg text-sm font-semibold transition-all ${
                           currentPage === p
-                            ? 'bg-blue-600 text-white shadow-md border-transparent'
+                            ? 'bg-blue-600 text-white shadow-md'
                             : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
                         }`}
                       >
@@ -293,7 +503,6 @@ export default function FilterContent({
                 <ChevronRight size={16} />
               </button>
             </div>
-
             <p className="sm:hidden text-xs text-gray-500">
               Page {currentPage} of {meta.totalPages}
             </p>
