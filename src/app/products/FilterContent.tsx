@@ -368,27 +368,11 @@ export default function FilterContent({
             {/* Footer — always visible at bottom */}
             <div className="flex-shrink-0 border-t border-gray-100 bg-white px-5 py-4 space-y-2.5"
               style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
-              {(priceMin || priceMax) && (
-                <button
-                  onClick={() => { applyPrice(); setDrawerOpen(false); }}
-                  className="w-full h-11 bg-gray-800 hover:bg-gray-900 text-white font-semibold text-sm rounded-2xl transition-all active:scale-95"
-                >
-                  Apply Price Filter
-                </button>
-              )}
-              {(searchParams.get('priceMin') || searchParams.get('priceMax')) && !priceMin && !priceMax && (
-                <button
-                  onClick={() => {
-                    updateURL({ priceMin: undefined, priceMax: undefined, page: '1' });
-                    setDrawerOpen(false);
-                  }}
-                  className="w-full h-11 border-2 border-red-200 text-red-500 font-semibold text-sm rounded-2xl transition-all active:scale-95"
-                >
-                  Clear Price Filter
-                </button>
-              )}
               <button
-                onClick={() => setDrawerOpen(false)}
+                onClick={() => {
+                  applyPrice();
+                  setDrawerOpen(false);
+                }}
                 className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-2xl transition-all active:scale-95 shadow-lg shadow-blue-200"
               >
                 Show {meta?.total ?? initialProducts.length} Results
