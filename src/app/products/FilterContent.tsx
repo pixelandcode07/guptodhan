@@ -222,7 +222,7 @@ function FilterPanel({
       )}
 
       {/* ── PRICE ── */}
-      <div className="pt-4">
+      <div className="mb-4">
         <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Price Range</h3>
         <div className="flex gap-2 items-center mb-2.5">
           <input
