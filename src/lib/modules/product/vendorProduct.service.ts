@@ -11,6 +11,7 @@ import { DeviceConditionModel } from "../product-config/models/deviceCondition.m
 import { ProductSimTypeModel } from "../product-config/models/productSimType.model";
 import { ProductWarrantyModel } from "../product-config/models/warranty.model";
 
+
 // ✅ Import Redis cache helpers
 import { getCachedData, deleteCacheKey, deleteCachePattern } from '@/lib/redis/cache-helpers';
 import { CacheKeys, CacheTTL } from '@/lib/redis/cache-keys';
@@ -259,9 +260,11 @@ const getAllVendorProductsFromDB = async (page = 1, limit = 20) => {
 // 📋 GET ALL PRODUCTS WITH PAGINATION + FILTERS
 // ================================================================
 // ================================================================
-// ✅ vendorProduct.service.ts এ শুধু এই function টি replace করুন
-//    getAllVendorProductsWithPaginationFromDB
 // ================================================================
+// ✅ vendorProduct.service.ts এ এই পুরো function টি replace করুন
+//    (getAllVendorProductsWithPaginationFromDB)
+//
+
 
 const getAllVendorProductsWithPaginationFromDB = async (params: {
   page?: number;
@@ -288,7 +291,9 @@ const getAllVendorProductsWithPaginationFromDB = async (params: {
 
   const skip = (page - 1) * limit;
 
-  // ── ১. Base match stage ─────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════
+  // STEP 1: Base match (fast indexed fields)
+  // ══════════════════════════════════════════════════════════════
   const matchStage: any = { status: 'active' };
 
   if (search) {
@@ -301,20 +306,31 @@ const getAllVendorProductsWithPaginationFromDB = async (params: {
     if (priceMax) matchStage.discountPrice.$lte = priceMax;
   }
 
-  // ── ২. Brand name → ObjectId (BUG FIX: pagination এর আগে resolve করতে হবে) ──
+  // ══════════════════════════════════════════════════════════════
+  // STEP 2: Brand name → ObjectId  (pagination এর আগে resolve করতে হবে)
+  // ══════════════════════════════════════════════════════════════
   if (brand) {
-    // 'brandmodels' collection থেকে brand name দিয়ে _id খোঁজা
-    const BrandModel = mongoose.models['brandmodels'];
+    // VendorProduct.brand → 'brandmodels' collection এর _id
+    // mongoose.models এ registered model খুঁজতে হবে
+    // সম্ভাব্য model names: 'brandmodels', 'BrandModel', 'Brand'
+    const possibleBrandModelNames = ['brandmodels', 'BrandModel', 'Brand', 'brandmodel'];
+    let BrandModel: any = null;
+
+    for (const name of possibleBrandModelNames) {
+      if (mongoose.models[name]) {
+        BrandModel = mongoose.models[name];
+        break;
+      }
+    }
+
     if (BrandModel) {
       const brandDoc = await BrandModel.findOne({
         name: { $regex: `^${brand.trim()}$`, $options: 'i' },
       }).lean() as any;
 
       if (brandDoc) {
-        // ✅ ObjectId দিয়ে সরাসরি initial $match এ filter করা
-        matchStage.brand = brandDoc._id;
+        matchStage.brand = brandDoc._id;  // ✅ ObjectId দিয়ে initial $match এ filter
       } else {
-        // Brand DB তে নেই → empty return
         return {
           products: [],
           meta: { total: 0, page, limit, totalPages: 0, hasNext: false, hasPrev: false },
@@ -323,35 +339,83 @@ const getAllVendorProductsWithPaginationFromDB = async (params: {
     }
   }
 
-  // ── ৩. Sort stage ────────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════
+  // STEP 3: Color name → ObjectId(s)  (productOptions.color = ObjectId[])
+  // ══════════════════════════════════════════════════════════════
+  if (color) {
+    const colorDocs = await ProductColor.find({
+      colorName: { $regex: `^${color.trim()}$`, $options: 'i' },
+      status: 'active',
+    }).lean() as any[];
+
+    if (colorDocs.length > 0) {
+      // productOptions array এর ভেতরে color array তে যেকোনো একটা match হলেই হবে
+      matchStage['productOptions'] = {
+        $elemMatch: {
+          color: { $in: colorDocs.map((c) => c._id) },
+        },
+      };
+    } else {
+      return {
+        products: [],
+        meta: { total: 0, page, limit, totalPages: 0, hasNext: false, hasPrev: false },
+      };
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 4: Size name → ObjectId  (productOptions.size = ObjectId[])
+  // ══════════════════════════════════════════════════════════════
+  if (size) {
+    const sizeDoc = await ProductSize.findOne({
+      name: { $regex: `^${size.trim()}$`, $options: 'i' },
+      status: 'active',
+    }).lean() as any;
+
+    if (sizeDoc) {
+      if (matchStage['productOptions']) {
+        // color filter ইতিমধ্যে আছে, সেখানে size যোগ করতে হবে
+        matchStage['productOptions']['$elemMatch'].size = sizeDoc._id;
+      } else {
+        matchStage['productOptions'] = {
+          $elemMatch: {
+            size: sizeDoc._id,
+          },
+        };
+      }
+    } else {
+      return {
+        products: [],
+        meta: { total: 0, page, limit, totalPages: 0, hasNext: false, hasPrev: false },
+      };
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // STEP 5: Sort
+  // ══════════════════════════════════════════════════════════════
   const sortStage: any = {};
   if      (sortBy === 'price_low')  sortStage.discountPrice = 1;
   else if (sortBy === 'price_high') sortStage.discountPrice = -1;
   else if (sortBy === 'popularity') sortStage.sellCount     = -1;
   else                              sortStage.createdAt     = -1;
 
-  // ── ৪. Total count (filters সব apply হওয়ার পরে, pagination এর আগে) ──────
+  // ══════════════════════════════════════════════════════════════
+  // STEP 6: Total count — সব filter apply হওয়ার পরে, pagination এর আগে
+  // ══════════════════════════════════════════════════════════════
   const totalCount = await VendorProductModel.countDocuments(matchStage);
 
-  // ── ৫. Aggregation ────────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════
+  // STEP 7: Aggregation — filter → sort → paginate → lookup
+  // ══════════════════════════════════════════════════════════════
   const products = await VendorProductModel.aggregate([
-    { $match: matchStage },   // ✅ brand filter এখানে আছে
+    { $match: matchStage },   // ✅ brand + color + size সবই এখানে
     { $sort: sortStage },
     { $skip: skip },
     { $limit: limit },
     ...getProductLookupPipeline(),
 
-    // Color filter (populated name দিয়ে) — lookup এর পরে
-    ...(color
-      ? [{ $match: { 'productOptions.color': { $elemMatch: { $regex: color, $options: 'i' } } } }]
-      : []),
-
-    // Size filter — lookup এর পরে
-    ...(size
-      ? [{ $match: { 'productOptions.size': { $elemMatch: { $regex: `^${size}$`, $options: 'i' } } } }]
-      : []),
-
-    // Review data
+    // Review stats
     {
       $lookup: {
         from: 'reviews',
@@ -362,7 +426,7 @@ const getAllVendorProductsWithPaginationFromDB = async (params: {
     },
     {
       $addFields: {
-        totalReviews:  { $size: '$reviewData' },
+        totalReviews: { $size: '$reviewData' },
         averageRating: {
           $cond: [
             { $gt: [{ $size: '$reviewData' }, 0] },
