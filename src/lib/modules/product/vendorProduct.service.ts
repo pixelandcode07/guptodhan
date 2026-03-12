@@ -257,21 +257,18 @@ const getAllVendorProductsFromDB = async (page = 1, limit = 20) => {
 
 
 // ================================================================
-// 📋 GET ALL PRODUCTS WITH PAGINATION + FILTERS
-// ================================================================
-// ================================================================
-// ================================================================
-// ✅ vendorProduct.service.ts এ এই পুরো function টি replace করুন
-//    (getAllVendorProductsWithPaginationFromDB)
+// ✅ vendorProduct.service.ts এ এই function টি replace করুন
+//    getAllVendorProductsWithPaginationFromDB
 //
-
+// Multi-select support: brand=Asus,TpLink&color=Brown,Red
+// ================================================================
 
 const getAllVendorProductsWithPaginationFromDB = async (params: {
   page?: number;
   limit?: number;
   search?: string;
-  brand?: string;
-  color?: string;
+  brand?: string;   // comma-separated: "Asus,TpLink"
+  color?: string;   // comma-separated: "Brown,Red"
   size?: string;
   priceMin?: number;
   priceMax?: number;
@@ -291,9 +288,7 @@ const getAllVendorProductsWithPaginationFromDB = async (params: {
 
   const skip = (page - 1) * limit;
 
-  // ══════════════════════════════════════════════════════════════
-  // STEP 1: Base match (fast indexed fields)
-  // ══════════════════════════════════════════════════════════════
+  // ── STEP 1: Base match ────────────────────────────────────────────────────
   const matchStage: any = { status: 'active' };
 
   if (search) {
@@ -306,30 +301,21 @@ const getAllVendorProductsWithPaginationFromDB = async (params: {
     if (priceMax) matchStage.discountPrice.$lte = priceMax;
   }
 
-  // ══════════════════════════════════════════════════════════════
-  // STEP 2: Brand name → ObjectId  (pagination এর আগে resolve করতে হবে)
-  // ══════════════════════════════════════════════════════════════
+  // ── STEP 2: Brand (multi) → ObjectId array ────────────────────────────────
+  // URL param: brand=Asus,TpLink  →  ['Asus', 'TpLink']
   if (brand) {
-    // VendorProduct.brand → 'brandmodels' collection এর _id
-    // mongoose.models এ registered model খুঁজতে হবে
-    // সম্ভাব্য model names: 'brandmodels', 'BrandModel', 'Brand'
-    const possibleBrandModelNames = ['brandmodels', 'BrandModel', 'Brand', 'brandmodel'];
-    let BrandModel: any = null;
+    const brandNames = brand.split(',').map((b) => b.trim()).filter(Boolean);
 
-    for (const name of possibleBrandModelNames) {
-      if (mongoose.models[name]) {
-        BrandModel = mongoose.models[name];
-        break;
-      }
-    }
+    const BrandModel = mongoose.models['Brand'];
+    if (BrandModel && brandNames.length > 0) {
+      const brandDocs = await BrandModel.find({
+        name: { $in: brandNames.map((n) => new RegExp(`^${n}$`, 'i')) },
+        status: 'active',
+      }).lean() as any[];
 
-    if (BrandModel) {
-      const brandDoc = await BrandModel.findOne({
-        name: { $regex: `^${brand.trim()}$`, $options: 'i' },
-      }).lean() as any;
-
-      if (brandDoc) {
-        matchStage.brand = brandDoc._id;  // ✅ ObjectId দিয়ে initial $match এ filter
+      if (brandDocs.length > 0) {
+        // ✅ $in দিয়ে একাধিক brand একসাথে filter
+        matchStage.brand = { $in: brandDocs.map((b: any) => b._id) };
       } else {
         return {
           products: [],
@@ -339,33 +325,34 @@ const getAllVendorProductsWithPaginationFromDB = async (params: {
     }
   }
 
-  // ══════════════════════════════════════════════════════════════
-  // STEP 3: Color name → ObjectId(s)  (productOptions.color = ObjectId[])
-  // ══════════════════════════════════════════════════════════════
+  // ── STEP 3: Color (multi) → ObjectId array ────────────────────────────────
+  // URL param: color=Brown,Red  →  ['Brown', 'Red']
   if (color) {
-    const colorDocs = await ProductColor.find({
-      colorName: { $regex: `^${color.trim()}$`, $options: 'i' },
-      status: 'active',
-    }).lean() as any[];
+    const colorNames = color.split(',').map((c) => c.trim()).filter(Boolean);
 
-    if (colorDocs.length > 0) {
-      // productOptions array এর ভেতরে color array তে যেকোনো একটা match হলেই হবে
-      matchStage['productOptions'] = {
-        $elemMatch: {
-          color: { $in: colorDocs.map((c) => c._id) },
-        },
-      };
-    } else {
-      return {
-        products: [],
-        meta: { total: 0, page, limit, totalPages: 0, hasNext: false, hasPrev: false },
-      };
+    if (colorNames.length > 0) {
+      const colorDocs = await ProductColor.find({
+        colorName: { $in: colorNames.map((n) => new RegExp(`^${n}$`, 'i')) },
+        status: 'active',
+      }).lean() as any[];
+
+      if (colorDocs.length > 0) {
+        // ✅ productOptions array এ যেকোনো একটা option এ এই colors এর যেকোনো একটা থাকলেই হবে
+        matchStage['productOptions'] = {
+          $elemMatch: {
+            color: { $in: colorDocs.map((c: any) => c._id) },
+          },
+        };
+      } else {
+        return {
+          products: [],
+          meta: { total: 0, page, limit, totalPages: 0, hasNext: false, hasPrev: false },
+        };
+      }
     }
   }
 
-  // ══════════════════════════════════════════════════════════════
-  // STEP 4: Size name → ObjectId  (productOptions.size = ObjectId[])
-  // ══════════════════════════════════════════════════════════════
+  // ── STEP 4: Size (single) → ObjectId ─────────────────────────────────────
   if (size) {
     const sizeDoc = await ProductSize.findOne({
       name: { $regex: `^${size.trim()}$`, $options: 'i' },
@@ -374,13 +361,11 @@ const getAllVendorProductsWithPaginationFromDB = async (params: {
 
     if (sizeDoc) {
       if (matchStage['productOptions']) {
-        // color filter ইতিমধ্যে আছে, সেখানে size যোগ করতে হবে
+        // color ইতিমধ্যে আছে → same $elemMatch এ size যোগ
         matchStage['productOptions']['$elemMatch'].size = sizeDoc._id;
       } else {
         matchStage['productOptions'] = {
-          $elemMatch: {
-            size: sizeDoc._id,
-          },
+          $elemMatch: { size: sizeDoc._id },
         };
       }
     } else {
@@ -391,31 +376,23 @@ const getAllVendorProductsWithPaginationFromDB = async (params: {
     }
   }
 
-  // ══════════════════════════════════════════════════════════════
-  // STEP 5: Sort
-  // ══════════════════════════════════════════════════════════════
+  // ── STEP 5: Sort ──────────────────────────────────────────────────────────
   const sortStage: any = {};
   if      (sortBy === 'price_low')  sortStage.discountPrice = 1;
   else if (sortBy === 'price_high') sortStage.discountPrice = -1;
   else if (sortBy === 'popularity') sortStage.sellCount     = -1;
   else                              sortStage.createdAt     = -1;
 
-  // ══════════════════════════════════════════════════════════════
-  // STEP 6: Total count — সব filter apply হওয়ার পরে, pagination এর আগে
-  // ══════════════════════════════════════════════════════════════
+  // ── STEP 6: Count (pagination এর আগে) ────────────────────────────────────
   const totalCount = await VendorProductModel.countDocuments(matchStage);
 
-  // ══════════════════════════════════════════════════════════════
-  // STEP 7: Aggregation — filter → sort → paginate → lookup
-  // ══════════════════════════════════════════════════════════════
+  // ── STEP 7: Paginated aggregation ────────────────────────────────────────
   const products = await VendorProductModel.aggregate([
-    { $match: matchStage },   // ✅ brand + color + size সবই এখানে
+    { $match: matchStage },
     { $sort: sortStage },
     { $skip: skip },
     { $limit: limit },
     ...getProductLookupPipeline(),
-
-    // Review stats
     {
       $lookup: {
         from: 'reviews',
