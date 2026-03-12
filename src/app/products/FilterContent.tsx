@@ -503,7 +503,7 @@ export default function FilterContent({
           </div>
 
           {/* Drawer Footer */}
-          <div className="px-5 pt-3 pb-4 border-t border-gray-100 bg-white space-y-2">
+          <div className="px-5 pt-3 pb-4 mb-20 border-t border-gray-100 bg-white space-y-2">
             {/* Price apply (mobile only) */}
             {(priceMin || priceMax) && (
               <button
