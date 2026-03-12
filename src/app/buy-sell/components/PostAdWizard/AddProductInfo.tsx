@@ -59,7 +59,7 @@ export default function AddProductInfo({ form, onBack, onSubmit, isSubmitting }:
           exit="exit"
           className="space-y-4"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-5 md:px-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-5">
             {/* Left Column */}
             <div className="space-y-4">
               {/* Condition */}
@@ -262,7 +262,7 @@ export default function AddProductInfo({ form, onBack, onSubmit, isSubmitting }:
               Back
             </Button>
             
-            <Button type="button" onClick={handleFormSubmit} disabled={isSubmitting} className="min-w-[150px]">
+            <Button type="button" variant={"BlueBtn"} onClick={handleFormSubmit} disabled={isSubmitting} className="min-w-[150px]">
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

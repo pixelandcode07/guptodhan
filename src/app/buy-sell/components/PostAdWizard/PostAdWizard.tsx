@@ -124,17 +124,17 @@ export default function PostAdWizard() {
       formData.append('title', data.title || '');
       if (data.category?._id) formData.append('category', data.category._id);
       if (data.subCategory?._id) formData.append('subCategory', data.subCategory._id);
-      
+
       formData.append('division', data.division?.value || '');
       formData.append('district', data.district?.value || '');
       formData.append('upazila', data.upazila?.value || '');
       formData.append('condition', data.condition || '');
       formData.append('authenticity', data.authenticity || '');
-      
+
       formData.append('brand', getStringValue(data.brand));
       formData.append('productModel', getStringValue(data.productModel));
       formData.append('edition', getStringValue(data.edition));
-      
+
       formData.append('description', data.description || '');
       formData.append('price', data.price?.toString() || '0');
       formData.append('isNegotiable', data.isNegotiable.toString());
@@ -143,7 +143,7 @@ export default function PostAdWizard() {
       const compressedImages = await Promise.all(
         data.images.map(async (img) => {
           if (img instanceof File) {
-            if (img.size > 1024 * 1024) { 
+            if (img.size > 1024 * 1024) {
               const options = {
                 maxSizeMB: 0.8,
                 maxWidthOrHeight: 1920,
@@ -185,7 +185,7 @@ export default function PostAdWizard() {
       setActiveTab('step1');
     } catch (err: any) {
       console.error(err);
-      
+
       // ✅ SMART ERROR HANDLING FOR ZOD JSON ERRORS
       let errorMessage = 'Failed to submit ad. Please try again.';
       const responseData = err.response?.data;
@@ -202,7 +202,7 @@ export default function PostAdWizard() {
 
             if (field === 'description' && errorObj.code === 'too_small') {
               errorMessage = 'Description is too short. Please write at least 20 characters.';
-            } 
+            }
             else if (field) {
               const fieldName = String(field).charAt(0).toUpperCase() + String(field).slice(1);
               errorMessage = `${fieldName}: ${errorObj.message}`;
@@ -225,17 +225,18 @@ export default function PostAdWizard() {
 
   return (
     // ✅ Fix: Added pb-28 for mobile and px-4 for responsiveness
-    <div className="max-w-6xl mx-auto py-6 md:py-10 px-4 md:px-10 min-h-screen pb-28 md:pb-12">
-      
+    // <div className="max-w-6xl mx-auto py-6 md:py-10 px-4 md:px-10 min-h-screen pb-28 md:pb-12">
+    <div className="md:max-w-[95vw] xl:container mx-auto sm:px-8 py-2 min-h-screen pb-28 md:pb-12">
+      {/* md:max-w-[95vw] xl:container sm:px-8 mx-auto py-4 flex justify-between items-center */}
       {/* Mobile Title */}
       <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6 md:hidden">Post Your Ad</h1>
-      
+
       {/* Desktop Title & Back Button */}
-      <div className='hidden md:flex justify-between items-center mb-10'>
-        <h1 className="text-3xl font-bold"> Post Your Ad</h1>
+      <div className='hidden md:flex justify-between items-center mb-1'>
+        <h1 className="text-3xl font-bold text-[#00005E]"> Post Your Ad</h1>
         <Button variant={'BlueBtn'}>
           <Link href="/buy-sell" className='flex justify-center items-center gap-2'>
-            <MoveLeft className='w-4 h-4 text-gray-100' /> 
+            <MoveLeft className='w-4 h-4 text-gray-100' />
             <span>Back to Buy & Sell</span>
           </Link>
         </Button>
@@ -279,11 +280,11 @@ export default function PostAdWizard() {
             onNext={() => setActiveTab('step3')}
           />
 
-          <AddProductInfo 
-            form={form} 
-            onBack={() => setActiveTab('step2')} 
-            onSubmit={handleSubmit(onSubmit)} 
-            isSubmitting={isSubmitting} 
+          <AddProductInfo
+            form={form}
+            onBack={() => setActiveTab('step2')}
+            onSubmit={handleSubmit(onSubmit)}
+            isSubmitting={isSubmitting}
           />
         </Tabs>
       </form>
