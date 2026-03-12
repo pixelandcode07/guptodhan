@@ -1,11 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 export type Product = {
   _id: string;
   productTitle: string;
@@ -107,7 +108,7 @@ function ProductCard({ product }: { product: Product }) {
   );
 }
 
-// ─── Main FilterContent ───────────────────────────────────────────────────────
+// ─── FilterContent ────────────────────────────────────────────────────────────
 export default function FilterContent({
   initialProducts,
   initialColors,
@@ -125,20 +126,30 @@ export default function FilterContent({
   const pathname     = usePathname();
   const searchParams = useSearchParams();
 
-  // ── URL থেকে multi-select values parse (comma-separated) ──────────────────
+  // ── URL থেকে multi-select parse ───────────────────────────────────────────
   const parseMulti = (key: string): string[] => {
     const val = searchParams.get(key);
     if (!val) return [];
     return val.split(',').map((v) => v.trim()).filter(Boolean);
   };
 
-  const selectedBrands = parseMulti('brand');  // e.g. ['Asus', 'TpLink']
-  const selectedColors = parseMulti('color');  // e.g. ['Brown', 'Red']
+  const selectedBrands = parseMulti('brand');
+  const selectedColors = parseMulti('color');
   const currentSize    = searchParams.get('size') || undefined;
   const currentSort    = searchParams.get('sortBy') || 'createdAt';
   const currentPage    = Number(searchParams.get('page')) || 1;
 
-  // ── URL update helper ──────────────────────────────────────────────────────
+  // ── Price: controlled state ───────────────────────────────────────────────
+  const [priceMin, setPriceMin] = useState(searchParams.get('priceMin') || '');
+  const [priceMax, setPriceMax] = useState(searchParams.get('priceMax') || '');
+
+  // Reset button চাপলে বা URL manually clear হলে price fields ও clear হবে
+  useEffect(() => {
+    setPriceMin(searchParams.get('priceMin') || '');
+    setPriceMax(searchParams.get('priceMax') || '');
+  }, [searchParams]);
+
+  // ── URL update ────────────────────────────────────────────────────────────
   const updateURL = (updates: Record<string, string | undefined>) => {
     const params = new URLSearchParams(searchParams.toString());
     Object.entries(updates).forEach(([key, val]) => {
@@ -151,37 +162,46 @@ export default function FilterContent({
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  // ── Brand toggle ───────────────────────────────────────────────────────────
+  // ── Brand toggle (multi) ──────────────────────────────────────────────────
   const toggleBrand = (name: string) => {
     const next = selectedBrands.includes(name)
-      ? selectedBrands.filter((b) => b !== name)   // click again = unselect
+      ? selectedBrands.filter((b) => b !== name)
       : [...selectedBrands, name];
     updateURL({ brand: next.length > 0 ? next.join(',') : undefined, page: '1' });
   };
 
-  // ── Color toggle ───────────────────────────────────────────────────────────
+  // ── Color toggle (multi) ──────────────────────────────────────────────────
   const toggleColor = (name: string) => {
     const next = selectedColors.includes(name)
-      ? selectedColors.filter((c) => c !== name)   // click again = unselect
+      ? selectedColors.filter((c) => c !== name)
       : [...selectedColors, name];
     updateURL({ color: next.length > 0 ? next.join(',') : undefined, page: '1' });
   };
 
-  // ── Size toggle (single select) ────────────────────────────────────────────
+  // ── Size toggle (single, click again = deselect) ──────────────────────────
   const toggleSize = (name: string) => {
     updateURL({ size: currentSize === name ? undefined : name, page: '1' });
   };
 
-  // ── Sort ───────────────────────────────────────────────────────────────────
+  // ── Price apply ───────────────────────────────────────────────────────────
+  const applyPrice = () => {
+    updateURL({
+      priceMin: priceMin || undefined,
+      priceMax: priceMax || undefined,
+      page: '1',
+    });
+  };
+
+  // ── Sort ──────────────────────────────────────────────────────────────────
   const handleSortChange = (sortBy: string) => updateURL({ sortBy, page: '1' });
 
-  // ── Page ───────────────────────────────────────────────────────────────────
+  // ── Page ──────────────────────────────────────────────────────────────────
   const handlePageChange = (page: number) => {
     updateURL({ page: page.toString() });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // ── Reset ──────────────────────────────────────────────────────────────────
+  // ── Reset all ─────────────────────────────────────────────────────────────
   const handleReset = () => router.push(pathname, { scroll: false });
 
   const hasActiveFilters =
@@ -193,14 +213,17 @@ export default function FilterContent({
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
-      {/* ═══ SIDEBAR ════════════════════════════════════════════════════════ */}
+
+      {/* ════════════════════════════════════════════════════════
+          SIDEBAR
+      ════════════════════════════════════════════════════════ */}
       <aside className="w-full lg:w-64 xl:w-72 flex-shrink-0">
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sticky top-4">
 
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
               </svg>
@@ -218,88 +241,91 @@ export default function FilterContent({
 
           <div className="space-y-5 divide-y divide-gray-100">
 
-            {/* ── BRAND (multi-select checkboxes) ── */}
-            <div>
-              <div className="flex items-center justify-between mb-2.5">
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Brand</h3>
-                {selectedBrands.length > 0 && (
-                  <span className="text-[10px] bg-blue-100 text-blue-600 font-bold rounded-full px-2 py-0.5">
-                    {selectedBrands.length}
-                  </span>
-                )}
-              </div>
-              <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-                {initialBrands.map((b) => {
-                  const active = selectedBrands.includes(b.name);
-                  return (
-                    <label
-                      key={b._id}
-                      className="flex items-center gap-2.5 cursor-pointer group"
-                      onClick={() => toggleBrand(b.name)}
-                    >
-                      {/* Custom checkbox */}
-                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                        active ? 'bg-blue-600 border-blue-600' : 'border-gray-300 group-hover:border-blue-400'
-                      }`}>
-                        {active && (
-                          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </div>
-                      <span className={`text-sm transition-colors ${
-                        active ? 'text-blue-600 font-semibold' : 'text-gray-600 group-hover:text-gray-900'
-                      }`}>
-                        {b.name}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* ── COLOR (multi-select color swatches) ── */}
-            <div className="pt-4">
-              <div className="flex items-center justify-between mb-2.5">
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Color</h3>
-                {selectedColors.length > 0 && (
-                  <span className="text-[10px] bg-blue-100 text-blue-600 font-bold rounded-full px-2 py-0.5">
-                    {selectedColors.length}
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {initialColors.map((c) => {
-                  const active = selectedColors.includes(c.colorName);
-                  return (
-                    <button
-                      key={c._id}
-                      onClick={() => toggleColor(c.colorName)}
-                      title={c.colorName}
-                      className={`relative w-7 h-7 rounded-full border-2 transition-all hover:scale-110 ${
-                        active
-                          ? 'border-blue-600 scale-110 shadow-md ring-2 ring-blue-300 ring-offset-1'
-                          : 'border-gray-200 hover:border-gray-400'
-                      }`}
-                      style={{ backgroundColor: c.colorCode }}
-                    >
-                      {active && (
-                        <span className="absolute inset-0 flex items-center justify-center">
-                          <svg className="w-3 h-3 text-white drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
+            {/* ── BRAND (multi-select) ─────────────────────────── */}
+            {initialBrands.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-2.5">
+                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Brand</h3>
+                  {selectedBrands.length > 0 && (
+                    <span className="text-[10px] bg-blue-100 text-blue-600 font-bold rounded-full px-2 py-0.5">
+                      {selectedBrands.length}
+                    </span>
+                  )}
+                </div>
+                <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                  {initialBrands.map((b) => {
+                    const active = selectedBrands.includes(b.name);
+                    return (
+                      <label
+                        key={b._id}
+                        className="flex items-center gap-2.5 cursor-pointer group"
+                        onClick={() => toggleBrand(b.name)}
+                      >
+                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                          active ? 'bg-blue-600 border-blue-600' : 'border-gray-300 group-hover:border-blue-400'
+                        }`}>
+                          {active && (
+                            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className={`text-sm transition-colors ${
+                          active ? 'text-blue-600 font-semibold' : 'text-gray-600 group-hover:text-gray-900'
+                        }`}>
+                          {b.name}
                         </span>
-                      )}
-                    </button>
-                  );
-                })}
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
-              {selectedColors.length > 0 && (
-                <p className="text-xs text-gray-400 italic">{selectedColors.join(', ')}</p>
-              )}
-            </div>
+            )}
 
-            {/* ── SIZE (single select, click again = deselect) ── */}
+            {/* ── COLOR (multi-select swatches) ────────────────── */}
+            {initialColors.length > 0 && (
+              <div className="pt-4">
+                <div className="flex items-center justify-between mb-2.5">
+                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Color</h3>
+                  {selectedColors.length > 0 && (
+                    <span className="text-[10px] bg-blue-100 text-blue-600 font-bold rounded-full px-2 py-0.5">
+                      {selectedColors.length}
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {initialColors.map((c) => {
+                    const active = selectedColors.includes(c.colorName);
+                    return (
+                      <button
+                        key={c._id}
+                        onClick={() => toggleColor(c.colorName)}
+                        title={c.colorName}
+                        className={`relative w-7 h-7 rounded-full border-2 transition-all hover:scale-110 ${
+                          active
+                            ? 'border-blue-600 scale-110 shadow-md ring-2 ring-blue-300 ring-offset-1'
+                            : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                        style={{ backgroundColor: c.colorCode }}
+                      >
+                        {active && (
+                          <span className="absolute inset-0 flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedColors.length > 0 && (
+                  <p className="text-xs text-gray-400 italic">{selectedColors.join(', ')}</p>
+                )}
+              </div>
+            )}
+
+            {/* ── SIZE (single select) ─────────────────────────── */}
             {initialSizes.length > 0 && (
               <div className="pt-4">
                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5">Size</h3>
@@ -324,43 +350,62 @@ export default function FilterContent({
               </div>
             )}
 
-            {/* ── PRICE ── */}
+            {/* ── PRICE RANGE ──────────────────────────────────── */}
             <div className="pt-4">
               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2.5">Price Range</h3>
-              <div className="flex gap-2 items-center">
+              <div className="flex gap-2 items-center mb-2">
                 <input
                   type="number"
                   placeholder="Min ৳"
-                  defaultValue={searchParams.get('priceMin') || ''}
-                  onBlur={(e) => updateURL({
-                    priceMin: e.target.value || undefined,
-                    page: '1',
-                  })}
-                  className="w-full h-8 border border-gray-200 rounded-lg px-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  value={priceMin}
+                  onChange={(e) => setPriceMin(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && applyPrice()}
+                  className="w-full h-8 border border-gray-200 rounded-lg px-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                 />
-                <span className="text-gray-400 flex-shrink-0">–</span>
+                <span className="text-gray-400 flex-shrink-0 text-sm">–</span>
                 <input
                   type="number"
                   placeholder="Max ৳"
-                  defaultValue={searchParams.get('priceMax') || ''}
-                  onBlur={(e) => updateURL({
-                    priceMax: e.target.value || undefined,
-                    page: '1',
-                  })}
-                  className="w-full h-8 border border-gray-200 rounded-lg px-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  value={priceMax}
+                  onChange={(e) => setPriceMax(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && applyPrice()}
+                  className="w-full h-8 border border-gray-200 rounded-lg px-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                 />
               </div>
+              <button
+                onClick={applyPrice}
+                disabled={!priceMin && !priceMax}
+                className="w-full h-8 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-lg transition-all"
+              >
+                Apply Price
+              </button>
+              {(searchParams.get('priceMin') || searchParams.get('priceMax')) && (
+                <button
+                  onClick={() => {
+                    setPriceMin('');
+                    setPriceMax('');
+                    updateURL({ priceMin: undefined, priceMax: undefined, page: '1' });
+                  }}
+                  className="mt-1.5 w-full text-xs text-red-400 hover:text-red-600 transition-colors text-center"
+                >
+                  Clear price filter
+                </button>
+              )}
             </div>
 
           </div>
         </div>
       </aside>
 
-      {/* ═══ MAIN ═══════════════════════════════════════════════════════════ */}
+      {/* ════════════════════════════════════════════════════════
+          MAIN CONTENT
+      ════════════════════════════════════════════════════════ */}
       <main className="flex-1 min-w-0">
+
         {/* Top bar */}
         <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 mb-5 flex flex-wrap items-center gap-3 shadow-sm">
-          <p className="text-sm text-gray-600">
+          {/* Count */}
+          <p className="text-sm text-gray-600 flex-shrink-0">
             {meta ? (
               <>
                 Showing{' '}
@@ -371,13 +416,13 @@ export default function FilterContent({
                 <span className="font-bold text-gray-900">{meta.total}</span> products
               </>
             ) : (
-              <span className="font-bold">{initialProducts.length} products found</span>
+              <span className="font-bold">{initialProducts.length} products</span>
             )}
           </p>
 
           {/* Active filter pills */}
           {(selectedBrands.length > 0 || selectedColors.length > 0 || currentSize) && (
-            <div className="flex flex-wrap gap-1.5 flex-1">
+            <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
               {selectedBrands.map((b) => (
                 <button
                   key={b}
@@ -416,7 +461,8 @@ export default function FilterContent({
             </div>
           )}
 
-          <div className="flex items-center gap-2 ml-auto">
+          {/* Sort */}
+          <div className="flex items-center gap-2 ml-auto flex-shrink-0">
             <span className="text-sm text-gray-500">Sort by:</span>
             <select
               value={currentSort}
@@ -508,6 +554,7 @@ export default function FilterContent({
             </p>
           </div>
         )}
+
       </main>
     </div>
   );
