@@ -270,68 +270,112 @@ const getAllVendorProductsWithPaginationFromDB = async (params: {
   sortBy?: string;
 }) => {
   const {
-    page = 1,
-    limit = 12,
+    page     = 1,
+    limit    = 12,
     search,
     brand,
     color,
     size,
     priceMin,
     priceMax,
-    sortBy = 'createdAt',
+    sortBy   = 'createdAt',
   } = params;
-
+ 
   const skip = (page - 1) * limit;
-
-  // ✅ Match stage build করুন
+ 
+  // ── Base match (indexed fields only) ────────────────────────────────────
   const matchStage: any = { status: 'active' };
-
+ 
   if (search) {
     matchStage.productTitle = { $regex: search, $options: 'i' };
   }
-  if (priceMin || priceMax) {
-    matchStage.discountPrice = {};
-    if (priceMin) matchStage.discountPrice.$gte = priceMin;
-    if (priceMax) matchStage.discountPrice.$lte = priceMax;
+ 
+  if (priceMin !== undefined || priceMax !== undefined) {
+    const priceCondition: any = {};
+    if (priceMin !== undefined) priceCondition.$gte = priceMin;
+    if (priceMax !== undefined) priceCondition.$lte = priceMax;
+    // Match either discountPrice or productPrice in range
+    matchStage.$or = [
+      { discountPrice: priceCondition },
+      { productPrice:  priceCondition },
+    ];
   }
-
-  // ✅ Sort stage
+ 
+  // ── Resolve Brand name → ObjectId ───────────────────────────────────────
+  if (brand) {
+    // The brand field in VendorProduct references the 'brandmodels' collection.
+    // We use mongoose to look it up by name so we can filter before pagination.
+    const BrandModel = mongoose.models['brandmodels'] as any;
+    if (BrandModel) {
+      const brandDoc = await BrandModel.findOne({
+        name: { $regex: `^${brand.trim()}$`, $options: 'i' },
+      }).lean();
+ 
+      if (brandDoc) {
+        matchStage.brand = brandDoc._id;
+      } else {
+        // Brand name given but not in DB → empty result
+        return {
+          products: [],
+          meta: { total: 0, page, limit, totalPages: 0, hasNext: false, hasPrev: false },
+        };
+      }
+    }
+  }
+ 
+  // ── Resolve Color name → ObjectId(s) ────────────────────────────────────
+  if (color) {
+    const colorDocs = await ProductColor.find({
+      colorName: { $regex: color.trim(), $options: 'i' },
+      status: 'active',
+    }).lean();
+ 
+    if (colorDocs.length > 0) {
+      matchStage['productOptions.color'] = { $in: colorDocs.map((c: any) => c._id) };
+    } else {
+      return {
+        products: [],
+        meta: { total: 0, page, limit, totalPages: 0, hasNext: false, hasPrev: false },
+      };
+    }
+  }
+ 
+  // ── Resolve Size name → ObjectId ─────────────────────────────────────────
+  if (size) {
+    const sizeDoc = await ProductSize.findOne({
+      name: { $regex: `^${size.trim()}$`, $options: 'i' },
+      status: 'active',
+    }).lean();
+ 
+    if (sizeDoc) {
+      matchStage['productOptions.size'] = (sizeDoc as any)._id;
+    } else {
+      return {
+        products: [],
+        meta: { total: 0, page, limit, totalPages: 0, hasNext: false, hasPrev: false },
+      };
+    }
+  }
+ 
+  // ── Sort ─────────────────────────────────────────────────────────────────
   const sortStage: any = {};
-  if (sortBy === 'price_low') sortStage.discountPrice = 1;
+  if      (sortBy === 'price_low')  sortStage.discountPrice = 1;
   else if (sortBy === 'price_high') sortStage.discountPrice = -1;
-  else if (sortBy === 'popularity') sortStage.sellCount = -1;
-  else sortStage.createdAt = -1;
-
-  // ✅ Total count (pagination এর জন্য)
+  else if (sortBy === 'popularity') sortStage.sellCount     = -1;
+  else                              sortStage.createdAt     = -1;
+ 
+  // ── Total count (ALL filters applied, BEFORE pagination) ─────────────────
   const totalCount = await VendorProductModel.countDocuments(matchStage);
-
+ 
+  // ── Paginated aggregation ─────────────────────────────────────────────────
   const products = await VendorProductModel.aggregate([
-    { $match: matchStage },
+    { $match: matchStage },     // ← all filters here
     { $sort: sortStage },
-    { $skip: skip },
+    { $skip: skip },            // ← pagination after filters
     { $limit: limit },
     ...getProductLookupPipeline(),
-
-    // Brand filter — lookup এর পরে
-    ...(brand ? [{ $match: { 'brand.name': brand } }] : []),
-
-    // Color filter
-    ...(color
-      ? [{
-          $match: {
-            'productOptions.color': {
-              $elemMatch: { $regex: color, $options: 'i' },
-            },
-          },
-        }]
-      : []),
-
-    // Size filter
-    ...(size
-      ? [{ $match: { 'productOptions.size': size } }]
-      : []),
-
-    // Review data
+ 
+    // Inline review stats
     {
       $lookup: {
         from: 'reviews',
@@ -342,7 +386,7 @@ const getAllVendorProductsWithPaginationFromDB = async (params: {
     },
     {
       $addFields: {
-        totalReviews: { $size: '$reviewData' },
+        totalReviews:  { $size: '$reviewData' },
         averageRating: {
           $cond: [
             { $gt: [{ $size: '$reviewData' }, 0] },
@@ -354,21 +398,22 @@ const getAllVendorProductsWithPaginationFromDB = async (params: {
     },
     { $project: { reviewData: 0 } },
   ]);
-
+ 
   const populatedProducts = await populateColorAndSizeNamesForProducts(products);
-
+ 
   return {
     products: populatedProducts,
     meta: {
-      total: totalCount,
+      total:      totalCount,
       page,
       limit,
       totalPages: Math.ceil(totalCount / limit),
-      hasNext: page < Math.ceil(totalCount / limit),
-      hasPrev: page > 1,
+      hasNext:    page < Math.ceil(totalCount / limit),
+      hasPrev:    page > 1,
     },
   };
 };
+ 
 
 // ===================================
 // ✅ GET ACTIVE PRODUCTS (WITH PAGINATION)
