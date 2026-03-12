@@ -243,25 +243,28 @@ function FilterPanel({
             className="w-full h-9 border border-gray-200 rounded-xl px-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-gray-50"
           />
         </div>
-        <button
-          onClick={applyPrice}
-          disabled={!priceMin && !priceMax}
-          className="w-full h-9 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-xl transition-all duration-150"
-        >
-          Apply Price Filter
-        </button>
-        {(searchParams.get('priceMin') || searchParams.get('priceMax')) && (
+        {/* Desktop: show apply button inline. Mobile: button is in drawer footer */}
+        <div className="hidden lg:block">
           <button
-            onClick={() => {
-              setPriceMin('');
-              setPriceMax('');
-              updateURL({ priceMin: undefined, priceMax: undefined, page: '1' });
-            }}
-            className="mt-1.5 w-full text-xs text-red-400 hover:text-red-600 transition-colors text-center py-1"
+            onClick={applyPrice}
+            disabled={!priceMin && !priceMax}
+            className="w-full h-9 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-xl transition-all duration-150"
           >
-            Clear price filter ×
+            Apply Price Filter
           </button>
-        )}
+          {(searchParams.get('priceMin') || searchParams.get('priceMax')) && (
+            <button
+              onClick={() => {
+                setPriceMin('');
+                setPriceMax('');
+                updateURL({ priceMin: undefined, priceMax: undefined, page: '1' });
+              }}
+              className="mt-1.5 w-full text-xs text-red-400 hover:text-red-600 transition-colors text-center py-1"
+            >
+              Clear price filter ×
+            </button>
+          )}
+        </div>
       </div>
 
     </div>
@@ -495,12 +498,34 @@ export default function FilterContent({
           </div>
 
           {/* Drawer Body */}
-          <div className="overflow-y-auto px-5 py-4" style={{ maxHeight: 'calc(88vh - 130px)' }}>
+          <div className="overflow-y-auto px-5 py-4 pb-6" style={{ maxHeight: 'calc(88vh - 160px)' }}>
             <FilterPanel {...filterPanelProps} />
           </div>
 
           {/* Drawer Footer */}
-          <div className="px-5 py-3 border-t border-gray-100 bg-white">
+          <div className="px-5 pt-3 pb-4 border-t border-gray-100 bg-white space-y-2">
+            {/* Price apply (mobile only) */}
+            {(priceMin || priceMax) && (
+              <button
+                onClick={applyPrice}
+                className="w-full h-10 bg-gray-800 hover:bg-gray-900 text-white text-sm font-semibold rounded-2xl transition-all active:scale-95"
+              >
+                Apply Price Filter
+              </button>
+            )}
+            {(searchParams.get('priceMin') || searchParams.get('priceMax')) && !priceMin && !priceMax && (
+              <button
+                onClick={() => {
+                  setPriceMin('');
+                  setPriceMax('');
+                  updateURL({ priceMin: undefined, priceMax: undefined, page: '1' });
+                  setDrawerOpen(false);
+                }}
+                className="w-full h-10 border border-red-200 text-red-500 text-sm font-semibold rounded-2xl transition-all active:scale-95"
+              >
+                Clear Price Filter
+              </button>
+            )}
             <button
               onClick={() => setDrawerOpen(false)}
               className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-2xl transition-all active:scale-95 shadow-lg shadow-blue-200"
