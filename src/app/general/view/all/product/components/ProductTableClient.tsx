@@ -1,276 +1,242 @@
 'use client';
 
-import * as React from 'react';
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  SortingState,
-  useReactTable,
-  RowSelectionState,
-} from '@tanstack/react-table';
-import {
-  Table, TableBody, TableCell,
-  TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
-import { Input }  from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from 'lucide-react';
+import { DataTable } from "@/components/TableHelper/data-table";
+import { Product, getProductColumns } from "@/components/TableHelper/product_columns";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import axios from "axios";
+import { useSession } from "next-auth/react";
+import type { Session } from "next-auth";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import FiltersBar from "./FiltersBar";
+import { downloadProductsCSV } from "./csv";
+import Dialogs from "./Dialogs";
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
-  data: TData[];
-  setData?: React.Dispatch<React.SetStateAction<any>>;
-  initialPageIndex?: number;              // URL থেকে আসা (0-indexed), শুধু mount এ use হবে
-  onPageChange?: (pageIndex: number) => void; // page click এ URL update
+type ApiProduct = {
+  _id: string;
+  productId: string;
+  productTitle: string;
+  slug?: string;
+  category?: { _id?: string; name?: string } | string | null;
+  vendorStoreId?: { _id?: string; storeName?: string } | string | null;
+  vendorName?: string | null;
+  brand?: { _id?: string; name?: string } | string | null;
+  flag?: { _id?: string; name?: string } | string | null;
+  warranty?: { _id?: string; warrantyName?: string } | string | null;
+  weightUnit?: { _id?: string; name?: string } | string | null;
+  productPrice?: number;
+  discountPrice?: number;
+  stock?: number;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  thumbnailImage?: string;
+};
+
+type ApiCategory = { _id: string; name: string; status: 'active' | 'inactive' };
+type ApiStore    = { _id: string; storeName: string; status: 'active' | 'inactive' };
+type ApiFlag     = { _id: string; name: string; status: 'active' | 'inactive' };
+
+interface ProductTableClientProps {
+  initialData: {
+    products: ApiProduct[];
+    categories: ApiCategory[];
+    stores: ApiStore[];
+    flags: ApiFlag[];
+  };
+  initialPage?: number; // ✅ server থেকে pass করা (0-indexed)
 }
 
-export function DataTable<TData, TValue>({
-  columns,
-  data,
-  initialPageIndex = 0,
-  onPageChange,
-}: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting]           = React.useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = React.useState('');
-  const [pageSize, setPageSize]         = React.useState(10);
-  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
-  const [pageIndex, setPageIndex]       = React.useState(initialPageIndex);
+export default function ProductTableClient({ initialData, initialPage = 0 }: ProductTableClientProps) {
+  const router = useRouter();
 
-  // ✅ KEY FIX: শুধু বাইরে থেকে (URL back/forward) initialPageIndex change হলে sync করবে
-  // নিজের page click এ loop হবে না — ref দিয়ে track করা হচ্ছে
-  const isInternalChange = React.useRef(false);
-  const prevInitialPage  = React.useRef(initialPageIndex);
+  const [products, setProducts]           = useState<ApiProduct[]>(initialData.products || []);
+  const [rows, setRows]                   = useState<Product[]>([]);
+  const [categoryMap, setCategoryMap]     = useState<Record<string, string>>({});
+  const [storeMap, setStoreMap]           = useState<Record<string, string>>({});
+  const [flagMap, setFlagMap]             = useState<Record<string, string>>({});
+  const [deleteOpen, setDeleteOpen]       = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isDeleting, setIsDeleting]       = useState(false);
+  const [statusToggleOpen, setStatusToggleOpen] = useState(false);
+  const [productToToggle, setProductToToggle]   = useState<Product | null>(null);
+  const [isToggling, setIsToggling]       = useState(false);
+  const [search, setSearch]               = useState('');
 
-  React.useEffect(() => {
-    // Internal page click এ আমরা নিজেই isInternalChange = true করি
-    // সেক্ষেত্রে এই effect কিছু করবে না
-    if (isInternalChange.current) {
-      isInternalChange.current = false;
-      return;
+  const { data: session } = useSession();
+  type AugmentedSession = Session & { accessToken?: string; user?: Session['user'] & { role?: string } };
+  const s        = session as AugmentedSession | null;
+  const token    = s?.accessToken;
+  const userRole = s?.user?.role;
+
+  // ── Page change: URL update ───────────────────────────────────────────────
+  const handlePageChange = useCallback((pageIndex: number) => {
+    // ✅ replace ব্যবহার করছি push নয় — back button history pollute হবে না
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', String(pageIndex + 1));
+    window.history.replaceState({}, '', url.toString());
+  }, []);
+
+  // 1. Setup Maps
+  useEffect(() => {
+    const cMap: Record<string, string> = {};
+    initialData.categories.filter(c => c.status === 'active').forEach(c => { cMap[c._id] = c.name; });
+    setCategoryMap(cMap);
+
+    const sMap: Record<string, string> = {};
+    initialData.stores.filter(s => s.status === 'active').forEach(st => { sMap[st._id] = st.storeName; });
+    setStoreMap(sMap);
+
+    const fMap: Record<string, string> = {};
+    initialData.flags.filter(f => f.status === 'active').forEach(f => { fMap[f._id] = f.name; });
+    setFlagMap(fMap);
+  }, [initialData]);
+
+  // 2. Map Products → Rows
+  useEffect(() => {
+    if (!Array.isArray(products)) { setRows([]); return; }
+
+    setRows(products.map((p, idx) => {
+      let categoryName = '';
+      if (typeof p.category === 'string')   categoryName = categoryMap[p.category] || p.category;
+      else if (p.category?.name)            categoryName = p.category.name;
+      categoryName = categoryName || 'N/A';
+
+      let storeName = '';
+      if (p.vendorName)                           storeName = p.vendorName;
+      else if (typeof p.vendorStoreId === 'string') storeName = storeMap[p.vendorStoreId] || p.vendorStoreId;
+      else if (p.vendorStoreId?.storeName)        storeName = p.vendorStoreId.storeName;
+      storeName = storeName || 'N/A';
+
+      let flagName = '';
+      if (typeof p.flag === 'string') flagName = flagMap[p.flag] || p.flag;
+      else if (p.flag?.name)          flagName = p.flag.name;
+      else if (p.flag?._id)           flagName = flagMap[p.flag._id] || '';
+
+      return {
+        id:          idx + 1,
+        _id:         p._id,
+        slug:        p.slug || '',
+        image:       p.thumbnailImage || '',
+        category:    categoryName,
+        name:        p.productTitle || '',
+        store:       storeName,
+        price:       p.productPrice   != null ? String(p.productPrice)  : '',
+        offer_price: p.discountPrice  != null ? String(p.discountPrice) : '',
+        stock:       p.stock          != null ? String(p.stock)         : '',
+        flag:        flagName,
+        status:      p.status === 'active' ? 'Active' : 'Inactive',
+        created_at:  p.createdAt ? new Date(p.createdAt).toLocaleString() : '',
+      };
+    }));
+  }, [products, categoryMap, storeMap, flagMap]);
+
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(r => r.name.toLowerCase().includes(q));
+  }, [rows, search]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const onView = useCallback((product: Product) => {
+    if (product.slug) router.push(`/product/${product.slug}`);
+    else toast.error('Product not found');
+  }, [router]);
+
+  const onEdit = useCallback((product: Product) => {
+    if (!product._id) { toast.error('Product ID not found.'); return; }
+    // ✅ current page URL সহ returnPath পাঠানো
+    const currentURL = window.location.pathname + window.location.search;
+    const returnPath = encodeURIComponent(currentURL);
+    router.push(`/general/edit/product/${product._id}?returnPath=${returnPath}`);
+  }, [router]);
+
+  const onDelete       = useCallback((p: Product) => { setProductToDelete(p); setDeleteOpen(true); }, []);
+  const onToggleStatus = useCallback((p: Product) => { setProductToToggle(p); setStatusToggleOpen(true); }, []);
+
+  const confirmStatusToggle = useCallback(async () => {
+    if (!productToToggle?._id) return;
+    const newStatus = productToToggle.status === 'Active' ? 'inactive' : 'active';
+    setIsToggling(true);
+    try {
+      await axios.patch(`/api/v1/product/${productToToggle._id}`,
+        { status: newStatus },
+        { headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(userRole ? { 'x-user-role': userRole } : {}) } }
+      );
+      toast.success(`Product ${newStatus === 'active' ? 'activated' : 'deactivated'}!`);
+      setStatusToggleOpen(false);
+      setProductToToggle(null);
+      setProducts(prev => prev.map(p => p._id === productToToggle._id ? { ...p, status: newStatus as 'active' | 'inactive' } : p));
+      router.refresh();
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to update status');
+    } finally {
+      setIsToggling(false);
     }
-    // বাইরে থেকে (edit থেকে ফিরে আসা) page change হলে sync করবে
-    if (initialPageIndex !== prevInitialPage.current) {
-      prevInitialPage.current = initialPageIndex;
-      setPageIndex(initialPageIndex);
+  }, [productToToggle, token, userRole, router]);
+
+  const confirmDelete = useCallback(async () => {
+    if (!productToDelete?._id) return;
+    setIsDeleting(true);
+    try {
+      await axios.delete(`/api/v1/product/${productToDelete._id}`, {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(userRole ? { 'x-user-role': userRole } : {}) },
+      });
+      toast.success('Product deleted!');
+      setDeleteOpen(false);
+      setProductToDelete(null);
+      setProducts(prev => prev.filter(p => p._id !== productToDelete._id));
+      router.refresh();
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to delete');
+    } finally {
+      setIsDeleting(false);
     }
-  }, [initialPageIndex]);
+  }, [productToDelete, token, userRole, router]);
 
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel:       getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel:     getSortedRowModel(),
-    getFilteredRowModel:   getFilteredRowModel(),
-    onSortingChange:       setSorting,
-    onGlobalFilterChange:  setGlobalFilter,
-    onRowSelectionChange:  setRowSelection,
-    state: {
-      sorting,
-      globalFilter,
-      rowSelection,
-      pagination: { pageIndex, pageSize },
-    },
-    onPaginationChange: (updater) => {
-      const newState =
-        typeof updater === 'function'
-          ? updater({ pageIndex, pageSize })
-          : updater;
+  const columns = useMemo(
+    () => getProductColumns({ onView, onEdit, onDelete, onToggleStatus }),
+    [onView, onEdit, onDelete, onToggleStatus]
+  );
 
-      // ✅ internal change হিসেবে mark করা — useEffect loop হবে না
-      isInternalChange.current = true;
-      prevInitialPage.current  = newState.pageIndex;
-
-      setPageIndex(newState.pageIndex);
-      if (newState.pageSize !== pageSize) setPageSize(newState.pageSize);
-
-      // URL update (page click এ)
-      if (onPageChange) onPageChange(newState.pageIndex);
-    },
-    enableRowSelection: true,
-  });
-
-  const pageCount = table.getPageCount();
-  const totalRows = table.getFilteredRowModel().rows.length;
-  const startRow  = pageIndex * pageSize + 1;
-  const endRow    = Math.min((pageIndex + 1) * pageSize, totalRows);
+  const onDownloadCSV = useCallback(() => {
+    if (!downloadProductsCSV(rows)) toast.error('No data to export');
+    else toast.success(`Exported ${rows.length} products`);
+  }, [rows]);
 
   return (
-    <div className="w-full space-y-3">
+    <>
+      <FiltersBar
+        search={search}
+        onSearchChange={setSearch}
+        isSearching={false}
+        onDownloadCSV={onDownloadCSV}
+      />
 
-      {/* Top Controls */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-white px-4 py-3 rounded-xl border border-gray-200 shadow-sm">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <span>Show</span>
-          <select
-            value={pageSize}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              setPageSize(val);
-              table.setPageSize(val);
-            }}
-            className="h-8 w-16 rounded-md border border-gray-300 text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-          >
-            {[10, 25, 50, 100].map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <span>entries</span>
-        </div>
-
-        <div className="relative w-full sm:w-64">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <Input
-            placeholder="Search products..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="h-9 pl-8 border-gray-300 focus:ring-blue-500 text-sm"
-          />
+      <div className="mb-4 sm:mb-6">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
+          <div className="min-w-[840px]">
+            <DataTable
+              columns={columns}
+              data={filteredRows}
+              initialPageIndex={initialPage}
+              onPageChange={handlePageChange}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
-          <Table className="min-w-[1400px] w-full border-collapse">
-            <TableHeader>
-              {table.getHeaderGroups().map((hg) => (
-                <TableRow key={hg.id} className="bg-gray-50 border-b border-gray-200 hover:bg-gray-50">
-                  {hg.headers.map((h) => (
-                    <TableHead
-                      key={h.id}
-                      onClick={h.column.getToggleSortingHandler()}
-                      className="h-11 px-3 text-[11px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap cursor-pointer select-none"
-                    >
-                      <div className="flex items-center gap-1">
-                        {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
-                        {h.column.getCanSort() && (
-                          <span className="text-gray-400 text-[10px]">
-                            {h.column.getIsSorted() === 'asc' ? ' ↑' : h.column.getIsSorted() === 'desc' ? ' ↓' : ' ↕'}
-                          </span>
-                        )}
-                      </div>
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row, i) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() ? 'selected' : undefined}
-                    className={`border-b border-gray-100 last:border-0 transition-colors hover:bg-blue-50/30 ${
-                      row.getIsSelected() ? 'bg-blue-50' : i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
-                    }`}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="px-3 py-2.5 text-sm text-gray-700 whitespace-nowrap">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-32 text-center text-gray-400 italic text-sm">
-                    No entries found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
-      {/* Bottom Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white px-4 py-3 rounded-xl border border-gray-200 shadow-sm">
-        <div className="text-sm text-gray-500">
-          {totalRows > 0 ? (
-            <>
-              Showing{' '}
-              <span className="font-medium text-gray-700">{startRow}</span>
-              {' '}to{' '}
-              <span className="font-medium text-gray-700">{endRow}</span>
-              {' '}of{' '}
-              <span className="font-medium text-gray-700">{totalRows}</span>
-              {' '}entries
-              {Object.keys(rowSelection).length > 0 && (
-                <span className="ml-2 text-blue-600">({Object.keys(rowSelection).length} selected)</span>
-              )}
-            </>
-          ) : 'No entries'}
-        </div>
-
-        <div className="flex items-center gap-1">
-          <Button variant="outline" size="sm"
-            onClick={() => table.setPageIndex(0)}
-            disabled={!table.getCanPreviousPage()}
-            className="h-8 w-8 p-0 border-gray-300"
-          >
-            <ChevronsLeft size={14} />
-          </Button>
-          <Button variant="outline" size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            className="h-8 px-3 border-gray-300 text-xs"
-          >
-            <ChevronLeft size={14} className="mr-1" /> Previous
-          </Button>
-
-          {Array.from({ length: Math.min(pageCount, 5) }, (_, i) => {
-            let pageNum: number;
-            if (pageCount <= 5)               pageNum = i;
-            else if (pageIndex < 3)           pageNum = i;
-            else if (pageIndex > pageCount - 4) pageNum = pageCount - 5 + i;
-            else                              pageNum = pageIndex - 2 + i;
-            return (
-              <Button
-                key={pageNum}
-                variant={pageIndex === pageNum ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => table.setPageIndex(pageNum)}
-                className={`h-8 w-8 p-0 text-xs border-gray-300 ${
-                  pageIndex === pageNum ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700' : ''
-                }`}
-              >
-                {pageNum + 1}
-              </Button>
-            );
-          })}
-
-          {pageCount > 5 && pageIndex < pageCount - 3 && (
-            <span className="text-gray-400 text-xs px-1">...</span>
-          )}
-          {pageCount > 5 && pageIndex < pageCount - 3 && (
-            <Button variant="outline" size="sm"
-              onClick={() => table.setPageIndex(pageCount - 1)}
-              className="h-8 w-8 p-0 text-xs border-gray-300"
-            >
-              {pageCount}
-            </Button>
-          )}
-
-          <Button variant="outline" size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            className="h-8 px-3 border-gray-300 text-xs"
-          >
-            Next <ChevronRight size={14} className="ml-1" />
-          </Button>
-          <Button variant="outline" size="sm"
-            onClick={() => table.setPageIndex(pageCount - 1)}
-            disabled={!table.getCanNextPage()}
-            className="h-8 w-8 p-0 border-gray-300"
-          >
-            <ChevronsRight size={14} />
-          </Button>
-        </div>
-      </div>
-    </div>
+      <Dialogs
+        deleteOpen={deleteOpen}
+        onDeleteOpenChange={(open) => { if (!open) { setProductToDelete(null); setIsDeleting(false); } setDeleteOpen(open); }}
+        productToDelete={productToDelete}
+        isDeleting={isDeleting}
+        onConfirmDelete={confirmDelete}
+        statusToggleOpen={statusToggleOpen}
+        onStatusToggleOpenChange={(open) => { if (!open) { setProductToToggle(null); setIsToggling(false); } setStatusToggleOpen(open); }}
+        productToToggle={productToToggle}
+        isToggling={isToggling}
+        onConfirmToggle={confirmStatusToggle}
+      />
+    </>
   );
 }
