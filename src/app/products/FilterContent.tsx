@@ -60,7 +60,7 @@ function ProductCard({ product }: { product: Product }) {
 
   return (
     <Link
-      href={`/products/${product.slug || product._id}`}
+      href={`/product/${product.slug || product._id}`}
       className="group bg-white rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col"
     >
       {/* Image */}
