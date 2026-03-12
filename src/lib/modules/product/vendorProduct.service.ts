@@ -263,12 +263,23 @@ const getAllVendorProductsFromDB = async (page = 1, limit = 20) => {
 // Multi-select support: brand=Asus,TpLink&color=Brown,Red
 // ================================================================
 
+// ================================================================
+// ✅ vendorProduct.service.ts এ দুটো কাজ করুন:
+//
+// 1) ফাইলের একদম উপরে import যোগ করুন (যদি না থাকে):
+//    import { Brand } from "../brand/brand.model";
+//    import { ProductColor } from "../product-config/models/productColor.model";
+//    import { ProductSize } from "../product-config/models/productSize.model";
+//
+// 2) getAllVendorProductsWithPaginationFromDB function টি replace করুন:
+// ================================================================
+
 const getAllVendorProductsWithPaginationFromDB = async (params: {
   page?: number;
   limit?: number;
   search?: string;
-  brand?: string;   // comma-separated: "Asus,TpLink"
-  color?: string;   // comma-separated: "Brown,Red"
+  brand?: string;   // single বা comma-separated: "Asus" বা "Asus,TpLink"
+  color?: string;   // single বা comma-separated: "Brown" বা "Brown,Red"
   size?: string;
   priceMin?: number;
   priceMax?: number;
@@ -288,35 +299,42 @@ const getAllVendorProductsWithPaginationFromDB = async (params: {
 
   const skip = (page - 1) * limit;
 
-  // ── STEP 1: Base match ────────────────────────────────────────────────────
-  const matchStage: any = { status: 'active' };
+  // ── STEP 1: Base match ─────────────────────────────────────────────────────
+  const matchStage: Record<string, any> = { status: 'active' };
 
   if (search) {
     matchStage.productTitle = { $regex: search, $options: 'i' };
   }
 
-  if (priceMin || priceMax) {
+  if (priceMin !== undefined || priceMax !== undefined) {
     matchStage.discountPrice = {};
-    if (priceMin) matchStage.discountPrice.$gte = priceMin;
-    if (priceMax) matchStage.discountPrice.$lte = priceMax;
+    if (priceMin !== undefined) matchStage.discountPrice.$gte = Number(priceMin);
+    if (priceMax !== undefined) matchStage.discountPrice.$lte = Number(priceMax);
   }
 
-  // ── STEP 2: Brand (multi) → ObjectId array ────────────────────────────────
-  // URL param: brand=Asus,TpLink  →  ['Asus', 'TpLink']
+  // ── STEP 2: Brand name → ObjectId ─────────────────────────────────────────
+  // ✅ mongoose.models এর পরিবর্তে সরাসরি Brand model import করা হয়েছে
   if (brand) {
-    const brandNames = brand.split(',').map((b) => b.trim()).filter(Boolean);
+    const brandNames = brand
+      .split(',')
+      .map((b) => b.trim())
+      .filter(Boolean);
 
-    const BrandModel = mongoose.models['Brand'];
-    if (BrandModel && brandNames.length > 0) {
-      const brandDocs = await BrandModel.find({
-        name: { $in: brandNames.map((n) => new RegExp(`^${n}$`, 'i')) },
+    if (brandNames.length > 0) {
+      const brandDocs = await Brand.find({
+        name: {
+          $in: brandNames.map((n) => new RegExp(`^${n}$`, 'i')),
+        },
         status: 'active',
-      }).lean() as any[];
+      }).lean();
 
       if (brandDocs.length > 0) {
-        // ✅ $in দিয়ে একাধিক brand একসাথে filter
-        matchStage.brand = { $in: brandDocs.map((b: any) => b._id) };
+        matchStage.brand =
+          brandDocs.length === 1
+            ? brandDocs[0]._id                          // single brand
+            : { $in: brandDocs.map((b) => b._id) };    // multiple brands
       } else {
+        // DB তে brand পাওয়া যায়নি → empty result
         return {
           products: [],
           meta: { total: 0, page, limit, totalPages: 0, hasNext: false, hasPrev: false },
@@ -325,22 +343,28 @@ const getAllVendorProductsWithPaginationFromDB = async (params: {
     }
   }
 
-  // ── STEP 3: Color (multi) → ObjectId array ────────────────────────────────
-  // URL param: color=Brown,Red  →  ['Brown', 'Red']
+  // ── STEP 3: Color name → ObjectId ─────────────────────────────────────────
   if (color) {
-    const colorNames = color.split(',').map((c) => c.trim()).filter(Boolean);
+    const colorNames = color
+      .split(',')
+      .map((c) => c.trim())
+      .filter(Boolean);
 
     if (colorNames.length > 0) {
       const colorDocs = await ProductColor.find({
-        colorName: { $in: colorNames.map((n) => new RegExp(`^${n}$`, 'i')) },
+        colorName: {
+          $in: colorNames.map((n) => new RegExp(`^${n}$`, 'i')),
+        },
         status: 'active',
-      }).lean() as any[];
+      }).lean();
 
       if (colorDocs.length > 0) {
-        // ✅ productOptions array এ যেকোনো একটা option এ এই colors এর যেকোনো একটা থাকলেই হবে
         matchStage['productOptions'] = {
           $elemMatch: {
-            color: { $in: colorDocs.map((c: any) => c._id) },
+            color:
+              colorDocs.length === 1
+                ? colorDocs[0]._id
+                : { $in: colorDocs.map((c) => c._id) },
           },
         };
       } else {
@@ -352,16 +376,16 @@ const getAllVendorProductsWithPaginationFromDB = async (params: {
     }
   }
 
-  // ── STEP 4: Size (single) → ObjectId ─────────────────────────────────────
+  // ── STEP 4: Size name → ObjectId ──────────────────────────────────────────
   if (size) {
     const sizeDoc = await ProductSize.findOne({
       name: { $regex: `^${size.trim()}$`, $options: 'i' },
       status: 'active',
-    }).lean() as any;
+    }).lean();
 
     if (sizeDoc) {
       if (matchStage['productOptions']) {
-        // color ইতিমধ্যে আছে → same $elemMatch এ size যোগ
+        // color filter আগে থেকেই আছে → same $elemMatch এ size যোগ
         matchStage['productOptions']['$elemMatch'].size = sizeDoc._id;
       } else {
         matchStage['productOptions'] = {
@@ -376,19 +400,19 @@ const getAllVendorProductsWithPaginationFromDB = async (params: {
     }
   }
 
-  // ── STEP 5: Sort ──────────────────────────────────────────────────────────
-  const sortStage: any = {};
+  // ── STEP 5: Sort ───────────────────────────────────────────────────────────
+  const sortStage: Record<string, 1 | -1> = {};
   if      (sortBy === 'price_low')  sortStage.discountPrice = 1;
   else if (sortBy === 'price_high') sortStage.discountPrice = -1;
   else if (sortBy === 'popularity') sortStage.sellCount     = -1;
   else                              sortStage.createdAt     = -1;
 
-  // ── STEP 6: Count (pagination এর আগে) ────────────────────────────────────
+  // ── STEP 6: Total count (pagination এর আগে) ────────────────────────────────
   const totalCount = await VendorProductModel.countDocuments(matchStage);
 
-  // ── STEP 7: Paginated aggregation ────────────────────────────────────────
+  // ── STEP 7: Paginated aggregation ─────────────────────────────────────────
   const products = await VendorProductModel.aggregate([
-    { $match: matchStage },
+    { $match: matchStage },   // ✅ brand + color + size সবই $skip এর আগে
     { $sort: sortStage },
     { $skip: skip },
     { $limit: limit },
