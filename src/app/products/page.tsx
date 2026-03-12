@@ -1,20 +1,19 @@
 import FilterContent from './FilterContent';
+
 async function getProducts(searchParams: any) {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhan.com';
-
-    // ✅ FIX 1: Safe query parameter generation
     const params = new URLSearchParams();
     params.set('page', searchParams?.page || '1');
-    params.set('limit', '10');
-    
+    params.set('limit', '12'); // ✅ 12 products = 3 complete rows of 4
+
     if (searchParams?.search) params.set('search', searchParams.search);
-    if (searchParams?.brand) params.set('brand', searchParams.brand);
-    if (searchParams?.color) params.set('color', searchParams.color);
-    if (searchParams?.size) params.set('size', searchParams.size);
+    if (searchParams?.brand)    params.set('brand', searchParams.brand);
+    if (searchParams?.color)    params.set('color', searchParams.color);
+    if (searchParams?.size)     params.set('size', searchParams.size);
     if (searchParams?.priceMin) params.set('priceMin', searchParams.priceMin);
     if (searchParams?.priceMax) params.set('priceMax', searchParams.priceMax);
-    if (searchParams?.sortBy) params.set('sortBy', searchParams.sortBy);
+    if (searchParams?.sortBy)   params.set('sortBy', searchParams.sortBy);
 
     const res = await fetch(`${baseUrl}/api/v1/public/product?${params.toString()}`, {
       cache: 'no-store',
@@ -31,9 +30,7 @@ async function getProducts(searchParams: any) {
 async function getActiveColors() {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhan.com';
-    const res = await fetch(`${baseUrl}/api/v1/public/product-config/product-color/active`, {
-      cache: 'force-cache',
-    });
+    const res = await fetch(`${baseUrl}/api/v1/product-config/productColor/active`, { cache: 'force-cache' });
     if (!res.ok) return [];
     const data = await res.json();
     return data.data || [];
@@ -43,9 +40,7 @@ async function getActiveColors() {
 async function getActiveBrands() {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhan.com';
-    const res = await fetch(`${baseUrl}/api/v1/public/product-config/brand/active`, {
-      cache: 'force-cache',
-    });
+    const res = await fetch(`${baseUrl}/api/v1/product-config/brandName/active`, { cache: 'force-cache' });
     if (!res.ok) return [];
     const data = await res.json();
     return data.data || [];
@@ -55,9 +50,7 @@ async function getActiveBrands() {
 async function getActiveSizes() {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhan.com';
-    const res = await fetch(`${baseUrl}/api/v1/public/product-config/product-size/active`, {
-      cache: 'force-cache',
-    });
+    const res = await fetch(`${baseUrl}/api/v1/product-config/productSize/active`, { cache: 'force-cache' });
     if (!res.ok) return [];
     const data = await res.json();
     return data.data || [];
@@ -79,16 +72,14 @@ export default async function ProductFilterPage({
   ]);
 
   return (
-    <>
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <FilterContent
-          initialProducts={products}
-          initialColors={colors}
-          initialBrands={brands}
-          initialSizes={sizes}
-          meta={meta}
-        />
-      </div>
-    </>
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <FilterContent
+        initialProducts={products}
+        initialColors={colors}
+        initialBrands={brands}
+        initialSizes={sizes}
+        meta={meta}
+      />
+    </div>
   );
 }
