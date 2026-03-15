@@ -25,7 +25,7 @@ export default function NavMain() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  
+
   const [settings, setSettings] = useState<any>(null);
 
   useEffect(() => {
@@ -311,29 +311,29 @@ export default function NavMain() {
                 {/* Menu Items */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                      {/* Buy & Sell */}
-                      <Link onClick={() => setMobileOpen(false)} href="/buy-sell" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 transition shadow-sm">
-                          <ShoppingBag size={24} className="mb-2 text-blue-100" />
-                          <span className="text-xs font-medium">Buy & Sell</span>
-                      </Link>
-                      
-                      {/* Services */}
-                      <Link onClick={() => setMobileOpen(false)} href="/services" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-lg hover:from-indigo-700 hover:to-indigo-800 transition shadow-sm">
-                          <Wrench size={24} className="mb-2 text-indigo-100" />
-                          <span className="text-xs font-medium">Services</span>
-                      </Link>
-                      
-                      {/* Jobs */}
-                      <Link onClick={() => setMobileOpen(false)} href="/jobs" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-teal-600 to-teal-700 rounded-lg hover:from-teal-700 hover:to-teal-800 transition shadow-sm">
-                          <Briefcase size={24} className="mb-2 text-teal-100" />
-                          <span className="text-xs font-medium">Jobs</span>
-                      </Link>
-                      
-                      {/* Donation */}
-                      <Link onClick={() => setMobileOpen(false)} href="/donation" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition shadow-sm">
-                          <HandCoins size={24} className="mb-2 text-emerald-100" />
-                          <span className="text-xs font-medium">Donation</span>
-                      </Link>
+                    {/* Buy & Sell */}
+                    <Link onClick={() => setMobileOpen(false)} href="/buy-sell" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 transition shadow-sm">
+                      <ShoppingBag size={24} className="mb-2 text-blue-100" />
+                      <span className="text-xs font-medium">Buy & Sell</span>
+                    </Link>
+
+                    {/* Services */}
+                    <Link onClick={() => setMobileOpen(false)} href="/services" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-lg hover:from-indigo-700 hover:to-indigo-800 transition shadow-sm">
+                      <Wrench size={24} className="mb-2 text-indigo-100" />
+                      <span className="text-xs font-medium">Services</span>
+                    </Link>
+
+                    {/* Jobs */}
+                    <Link onClick={() => setMobileOpen(false)} href="/jobs" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-teal-600 to-teal-700 rounded-lg hover:from-teal-700 hover:to-teal-800 transition shadow-sm">
+                      <Briefcase size={24} className="mb-2 text-teal-100" />
+                      <span className="text-xs font-medium">Jobs</span>
+                    </Link>
+
+                    {/* Donation */}
+                    <Link onClick={() => setMobileOpen(false)} href="/donation" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition shadow-sm">
+                      <HandCoins size={24} className="mb-2 text-emerald-100" />
+                      <span className="text-xs font-medium">Donation</span>
+                    </Link>
                   </div>
 
                   <hr className="border-gray-600 my-2" />

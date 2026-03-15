@@ -48,6 +48,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'cdn-icons-png.flaticon.com', pathname: '/**' },
       { protocol: 'https', hostname: 'static.vecteezy.com', pathname: '/**' },
       { protocol: 'https', hostname: 'github.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'example.com', pathname: '/**' },
     ],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],

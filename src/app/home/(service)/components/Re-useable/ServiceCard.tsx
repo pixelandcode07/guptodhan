@@ -21,6 +21,8 @@ export default function ServiceCard({ service }: ServiceCardProps) {
         ? service.service_images
         : ["/placeholder-service.png"];
 
+        
+
     const [currentImage, setCurrentImage] = useState(0);
     const [open, setOpen] = useState(false);
 

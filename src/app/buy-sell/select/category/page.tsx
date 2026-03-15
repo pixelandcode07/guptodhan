@@ -15,7 +15,6 @@ export async function generateMetadata() {
 export default function SelectCategoryPage() {
     return (
         <div>
-            {/* <SelectItems /> */}
             <PostAdWizard />
         </div>
     )
