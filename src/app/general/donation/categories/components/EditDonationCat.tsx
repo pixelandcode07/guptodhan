@@ -30,7 +30,6 @@ export default function EditDonationCat() {
     const router = useRouter();
 
     const { data: session } = useSession();
-    // accessToken is not part of the default Session type — narrow with a cast
     const token = (session as unknown as { accessToken?: string })?.accessToken;
     const adminRole = (session?.user as { role?: string })?.role === "admin";
 
@@ -41,11 +40,9 @@ export default function EditDonationCat() {
         register,
         handleSubmit,
         setValue,
-        // watch,
         formState: { isSubmitting },
     } = useForm<CategoryFormData>();
 
-    // Fetch category data by ID
     useEffect(() => {
         const fetchCategory = async () => {
             if (!token) return;
@@ -57,11 +54,13 @@ export default function EditDonationCat() {
                 });
                 setDonationData(data?.data);
 
-                // Debug log to check data
-                console.log("Fetched Category by ID:", data);
+                // ✅ FIX: setValue দিয়ে form এ data সেট করা হচ্ছে
+                setValue("name", data?.data?.name || "");
+                setValue("status", data?.data?.status || "active");
+
             } catch (error: unknown) {
                 if (axios.isAxiosError(error)) {
-                    toast.error(error.response?.data?.message || "Faield to fetch category.");
+                    toast.error(error.response?.data?.message || "Failed to fetch category.");
                 } else {
                     toast.error("Working on process.");
                 }
@@ -69,10 +68,8 @@ export default function EditDonationCat() {
         };
 
         if (id && token) fetchCategory();
-        // if (id) fetchCategory();
     }, [id, token, setValue]);
 
-    // Handle form submit
     const onSubmit = async (formData: CategoryFormData) => {
         if (!adminRole) {
             toast.error("Only admins can update categories!");
@@ -104,8 +101,6 @@ export default function EditDonationCat() {
                 toast.error("Something went wrong.");
             }
         }
-
-
     };
 
     return (
@@ -119,21 +114,22 @@ export default function EditDonationCat() {
                     <Label htmlFor="name" className="mb-2">
                         Category Name
                     </Label>
+                    {/* ✅ FIX: defaultValue সরানো হয়েছে */}
                     <Input
                         id="name"
                         {...register("name")}
-                        defaultValue={donationData?.name}
-                    // , { required: "Category name is required" }
                     />
                 </div>
 
                 {/* Category Icon */}
                 <div>
                     <Label htmlFor="icon">Category Icon</Label>
+                    {/* ✅ FIX: fieldName যোগ করা হয়েছে */}
                     <UploadImageBtn
                         value={donationData?.icon ?? null}
                         onChange={(file) => setIconFile(file)}
                         onRemove={() => setIconFile(null)}
+                        fieldName="category-icon"
                     />
                 </div>
 
@@ -145,7 +141,6 @@ export default function EditDonationCat() {
                     <Select
                         value={donationData?.status}
                         onValueChange={(value) => {
-                            // setStatusValue(value);
                             setValue("status", value);
                         }}
                     >

@@ -1,4 +1,4 @@
-
+export const dynamic = 'force-dynamic';
 import axios from 'axios';
 import { ProductCardType } from '@/types/ProductCardType';
 

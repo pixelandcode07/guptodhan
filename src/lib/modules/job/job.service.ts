@@ -112,10 +112,35 @@ const getSingleJobByIdFromDB = async (id: string) => {
   return result[0];
 };
 
+
+const getMyJobsFromDB = async (userId: string) => {
+  return await Job.find({ postedBy: userId })
+    .sort({ createdAt: -1 })
+    .lean();
+};
+
+// Edit My Job
+const updateMyJobInDB = async (jobId: string, userId: string, payload: Partial<IJob>) => {
+  return await Job.findOneAndUpdate(
+    { _id: jobId, postedBy: userId }, // ✅ শুধু নিজের job edit করতে পারবে
+    { ...payload, status: 'pending' }, // ✅ edit করলে আবার pending হবে
+    { new: true, runValidators: true }
+  );
+};
+
+// Delete My Job
+const deleteMyJobFromDB = async (jobId: string, userId: string) => {
+  return await Job.findOneAndDelete({ _id: jobId, postedBy: userId });
+};
+
+
 export const JobService = {
   createJobIntoDB,
   getApprovedJobsFromDB,
   getAllJobsForAdminFromDB,
   updateJobStatusInDB,
   getSingleJobByIdFromDB,
+   getMyJobsFromDB,       // ✅ new
+  updateMyJobInDB,       // ✅ new
+  deleteMyJobFromDB,
 };

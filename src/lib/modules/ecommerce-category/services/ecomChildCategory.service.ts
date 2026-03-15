@@ -18,6 +18,8 @@ const createChildCategoryInDB = async (payload: Partial<IChildCategory>) => {
 
   // 🗑️ Clear caches
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
+  
+  await deleteCacheKey(CacheKeys.CHILDCATEGORY.ALL);
 
   return result;
 };
@@ -111,6 +113,8 @@ const updateChildCategoryInDB = async (id: string, payload: Partial<IChildCatego
   // 🗑️ Clear caches
   await deleteCachePattern(CacheKeys.PATTERNS.CATEGORY_ALL);
   await deleteCacheKey(CacheKeys.CHILDCATEGORY.BY_SUBCATEGORY(result.subCategory.toString()));
+  
+  await deleteCacheKey(CacheKeys.CHILDCATEGORY.ALL);
 
   return result;
 };

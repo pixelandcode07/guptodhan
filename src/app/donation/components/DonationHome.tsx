@@ -2,15 +2,16 @@
 
 import DonationModal from './DonationModal'
 import React, { useState, useEffect } from 'react'
-import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import DonationClaimModal from './DonationClaimModal'
-import { Badge } from '@/components/ui/badge'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
-import { Package, RefreshCw } from 'lucide-react'
+import { Package, RefreshCw, LayoutGrid, MapPin, Heart, HandHeart, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
+import { Dialog } from '@/components/ui/dialog'
+import LogInRegister from '@/app/components/LogInAndRegister/LogIn_Register'
 
 interface DonationCampaign {
     _id: string;
@@ -30,6 +31,8 @@ interface DonationCampaign {
 interface DonationCategory {
     _id: string;
     name: string;
+    icon: string;
+    status: string;
 }
 
 interface DonationHomeProps {
@@ -43,22 +46,22 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
     const [category, setCategory] = useState<string>('all')
     const [displayCount, setDisplayCount] = useState<number>(8)
     const [claimOpen, setClaimOpen] = useState<boolean>(false)
+    const [loginOpen, setLoginOpen] = useState<boolean>(false) // ✅ Login modal state added
     const [selectedItem, setSelectedItem] = useState<{ id: string, title: string, image: string, type: string } | undefined>(undefined)
     const [loading, setLoading] = useState(false)
 
-    // ✅ Fetch only approved AND active campaigns
+    const activeCategories = initialCategories.filter((c) => c.status === 'active');
+
     const refreshCampaigns = async () => {
         try {
             setLoading(true)
             const response = await fetch('/api/v1/public/donation-campaigns');
             const result = await response.json();
-            
             if (result.success && result.data) {
-                const activeCampaigns = result.data.filter((camp: DonationCampaign) => 
+                const activeCampaigns = result.data.filter((camp: DonationCampaign) =>
                     camp.moderationStatus === 'approved' && camp.status === 'active'
                 );
                 setCampaigns(activeCampaigns);
-                
                 if (activeCampaigns.length === 0) {
                     toast.info('No active donation campaigns available at the moment');
                 }
@@ -75,52 +78,150 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
         refreshCampaigns()
     }, [])
 
-    const filteredItems = category === 'all' 
-        ? campaigns 
+    const filteredItems = category === 'all'
+        ? campaigns
         : campaigns.filter(camp => camp.category?._id === category);
 
     const hasMoreItems = displayCount < filteredItems.length;
 
+    // ✅ Handle Request Click with Login Check
+    const handleRequestClick = (camp: DonationCampaign) => {
+        if (!session) {
+            setLoginOpen(true);
+            return;
+        }
+        setSelectedItem({
+            id: camp._id,
+            title: camp.title,
+            image: camp.images?.[0] || '',
+            type: camp.item
+        });
+        setClaimOpen(true);
+    };
+
     return (
-        // ✅ Alignment Fixed Matches JustForYou
         <div className='md:max-w-[95vw] xl:container mx-auto px-4 md:px-8'>
+            
+            {/* ✅ Login Modal — fixed overlay for unauthenticated users */}
+            <AnimatePresence>
+                {loginOpen && (
+                    <div className="fixed inset-0 z-[999] flex items-center justify-center px-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setLoginOpen(false)}
+                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            transition={{ duration: 0.2 }}
+                            className="relative z-10 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <button
+                                onClick={() => setLoginOpen(false)}
+                                className="absolute top-3 right-3 z-20 p-1.5 bg-white/80 hover:bg-white rounded-full shadow transition-colors"
+                            >
+                                <X size={16} className="text-gray-600" />
+                            </button>
+                            
+                            <Dialog open={true} onOpenChange={setLoginOpen}>
+                                <LogInRegister />
+                            </Dialog>
+                            
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
             <DonationModal categories={initialCategories} onSuccess={refreshCampaigns} />
-            <DonationClaimModal open={claimOpen} onOpenChange={setClaimOpen} item={selectedItem} />
+            <DonationClaimModal 
+                open={claimOpen} 
+                onOpenChange={setClaimOpen} 
+                item={selectedItem} 
+                // Passed down just in case your DonationClaimModal uses it internally
+                onLoginRequired={() => setLoginOpen(true)} 
+            />
 
             <section id='browse-items' className='mt-6'>
-                <div className='flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-white p-4 rounded-lg shadow-sm border'>
-                    <div>
-                        <h2 className='text-2xl font-bold text-gray-800'>Browse Active Donations</h2>
-                        <p className='text-sm text-gray-500 mt-1'>
-                            {campaigns.length} active {campaigns.length === 1 ? 'campaign' : 'campaigns'} available
-                        </p>
+
+                {/* ================================ */}
+                {/* Category Filter                  */}
+                {/* ================================ */}
+                <div className="mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className='text-xl font-bold text-gray-800'>Browse by Category</h2>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <span>{campaigns.length} active {campaigns.length === 1 ? 'campaign' : 'campaigns'}</span>
+                            <button
+                                onClick={refreshCampaigns}
+                                disabled={loading}
+                                className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                                title="Refresh"
+                            >
+                                <RefreshCw size={16} className={loading ? 'animate-spin text-blue-600' : 'text-gray-500'} />
+                            </button>
+                        </div>
                     </div>
-                    <div className='flex items-center gap-3 w-full sm:w-auto'>
-                        <Select value={category} onValueChange={setCategory}>
-                            <SelectTrigger className="w-full sm:w-[200px]">
-                                <SelectValue placeholder="Filter by Category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value='all'>All Categories</SelectItem>
-                                {initialCategories.map(cat => (
-                                    <SelectItem key={cat._id} value={cat._id}>
-                                        {cat.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Button 
-                            variant="outline" 
-                            size="icon"
-                            onClick={refreshCampaigns}
-                            disabled={loading}
-                            title="Refresh campaigns"
-                        >
-                            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-                        </Button>
+
+                    <div className="w-full overflow-x-auto scrollbar-hide pb-2">
+                        <div className="flex gap-4 min-w-max px-1">
+                            {/* All Button */}
+                            <motion.button
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
+                                onClick={() => setCategory('all')}
+                                className={`flex flex-col items-center justify-center gap-3 rounded-2xl px-8 py-5 min-w-[140px] transition-all duration-200 border
+                                    ${category === 'all'
+                                        ? "bg-[#00005E] text-white border-[#00005E] shadow-lg shadow-blue-900/20"
+                                        : "bg-[#eef0f8] text-[#00005E] border-transparent hover:border-[#00005E]/20 hover:shadow-md"
+                                    }`}
+                            >
+                                <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-white">
+                                    <LayoutGrid className="w-7 h-7 text-[#00005E]" />
+                                </div>
+                                <span className="text-sm font-bold whitespace-nowrap">All</span>
+                            </motion.button>
+
+                            {activeCategories.map((cat) => {
+                                const isSelected = category === cat._id;
+                                return (
+                                    <motion.button
+                                        key={cat._id}
+                                        whileHover={{ scale: 1.03 }}
+                                        whileTap={{ scale: 0.97 }}
+                                        onClick={() => setCategory(isSelected ? 'all' : cat._id)}
+                                        className={`flex flex-col items-center justify-center gap-3 rounded-2xl px-8 py-5 min-w-[140px] transition-all duration-200 border
+                                            ${isSelected
+                                                ? "bg-[#00005E] text-white border-[#00005E] shadow-lg shadow-blue-900/20"
+                                                : "bg-[#eef0f8] text-[#00005E] border-transparent hover:border-[#00005E]/20 hover:shadow-md"
+                                            }`}
+                                    >
+                                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden bg-white">
+                                            <img
+                                                src={cat.icon}
+                                                alt={cat.name}
+                                                width={36}
+                                                height={36}
+                                                className="object-contain"
+                                            />
+                                        </div>
+                                        <span className="text-sm font-bold whitespace-nowrap line-clamp-1 max-w-[120px] text-center">
+                                            {cat.name}
+                                        </span>
+                                    </motion.button>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 
+                {/* ================================ */}
+                {/* Campaigns Grid                   */}
+                {/* ================================ */}
                 {loading ? (
                     <div className='flex flex-col justify-center items-center py-20 bg-white rounded-xl border border-dashed border-gray-300'>
                         <RefreshCw className="animate-spin text-blue-600 mb-3" size={48} />
@@ -133,118 +234,158 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                         </div>
                         <p className='text-lg font-medium text-gray-600 mb-1'>No active donation campaigns found</p>
                         <p className='text-sm text-gray-500'>
-                            {category !== 'all' 
-                                ? 'Try selecting a different category' 
+                            {category !== 'all'
+                                ? 'Try selecting a different category'
                                 : 'New campaigns will appear here once approved'}
                         </p>
                     </div>
                 ) : (
                     <>
-                        <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6'>
-                            {filteredItems.slice(0, displayCount).map(camp => {
+                        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5'>
+                            {filteredItems.slice(0, displayCount).map((camp, index) => {
                                 const isOwner = session?.user && (session.user as any).id === camp.creator?._id;
-                                const progress = camp.goalAmount && camp.raisedAmount 
-                                    ? Math.round((camp.raisedAmount / camp.goalAmount) * 100) 
+                                const progress = camp.goalAmount && camp.raisedAmount
+                                    ? Math.round((camp.raisedAmount / camp.goalAmount) * 100)
                                     : 0;
+                                const cleanDescription = camp.description?.replace(/<[^>]*>/g, '').replace(/\*\*/g, '').trim() || '';
 
                                 return (
-                                    <div key={camp._id} className='bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group flex flex-col h-full'>
-                                        
-                                        {/* Image area */}
-                                        <Link href={`/donation/${camp._id}`} className="relative w-full aspect-[4/3] bg-gray-200 overflow-hidden block">
+                                    <motion.div
+                                        key={camp._id}
+                                        initial={{ opacity: 0, y: 16 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                                        className='bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-blue-100 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col'
+                                    >
+                                        {/* ======================== */}
+                                        {/* Image Section            */}
+                                        {/* ======================== */}
+                                       <Link href={`/donation/${camp._id}`} className="relative w-full overflow-hidden block aspect-[4/3] bg-gray-100">
                                             <Image
                                                 src={camp.images?.[0] || '/img/placeholder.png'}
                                                 alt={camp.title}
                                                 fill
-                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                className="object-contain group-hover:scale-105 transition-transform duration-700"
                                             />
+
+                                            {/* Dark gradient overlay */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+
+                                            {/* Category Badge - top left */}
                                             {camp.category?.name && (
-                                                <div className="absolute top-3 right-3 z-10">
-                                                    <Badge variant="secondary" className="bg-white/90 text-black shadow-sm backdrop-blur-sm">
-                                                        {camp.category.name}
-                                                    </Badge>
-                                                </div>
-                                            )}
-                                            {isOwner && (
                                                 <div className="absolute top-3 left-3 z-10">
-                                                    <Badge className="bg-blue-600 text-white shadow-sm">My Post</Badge>
+                                                    <span className="inline-flex items-center gap-1 bg-white/95 backdrop-blur-sm text-[#00005E] text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
+                                                        {camp.category.name}
+                                                    </span>
                                                 </div>
                                             )}
-                                            
-                                            {/* Progress badge */}
-                                            {camp.goalAmount && camp.goalAmount > 0 && (
-                                                <div className="absolute bottom-3 left-3 z-10">
-                                                    <Badge className={`${progress >= 100 ? 'bg-green-600' : 'bg-blue-600'} text-white shadow-sm font-bold`}>
-                                                        {progress}% Raised
-                                                    </Badge>
+
+                                            {/* My Post badge */}
+                                            {isOwner && (
+                                                <div className="absolute top-3 right-3 z-10">
+                                                    <span className="inline-flex items-center gap-1 bg-blue-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
+                                                        My Post
+                                                    </span>
                                                 </div>
                                             )}
+
+                                            {/* Item type badge - bottom left */}
+                                            <div className="absolute bottom-3 left-3 z-10">
+                                                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm
+                                                    ${camp.item === 'money'
+                                                        ? 'bg-emerald-500 text-white'
+                                                        : 'bg-orange-500 text-white'
+                                                    }`}>
+                                                    {camp.item === 'money' ? '💸 Fund' : '📦 Item'}
+                                                </span>
+                                            </div>
                                         </Link>
-                                        
-                                        <div className='p-4 flex flex-col flex-grow'>
+
+                                        {/* ======================== */}
+                                        {/* Content Section          */}
+                                        {/* ======================== */}
+                                        <div className='p-4 flex flex-col flex-grow gap-3'>
+
+                                            {/* Creator */}
+                                            {camp.creator?.name && (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-6 h-6 rounded-full bg-[#00005E]/10 flex items-center justify-center flex-shrink-0">
+                                                        <span className="text-[9px] font-bold text-[#00005E]">
+                                                            {camp.creator.name.charAt(0).toUpperCase()}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-xs text-gray-500 truncate">{camp.creator.name}</span>
+                                                </div>
+                                            )}
+
                                             {/* Title */}
                                             <Link href={`/donation/${camp._id}`}>
-                                                <h3 className='font-bold text-gray-900 text-lg mb-2 line-clamp-1 hover:text-blue-600 transition-colors' title={camp.title}>
+                                                <h3 className='font-bold text-gray-900 text-base line-clamp-2 hover:text-blue-600 transition-colors leading-snug'>
                                                     {camp.title}
                                                 </h3>
                                             </Link>
-                                            
+
                                             {/* Description */}
-                                            <p className='text-sm text-gray-500 line-clamp-2 mb-3 flex-grow'>
-                                                {camp.description?.replace(/<[^>]*>/g, '') || 'No description available.'}
-                                            </p>
-                                            
-                                            {/* Progress bar (if money campaign) */}
+                                            {cleanDescription && (
+                                                <p className='text-xs text-gray-500 line-clamp-2 leading-relaxed flex-grow'>
+                                                    {cleanDescription}
+                                                </p>
+                                            )}
+
+                                            {/* Progress bar for money campaigns */}
                                             {camp.item === 'money' && camp.goalAmount && camp.goalAmount > 0 && (
-                                                <div className="mb-3">
-                                                    <div className="flex justify-between text-xs text-gray-600 mb-1">
-                                                        <span>৳{(camp.raisedAmount || 0).toLocaleString()}</span>
-                                                        <span>৳{camp.goalAmount.toLocaleString()}</span>
+                                                <div className="space-y-1.5">
+                                                    <div className="flex justify-between text-xs font-semibold">
+                                                        <span className="text-emerald-600">৳{(camp.raisedAmount || 0).toLocaleString()} raised</span>
+                                                        <span className="text-gray-400">Goal: ৳{camp.goalAmount.toLocaleString()}</span>
                                                     </div>
-                                                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                        <div 
-                                                            className={`h-full ${progress >= 100 ? 'bg-green-600' : 'bg-blue-600'} transition-all duration-500`}
-                                                            style={{ width: `${Math.min(progress, 100)}%` }}
+                                                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                        <motion.div
+                                                            initial={{ width: 0 }}
+                                                            animate={{ width: `${Math.min(progress, 100)}%` }}
+                                                            transition={{ duration: 1, delay: 0.3 }}
+                                                            className={`h-full rounded-full ${progress >= 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
                                                         />
                                                     </div>
+                                                    <p className="text-[10px] text-gray-400 text-right">{progress}% funded</p>
                                                 </div>
                                             )}
-                                            
+
+                                            {/* Divider */}
+                                            <div className="h-px bg-gray-100" />
+
                                             {/* Action Button */}
                                             {isOwner ? (
-                                                <Button 
-                                                    className='w-full bg-gray-100 text-gray-400 cursor-not-allowed hover:bg-gray-100 mt-auto'
+                                                <button
                                                     disabled
+                                                    className='w-full py-2.5 bg-gray-50 text-gray-400 text-sm font-semibold rounded-xl cursor-not-allowed flex items-center justify-center gap-2'
                                                 >
+                                                    <Heart className="w-4 h-4" />
                                                     You are the donor
-                                                </Button>
+                                                </button>
                                             ) : (
-                                                <Button
-                                                    className='w-full bg-blue-600 hover:bg-blue-700 text-white font-medium mt-auto'
-                                                    onClick={() => { 
-                                                        setSelectedItem({ 
-                                                            id: camp._id, 
-                                                            title: camp.title, 
-                                                            image: camp.images?.[0] || '',
-                                                            type: camp.item 
-                                                        }); 
-                                                        setClaimOpen(true); 
-                                                    }}
+                                                <motion.button
+                                                    whileHover={{ scale: 1.02 }}
+                                                    whileTap={{ scale: 0.98 }}
+                                                    className='w-full py-2.5 bg-[#00005E] hover:bg-[#000045] text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm shadow-blue-900/20'
+                                                    onClick={() => handleRequestClick(camp)} // ✅ Added login checking logic here
                                                 >
+                                                    <HandHeart className="w-4 h-4" />
                                                     {camp.item === 'money' ? 'Request Fund' : 'Request Item'}
-                                                </Button>
+                                                </motion.button>
                                             )}
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 )
                             })}
                         </div>
+
                         {hasMoreItems && (
                             <div className='flex justify-center py-10'>
-                                <Button 
-                                    variant={'outline'} 
-                                    onClick={() => setDisplayCount(prev => prev + 8)} 
-                                    className='px-8'
+                                <Button
+                                    variant={'outline'}
+                                    onClick={() => setDisplayCount(prev => prev + 8)}
+                                    className='px-8 border-2 border-[#00005E] text-[#00005E] hover:bg-[#00005E] hover:text-white font-bold rounded-xl transition-all'
                                 >
                                     Load More ({filteredItems.length - displayCount} remaining)
                                 </Button>
