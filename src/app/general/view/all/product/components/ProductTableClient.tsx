@@ -70,11 +70,11 @@ export default function ProductTableClient({ initialData, initialPage = 0 }: Pro
 
   // ── Page change: URL update ───────────────────────────────────────────────
   const handlePageChange = useCallback((pageIndex: number) => {
-    // ✅ replace ব্যবহার করছি push নয় — back button history pollute হবে না
-    const url = new URL(window.location.href);
-    url.searchParams.set('page', String(pageIndex + 1));
-    window.history.replaceState({}, '', url.toString());
-  }, []);
+    // ✅ router.replace — Next.js router জানবে, back button এ page restore হবে
+    const params = new URLSearchParams(window.location.search);
+    params.set('page', String(pageIndex + 1));
+    router.replace(`/general/view/all/product?${params.toString()}`, { scroll: false });
+  }, [router]);
 
   // 1. Setup Maps
   useEffect(() => {
@@ -239,4 +239,4 @@ export default function ProductTableClient({ initialData, initialPage = 0 }: Pro
       />
     </>
   );
-}
+} 
