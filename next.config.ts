@@ -17,10 +17,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
 
   // ========================
-  // ✅ REDIRECTS REMOVED
+  // REDIRECTS
   // ========================
   async redirects() {
-    // Purono domain redirect remove kora hoyeche jate mobile app thikmoto kaj kore
     return [];
   },
 
@@ -32,10 +31,6 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'www.guptodhan.com', pathname: '/**' },
       { protocol: 'https', hostname: 'guptodhan.com', pathname: '/**' },
       { protocol: 'https', hostname: 'app-area.guptodhan.com', pathname: '/**' },
-      // Purono domain (backward compat)
-      { protocol: 'https', hostname: 'guptodhan.com', pathname: '/**' },
-      { protocol: 'https', hostname: 'www.guptodhan.com', pathname: '/**' },
-      // Image hosts
       { protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' },
       { protocol: 'http', hostname: '76.13.191.238', pathname: '/**' },
       { protocol: 'https', hostname: 'cdn.guptodhan.com', pathname: '/**' },
@@ -134,9 +129,25 @@ const nextConfig: NextConfig = {
     ];
   },
 
+  // ========================
+  // EXPERIMENTAL
+  // ========================
   experimental: {
     optimizePackageImports: ['lucide-react', '@tanstack/react-table', 'recharts'],
     esmExternals: true,
+
+    // ✅ FIX: SSLCommerz তাদের server থেকে callback URL এ POST করে।
+    // Next.js এই POST কে Server Action মনে করে এবং origin mismatch এ block করে দেয়।
+    // allowedOrigins এ SSLCommerz domains add করলে এই block উঠে যায়।
+    serverActions: {
+      allowedOrigins: [
+        'guptodhan.com',
+        'www.guptodhan.com',
+        'sandbox.sslcommerz.com',    // SSLCommerz sandbox server (testing)
+        'securepay.sslcommerz.com',  // SSLCommerz production server (live)
+        'sslcommerz.com',
+      ],
+    },
   },
 
   typescript: {

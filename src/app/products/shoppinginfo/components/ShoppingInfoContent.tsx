@@ -15,6 +15,12 @@ import ItemsList from './ItemsList';
 import OrderSummary from './OrderSummary';
 import OrderSuccessModal from './OrderSuccessModal';
 import OrderErrorModal from './OrderErrorModal';
+import {
+  placeOrder,
+  initiateSSLCommerzPayment,
+  extractOrderId,
+  type CreateOrderPayload,
+} from '@/app/products/shoppinginfo/utils/payment';
 
 export type CartItem = {
   id: string;
@@ -48,16 +54,12 @@ interface UserProfile {
 }
 
 export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem[] }) {
-  // ✅ VALIDATION: Check if cartItems is valid
   if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
-    console.error('❌ Invalid or empty cartItems:', cartItems);
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            <p className="font-bold">Error Loading Cart</p>
-            <p className="text-sm">Please refresh the page and try again.</p>
-          </div>
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-center">
+          <p className="font-bold">Error Loading Cart</p>
+          <p className="text-sm">Please refresh the page and try again.</p>
         </div>
       </div>
     );
@@ -90,22 +92,16 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
   const [lastPaymentMethod, setLastPaymentMethod] = useState<'cod' | 'card'>('cod');
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  // Add this alongside subtotal and totalSavings calculations
+  const totalItems = cartItems.reduce((sum, item) => sum + (item?.product?.quantity || 0), 0);
 
-  // ✅ Calculate subtotal with safety checks
-  const subtotal = cartItems.reduce((sum: number, item: CartItem) => {
-    if (!item?.product?.price || !item?.product?.quantity) {
-      console.warn('⚠️ Invalid item structure:', item);
-      return sum;
-    }
+  const subtotal = cartItems.reduce((sum, item) => {
+    if (!item?.product?.price || !item?.product?.quantity) return sum;
     return sum + item.product.price * item.product.quantity;
   }, 0);
 
-  // ✅ Calculate total savings with safety checks
-  const totalSavings = cartItems.reduce((sum: number, item: CartItem) => {
-    if (!item?.product?.originalPrice || !item?.product?.price || !item?.product?.quantity) {
-      console.warn('⚠️ Invalid item structure:', item);
-      return sum;
-    }
+  const totalSavings = cartItems.reduce((sum, item) => {
+    if (!item?.product?.originalPrice || !item?.product?.price || !item?.product?.quantity) return sum;
     return sum + (item.product.originalPrice - item.product.price) * item.product.quantity;
   }, 0);
 
@@ -114,11 +110,9 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
     const typeLower = appliedCoupon.type.toLowerCase().trim();
     const isPercentage = typeLower === 'percentage' || typeLower.includes('percentage');
     if (isPercentage) {
-      const couponDiscount = (subtotal * appliedCoupon.value) / 100;
-      return Math.round(couponDiscount * 100) / 100;
-    } else {
-      return Math.min(appliedCoupon.value, subtotal);
+      return Math.round((subtotal * appliedCoupon.value) / 100 * 100) / 100;
     }
+    return Math.min(appliedCoupon.value, subtotal);
   };
 
   const couponDiscount = calculateCouponDiscount();
@@ -133,7 +127,7 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
         await axios.delete(`/api/v1/add-to-cart/get-cart/${userProfile._id}`);
         localStorage.removeItem('cart');
       } catch (error) {
-        console.error('Error clearing cart from database:', error);
+        console.error('Error clearing cart:', error);
       }
     }
   };
@@ -144,24 +138,16 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
     setSuccessModalOpen(false);
   };
 
-  const handleSuccessModalClose = () => {
-    setSuccessModalOpen(false);
-  };
+  const handleSuccessModalClose = () => setSuccessModalOpen(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
         setProfileLoading(true);
-        if (!session?.user) {
-          setProfileLoading(false);
-          return;
-        }
-        const userLike = (session?.user ?? {}) as { id?: string; _id?: string };
+        if (!session?.user) return;
+        const userLike = (session.user ?? {}) as { id?: string; _id?: string };
         const userId = userLike.id || userLike._id;
-        if (!userId) {
-          setProfileLoading(false);
-          return;
-        }
+        if (!userId) return;
         const response = await axios.get('/api/v1/profile/me', {
           headers: { 'x-user-id': userId },
         });
@@ -177,51 +163,49 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
     fetchUserProfile();
   }, [session]);
 
-  const validateOrder = (paymentMethod: 'cod' | 'card') => {
+  const validateOrder = (): string[] => {
     const errors: string[] = [];
-    if (!session?.user) errors.push('User must be logged in to place order');
-    if (!userProfile?._id) errors.push('User profile information is missing. Please complete your profile.');
-    if (!formData.name || !formData.phone || !formData.email || !formData.district || !formData.upazila || !formData.address || !formData.city || !formData.postalCode || !formData.country) {
-      errors.push('Please fill in all required delivery information');
-    }
-    if (cartItems.length === 0) errors.push('Your cart is empty');
-    if (!selectedDelivery) errors.push('Please select a delivery method');
+    if (!session?.user) errors.push('You must be logged in to place an order.');
+    if (!userProfile?._id) errors.push('User profile is missing. Please complete your profile.');
+    const requiredFields: (keyof typeof formData)[] = [
+      'name', 'phone', 'email', 'district', 'upazila', 'address', 'city', 'postalCode', 'country',
+    ];
+    const missingFields = requiredFields.filter((f) => !formData[f]);
+    if (missingFields.length > 0) errors.push('Please fill in all required delivery fields.');
+    if (cartItems.length === 0) errors.push('Your cart is empty.');
+    if (!selectedDelivery) errors.push('Please select a delivery method.');
     return errors;
   };
 
   const handlePlaceOrder = async (paymentMethod: 'cod' | 'card') => {
+    if (isProcessing) return;
+
+    setIsProcessing(true);
+    setLastPaymentMethod(paymentMethod);
+
     try {
-      if (isProcessing) {
-        console.warn('⚠️ Order already being processed');
-        return;
-      }
-
-      setIsProcessing(true);
-      setLastPaymentMethod(paymentMethod);
-
-      const validationErrors = validateOrder(paymentMethod);
+      // ── Validate ──────────────────────────────────────────────────
+      const validationErrors = validateOrder();
       if (validationErrors.length > 0) {
-        showError(validationErrors.join(', '));
-        setIsProcessing(false);
+        showError(validationErrors.join(' '));
         return;
       }
 
-      let resolvedStoreId: string | undefined = undefined;
-      if (cartItems.length > 0 && cartItems[0]?.product?.id) {
+      // ── Resolve store ID ──────────────────────────────────────────
+      let resolvedStoreId: string | undefined;
+      if (cartItems[0]?.product?.id) {
         try {
-          const firstProductId = cartItems[0].product.id;
-          const productResp = await axios.get(`/api/v1/product/${firstProductId}`);
-          const productData = productResp?.data?.data;
-          if (productData?.vendorStoreId) {
-            resolvedStoreId = productData.vendorStoreId;
-          }
+          const productResp = await axios.get(`/api/v1/product/${cartItems[0].product.id}`);
+          const storeId = productResp?.data?.data?.vendorStoreId;
+          if (storeId) resolvedStoreId = storeId;
         } catch {
-          // Continue without store ID, backend will handle it
+          // non-fatal — continue without store ID
         }
       }
 
-      const orderData = {
-        userId: userProfile?._id!,
+      // ── Build order payload ───────────────────────────────────────
+      const orderPayload: CreateOrderPayload = {
+        userId: userProfile!._id,
         ...(resolvedStoreId ? { storeId: resolvedStoreId } : {}),
         deliveryMethodId: selectedDelivery,
         shippingName: formData.name || userProfile?.name || 'Guest User',
@@ -239,8 +223,9 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
         orderStatus: 'Pending',
         orderForm: 'Website',
         orderDate: new Date(),
-        deliveryDate: new Date(Date.now() + (selectedDelivery === 'steadfast' ? 2 : 3) * 24 * 60 * 60 * 1000),
-        ...(selectedDelivery === 'steadfast' && { parcelId: null, trackingId: null }),
+        deliveryDate: new Date(
+          Date.now() + (selectedDelivery === 'steadfast' ? 2 : 3) * 24 * 60 * 60 * 1000
+        ),
         products: cartItems.map((item) => ({
           productId: item.product.id,
           vendorId: item.id,
@@ -250,97 +235,58 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
           size: item.product.size,
           color: item.product.color,
         })),
-        couponId: appliedCoupon?._id || undefined,
+        couponId: appliedCoupon?._id,
       };
 
+      // ── STEP 1: Create order ──────────────────────────────────────
       console.log('📝 Creating order...');
-      toast.loading('Creating your order...', { id: 'order-create' });
+      toast.loading('Creating your order...', { id: 'order-toast' });
 
-      // ✅ STEP 1: Create order FIRST
-      const orderResponse = await axios.post('/api/v1/product-order', orderData);
+      const createdOrderData = await placeOrder(orderPayload);
 
-      if (!orderResponse.data.success) {
-        toast.dismiss('order-create');
-        const errorMsg = orderResponse.data.message || 'Failed to place order';
-        toast.error('Order creation failed', { description: errorMsg, duration: 4000 });
-        showError(errorMsg);
-        setIsProcessing(false);
-        return;
-      }
+      // ✅ FIX: extractOrderId prefers string orderId over MongoDB _id
+      const orderId = extractOrderId(createdOrderData);
 
-      const createdOrder = orderResponse.data.data;
-      const orderId = createdOrder?.order?._id || createdOrder?.orderId;
+      toast.dismiss('order-toast');
+      console.log('✅ Order created, orderId:', orderId);
 
-      if (!orderId) {
-        toast.dismiss('order-create');
-        toast.error('Order creation failed', { description: 'No order ID received', duration: 4000 });
-        showError('Order creation failed - No order ID received');
-        setIsProcessing(false);
-        return;
-      }
-
-      console.log('✅ Order created successfully:', orderId);
-      toast.dismiss('order-create');
-
-      // ✅ STEP 2: If Card payment, initiate payment gateway
+      // ── STEP 2a: Card payment → redirect to gateway ───────────────
       if (paymentMethod === 'card') {
-        toast.loading('Redirecting to payment gateway...', { id: 'payment-init' });
+        toast.loading('Redirecting to payment gateway...', { id: 'order-toast' });
 
-        try {
-          console.log('📤 Initiating payment for order:', orderId);
+        console.log('📤 Initiating payment for orderId:', orderId);
+        const gatewayUrl = await initiateSSLCommerzPayment(orderId);
 
-          const paymentResponse = await axios.post('/api/v1/payment/init', {
-            orderId: orderId,
-          });
-
-          if (paymentResponse.data.success && paymentResponse.data.data?.url) {
-            console.log('✅ Payment gateway URL received');
-            toast.dismiss('payment-init');
-            window.location.href = paymentResponse.data.data.url;
-            return;
-          } else {
-            const errorMsg = paymentResponse.data.message || 'Failed to get payment gateway URL';
-            throw new Error(errorMsg);
-          }
-        } catch (err: any) {
-          toast.dismiss('payment-init');
-          const msg = err?.message || 'Failed to initialize payment gateway. Please try again.';
-          console.error('❌ Payment initialization failed:', msg);
-          toast.error('Payment initialization failed', { description: msg, duration: 4000 });
-          showError(msg);
-          setIsProcessing(false);
-          return;
-        }
+        console.log('✅ Redirecting to payment gateway...');
+        toast.dismiss('order-toast');
+        window.location.href = gatewayUrl;
+        return; // don't setIsProcessing(false) — page is navigating away
       }
 
-      // ✅ STEP 3: If COD, show success modal
-      console.log('✅ Order placed successfully with COD');
-      toast.dismiss('order-create');
-      showSuccessModal(orderId);
-      setIsProcessing(false);
+      // ── STEP 2b: COD → show success modal ────────────────────────
+      console.log('✅ COD order placed successfully');
+      toast.success('Order placed successfully!');
+      await showSuccessModal(orderId);
 
     } catch (error: any) {
-      console.error('❌ Error placing order:', error);
-      const errorMsg = error.message || 'Failed to place order. Please try again or contact support.';
-      toast.error('Order failed', { description: errorMsg, duration: 4000 });
-      showError(errorMsg);
+      console.error('❌ Order flow error:', error);
+      toast.dismiss('order-toast');
+      const msg = error?.response?.data?.message || error?.message || 'Something went wrong. Please try again.';
+      toast.error('Order failed', { description: msg, duration: 4000 });
+      showError(msg);
+    } finally {
       setIsProcessing(false);
     }
   };
 
-  if (profileLoading || geoLoading) {
-    return <ShoppingInfoSkeleton />;
-  }
+  if (profileLoading || geoLoading) return <ShoppingInfoSkeleton />;
 
   if (!userProfile && session?.user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
-            <p className="font-bold">Profile Information Required</p>
-            <p className="text-sm">Please complete your profile information to proceed with checkout.</p>
-            <p className="text-xs mt-2">Using default information for now.</p>
-          </div>
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded text-center">
+          <p className="font-bold">Profile Information Required</p>
+          <p className="text-sm">Please complete your profile to proceed with checkout.</p>
         </div>
       </div>
     );
@@ -364,7 +310,10 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
             districts={geoData.allDistricts}
             upazilas={upazilas}
           />
-          <DeliveryOptions selectedDelivery={selectedDelivery} onDeliveryChange={setSelectedDelivery} />
+          <DeliveryOptions
+            selectedDelivery={selectedDelivery}
+            onDeliveryChange={setSelectedDelivery}
+          />
           <ItemsList items={cartItems} />
         </div>
 
@@ -377,6 +326,7 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
             selectedDelivery={selectedDelivery}
             appliedCoupon={appliedCoupon}
             onCouponApplied={setAppliedCoupon}
+            totalItems={totalItems}
           />
         </div>
       </div>
@@ -392,9 +342,7 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
         onOpenChange={setErrorModalOpen}
         errorMessage={errorMessage}
         onRetry={() => {
-          if (!isProcessing) {
-            handlePlaceOrder(lastPaymentMethod);
-          }
+          if (!isProcessing) handlePlaceOrder(lastPaymentMethod);
         }}
       />
     </div>
