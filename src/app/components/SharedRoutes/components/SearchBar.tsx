@@ -88,7 +88,7 @@ export default function SearchBar() {
     setQuery("");
     const identifier = item.slug || item._id; 
     if (identifier) {
-      router.push(`/products/${identifier}`);
+      router.push(`/product/${identifier}`);
     }
   };
 

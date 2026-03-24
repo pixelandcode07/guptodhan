@@ -193,6 +193,11 @@ export const sidebarData = {
           title: 'Previous Notifications',
           url: '/general/view/all/notifications',
         },
+        {
+          title: 'Previous Notifications',
+          url: '/general/view/all/notifications',
+        },
+        { title: 'Registered Devices', url: '/general/view/all/devices' },
       ],
     },
     {

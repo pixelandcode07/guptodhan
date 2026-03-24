@@ -12,7 +12,7 @@ const getBaseUrl = () => {
 async function getJobs(): Promise<IJob[]> {
   try {
     const res = await fetch(`${getBaseUrl()}/api/v1/public/job`, {
-      cache: 'no-store', // 🔥 CRITICAL FIX: Disable caching so it always fetches fresh data with the 'status' field
+      cache: 'no-store',
     });
 
     if (!res.ok) {
@@ -44,6 +44,13 @@ export default async function JobsPage() {
             <h1 className="text-3xl font-bold text-gray-900">Available Jobs</h1>
             <p className="mt-2 text-gray-600">Find your dream job from our latest listings.</p>
           </div>
+          <Link
+              href="/jobs/my-jobs"
+              className="mt-4 md:mt-0 inline-flex items-center px-5 py-2.5 border-2 border-[#00005E] text-[#00005E] rounded-md font-semibold text-sm hover:bg-[#00005E] hover:text-white transition-all"
+          >
+              <Briefcase className="mr-2 h-4 w-4" />
+              My Jobs
+          </Link>
           <Link 
             href="/jobs/create" 
             className="mt-4 md:mt-0 inline-flex items-center px-6 py-3 bg-[#00005E] border border-transparent rounded-md font-semibold text-sm text-white uppercase tracking-widest hover:bg-[#000045] focus:outline-none focus:ring-2 focus:ring-[#00005E] focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150 shadow-md hover:shadow-lg"

@@ -24,8 +24,8 @@ export default function NavMain() {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
-  
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   const [settings, setSettings] = useState<any>(null);
 
   useEffect(() => {
@@ -136,7 +136,7 @@ export default function NavMain() {
                 </Link>
               </li>
 
-              {/* Job (Restored to Desktop Nav) */}
+              {/* Jobs */}
               <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
                 <Link href={'/jobs'} className="flex flex-col items-center gap-0.5 group">
                   <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
@@ -150,7 +150,7 @@ export default function NavMain() {
               <li className="scale-90 lg:scale-100"><CartIcon /></li>
               <li className="scale-90 lg:scale-100"><WishlistIcon /></li>
 
-              {/* Track Order (Restored to Desktop Nav) */}
+              {/* Track Order */}
               <li className="flex flex-col justify-center items-center text-[#00005E] font-medium min-w-fit">
                 <Link href={'/track-order'} className="flex flex-col items-center gap-0.5 group">
                   <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
@@ -180,7 +180,7 @@ export default function NavMain() {
                 </li>
               ) : (
                 <DialogTrigger asChild>
-                  <li className="flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer min-w-fit group">
+                  <li id="login-modal-btn" className="flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer min-w-fit group">
                     <div className="p-1 group-hover:bg-blue-50 rounded-full transition-colors">
                       <UserIcon size={18} className="lg:size-5" />
                     </div>
@@ -202,7 +202,6 @@ export default function NavMain() {
                   </DropdownMenuTrigger>
 
                   <DropdownMenuContent align="end" className="w-64 p-2 shadow-2xl border-gray-100">
-                    {/* Essential Links */}
                     <DropdownMenuItem asChild>
                       <Link href="/about-us" className="cursor-pointer flex items-center gap-3 py-2">
                         <Info size={18} className="text-blue-600" />
@@ -226,7 +225,6 @@ export default function NavMain() {
 
                     <DropdownMenuSeparator />
 
-                    {/* Business Links */}
                     <DropdownMenuItem asChild>
                       <Link href="/join-as-vendor" className="cursor-pointer flex items-center gap-3 py-2">
                         <UserPlus size={18} className="text-indigo-600" />
@@ -241,7 +239,6 @@ export default function NavMain() {
                       </Link>
                     </DropdownMenuItem>
 
-                    {/* Buy & Sell and Donation restored exactly as they were in the Dropdown */}
                     <DropdownMenuItem asChild>
                       <Link href="/buy-sell" className="cursor-pointer flex items-center gap-3 py-2">
                         <ShoppingBag size={18} className="text-blue-500" />
@@ -258,7 +255,6 @@ export default function NavMain() {
 
                     <DropdownMenuSeparator />
 
-                    {/* Contact Links */}
                     <DropdownMenuItem asChild>
                       <Link href="tel:+8801816500600" className="cursor-pointer flex items-center gap-3 py-2 text-blue-600">
                         <PhoneCall size={18} />
@@ -303,7 +299,7 @@ export default function NavMain() {
               className="absolute inset-0 bg-black/50"
             />
             <Dialog>
-              <motion.div className="relative w-80 max-w-full bg-[#000066] text-white flex flex-col">
+              <motion.div className="relative w-80 max-w-full bg-[#000066] text-white flex flex-col h-full">
                 {/* Header */}
                 <div className="flex justify-between items-center p-4 border-b border-gray-600">
                   <h2 className="text-lg font-bold">Menu</h2>
@@ -315,29 +311,29 @@ export default function NavMain() {
                 {/* Menu Items */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                      {/* Buy & Sell */}
-                      <Link onClick={() => setMobileOpen(false)} href="/buy-sell" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 transition shadow-sm">
-                          <ShoppingBag size={24} className="mb-2 text-blue-100" />
-                          <span className="text-xs font-medium">Buy & Sell</span>
-                      </Link>
-                      
-                      {/* Services */}
-                      <Link onClick={() => setMobileOpen(false)} href="/services" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-lg hover:from-indigo-700 hover:to-indigo-800 transition shadow-sm">
-                          <Wrench size={24} className="mb-2 text-indigo-100" />
-                          <span className="text-xs font-medium">Services</span>
-                      </Link>
-                      
-                      {/* Jobs */}
-                      <Link onClick={() => setMobileOpen(false)} href="/jobs" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-teal-600 to-teal-700 rounded-lg hover:from-teal-700 hover:to-teal-800 transition shadow-sm">
-                          <Briefcase size={24} className="mb-2 text-teal-100" />
-                          <span className="text-xs font-medium">Jobs</span>
-                      </Link>
-                      
-                      {/* Donation */}
-                      <Link onClick={() => setMobileOpen(false)} href="/donation" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition shadow-sm">
-                          <HandCoins size={24} className="mb-2 text-emerald-100" />
-                          <span className="text-xs font-medium">Donation</span>
-                      </Link>
+                    {/* Buy & Sell */}
+                    <Link onClick={() => setMobileOpen(false)} href="/buy-sell" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 transition shadow-sm">
+                      <ShoppingBag size={24} className="mb-2 text-blue-100" />
+                      <span className="text-xs font-medium">Buy & Sell</span>
+                    </Link>
+
+                    {/* Services */}
+                    <Link onClick={() => setMobileOpen(false)} href="/services" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-lg hover:from-indigo-700 hover:to-indigo-800 transition shadow-sm">
+                      <Wrench size={24} className="mb-2 text-indigo-100" />
+                      <span className="text-xs font-medium">Services</span>
+                    </Link>
+
+                    {/* Jobs */}
+                    <Link onClick={() => setMobileOpen(false)} href="/jobs" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-teal-600 to-teal-700 rounded-lg hover:from-teal-700 hover:to-teal-800 transition shadow-sm">
+                      <Briefcase size={24} className="mb-2 text-teal-100" />
+                      <span className="text-xs font-medium">Jobs</span>
+                    </Link>
+
+                    {/* Donation */}
+                    <Link onClick={() => setMobileOpen(false)} href="/donation" className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg hover:from-emerald-700 hover:to-emerald-800 transition shadow-sm">
+                      <HandCoins size={24} className="mb-2 text-emerald-100" />
+                      <span className="text-xs font-medium">Donation</span>
+                    </Link>
                   </div>
 
                   <hr className="border-gray-600 my-2" />
@@ -417,7 +413,7 @@ export default function NavMain() {
                       </button>
                     </div>
                   ) : (
-                    <DialogTrigger className="w-full">
+                    <DialogTrigger id="login-modal-btn-mobile" className="w-full">
                       <DialogContent className="sm:max-w-md p-0">
                         <LogInRegister />
                       </DialogContent>
@@ -429,6 +425,7 @@ export default function NavMain() {
           </motion.div>
         )}
       </AnimatePresence>
+
       <AnimatePresence>
         {mobileSearchOpen && (
           <motion.div
@@ -445,15 +442,12 @@ export default function NavMain() {
               className="bg-white p-3"
             >
               <div className="flex items-center gap-2">
-                {/* Back Button */}
                 <button
                   onClick={() => setMobileSearchOpen(false)}
                   className="p-2 rounded-lg hover:bg-gray-100"
                 >
                   <X size={20} />
                 </button>
-
-                {/* FULL WIDTH SEARCH */}
                 <div className="flex-1">
                   <SearchBar />
                 </div>
@@ -462,7 +456,6 @@ export default function NavMain() {
           </motion.div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }

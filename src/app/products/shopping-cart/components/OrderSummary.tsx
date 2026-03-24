@@ -45,7 +45,7 @@ export default function OrderSummary({
     try {
       localStorage.setItem('cart', JSON.stringify(selectedCartItems));
       // Navigate to shopping info page
-      router.push('/home/product/shoppinginfo');
+      router.push('/products/shoppinginfo');
     } catch (error) {
       console.error('Error saving cart to localStorage:', error);
       toast.error('Failed to save cart items', {

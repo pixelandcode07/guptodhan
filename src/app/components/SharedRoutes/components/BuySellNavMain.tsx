@@ -52,92 +52,102 @@ export default function BuySellNavMain() {
     };
 
     return (
-        <div className="bg-white text-black flex w-full justify-between items-center py-5 px-4 lg:px-15 border-b-2 border-gray-200">
-            {/* Logo */}
-            <Link href="/">
-                <img src="/img/logo.png" alt="Logo" className="h-11 w-auto" />
-            </Link>
+        <div className="bg-white text-black border-b-2 border-gray-200">
+            <div className="md:max-w-[95vw] xl:container sm:px-8 mx-auto py-4 flex justify-between items-center">
+                {/* fixed top-0 left-0 right-0 z-50 */}
+                {/* Logo */}
+                <div className="hidden md:block">
+                    <Link href="/">
+                        <img src="/img/logo.png" alt="Logo" className="h-11 w-auto" />
+                    </Link>
+                </div>
+                <div className="block md:hidden">
+                    <Link href="/">
+                        <img src="/img/logo.png" alt="Logo" className="h-11 w-auto" />
+                    </Link>
+                </div>
 
-            {/* Search - Desktop */}
-            <div className="hidden md:block flex-1 max-w-md mx-8">
-                <SearchBar />
-            </div>
+                {/* Search - Desktop */}
+                <div className="hidden md:block flex-1 max-w-md mx-8">
+                    <SearchBar />
+                </div>
 
-            {/* Right Side */}
-            <div className="flex items-center gap-6">
-                <Dialog open={openLoginDialog} onOpenChange={setOpenLoginDialog}>
-                    {/* Profile / Login Area */}
-                    <div className="flex items-center gap-6">
-                        {isLoggedIn ? (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button className="flex items-center gap-3 hover:opacity-80 transition">
-                                        <Avatar className="relative">
-                                            <Avatar className="h-10 w-10 ring-2 ring-[#0097E9] ring-offset-2">
-                                                <AvatarImage
-                                                    src={
-                                                        user?.image && user.image !== "undefined" && user.image !== "null"
-                                                            ? user.image
-                                                            : undefined
-                                                    }
-                                                    alt={user?.name || "User"}
-                                                />
-                                                <AvatarFallback className="bg-[#0097E9] text-white font-bold text-sm">
-                                                    {getInitials(user?.name)}
-                                                </AvatarFallback>
+                {/* Right Side */}
+                <div className="flex items-center gap-6">
+                    <Dialog open={openLoginDialog} onOpenChange={setOpenLoginDialog}>
+                        {/* Profile / Login Area */}
+                        <div className="flex items-center gap-6">
+                            {isLoggedIn ? (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button className="flex items-center gap-3 hover:opacity-80 transition">
+                                            <Avatar className="relative">
+                                                <Avatar className="h-10 w-10 ring-2 ring-[#0097E9] ring-offset-2">
+                                                    <AvatarImage
+                                                        src={
+                                                            user?.image && user.image !== "undefined" && user.image !== "null"
+                                                                ? user.image
+                                                                : undefined
+                                                        }
+                                                        alt={user?.name || "User"}
+                                                    />
+                                                    <AvatarFallback className="bg-[#0097E9] text-white font-bold text-sm">
+                                                        {getInitials(user?.name)}
+                                                    </AvatarFallback>
+                                                </Avatar>
                                             </Avatar>
-                                        </Avatar>
 
-                                        <div className="text-left hidden lg:block">
-                                            <p className="text-sm font-semibold text-gray-900">
-                                                {user?.name?.split(" ")[0] || "User"}
-                                            </p>
-                                            <p className="text-xs text-gray-500">My Account</p>
-                                        </div>
-                                    </button>
-                                </DropdownMenuTrigger>
+                                            <div className="text-left hidden lg:block">
+                                                <p className="text-sm font-semibold text-gray-900">
+                                                    {user?.name?.split(" ")[0] || "User"}
+                                                </p>
+                                                <p className="text-xs text-gray-500">My Account</p>
+                                            </div>
+                                        </button>
+                                    </DropdownMenuTrigger>
 
-                                <DropdownMenuContent align="end" className="w-56">
-                                    <DropdownMenuItem asChild>
-                                        <Link href="/home/UserProfile" className="flex items-center gap-2">
-                                            <Settings size={16} />
-                                            Profile Settings
-                                        </Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() => signOut({ callbackUrl: "/" })}
-                                        className="text-red-600 focus:text-red-600 flex items-center gap-2"
+                                    <DropdownMenuContent align="end" className="w-56">
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/home/UserProfile" className="flex items-center gap-2">
+                                                <Settings size={16} />
+                                                Profile Settings
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => signOut({ callbackUrl: "/" })}
+                                            className="text-red-600 focus:text-red-600 flex items-center gap-2"
+                                        >
+                                            <LogOut size={16} />
+                                            Logout
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            ) : (
+                                <DialogTrigger asChild>
+                                    <button
+                                        // onClick={() => {
+                                        //     localStorage.setItem("redirectAfterLogin", window.location.pathname + window.location.search);
+                                        // }}
+                                        className="flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer"
                                     >
-                                        <LogOut size={16} />
-                                        Logout
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        ) : (
-                            <DialogTrigger asChild>
-                                <button
-                                    // onClick={() => {
-                                    //     localStorage.setItem("redirectAfterLogin", window.location.pathname + window.location.search);
-                                    // }}
-                                    className="flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer"
-                                >
-                                    <User size={20} />
-                                    <span className="text-[#00005E] text-[12px]">Login / Register</span>
-                                </button>
-                            </DialogTrigger>
-                        )}
+                                        <User size={20} />
+                                        <span className="text-[#00005E] text-[12px]">Login / Register</span>
+                                    </button>
+                                </DialogTrigger>
+                            )}
 
-                        {/* Post Ad Button */}
-                        <Button onClick={handlePostAdClick} variant="BlueBtn" size="lg" className="font-bold px-6">
-                            <Plus size={20} /> <span className="hidden md:block">Post a Free Ad</span>
-                        </Button>
-                    </div>
+                            {/* Post Ad Button */}
+                            <Button onClick={handlePostAdClick} variant="BlueBtn" size="lg" className="font-bold px-6">
+                                <Plus size={20} /> <span className="hidden md:block">Post a Free Ad</span>
+                            </Button>
+                        </div>
 
-                    {/* Login Modal */}
-                    <DialogContent className="max-w-md p-0 border-none rounded-2xl overflow-hidden">
-                        <LogInRegister onSuccess={() => setOpenLoginDialog(false)} />
-                    </DialogContent>
-                </Dialog>
+                        {/* Login Modal */}
+                        <DialogContent className="max-w-md p-0 border-none rounded-2xl overflow-hidden">
+                            <LogInRegister onSuccess={() => setOpenLoginDialog(false)} />
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
         </div>
     );

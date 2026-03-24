@@ -11,6 +11,7 @@ import '@/lib/modules/promo-code/promoCode.model';
 // ✅ Redis Cache Imports
 import { getCachedData, deleteCacheKey, deleteCachePattern } from '@/lib/redis/cache-helpers';
 import { CacheKeys, CacheTTL } from '@/lib/redis/cache-keys';
+import { User } from '../../user/user.model';
 
 // ================================================================
 // 📝 CREATE ORDER (WITHOUT TRANSACTIONS) ✅ FIXED
@@ -244,22 +245,51 @@ const getOrdersByUserFromDB = async (userId: string) => {
 // ================================================================
 // ✏️ UPDATE ORDER
 // ================================================================
+// ================================================================
+// ✏️ UPDATE ORDER (WITH WALLET BALANCE LOGIC)
+// ================================================================
 const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
   try {
-    const result = await OrderModel.findByIdAndUpdate(id, payload, { new: true });
+    // ✅ Step 1: আগের order data নিয়ে রাখো
+    const previousOrder = await OrderModel.findById(id).lean() as any;
     
-    if (!result) {
+    if (!previousOrder) {
       throw new Error('Order not found to update.');
+    }
+
+    // ✅ Step 2: Order update করো
+    const result = await OrderModel.findByIdAndUpdate(id, payload, { new: true });
+
+    // ✅ Step 3: Delivered হলে balance update করো
+    if (
+      payload.orderStatus === 'Delivered' && 
+      previousOrder.orderStatus !== 'Delivered' &&
+      previousOrder.storeId
+    ) {
+      const store = await StoreModel.findById(previousOrder.storeId).lean() as any;
+      
+      if (store) {
+        const commissionRate = store.commission || 0;
+        const vendorEarning = previousOrder.totalAmount * (1 - commissionRate / 100);
+
+        await StoreModel.findByIdAndUpdate(previousOrder.storeId, {
+          $inc: {
+            availableBalance: vendorEarning,
+            totalEarned: vendorEarning,
+          }
+        });
+        
+        console.log(`✅ Balance updated: +৳${vendorEarning} for store ${previousOrder.storeId}`);
+      }
     }
 
     // 🗑️ Clear caches
     await deleteCacheKey(CacheKeys.ORDER.BY_ID(id));
-    if (result.userId) {
+    if (result?.userId) {
       await deleteCachePattern(`orders:user:${result.userId}*`);
     }
     await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
 
-    console.log('✅ Order updated successfully:', id);
     return result;
   } catch (error) {
     console.error('❌ Error updating order:', error);
@@ -695,60 +725,72 @@ const requestReturnInDB = async (orderId: string, reason: string) => {
 // ================================================================
 const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
   try {
-    const store = await StoreModel.findOne({ vendorId });
-
-    if (!store) {
-      throw new Error('Store not found for this vendor');
+    // ১. আইডি ভ্যালিড কি না চেক করা
+    if (!Types.ObjectId.isValid(vendorId)) {
+      throw new Error('আইডির ফরম্যাট সঠিক নয়।');
     }
 
-    // Use aggregation
+    const vId = new Types.ObjectId(vendorId);
+
+    // ২. প্রথমে সরাসরি vendorId দিয়ে স্টোর খোঁজা
+    let store = await StoreModel.findOne({ vendorId: vId });
+
+    // ৩. যদি না পাওয়া যায়, তবে চেক করা এই আইডিটি কি ইউজারের? 
+    // যদি ইউজারের হয়, তবে তার প্রোফাইল থেকে vendorInfo (Vendor ID) নিয়ে স্টোর খোঁজা।
+    if (!store) {
+      // User এখন ডিফাইন করা আছে, তাই আর এরর দিবে না
+      const userWithVendor = await User.findById(vId).select('vendorInfo');
+      if (userWithVendor && userWithVendor.vendorInfo) {
+        store = await StoreModel.findOne({ vendorId: userWithVendor.vendorInfo });
+      }
+    }
+
+    // ৪. স্টোর না পাওয়া গেলে এরর থ্রো করা
+    if (!store) {
+      throw new Error('আপনার অ্যাকাউন্টের বিপরীতে কোনো স্টোর খুঁজে পাওয়া যায়নি।');
+    }
+
+    // ৫. অর্ডারের এগ্রিগেশন (সব স্ট্যাটাসের অর্ডার আসবে)
     const orders = await OrderModel.aggregate([
       { $match: { storeId: store._id } },
       { $sort: { createdAt: -1 } },
-
-      // Lookup user
       {
         $lookup: {
           from: 'users',
           localField: 'userId',
           foreignField: '_id',
-          as: 'userId',
+          as: 'user',
         },
       },
-      { $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } },
-
-      // Lookup order details
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
           from: 'orderdetails',
           localField: 'orderDetails',
           foreignField: '_id',
-          as: 'orderDetails',
+          as: 'details',
         },
       },
-
-      // Project
       {
         $project: {
+          _id: 1,
           orderId: 1,
-          'userId.name': 1,
-          'userId.email': 1,
           orderStatus: 1,
           paymentStatus: 1,
           totalAmount: 1,
-          orderDate: 1,
-          orderDetails: 1,
           createdAt: 1,
+          shippingName: 1,
+          shippingPhone: 1,
+          'user.name': 1,
+          'user.email': 1,
+          orderDetails: '$details',
         },
       },
     ]);
 
-    return {
-      store,
-      orders,
-    };
-  } catch (error) {
-    console.error('❌ Error getting vendor store and orders:', error);
+    return { store, orders };
+  } catch (error: any) {
+    console.error('❌ Error fetching vendor orders:', error.message);
     throw error;
   }
 };

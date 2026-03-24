@@ -3,154 +3,286 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { MapPin, Star, Clock, Calendar } from "lucide-react";
+import { MapPin, Star, Clock, Calendar, Bookmark } from "lucide-react";
 import { ServiceData } from "@/types/ServiceDataType";
 import { cn } from "@/lib/utils";
 import ServiceBookingDialog from "../ServiceBookingDialog";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 interface ServiceCardProps {
     service: ServiceData;
 }
 
 export default function ServiceCard({ service }: ServiceCardProps) {
+    const { data: session } = useSession();
     const images = service.service_images?.length
         ? service.service_images
         : ["/placeholder-service.png"];
 
+        
+
     const [currentImage, setCurrentImage] = useState(0);
     const [open, setOpen] = useState(false);
 
-    // Auto image change every 30 seconds
     useEffect(() => {
         if (images.length <= 1) return;
-
         const interval = setInterval(() => {
             setCurrentImage((prev) => (prev + 1) % images.length);
-        }, 10000);
-
+        }, 5000); 
         return () => clearInterval(interval);
     }, [images.length]);
 
-    return (
+    const handleBookNow = (e: React.MouseEvent) => {
+        e.preventDefault(); 
+        if (!session) {
+            const loginButton = document.getElementById('login-modal-btn-service');
+            if (loginButton) {
+                loginButton.click();
+            } else {
+                toast.info("Please click the Login button at the top.");
+            }
+            return;
+        }
+        setOpen(true);
+    };
 
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -6 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="group relative flex flex-col overflow-hidden rounded-2xl border bg-white shadow-sm hover:shadow-lg transition-all"
-        >
-            {/* Image Slider */}
-            <Link href={`/home/service-info/${service._id}`} className="group relative flex flex-col overflow-hidden rounded-t-2xl border bg-white shadow-sm hover:shadow-lg transition-all">
-                <div className="relative h-44 w-full overflow-hidden bg-gray-100">
+    return (
+        <div className="w-full h-full flex flex-col">
+            {/* ===================== */}
+            {/* MOBILE: Vertical Card */}
+            {/* ===================== */}
+            <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="md:hidden flex w-full h-full flex-col overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300"
+            >
+                {/* Image */}
+                <Link href={`/home/service-info/${service._id}`} className="block w-full">
+                    <div className="relative h-44 w-full overflow-hidden bg-gray-100 group">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={currentImage}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.4 }}
+                                className="absolute inset-0"
+                            >
+                                <Image
+                                    src={images[currentImage]}
+                                    alt={service.service_title}
+                                    fill
+                                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                    sizes="(max-width: 768px) 100vw, 50vw"
+                                />
+                            </motion.div>
+                        </AnimatePresence>
+
+                        {/* Bookmark */}
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                toast.success("Added to bookmarks!");
+                            }}
+                            className="absolute top-3 right-3 z-10 p-2 bg-white/80 backdrop-blur-md rounded-full hover:bg-white transition-colors shadow-sm"
+                        >
+                            <Bookmark className="w-3.5 h-3.5 text-gray-600 hover:text-[#0097E9] transition-colors" />
+                        </button>
+
+                        {/* Status */}
+                        <span className={cn(
+                            "absolute top-3 left-3 z-10 px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider shadow-sm",
+                            service.service_status === "Active"
+                                ? "bg-green-500 text-white"
+                                : service.service_status === "Under Review"
+                                    ? "bg-amber-500 text-white"
+                                    : "bg-red-500 text-white"
+                        )}>
+                            {service.service_status}
+                        </span>
+                    </div>
+                </Link>
+
+                {/* Content */}
+                <div className="p-4 flex flex-col flex-grow gap-3">
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                            <h3 className="text-sm sm:text-base font-bold text-gray-900 line-clamp-2 leading-tight">
+                                {service.service_title}
+                            </h3>
+                            <p className="text-[11px] sm:text-xs text-orange-500 font-medium mt-1 truncate">
+                                {service.service_category}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0 bg-amber-50 border border-amber-100 px-2 py-1 rounded-lg">
+                            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                            <span className="text-[11px] font-bold text-gray-800">
+                                {service.average_rating.toFixed(1)}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 text-[11px] sm:text-xs text-gray-600 font-medium flex-grow">
+                        <div className="flex items-center gap-2">
+                            <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                            <span className="truncate">{service.service_area.thana}, {service.service_area.city}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Clock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                            <span className="truncate">{service.available_time_slots.join(", ")}</span>
+                        </div>
+                    </div>
+
+                    {/* ✅ Fixed Price & Button Section for Mobile */}
+                    <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-100 gap-2">
+                        <div className="flex-1 min-w-0">
+                            <p className="text-[9px] text-gray-500 uppercase tracking-wider font-semibold mb-0.5">Starts from</p>
+                            <p className="text-base font-black text-gray-900 truncate">
+                                ৳{service.base_price}
+                                <span className="text-[10px] font-medium text-gray-500 ml-0.5">
+                                    /{service.pricing_type === "hourly" ? "Hour" : "Fixed"}
+                                </span>
+                            </p>
+                        </div>
+                        <motion.button
+                            onClick={handleBookNow}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="flex-shrink-0 whitespace-nowrap px-4 py-2 bg-[#ff6b00] hover:bg-[#e66000] text-white text-[11px] sm:text-xs font-bold rounded-lg transition-all shadow-md"
+                        >
+                            Book Now
+                        </motion.button>
+                    </div>
+                </div>
+            </motion.div>
+
+            {/* ========================= */}
+            {/* DESKTOP: Horizontal Card  */}
+            {/* ========================= */}
+            <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="hidden md:flex w-full min-h-[220px] overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 group"
+            >
+                {/* Image - Left Side */}
+                <Link
+                    href={`/home/service-info/${service._id}`}
+                    className="relative w-[30%] min-w-[240px] max-w-[280px] h-auto flex-shrink-0 overflow-hidden bg-gray-100"
+                >
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={currentImage}
-                            initial={{ opacity: 0.4 }}
+                            initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            exit={{ opacity: 0.4 }}
-                            transition={{ duration: 0.6 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.4 }}
                             className="absolute inset-0"
                         >
                             <Image
                                 src={images[currentImage]}
                                 alt={service.service_title}
                                 fill
-                                className="object-cover"
-                                sizes="(max-width: 768px) 100vw, 33vw"
+                                className="object-cover group-hover:scale-105 transition-transform duration-700 ease-in-out"
+                                sizes="280px"
                             />
                         </motion.div>
                     </AnimatePresence>
 
-                    {/* Status Badge */}
-                    <span
-                        className={cn(
-                            "absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-wide",
-                            service.service_status === "Active"
-                                ? "bg-green-100 text-green-700"
-                                : service.service_status === "Under Review"
-                                    ? "bg-amber-100 text-amber-700"
-                                    : "bg-red-100 text-red-700"
-                        )}
+                    {/* Bookmark */}
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            toast.success("Added to bookmarks!");
+                        }}
+                        className="absolute top-4 right-4 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white hover:text-[#0097E9] transition-all shadow-sm"
                     >
+                        <Bookmark className="w-4 h-4 text-gray-600 transition-colors" />
+                    </button>
+                    
+                    {/* Status Badge */}
+                    <span className={cn(
+                        "absolute top-4 left-4 z-10 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm",
+                        service.service_status === "Active"
+                            ? "bg-green-500 text-white"
+                            : service.service_status === "Under Review"
+                                ? "bg-amber-500 text-white"
+                                : "bg-red-500 text-white"
+                    )}>
                         {service.service_status}
                     </span>
-                </div>
-            </Link>
+                </Link>
 
-            {/* Content */}
-            <div className="flex flex-1 flex-col gap-0.5 md:gap-3 p-1 md:p-4">
-                <h3 className="line-clamp-1 text-base font-semibold text-gray-900">
-                    {service.service_title}
-                </h3>
-
-                <p className="text-xs text-gray-500">
-                    {service.service_category}
-                </p>
-
-                <div className="flex items-center gap-1 text-xs text-gray-600">
-                    <MapPin className="h-3.5 w-3.5 text-red-400" />
-                    <span>
-                        {service.service_area.thana}, {service.service_area.city}
-                    </span>
-                </div>
-
-                <div className="flex flex-wrap gap-3 text-xs text-gray-500">
-                    <div className="flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5" />
-                        {service.available_time_slots.join(", ")}
+                {/* Content - Right Side */}
+                <div className="flex flex-1 flex-col justify-between p-6 bg-white w-full">
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                            <Link href={`/home/service-info/${service._id}`}>
+                                <h3 className="text-xl font-bold text-gray-900 hover:text-[#0097E9] transition-colors line-clamp-2">
+                                    {service.service_title}
+                                </h3>
+                            </Link>
+                            <p className="text-sm font-medium text-orange-500 mt-1">
+                                {service.service_category}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-shrink-0 bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-xl">
+                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                            <span className="text-sm font-bold text-gray-800">
+                                {service.average_rating.toFixed(1)}
+                            </span>
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-1">
-                        <Calendar className="h-3.5 w-3.5" />
-                        {service.working_days.slice(0, 3).join(", ")}
-                        {service.working_days.length > 3 && "..."}
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-gray-600 font-medium py-3">
+                        <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span>{service.service_area.thana}, {service.service_area.city}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span>{service.available_time_slots.join(", ")}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span>
+                                {service.working_days.slice(0, 3).join(", ")}
+                                {service.working_days.length > 3 && "..."}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Desktop Button Section */}
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-0.5">Start from</p>
+                            <p className="text-2xl font-black text-gray-900 truncate">
+                                ৳{service.base_price}
+                                <span className="text-sm font-medium text-gray-500 ml-1">
+                                    /{service.pricing_type === "hourly" ? "Hour" : "Fixed"}
+                                </span>
+                            </p>
+                        </div>
+                        <motion.button
+                            onClick={handleBookNow}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="flex-shrink-0 whitespace-nowrap px-8 py-3 bg-[#ff6b00] hover:bg-[#e66000] text-white text-sm font-bold rounded-xl transition-all shadow-md shadow-orange-200"
+                        >
+                            Book Now
+                        </motion.button>
                     </div>
                 </div>
+            </motion.div>
 
-                {/* Footer */}
-                <div className="mt-auto flex items-center justify-between pt-1 md:pt-4">
-                    <div>
-                        <p className="text-lg font-bold text-primary">
-                            ৳{service.base_price}
-                        </p>
-                        <p className="text-[10px] capitalize text-gray-400">
-                            {service.pricing_type} pricing
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                        <Star className="h-4 w-4 text-yellow-400" />
-                        {service.average_rating.toFixed(1)}
-                    </div>
-                </div>
-
-                {/* Take Service Button */}
-                <motion.button
-                    onClick={() => setOpen(true)}
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="relative mt-1 md:mt-4 w-full overflow-hidden rounded-xl p-[2px]"
-                >
-                    {/* Animated Border */}
-                    <motion.span
-                        className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary via-purple-500 to-primary"
-                        animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-                        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                        style={{ backgroundSize: "200% 200%" }}
-                    />
-
-                    <span className="relative z-10 flex items-center justify-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-primary">
-                        Book Now
-                    </span>
-                </motion.button>
-                <ServiceBookingDialog
-                    service={service}
-                    open={open}
-                    onOpenChange={setOpen}
-                />
-            </div>
-        </motion.div>
+            <ServiceBookingDialog
+                service={service}
+                open={open}
+                onOpenChange={setOpen}
+            />
+        </div>
     );
 }

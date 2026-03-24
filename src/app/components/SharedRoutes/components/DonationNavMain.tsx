@@ -16,22 +16,21 @@ export default function DonationNavMain() {
     const router = useRouter()
 
     return (
-        // ✅ Fixed Alignment: Matches Donation Pages & JustForYou
-        <div className='bg-white border-b-2'>
-            <div className='md:max-w-[95vw] xl:container mx-auto px-4 md:px-8 py-4 flex justify-between items-center'>
-                
+        <div className='bg-white text-black border-b-2 border-gray-200'>
+            <div className='md:max-w-[95vw] xl:container sm:px-8 mx-auto py-4 flex justify-between items-center'>
+
                 {/* Logo Section */}
                 <Link href={'/'} className="logo flex-shrink-0">
-                    <Image 
-                        src="/img/logo.png" 
-                        width={130} 
-                        height={44} 
-                        alt="logo" 
-                        priority 
+                    <Image
+                        src="/img/logo.png"
+                        width={130}
+                        height={44}
+                        alt="logo"
+                        priority
                         className="w-[100px] md:w-[130px] h-auto"
                     />
                 </Link>
-                
+
                 {/* Search Bar Section - Centered */}
                 <div className="hidden md:flex flex-1 max-w-md mx-6 lg:mx-10 relative">
                     <SearchBar />
@@ -47,12 +46,12 @@ export default function DonationNavMain() {
                                     <li className='flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer'>
                                         <Link href={'/home/UserProfile'} className='flex flex-col justify-center items-center gap-1 group'>
                                             {user?.image ? (
-                                                <Image 
-                                                    src={user.image} 
-                                                    width={24} 
-                                                    height={24} 
-                                                    alt={user?.name ?? 'Profile'} 
-                                                    className='rounded-full border border-gray-200 group-hover:border-blue-500 transition-colors' 
+                                                <Image
+                                                    src={user.image}
+                                                    width={24}
+                                                    height={24}
+                                                    alt={user?.name ?? 'Profile'}
+                                                    className='rounded-full border border-gray-200 group-hover:border-blue-500 transition-colors'
                                                 />
                                             ) : (
                                                 <User size={20} className="group-hover:text-blue-600 transition-colors" />
@@ -62,8 +61,8 @@ export default function DonationNavMain() {
                                     </li>
 
                                     {/* Logout Button */}
-                                    <li 
-                                        onClick={() => signOut()} 
+                                    <li
+                                        onClick={() => signOut()}
                                         className='flex flex-col justify-center items-center text-[#00005E] font-medium cursor-pointer gap-1 group'
                                     >
                                         <LogOut size={20} className="group-hover:text-red-600 transition-colors" />
@@ -72,11 +71,11 @@ export default function DonationNavMain() {
 
                                     {/* Donate Button (Only for Logged in Users) */}
                                     <li>
-                                        <Button 
-                                            variant={'BlueBtn'} 
+                                        <Button
+                                            variant={'BlueBtn'}
                                             size="sm"
                                             className="h-9 px-4 text-xs sm:text-sm font-semibold shadow-md"
-                                            type='button' 
+                                            type='button'
                                             onClick={() => router.push('/donation?donate=1')}
                                         >
                                             Donate

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { ApiResponse } from '@/types/FeaturedCategoryType';
 import axios from 'axios';
 import { IStory } from '../modules/story/story.interface';

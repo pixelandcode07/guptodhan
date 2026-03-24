@@ -16,10 +16,12 @@ export default async function BuyandSellHome() {
     const allAds = await fetchPublicClassifiedAds();
     // console.log("All Ads:", allAds);
     return (
-        <div className='mt-5 max-w-7xl mx-auto'>
-            <BuyandSellBanner banner={banner} />
+        <div className='space-y-6'>
+            <div className="pt-8">
+                <BuyandSellBanner banner={banner} />
+            </div>
             <BuyandSellItems allCategory={allCategory} />
-            {/* <BuyandSellAdds allAds={allAds} /> */}
+
             <Suspense fallback={<SectionSkeleton title="Best Selling" count={6} />}>
                 {/* <BestSell products={bestSelling} topShoppage={topShoppage} /> */}
                 <BuyandSellAdds allAds={allAds} />

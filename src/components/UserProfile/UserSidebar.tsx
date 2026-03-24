@@ -19,6 +19,7 @@ import {
   Gift,
   Hand,
   LucideWorkflow,
+  UserX, // ✅ Added UserX icon for Delete Account
 } from 'lucide-react'
 import api from '@/lib/axios'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
@@ -38,6 +39,7 @@ const items = [
   { title: 'Support Tickets', url: '/home/UserProfile/support-tickets', icon: Headset },
   { title: 'Saved Address', url: '/home/UserProfile/addresses', icon: MapPin },
   { title: 'Change Password', url: '/home/UserProfile/change-password', icon: KeyRound },
+  { title: 'Delete Account', url: '/page/account-deletion', icon: UserX }, // ✅ Added Delete Account link
 ]
 
 export default function UserSidebar() {
@@ -195,7 +197,7 @@ export default function UserSidebar() {
       console.log('🧹 Step 5: Clearing NextAuth session...')
       await signOut({
         redirect: false,
-        callbackUrl: '/components/LogInAndRegister',
+        callbackUrl: '/',
       })
 
       // ========================================
@@ -246,7 +248,7 @@ export default function UserSidebar() {
       
       // Hard redirect যাতে ব্রাউজার সম্পূর্ণভাবে রিফ্রেশ হয়
       setTimeout(() => {
-        window.location.href = '/components/LogInAndRegister'
+        window.location.href = '/'
       }, 500)
 
     } catch (error: any) {
@@ -265,7 +267,7 @@ export default function UserSidebar() {
 
       // Force logout anyway
       setTimeout(() => {
-        window.location.href = '/components/LogInAndRegister'
+        window.location.href = '/'
       }, 1000)
 
     } finally {

@@ -34,10 +34,11 @@ export type OrderRow = {
   }
 }
 
-// Steadfast action handlers
+// Action handlers component
 const SteadfastActions = ({ order }: { order: OrderRow }) => {
   const [loading, setLoading] = useState<string | null>(null)
 
+  // Status Update Function
   const handleSteadfastAction = async (action: string) => {
     try {
       setLoading(action)
@@ -51,13 +52,37 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
       
       if (response.data.success) {
         toast.success(`Order ${action}ed successfully`)
-        // Refresh the page to update the order status
         window.location.reload()
       } else {
-        toast.error(response.data.message || 'Failed to update order')
+        toast.error(response.data.message || `Failed to ${action} order`)
       }
     } catch (error: any) {
-      toast.error('Failed to update order')
+      const errorMsg = error.response?.data?.message || 'Something went wrong. Action failed!';
+      toast.error(errorMsg);
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  // Delete Order Function
+  const handleDeleteOrder = async () => {
+    const isConfirmed = window.confirm('Are you sure you want to delete this order? This action cannot be undone.');
+    if (!isConfirmed) return;
+
+    try {
+      setLoading('delete')
+      
+      const response = await axios.delete(`/api/v1/product-order/${order.id}`);
+      
+      if (response.data.success) {
+        toast.success('Order deleted successfully')
+        window.location.reload()
+      } else {
+        toast.error(response.data.message || 'Failed to delete order')
+      }
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || 'Error deleting the order!';
+      toast.error(errorMsg);
     } finally {
       setLoading(null)
     }
@@ -65,7 +90,7 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
 
   const handleTrackOrder = () => {
     if (order.trackingId && order.trackingId !== '-') {
-      window.open(`/home/product/tracking?trackingId=${order.trackingId}`, '_blank')
+      window.open(`/products/tracking?trackingId=${order.trackingId}`, '_blank')
     } else {
       toast.error('No tracking ID available for this order')
     }
@@ -86,7 +111,8 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
         toast.error(response.data.message || 'Failed to create Steadfast parcel')
       }
     } catch (error: any) {
-      toast.error('Failed to create Steadfast parcel')
+      const errorMsg = error.response?.data?.message || 'Failed to create Steadfast parcel';
+      toast.error(errorMsg);
     } finally {
       setLoading(null)
     }
@@ -98,6 +124,7 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
 
   return (
     <div className="flex items-center gap-1">
+      {/* View Details Button */}
       <Link
         href={`/general/view/orders/${order.id}`}
         className="p-1.5 rounded bg-blue-500/10 text-blue-600 hover:bg-blue-500/20"
@@ -106,6 +133,9 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
         <Eye size={14} />
       </Link>
       
+      {/* ==============================================
+          STEADFAST DELIVERY METHOD ACTIONS
+          ============================================== */}
       {isSteadfastOrder && (
         <>
           {/* Create Steadfast Parcel */}
@@ -131,7 +161,7 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
             </button>
           )}
           
-          {/* Order Actions */}
+          {/* Order Actions based on Status */}
           {order.status === 'Pending' && (
             <button 
               onClick={() => handleSteadfastAction('accept')}
@@ -179,16 +209,35 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
         </>
       )}
       
-      {/* Non-Steadfast orders - keep original actions */}
+      {/* ==============================================
+          NON-STEADFAST (Regular/COD) DELIVERY ACTIONS
+          ============================================== */}
       {!isSteadfastOrder && (
         <>
-          <button className="p-1.5 rounded bg-teal-500/10 text-teal-600 hover:bg-teal-500/20" title="Tracking the order">
+          <button 
+            onClick={() => handleSteadfastAction('ship')}
+            disabled={loading === 'ship'}
+            className="p-1.5 rounded bg-teal-500/10 text-teal-600 hover:bg-teal-500/20 disabled:opacity-50" 
+            title="Mark as Shipped"
+          >
             <Truck size={14} />
           </button>
-          <button className="p-1.5 rounded bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20" title="Deliver">
+          
+          <button 
+            onClick={() => handleSteadfastAction('deliver')}
+            disabled={loading === 'deliver'}
+            className="p-1.5 rounded bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 disabled:opacity-50" 
+            title="Mark as Delivered"
+          >
             <CheckCircle2 size={14} />
           </button>
-          <button className="p-1.5 rounded bg-red-600/10 text-red-700 hover:bg-red-600/20" title="Delete">
+          
+          <button 
+            onClick={handleDeleteOrder}
+            disabled={loading === 'delete'}
+            className="p-1.5 rounded bg-red-600/10 text-red-700 hover:bg-red-600/20 disabled:opacity-50" 
+            title="Delete Order"
+          >
             <Trash2 size={14} />
           </button>
         </>
@@ -346,5 +395,3 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
     enableSorting: false,
   },
 ]
-
-

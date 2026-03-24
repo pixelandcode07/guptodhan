@@ -36,11 +36,16 @@ export default function SelectCategory_SubCategory({ onSelectCategory, onSelectS
     fetchCategories();
   }, []);
 
-  const handleCategorySelect = async (cat: Category) => {
+  // ✅ Fix: Added 'isMobileExpand' parameter so mobile doesn't auto-collapse the accordion
+  const handleCategorySelect = async (cat: Category, isMobileExpand = false) => {
     setSelectedCategory(cat);
     setSubCategories([]);
     onSelectCategory(cat);
-    setExpandedCategory(null);
+    
+    // Desktop will close accordion, Mobile will keep it open based on toggle
+    if (!isMobileExpand) {
+      setExpandedCategory(null);
+    }
 
     setLoadingSubCategories(true);
     try {
@@ -51,10 +56,6 @@ export default function SelectCategory_SubCategory({ onSelectCategory, onSelectS
     } finally {
       setLoadingSubCategories(false);
     }
-  };
-
-  const toggleExpand = (catId: string) => {
-    setExpandedCategory(expandedCategory === catId ? null : catId);
   };
 
   const variants = {
@@ -84,8 +85,18 @@ export default function SelectCategory_SubCategory({ onSelectCategory, onSelectS
                 {categories.map((cat) => (
                   <div key={cat._id} className="border rounded-lg overflow-hidden">
                     {/* Main Category */}
+                    {/* ✅ Fix: Updated onClick for Mobile to trigger both expand and fetch */}
                     <button
-                      onClick={() => toggleExpand(cat._id)}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (expandedCategory === cat._id) {
+                          setExpandedCategory(null); // Just collapse if already open
+                        } else {
+                          setExpandedCategory(cat._id); // Expand it
+                          handleCategorySelect(cat, true); // Fetch subcategories
+                        }
+                      }}
                       className={`
                         w-full flex items-center justify-between p-3 text-left
                         hover:bg-gray-50 transition-colors
@@ -121,8 +132,12 @@ export default function SelectCategory_SubCategory({ onSelectCategory, onSelectS
                             <div className="p-2 grid grid-cols-1 gap-0.5">
                               {subCategories.map((sub) => (
                                 <button
+                                  type="button"
                                   key={sub._id}
-                                  onClick={() => onSelectSubCategory(sub)}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    onSelectSubCategory(sub);
+                                  }}
                                   className="flex items-center gap-2 p-2 text-sm rounded hover:bg-blue-50 transition-colors text-left"
                                 >
                                   {sub.icon && typeof sub.icon === 'string' && (

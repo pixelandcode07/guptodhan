@@ -85,6 +85,7 @@ export default function SelectLocation({
                         </Button>
                         <Button
                             type="button"
+                            variant={"BlueBtn"}
                             onClick={() => {
                                 if (selectedDivision && selectedCity && watch('upazila')) onNext();
                                 else toast.error('Please fill location');

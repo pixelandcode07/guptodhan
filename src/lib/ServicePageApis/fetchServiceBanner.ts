@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { ApiResponse, IServiceBanner } from '@/types/ServiceBannerType';
 
@@ -11,26 +10,21 @@ export const fetchAllPublicServiceBanners = async (): Promise<IServiceBanner[]> 
     }
 
     try {
-        const response = await axios.get<ApiResponse<IServiceBanner[]>>(
-            `${baseUrl}/api/v1/public/service-section/service-banner`
+        const response = await fetch(
+            `${baseUrl}/api/v1/public/service-section/service-banner`,
+            {
+                cache: 'no-store', // ✅ Next.js cache বন্ধ
+                next: { revalidate: 0 },
+            }
         );
 
-        return response.data.data || [];
+        const data = await response.json();
+        return data.data || [];
     } catch (error: any) {
-        console.error(
-            'Axios Error: Failed to fetch public service banners',
-            error.message || error
-        );
-        const errorMessage =
-            error.response?.data?.message ||
-            'Failed to fetch banners. Please try again later.';
-
-        throw new Error(errorMessage);
+        console.error('Failed to fetch public service banners:', error.message || error);
+        return [];
     }
 };
-
-// -------------------------------------------------------------
-
 
 export const fetchAllProtectedServiceBanners = async (
     token: string
@@ -58,14 +52,10 @@ export const fetchAllProtectedServiceBanners = async (
 
         return response.data.data || [];
     } catch (error: any) {
-        console.error(
-            'Axios Error: Failed to fetch protected service banners',
-            error.message || error
-        );
+        console.error('Failed to fetch protected service banners:', error.message || error);
         const errorMessage =
             error.response?.data?.message ||
             'Failed to fetch banners. Authentication may have expired.';
-
         throw new Error(errorMessage);
     }
 };

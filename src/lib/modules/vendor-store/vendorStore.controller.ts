@@ -321,11 +321,9 @@ const updateStore = async (
     if (logoFile instanceof File) {
       try {
         const buffer = Buffer.from(await logoFile.arrayBuffer());
-
         if (existingStore.storeLogo) {
           await deleteFromCloudinary(existingStore.storeLogo);
         }
-
         const result = await uploadToCloudinary(buffer, 'stores/logo');
         storeLogo = result.secure_url;
       } catch (err) {
@@ -343,11 +341,9 @@ const updateStore = async (
     if (bannerFile instanceof File) {
       try {
         const buffer = Buffer.from(await bannerFile.arrayBuffer());
-
         if (existingStore.storeBanner) {
           await deleteFromCloudinary(existingStore.storeBanner);
         }
-
         const result = await uploadToCloudinary(buffer, 'stores/banner');
         storeBanner = result.secure_url;
       } catch (err) {
@@ -361,7 +357,24 @@ const updateStore = async (
       }
     }
 
-    // ✅ Build payload with proper types
+    // ================================================================
+    // ✅ PAYMENT INFO HANDLE
+    // ================================================================
+    const paymentInfoData: Record<string, string> = {};
+    const piFields = ['bkash', 'nagad', 'rocket', 'bankName', 'bankAccount', 'bankBranch'];
+    let hasPaymentInfo = false;
+
+    piFields.forEach((field) => {
+      const val = formData.get(`paymentInfo[${field}]`);
+      if (val && typeof val === 'string' && val.trim()) {
+        paymentInfoData[field] = val.trim();
+        hasPaymentInfo = true;
+      }
+    });
+
+    // ================================================================
+    // ✅ BUILD PAYLOAD
+    // ================================================================
     const payload: Partial<IStore> = {
       storeLogo,
       storeBanner,
@@ -380,7 +393,6 @@ const updateStore = async (
       storeMetaTitle: (() => {
         const raw = formData.get('storeMetaTitle');
         if (!raw) return existingStore.storeMetaTitle;
-
         try {
           const parsed = JSON.parse(raw as string);
           return typeof parsed === 'string' ? parsed : existingStore.storeMetaTitle;
@@ -392,7 +404,6 @@ const updateStore = async (
       storeMetaKeywords: (() => {
         const raw = formData.get('storeMetaKeywords');
         if (!raw) return existingStore.storeMetaKeywords;
-
         try {
           const parsed = JSON.parse(raw as string);
           return Array.isArray(parsed) ? parsed : existingStore.storeMetaKeywords;
@@ -404,8 +415,15 @@ const updateStore = async (
       storeMetaDescription:
         (formData.get('storeMetaDescription') as string) || existingStore.storeMetaDescription,
 
-      // ✅ FIXED: Using cleanSocialLinks helper
       storeSocialLinks: cleanSocialLinks(formData) || existingStore.storeSocialLinks,
+
+      // ✅ paymentInfo: নতুন data থাকলে merge করো, না থাকলে পুরনোটা রাখো
+      paymentInfo: hasPaymentInfo
+        ? {
+            ...existingStore.paymentInfo,
+            ...paymentInfoData,
+          }
+        : existingStore.paymentInfo,
     };
 
     const updatedStore = await StoreServices.updateStoreInDB(id, payload);

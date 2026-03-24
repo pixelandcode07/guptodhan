@@ -35,6 +35,7 @@ export default function ChildCategoriesClient() {
   const fetchRows = useCallback(async () => {
     try {
       const res = await axios.get("/api/v1/ecommerce-category/ecomChildCategory", { params: { _ts: Date.now() } });
+      console.log("Child Category API Response:", res.data);
       const items: ApiChildCategory[] = res.data.data || [];
       const mapped: ChildCategory[] = items.map((it, index) => ({
         _id: it._id,

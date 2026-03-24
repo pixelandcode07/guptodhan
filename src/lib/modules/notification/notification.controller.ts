@@ -84,7 +84,32 @@ const sendToAllDevices = async (req: NextRequest) => {
   }
 };
 
+
+const getUserNotifications = async (req: NextRequest) => {
+  await dbConnect();
+  
+  const { searchParams } = new URL(req.url);
+  const userId = searchParams.get('userId');
+
+  const query = {
+    $or: [
+      { type: 'broadcast' },
+      { userId: userId }
+    ]
+  };
+
+  const notifications = await Notification.find(query).sort({ sentAt: -1 });
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Notifications retrieved successfully!',
+    data: notifications,
+  });
+};
+
 export const NotificationController = {
   sendToSpecificDevice,
-  sendToAllDevices
+  sendToAllDevices,
+  getUserNotifications,
 };
