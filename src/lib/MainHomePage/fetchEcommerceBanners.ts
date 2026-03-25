@@ -1,6 +1,10 @@
+
+
+
+// src/lib/MainHomePage/fetchEcommerceBanners.ts
+
 import axios, { AxiosError } from 'axios';
 import { ApiResponse, EcommerceBannerType, EcommerceSliderBannerType } from '@/types/ecommerce-banner-type';
-import { unstable_noStore as noStore } from 'next/cache'; // <-- Added here
 
 interface EcommerceBannersResponse {
   leftBanners: EcommerceSliderBannerType[];
@@ -11,8 +15,6 @@ interface EcommerceBannersResponse {
 }
 
 export async function fetchEcommerceBanners(): Promise<EcommerceBannersResponse> {
-  noStore(); // <-- Added to prevent Next.js server caching
-
   const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
   if (!baseUrl) {
