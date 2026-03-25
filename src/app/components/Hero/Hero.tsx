@@ -1,6 +1,7 @@
+
 import HeroImage from './HeroImage';
 import HeroFooter from './HeroFooter';
-import { fetchEcommerceBanners, fetchNavigationCategoryData } from '@/lib/MainHomePage'; // Adjusted import to avoid circular dependency
+import { fetchEcommerceBanners, fetchNavigationCategoryData } from '@/lib/MainHomePage';
 import { HeroNav } from './HeroNav';
 
 export default async function Hero() {
