@@ -37,6 +37,7 @@ export default async function HeroImage({
           {rightBanners[0] ? (
             <Link
               href={rightBanners[0].bannerLink || '#'}
+              prefetch={false} // <-- Added prefetch false
               className="block w-full h-full relative rounded-lg overflow-hidden group"
             >
               <Image
@@ -59,6 +60,7 @@ export default async function HeroImage({
           {bottomBanners[0] ? (
             <Link
               href={bottomBanners[0].bannerLink || '#'}
+              prefetch={false} // <-- Added prefetch false
               className="block w-full h-full relative rounded-lg overflow-hidden group"
             >
               <Image
@@ -83,6 +85,7 @@ export default async function HeroImage({
         {rightBanners[0] ? (
           <Link
             href={rightBanners[0].bannerLink || '#'}
+            prefetch={false} // <-- Added prefetch false
             className="block w-full aspect-2250/1125 relative rounded-lg overflow-hidden group"
           >
             <Image
@@ -99,6 +102,7 @@ export default async function HeroImage({
         {bottomBanners[0] ? (
           <Link
             href={bottomBanners[0].bannerLink || '#'}
+            prefetch={false} // <-- Added prefetch false
             className="block w-full aspect-2250/1125 relative rounded-lg overflow-hidden group"
           >
             <Image
