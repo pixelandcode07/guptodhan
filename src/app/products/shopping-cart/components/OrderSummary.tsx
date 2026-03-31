@@ -44,6 +44,7 @@ export default function OrderSummary({
     // Save only selected items to localStorage for checkout
     try {
       localStorage.setItem('cart', JSON.stringify(selectedCartItems));
+      sessionStorage.setItem('selectedCartItemIds', JSON.stringify(selectedCartItems.map((item) => item.id)));
       // Navigate to shopping info page
       router.push('/products/shoppinginfo');
     } catch (error) {
@@ -56,7 +57,7 @@ export default function OrderSummary({
   }
 
   return (
-    <div className="bg-white rounded-lg p-6 sticky top-4">
+    <div className="bg-white rounded-lg p-4 sm:p-6 lg:sticky lg:top-4 mb-24 lg:mb-0">
       <h2 className="text-xl font-semibold text-gray-900 mb-6">CART TOTALS</h2>
 
       {selectedCartItems.length === 0 && (
@@ -94,17 +95,8 @@ export default function OrderSummary({
         </div>
       </div>
 
-      {/* Checkout Button */}
-      <Button 
-        className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 text-lg font-medium mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
-        onClick={handleCheckout}
-        disabled={!termsAccepted || selectedCartItems.length === 0}
-      >
-        PROCEED TO CHECKOUT →
-      </Button>
-
       {/* Terms and Conditions */}
-      <div className="text-xs text-gray-500">
+      <div className="text-xs text-gray-500 mb-4">
         <label className="flex items-start gap-2 cursor-pointer">
           <input 
             type="checkbox" 
@@ -120,6 +112,16 @@ export default function OrderSummary({
           </span>
         </label>
       </div>
+
+      {/* Checkout Button */}
+      <Button 
+        className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 text-base sm:text-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        onClick={handleCheckout}
+        disabled={selectedCartItems.length === 0}
+      >
+        PROCEED TO CHECKOUT →
+      </Button>
+
     </div>
   )
 }

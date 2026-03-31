@@ -101,7 +101,7 @@ export default function OrderSummary({
   }
 
   return (
-    <div className="bg-white rounded-lg p-6 sticky top-4">
+    <div className="bg-white rounded-lg p-6 lg:sticky lg:top-4">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">Order Summary</h2>
 
       {/* Selected Delivery Method */}
