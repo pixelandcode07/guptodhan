@@ -21,7 +21,7 @@ export default function CartModalProvider() {
 
   const handleCheckout = () => {
     closeAddToCartModal();
-    router.push('/products/checkout');
+    router.push('/products/shoppinginfo');
   };
 
   if (!lastAddedProduct || !showAddToCartModal) return null;
