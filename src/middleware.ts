@@ -61,6 +61,7 @@ const adminRoutes = [
   '/api/v1/faq-category',
   '/api/v1/faq',
   '/api/v1/delivery-charge/',
+  '/api/v1/admin/redis/flush',
 ];
 
 // 🔥 Vendor Routes
