@@ -46,7 +46,7 @@ export default function ShoppingCartContent({
   } = useCartSelection({ cartItems })
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-24 lg:pb-0">
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Shopping Cart Section */}

@@ -34,6 +34,19 @@ export default function ShoppingInfoClient() {
         return cartItems.filter((item: CartItem) => item.product.id === buyNowProductId);
       }
     }
+    if (typeof window !== 'undefined') {
+      const selectedRaw = sessionStorage.getItem('selectedCartItemIds');
+      if (selectedRaw) {
+        try {
+          const selectedIds = JSON.parse(selectedRaw) as string[];
+          if (Array.isArray(selectedIds) && selectedIds.length > 0) {
+            return cartItems.filter((item: CartItem) => selectedIds.includes(item.id));
+          }
+        } catch (error) {
+          console.error('Failed to parse selectedCartItemIds:', error);
+        }
+      }
+    }
     return cartItems;
   }, [cartItems, isBuyNow]);
 

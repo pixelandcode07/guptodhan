@@ -125,12 +125,14 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           quantity?: number;
         }
         
-        const transformedItems: CartItem[] = apiCartItems.map((item: ApiCartItem) => {
+        const transformedItems: CartItem[] = apiCartItems.map((item: ApiCartItem, index: number) => {
           const productIdStr = typeof item.productID === 'string' ? item.productID : item.productID?.toString();
+          const resolvedCartId = item.cartID || item._id?.toString() || `${productIdStr || 'item'}-${index}`;
           
           return {
-            id: productIdStr || item._id?.toString() || '',
-            cartId: item.cartID || '', // Always use cartID from database
+            // Keep row identity unique by cart record id (not product id)
+            id: resolvedCartId,
+            cartId: resolvedCartId,
             seller: {
               name: item.storeName || 'Store',
               verified: true,
@@ -218,6 +220,34 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       setIsLoading(true);
     }
     try {
+      // If same product + variant already exists, update quantity instead of creating duplicate row
+      const normalizedColor = (color || '').trim().toLowerCase();
+      const normalizedSize = (size || '').trim().toLowerCase();
+      const existingItem = cartItems.find((item) => {
+        const itemColor = (item.product.color || '').trim().toLowerCase();
+        const itemSize = (item.product.size || '').trim().toLowerCase();
+        return (
+          item.product.id === productId &&
+          itemColor === normalizedColor &&
+          itemSize === normalizedSize
+        );
+      });
+
+      if (existingItem) {
+        await updateQuantity(existingItem.id, existingItem.product.quantity + quantity);
+        if (!skipModal) {
+          setLastAddedProduct({
+            ...existingItem,
+            product: {
+              ...existingItem.product,
+              quantity: existingItem.product.quantity + quantity,
+            },
+          });
+          setShowAddToCartModal(true);
+        }
+        return;
+      }
+
       // Fetch product details
       const response = await axios.get(`/api/v1/product/${productId}`);
       const productData = response.data.data;
@@ -284,7 +314,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         
         // Create cart item for modal display
         const newCartItem: CartItem = {
-          id: productData._id,
+          id: cartId || productData._id,
           cartId: cartId,
           seller: {
             name: storeName,
