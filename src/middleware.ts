@@ -247,7 +247,7 @@ export async function middleware(req: NextRequest) {
         { status: StatusCodes.FORBIDDEN }
       );
     }
-  }
+  }  
 
   // 🔥 Vendor Check
   if (
