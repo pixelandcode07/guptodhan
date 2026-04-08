@@ -8,7 +8,7 @@ async function getAllActiveProducts() {
     const res = await fetch(
       `${BASE_URL}/api/v1/public/product?limit=50000&fields=slug,updatedAt`,
       {
-        next: { revalidate: 3600 }, // 1 ঘন্টা cache
+        next: { revalidate: 3600 },
         headers: { 'Content-Type': 'application/json' },
       }
     );
@@ -19,8 +19,6 @@ async function getAllActiveProducts() {
     }
 
     const json = await res.json();
-
-    // API response structure: { success, data: { products: [...] } } অথবা { data: [...] }
     const products = json?.data?.products || json?.data || [];
     return Array.isArray(products) ? products : [];
   } catch (error) {
@@ -32,15 +30,6 @@ async function getAllActiveProducts() {
 // ─── Categories: API থেকে fetch ──────────────────────────────────────────────
 async function getAllActiveCategories() {
   try {
-    const res = await fetch(
-      `${BASE_URL}/api/v1/public/product?type=categories&fields=slug,updatedAt`,
-      {
-        next: { revalidate: 3600 },
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
-
-    // ecommerce category endpoint
     const catRes = await fetch(
       `${BASE_URL}/api/v1/ecommerce-category/ecomCategory/mainCategory`,
       {
@@ -61,6 +50,18 @@ async function getAllActiveCategories() {
     console.error('Sitemap: category fetch failed', error);
     return [];
   }
+}
+
+// ─── Slug Sanitize Helper ─────────────────────────────────────────────────────
+function sanitizeSlug(slug: string): string {
+  return slug
+    .replace(/&/g, '%26')
+    .replace(/</g, '%3C')
+    .replace(/>/g, '%3E')
+    .replace(/"/g, '%22')
+    .replace(/'/g, '%27')
+    .replace(/\s+/g, '-')
+    .trim();
 }
 
 // ─── Main Sitemap Export ──────────────────────────────────────────────────────
@@ -145,9 +146,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Category pages
   const categories = await getAllActiveCategories();
   const categoryPages: MetadataRoute.Sitemap = categories
-    .filter((cat: any) => cat?.slug)
+    .filter((cat: any) => cat?.slug && typeof cat.slug === 'string')
     .map((cat: any) => ({
-      url: `${BASE_URL}/category/${cat.slug}`,
+      url: `${BASE_URL}/category/${sanitizeSlug(cat.slug)}`,
       lastModified:
         cat.updatedAt && !isNaN(new Date(cat.updatedAt).getTime())
           ? new Date(cat.updatedAt)
@@ -159,9 +160,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Product pages
   const products = await getAllActiveProducts();
   const productPages: MetadataRoute.Sitemap = products
-    .filter((p: any) => p?.slug)
+    .filter((p: any) => p?.slug && typeof p.slug === 'string')
     .map((p: any) => ({
-      url: `${BASE_URL}/product/${p.slug}`,
+      url: `${BASE_URL}/product/${sanitizeSlug(p.slug)}`,
       lastModified:
         p.updatedAt && !isNaN(new Date(p.updatedAt).getTime())
           ? new Date(p.updatedAt)
