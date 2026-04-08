@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next';
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.guptodhan.com';
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://guptodhan.com';
 
 // ─── Products: API থেকে fetch ────────────────────────────────────────────────
 async function getAllActiveProducts() {
