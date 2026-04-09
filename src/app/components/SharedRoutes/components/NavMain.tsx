@@ -57,7 +57,7 @@ export default function NavMain() {
     <div>
       {/* Main Top Bar */}
       <div className="bg-[#0097E9] md:bg-[#FFFFFF] text-black  flex justify-between items-center md:max-w-[95vw] xl:container sm:px-8 mx-auto py-4" id="navbar">
-        <div className="w-full md:w-3xs flex justify-between items-center gap-2 px-4">
+        <div className="w-full md:w-3xs flex justify-between items-center gap-2 px-4 md:px-0">
           <div className="flex justify-between items-center lg:block ">
             {/* Mobile Menu Toggle */}
             <div className=" flex justify-between items-center gap-2">
