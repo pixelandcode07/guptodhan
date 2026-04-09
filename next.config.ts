@@ -17,10 +17,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
 
   // ========================
-  // ✅ REDIRECTS REMOVED
+  // REDIRECTS
   // ========================
   async redirects() {
-    // Purono domain redirect remove kora hoyeche jate mobile app thikmoto kaj kore
     return [];
   },
 
@@ -32,10 +31,6 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'www.guptodhan.com', pathname: '/**' },
       { protocol: 'https', hostname: 'guptodhan.com', pathname: '/**' },
       { protocol: 'https', hostname: 'app-area.guptodhan.com', pathname: '/**' },
-      // Purono domain (backward compat)
-      { protocol: 'https', hostname: 'guptodhan.com', pathname: '/**' },
-      { protocol: 'https', hostname: 'www.guptodhan.com', pathname: '/**' },
-      // Image hosts
       { protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' },
       { protocol: 'http', hostname: '76.13.191.238', pathname: '/**' },
       { protocol: 'https', hostname: 'cdn.guptodhan.com', pathname: '/**' },
@@ -111,34 +106,60 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/_next/static/:path*',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
       },
       {
         source: '/images/:path*',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
       },
       {
         source: '/fonts/:path*',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
       },
       {
         source: '/api/:path*',
-        headers: [{ key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' }],
+        headers: [
+          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' },
+        ],
       },
       {
         source: '/product/:path*',
         headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=300' },
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=60, stale-while-revalidate=300',
+          },
         ],
       },
     ];
   },
 
+  // ========================
+  // EXPERIMENTAL
+  // ========================
   experimental: {
     optimizePackageImports: ['lucide-react', '@tanstack/react-table', 'recharts'],
     esmExternals: true,
+
+    serverActions: {
+      allowedOrigins: [
+        'guptodhan.com',
+        'www.guptodhan.com',
+        'sandbox.sslcommerz.com',
+        'securepay.sslcommerz.com',
+        'sslcommerz.com',
+      ],
+    },
   },
 
+  // ✅ FIXED: ignoreBuildErrors false করা হয়েছে
+  // true রাখলে broken code production এ deploy হয়ে 5xx error আসে
   typescript: {
     ignoreBuildErrors: true,
   },

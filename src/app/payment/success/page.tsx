@@ -3,11 +3,28 @@
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import React, { Suspense, useEffect, useState, useRef } from 'react';
-import { CheckCircle2, Package, Home, ShoppingBag } from 'lucide-react';
+import { CheckCircle2, Package, Home, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { HeroNav } from '@/app/components/Hero/HeroNav';
-import { MainCategory } from '@/types/navigation-menu';
+
+// ✅ FIX: HeroNav removed — it was fetching data internally and crashing on VPS production.
+// A lightweight nav is used instead to keep the page self-contained and crash-proof.
+function SimpleNav() {
+  return (
+    <nav className="w-full bg-white border-b shadow-sm px-4 py-3 flex items-center justify-between sticky top-0 z-50">
+      <Link href="/" className="text-xl font-bold text-blue-700 tracking-tight">
+        Guptodhan
+      </Link>
+      <Link
+        href="/"
+        className="flex items-center gap-1 text-sm text-gray-600 hover:text-blue-600 transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to Shop
+      </Link>
+    </nav>
+  );
+}
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -18,7 +35,6 @@ function SuccessContent() {
   const tran_id = searchParams?.get('tran_id') ?? '';
   const order_id = searchParams?.get('order_id') ?? '';
 
-  // ✅ Auto redirect to orders page after 5 seconds (using useEffect, not during render)
   useEffect(() => {
     if (hasRedirected.current) return;
 
@@ -26,7 +42,6 @@ function SuccessContent() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          // ✅ Mark as redirected and navigate
           hasRedirected.current = true;
           router.push('/home/UserProfile/orders');
           return 0;
@@ -40,7 +55,7 @@ function SuccessContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
-      <HeroNav categories={[] as MainCategory[]} />
+      <SimpleNav />
 
       <div className="container mx-auto px-4 py-8 sm:py-12 max-w-4xl">
         {/* Success Icon & Header */}
@@ -51,9 +66,7 @@ function SuccessContent() {
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
             Payment Successful!
           </h1>
-          <p className="text-lg text-gray-600 mb-2">
-            Thank you for your purchase
-          </p>
+          <p className="text-lg text-gray-600 mb-2">Thank you for your purchase</p>
           <p className="text-sm text-gray-500">
             Your order has been confirmed and will be processed shortly
           </p>
@@ -64,20 +77,26 @@ function SuccessContent() {
           <CardContent className="p-6 sm:p-8">
             <div className="space-y-6">
               {/* Transaction ID */}
-              <div className="pb-4 border-b">
-                <p className="text-sm font-medium text-gray-500 mb-1">Transaction ID</p>
-                <p className="text-lg font-mono font-semibold text-gray-900 break-all">{tran_id || 'N/A'}</p>
-              </div>
+              {tran_id && (
+                <div className="pb-4 border-b">
+                  <p className="text-sm font-medium text-gray-500 mb-1">Transaction ID</p>
+                  <p className="text-lg font-mono font-semibold text-gray-900 break-all">
+                    {tran_id}
+                  </p>
+                </div>
+              )}
 
               {/* Order ID */}
               {order_id && (
                 <div className="pb-4 border-b">
                   <p className="text-sm font-medium text-gray-500 mb-1">Order ID</p>
-                  <p className="text-lg font-mono font-semibold text-gray-900 break-all">{order_id}</p>
+                  <p className="text-lg font-mono font-semibold text-gray-900 break-all">
+                    {order_id}
+                  </p>
                 </div>
               )}
 
-              {/* Order Summary */}
+              {/* Status & Date */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-gray-700 mb-4">
                   <Package className="w-5 h-5" />
@@ -110,7 +129,7 @@ function SuccessContent() {
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-start gap-2">
                     <span className="text-green-600 mt-1">✓</span>
-                    <span>You will receive an order confirmation email shortly</span>
+                    <span>You will receive an order confirmation shortly</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-green-600 mt-1">✓</span>
@@ -124,9 +143,10 @@ function SuccessContent() {
               </div>
 
               {/* Auto Redirect Notice */}
-              <div className="mt-4 p-3 bg-blue-100 border border-blue-300 rounded-lg">
+              <div className="p-3 bg-blue-100 border border-blue-300 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  ⏱️ Redirecting to your orders in <span className="font-bold">{countdown}</span> seconds...
+                  ⏱️ Redirecting to your orders in{' '}
+                  <span className="font-bold">{countdown}</span> seconds...
                 </p>
               </div>
             </div>
@@ -145,12 +165,7 @@ function SuccessContent() {
               View My Orders
             </Link>
           </Button>
-          <Button
-            asChild
-            variant="outline"
-            size="lg"
-            className="border-2"
-          >
+          <Button asChild variant="outline" size="lg" className="border-2">
             <Link href="/" className="flex items-center gap-2">
               <Home className="w-5 h-5" />
               Continue Shopping
@@ -160,7 +175,7 @@ function SuccessContent() {
 
         {/* Help Section */}
         <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500 mb-2">
+          <p className="text-sm text-gray-500">
             Need help?{' '}
             <Link href="/contact" className="text-blue-600 hover:underline">
               Contact Support
@@ -172,12 +187,17 @@ function SuccessContent() {
   );
 }
 
+// ✅ Suspense is required here because useSearchParams() is used inside SuccessContent.
+// Without this wrapper, Next.js throws on production builds.
 export default function SuccessPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto" />
+            <p className="text-sm text-gray-500">Loading your order confirmation...</p>
+          </div>
         </div>
       }
     >
