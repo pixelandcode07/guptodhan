@@ -36,13 +36,13 @@ export default function DeliveryOptions({
   ]
 
   return (
-    <div className="bg-white rounded-lg p-6">
+    <div className="rounded-lg bg-white p-4 sm:p-6">
       <h2 className="text-lg font-medium text-gray-900 mb-4">Delivery Option</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {deliveryOptions.map((option) => (
           <label 
             key={option.id}
-            className={`border rounded-md p-4 cursor-pointer flex gap-3 transition-all ${
+            className={`border rounded-md p-3 sm:p-4 cursor-pointer flex gap-3 transition-all ${
               selectedDelivery === option.id 
                 ? 'ring-2 ring-blue-600 border-blue-200 bg-blue-50' 
                 : 'hover:border-gray-300'

@@ -114,9 +114,9 @@ export default function InfoForm({ onFormDataChange, initialData, districts = []
   }
 
   return (
-    <div className="bg-white rounded-lg p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Delivery Information</h1>
+    <div className="space-y-5 rounded-lg bg-white p-4 sm:p-6 sm:space-y-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">Delivery Information</h1>
         {!user && (
           <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">
             Login required to place order
@@ -126,7 +126,7 @@ export default function InfoForm({ onFormDataChange, initialData, districts = []
 
       {/* Contact Information */}
       <section className="space-y-3">
-        <h2 className="text-lg font-medium text-gray-900">Contact Information</h2>
+        <h2 className="text-base font-medium text-gray-900 sm:text-lg">Contact Information</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
@@ -160,7 +160,7 @@ export default function InfoForm({ onFormDataChange, initialData, districts = []
 
       {/* Location Information */}
       <section className="space-y-3">
-        <h2 className="text-lg font-medium text-gray-900">Delivery Location</h2>
+        <h2 className="text-base font-medium text-gray-900 sm:text-lg">Delivery Location</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">District *</label>
@@ -205,7 +205,7 @@ export default function InfoForm({ onFormDataChange, initialData, districts = []
 
       {/* City and Postal Code */}
       <section className="space-y-3">
-        <h2 className="text-lg font-medium text-gray-900">City & Postal Information</h2>
+        <h2 className="text-base font-medium text-gray-900 sm:text-lg">City & Postal Information</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
@@ -239,7 +239,7 @@ export default function InfoForm({ onFormDataChange, initialData, districts = []
 
       {/* Address Details */}
       <section className="space-y-3">
-        <h2 className="text-lg font-medium text-gray-900">Address Details</h2>
+        <h2 className="text-base font-medium text-gray-900 sm:text-lg">Address Details</h2>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Street Address *</label>
           <Textarea 
