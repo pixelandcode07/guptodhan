@@ -101,8 +101,8 @@ export default function OrderSummary({
   }
 
   return (
-    <div className="bg-white rounded-lg p-6 lg:sticky lg:top-4">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">Order Summary</h2>
+    <div className="rounded-lg bg-white p-4 lg:sticky lg:top-4 lg:p-6">
+      <h2 className="mb-4 text-lg font-semibold text-gray-900 sm:text-xl">Order Summary</h2>
 
       {/* Selected Delivery Method */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
@@ -122,11 +122,11 @@ export default function OrderSummary({
       </div>
 
       {/* Payment options */}
-      <div className="space-y-3 mb-6">
+      <div className="mb-6 space-y-3">
         <h3 className="text-sm font-medium text-gray-900 mb-3">Choose Payment Method</h3>
         
         {/* Cash on Delivery Option */}
-        <label className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all ${
+        <label className={`flex items-center justify-between gap-2 rounded-lg border p-3 sm:p-4 cursor-pointer transition-all ${
           payment === 'cod' ? 'ring-2 ring-blue-600 border-blue-200 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
         }`}>
           <div className="flex items-center gap-3">
@@ -142,14 +142,14 @@ export default function OrderSummary({
               <p className="text-xs text-gray-500">Pay when your order arrives</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Image src="/img/regular.png" alt="cod" width={24} height={24} />
-            <span className="text-xs text-green-600 font-medium">Available</span>
+            <span className="text-[11px] font-medium text-green-600 sm:text-xs">Available</span>
           </div>
         </label>
 
         {/* Online Payment Option */}
-        <div className={`p-4 border rounded-lg transition-all ${
+        <div className={`rounded-lg border p-3 sm:p-4 transition-all ${
           payment === 'card' ? 'ring-2 ring-blue-600 border-blue-200 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
         }`}>
           <label className="flex items-center gap-3 cursor-pointer">
@@ -165,7 +165,7 @@ export default function OrderSummary({
               <p className="text-xs text-gray-500">Secure online payment</p>
             </div>
           </label>
-          <div className="flex items-center gap-2 mt-3 ml-7">
+          <div className="ml-7 mt-3 flex flex-wrap items-center gap-2">
             <Image src="/img/sslcommerz.png" alt="sslcommerz" width={34} height={20} />
             <Image src="/img/stripe.png" alt="stripe" width={34} height={20} />
             <Image src="/img/bkash.png" alt="bkash" width={34} height={20} />

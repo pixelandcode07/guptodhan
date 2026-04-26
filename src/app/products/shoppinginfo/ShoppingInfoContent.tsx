@@ -368,8 +368,8 @@ export default function ShoppingInfoContent({
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
+                <div className="space-y-4 lg:col-span-2 lg:space-y-6">
                     <InfoForm 
                         onFormDataChange={setFormData}
                         initialData={{
