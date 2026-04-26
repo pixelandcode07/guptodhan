@@ -9,7 +9,7 @@ export default function ShoppingInfoPage() {
   return (
     <>
       <HeroNav categories={categoriesData} />
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-6">
         <ShoppingInfoClient />
       </div>
     </>
