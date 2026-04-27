@@ -27,11 +27,11 @@ export default function CheckoutItemsTable({
   const totalItems = items.reduce((s, i) => s + i.product.quantity, 0);
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">
+    <div className="rounded-lg bg-white p-4 shadow-sm sm:p-6">
+      <h2 className="mb-4 text-lg font-semibold text-gray-900 sm:text-xl">
         Items ({totalItems} {totalItems === 1 ? 'item' : 'items'})
       </h2>
-      <div className="overflow-x-auto">
+      <div className="hidden overflow-x-auto lg:block">
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-200">
@@ -54,6 +54,16 @@ export default function CheckoutItemsTable({
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="space-y-3 lg:hidden">
+        {items.map((item) => (
+          <CheckoutItemMobileCard
+            key={item.id}
+            item={item}
+            onUpdateQuantity={onUpdateQuantity}
+            onRemoveItem={onRemoveItem}
+          />
+        ))}
       </div>
     </div>
   );
@@ -175,5 +185,102 @@ function CheckoutItemRow({
         </Button>
       </td>
     </tr>
+  );
+}
+
+function CheckoutItemMobileCard({
+  item,
+  onUpdateQuantity,
+  onRemoveItem,
+}: {
+  item: CartItemWithShipping;
+  onUpdateQuantity: (itemId: string, newQuantity: number) => void;
+  onRemoveItem: (itemId: string) => void;
+}) {
+  const [quantity, setQuantity] = React.useState(item.product.quantity);
+  React.useEffect(() => {
+    setQuantity(item.product.quantity);
+  }, [item.product.quantity]);
+
+  const subtotal = item.product.price * quantity;
+  const savings = (item.product.originalPrice - item.product.price) * quantity;
+
+  const handleQuantityChange = (newQuantity: number) => {
+    if (newQuantity >= 1) {
+      setQuantity(newQuantity);
+      onUpdateQuantity(item.id, newQuantity);
+    }
+  };
+
+  return (
+    <div className="rounded-md border border-gray-200 p-3">
+      <div className="flex gap-3">
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+          <Image
+            src={item.product.image}
+            alt={item.product.name}
+            width={64}
+            height={64}
+            className="h-full w-full object-cover"
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-sm font-medium text-gray-900">{item.product.name}</h3>
+          {(hasVariant(item.product.size) || hasVariant(item.product.color)) && (
+            <div className="mt-1 text-xs text-gray-600">
+              {hasVariant(item.product.size) && <span>Size: {item.product.size}</span>}
+              {hasVariant(item.product.size) && hasVariant(item.product.color) && <span> · </span>}
+              {hasVariant(item.product.color) && <span>Color: {item.product.color}</span>}
+            </div>
+          )}
+          <div className="mt-1 text-xs text-gray-500">
+            Unit: ৳ {item.product.price.toLocaleString()}
+          </div>
+          <div className="mt-1 text-sm font-semibold text-gray-900">
+            Subtotal: ৳ {subtotal.toLocaleString()}
+          </div>
+          {savings > 0 && (
+            <div className="mt-1 text-xs text-green-600">
+              Save ৳{savings.toLocaleString()}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between">
+        <div className="flex items-center rounded-md border border-gray-300">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 hover:bg-gray-100"
+            onClick={() => handleQuantityChange(Math.max(1, quantity - 1))}
+            aria-label="Decrease quantity"
+          >
+            <Minus className="h-3 w-3" />
+          </Button>
+          <span className="min-w-8 border-x border-gray-300 px-3 py-1 text-center text-sm font-medium">
+            {quantity}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 hover:bg-gray-100"
+            onClick={() => handleQuantityChange(quantity + 1)}
+            aria-label="Increase quantity"
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="p-1 text-gray-600 hover:text-red-500"
+          onClick={() => onRemoveItem(item.id)}
+          aria-label="Remove from checkout"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
   );
 }

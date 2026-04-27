@@ -33,7 +33,6 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
 
 # vercel
 .vercel
@@ -51,3 +50,4 @@ guptodhan-df835-firebase-adminsdk-fbsvc-e40c788905.json
 
 
 .vercel
+config.bat

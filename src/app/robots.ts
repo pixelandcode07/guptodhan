@@ -25,10 +25,10 @@ export default function robots(): MetadataRoute.Robots {
           '/shipping-policy',
         ],
         disallow: [
-          '/general/',              // Admin panel
-          '/api/',                  // API routes
-          '/auth/',                 // Auth routes
-          '/home/UserProfile/',     // User profile
+          '/general/',
+          '/api/',
+          '/auth/',
+          '/home/UserProfile/',
           '/products/shopping-cart/',
           '/products/shoppinginfo/',
           '/products/tracking/',
@@ -50,13 +50,19 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: 'Googlebot',
         allow: ['/product/', '/category/', '/products'],
         disallow: [
-          '/search', '/general/', '/api/', '/auth/',
-          '/home/UserProfile/', '/products/shopping-cart/',
-          '/products/shoppinginfo/', '/withdrawal/', '/dashboard/',
+          '/search',
+          '/general/',
+          '/api/',
+          '/auth/',
+          '/home/UserProfile/',
+          '/products/shopping-cart/',
+          '/products/shoppinginfo/',
+          '/withdrawal/',
+          '/dashboard/',
         ],
       },
 
-      // ─── Googlebot-Image: product image সব allow ────────────────
+      // ─── Googlebot-Image ─────────────────────────────────────────
       {
         userAgent: 'Googlebot-Image',
         allow: ['/'],

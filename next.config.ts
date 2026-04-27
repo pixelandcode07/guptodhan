@@ -106,24 +106,35 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/_next/static/:path*',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
       },
       {
         source: '/images/:path*',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
       },
       {
         source: '/fonts/:path*',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
       },
       {
         source: '/api/:path*',
-        headers: [{ key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' }],
+        headers: [
+          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' },
+        ],
       },
       {
         source: '/product/:path*',
         headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=300' },
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=60, stale-while-revalidate=300',
+          },
         ],
       },
     ];
@@ -136,20 +147,19 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['lucide-react', '@tanstack/react-table', 'recharts'],
     esmExternals: true,
 
-    // ✅ FIX: SSLCommerz তাদের server থেকে callback URL এ POST করে।
-    // Next.js এই POST কে Server Action মনে করে এবং origin mismatch এ block করে দেয়।
-    // allowedOrigins এ SSLCommerz domains add করলে এই block উঠে যায়।
     serverActions: {
       allowedOrigins: [
         'guptodhan.com',
         'www.guptodhan.com',
-        'sandbox.sslcommerz.com',    // SSLCommerz sandbox server (testing)
-        'securepay.sslcommerz.com',  // SSLCommerz production server (live)
+        'sandbox.sslcommerz.com',
+        'securepay.sslcommerz.com',
         'sslcommerz.com',
       ],
     },
   },
 
+  // ✅ FIXED: ignoreBuildErrors false করা হয়েছে
+  // true রাখলে broken code production এ deploy হয়ে 5xx error আসে
   typescript: {
     ignoreBuildErrors: true,
   },

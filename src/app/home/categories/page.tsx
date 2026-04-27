@@ -5,9 +5,9 @@ import Link from 'next/link';
 export default async function BuySellCategories() {
     const categories = await fetchNavigationCategoryData();
     return (
-        <div className="px-5 py-3 mb-20">
+        <div className="px-2 md:px-5 pt-2 md:py-3 mb-20">
             {/* Scrollable Container */}
-            <div className="grid grid-cols-2 gap-5 overflow-y-auto scrollbar-hide space-y-3">
+            <div className="grid grid-cols-2 gap-2 md:gap-5 overflow-y-auto scrollbar-hide space-y-3">
                 {categories?.map((cat) => (
                     <Link
                         key={cat.mainCategoryId}
@@ -24,7 +24,7 @@ export default async function BuySellCategories() {
                             />
                         </div>
                         <div className="flex flex-col justify-center items-center min-w-0 flex-1">
-                            <span className="font-medium text-gray-800 text-sm truncate">{cat.name}</span>
+                            <span className="font-medium text-gray-800 text-sm line-clamp-1">{cat.name}</span>
                         </div>
                     </Link>
                 ))}
