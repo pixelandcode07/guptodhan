@@ -4,12 +4,13 @@ export const fetchCache = 'force-no-store';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { getServerSession } from 'next-auth'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, ShoppingCart, Package, CreditCard } from "lucide-react";
+import { BarChart3, ShoppingCart, Package, CreditCard, Store, PlusCircle } from "lucide-react";
 import { DataTable } from "@/components/TableHelper/data-table";
 import SalesAnalyticsChart from '../components/SalesAnalyticsChart';
 import { recentOrdersColumns } from '@/components/TableHelper/recent-orders-columns';
 import { bestSellingProductsColumns } from '@/components/TableHelper/best-selling-products-columns';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 interface DashboardResponse {
   success: boolean;
@@ -38,14 +39,32 @@ export default async function VendorDashboard() {
 
   const vendorId = session?.user?.vendorId;
   const accessToken = session?.accessToken;
-  
-  // Provide fallbacks so production builds don't crash if NEXTAUTH_URL is missing
-  const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_API_URL || 'https://guptodhan.com';
 
+  // 💡 মেইন লজিক: যদি vendorId না থাকে, ইউজারকে স্টোর খোলার পেজে পাঠানো হবে
   if (!vendorId) {
-    return <div className="p-6 text-red-500">Error: Vendor ID is missing from your session. Please try logging in again.</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
+        <div className="bg-white p-10 rounded-2xl shadow-sm border max-w-lg w-full">
+          <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Store size={40} />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-3">Welcome to Guptodhan!</h2>
+          <p className="text-gray-600 mb-8 leading-relaxed">
+            You haven't set up your store yet. To access your dashboard and start selling, you need to create your store profile first.
+          </p>
+          <Link href="/store">
+            <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white w-full gap-2">
+              <PlusCircle size={20} />
+              Create My Store Now
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
   }
 
+  // Provide fallbacks so production builds don't crash if NEXTAUTH_URL is missing
+  const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_API_URL || 'https://guptodhan.com';
   let dashboardData: DashboardResponse['data'] | null = null;
 
   try {
@@ -58,8 +77,7 @@ export default async function VendorDashboard() {
     });
 
     if (!res.ok) {
-      const errorText = await res.text();
-      console.error("Dashboard API Error:", errorText);
+      console.error("Dashboard API Error:", await res.text());
     } else {
       const json = await res.json();
       dashboardData = json.data;
@@ -74,7 +92,7 @@ export default async function VendorDashboard() {
       <div className="p-6 flex items-center justify-center h-[50vh]">
         <div className="text-center space-y-4">
           <h2 className="text-2xl font-bold text-gray-800">Oops! Could not load dashboard</h2>
-          <p className="text-gray-600">We encountered an issue fetching your store data. Please refresh the page or try again later.</p>
+          <p className="text-gray-600">We encountered an issue fetching your store data. Please refresh or try again.</p>
         </div>
       </div>
     );
