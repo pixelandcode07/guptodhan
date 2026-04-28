@@ -4,7 +4,7 @@ export const fetchCache = 'force-no-store';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { getServerSession } from 'next-auth'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, ShoppingCart, Package, CreditCard, Store, PlusCircle } from "lucide-react";
+import { BarChart3, ShoppingCart, Package, CreditCard, Store, PlusCircle, AlertCircle } from "lucide-react";
 import { DataTable } from "@/components/TableHelper/data-table";
 import SalesAnalyticsChart from '../components/SalesAnalyticsChart';
 import { recentOrdersColumns } from '@/components/TableHelper/recent-orders-columns';
@@ -40,8 +40,43 @@ export default async function VendorDashboard() {
   const vendorId = session?.user?.vendorId;
   const accessToken = session?.accessToken;
 
-  // 💡 মেইন লজিক: যদি vendorId না থাকে, ইউজারকে স্টোর খোলার পেজে পাঠানো হবে
-  if (!vendorId) {
+  const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_API_URL || 'https://guptodhan.com';
+  
+  let dashboardData: DashboardResponse['data'] | null = null;
+  let isStoreMissing = !vendorId; // প্রথমে চেক করছি vendorId আছে কিনা
+  let apiError = false;
+
+  // যদি vendorId থাকে, তাহলে API কল করে চেক করবো
+  if (vendorId) {
+    try {
+      const res = await fetch(`${baseUrl}/api/v1/vendor-store/dashboard/${vendorId}`, {
+        cache: "no-store",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        console.error("Dashboard API Error Status:", res.status);
+        // যদি স্টোর খুঁজে না পায় (404) বা ইনভ্যালিড হয় (400), তার মানে স্টোর ক্রিয়েট করা নেই
+        if (res.status === 404 || res.status === 400) {
+          isStoreMissing = true;
+        } else {
+          apiError = true;
+        }
+      } else {
+        const json = await res.json();
+        dashboardData = json.data;
+      }
+    } catch (error) {
+      console.error("Failed to fetch dashboard data:", error);
+      apiError = true;
+    }
+  }
+
+  // 💡 মেইন লজিক: যদি vendorId না থাকে অথবা API স্টোর খুঁজে না পায়
+  if (isStoreMissing) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
         <div className="bg-white p-10 rounded-2xl shadow-sm border max-w-lg w-full">
@@ -50,7 +85,7 @@ export default async function VendorDashboard() {
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-3">Welcome to Guptodhan!</h2>
           <p className="text-gray-600 mb-8 leading-relaxed">
-            You haven't set up your store yet. To access your dashboard and start selling, you need to create your store profile first.
+            You haven't set up your store yet or your store profile is incomplete. To access your dashboard and start selling, you need to create your store first.
           </p>
           <Link href="/store">
             <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white w-full gap-2">
@@ -63,36 +98,25 @@ export default async function VendorDashboard() {
     );
   }
 
-  // Provide fallbacks so production builds don't crash if NEXTAUTH_URL is missing
-  const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_API_URL || 'https://guptodhan.com';
-  let dashboardData: DashboardResponse['data'] | null = null;
-
-  try {
-    const res = await fetch(`${baseUrl}/api/v1/vendor-store/dashboard/${vendorId}`, {
-      cache: "no-store",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!res.ok) {
-      console.error("Dashboard API Error:", await res.text());
-    } else {
-      const json = await res.json();
-      dashboardData = json.data;
-    }
-  } catch (error) {
-    console.error("Failed to fetch dashboard data:", error);
-  }
-
-  // Graceful fallback if the API fails or returns no data
-  if (!dashboardData) {
+  // যদি সত্যিই সার্ভার এরর হয়, তাহলেও আমরা ইউজারকে স্টোর খোলার অপশন দিয়ে রাখবো
+  if (apiError || !dashboardData) {
     return (
-      <div className="p-6 flex items-center justify-center h-[50vh]">
-        <div className="text-center space-y-4">
+      <div className="p-6 flex items-center justify-center h-[60vh]">
+        <div className="text-center space-y-4 bg-white p-8 rounded-2xl border max-w-md w-full shadow-sm">
+          <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+             <AlertCircle size={32} />
+          </div>
           <h2 className="text-2xl font-bold text-gray-800">Oops! Could not load dashboard</h2>
-          <p className="text-gray-600">We encountered an issue fetching your store data. Please refresh or try again.</p>
+          <p className="text-gray-600">
+            We encountered an issue fetching your store data. If you haven't completed your store setup yet, please do it below.
+          </p>
+          <div className="pt-4">
+            <Link href="/store" className="block">
+              <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+                <PlusCircle className="w-4 h-4 mr-2" /> Set Up Store Now
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
