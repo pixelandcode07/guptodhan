@@ -11,9 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '../ui/sidebar';
-import {
-  House,
-} from 'lucide-react';
+import { House } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import WebsiteConfig from './MotherRoutes/WebsiteConfig';
@@ -101,11 +99,13 @@ export default function AppSidebar() {
             <Link
               href="/general/home"
               className="flex justify-center items-center py-6">
+              {/* Added priority and fixed path to resolve preload warning */}
               <Image
-                src="/img/logo.png"
+                src="/logo.png" 
                 alt="Guptodhan"
                 width={150}
                 height={50}
+                priority
               />
             </Link>
           </SidebarMenuItem>
