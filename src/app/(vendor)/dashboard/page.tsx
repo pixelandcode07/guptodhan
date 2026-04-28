@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
+
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { getServerSession } from 'next-auth'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,42 +31,65 @@ interface DashboardResponse {
 
 export default async function VendorDashboard() {
   const session = await getServerSession(authOptions);
-  console.log("Vendor Dashboard Session:", session);
 
   if (!session?.user) {
-    return <div>Please log in to view dashboard.</div>;
+    return <div className="p-6">Please log in to view dashboard.</div>;
   }
 
   const vendorId = session?.user?.vendorId;
-  const accessToken = session.accessToken;
-  const baseUrl = process.env.NEXTAUTH_URL;
+  const accessToken = session?.accessToken;
+  
+  // Provide fallbacks so production builds don't crash if NEXTAUTH_URL is missing
+  const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_API_URL || 'https://guptodhan.com';
 
-
-  const res = await fetch(`${baseUrl}/api/v1/vendor-store/dashboard/${vendorId}`, {
-    cache: "no-store",
-    headers: {
-      "Authorization": `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!res.ok) {
-    const error = await res.text();
-    console.error("Dashboard API Error:", error);
-    throw new Error("Failed to load dashboard data");
+  if (!vendorId) {
+    return <div className="p-6 text-red-500">Error: Vendor ID is missing from your session. Please try logging in again.</div>;
   }
 
-  const { data }: DashboardResponse = await res.json();
+  let dashboardData: DashboardResponse['data'] | null = null;
 
+  try {
+    const res = await fetch(`${baseUrl}/api/v1/vendor-store/dashboard/${vendorId}`, {
+      cache: "no-store",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("Dashboard API Error:", errorText);
+    } else {
+      const json = await res.json();
+      dashboardData = json.data;
+    }
+  } catch (error) {
+    console.error("Failed to fetch dashboard data:", error);
+  }
+
+  // Graceful fallback if the API fails or returns no data
+  if (!dashboardData) {
+    return (
+      <div className="p-6 flex items-center justify-center h-[50vh]">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold text-gray-800">Oops! Could not load dashboard</h2>
+          <p className="text-gray-600">We encountered an issue fetching your store data. Please refresh the page or try again later.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Safely destructure now that we guarantee dashboardData exists
   const {
     todayOrdersCount = 0,
     totalOrders = 0,
     totalProducts = 0,
     totalSell = 0,
-  } = data.stats || {};
+  } = dashboardData.stats || {};
 
-  const { todaysOrders = [], deliveredCancelledOrders = [], allOrders = [] } = data.orders || {};
-  const bestSellingProducts = data.bestSellingProducts || [];
+  const { todaysOrders = [], deliveredCancelledOrders = [], allOrders = [] } = dashboardData.orders || {};
+  const bestSellingProducts = dashboardData.bestSellingProducts || [];
 
   return (
     <div className="p-6 space-y-8">
@@ -113,7 +137,6 @@ export default async function VendorDashboard() {
             <div className="text-3xl font-bold">
               {totalSell.toLocaleString("en-BD")}
             </div>
-            {/* <Link href={'/withdrawal/request'} className="text-sm text-blue-600 cursor-pointer hover:underline">View Earnings</Link> */}
           </CardContent>
         </Card>
       </div>
