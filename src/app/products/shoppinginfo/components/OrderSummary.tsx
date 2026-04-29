@@ -272,7 +272,7 @@ export default function OrderSummary({
         )}
         {user && !termsAccepted && (
           <p className="text-xs text-gray-400 text-center">
-            ☝️ Check the box above to proceed
+            Check the box above to proceed
           </p>
         )}
       </div>
