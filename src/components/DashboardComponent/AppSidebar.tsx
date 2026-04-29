@@ -101,7 +101,7 @@ export default function AppSidebar() {
               className="flex justify-center items-center py-6">
               {/* Added priority and fixed path to resolve preload warning */}
               <Image
-                src="/logo.png" 
+                src="\logo.png" 
                 alt="Guptodhan"
                 width={150}
                 height={50}
