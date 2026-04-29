@@ -23,7 +23,7 @@ export default function BuySellGrid({ ads }: BuySellGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mt-2 mb-28">
+    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-6 mt-2 mb-28">
       {ads.map((ad, index) => (
         <BuySellCard key={ad._id} ad={ad} index={index} />
       ))}
