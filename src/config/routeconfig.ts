@@ -68,10 +68,10 @@ export const routeConfig: Record<
   '/general/view/withdrawal': { breadcrumb: 'Withdrawal', title: 'Withdrawal' },
 
   // demoProducts
-  '/general/view/demo/products': {
-    breadcrumb: 'Demo Products',
-    title: 'Demo Products',
-  },
+  // '/general/view/demo/products': {
+  //   breadcrumb: 'Demo Products',
+  //   title: 'Demo Products',
+  // },
 
   // userRole
   '/general/view/system/users': {
