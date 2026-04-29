@@ -17,7 +17,7 @@ interface OrderSummaryProps {
   selectedDelivery: DeliveryOption
   appliedCoupon: AppliedCoupon | null
   onCouponApplied: (coupon: AppliedCoupon | null) => void
-  totalItems: number // ✅ NEW PROP
+  totalItems: number
 }
 
 export default function OrderSummary({
@@ -28,29 +28,22 @@ export default function OrderSummary({
   selectedDelivery,
   appliedCoupon,
   onCouponApplied,
-  totalItems // ✅ NEW PROP
+  totalItems
 }: OrderSummaryProps) {
   const [payment, setPayment] = React.useState<'cod' | 'card'>('cod')
   const [open, setOpen] = React.useState(false)
   const [termsAccepted, setTermsAccepted] = React.useState(false)
   const { data: session } = useSession()
   const user = session?.user
-  
-  // Calculate coupon discount (using API values only)
+
   const calculateCouponDiscount = (): number => {
     if (!appliedCoupon) return 0
-    
-    // Handle both "Percentage" and "percentage" formats (case-insensitive)
     const typeLower = appliedCoupon.type.toLowerCase().trim()
     const isPercentage = typeLower === 'percentage' || typeLower.includes('percentage')
-    
     if (isPercentage) {
-      // Percentage discount - value from API is the percentage (e.g., 10 for 10%)
-      const couponDiscount = (subtotal * appliedCoupon.value) / 100
-      return Math.round(couponDiscount * 100) / 100 // Round to 2 decimal places
+      return Math.round(((subtotal * appliedCoupon.value) / 100) * 100) / 100
     } else {
-      // Fixed amount discount - value from API is the fixed amount
-      return Math.min(appliedCoupon.value, subtotal) // Don't exceed subtotal
+      return Math.min(appliedCoupon.value, subtotal)
     }
   }
 
@@ -59,45 +52,40 @@ export default function OrderSummary({
   const total = Math.max(0, subtotal - totalDiscount + shipping)
 
   const handlePlaceOrder = () => {
-    // ✅ Check for login first
     if (!user) {
-        toast.error('Please login to place an order');
-        return;
+      toast.error('Please login to place an order')
+      return
     }
-
-    // ✅ Check for Terms acceptance
     if (!termsAccepted) {
       toast.error('Please accept terms and conditions', {
         description: 'You must agree to the terms and conditions to place your order.',
         duration: 3000,
-      });
-      return;
+      })
+      return
     }
-
-    // Call the parent's place order function
-    onPlaceOrder(payment);
+    onPlaceOrder(payment)
   }
 
   const getDeliveryMethodName = (method: DeliveryOption) => {
     switch (method) {
-      case 'steadfast':
-        return 'Steadfast COD'
-      case 'office':
-        return 'Office Delivery'
-      default:
-        return 'Standard Delivery'
+      case 'steadfast': return 'Steadfast COD'
+      case 'office': return 'Office Delivery'
+      default: return 'Standard Delivery'
     }
   }
 
   const getDeliveryTime = (method: DeliveryOption) => {
     switch (method) {
-      case 'steadfast':
-        return '48 hours'
-      case 'office':
-        return '1-2 days'
-      default:
-        return '3-5 days'
+      case 'steadfast': return '48 hours'
+      case 'office': return '1-2 days'
+      default: return '3-5 days'
     }
+  }
+
+  const getButtonLabel = () => {
+    if (!user) return 'Login Required'
+    if (!termsAccepted) return 'Accept Terms to Continue'
+    return payment === 'cod' ? 'Place Order (COD)' : 'Place Order & Pay Online'
   }
 
   return (
@@ -107,10 +95,10 @@ export default function OrderSummary({
       {/* Selected Delivery Method */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+          <div className="w-5 h-5 flex-shrink-0 bg-blue-500 rounded-full flex items-center justify-center">
             <span className="text-white text-xs">🚚</span>
           </div>
-          <div className="text-sm">
+          <div className="text-sm min-w-0">
             <p className="font-medium text-blue-800">
               {getDeliveryMethodName(selectedDelivery)} Selected
             </p>
@@ -121,47 +109,45 @@ export default function OrderSummary({
         </div>
       </div>
 
-      {/* Payment options */}
+      {/* Payment Options */}
       <div className="mb-6 space-y-3">
         <h3 className="text-sm font-medium text-gray-900 mb-3">Choose Payment Method</h3>
-        
-        {/* Cash on Delivery Option */}
+
         <label className={`flex items-center justify-between gap-2 rounded-lg border p-3 sm:p-4 cursor-pointer transition-all ${
           payment === 'cod' ? 'ring-2 ring-blue-600 border-blue-200 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
         }`}>
-          <div className="flex items-center gap-3">
-            <input 
-              type="radio" 
-              name="payment" 
-              checked={payment === 'cod'} 
+          <div className="flex items-center gap-3 min-w-0">
+            <input
+              type="radio"
+              name="payment"
+              checked={payment === 'cod'}
               onChange={() => setPayment('cod')}
-              className="w-4 h-4 text-blue-600 cursor-pointer"
+              className="w-4 h-4 flex-shrink-0 text-blue-600 cursor-pointer"
             />
-            <div>
-              <span className="text-sm font-medium text-gray-900">Cash on Delivery</span>
+            <div className="min-w-0">
+              <span className="text-sm font-medium text-gray-900 block">Cash on Delivery</span>
               <p className="text-xs text-gray-500">Pay when your order arrives</p>
             </div>
           </div>
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="flex-shrink-0 flex items-center gap-1 sm:gap-2">
             <Image src="/img/regular.png" alt="cod" width={24} height={24} />
             <span className="text-[11px] font-medium text-green-600 sm:text-xs">Available</span>
           </div>
         </label>
 
-        {/* Online Payment Option */}
         <div className={`rounded-lg border p-3 sm:p-4 transition-all ${
           payment === 'card' ? 'ring-2 ring-blue-600 border-blue-200 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
         }`}>
           <label className="flex items-center gap-3 cursor-pointer">
-            <input 
-              type="radio" 
-              name="payment" 
-              checked={payment === 'card'} 
+            <input
+              type="radio"
+              name="payment"
+              checked={payment === 'card'}
               onChange={() => setPayment('card')}
-              className="w-4 h-4 text-blue-600 cursor-pointer"
+              className="w-4 h-4 flex-shrink-0 text-blue-600 cursor-pointer"
             />
             <div>
-              <span className="text-sm font-medium text-gray-900">Pay Online</span>
+              <span className="text-sm font-medium text-gray-900 block">Pay Online</span>
               <p className="text-xs text-gray-500">Secure online payment</p>
             </div>
           </label>
@@ -174,25 +160,22 @@ export default function OrderSummary({
         </div>
       </div>
 
-      {/* Cash on Delivery Info */}
+      {/* COD Info */}
       {payment === 'cod' && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6">
           <div className="flex items-start gap-2">
-            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mt-0.5">
+            <div className="w-5 h-5 flex-shrink-0 bg-green-500 rounded-full flex items-center justify-center mt-0.5">
               <span className="text-white text-xs">✓</span>
             </div>
             <div className="text-sm">
               <p className="font-medium text-green-800">Cash on Delivery Selected</p>
               <p className="text-green-700 text-xs mt-1">
-                • Pay with cash when your order arrives<br/>
-                • No advance payment required<br/>
-                • Delivery person will collect the payment<br/>
-                
+                • Pay with cash when your order arrives<br />
+                • No advance payment required<br />
+                • Delivery person will collect the payment
               </p>
             </div>
           </div>
-          
-          {/* Steadfast COD Info */}
           {selectedDelivery === 'steadfast' && (
             <div className="mt-3 pt-3 border-t border-green-200">
               <div className="text-xs text-green-700">
@@ -209,7 +192,7 @@ export default function OrderSummary({
         </div>
       )}
 
-      {/* Coupon Section */}
+      {/* Coupon */}
       <div className="mb-6">
         <CouponSection
           subtotal={subtotal}
@@ -243,56 +226,55 @@ export default function OrderSummary({
         <div className="border-t pt-2">
           <div className="flex justify-between">
             <span className="text-gray-600">Total Items</span>
-            {/* ✅ FIXED: এখন সঠিকভাবে cart-এর মোট quantity দেখাবে */}
             <span className="text-gray-900">{totalItems} items</span>
           </div>
         </div>
       </div>
 
-      {/* Total */}
-      <div className="flex items-center justify-between text-lg font-semibold mb-4">
+      {/* Grand Total */}
+      <div className="flex items-center justify-between text-lg font-semibold mb-5">
         <span>Total:</span>
         <span>৳ {total.toLocaleString()}</span>
       </div>
 
-      {/* ✅ SOLVED: Button is now interactive */}
-      <Button 
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors" 
-        onClick={handlePlaceOrder}
-        disabled={!user} 
-      >
-        {!user 
-          ? 'Login Required to Place Order'
-          : !termsAccepted 
-            ? 'Accept Terms to Place Order'
-            : (payment === 'cod' ? 'Place Order (Cash on Delivery)' : 'Place Order & Pay Online')
-        }
-      </Button>
-
-      {!user && (
-        <p className="text-xs text-red-500 mt-2 text-center">
-          Please login or register to place your order
-        </p>
-      )}
-
-      {user && !termsAccepted && (
-        <p className="text-xs text-gray-500 mt-2 text-center">
-          Please accept the terms and conditions to proceed with your order
-        </p>
-      )}
-
-      <div className="mt-4 text-xs text-gray-600">
-        <label className="flex items-start gap-2 cursor-pointer select-none">
-          <input 
-            type="checkbox" 
-            className="mt-0.5 cursor-pointer accent-blue-600" 
+      {/* ✅ Terms + Button — always inline, no fixed/sticky tricks */}
+      <div className="border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-4">
+        {/* Terms */}
+        <label className="flex items-start gap-2.5 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            className="mt-0.5 w-4 h-4 flex-shrink-0 cursor-pointer accent-blue-600"
             checked={termsAccepted}
             onChange={(e) => setTermsAccepted(e.target.checked)}
           />
-          <span>
-            I have read and agree to the <a className="text-blue-600 hover:underline" href="#">Terms and Conditions</a>, <a className="text-blue-600 hover:underline" href="#">Privacy Policy</a> and <a className="text-blue-600 hover:underline" href="#">Refund and Return Policy</a>
+          <span className="text-xs text-gray-600 leading-relaxed">
+            I have read and agree to the{' '}
+            <a className="text-blue-600 hover:underline font-medium" href="#">Terms and Conditions</a>,{' '}
+            <a className="text-blue-600 hover:underline font-medium" href="#">Privacy Policy</a> and{' '}
+            <a className="text-blue-600 hover:underline font-medium" href="#">Refund and Return Policy</a>
           </span>
         </label>
+
+        {/* Place Order Button */}
+        <Button
+          className="w-full h-12 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold cursor-pointer disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors rounded-lg"
+          onClick={handlePlaceOrder}
+          disabled={!user}
+        >
+          {getButtonLabel()}
+        </Button>
+
+        {/* Helper text */}
+        {!user && (
+          <p className="text-xs text-red-500 text-center">
+            Please login or register to place your order
+          </p>
+        )}
+        {user && !termsAccepted && (
+          <p className="text-xs text-gray-400 text-center">
+            Check the box above to proceed
+          </p>
+        )}
       </div>
 
       <OrderSuccessModal open={open} onOpenChange={setOpen} />
