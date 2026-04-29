@@ -107,6 +107,7 @@ export default function AppSidebar() {
                 width={150}
                 height={50}
                 priority
+                
               />
             </Link>
           </SidebarMenuItem>
