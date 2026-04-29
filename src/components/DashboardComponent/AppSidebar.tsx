@@ -21,7 +21,7 @@ import CRMModules from './MotherRoutes/CRMModules';
 import BuySell from './MotherRoutes/BuySell';
 import Donation from './MotherRoutes/Donation';
 import Multivendor from './MotherRoutes/Multivendor';
-import DemoProducts from './MotherRoutes/DemoProducts';
+// import DemoProducts from './MotherRoutes/DemoProducts';
 import Logout from './MotherRoutes/Logout';
 import UserRolePermision from './MotherRoutes/UserRolePermision';
 import ServiceModule from './MotherRoutes/ServiceModule';
@@ -131,7 +131,7 @@ export default function AppSidebar() {
         <WebsiteConfig />
         <CRMModules />
         <UserRolePermision />
-        <DemoProducts />
+        {/* <DemoProducts /> */}
         <Logout />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>
