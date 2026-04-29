@@ -172,14 +172,14 @@ export const routeConfig: Record<
   },
 
   // demoHelper
-  '/general/generate/demo/products': {
-    breadcrumb: 'Generate Products',
-    title: 'Generate Products',
-  },
-  '/general/remove/demo/products/page': {
-    breadcrumb: 'Remove Products',
-    title: 'Remove Products',
-  },
+  // '/general/generate/demo/products': {
+  //   breadcrumb: 'Generate Products',
+  //   title: 'Generate Products',
+  // },
+  // '/general/remove/demo/products/page': {
+  //   breadcrumb: 'Remove Products',
+  //   title: 'Remove Products',
+  // },
 
   // sliders
   '/general/view/all/sliders': {
