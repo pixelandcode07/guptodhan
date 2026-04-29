@@ -98,10 +98,11 @@ export default function AppSidebar() {
           <SidebarMenuItem>
             <Link
               href="/general/home"
-              className="flex justify-center items-center py-6">
+              className="flex justify-center items-center py-6"
+            >
               {/* Added priority and fixed path to resolve preload warning */}
               <Image
-                src="\logo.png" 
+                src="/img/logo.png" 
                 alt="Guptodhan"
                 width={150}
                 height={50}
