@@ -1,3 +1,5 @@
+// D:\Guptodhan Project\guptodhan\src\app\components\LogInAndRegister\LogIn_Register.tsx
+
 'use client'
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -87,32 +89,51 @@ export default function LogInRegister() {
   const [showPin, setShowPin] = useState<boolean>(false)
 
   // ==========================================
-  // ✅ OPTIMIZED: Login Submit Handler (Fixed Redirect)
+  // ✅ OPTIMIZED & UNIFIED: Login Submit Handler (Supports User, Vendor, Admin)
   // ==========================================
   const onSubmitLogin = async (data: LoginFormData) => {
     try {
       setLoading(true)
       toast.loading('Logging in...', { id: 'login-toast' })
 
-      const res = await axios.post('/api/v1/auth/login', {
-        identifier: data.identifier,
-        password: data.pin,
-      })
+      let res;
+      try {
+        // ১. প্রথমে নরমাল ইউজার লগইন ট্রাই করবে
+        res = await axios.post('/api/v1/auth/login', {
+          identifier: data.identifier,
+          password: data.pin,
+        });
+      } catch (primaryError: any) {
+        // ২. যদি নরমাল লগইন ফেইল করে, তবে ভেন্ডর হিসেবে ট্রাই করবে 
+        // (যাতে ভেন্ডররাও এই একই ফর্ম থেকে লগইন করতে পারে)
+        try {
+          res = await axios.post('/api/v1/auth/vendor-login', {
+            identifier: data.identifier,
+            password: data.pin,
+          });
+        } catch (vendorError: any) {
+          // দুইটাতেই ফেইল করলে অরিজিনাল এরর থ্রো করবে
+          throw primaryError; 
+        }
+      }
 
-      if (res.data.success) {
+      if (res?.data?.success) {
         const { user, accessToken } = res.data.data
+
+        // ডাটাবেস ভেদে user._id বা user.id আসতে পারে, তাই সেইফলি হ্যান্ডেল করা হলো
+        const resolvedUserId = user._id || user.id || '';
 
         const result = await signIn('credentials', {
           redirect: false,
-          userId: user._id,
-          role: user.role,
+          userId: resolvedUserId,
+          role: user.role || 'user',
           accessToken: accessToken,
           vendorId: user.vendorId || '',
           name: user.name || '',
           email: user.email || '',
           phoneNumber: user.phoneNumber || '',
           profilePicture: user.profilePicture || '',
-          address: user.address || '',
+          address: typeof user.address === 'string' ? user.address : JSON.stringify(user.address || ''),
         })
 
         toast.dismiss('login-toast')
@@ -124,7 +145,7 @@ export default function LogInRegister() {
           return
         }
 
-        toast.success('Welcome back!', {
+        toast.success(`Welcome back, ${user.name || 'User'}!`, {
           description: 'Login successful',
           duration: 3000,
         })
@@ -133,9 +154,16 @@ export default function LogInRegister() {
 
         await update()
         
-        // ✅ FIX: Use window.location.href for guaranteed hard redirect after Auth
+        // ==========================================
+        // ✅ ROLE-BASED REDIRECT LOGIC
+        // ==========================================
         const savedUrl = localStorage.getItem('redirectAfterLogin');
-        const redirectPath = savedUrl || window.location.pathname; 
+        let redirectPath = savedUrl || window.location.pathname; 
+        
+        // যদি লগইন করা ব্যক্তি ভেন্ডর বা অ্যাডমিন হয়, তবে তাকে সরাসরি ড্যাশবোর্ডে পাঠিয়ে দেবে (যদি শপিং কার্টের কোনো সেভড লিংক না থাকে)
+        if ((user.role === 'vendor' || user.role === 'admin') && !savedUrl) {
+           redirectPath = '/dashboard';
+        }
         
         localStorage.removeItem('redirectAfterLogin');
         window.location.href = redirectPath;
@@ -159,7 +187,7 @@ export default function LogInRegister() {
   }
 
   // ==========================================
-  // ✅ OPTIMIZED: Handle Account Created (Fixed Auto Redirect)
+  // ✅ OPTIMIZED: Handle Account Created
   // ==========================================
   const handleAccountCreated = async (phone: string, pin: string) => {
     try {
@@ -176,18 +204,19 @@ export default function LogInRegister() {
 
       if (loginRes.data.success) {
         const { user, accessToken } = loginRes.data.data
+        const resolvedUserId = user._id || user.id || '';
 
         const result = await signIn('credentials', {
           redirect: false,
-          userId: user._id,
-          role: user.role,
+          userId: resolvedUserId,
+          role: user.role || 'user',
           accessToken: accessToken,
           vendorId: user.vendorId || '',
           name: user.name || '',
           email: user.email || '',
           phoneNumber: user.phoneNumber || '',
           profilePicture: user.profilePicture || '',
-          address: user.address || '',
+          address: typeof user.address === 'string' ? user.address : JSON.stringify(user.address || ''),
         })
 
         toast.dismiss('setup-toast')
@@ -209,7 +238,6 @@ export default function LogInRegister() {
 
         await update()
 
-        // ✅ FIX: Auto Redirect even after new account creation
         const redirectPath = localStorage.getItem('redirectAfterLogin') || '/'
         localStorage.removeItem('redirectAfterLogin')
         window.location.href = redirectPath
