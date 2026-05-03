@@ -1,5 +1,3 @@
-// D:\Guptodhan Project\guptodhan\src\app\components\LogInAndRegister\LogIn_Register.tsx
-
 'use client'
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -89,51 +87,78 @@ export default function LogInRegister() {
   const [showPin, setShowPin] = useState<boolean>(false)
 
   // ==========================================
-  // ✅ OPTIMIZED & UNIFIED: Login Submit Handler (Supports User, Vendor, Admin)
+  // ✅ CORE FIX: Vendor হলে vendor-login endpoint ব্যবহার করে vendorId নিশ্চিত করা
+  // ==========================================
+  const performLogin = async (identifier: string, password: string) => {
+    // ১. প্রথমে vendor-login ট্রাই করো (vendor দের জন্য vendorId সহ আসে)
+    try {
+      const res = await axios.post('/api/v1/auth/vendor-login', {
+        identifier,
+        password,
+      })
+      if (res?.data?.success) return res
+    } catch {
+      // vendor login fail হলে normal login ট্রাই করো
+    }
+
+    // ২. Normal user login ট্রাই করো
+    const res = await axios.post('/api/v1/auth/login', {
+      identifier,
+      password,
+    })
+    return res
+  }
+
+  // ==========================================
+  // ✅ FIXED: Login Submit Handler
   // ==========================================
   const onSubmitLogin = async (data: LoginFormData) => {
     try {
       setLoading(true)
       toast.loading('Logging in...', { id: 'login-toast' })
 
-      let res;
-      try {
-        // ১. প্রথমে নরমাল ইউজার লগইন ট্রাই করবে
-        res = await axios.post('/api/v1/auth/login', {
-          identifier: data.identifier,
-          password: data.pin,
-        });
-      } catch (primaryError: any) {
-        // ২. যদি নরমাল লগইন ফেইল করে, তবে ভেন্ডর হিসেবে ট্রাই করবে 
-        // (যাতে ভেন্ডররাও এই একই ফর্ম থেকে লগইন করতে পারে)
-        try {
-          res = await axios.post('/api/v1/auth/vendor-login', {
-            identifier: data.identifier,
-            password: data.pin,
-          });
-        } catch (vendorError: any) {
-          // দুইটাতেই ফেইল করলে অরিজিনাল এরর থ্রো করবে
-          throw primaryError; 
-        }
-      }
+      const res = await performLogin(data.identifier, data.pin)
 
       if (res?.data?.success) {
         const { user, accessToken } = res.data.data
 
-        // ডাটাবেস ভেদে user._id বা user.id আসতে পারে, তাই সেইফলি হ্যান্ডেল করা হলো
-        const resolvedUserId = user._id || user.id || '';
+        const resolvedUserId = user._id || user.id || ''
+
+        // ==========================================
+        // ✅ KEY FIX: vendor role কিন্তু vendorId নেই? → vendor store fetch করো
+        // ==========================================
+        let resolvedVendorId = user.vendorId || ''
+
+        if (user.role === 'vendor' && !resolvedVendorId) {
+          try {
+            // vendorId বের করার জন্য vendor store info fetch করো
+            const vendorRes = await axios.get('/api/v1/vendor/my-store', {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            })
+            resolvedVendorId =
+              vendorRes?.data?.data?.vendorId ||
+              vendorRes?.data?.data?._id ||
+              ''
+          } catch {
+            // fetch fail হলেও proceed করো, vendorId empty থাকবে
+            console.warn('Could not fetch vendorId separately')
+          }
+        }
 
         const result = await signIn('credentials', {
           redirect: false,
           userId: resolvedUserId,
           role: user.role || 'user',
           accessToken: accessToken,
-          vendorId: user.vendorId || '',
+          vendorId: resolvedVendorId,
           name: user.name || '',
           email: user.email || '',
           phoneNumber: user.phoneNumber || '',
           profilePicture: user.profilePicture || '',
-          address: typeof user.address === 'string' ? user.address : JSON.stringify(user.address || ''),
+          address:
+            typeof user.address === 'string'
+              ? user.address
+              : JSON.stringify(user.address || ''),
         })
 
         toast.dismiss('login-toast')
@@ -153,20 +178,22 @@ export default function LogInRegister() {
         closeButtonRef.current?.click()
 
         await update()
-        
+
         // ==========================================
         // ✅ ROLE-BASED REDIRECT LOGIC
         // ==========================================
-        const savedUrl = localStorage.getItem('redirectAfterLogin');
-        let redirectPath = savedUrl || window.location.pathname; 
-        
-        // যদি লগইন করা ব্যক্তি ভেন্ডর বা অ্যাডমিন হয়, তবে তাকে সরাসরি ড্যাশবোর্ডে পাঠিয়ে দেবে (যদি শপিং কার্টের কোনো সেভড লিংক না থাকে)
-        if ((user.role === 'vendor' || user.role === 'admin') && !savedUrl) {
-           redirectPath = '/dashboard';
+        const savedUrl = localStorage.getItem('redirectAfterLogin')
+        let redirectPath = savedUrl || window.location.pathname
+
+        if (
+          (user.role === 'vendor' || user.role === 'admin') &&
+          !savedUrl
+        ) {
+          redirectPath = '/dashboard'
         }
-        
-        localStorage.removeItem('redirectAfterLogin');
-        window.location.href = redirectPath;
+
+        localStorage.removeItem('redirectAfterLogin')
+        window.location.href = redirectPath
       }
     } catch (error: any) {
       toast.dismiss('login-toast')
@@ -187,7 +214,7 @@ export default function LogInRegister() {
   }
 
   // ==========================================
-  // ✅ OPTIMIZED: Handle Account Created
+  // ✅ Handle Account Created (unchanged)
   // ==========================================
   const handleAccountCreated = async (phone: string, pin: string) => {
     try {
@@ -204,7 +231,7 @@ export default function LogInRegister() {
 
       if (loginRes.data.success) {
         const { user, accessToken } = loginRes.data.data
-        const resolvedUserId = user._id || user.id || '';
+        const resolvedUserId = user._id || user.id || ''
 
         const result = await signIn('credentials', {
           redirect: false,
@@ -216,7 +243,10 @@ export default function LogInRegister() {
           email: user.email || '',
           phoneNumber: user.phoneNumber || '',
           profilePicture: user.profilePicture || '',
-          address: typeof user.address === 'string' ? user.address : JSON.stringify(user.address || ''),
+          address:
+            typeof user.address === 'string'
+              ? user.address
+              : JSON.stringify(user.address || ''),
         })
 
         toast.dismiss('setup-toast')
@@ -238,7 +268,8 @@ export default function LogInRegister() {
 
         await update()
 
-        const redirectPath = localStorage.getItem('redirectAfterLogin') || '/'
+        const redirectPath =
+          localStorage.getItem('redirectAfterLogin') || '/'
         localStorage.removeItem('redirectAfterLogin')
         window.location.href = redirectPath
       }
