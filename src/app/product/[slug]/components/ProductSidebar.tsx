@@ -445,5 +445,5 @@ export default function ProductMainInfo({
         </div>
       </div>
     </motion.div>
-  );
+  ); 
 }
