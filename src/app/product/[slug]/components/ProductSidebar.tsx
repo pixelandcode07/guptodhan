@@ -52,7 +52,13 @@ export default function ProductMainInfo({
   const [isBuyingNow, setIsBuyingNow] = useState(false);
   const [isProductInWishlist, setIsProductInWishlist] = useState(false);
   const [isWishlistToggling, setIsWishlistToggling] = useState(false);
-  const [locationType, setLocationType] = useState<'dhaka' | 'outside'>('dhaka');
+
+  // ==========================================
+  // ✅ NEW: Dynamic Delivery State
+  // ==========================================
+  const [dynamicDeliveryCharge, setDynamicDeliveryCharge] = useState<number>(130);
+  const [dynamicLocation, setDynamicLocation] = useState<string>('Outside Dhaka, Bangladesh (Default)');
+  const [isDeliveryLoading, setIsDeliveryLoading] = useState<boolean>(true);
 
   // Store Logic
   const storeInfo = useMemo(() => {
@@ -99,6 +105,82 @@ export default function ProductMainInfo({
     };
     checkWishlistStatus();
   }, [product?._id, isInWishlist, session?.user]);
+
+
+  // ==========================================
+  // ✅ NEW: Dynamic Delivery Fetch Logic
+  // ==========================================
+  useEffect(() => {
+    const fetchDeliveryInfo = async () => {
+      setIsDeliveryLoading(true);
+      try {
+        // ১. যদি প্রোডাক্টের নিজস্ব shippingCost থাকে
+        if (product?.shippingCost && product.shippingCost > 0) {
+          setDynamicDeliveryCharge(product.shippingCost);
+          setDynamicLocation('Standard Delivery Area');
+          setIsDeliveryLoading(false);
+          return;
+        }
+
+        // ২. যদি ইউজার লগইন না থাকে, তবে ডিফল্ট ১৩০ টাকা
+        if (!session?.user) {
+          setDynamicDeliveryCharge(130);
+          setDynamicLocation('Outside Dhaka (Default)');
+          setIsDeliveryLoading(false);
+          return;
+        }
+
+        // ৩. ইউজারের প্রোফাইল এবং ডেলিভারি চার্জ API থেকে ডাটা আনা
+        const [profileRes, deliveryRes] = await Promise.all([
+          fetch('https://guptodhan.com/api/v1/profile/me', { credentials: 'include' }).catch(() => null),
+          fetch('https://guptodhan.com/api/v1/delivery-charge').catch(() => null)
+        ]);
+
+        let userDistrict = '';
+        
+        if (profileRes?.ok) {
+          const profileData = await profileRes.json();
+          const addressString = profileData?.data?.address || '';
+          
+          // Address স্ট্রিং থেকে district বের করা (Regex ব্যবহার করে)
+          const districtMatch = addressString.match(/district:\s*([^,]+)/i);
+          if (districtMatch && districtMatch[1]) {
+            userDistrict = districtMatch[1].trim();
+            setDynamicLocation(`${userDistrict}, Bangladesh`);
+          } else {
+            setDynamicLocation('Bangladesh');
+          }
+        }
+
+        if (deliveryRes?.ok && userDistrict) {
+          const deliveryData = await deliveryRes.json();
+          const charges = deliveryData?.data || [];
+          
+          // ইউজারের জেলার সাথে ডেলিভারি API এর জেলার নাম মেলানো
+          const matchedCharge = charges.find((c: any) => 
+            c.districtName.toLowerCase() === userDistrict.toLowerCase()
+          );
+          
+          if (matchedCharge) {
+            setDynamicDeliveryCharge(matchedCharge.deliveryCharge);
+          } else {
+            setDynamicDeliveryCharge(130); // জেলা না মিললে ডিফল্ট ১৩০
+          }
+        } else {
+          setDynamicDeliveryCharge(130); // API ফেইল করলে ডিফল্ট ১৩০
+        }
+
+      } catch (error) {
+        console.error("Failed to fetch delivery details:", error);
+        setDynamicDeliveryCharge(130);
+        setDynamicLocation('Default Location');
+      } finally {
+        setIsDeliveryLoading(false);
+      }
+    };
+
+    fetchDeliveryInfo();
+  }, [product?.shippingCost, session?.user]);
 
   // ==========================================
   // ✅ UPDATE: Wishlist Handler
@@ -182,26 +264,17 @@ export default function ProductMainInfo({
   const discountPercent = calculateDiscountPercent(variantPrice, variantDiscountPrice);
 
   // ==========================================
-  // ✅ UPDATE: Dynamic Delivery Info Logic
+  // ✅ UPDATE: Change Location Handler
   // ==========================================
-  // ডাটাবেস থেকে ডায়নামিক ভ্যালু রিসিভ করা (না থাকলে ডিফল্ট বসবে)
-  const insideDhakaCharge = product?.insideDhakaCharge ?? product?.deliveryChargeInside ?? 70;
-  const outsideDhakaCharge = product?.outsideDhakaCharge ?? product?.deliveryChargeOutside ?? 130;
-  
-  const insideDhakaTime = product?.insideDhakaTime ?? '1 - 4 day(s)';
-  const outsideDhakaTime = product?.outsideDhakaTime ?? '4 - 7 day(s)';
-
-  const deliveryCharge = locationType === 'dhaka' ? insideDhakaCharge : outsideDhakaCharge;
-  const deliveryTime = locationType === 'dhaka' ? insideDhakaTime : outsideDhakaTime;
-  
-  // চাইলে লোকেশনের টেক্সটগুলোও ডায়নামিক করতে পারেন, আপাতত টগল অনুযায়ী রাখা হলো:
-  const locationText = locationType === 'dhaka' 
-    ? 'Dhaka, Dhaka North, Banani Road No. 12 - 19' 
-    : 'Outside Dhaka, Sadar, Chattogram';
-
-  const toggleLocation = () => {
-    setLocationType(prev => prev === 'dhaka' ? 'outside' : 'dhaka');
-    toast.success(`Location changed to ${locationType === 'dhaka' ? 'Outside Dhaka' : 'Inside Dhaka'}`);
+  const handleChangeLocationClick = () => {
+    if (!session?.user) {
+      toast.info("Please login to set your delivery location.");
+      const loginButton = document.getElementById('login-modal-btn');
+      if (loginButton) loginButton.click();
+    } else {
+      toast.info("Delivery location is based on your profile address. Please update your profile.");
+      // router.push('/dashboard/profile'); // যদি প্রোফাইল আপডেট করার পেইজ থাকে, তবে এটি আনকমেন্ট করতে পারেন
+    }
   };
 
   // ==========================================
@@ -368,18 +441,24 @@ export default function ProductMainInfo({
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Delivery</h3>
-              <button onClick={toggleLocation} className="text-[#0099cc] text-xs font-bold hover:underline">CHANGE</button>
+              <button onClick={handleChangeLocationClick} className="text-[#0099cc] text-xs font-bold hover:underline">CHANGE</button>
             </div>
             <div className="flex gap-3 mb-3 items-start">
               <MapPin className="text-gray-400 shrink-0 mt-0.5" size={18} />
-              <span className="text-sm text-gray-700 leading-snug">{locationText}</span>
+              <span className="text-sm text-gray-700 leading-snug">
+                {isDeliveryLoading ? 'Fetching Location...' : dynamicLocation}
+              </span>
             </div>
             <div className="space-y-2.5 pt-3 border-t border-gray-200">
               <div className="flex justify-between text-sm">
                 <div className="flex gap-2 text-gray-600 font-medium"><Truck size={16} /> Standard Delivery</div>
-                <span className="font-bold text-gray-900">৳{deliveryCharge}</span>
+                <span className="font-bold text-gray-900">
+                  {isDeliveryLoading ? '...' : `৳${dynamicDeliveryCharge}`}
+                </span>
               </div>
-              <p className="text-xs text-gray-500 pl-6">{deliveryTime}</p>
+              <p className="text-xs text-gray-500 pl-6">
+                {product?.shippingCost && product.shippingCost > 0 ? 'Depends on product' : '1 - 4 day(s)'}
+              </p>
               <div className="flex gap-2 text-sm text-gray-600 font-medium"><Banknote size={16} /> Cash on Delivery Available</div>
             </div>
           </div>
