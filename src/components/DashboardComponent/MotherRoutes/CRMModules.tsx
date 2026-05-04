@@ -32,25 +32,25 @@ export default function CRMModules() {
             icon: Headset,
             count: pendingCount,
         },
-        {
-            href: '/general/view/all/contact/requests',
-            label: 'Contact Request',
-            icon: Phone,
-            count: null,
-        },
+        // {
+        //     href: '/general/view/all/contact/requests',
+        //     label: 'Contact Request',
+        //     icon: Phone,
+        //     count: null,
+        // },
         {
             href: '/general/view/all/subscribed/users',
             label: 'Subscribed Users',
             icon: Users,
             count: null,
         },
-        {
-            href: '#',
-            label: 'Service Query Form',
-            icon: ClipboardList,
-            count: null,
-            disabled: true,
-        }
+        // {
+        //     href: '#',
+        //     label: 'Service Query Form',
+        //     icon: ClipboardList,
+        //     count: null,
+        //     disabled: true,
+        // }
     ];
 
     // API থেকে পেন্ডিং টিকেটের সংখ্যা fetch করা

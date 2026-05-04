@@ -1,10 +1,13 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # env files (can opt-in for committing if needed)
+
+# env files (can opt-in for committing if needed)
 .env
 .env.local
-.env.development
-.env.production
+.env.development.local
+.env.test.local
+.env.production.local
 
 # vercel
 .vercel
@@ -54,7 +57,7 @@ guptodhan-df835-firebase-adminsdk-fbsvc-e40c788905.json
 .github
 .vscode
 
-
+.env.local
 
 
 .vercel

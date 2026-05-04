@@ -333,7 +333,7 @@ function WishlistItem({ item, onRemove, onAddToCart, isSelected, onToggleSelect 
     >
       {/* Checkbox overlay on image */}
       <div className="relative aspect-square bg-gray-100 group">
-        <Link href={`/products/${productId}`} onClick={(e) => e.stopPropagation()}>
+        <Link href={`/product/${productId}`} onClick={(e) => e.stopPropagation()}>
           <Image
             src={thumbnailImage}
             alt={productTitle}
@@ -368,7 +368,7 @@ function WishlistItem({ item, onRemove, onAddToCart, isSelected, onToggleSelect 
       </div>
       
       <div className="p-4">
-        <Link href={`/products/${productId}`} onClick={(e) => e.stopPropagation()}>
+        <Link href={`/product/${productId}`} onClick={(e) => e.stopPropagation()}>
           <h3 className={`font-semibold mb-2 line-clamp-2 transition-colors ${
             isSelected 
               ? 'text-blue-700' 

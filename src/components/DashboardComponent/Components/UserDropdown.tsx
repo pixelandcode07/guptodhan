@@ -8,18 +8,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, Key, LogOut } from 'lucide-react';
+import { ChevronDown, LogOut, User } from 'lucide-react'; // Added 'User' icon, removed 'Key'
 import { signOut, useSession } from 'next-auth/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-// import LogoutBtn from './LogoutBtn';
+import Link from 'next/link'; // Imported Link from Next.js
 
 export default function UserDropdown() {
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
-  const { data: session, status } = useSession();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { data: session } = useSession();
   const token = (session as any)?.accessToken;
   const user = session?.user;
-  console.log("TOKEN:", token)
+  console.log("TOKEN:", token);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
@@ -41,20 +42,25 @@ export default function UserDropdown() {
       <DropdownMenuContent sideOffset={18}>
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <Key /> Change Password
+        
+        {/* Profile Button added here */}
+        <DropdownMenuItem asChild>
+          <Link href="/home/UserProfile/profile" className="flex items-center cursor-pointer w-full gap-2">
+            <User className="w-4 h-4" /> 
+            <span>Profile</span>
+          </Link>
         </DropdownMenuItem>
+
         <DropdownMenuItem
           disabled={isLoggingOut}
-          className="text-red-500 hover:bg-red-500/10 w-full"
+          className="text-red-500 hover:bg-red-500/10 w-full cursor-pointer flex items-center gap-2"
           onClick={async () => {
             setIsLoggingOut(true);
             toast.loading("Logging out...");
             await signOut({ callbackUrl: "/" });
           }}>
-          <LogOut className="w-5 h-5" />
+          <LogOut className="w-4 h-4" />
           <span>{isLoggingOut ? "Logging out..." : "Logout"}</span>
-          {/* <LogoutBtn /> */}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

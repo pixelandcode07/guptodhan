@@ -16,7 +16,7 @@ export default function ProductCard({ product }: { product: Product }) {
           className="rounded-lg mb-4"
         />
         <p className="text-gray-600 mb-2">${product.price}</p>
-        <Link href={`/products/${product.id}`}>
+        <Link href={`/product/${product.id}`}>
           <Button className="w-full">View Details</Button>
         </Link>
       </CardContent>

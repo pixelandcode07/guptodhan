@@ -71,7 +71,7 @@ export default function SearchBar() {
     const goToProduct = (productId: string) => {
         setShowDropdown(false);
         setQuery("");
-        router.push(`/products/${productId}`);
+        router.push(`/product/${productId}`);
     };
 
     // When user clicks “View all results”
