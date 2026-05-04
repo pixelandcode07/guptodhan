@@ -73,7 +73,7 @@ export const vendor_product_columns: ColumnDef<VendorProduct>[] = [
             const id = row.original._id;
             return (
                 <Link
-                    href={`/products/${id}`}
+                    href={`/product/${id}`}
                     className="font-semibold text-blue-600 hover:underline"
                 >
                     {title}

@@ -21,7 +21,7 @@ import CRMModules from './MotherRoutes/CRMModules';
 import BuySell from './MotherRoutes/BuySell';
 import Donation from './MotherRoutes/Donation';
 import Multivendor from './MotherRoutes/Multivendor';
-import DemoProducts from './MotherRoutes/DemoProducts';
+// import DemoProducts from './MotherRoutes/DemoProducts';
 import Logout from './MotherRoutes/Logout';
 import UserRolePermision from './MotherRoutes/UserRolePermision';
 import ServiceModule from './MotherRoutes/ServiceModule';
@@ -98,14 +98,16 @@ export default function AppSidebar() {
           <SidebarMenuItem>
             <Link
               href="/general/home"
-              className="flex justify-center items-center py-6">
+              className="flex justify-center items-center py-6"
+            >
               {/* Added priority and fixed path to resolve preload warning */}
               <Image
-                src="/logo.png" 
+                src="/img/logo.png" 
                 alt="Guptodhan"
                 width={150}
                 height={50}
                 priority
+                
               />
             </Link>
           </SidebarMenuItem>
@@ -129,7 +131,7 @@ export default function AppSidebar() {
         <WebsiteConfig />
         <CRMModules />
         <UserRolePermision />
-        <DemoProducts />
+        {/* <DemoProducts /> */}
         <Logout />
       </SidebarContent>
       <SidebarFooter></SidebarFooter>

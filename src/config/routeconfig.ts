@@ -68,10 +68,10 @@ export const routeConfig: Record<
   '/general/view/withdrawal': { breadcrumb: 'Withdrawal', title: 'Withdrawal' },
 
   // demoProducts
-  '/general/view/demo/products': {
-    breadcrumb: 'Demo Products',
-    title: 'Demo Products',
-  },
+  // '/general/view/demo/products': {
+  //   breadcrumb: 'Demo Products',
+  //   title: 'Demo Products',
+  // },
 
   // userRole
   '/general/view/system/users': {
@@ -172,14 +172,14 @@ export const routeConfig: Record<
   },
 
   // demoHelper
-  '/general/generate/demo/products': {
-    breadcrumb: 'Generate Products',
-    title: 'Generate Products',
-  },
-  '/general/remove/demo/products/page': {
-    breadcrumb: 'Remove Products',
-    title: 'Remove Products',
-  },
+  // '/general/generate/demo/products': {
+  //   breadcrumb: 'Generate Products',
+  //   title: 'Generate Products',
+  // },
+  // '/general/remove/demo/products/page': {
+  //   breadcrumb: 'Remove Products',
+  //   title: 'Remove Products',
+  // },
 
   // sliders
   '/general/view/all/sliders': {
