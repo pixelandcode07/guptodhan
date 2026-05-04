@@ -57,7 +57,7 @@ guptodhan-df835-firebase-adminsdk-fbsvc-e40c788905.json
 .github
 .vscode
 
-
+.env.local
 
 
 .vercel
