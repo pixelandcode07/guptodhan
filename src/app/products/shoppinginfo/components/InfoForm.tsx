@@ -38,37 +38,16 @@ interface InfoFormProps {
   upazilas?: Upazila[]
 }
 
-// Updated Helper function to handle JSON Array strings and normal strings
+// Helper function to extract only the actual address from a stringified object format
 const extractCleanAddress = (rawAddress?: string) => {
   if (!rawAddress) return '';
-  
-  try {
-    // Check if it's a JSON string (like the one in your screenshot)
-    const parsedData = JSON.parse(rawAddress);
-    
-    // If it's an array (e.g., [{"fullName":"...", "address":"domsar bajaar"}])
-    if (Array.isArray(parsedData) && parsedData.length > 0) {
-      if (parsedData[0].address) {
-        return parsedData[0].address;
-      }
-    } 
-    // If it's a single object
-    else if (typeof parsedData === 'object' && parsedData !== null) {
-      if (parsedData.address) {
-        return parsedData.address;
-      }
-    }
-  } catch (error) {
-    // If JSON.parse fails, it means it's not a JSON string, so fallback to previous regex method
-    if (rawAddress.includes('fullName:') || rawAddress.includes('address:')) {
-      const match = rawAddress.match(/address:\s*([^,}]+)/);
-      if (match && match[1]) {
-        return match[1].replace(/["']/g, '').trim();
-      }
+  // Check if the string contains the messy key-value format
+  if (rawAddress.includes('fullName:') || rawAddress.includes('address:')) {
+    const match = rawAddress.match(/address:\s*([^,]+)/);
+    if (match && match[1]) {
+      return match[1].trim();
     }
   }
-  
-  // Return the original string if no patterns match
   return rawAddress;
 };
 
@@ -118,6 +97,7 @@ export default function InfoForm({ onFormDataChange, initialData, districts = []
 
   // Helper function to get postal code based on upazila/thana name
   const getPostalCodeByUpazila = (upazilaName: string, districtName: string) => {
+    // বাংলাদেশের সকল প্রধান উপজেলা ও থানার পোস্টাল কোড
     const upazilaPostalMap: { [key: string]: string } = {
       // Dhaka Division
       'Savar': '1340', 'Dhamrai': '1350', 'Keraniganj': '1310', 'Nawabganj': '1320', 'Dohar': '1330',
