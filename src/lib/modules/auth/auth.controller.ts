@@ -21,6 +21,7 @@ import {
 } from './auth.validation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { User } from '../user/user.model';
 
 // --- User Login ---
 const loginUser = async (req: NextRequest) => {
@@ -506,6 +507,51 @@ const serviceProviderSendRegistrationOtp = async (req: NextRequest) => {
     data: null
   });
 };
+
+
+const checkDuplicate = async (req: NextRequest) => {
+  try {
+    await dbConnect();
+    const body = await req.json();
+    const { email, phoneNumber } = body;
+
+    // ✅ Inline check — no new service function
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.CONFLICT,
+        message: 'This email address is already registered',
+        data: null,
+      });
+    }
+
+    const existingPhone = await User.findOne({ phoneNumber });
+    if (existingPhone) {
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.CONFLICT,
+        message: 'This phone number is already registered',
+        data: null,
+      });
+    }
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: 'Available',
+      data: null,
+    });
+  } catch (error: any) {
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: error.message || 'Server error',
+      data: null,
+    });
+  }
+};
+
 
 const registerServiceProvider = async (req: NextRequest) => {
   await dbConnect();
