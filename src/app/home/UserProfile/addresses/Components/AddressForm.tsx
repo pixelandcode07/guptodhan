@@ -18,22 +18,48 @@ type AddressFormProps = {
   onSave: (data: any) => void;
 };
 
+// Helper function to safely parse incoming initialData (handles stringified JSON, Arrays, or raw Objects)
+const getParsedInitialData = (data: any) => {
+  if (!data) return {};
+  
+  try {
+    // If data is a JSON string, parse it
+    const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+    
+    // If it's an array (like [{"fullName":...}]), return the first item
+    if (Array.isArray(parsedData) && parsedData.length > 0) {
+      return parsedData[0];
+    }
+    // If it's an object, return it directly
+    if (typeof parsedData === 'object' && parsedData !== null) {
+      return parsedData;
+    }
+  } catch (error) {
+    console.error("Failed to parse initialData:", error);
+  }
+  
+  return {};
+};
+
 export default function AddAddressForm({
   initialData,
   onCancel,
   onSave,
 }: AddressFormProps) {
   
+  // Safely extract the data before setting state
+  const parsedData = getParsedInitialData(initialData);
+
   // Local State
   const [formData, setFormData] = useState({
-    fullName: initialData?.fullName || '',
-    phone: initialData?.phone || '',
-    landmark: initialData?.landmark || '',
-    province: initialData?.province || '',
-    city: initialData?.city || '',
-    zone: initialData?.zone || '',
-    address: initialData?.address || '',
-    addressType: initialData?.addressType || 'Home',
+    fullName: parsedData.fullName || '',
+    phone: parsedData.phone || '',
+    landmark: parsedData.landmark || '',
+    province: parsedData.province || '',
+    city: parsedData.city || '',
+    zone: parsedData.zone || '',
+    address: parsedData.address || '',
+    addressType: parsedData.addressType || 'Home',
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
