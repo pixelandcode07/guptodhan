@@ -12,90 +12,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-// Complete Bangladesh Location Data Fallback
-const locationData: Record<string, Record<string, string[]>> = {
-  "Dhaka": {
-    "Dhaka": ["Savar", "Dhamrai", "Keraniganj", "Nawabganj", "Dohar", "Mirpur", "Uttara", "Gulshan", "Dhanmondi", "Mohammadpur", "Badda", "Motijheel", "Banasree", "Cantonment", "Paltan"],
-    "Gazipur": ["Gazipur Sadar", "Tongi", "Kaliakair", "Kapasia", "Sreepur"],
-    "Narayanganj": ["Narayanganj Sadar", "Bandar", "Sonargaon", "Araihazar", "Rupganj", "Fatullah", "Siddhirganj"],
-    "Narsingdi": ["Narsingdi Sadar", "Palash", "Shibpur", "Monohardi", "Belabo", "Raipura"],
-    "Faridpur": ["Faridpur Sadar", "Bhanga", "Boalmari", "Sadarpur", "Nagarkanda", "Alfanga", "Madhukhali"],
-    "Gopalganj": ["Gopalganj Sadar", "Tungipara", "Kotalipara", "Kashiani", "Muksudpur"],
-    "Madaripur": ["Madaripur Sadar", "Shibchar", "Rajoir", "Kalkini"],
-    "Shariatpur": ["Shariatpur Sadar", "Naria", "Zajira", "Bhedarganj", "Gosairhat", "Damudya"],
-    "Tangail": ["Tangail Sadar", "Mirzapur", "Gopalpur", "Ghatail", "Madhupur", "Kalihati", "Bhuapur"],
-    "Kishoreganj": ["Kishoreganj Sadar", "Bhairab", "Bajitpur", "Katiadi", "Hossainpur", "Pakundia"],
-    "Manikganj": ["Manikganj Sadar", "Singair", "Saturia", "Ghior", "Shivalaya"],
-    "Munshiganj": ["Munshiganj Sadar", "Sirajdikhan", "Sreenagar", "Lauhajang", "Gazaria", "Tongibari"],
-    "Rajbari": ["Rajbari Sadar", "Goalanda", "Pangsha", "Baliakandi", "Kalukhali"]
-  },
-  "Chattogram": {
-    "Chattogram": ["Chattogram Sadar", "Pahartali", "Double Mooring", "Hathazari", "Patiya", "Boalkhali", "Chandanaish", "Anwara", "Banshkhali", "Satkania", "Lohagara", "Fatikchhari", "Raozan", "Rangunia", "Mirsharai", "Sitakunda", "Sandwip", "Roufabad"],
-    "Cox's Bazar": ["Cox's Bazar Sadar", "Chakaria", "Maheshkhali", "Teknaf", "Ukhia", "Ramu", "Pekua", "Kutubdia"],
-    "Bandarban": ["Bandarban Sadar", "Lama", "Alikadam", "Naikhongchhari", "Rowangchhari", "Ruma", "Thanchi"],
-    "Rangamati": ["Rangamati Sadar", "Kaptai", "Kawkhali", "Langadu", "Naniarchar", "Barkal", "Baghaichhari"],
-    "Khagrachhari": ["Khagrachhari Sadar", "Dighinala", "Lakshmichhari", "Mahalchhari", "Manikchhari", "Matiranga", "Panchhari"],
-    "Cumilla": ["Cumilla Sadar", "Laksam", "Daudkandi", "Chauddagram", "Brahmanpara", "Burichang", "Chandina", "Homna", "Muradnagar", "Barura"],
-    "Brahmanbaria": ["Brahmanbaria Sadar", "Kasba", "Akhaura", "Ashuganj", "Banchharampur", "Nabinagar", "Nasirnagar"],
-    "Chandpur": ["Chandpur Sadar", "Hajiganj", "Matlab", "Faridganj", "Kachua", "Haimchar"],
-    "Feni": ["Feni Sadar", "Chhagalnaiya", "Daganbhuiyan", "Parshuram", "Sonagazi"],
-    "Noakhali": ["Noakhali Sadar", "Begumganj", "Chatkhil", "Companiganj", "Senbagh", "Hatiya"],
-    "Lakshmipur": ["Lakshmipur Sadar", "Ramganj", "Raipur", "Ramgati"]
-  },
-  "Sylhet": {
-    "Sylhet": ["Sylhet Sadar", "South Surma", "Bishwanath", "Golapganj", "Beanibazar", "Ziganj", "Balaganj", "Fenchuganj", "Gowainghat", "Jaintiapur", "Kanaighat"],
-    "Moulvibazar": ["Moulvibazar Sadar", "Sreemangal", "Kulaura", "Kamalganj", "Barlekha", "Rajnagar", "Juri"],
-    "Habiganj": ["Habiganj Sadar", "Chunarughat", "Madhabpur", "Nabiganj", "Baniachong", "Ajmiriganj", "Bahubal"],
-    "Sunamganj": ["Sunamganj Sadar", "Chhatak", "Jagannathpur", "Bishwamvarpur", "Derai", "Dharamapasha", "Dowarabazar", "Jamalganj", "Sullah", "Tahirpur"]
-  },
-  "Rajshahi": {
-    "Rajshahi": ["Rajshahi Sadar", "Godagari", "Tanore", "Bagmara", "Puthia", "Charghat", "Bagha", "Mohanpur", "Durgapur"],
-    "Natore": ["Natore Sadar", "Singra", "Baraigram", "Bagatipara", "Gurudaspur", "Lalpur"],
-    "Naogaon": ["Naogaon Sadar", "Patnitala", "Niamatpur", "Badalgachhi", "Dhamoirhat", "Manda", "Mohadevpur", "Porsha", "Raninagar", "Sapahar"],
-    "Chapainawabganj": ["Chapainawabganj Sadar", "Shibganj", "Bholahat", "Gomastapur", "Nachole"],
-    "Pabna": ["Pabna Sadar", "Ishwardi", "Sujanagar", "Atgharia", "Bera", "Chatmohar", "Santhia"],
-    "Sirajganj": ["Sirajganj Sadar", "Ullahpara", "Shahjadpur", "Belkuchi", "Chauhali", "Kamarkhanda", "Kazipur", "Raiganj", "Tarash"],
-    "Bogura": ["Bogura Sadar", "Sherpur", "Adamdighi", "Dhunat", "Dupchanchia", "Gabtali", "Kahaloo", "Nandigram", "Sariakandi"],
-    "Joypurhat": ["Joypurhat Sadar", "Panchbibi", "Akkelpur", "Kalai", "Khetlal"]
-  },
-  "Khulna": {
-    "Khulna": ["Khulna Sadar", "Dumuria", "Phultala", "Batiaghata", "Dacope", "Paikgachha", "Koyra", "Terokhada", "Rupsha", "Dighalia"],
-    "Bagerhat": ["Bagerhat Sadar", "Mongla", "Morrelganj", "Fakirhat", "Chitalmari", "Mollahat", "Rampal", "Sarankhola"],
-    "Satkhira": ["Satkhira Sadar", "Tala", "Shyamnagar", "Assasuni", "Debhata", "Kalaroa"],
-    "Jashore": ["Jashore Sadar", "Abhaynagar", "Jhikargachha", "Navaron", "Chaugachha", "Bagherpara", "Keshabpur", "Manirampur"],
-    "Narail": ["Narail Sadar", "Kalia"],
-    "Magura": ["Magura Sadar", "Mohammadpur", "Shalikha"],
-    "Jhenaidah": ["Jhenaidah Sadar", "Shailkupa", "Harinakunda", "Kotchandpur", "Maheshpur"],
-    "Chuadanga": ["Chuadanga Sadar", "Alamdanga", "Damurhuda", "Jibannagar"],
-    "Kushtia": ["Kushtia Sadar", "Bheramara", "Kumarkhali", "Daulatpur", "Khoksa"],
-    "Meherpur": ["Meherpur Sadar", "Gangni", "Mujibnagar"]
-  },
-  "Barishal": {
-    "Barishal": ["Barishal Sadar", "Bakerganj", "Babuganj", "Wazirpur", "Banaripara", "Gournadi", "Agailjhara", "Muladi", "Hizla", "Mehendiganj"],
-    "Bhola": ["Bhola Sadar", "Borhanuddin", "Char Fasson", "Lalmohan", "Daulatkhan", "Manpura", "Tazumuddin"],
-    "Patuakhali": ["Patuakhali Sadar", "Bauphal", "Galachipa", "Dashmina", "Kalapara", "Dumki", "Mirzaganj"],
-    "Barguna": ["Barguna Sadar", "Amtali", "Patharghata", "Bamna", "Betagi", "Taltali"],
-    "Pirojpur": ["Pirojpur Sadar", "Bhandaria", "Mathbaria", "Swarupkati", "Kaukhali", "Nazirpur", "Zianagar"],
-    "Jhalokati": ["Jhalokati Sadar", "Nalchity", "Rajapur", "Kathalia"]
-  },
-  "Rangpur": {
-    "Rangpur": ["Rangpur Sadar", "Badarganj", "Mithapukur", "Taraganj", "Gangachhara", "Kaunia", "Pirgachha"],
-    "Dinajpur": ["Dinajpur Sadar", "Birganj", "Kaharole", "Biral", "Parbatipur", "Phulbari", "Ghoraghat", "Bochaganj", "Chirirbandar", "Hakimpur", "Khansama"],
-    "Thakurgaon": ["Thakurgaon Sadar", "Baliadangi", "Haripur", "Ranisankail"],
-    "Panchagarh": ["Panchagarh Sadar", "Boda", "Debiganj", "Tetulia", "Atwari"],
-    "Nilphamari": ["Nilphamari Sadar", "Saidpur", "Domar", "Dimla", "Jaldhaka"],
-    "Kurigram": ["Kurigram Sadar", "Ulipur", "Nageshwari", "Bhurungamari", "Rajarhat", "Chilmari", "Rajibpur", "Rowmari"],
-    "Lalmonirhat": ["Lalmonirhat Sadar", "Aditmari", "Hatibandha", "Patgram"],
-    "Gaibandha": ["Gaibandha Sadar", "Sadullapur", "Palashbari", "Gobindaganj", "Sundarganj", "Phulchhari", "Saghata"]
-  },
-  "Mymensingh": {
-    "Mymensingh": ["Mymensingh Sadar", "Muktagachha", "Fulbaria", "Trishal", "Bhaluka", "Gaffargaon", "Nandail", "Ishwarganj", "Gouripur", "Phulpur", "Haluaghat", "Dhobaura", "Tarakanda"],
-    "Jamalpur": ["Jamalpur Sadar", "Melandaha", "Islampur", "Dewanganj", "Sarishabari", "Madarganj", "Baksiganj"],
-    "Sherpur": ["Sherpur Sadar", "Nakla", "Sreebardi", "Jhenaigati", "Nalitabari"],
-    "Netrokona": ["Netrokona Sadar", "Kendua", "Madan", "Mohanganj", "Barhatta", "Kalmakanda", "Purbadhala", "Durgapur", "Atpara", "Khaliajuri"]
-  }
-};
-
 type AddressFormProps = {
   initialData?: any;
   onCancel: () => void;
@@ -137,7 +53,7 @@ export default function AddAddressForm({
   // State to hold dynamic API locations (Division -> District mapping)
   const [apiLocations, setApiLocations] = useState<Record<string, string[]>>({});
 
-  // Fetch Delivery Charges to build dynamic Province and City lists
+  // Fetch Delivery Charges to build dynamic Province and City lists strictly from API
   useEffect(() => {
     const fetchApiLocations = async () => {
       try {
@@ -162,7 +78,6 @@ export default function AddAddressForm({
             }
           });
           
-          // Sort districts for better UX
           Object.keys(locs).forEach(key => locs[key].sort());
           setApiLocations(locs);
         }
@@ -184,9 +99,6 @@ export default function AddAddressForm({
       const newData = { ...prev, [name]: value };
       if (name === 'province') {
         newData.city = '';
-        newData.zone = '';
-      } else if (name === 'city') {
-        newData.zone = '';
       }
       return newData;
     });
@@ -195,38 +107,16 @@ export default function AddAddressForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.fullName || !formData.phone || !formData.address || !formData.province || !formData.city || !formData.zone) {
-      alert('Please fill all required fields including location dropdowns.');
+      alert('Please fill all required fields.');
       return;
     }
     onSave(formData);
   };
 
-  // Determine Regions (Provinces) from API or Fallback
-  const hasApiData = Object.keys(apiLocations).length > 0;
-  const regions = hasApiData ? Object.keys(apiLocations).sort() : Object.keys(locationData).sort();
-  
-  // Determine Cities (Districts)
-  const cities = formData.province
-    ? (hasApiData && apiLocations[formData.province] 
-        ? apiLocations[formData.province] 
-        : Object.keys(locationData[formData.province] || {})).sort()
+  const regions = Object.keys(apiLocations).sort();
+  const cities = formData.province && apiLocations[formData.province] 
+    ? apiLocations[formData.province] 
     : [];
-
-  // Determine Zones (Upazilas). Since API only gives District, we always fallback to locationData for Zones
-  let zones: string[] = [];
-  if (formData.province && formData.city) {
-    if (locationData[formData.province] && locationData[formData.province][formData.city]) {
-      zones = locationData[formData.province][formData.city];
-    } else {
-      // Graceful fallback if exact Division->District match fails due to API spelling differences
-      for (const div of Object.values(locationData)) {
-        if (div[formData.city]) {
-          zones = div[formData.city];
-          break;
-        }
-      }
-    }
-  }
 
   return (
     <form onSubmit={handleSubmit} className="bg-white space-y-6 border p-6 rounded-md shadow-sm">
@@ -282,14 +172,15 @@ export default function AddAddressForm({
 
           <div>
             <label className="text-sm font-medium">Zone / Area *</label>
-            <Select disabled={!formData.city} value={formData.zone} onValueChange={(val) => handleSelectChange('zone', val)}>
-              <SelectTrigger className="rounded-none mt-1"><SelectValue placeholder="Select Zone/Area" /></SelectTrigger>
-              <SelectContent>
-                {zones.map((zone) => (
-                  <SelectItem key={zone} value={zone}>{zone}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Changed from Select to Input since the API does not provide Zone data */}
+            <Input 
+              name="zone" 
+              value={formData.zone} 
+              onChange={handleInputChange} 
+              required 
+              className="rounded-none mt-1" 
+              placeholder="Enter Zone or Area (e.g., Mirpur)" 
+            />
           </div>
 
           <div>
