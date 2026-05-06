@@ -59,6 +59,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [otp, setOtp] = useState("");
   const [isOtpLoading, setIsOtpLoading] = useState(false);
+  const [isChecking, setIsChecking] = useState(false); // ✅ ডুপ্লিকেট চেকিং লোডিং স্টেট
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -115,7 +116,34 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
         "owner_email_password",
       ]);
       if (!ok) return;
-      setStep((p) => p + 1);
+
+      // ✅ STEP 2: ডুপ্লিকেট নাম্বার এবং ইমেইল চেকিং লজিক
+      setIsChecking(true);
+      try {
+        await axios.post("/api/v1/auth/check-duplicate", {
+          email: getValues("owner_email"),
+          phoneNumber: getValues("owner_number"),
+        });
+        
+        // সব ঠিক থাকলে ৩ নাম্বার স্টেপে যাবে
+        setStep((p) => p + 1);
+      } catch (err: any) {
+        const errorMsg = err?.response?.data?.message || err?.response?.data?.error || "Duplicate data found!";
+        toast.error(errorMsg);
+
+        const lowerMsg = errorMsg.toLowerCase();
+        
+        // Error ফিল্ডে মেসেজ দেখানো হবে
+        if (lowerMsg.includes("email")) {
+          setError("owner_email", { type: "manual", message: "This email is already in use" });
+        } 
+        if (lowerMsg.includes("phone") || lowerMsg.includes("number") || lowerMsg.includes("11000")) {
+          setError("owner_number", { type: "manual", message: "This phone number is already in use" });
+        }
+        return; // ⛔ Error থাকলে পরবর্তী ধাপে যাবে না
+      } finally {
+        setIsChecking(false);
+      }
     }
 
     if (step === 3) {
@@ -212,9 +240,9 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step < 4) {
-      await next();
+      if (!isChecking) await next();
     } else {
-      await verifyOtpAndSubmit();
+      if (!isOtpLoading) await verifyOtpAndSubmit();
     }
   };
 
@@ -267,7 +295,6 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                   onSubmit={handleFormSubmit}
                 >
                   {/* STEP 1 */}
-                  {/* ✅ CSS display ব্যবহার করে hide করা হয়েছে, যাতে DOM থেকে রিমুভ না হয় */}
                   <div style={{ display: step === 1 ? "block" : "none" }}>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="flex flex-col">
@@ -495,11 +522,14 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                     )}
                     {step < 4 && (
                       <Button
-                        type="submit"
+                        type="submit" 
                         className="ml-auto"
                         variant={"GreenBtn"}
+                        disabled={isChecking} // ✅ চেকিং অবস্থায় বাটন ডিজেবল থাকবে
                       >
-                        Next <ArrowRight className="ml-2 h-4 w-4" />
+                        {isChecking ? "Checking..." : (
+                          <>Next <ArrowRight className="ml-2 h-4 w-4" /></>
+                        )}
                       </Button>
                     )}
                   </div>
