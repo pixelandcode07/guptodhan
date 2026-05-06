@@ -122,17 +122,9 @@ export default function ProductMainInfo({
   }, [product?._id, isInWishlist, session?.user]);
 
   // ─── Delivery Charge Logic ────────────────────────────────────────────────────
-  /**
-   * RULE:
-   * 1. product.shippingCost set আছে → fixed charge, district দেখার দরকার নেই
-   * 2. shippingCost নেই → API থেকে district-wise charge আনো
-   * a. User logged in → profile address থেকে district বের করো
-   * b. User logged in নয় → default 130
-   */
   const hasFixedShipping = !!(product?.shippingCost && product.shippingCost > 0);
 
   useEffect(() => {
-    // Fixed shipping হলে API call দরকার নেই
     if (hasFixedShipping) {
       setDeliveryLoading(false);
       return;
@@ -141,7 +133,7 @@ export default function ProductMainInfo({
     const initDelivery = async () => {
       setDeliveryLoading(true);
       try {
-        // Fetch all delivery charges with cache: 'no-store' to get latest updates from admin panel
+        // Strict API fetch with cache-busting
         const chargesRes = await fetch('/api/v1/delivery-charge', {
           cache: 'no-store',
           headers: {
@@ -153,13 +145,11 @@ export default function ProductMainInfo({
         const charges: DeliveryCharge[] = chargesData?.data ?? [];
         setDeliveryCharges(charges);
 
-        // If not logged in → default 130
         if (!session?.user) {
           setDeliveryLoading(false);
           return;
         }
 
-        // Fetch user profile to get district (also bypassing cache)
         const profileRes = await fetch('/api/v1/profile/me', {
           cache: 'no-store',
           headers: {
