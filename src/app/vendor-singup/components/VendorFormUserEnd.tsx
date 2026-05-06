@@ -49,19 +49,6 @@ interface Props {
   vendorCategories: { _id: string; name: string }[];
 }
 
-// ✅ Error message parse করে field বের করার helper
-const parseFieldError = (message: string): 'email' | 'phone' | null => {
-  const lower = message.toLowerCase();
-  if (lower.includes('email')) return 'email';
-  if (
-    lower.includes('phone') ||
-    lower.includes('number') ||
-    lower.includes('phonenumber')
-  )
-    return 'phone';
-  return null;
-};
-
 export default function VendorSignupWizard({ vendorCategories }: Props) {
   const router = useRouter();
 
@@ -72,7 +59,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [otp, setOtp] = useState("");
   const [isOtpLoading, setIsOtpLoading] = useState(false);
-  const [isChecking, setIsChecking] = useState(false);
+  const [isChecking, setIsChecking] = useState(false); 
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -99,28 +86,6 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
     label: c.name,
   }));
 
-  // ✅ Centralized duplicate error handler — Step 2 এ field error set করে
-  const handleDuplicateError = (message: string) => {
-    const field = parseFieldError(message);
-
-    if (field === 'email') {
-      setError('owner_email', {
-        type: 'manual',
-        message: 'এই email টি ইতিমধ্যে registered। অন্য email দিন।',
-      });
-      toast.error('Email already registered!');
-    } else if (field === 'phone') {
-      setError('owner_number', {
-        type: 'manual',
-        message: 'এই phone number টি ইতিমধ্যে registered। অন্য number দিন।',
-      });
-      toast.error('Phone number already registered!');
-    } else {
-      // field বোঝা যায়নি — step 2 এ ফেরত নিয়ে generic দেখাও
-      toast.error(message || 'Duplicate data found. Step 2 check করুন।');
-    }
-  };
-
   const next = async () => {
     if (step === 1) {
       const ok = await trigger([
@@ -128,6 +93,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
         "trade_license_number",
         "business_address",
       ]);
+
       const hasCategory = selectedCategories && selectedCategories.length > 0;
       if (!hasCategory) {
         setError("business_category", {
@@ -137,6 +103,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
       } else {
         clearErrors("business_category");
       }
+
       if (!ok || !hasCategory) return;
       setStep((p) => p + 1);
     }
@@ -150,22 +117,42 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
       ]);
       if (!ok) return;
 
+      // ✅ STEP 2: ডুপ্লিকেট নাম্বার এবং ইমেইল চেকিং লজিক
       setIsChecking(true);
       try {
-        await axios.post("/api/v1/auth/check-duplicate", {
+        const response = await axios.post("/api/v1/auth/check-duplicate", {
           email: getValues("owner_email"),
           phoneNumber: getValues("owner_number"),
         });
+
+        // যদি API স্ট্যাটাস ২০০ দেয় কিন্তু success: false থাকে
+        if (response.data && response.data.success === false) {
+          throw new Error(response.data.message || "Duplicate data found");
+        }
+        
+        // সব ঠিক থাকলে ৩ নাম্বার স্টেপে যাবে
         setStep((p) => p + 1);
       } catch (err: any) {
-        // ✅ Backend থেকে specific message আসছে — সেটাই parse করো
-        const message =
-          err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          err.message ||
-          'Duplicate data found';
+        // ব্যাকএন্ড থেকে আসা ঠিক মেসেজটাই এক্সট্রাক্ট করা হচ্ছে
+        const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || "Duplicate data found!";
+        
+        // হুবহু সেই মেসেজটি টোস্টে দেখানো হচ্ছে
+        toast.error(errorMsg);
 
-        handleDuplicateError(message);
+        const lowerMsg = String(errorMsg).toLowerCase();
+        
+        // স্পেসিফিক ফিল্ডের নিচে এরর দেখানো হচ্ছে
+        if (lowerMsg.includes("email")) {
+          setError("owner_email", { type: "manual", message: errorMsg });
+        } else if (lowerMsg.includes("phone") || lowerMsg.includes("number") || lowerMsg.includes("11000")) {
+          setError("owner_number", { type: "manual", message: errorMsg });
+        } else {
+          // যদি স্পেসিফিক ফিল্ড ধরতে না পারে, দুটোর নিচেই ওয়ার্নিং দিয়ে দেবে
+          setError("owner_email", { type: "manual", message: errorMsg });
+          setError("owner_number", { type: "manual", message: errorMsg });
+        }
+        
+        return; // ⛔ Error থাকলে পরবর্তী ধাপে যাবে না
       } finally {
         setIsChecking(false);
       }
@@ -206,6 +193,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
 
   const sendOtp = async () => {
     if (!ownerEmail) return toast.error("Email missing");
+
     setIsOtpLoading(true);
     try {
       await axios.post("/api/v1/auth/register-vendor/send-otp", {
@@ -228,17 +216,21 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
       const data = getValues();
       const formData = new FormData();
       formData.append("name", data.owner_name);
+
       formData.append("ownerName", data.owner_name);
       formData.append("email", data.owner_email);
       formData.append("password", data.owner_email_password);
       formData.append("phoneNumber", data.owner_number);
+
       formData.append("businessName", data.business_name);
       formData.append("businessAddress", data.business_address || "");
       formData.append("tradeLicenseNumber", data.trade_license_number || "");
+
       formData.append(
         "businessCategory",
         JSON.stringify(data.business_category.map((c) => c.value))
       );
+
       formData.append("ownerNid", ownerNidFile!);
       formData.append("tradeLicense", tradeLicenseFile!);
       formData.append("otp", otp);
@@ -251,24 +243,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
       toast.success("Vendor request submitted");
       setIsSuccessDialogOpen(true);
     } catch (err: any) {
-      const message =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err.message ||
-        'Submission failed';
-
-      const field = parseFieldError(message);
-
-      // ✅ Final submit এও duplicate হলে — step 2 তে ফেরত নিয়ে field error দেখাও
-      if (field === 'email' || field === 'phone') {
-        handleDuplicateError(message);
-        setStep(2); // Step 2 এ ফেরত নিয়ে যাও যাতে fix করতে পারে
-        toast.error('Step 2 এ ফিরে ' + (field === 'email' ? 'email' : 'phone') + ' fix করুন।');
-      } else if (message.toLowerCase().includes('otp')) {
-        toast.error('OTP invalid বা expired। আবার চেষ্টা করুন।');
-      } else {
-        toast.error(message);
-      }
+      toast.error(err?.response?.data?.message || "Submission failed");
     } finally {
       setIsOtpLoading(false);
     }
@@ -291,7 +266,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
             <div className="bg-white/30 backdrop-blur-md rounded-3xl p-2 md:p-10 border border-white/30">
               {/* HEADER */}
               <div className="flex justify-between items-center mb-8">
-                <h2 className="text-md md:text-2xl font-extrabold text-emerald-600">
+                <h2 className="text-md md:text-2xl font-extrabold text-emerald-600 ">
                   Guptodhan Vendor Signup
                 </h2>
                 <span className="text-sm font-medium">Step {step} of 4</span>
@@ -300,10 +275,30 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
               <div className="grid md:grid-cols-3 gap-6">
                 {/* SIDEBAR */}
                 <aside className="space-y-4 grid grid-cols-2 md:block">
-                  <StepBadge number={1} title="Business Info" icon={<Briefcase />} isActive={step === 1} />
-                  <StepBadge number={2} title="Owner Info" icon={<User />} isActive={step === 2} />
-                  <StepBadge number={3} title="Attachments" icon={<Paperclip />} isActive={step === 3} />
-                  <StepBadge number={4} title="Verify Email" icon={<Shield />} isActive={step === 4} />
+                  <StepBadge
+                    number={1}
+                    title="Business Info"
+                    icon={<Briefcase />}
+                    isActive={step === 1}
+                  />
+                  <StepBadge
+                    number={2}
+                    title="Owner Info"
+                    icon={<User />}
+                    isActive={step === 2}
+                  />
+                  <StepBadge
+                    number={3}
+                    title="Attachments"
+                    icon={<Paperclip />}
+                    isActive={step === 3}
+                  />
+                  <StepBadge
+                    number={4}
+                    title="Verify Email"
+                    icon={<Shield />}
+                    isActive={step === 4}
+                  />
                 </aside>
 
                 {/* MAIN FORM */}
@@ -315,32 +310,75 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                   <div style={{ display: step === 1 ? "block" : "none" }}>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="flex flex-col">
-                        <Label className="text-emerald-600 font-semibold pb-2">Business Name *</Label>
-                        <Input {...register("business_name", { required: "Business name is required" })} placeholder="Example: XYZ enterprise" />
-                        {errors.business_name && <span className="text-red-500 text-xs mt-1 font-medium">{errors.business_name.message}</span>}
+                        <Label className="text-emerald-600 font-semibold pb-2">
+                          Business Name *
+                        </Label>
+                        <Input
+                          {...register("business_name", {
+                            required: "Business name is required",
+                          })}
+                          placeholder="Example: XYZ enterprise"
+                        />
+                        {errors.business_name && (
+                          <span className="text-red-500 text-xs mt-1 font-medium">
+                            {errors.business_name.message}
+                          </span>
+                        )}
                       </div>
                       <div className="flex flex-col">
-                        <Label className="text-emerald-600 font-semibold pb-2">Business Category *</Label>
+                        <Label className="text-emerald-600 font-semibold pb-2">
+                          Business Category *
+                        </Label>
                         <Select
                           isMulti
                           options={categoryOptions}
                           value={selectedCategories}
                           onChange={(v) => {
-                            setValue("business_category", v as any, { shouldValidate: true });
-                            if (v && v.length > 0) clearErrors("business_category");
+                            setValue("business_category", v as any, {
+                              shouldValidate: true,
+                            });
+                            if (v && v.length > 0) {
+                              clearErrors("business_category");
+                            }
                           }}
                         />
-                        {errors.business_category && <span className="text-red-500 text-xs mt-1 font-medium">{errors.business_category.message}</span>}
+                        {errors.business_category && (
+                          <span className="text-red-500 text-xs mt-1 font-medium">
+                            {errors.business_category.message}
+                          </span>
+                        )}
                       </div>
                       <div className="flex flex-col">
-                        <Label className="text-emerald-600 font-semibold pb-2">Trade License Number *</Label>
-                        <Input {...register("trade_license_number", { required: "Trade license number is required" })} placeholder="Valid Trade License Number." />
-                        {errors.trade_license_number && <span className="text-red-500 text-xs mt-1 font-medium">{errors.trade_license_number.message}</span>}
+                        <Label className="text-emerald-600 font-semibold pb-2">
+                          Trade License Number *
+                        </Label>
+                        <Input
+                          {...register("trade_license_number", {
+                            required: "Trade license number is required",
+                          })}
+                          placeholder="Valid Trade License Number."
+                        />
+                        {errors.trade_license_number && (
+                          <span className="text-red-500 text-xs mt-1 font-medium">
+                            {errors.trade_license_number.message}
+                          </span>
+                        )}
                       </div>
                       <div className="flex flex-col">
-                        <Label className="text-emerald-600 font-semibold pb-2">Business Address *</Label>
-                        <Input {...register("business_address", { required: "Business address is required" })} placeholder="Example: 123 Main Street, City, Country" />
-                        {errors.business_address && <span className="text-red-500 text-xs mt-1 font-medium">{errors.business_address.message}</span>}
+                        <Label className="text-emerald-600 font-semibold pb-2">
+                          Business Address *
+                        </Label>
+                        <Input
+                          {...register("business_address", {
+                            required: "Business address is required",
+                          })}
+                          placeholder="Example: 123 Main Street, City, Country"
+                        />
+                        {errors.business_address && (
+                          <span className="text-red-500 text-xs mt-1 font-medium">
+                            {errors.business_address.message}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -349,52 +387,86 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                   <div style={{ display: step === 2 ? "block" : "none" }}>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="flex flex-col">
-                        <Label className="text-emerald-600 font-semibold pb-2">Owner Name *</Label>
-                        <Input placeholder="Owner Name" {...register("owner_name", { required: "Owner name is required" })} />
-                        {errors.owner_name && <span className="text-red-500 text-xs mt-1 font-medium">{errors.owner_name.message}</span>}
-                      </div>
-                      <div className="flex flex-col">
-                        <Label className="text-emerald-600 font-semibold pb-2">Owner Phone Number *</Label>
-                        <Input placeholder="Phone Number" {...register("owner_number", { required: "Phone number is required" })} />
-                        {errors.owner_number && (
-                          // ✅ Phone error — লাল border দিয়ে স্পষ্ট দেখাচ্ছে
+                        <Label className="text-emerald-600 font-semibold pb-2">
+                          Owner Name *
+                        </Label>
+                        <Input
+                          placeholder="Owner Name"
+                          {...register("owner_name", {
+                            required: "Owner name is required",
+                          })}
+                        />
+                        {errors.owner_name && (
                           <span className="text-red-500 text-xs mt-1 font-medium">
-                            ⚠️ {errors.owner_number.message}
+                            {errors.owner_name.message}
                           </span>
                         )}
                       </div>
                       <div className="flex flex-col">
-                        <Label className="text-emerald-600 font-semibold pb-2">Owner Email *</Label>
+                        <Label className="text-emerald-600 font-semibold pb-2">
+                          Owner Phone Number *
+                        </Label>
+                        <Input
+                          placeholder="Phone Number"
+                          {...register("owner_number", {
+                            required: "Phone number is required",
+                          })}
+                        />
+                        {errors.owner_number && (
+                          <span className="text-red-500 text-xs mt-1 font-medium">
+                            {errors.owner_number.message}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col">
+                        <Label className="text-emerald-600 font-semibold pb-2">
+                          Owner Email *
+                        </Label>
                         <Input
                           placeholder="Email"
                           type="email"
                           {...register("owner_email", {
                             required: "Email is required",
-                            pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Invalid email address" },
+                            pattern: {
+                              value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                              message: "Invalid email address",
+                            },
                           })}
                         />
                         {errors.owner_email && (
-                          // ✅ Email error — স্পষ্ট ⚠️ দিয়ে দেখাচ্ছে
                           <span className="text-red-500 text-xs mt-1 font-medium">
-                            ⚠️ {errors.owner_email.message}
+                            {errors.owner_email.message}
                           </span>
                         )}
                       </div>
                       <div className="flex flex-col">
-                        <Label className="text-emerald-600 font-semibold pb-2">Add Your Password *</Label>
+                        <Label className="text-emerald-600 font-semibold pb-2">
+                          Add Your Password *
+                        </Label>
                         <div className="relative">
                           <Input
                             type={showPassword ? "text" : "password"}
                             {...register("owner_email_password", {
                               required: "Password is required",
-                              minLength: { value: 8, message: "Password must be at least 8 characters" },
+                              minLength: {
+                                value: 8,
+                                message: "Password must be at least 8 characters",
+                              },
                             })}
                           />
-                          <button type="button" className="absolute right-2 top-2" onClick={() => setShowPassword(!showPassword)}>
+                          <button
+                            type="button"
+                            className="absolute right-2 top-2"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
                             {showPassword ? <EyeOff /> : <Eye />}
                           </button>
                         </div>
-                        {errors.owner_email_password && <span className="text-red-500 text-xs mt-1 font-medium">{errors.owner_email_password.message}</span>}
+                        {errors.owner_email_password && (
+                          <span className="text-red-500 text-xs mt-1 font-medium">
+                            {errors.owner_email_password.message}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -403,14 +475,29 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                   <div style={{ display: step === 3 ? "block" : "none" }}>
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="flex flex-col">
-                        <Label className="text-emerald-600 font-semibold pb-2">Owner NID Image *</Label>
+                        <Label className="text-emerald-600 font-semibold pb-2">
+                          Owner NID Image *
+                        </Label>
                         <UploadImage name="ownerNid" onChange={onFileChange} />
-                        {fileErrors.nid && <span className="text-red-500 text-xs mt-1 font-medium">{fileErrors.nid}</span>}
+                        {fileErrors.nid && (
+                          <span className="text-red-500 text-xs mt-1 font-medium">
+                            {fileErrors.nid}
+                          </span>
+                        )}
                       </div>
                       <div className="flex flex-col">
-                        <Label className="text-emerald-600 font-semibold pb-2">Trade License Image *</Label>
-                        <UploadImage name="tradeLicense" onChange={onFileChange} />
-                        {fileErrors.trade && <span className="text-red-500 text-xs mt-1 font-medium">{fileErrors.trade}</span>}
+                        <Label className="text-emerald-600 font-semibold pb-2">
+                          Trade License Image *
+                        </Label>
+                        <UploadImage
+                          name="tradeLicense"
+                          onChange={onFileChange}
+                        />
+                        {fileErrors.trade && (
+                          <span className="text-red-500 text-xs mt-1 font-medium">
+                            {fileErrors.trade}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -418,15 +505,22 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                   {/* STEP 4 */}
                   <div style={{ display: step === 4 ? "block" : "none" }}>
                     <div className="space-y-4">
-                      <p className="text-sm">OTP sent to <b>{ownerEmail}</b></p>
+                      <p className="text-sm">
+                        OTP sent to <b>{ownerEmail}</b>
+                      </p>
                       <Input
                         value={otp}
-                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                        onChange={(e) =>
+                          setOtp(e.target.value.replace(/\D/g, ""))
+                        }
                         maxLength={6}
                         className="text-center text-2xl tracking-widest"
                       />
-                      <Button type="submit" disabled={isOtpLoading}>
-                        {isOtpLoading ? "Submitting..." : "Complete Registration"}
+                      <Button
+                        type="submit"
+                        disabled={isOtpLoading}
+                      >
+                        Complete Registration
                       </Button>
                     </div>
                   </div>
@@ -439,8 +533,15 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                       </Button>
                     )}
                     {step < 4 && (
-                      <Button type="submit" className="ml-auto" variant={"GreenBtn"} disabled={isChecking}>
-                        {isChecking ? "Checking..." : <> Next <ArrowRight className="ml-2 h-4 w-4" /> </>}
+                      <Button
+                        type="submit" 
+                        className="ml-auto"
+                        variant={"GreenBtn"}
+                        disabled={isChecking} 
+                      >
+                        {isChecking ? "Checking..." : (
+                          <>Next <ArrowRight className="ml-2 h-4 w-4" /></>
+                        )}
                       </Button>
                     )}
                   </div>
@@ -450,11 +551,21 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
               {/* FOOTER */}
               <div className="mt-8 text-center text-sm">
                 Already have an account?{" "}
-                <Link href="/vendor-singin" className="text-emerald-600 font-semibold">Sign In</Link>
+                <Link
+                  href="/vendor-singin"
+                  className="text-emerald-600 font-semibold"
+                >
+                  Sign In
+                </Link>
               </div>
               <div className="mt-2 text-center text-sm">
                 Go back to{" "}
-                <Link href={SITE_CONFIG.mainUrl} className="text-emerald-600 font-semibold">Home Page</Link>
+                <Link
+                  href={SITE_CONFIG.mainUrl}
+                  className="text-emerald-600 font-semibold"
+                >
+                  Home Page
+                </Link>
               </div>
             </div>
           </div>
@@ -467,9 +578,13 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
           <DialogHeader className="text-center">
             <CheckCircle className="mx-auto text-emerald-500 mb-4" size={48} />
             <DialogTitle>Request Submitted</DialogTitle>
-            <DialogDescription>Admin will review your request soon.</DialogDescription>
+            <DialogDescription>
+              Admin will review your request soon.
+            </DialogDescription>
           </DialogHeader>
-          <Button onClick={() => (window.location.href = SITE_CONFIG.mainUrl)}>Go Home</Button>
+          <Button onClick={() => (window.location.href = SITE_CONFIG.mainUrl)}>
+            Go Home
+          </Button>
         </DialogContent>
       </Dialog>
     </>
