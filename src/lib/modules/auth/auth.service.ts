@@ -12,6 +12,7 @@ import { User } from '../user/user.model';
 import { verifyGoogleToken } from '@/lib/utils/verifyGoogleToken';
 import { Vendor } from '../vendors/vendor.model';
 import { OtpServices } from '../otp/otp.service';
+import dbConnect from '@/lib/db';
 
 
 
@@ -629,7 +630,22 @@ export const registerVendor = async (payload: any, otp: string = '', isByAdmin =
 
 
 
+// auth.service.ts এ এই function add করো
+export const checkDuplicate = async (email: string, phoneNumber: string) => {
+  await dbConnect();
 
+  const existingEmail = await User.findOne({ email });
+  if (existingEmail) {
+    throw new Error('EMAIL_DUPLICATE'); // specific code পাঠাচ্ছি
+  }
+
+  const existingPhone = await User.findOne({ phoneNumber });
+  if (existingPhone) {
+    throw new Error('PHONE_DUPLICATE'); // specific code পাঠাচ্ছি
+  }
+
+  return { ok: true };
+};
 
 const serviceProviderSendRegistrationOtp = async (email: string) => {
   await connectRedis();
@@ -952,6 +968,7 @@ export const AuthServices = {
   registerServiceProvider,
   serviceProviderLogin,
   loginWithGoogle,
+  checkDuplicate,
   vendorLogin,
   vendorChangePassword,
   vendorSendForgotPasswordOtpToEmail,
