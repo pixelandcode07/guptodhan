@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { User } from '@/lib/modules/user/user.model'; 
+import { User } from '@/lib/modules/user/user.model';
 import dbConnect from '@/lib/db';
 
 export async function POST(req: Request) {
   try {
     await dbConnect();
-    
+
     const { email, phoneNumber } = await req.json();
 
     if (email) {
