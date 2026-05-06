@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-// Complete Bangladesh Location Data
+// Complete Bangladesh Location Data Fallback
 const locationData: Record<string, Record<string, string[]>> = {
   "Dhaka": {
     "Dhaka": ["Savar", "Dhamrai", "Keraniganj", "Nawabganj", "Dohar", "Mirpur", "Uttara", "Gulshan", "Dhanmondi", "Mohammadpur", "Badda", "Motijheel", "Banasree", "Cantonment", "Paltan"],
@@ -134,6 +134,46 @@ export default function AddAddressForm({
     addressType: parsedData.addressType || 'Home',
   });
 
+  // State to hold dynamic API locations (Division -> District mapping)
+  const [apiLocations, setApiLocations] = useState<Record<string, string[]>>({});
+
+  // Fetch Delivery Charges to build dynamic Province and City lists
+  useEffect(() => {
+    const fetchApiLocations = async () => {
+      try {
+        const res = await fetch('/api/v1/delivery-charge', {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        });
+        const data = await res.json();
+        
+        if (data?.data && Array.isArray(data.data)) {
+          const locs: Record<string, string[]> = {};
+          
+          data.data.forEach((item: any) => {
+            const division = item.divisionName;
+            const district = item.districtName;
+            
+            if (!locs[division]) {
+              locs[division] = [];
+            }
+            if (!locs[division].includes(district)) {
+              locs[division].push(district);
+            }
+          });
+          
+          // Sort districts for better UX
+          Object.keys(locs).forEach(key => locs[key].sort());
+          setApiLocations(locs);
+        }
+      } catch (err) {
+        console.error("Failed to fetch locations from delivery-charge API", err);
+      }
+    };
+    
+    fetchApiLocations();
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -142,7 +182,6 @@ export default function AddAddressForm({
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => {
       const newData = { ...prev, [name]: value };
-      // Reset dependencies when parent changes
       if (name === 'province') {
         newData.city = '';
         newData.zone = '';
@@ -162,10 +201,32 @@ export default function AddAddressForm({
     onSave(formData);
   };
 
-  // Dynamically calculate options based on current selection
-  const regions = Object.keys(locationData);
-  const cities = formData.province ? Object.keys(locationData[formData.province] || {}) : [];
-  const zones = (formData.province && formData.city) ? (locationData[formData.province][formData.city] || []) : [];
+  // Determine Regions (Provinces) from API or Fallback
+  const hasApiData = Object.keys(apiLocations).length > 0;
+  const regions = hasApiData ? Object.keys(apiLocations).sort() : Object.keys(locationData).sort();
+  
+  // Determine Cities (Districts)
+  const cities = formData.province
+    ? (hasApiData && apiLocations[formData.province] 
+        ? apiLocations[formData.province] 
+        : Object.keys(locationData[formData.province] || {})).sort()
+    : [];
+
+  // Determine Zones (Upazilas). Since API only gives District, we always fallback to locationData for Zones
+  let zones: string[] = [];
+  if (formData.province && formData.city) {
+    if (locationData[formData.province] && locationData[formData.province][formData.city]) {
+      zones = locationData[formData.province][formData.city];
+    } else {
+      // Graceful fallback if exact Division->District match fails due to API spelling differences
+      for (const div of Object.values(locationData)) {
+        if (div[formData.city]) {
+          zones = div[formData.city];
+          break;
+        }
+      }
+    }
+  }
 
   return (
     <form onSubmit={handleSubmit} className="bg-white space-y-6 border p-6 rounded-md shadow-sm">
