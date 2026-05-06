@@ -209,7 +209,6 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
     }
   };
 
-  // ✅ Enter বাটন প্রেস করলে ফর্মের সাবমিট ইভেন্ট ট্রিগার হবে
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step < 4) {
@@ -268,7 +267,8 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                   onSubmit={handleFormSubmit}
                 >
                   {/* STEP 1 */}
-                  {step === 1 && (
+                  {/* ✅ CSS display ব্যবহার করে hide করা হয়েছে, যাতে DOM থেকে রিমুভ না হয় */}
+                  <div style={{ display: step === 1 ? "block" : "none" }}>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="flex flex-col">
                         <Label className="text-emerald-600 font-semibold pb-2">
@@ -342,10 +342,10 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                         )}
                       </div>
                     </div>
-                  )}
+                  </div>
 
                   {/* STEP 2 */}
-                  {step === 2 && (
+                  <div style={{ display: step === 2 ? "block" : "none" }}>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="flex flex-col">
                         <Label className="text-emerald-600 font-semibold pb-2">
@@ -416,7 +416,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                             })}
                           />
                           <button
-                            type="button" // ✅ Explicitly setting type="button" avoids form submit
+                            type="button"
                             className="absolute right-2 top-2"
                             onClick={() => setShowPassword(!showPassword)}
                           >
@@ -430,10 +430,10 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                         )}
                       </div>
                     </div>
-                  )}
+                  </div>
 
                   {/* STEP 3 */}
-                  {step === 3 && (
+                  <div style={{ display: step === 3 ? "block" : "none" }}>
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="flex flex-col">
                         <Label className="text-emerald-600 font-semibold pb-2">
@@ -461,10 +461,10 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                         )}
                       </div>
                     </div>
-                  )}
+                  </div>
 
                   {/* STEP 4 */}
-                  {step === 4 && (
+                  <div style={{ display: step === 4 ? "block" : "none" }}>
                     <div className="space-y-4">
                       <p className="text-sm">
                         OTP sent to <b>{ownerEmail}</b>
@@ -477,7 +477,6 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                         maxLength={6}
                         className="text-center text-2xl tracking-widest"
                       />
-                      {/* ✅ Set to submit so form catches it */}
                       <Button
                         type="submit"
                         disabled={isOtpLoading}
@@ -485,7 +484,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                         Complete Registration
                       </Button>
                     </div>
-                  )}
+                  </div>
 
                   {/* NAV */}
                   <div className="flex justify-between mt-6">
@@ -496,7 +495,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                     )}
                     {step < 4 && (
                       <Button
-                        type="submit" // ✅ type submit, form handler determines action
+                        type="submit"
                         className="ml-auto"
                         variant={"GreenBtn"}
                       >
