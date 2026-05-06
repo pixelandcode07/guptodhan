@@ -87,14 +87,12 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
 
   const next = async () => {
     if (step === 1) {
-      // Trigger validation for Step 1 fields
       const ok = await trigger([
         "business_name",
         "trade_license_number",
         "business_address",
       ]);
 
-      // Manually validate react-select
       const hasCategory = selectedCategories && selectedCategories.length > 0;
       if (!hasCategory) {
         setError("business_category", {
@@ -110,7 +108,6 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
     }
 
     if (step === 2) {
-      // Trigger validation for Step 2 fields
       const ok = await trigger([
         "owner_name",
         "owner_number",
@@ -122,7 +119,6 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
     }
 
     if (step === 3) {
-      // Validate file uploads
       let filesValid = true;
       const newFileErrors = { nid: "", trade: "" };
 
@@ -213,6 +209,16 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
     }
   };
 
+  // ✅ Enter বাটন প্রেস করলে ফর্মের সাবমিট ইভেন্ট ট্রিগার হবে
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (step < 4) {
+      await next();
+    } else {
+      await verifyOtpAndSubmit();
+    }
+  };
+
   return (
     <>
       <div className="min-h-screen md:py-12 md:px-6 bg-gradient-to-b from-[#e0f2fe] via-white/60 to-[#ecfdf5]">
@@ -256,8 +262,11 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                   />
                 </aside>
 
-                {/* MAIN */}
-                <main className="md:col-span-2 bg-white/60 rounded-2xl p-6">
+                {/* MAIN FORM */}
+                <form
+                  className="md:col-span-2 bg-white/60 rounded-2xl p-6"
+                  onSubmit={handleFormSubmit}
+                >
                   {/* STEP 1 */}
                   {step === 1 && (
                     <div className="grid md:grid-cols-2 gap-4">
@@ -407,7 +416,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                             })}
                           />
                           <button
-                            type="button"
+                            type="button" // ✅ Explicitly setting type="button" avoids form submit
                             className="absolute right-2 top-2"
                             onClick={() => setShowPassword(!showPassword)}
                           >
@@ -468,8 +477,9 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                         maxLength={6}
                         className="text-center text-2xl tracking-widest"
                       />
+                      {/* ✅ Set to submit so form catches it */}
                       <Button
-                        onClick={verifyOtpAndSubmit}
+                        type="submit"
                         disabled={isOtpLoading}
                       >
                         Complete Registration
@@ -480,21 +490,21 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                   {/* NAV */}
                   <div className="flex justify-between mt-6">
                     {step > 1 && (
-                      <Button variant="outline" onClick={back}>
+                      <Button type="button" variant="outline" onClick={back}>
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back
                       </Button>
                     )}
                     {step < 4 && (
                       <Button
+                        type="submit" // ✅ type submit, form handler determines action
                         className="ml-auto"
                         variant={"GreenBtn"}
-                        onClick={next}
                       >
                         Next <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
                     )}
                   </div>
-                </main>
+                </form>
               </div>
 
               {/* FOOTER */}
