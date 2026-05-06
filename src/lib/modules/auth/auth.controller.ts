@@ -494,39 +494,6 @@ const registerVendor = async (req: NextRequest) => {
   }
 };
 
-const checkDuplicate = async (req: NextRequest) => {
-  try {
-    await dbConnect();
-    const body = await req.json();
-    const { email, phoneNumber } = body;
-
-    await AuthServices.checkDuplicate(email, phoneNumber);
-
-    return sendResponse({
-      success: true,
-      statusCode: StatusCodes.OK,
-      message: 'Available',
-      data: null,
-    });
-  } catch (error: any) {
-    // error.message দিয়ে specific field বলে দিচ্ছি
-    const msg =
-      error.message === 'EMAIL_DUPLICATE'
-        ? 'This email address is already registered'
-        : error.message === 'PHONE_DUPLICATE'
-        ? 'This phone number is already registered'
-        : error.message || 'Duplicate data found';
-
-    return sendResponse({
-      success: false,
-      statusCode: StatusCodes.CONFLICT,
-      message: msg,
-      data: null,
-    });
-  }
-};
-
-
 const serviceProviderSendRegistrationOtp = async (req: NextRequest) => {
   await dbConnect();
   const { email } = await req.json();
