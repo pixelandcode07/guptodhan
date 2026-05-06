@@ -126,8 +126,8 @@ export default function ProductMainInfo({
    * RULE:
    * 1. product.shippingCost set আছে → fixed charge, district দেখার দরকার নেই
    * 2. shippingCost নেই → API থেকে district-wise charge আনো
-   *    a. User logged in → profile address থেকে district বের করো
-   *    b. User logged in নয় → default 130
+   * a. User logged in → profile address থেকে district বের করো
+   * b. User logged in নয় → default 130
    */
   const hasFixedShipping = !!(product?.shippingCost && product.shippingCost > 0);
 
@@ -141,8 +141,14 @@ export default function ProductMainInfo({
     const initDelivery = async () => {
       setDeliveryLoading(true);
       try {
-        // Fetch all delivery charges
-        const chargesRes = await fetch('/api/v1/delivery-charge');
+        // Fetch all delivery charges with cache: 'no-store' to get latest updates from admin panel
+        const chargesRes = await fetch('/api/v1/delivery-charge', {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
         const chargesData = await chargesRes.json();
         const charges: DeliveryCharge[] = chargesData?.data ?? [];
         setDeliveryCharges(charges);
@@ -153,8 +159,14 @@ export default function ProductMainInfo({
           return;
         }
 
-        // Fetch user profile to get district
-        const profileRes = await fetch('/api/v1/profile/me');
+        // Fetch user profile to get district (also bypassing cache)
+        const profileRes = await fetch('/api/v1/profile/me', {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
         const profileData = await profileRes.json();
         const address: string = profileData?.data?.address ?? '';
         const userDistrict = parseDistrictFromAddress(address);
