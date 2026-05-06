@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react' // ✅ useRef যুক্ত করা হয়েছে
+import { useState, useEffect, useRef } from 'react' 
 import OrderSummary from './components/OrderSummary'
 import DeliveryOptions, { DeliveryOption } from './components/DeliveryOptions'
 import ItemsList from './components/ItemsList'
@@ -14,7 +14,6 @@ import axios from 'axios'
 import { toast } from 'sonner'
 import { AppliedCoupon } from './components/CouponSection'
 import { useGeoData } from '@/hooks/useGeoData'
-import { useDeliveryCharge } from '@/hooks/useDeliveryCharge'
 import { useUpazilas } from '@/hooks/useUpazilas'
 import { placeOrder, initiateSSLCommerzPayment } from './utils/payment'
 
@@ -81,8 +80,32 @@ export default function ShoppingInfoContent({
     const { data: session } = useSession()
 
     const { geoData, geoLoading } = useGeoData()
-    const { deliveryCharge: baseDistrictCharge } = useDeliveryCharge(formData.district, formData.upazila)
     const { upazilas } = useUpazilas(formData.district)
+
+    // ✅ FIXED: ক্যাশিং এড়াতে সরাসরি API কল করা হচ্ছে (useDeliveryCharge হুক বাদ দেওয়া হয়েছে)
+    const [apiDeliveryCharges, setApiDeliveryCharges] = useState<any[]>([])
+
+    useEffect(() => {
+        const fetchCharges = async () => {
+            try {
+                const res = await fetch('/api/v1/delivery-charge', {
+                    cache: 'no-store',
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                });
+                const data = await res.json();
+                if (data?.data && Array.isArray(data.data)) {
+                    setApiDeliveryCharges(data.data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch dynamic delivery charges", err);
+            }
+        };
+        fetchCharges();
+    }, []);
+
+    // ডিস্ট্রিক্ট অনুযায়ী চার্জ বের করা হচ্ছে (লিস্টে না থাকলে ডিফল্ট ১৩০)
+    const matchedCharge = apiDeliveryCharges.find(c => c.districtName === formData.district);
+    const baseDistrictCharge = matchedCharge ? matchedCharge.deliveryCharge : (formData.district ? 130 : 0);
 
     const [successModalOpen, setSuccessModalOpen] = useState(false)
     const [successOrderId, setSuccessOrderId] = useState('')
@@ -91,16 +114,11 @@ export default function ShoppingInfoContent({
     const [lastPaymentMethod, setLastPaymentMethod] = useState<'cod' | 'card'>('cod')
     const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null)
 
-    // ✅ State for items
     const [enrichedCartItems, setEnrichedCartItems] = useState<CartItem[]>(cartItems);
-    
-    // ✅ ১. একটি Ref ব্যবহার করা হচ্ছে যাতে ট্যাব পাল্টানোর সময় বারবার এপিআই কল না হয়
     const isFetchedRef = useRef(false);
 
-    // ✅ ২. রিলোড সমস্যা সমাধানের মূল ফিক্স (Effect Logic)
     useEffect(() => {
         const fetchLatestProductDetails = async () => {
-            // যদি কার্ট খালি থাকে অথবা অলরেডি একবার ফেচ করা হয়ে থাকে তবে আর ফেচ করবে না
             if (cartItems.length === 0 || isFetchedRef.current) return;
             
             try {
@@ -122,20 +140,19 @@ export default function ShoppingInfoContent({
                     }
                 }));
                 setEnrichedCartItems(updatedItems);
-                isFetchedRef.current = true; // একবার সফলভাবে ফেচ হলে লক করে দেওয়া হলো
+                isFetchedRef.current = true; 
             } catch (error) {
                 console.error("Failed to refresh cart items", error);
             }
         };
         fetchLatestProductDetails();
-    }, [cartItems.length]); // ✅ পুরো অ্যারের বদলে শুধু length ব্যবহার করা হয়েছে
+    }, [cartItems.length]); 
 
     const subtotal = enrichedCartItems.reduce((sum, item) => sum + (item.product.price * item.product.quantity), 0)
     const totalSavings = enrichedCartItems.reduce((sum, item) => sum + ((item.product.originalPrice - item.product.price) * item.product.quantity), 0)
-    
-    // ✅ FIXED: সঠিকভাবে cart-এর মোট quantity গণনা করা হচ্ছে
     const totalItems = enrichedCartItems.reduce((sum, item) => sum + item.product.quantity, 0)
     
+    // ✅ ডেলিভারি চার্জ ক্যালকুলেশন
     const calculateTotalDeliveryCharge = () => {
         const customChargeTotal = enrichedCartItems.reduce((sum, item) => {
             return sum + ((item.product.shippingCost || 0) * item.product.quantity);
@@ -407,7 +424,7 @@ export default function ShoppingInfoContent({
                         selectedDelivery={selectedDelivery}
                         appliedCoupon={appliedCoupon}
                         onCouponApplied={setAppliedCoupon}
-                        totalItems={totalItems} // ✅ FIXED: সঠিক item count পাঠানো হচ্ছে
+                        totalItems={totalItems} 
                     />
                 </div>
             </div>
