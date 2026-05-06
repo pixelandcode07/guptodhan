@@ -90,7 +90,6 @@ export default function LogInRegister() {
   // ✅ CORE FIX: Vendor হলে vendor-login endpoint ব্যবহার করে vendorId নিশ্চিত করা
   // ==========================================
   const performLogin = async (identifier: string, password: string) => {
-    // ১. প্রথমে vendor-login ট্রাই করো (vendor দের জন্য vendorId সহ আসে)
     try {
       const res = await axios.post('/api/v1/auth/vendor-login', {
         identifier,
@@ -101,7 +100,6 @@ export default function LogInRegister() {
       // vendor login fail হলে normal login ট্রাই করো
     }
 
-    // ২. Normal user login ট্রাই করো
     const res = await axios.post('/api/v1/auth/login', {
       identifier,
       password,
@@ -110,7 +108,7 @@ export default function LogInRegister() {
   }
 
   // ==========================================
-  // ✅ FIXED: Login Submit Handler
+  // ✅ Login Submit Handler
   // ==========================================
   const onSubmitLogin = async (data: LoginFormData) => {
     try {
@@ -124,14 +122,10 @@ export default function LogInRegister() {
 
         const resolvedUserId = user._id || user.id || ''
 
-        // ==========================================
-        // ✅ KEY FIX: vendor role কিন্তু vendorId নেই? → vendor store fetch করো
-        // ==========================================
         let resolvedVendorId = user.vendorId || ''
 
         if (user.role === 'vendor' && !resolvedVendorId) {
           try {
-            // vendorId বের করার জন্য vendor store info fetch করো
             const vendorRes = await axios.get('/api/v1/vendor/my-store', {
               headers: { Authorization: `Bearer ${accessToken}` },
             })
@@ -140,7 +134,6 @@ export default function LogInRegister() {
               vendorRes?.data?.data?._id ||
               ''
           } catch {
-            // fetch fail হলেও proceed করো, vendorId empty থাকবে
             console.warn('Could not fetch vendorId separately')
           }
         }
@@ -180,16 +173,17 @@ export default function LogInRegister() {
         await update()
 
         // ==========================================
-        // ✅ ROLE-BASED REDIRECT LOGIC
+        // ✅ ROLE-BASED REDIRECT LOGIC FIX (Admin and Vendor separated)
         // ==========================================
         const savedUrl = localStorage.getItem('redirectAfterLogin')
         let redirectPath = savedUrl || window.location.pathname
 
-        if (
-          (user.role === 'vendor' || user.role === 'admin') &&
-          !savedUrl
-        ) {
-          redirectPath = '/dashboard'
+        if (!savedUrl) {
+          if (user.role === 'admin') {
+            redirectPath = '/general' // Admin goes to /general
+          } else if (user.role === 'vendor') {
+            redirectPath = '/dashboard' // Vendor goes to /dashboard
+          }
         }
 
         localStorage.removeItem('redirectAfterLogin')
@@ -213,9 +207,6 @@ export default function LogInRegister() {
     }
   }
 
-  // ==========================================
-  // ✅ Handle Account Created (unchanged)
-  // ==========================================
   const handleAccountCreated = async (phone: string, pin: string) => {
     try {
       toast.loading('Setting up your account...', { id: 'setup-toast' })
