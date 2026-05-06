@@ -15,14 +15,12 @@ export default function ShoppingInfoClient() {
   const searchParams = useSearchParams();
   const isBuyNow = searchParams?.get('buyNow') === 'true';
   
-  // ✅ ১. একটি মাউন্টেড স্টেট ব্যবহার করছি যাতে সাথে সাথে রিডাইরেক্ট না হয়
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // মাউন্ট হওয়ার পর ডাটা চেক করার জন্য অল্প একটু সময় দিচ্ছি
     const timer = setTimeout(() => {
       setIsReady(true);
-    }, 800); // ৮০০ মিলি-সেকেন্ড অপেক্ষা করবে ডাটা স্ট্যাবল হওয়ার জন্য
+    }, 800); 
     return () => clearTimeout(timer);
   }, []);
 
