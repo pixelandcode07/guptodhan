@@ -59,7 +59,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [otp, setOtp] = useState("");
   const [isOtpLoading, setIsOtpLoading] = useState(false);
-  const [isChecking, setIsChecking] = useState(false); // ✅ ডুপ্লিকেট চেকিং লোডিং স্টেট
+  const [isChecking, setIsChecking] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -128,18 +128,30 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
         // সব ঠিক থাকলে ৩ নাম্বার স্টেপে যাবে
         setStep((p) => p + 1);
       } catch (err: any) {
-        const errorMsg = err?.response?.data?.message || err?.response?.data?.error || "Duplicate data found!";
-        toast.error(errorMsg);
-
+        const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || "Duplicate data found!";
         const lowerMsg = errorMsg.toLowerCase();
         
-        // Error ফিল্ডে মেসেজ দেখানো হবে
+        let isSpecificErrorHandled = false;
+
+        // ইমেইল ডুপ্লিকেট হলে
         if (lowerMsg.includes("email")) {
-          setError("owner_email", { type: "manual", message: "This email is already in use" });
+          setError("owner_email", { type: "manual", message: "This email is already in use. Please try another." });
+          toast.error("The provided email is already registered.");
+          isSpecificErrorHandled = true;
         } 
-        if (lowerMsg.includes("phone") || lowerMsg.includes("number") || lowerMsg.includes("11000")) {
-          setError("owner_number", { type: "manual", message: "This phone number is already in use" });
+        
+        // ফোন নাম্বার ডুপ্লিকেট হলে
+        if (lowerMsg.includes("phone") || lowerMsg.includes("number") || lowerMsg.includes("phonenumber") || lowerMsg.includes("11000")) {
+          setError("owner_number", { type: "manual", message: "This phone number is already in use. Please try another." });
+          toast.error("The provided phone number is already registered.");
+          isSpecificErrorHandled = true;
         }
+
+        // যদি কোনো স্পেসিফিক ফিল্ড ধরতে না পারে
+        if (!isSpecificErrorHandled) {
+          toast.error("Validation failed: This data might already be registered.");
+        }
+        
         return; // ⛔ Error থাকলে পরবর্তী ধাপে যাবে না
       } finally {
         setIsChecking(false);
@@ -525,7 +537,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                         type="submit" 
                         className="ml-auto"
                         variant={"GreenBtn"}
-                        disabled={isChecking} // ✅ চেকিং অবস্থায় বাটন ডিজেবল থাকবে
+                        disabled={isChecking}
                       >
                         {isChecking ? "Checking..." : (
                           <>Next <ArrowRight className="ml-2 h-4 w-4" /></>
