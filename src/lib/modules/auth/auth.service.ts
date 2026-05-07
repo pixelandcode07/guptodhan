@@ -21,21 +21,21 @@ import { OtpServices } from '../otp/otp.service';
 const loginUser = async (payload: TLoginUser) => {
   const { identifier: rawIdentifier, password: plainPassword } = payload;
 
-  // ✅ Phone number format normalize — যেকোনো format থেকে 01XXXXXXXXX বানাও
+  // ✅ Phone format normalize
   const identifier = (() => {
     const trimmed = rawIdentifier.trim();
-    if (trimmed.includes('@')) return trimmed; // email হলে ছুঁয়ো না
-
-    if (trimmed.startsWith('+88')) return '0' + trimmed.slice(3);  // +8801... → 01...
-    if (trimmed.startsWith('88') && trimmed.length >= 13) return '0' + trimmed.slice(2); // 8801... → 01...
-    return trimmed; // already 01XXXXXXXXX
+    if (trimmed.includes('@')) return trimmed;
+    if (trimmed.startsWith('+88')) return '0' + trimmed.slice(3);
+    if (trimmed.startsWith('88') && trimmed.length >= 13) return '0' + trimmed.slice(2);
+    return trimmed;
   })();
 
   const isEmail = identifier.includes('@');
 
+  // ✅ isDeleted check remove — $ne ব্যবহার করো যাতে undefined ও match হয়
   const user = isEmail
-    ? await User.isUserExistsByEmail(identifier)
-    : await User.isUserExistsByPhone(identifier);
+    ? await User.findOne({ email: identifier, isDeleted: { $ne: true } }).select('+password')
+    : await User.findOne({ phoneNumber: identifier, isDeleted: { $ne: true } }).select('+password');
 
   if (!user) {
     throw new Error('User not found!');
