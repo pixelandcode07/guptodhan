@@ -5,10 +5,8 @@ import { TUserDoc, UserModel } from './user.interface';
 const userSchema = new Schema<TUserDoc, UserModel>(
   {
     name: { type: String, required: true },
-    // ✅ unique: true থাকার কারণে অটোমেটিক ইনডেক্স তৈরি হয়ে গেছে
     email: { type: String, sparse: true, unique: true },
     password: { type: String, select: false },
-    // ✅ unique: true থাকার কারণে অটোমেটিক ইনডেক্স তৈরি হয়ে গেছে
     phoneNumber: { type: String, unique: true, sparse: true },
     profilePicture: { type: String },
     address: { type: String },
@@ -36,35 +34,15 @@ const userSchema = new Schema<TUserDoc, UserModel>(
 );
 
 // ===================================
-// 🔥 CRITICAL INDEXES (Performance Optimization)
+// 🔥 CRITICAL INDEXES
 // ===================================
-
-// ❌ REMOVED: Single email/phone indexes removed because 'unique: true' already handles them.
-
-// 1️⃣ Role Index - Admin/Vendor panel query অপ্টিমাইজ
 userSchema.index({ role: 1 });
-
-// 2️⃣ Active Status Index - শুধু active users filter
 userSchema.index({ isActive: 1 });
-
-
-// 3️⃣ Deleted Status Index - isDeleted:false queries জন্য
 userSchema.index({ isDeleted: 1 });
-
-// 4️⃣ Compound Index - Login query perfect match (ESR Rule অনুসরণ)
-// E (Equality) = email, S (Sort) = none, R (Range) = none
 userSchema.index({ email: 1, isActive: 1, isDeleted: 1 });
-
-// 5️⃣ Compound Index - Phone login
 userSchema.index({ phoneNumber: 1, isActive: 1, isDeleted: 1 });
-
-// 6️⃣ Compound Index - Role-based filtering with active status
 userSchema.index({ role: 1, isActive: 1 });
-
-// 7️⃣ Service Provider Queries Optimization
 userSchema.index({ 'serviceProviderInfo.serviceCategory': 1 });
-
-// 8️⃣ Timestamp Index - Recently created users (if needed)
 userSchema.index({ createdAt: -1 });
 
 // ===========================
@@ -92,7 +70,29 @@ userSchema.statics.isUserExistsByEmail = async function (email: string) {
 };
 
 userSchema.statics.isUserExistsByPhone = async function (phone: string) {
-  return this.findOne({ phoneNumber: phone, isDeleted: false }).select('+password');
+  const trimmed = phone.trim();
+
+  // ✅ যেকোনো format থেকে সব possible format বানাও
+  const formats: string[] = [trimmed];
+
+  if (trimmed.startsWith('+88')) {
+    // +8801XXXXXXXX → 01XXXXXXXX এবং 8801XXXXXXXX
+    formats.push('0' + trimmed.slice(3));
+    formats.push(trimmed.slice(1));
+  } else if (trimmed.startsWith('88') && trimmed.length >= 13) {
+    // 8801XXXXXXXX → 01XXXXXXXX এবং +8801XXXXXXXX
+    formats.push('0' + trimmed.slice(2));
+    formats.push('+' + trimmed);
+  } else if (trimmed.startsWith('0')) {
+    // 01XXXXXXXX → +8801XXXXXXXX এবং 8801XXXXXXXX
+    formats.push('+88' + trimmed.slice(1));
+    formats.push('88' + trimmed.slice(1));
+  }
+
+  // ✅ $in দিয়ে যেকোনো format এ match হলেই user পাবে
+  return this.findOne(
+    { phoneNumber: { $in: formats }, isDeleted: false }
+  ).select('+password');
 };
 
 // ===========================
