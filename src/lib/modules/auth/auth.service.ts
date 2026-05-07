@@ -19,17 +19,7 @@ import { OtpServices } from '../otp/otp.service';
 
 
 const loginUser = async (payload: TLoginUser) => {
-  const { identifier: rawIdentifier, password: plainPassword } = payload;
-
-  // ✅ Phone number format normalize — যেকোনো format থেকে 01XXXXXXXXX বানাও
-  const identifier = (() => {
-    const trimmed = rawIdentifier.trim();
-    if (trimmed.includes('@')) return trimmed; // email হলে ছুঁয়ো না
-
-    if (trimmed.startsWith('+88')) return '0' + trimmed.slice(3);  // +8801... → 01...
-    if (trimmed.startsWith('88') && trimmed.length >= 13) return '0' + trimmed.slice(2); // 8801... → 01...
-    return trimmed; // already 01XXXXXXXXX
-  })();
+  const { identifier, password: plainPassword } = payload;
 
   const isEmail = identifier.includes('@');
 
@@ -76,6 +66,7 @@ const loginUser = async (payload: TLoginUser) => {
   const accessToken = generateToken(jwtPayload, accessTokenSecret, accessTokenExpiresIn);
   const refreshToken = generateToken(jwtPayload, refreshTokenSecret, refreshTokenExpiresIn);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password, ...userWithoutPassword } = user.toObject();
 
   return {
@@ -83,7 +74,7 @@ const loginUser = async (payload: TLoginUser) => {
     refreshToken,
     user: {
       ...userWithoutPassword,
-      hasPassword: !!password,
+      hasPassword: !!password, // ← এটা যোগ করো
     },
   };
 };
