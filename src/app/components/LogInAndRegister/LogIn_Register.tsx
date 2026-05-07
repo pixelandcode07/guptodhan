@@ -86,9 +86,27 @@ export default function LogInRegister() {
 
   const [showPin, setShowPin] = useState<boolean>(false)
 
-  // ==========================================
-  // ✅ CORE FIX: Vendor হলে vendor-login endpoint ব্যবহার করে vendorId নিশ্চিত করা
-  // ==========================================
+  // ✅ Phone number যেকোনো format থেকে 01XXXXXXXXX format এ convert করে
+  const normalizeIdentifier = (identifier: string): string => {
+    const trimmed = identifier.trim()
+
+    // email হলে সরাসরি return করো
+    if (trimmed.includes('@')) return trimmed
+
+    // +8801XXXXXXXXX → 01XXXXXXXXX
+    if (trimmed.startsWith('+88')) {
+      return '0' + trimmed.slice(3)
+    }
+
+    // 8801XXXXXXXXX → 01XXXXXXXXX
+    if (trimmed.startsWith('88') && trimmed.length === 13) {
+      return '0' + trimmed.slice(2)
+    }
+
+    // already 01XXXXXXXXX format
+    return trimmed
+  }
+
   const performLogin = async (identifier: string, password: string) => {
     try {
       const res = await axios.post('/api/v1/auth/vendor-login', {
@@ -107,21 +125,20 @@ export default function LogInRegister() {
     return res
   }
 
-  // ==========================================
-  // ✅ Login Submit Handler
-  // ==========================================
   const onSubmitLogin = async (data: LoginFormData) => {
     try {
       setLoading(true)
       toast.loading('Logging in...', { id: 'login-toast' })
 
-      const res = await performLogin(data.identifier, data.pin)
+      // ✅ Phone number format normalize করো — এটাই আগের "user not found" এর fix
+      const cleanIdentifier = normalizeIdentifier(data.identifier)
+
+      const res = await performLogin(cleanIdentifier, data.pin)
 
       if (res?.data?.success) {
         const { user, accessToken } = res.data.data
 
         const resolvedUserId = user._id || user.id || ''
-
         let resolvedVendorId = user.vendorId || ''
 
         if (user.role === 'vendor' && !resolvedVendorId) {
@@ -169,20 +186,16 @@ export default function LogInRegister() {
         })
 
         closeButtonRef.current?.click()
-
         await update()
 
-        // ==========================================
-        // ✅ ROLE-BASED REDIRECT LOGIC FIX (Admin and Vendor separated)
-        // ==========================================
         const savedUrl = localStorage.getItem('redirectAfterLogin')
         let redirectPath = savedUrl || window.location.pathname
 
         if (!savedUrl) {
           if (user.role === 'admin') {
-            redirectPath = '/general' // Admin goes to /general
+            redirectPath = '/general'
           } else if (user.role === 'vendor') {
-            redirectPath = '/dashboard' // Vendor goes to /dashboard
+            redirectPath = '/dashboard'
           }
         }
 
@@ -256,7 +269,6 @@ export default function LogInRegister() {
         })
 
         closeButtonRef.current?.click()
-
         await update()
 
         const redirectPath =
