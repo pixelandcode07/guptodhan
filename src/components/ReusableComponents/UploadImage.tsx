@@ -1,5 +1,5 @@
 'use client';
-import { Upload, X } from 'lucide-react';
+import { Upload } from 'lucide-react'; // X বাটন রিমুভ করা হয়েছে
 import Image from 'next/image';
 import { useState } from 'react';
 
@@ -24,11 +24,6 @@ export default function UploadImage({
     onChange(name, file);
   };
 
-  const handleRemove = () => {
-    setSelectedFile(null);
-    onChange(name, null);
-  };
-
   const imageUrl = selectedFile
     ? URL.createObjectURL(selectedFile)
     : preview || '';
@@ -47,12 +42,7 @@ export default function UploadImage({
               fill
               className="object-contain rounded-lg"
             />
-            <button
-              type="button"
-              onClick={handleRemove}
-              className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600">
-              <X size={16} />
-            </button>
+            {/* লাল X বাটনটি এখান থেকে সম্পূর্ণ রিমুভ করা হয়েছে */}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center text-center p-6">
