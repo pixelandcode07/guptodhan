@@ -1,7 +1,7 @@
 'use client';
 
 import { Input } from '@/components/ui/input';
-import { Upload, X } from 'lucide-react';
+import { Upload } from 'lucide-react'; // X বাদ দেওয়া হয়েছে
 import Image from 'next/image';
 
 interface UploadImageBtnProps {
@@ -52,20 +52,7 @@ export default function UploadImageBtn({
               fill
               className="object-cover rounded-lg"
             />
-            {onRemove && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onRemove();
-                  onChange(null); // clear value
-                }}
-                className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg z-10"
-              >
-                <X size={18} />
-              </button>
-            )}
+            {/* লাল X বাটনটি এখান থেকে সম্পূর্ণ রিমুভ করা হয়েছে */}
           </div>
         )}
       </label>
