@@ -23,7 +23,7 @@ export default function ImageSection({ formData, handleInputChange }: ImageSecti
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
           <Label className="text-sm font-medium mb-2 block">
-            Product Thumbnail Image<span className="text-red-500">*</span>
+            Product Thumbnail Image <span className="text-red-500">*</span>
           </Label>
           <UploadImage
             name="thumbnailImage"
@@ -34,7 +34,7 @@ export default function ImageSection({ formData, handleInputChange }: ImageSecti
 
         <div>
           <Label className="text-sm font-medium mb-2 block">
-            Product Gallery Images
+            Product Gallery Images <span className="text-red-500">*</span> <span className="text-gray-500 text-xs font-normal ml-1">(Required, Min: 1, Max: 8)</span>
           </Label>
           <MultipleImageUpload
             images={formData.galleryImages}
