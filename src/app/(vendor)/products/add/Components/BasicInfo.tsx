@@ -28,7 +28,7 @@ export default function BasicInfo({ formData, handleInputChange }: BasicInfoProp
       <div className="space-y-6">
         <div className="mb-6">
           <Label htmlFor="title" className="text-sm font-medium">
-            Product Title<span className="text-red-500">*</span>
+            Product Title <span className="text-red-500">*</span>
           </Label>
           <Input
             id="title"
@@ -41,7 +41,7 @@ export default function BasicInfo({ formData, handleInputChange }: BasicInfoProp
 
         <div className="mb-6">
           <Label htmlFor="shortDescription" className="text-sm font-medium">
-            Short Description (Max 255 Characters)
+            Short Description <span className="text-red-500">*</span> <span className="text-gray-500 text-xs font-normal ml-1">(Required, Max 255 Characters)</span>
           </Label>
           <Textarea
             id="shortDescription"
@@ -60,7 +60,9 @@ export default function BasicInfo({ formData, handleInputChange }: BasicInfoProp
           <Label className="text-sm font-medium mb-2 block">Detailed Information</Label>
           <Tabs defaultValue="description" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="description">Description</TabsTrigger>
+              <TabsTrigger value="description">
+                Description <span className="text-red-500 ml-1">*</span>
+              </TabsTrigger>
               <TabsTrigger value="specification">Specification</TabsTrigger>
               <TabsTrigger value="warranty">Warranty Policy</TabsTrigger>
             </TabsList>
