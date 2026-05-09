@@ -37,6 +37,7 @@ export default function VendorStoreFrom() {
         handleSubmit,
         control,
         reset,
+        setValue, // <-- Added setValue
         formState: { errors, isSubmitting },
     } = useForm<Inputs>();
 
@@ -91,7 +92,7 @@ export default function VendorStoreFrom() {
                         : [],
                     store_meta_description: store.storeMetaDescription || '',
                     selectVendor: {
-                        label: store?.storeName || 'My Vendor',
+                        label: store?.storeName || 'My Vendor Account',
                         value: vendorId,
                     },
                 });
@@ -100,15 +101,23 @@ export default function VendorStoreFrom() {
                 toast.success('Store loaded for editing');
             } catch (err: any) {
                 console.error(err);
-                toast.error('No existing store found or failed to load');
+                toast.error('No existing store found, please create one');
                 setIsEditMode(false);
+                
+                // Auto-select the vendor if creating a new store
+                if (vendorId) {
+                    setValue('selectVendor', {
+                        label: 'My Vendor Account',
+                        value: vendorId,
+                    });
+                }
             } finally {
                 setLoading(false);
             }
         };
 
         loadStoreById();
-    }, [vendorId, token, reset]);
+    }, [vendorId, token, reset, setValue]);
 
     const handleSavePaymentInfo = async () => {
         if (!loadedStore?._id || !token) {
@@ -148,7 +157,6 @@ export default function VendorStoreFrom() {
         }
         formData.append('vendorId', data.selectVendor.value);
 
-        // Required field checks for logo and banner
         if (!isEditMode && (!data.logo || !data.banner)) {
             toast.error("Logo and Banner are required to create a store");
             return;
@@ -222,7 +230,6 @@ export default function VendorStoreFrom() {
 
     return (
         <div className="bg-[#f8f9fb] m-3 md:m-10 space-y-6">
-
             <form
                 onSubmit={handleSubmit(onSubmit)}
                 className="p-6 md:p-10 border border-[#e4e7eb] rounded-lg space-y-8 bg-white"
@@ -231,7 +238,15 @@ export default function VendorStoreFrom() {
                     {isEditMode ? 'Update Your Store' : 'Create New Store'}
                 </h1>
 
-                <StoreInformation register={register} errors={errors} control={control} isEditMode={isEditMode} />
+                {/* Passed sessionVendorId here */}
+                <StoreInformation 
+                    register={register} 
+                    errors={errors} 
+                    control={control} 
+                    isEditMode={isEditMode} 
+                    sessionVendorId={vendorId} 
+                />
+                
                 <StoreSocialLinks register={register} errors={errors} />
                 <StoreMetaInfo register={register} control={control} />
 
