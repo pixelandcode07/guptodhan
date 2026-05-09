@@ -36,6 +36,7 @@ export default function BasicInfo({ formData, handleInputChange }: BasicInfoProp
             value={formData.title}
             onChange={(e) => handleInputChange('title', e.target.value)}
             className="mt-1"
+            required
           />
         </div>
 
@@ -50,13 +51,15 @@ export default function BasicInfo({ formData, handleInputChange }: BasicInfoProp
             onChange={(e) => handleInputChange('shortDescription', e.target.value)}
             className="mt-1"
             maxLength={255}
+            required
           />
           <p className="text-xs text-gray-500 mt-1">
             {formData.shortDescription.length}/255 characters
           </p>
         </div>
 
-        <div>
+        {/* স্ক্রল করার জন্য একটি ID দেওয়া হলো */}
+        <div id="detailedInformationContainer">
           <Label className="text-sm font-medium mb-2 block">Detailed Information</Label>
           <Tabs defaultValue="description" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
