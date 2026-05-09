@@ -16,11 +16,13 @@ export default function StoreInformation({
     errors,
     control,
     isEditMode = false,
+    vendorId, // ✅ নতুন প্রপস হিসেবে রিসিভ করা হলো
 }: {
     register: UseFormRegister<Inputs>;
     errors: FieldErrors<Inputs>;
     control: Control<Inputs>;
     isEditMode?: boolean;
+    vendorId?: string; // ✅ টাইপ ডিফাইন করা হলো
 }) {
     const [vendorOptions, setVendorOptions] = useState<{ label: string; value: string }[]>([]);
     const [loading, setLoading] = useState(true);
@@ -61,7 +63,6 @@ export default function StoreInformation({
                             <UploadImageBtn
                                 value={field.value ?? null}
                                 onChange={field.onChange}
-                                onRemove={() => field.onChange(null)}
                                 fieldName="logo"
                             />
                         )}
@@ -83,7 +84,6 @@ export default function StoreInformation({
                             <UploadImageBtn
                                 value={field.value ?? null}
                                 onChange={field.onChange}
-                                onRemove={() => field.onChange(null)}
                                 fieldName="banner"
                             />
                         )}
@@ -114,7 +114,7 @@ export default function StoreInformation({
                         <div className="flex items-center justify-center h-10 border border-gray-300 rounded-md bg-gray-50">
                             <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
                         </div>
-                    ) : vendorOptions.length === 0 ? (
+                    ) : vendorOptions.length === 0 && !vendorId ? (
                         <p className="text-sm text-red-500 bg-red-50 p-2 rounded">No approved vendors found</p>
                     ) : (
                         <Controller
@@ -124,15 +124,22 @@ export default function StoreInformation({
                             render={({ field }) => (
                                 <Select
                                     classNamePrefix="select"
-                                    isClearable
+                                    isClearable={!vendorId} // ✅ vendorId থাকলে clear ('X') বাটন অফ থাকবে
                                     isSearchable
                                     options={vendorOptions}
                                     value={field.value}
                                     onChange={field.onChange}
+                                    isDisabled={!!vendorId} // ✅ vendorId থাকলে ফিল্ডটি পুরোপুরি disable থাকবে
                                     placeholder="Search your vendor account..."
                                     noOptionsMessage={() => 'No vendors found'}
                                     styles={{
-                                        control: (base) => ({ ...base, borderColor: '#d1d5db', '&:hover': { borderColor: '#3b82f6' } })
+                                        control: (base, state) => ({ 
+                                            ...base, 
+                                            borderColor: '#d1d5db', 
+                                            backgroundColor: state.isDisabled ? '#f3f4f6' : 'white',
+                                            cursor: state.isDisabled ? 'not-allowed' : 'default',
+                                            '&:hover': { borderColor: '#3b82f6' } 
+                                        })
                                     }}
                                 />
                             )}
