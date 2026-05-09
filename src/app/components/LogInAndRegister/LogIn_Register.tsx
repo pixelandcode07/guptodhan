@@ -86,12 +86,13 @@ export default function LogInRegister() {
 
   const [showPin, setShowPin] = useState<boolean>(false)
 
-  // ✅ যেকোনো phone format → 01XXXXXXXXX
+  // ✅ FIXED: '0' + slice ছিল bug — এখন শুধু slice করে 01XXXXXXXXX বানাচ্ছি
+  // +8801816506070 → slice(3) → 01816506070 ✅ (আগে '0'+slice(3) = 001... ❌ ছিল)
   const normalizePhone = (identifier: string): string => {
     const trimmed = identifier.trim()
     if (trimmed.includes('@')) return trimmed
-    if (trimmed.startsWith('+88')) return '0' + trimmed.slice(3)
-    if (trimmed.startsWith('88') && trimmed.length >= 13) return '0' + trimmed.slice(2)
+    if (trimmed.startsWith('+88')) return trimmed.slice(3)
+    if (trimmed.startsWith('88') && trimmed.length >= 13) return trimmed.slice(2)
     return trimmed
   }
 
@@ -211,8 +212,6 @@ export default function LogInRegister() {
     try {
       toast.loading('Setting up your account...', { id: 'setup-toast' })
 
-      // ✅ এটাই ছিল bug — এখন normalizePhone দিয়ে সঠিকভাবে করছি
-      // ❌ আগে: '0' + phone.replace('+88', '') → '+8801...' হলে '001...' হয়ে যেত
       const cleanPhone = normalizePhone(phone)
 
       const loginRes = await axios.post('/api/v1/auth/login', {
