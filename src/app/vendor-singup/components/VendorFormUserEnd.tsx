@@ -63,6 +63,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
   const [showPassword, setShowPassword] = useState(false);
 
   const otpInputRef = useRef<HTMLInputElement>(null);
+  const submitBtnRef = useRef<HTMLButtonElement>(null); // ✅ Submit বাটনের রেফারেন্স
 
   const {
     register,
@@ -94,7 +95,19 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
     }
   }, [step]);
 
-  // ✅ Backend message থেকে কোন field duplicate সেটা নির্ধারণ করে error set করে
+  // ✅ Step 3-তে Enter বাটন চাপলে স্বয়ংক্রিয়ভাবে Next-এ যাওয়ার লজিক
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && step === 3) {
+        e.preventDefault();
+        submitBtnRef.current?.click();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [step]);
+
+  // Backend message থেকে কোন field duplicate সেটা নির্ধারণ করে error set করে
   const applyDuplicateError = (backendMessage: string) => {
     const lower = backendMessage.toLowerCase();
 
@@ -158,12 +171,8 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
           phoneNumber: getValues("owner_number"),
         });
 
-        // ✅ No error — পরের step এ যাও
         setStep((p) => p + 1);
       } catch (err: any) {
-        // ✅ axios 409 এ err.response.data.message ঠিকমতো পড়ো
-        // err.message হলো "Request failed with status code 409" — এটা কাজে লাগবে না
-        // তাই সরাসরি response.data থেকে নাও
         const backendMessage: string =
           err?.response?.data?.message ||
           "Something went wrong. Please try again.";
@@ -368,7 +377,6 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                           placeholder="Phone Number"
                           {...register("owner_number", { required: "Phone number is required" })}
                         />
-                        {/* ✅ Phone duplicate error এখানে দেখাবে */}
                         {errors.owner_number && (
                           <span className="text-red-500 text-xs mt-1 font-medium">{errors.owner_number.message}</span>
                         )}
@@ -386,7 +394,6 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                             },
                           })}
                         />
-                        {/* ✅ Email duplicate error এখানে দেখাবে */}
                         {errors.owner_email && (
                           <span className="text-red-500 text-xs mt-1 font-medium">{errors.owner_email.message}</span>
                         )}
@@ -464,6 +471,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                     )}
                     {step < 4 && (
                       <Button
+                        ref={submitBtnRef} // ✅ Reference যুক্ত করা হলো
                         type="submit"
                         className="ml-auto"
                         variant={"GreenBtn"}
