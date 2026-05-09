@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Save, Loader2, Asterisk } from 'lucide-react';
+import { Save, Loader2 } from 'lucide-react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import StoreInformation from './StoreInformation';
 import StoreSocialLinks from './StoreSocialLinks';
@@ -37,7 +37,7 @@ export default function VendorStoreFrom() {
         handleSubmit,
         control,
         reset,
-        setValue, // <-- Added setValue
+        setValue, // ✅ setValue ইম্পোর্ট করা হয়েছে
         formState: { errors, isSubmitting },
     } = useForm<Inputs>();
 
@@ -101,10 +101,10 @@ export default function VendorStoreFrom() {
                 toast.success('Store loaded for editing');
             } catch (err: any) {
                 console.error(err);
-                toast.error('No existing store found, please create one');
+                toast.error('No existing store found or failed to load');
                 setIsEditMode(false);
                 
-                // Auto-select the vendor if creating a new store
+                // ✅ যদি নতুন স্টোর হয়, তবে ভেন্ডর নিজে থেকেই সিলেক্ট হয়ে থাকবে
                 if (vendorId) {
                     setValue('selectVendor', {
                         label: 'My Vendor Account',
@@ -230,6 +230,7 @@ export default function VendorStoreFrom() {
 
     return (
         <div className="bg-[#f8f9fb] m-3 md:m-10 space-y-6">
+
             <form
                 onSubmit={handleSubmit(onSubmit)}
                 className="p-6 md:p-10 border border-[#e4e7eb] rounded-lg space-y-8 bg-white"
@@ -238,13 +239,13 @@ export default function VendorStoreFrom() {
                     {isEditMode ? 'Update Your Store' : 'Create New Store'}
                 </h1>
 
-                {/* Passed sessionVendorId here */}
+                {/* ✅ vendorId পাস করা হলো */}
                 <StoreInformation 
                     register={register} 
                     errors={errors} 
                     control={control} 
                     isEditMode={isEditMode} 
-                    sessionVendorId={vendorId} 
+                    vendorId={vendorId} 
                 />
                 
                 <StoreSocialLinks register={register} errors={errors} />
