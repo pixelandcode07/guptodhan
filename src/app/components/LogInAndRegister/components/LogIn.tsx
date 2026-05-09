@@ -27,153 +27,146 @@ export default function LogIn({
   setShowPin: Dispatch<SetStateAction<boolean>>
   loading?: boolean
 }) {
-  
-  // ✅ Form Submit Interceptor for formatting Phone Numbers & Emails correctly
+
   const handlePreSubmit: SubmitHandler<LoginFormData> = (data) => {
-    let formattedIdentifier = data.identifier.trim()
-
-    // Check if it's NOT an email (meaning it's a phone number)
-    if (!formattedIdentifier.includes('@')) {
-      // Remove any unwanted spaces or dashes
-      formattedIdentifier = formattedIdentifier.replace(/[\s-]/g, '')
-
-      // If number starts with '01' (11 digits), prepend '+88'
-      if (formattedIdentifier.startsWith('01') && formattedIdentifier.length === 11) {
-        formattedIdentifier = '+88' + formattedIdentifier
-      } 
-      // If number starts with '8801' (13 digits), prepend '+'
-      else if (formattedIdentifier.startsWith('880') && formattedIdentifier.length === 13) {
-        formattedIdentifier = '+' + formattedIdentifier
-      }
-      // If it already starts with '+880', it will remain as it is
-    }
-
-    // Pass the perfectly formatted data to the parent handler
+    const formattedIdentifier = data.identifier.trim().replace(/[\s-]/g, '')
     onSubmitLogin({
       ...data,
       identifier: formattedIdentifier,
     })
   }
 
+  if (step !== 'login') return null
+
   return (
-    <div>
-      {step === 'login' && (
-        <form onSubmit={handleSubmitLogin(handlePreSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="identifier" className="flex items-center text-[12px] font-medium text-gray-900">
-              Phone number or Email <Asterisk className="h-3 w-3 text-red-500" />
-            </label>
+    <form onSubmit={handleSubmitLogin(handlePreSubmit)} className="space-y-4">
 
-            <Input
-              id="identifier"
-              type="text"
-              placeholder="Enter phone or email"
-              disabled={loading}
-              {...registerLogin('identifier', {
-                required: 'Phone number or Email is required',
-                validate: (value) => {
-                  if (value.includes('@')) {
-                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-                    return emailRegex.test(value) || 'Invalid email format'
-                  } else {
-                    const phoneRegex = /^\+?[\d\s-]{10,15}$/
-                    return phoneRegex.test(value) || 'Invalid phone number format'
-                  }
-                },
-              })}
-              className={loginErrors.identifier ? 'border-red-500' : ''}
-            />
-            {loginErrors.identifier && (
-              <p className="text-sm text-red-500">{loginErrors.identifier.message}</p>
-            )}
-          </div>
+      <div className="space-y-2">
+        <label
+          htmlFor="identifier"
+          className="flex items-center text-[12px] font-medium text-gray-900"
+        >
+          Phone number or Email <Asterisk className="h-3 w-3 text-red-500" />
+        </label>
+        <Input
+          id="identifier"
+          type="text"
+          placeholder="Enter phone or email"
+          disabled={loading}
+          {...registerLogin('identifier', {
+            required: 'Phone number or Email is required',
+            validate: (value) => {
+              if (value.includes('@')) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+                return emailRegex.test(value) || 'Invalid email format'
+              } else {
+                const phoneRegex = /^\+?[\d\s-]{10,15}$/
+                return phoneRegex.test(value) || 'Invalid phone number format'
+              }
+            },
+          })}
+          className={loginErrors.identifier ? 'border-red-500' : ''}
+        />
+        {loginErrors.identifier && (
+          <p className="text-sm text-red-500">{loginErrors.identifier.message}</p>
+        )}
+      </div>
 
-          <div className="space-y-2">
-            <label htmlFor="pin" className="flex items-center text-[12px] font-medium text-gray-900">
-              Enter your Password <Asterisk className="h-3 w-3 text-red-500" />
-            </label>
-            <div className="relative">
-              <Input
-                id="pin"
-                type={showPin ? 'text' : 'password'}
-                placeholder="Enter your password"
-                disabled={loading}
-                {...registerLogin('pin', {
-                  required: 'Password is required',
-                  minLength: {
-                    value: 6,
-                    message: 'Password must be at least 6 characters',
-                  },
-                })}
-                className={loginErrors.pin ? 'border-red-500' : ''}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2"
-                onClick={() => setShowPin(!showPin)}
-                disabled={loading}
-              >
-                {showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-            </div>
-            {loginErrors.pin && <p className="text-sm text-red-500">{loginErrors.pin.message}</p>}
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="rememberMe"
-                {...registerLogin('rememberMe')}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                defaultChecked={false}
-                disabled={loading}
-              />
-              <label htmlFor="rememberMe" className="text-sm text-gray-700">
-                Remember me
-              </label>
-            </div>
-            <a
-              onClick={() => !loading && setStep('forgetPin')}
-              className={`text-sm text-blue-600 hover:underline ${loading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-            >
-              Forgot Password?
-            </a>
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full bg-blue-600 text-white hover:bg-blue-700"
+      <div className="space-y-2">
+        <label
+          htmlFor="pin"
+          className="flex items-center text-[12px] font-medium text-gray-900"
+        >
+          Enter your Password <Asterisk className="h-3 w-3 text-red-500" />
+        </label>
+        <div className="relative">
+          <Input
+            id="pin"
+            type={showPin ? 'text' : 'password'}
+            placeholder="Enter your password"
             disabled={loading}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Logging in...
-              </>
-            ) : (
-              'Login'
-            )}
-          </Button>
-
+            {...registerLogin('pin', {
+              required: 'Password is required',
+              minLength: {
+                value: 6,
+                message: 'Password must be at least 6 characters',
+              },
+            })}
+            className={loginErrors.pin ? 'border-red-500' : ''}
+          />
           <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => setStep('createAccount')}
             type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-1/2 -translate-y-1/2"
+            onClick={() => setShowPin(!showPin)}
             disabled={loading}
           >
-            Create Account
+            {showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </Button>
+        </div>
+        {loginErrors.pin && (
+          <p className="text-sm text-red-500">{loginErrors.pin.message}</p>
+        )}
+      </div>
 
-          <div className="text-center text-sm text-gray-600">OR LOGIN WITH</div>
-          <div className="flex justify-center space-x-2">
-            <SocialLoginPart />
-          </div>
-        </form>
-      )}
-    </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="rememberMe"
+            {...registerLogin('rememberMe')}
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            defaultChecked={false}
+            disabled={loading}
+          />
+          <label htmlFor="rememberMe" className="text-sm text-gray-700">
+            Remember me
+          </label>
+        </div>
+        
+        {/* Fixed: Added the missing '<a' tag here */}
+        <a
+          onClick={() => !loading && setStep('forgetPin')}
+          className={`text-sm text-blue-600 hover:underline ${
+            loading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+          }`}
+        >
+          Forgot Password?
+        </a>
+      </div>
+
+      <Button
+        type="submit"
+        className="w-full bg-blue-600 text-white hover:bg-blue-700"
+        disabled={loading}
+      >
+        {loading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Logging in...
+          </>
+        ) : (
+          'Login'
+        )}
+      </Button>
+
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={() => setStep('createAccount')}
+        type="button"
+        disabled={loading}
+      >
+        Create Account
+      </Button>
+
+      <div className="text-center text-sm text-gray-600">OR LOGIN WITH</div>
+
+      <div className="flex justify-center space-x-2">
+        <SocialLoginPart />
+      </div>
+
+    </form>
   )
 }
