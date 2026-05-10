@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import ShoppingCartContent from '../ShoppingCartContent';
-import { toast } from 'sonner';
 import { useCart } from '@/hooks/useCart';
 import ShoppingCartSkeleton from './ShoppingCartSkeleton';
 
@@ -34,16 +33,8 @@ export default function ShoppingCartClient() {
 
   // Cart management functions
   const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
+    // Context-এর ফাংশন কল করা হলো। টোস্ট মেসেজ Context থেকেই আসবে।
     updateQuantity(itemId, newQuantity);
-    
-    // Show toast for quantity update
-    const item = cartItems.find(item => item.id === itemId);
-    if (item) {
-      toast.success('Quantity updated!', {
-        description: `${item.product.name} quantity changed to ${newQuantity}.`,
-        duration: 2000,
-      });
-    }
   };
 
   const handleRemoveItem = (itemId: string) => {
