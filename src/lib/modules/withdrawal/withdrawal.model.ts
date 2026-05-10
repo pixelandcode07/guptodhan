@@ -17,7 +17,7 @@ const withdrawalSchema = new Schema<IWithdrawal>(
       enum: ['pending', 'approved', 'rejected'], 
       default: 'pending' 
     },
-    adminRemarks: { type: String },
+    adminRemarks: { type: String }, 
   },
   { timestamps: true }
 );
