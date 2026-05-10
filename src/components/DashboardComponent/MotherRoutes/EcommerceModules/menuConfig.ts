@@ -155,16 +155,16 @@ export const MENU_CONFIG: MenuConfig = {
       { title: 'SMS History', url: '/general/view/sms/history' },
     ],
   },
-  'Gateway & API': {
-    icon: Settings,
-    items: [
-      // { title: 'Email Credentials', url: '/general/view/email/credential' },
-      // { title: 'Email Templates', url: '/general/view/email/templates' },
-      // { title: 'SMS Gateways', url: '/general/setup/sms/gateways' },
-      // { title: 'Payment Gateways', url: '/general/setup/payment/gateways' },
-      { title: 'Courier API Keys', url: '/general/setup/courier/api/keys' },
-    ],
-  },
+  // 'Gateway & API': {
+  //   icon: Settings,
+  //   items: [
+  //     // { title: 'Email Credentials', url: '/general/view/email/credential' },
+  //     // { title: 'Email Templates', url: '/general/view/email/templates' },
+  //     // { title: 'SMS Gateways', url: '/general/setup/sms/gateways' },
+  //     // { title: 'Payment Gateways', url: '/general/setup/payment/gateways' },
+  //     { title: 'Courier API Keys', url: '/general/setup/courier/api/keys' },
+  //   ],
+  // },
   Customers: {
     icon: Headphones,
     items: [],
