@@ -200,15 +200,15 @@ export const sidebarData = {
         { title: 'Registered Devices', url: '/general/view/all/devices' },
       ],
     },
-    {
-      title: 'SMS Service',
-      icon: IconMessage,
-      items: [
-        { title: 'SMS Templates', url: '/general/view/sms/templates' },
-        { title: 'Send SMS', url: '/general/send/sms/page' },
-        { title: 'SMS History', url: '/general/view/sms/history' },
-      ],
-    },
+    // {
+    //   title: 'SMS Service',
+    //   icon: IconMessage,
+    //   items: [
+    //     { title: 'SMS Templates', url: '/general/view/sms/templates' },
+    //     { title: 'Send SMS', url: '/general/send/sms/page' },
+    //     { title: 'SMS History', url: '/general/view/sms/history' },
+    //   ],
+    // },
     // {
     //   title: 'Gateway & API',
     //   icon: IconSettings,
