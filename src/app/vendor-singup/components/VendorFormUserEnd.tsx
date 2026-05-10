@@ -13,7 +13,6 @@ import {
   Shield,
   Eye,
   EyeOff,
-  Info
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -53,9 +52,6 @@ interface Props {
 export default function VendorSignupWizard({ vendorCategories }: Props) {
   const router = useRouter();
 
-  // ✅ New state for the Pricing Rule Notice Modal
-  const [isNoticeOpen, setIsNoticeOpen] = useState(true);
-
   const [step, setStep] = useState(1);
   const [ownerNidFile, setOwnerNidFile] = useState<File | null>(null);
   const [tradeLicenseFile, setTradeLicenseFile] = useState<File | null>(null);
@@ -67,7 +63,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
   const [showPassword, setShowPassword] = useState(false);
 
   const otpInputRef = useRef<HTMLInputElement>(null);
-  const submitBtnRef = useRef<HTMLButtonElement>(null);
+  const submitBtnRef = useRef<HTMLButtonElement>(null); // ✅ Submit বাটনের রেফারেন্স
 
   const {
     register,
@@ -99,11 +95,9 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
     }
   }, [step]);
 
+  // ✅ Step 3-তে Enter বাটন চাপলে স্বয়ংক্রিয়ভাবে Next-এ যাওয়ার লজিক
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Prevent Enter key if the notice modal is still open
-      if (isNoticeOpen) return;
-
       if (e.key === "Enter" && step === 3) {
         e.preventDefault();
         submitBtnRef.current?.click();
@@ -111,8 +105,9 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [step, isNoticeOpen]);
+  }, [step]);
 
+  // Backend message থেকে কোন field duplicate সেটা নির্ধারণ করে error set করে
   const applyDuplicateError = (backendMessage: string) => {
     const lower = backendMessage.toLowerCase();
 
@@ -134,6 +129,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
       return;
     }
 
+    // কোনো specific field match না হলে দুটোতেই দেখাও
     toast.error(backendMessage);
   };
 
@@ -285,46 +281,6 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
 
   return (
     <>
-      {/* ✅ PRICING RULE NOTICE MODAL */}
-      <Dialog open={isNoticeOpen} onOpenChange={setIsNoticeOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <div className="mx-auto bg-emerald-100 p-4 rounded-full mb-4">
-              <Info className="text-emerald-600" size={32} />
-            </div>
-            <DialogTitle className="text-center text-xl font-bold text-slate-800">
-              📢 Important Pricing Rule
-            </DialogTitle>
-            <div className="text-slate-600 text-[15px] pt-3 space-y-4">
-              <p className="text-center">
-                Welcome to Guptodhan! To ensure a smooth delivery process, please remember this rule when setting your product prices:
-              </p>
-              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-                <ul className="list-disc pl-5 space-y-2 text-slate-700 font-medium">
-                  <li>
-                    You must add an <span className="text-emerald-600 font-bold">extra 5%</span> to your actual product price.
-                  </li>
-                  <li>
-                    This 5% covers the <span className="font-bold">Steadfast Courier COD charge</span> (৳2 per ৳100) and our processing fees.
-                  </li>
-                </ul>
-                <div className="mt-4 bg-white p-3 rounded border border-emerald-100 text-sm shadow-sm">
-                  💡 <strong>Example:</strong> If your product's actual price is <strong>৳1,000</strong>, you should list it as <strong className="text-emerald-600 text-base">৳1,050</strong> on our platform.
-                </div>
-              </div>
-            </div>
-          </DialogHeader>
-          <div className="flex justify-center mt-2">
-            <Button 
-              onClick={() => setIsNoticeOpen(false)} 
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2 h-auto text-md font-semibold w-full sm:w-auto"
-            >
-              I Understand, Let's Register
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       <div className="min-h-screen md:py-12 md:px-6 bg-gradient-to-b from-[#e0f2fe] via-white/60 to-[#ecfdf5]">
         <div className="md:max-w-[80vw] mx-auto">
           <div className="md:rounded-3xl p-1 bg-gradient-to-r from-emerald-200 via-white/40 to-sky-200 shadow-lg">
@@ -515,7 +471,7 @@ export default function VendorSignupWizard({ vendorCategories }: Props) {
                     )}
                     {step < 4 && (
                       <Button
-                        ref={submitBtnRef}
+                        ref={submitBtnRef} // ✅ Reference যুক্ত করা হলো
                         type="submit"
                         className="ml-auto"
                         variant={"GreenBtn"}
