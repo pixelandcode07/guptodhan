@@ -160,7 +160,7 @@ export default async function VendorShopsPage({
         {/* Hero Banner */}
         <section className="relative w-full aspect-[1920/600] min-h-[300px] max-h-[600px] overflow-hidden bg-gray-900">
           <Image
-            src="https://res.cloudinary.com/donrqkwe5/image/upload/v1766044937/uqm2xd1jbicyjxkriwxl.jpg"
+            src="/vendor_shop.jpg.jpeg"
             alt="Vendor Stores Banner"
             fill
             className="object-cover object-center"
