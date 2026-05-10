@@ -78,11 +78,11 @@ export function ContentManagement() {
           icon: File,
           items: condition,
         },
-        {
-          title: 'Custom Pages',
-          icon: FilePlus,
-          items: customPage,
-        },
+        // {
+        //   title: 'Custom Pages',
+        //   icon: FilePlus,
+        //   items: customPage,
+        // },
         {
           title: 'About Us',
           icon: Info,
