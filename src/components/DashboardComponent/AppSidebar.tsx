@@ -42,7 +42,7 @@ const data = {
     { title: 'Manage Orders' },
     { title: 'Promo Codes' },
     { title: 'Push Notification' },
-    { title: 'SMS Service' },
+    // { title: 'SMS Service' },
     // { title: 'Gateway & API' },
     { title: 'Customers' },
     { title: 'Story Management' },
