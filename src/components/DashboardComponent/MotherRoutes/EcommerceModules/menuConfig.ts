@@ -147,14 +147,14 @@ export const MENU_CONFIG: MenuConfig = {
       { title: 'Registered Devices', url: '/general/view/all/devices' },
     ],
   },
-  'SMS Service': {
-    icon: MessageSquare,
-    items: [
-      { title: 'SMS Templates', url: '/general/view/sms/templates' },
-      { title: 'Send SMS', url: '/general/send/sms/page' },
-      { title: 'SMS History', url: '/general/view/sms/history' },
-    ],
-  },
+  // 'SMS Service': {
+  //   icon: MessageSquare,
+  //   items: [
+  //     { title: 'SMS Templates', url: '/general/view/sms/templates' },
+  //     { title: 'Send SMS', url: '/general/send/sms/page' },
+  //     { title: 'SMS History', url: '/general/view/sms/history' },
+  //   ],
+  // },
   // 'Gateway & API': {
   //   icon: Settings,
   //   items: [
