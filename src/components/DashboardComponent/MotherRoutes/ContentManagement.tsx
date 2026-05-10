@@ -68,11 +68,11 @@ export function ContentManagement() {
           icon: MessageSquare,
           items: testimonials,
         },
-        {
-          title: 'Manage Blogs',
-          icon: FileText,
-          items: blog,
-        },
+        // {
+        //   title: 'Manage Blogs',
+        //   icon: FileText,
+        //   items: blog,
+        // },
         {
           title: 'Terms & Policies',
           icon: File,
