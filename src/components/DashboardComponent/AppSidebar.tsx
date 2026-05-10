@@ -43,7 +43,7 @@ const data = {
     { title: 'Promo Codes' },
     { title: 'Push Notification' },
     { title: 'SMS Service' },
-    { title: 'Gateway & API' },
+    // { title: 'Gateway & API' },
     { title: 'Customers' },
     { title: 'Story Management' },
     { title: "Customer's Wishlist" },
