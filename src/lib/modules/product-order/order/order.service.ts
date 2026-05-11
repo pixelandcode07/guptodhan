@@ -190,7 +190,7 @@ const getOrdersByUserFromDB = async (userId: string) => {
           },
           { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
 
-          // Merge product docs into each orderDetail so productId is populated (productTitle, thumbnailImage, etc.)
+          // Merge product docs into each orderDetail
           {
             $project: {
               _id: 1,
@@ -243,10 +243,7 @@ const getOrdersByUserFromDB = async (userId: string) => {
 };
 
 // ================================================================
-// ✏️ UPDATE ORDER
-// ================================================================
-// ================================================================
-// ✏️ UPDATE ORDER (WITH WALLET BALANCE LOGIC)
+// ✏️ UPDATE ORDER (WITH WALLET BALANCE LOGIC FIXED)
 // ================================================================
 const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
   try {
@@ -270,7 +267,13 @@ const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
       
       if (store) {
         const commissionRate = store.commission || 0;
-        const vendorEarning = previousOrder.totalAmount * (1 - commissionRate / 100);
+        const deliveryCharge = previousOrder.deliveryCharge || 0; // ✅ ডেলিভারি চার্জ বের করা হলো
+        
+        // ✅ ডেলিভারি চার্জ বাদ দিয়ে শুধুমাত্র প্রোডাক্টের মোট দাম বের করা হচ্ছে
+        const productTotal = previousOrder.totalAmount - deliveryCharge;
+        
+        // ✅ শুধুমাত্র প্রোডাক্টের দামের ওপর কমিশন কাটা হচ্ছে
+        const vendorEarning = productTotal * (1 - commissionRate / 100);
 
         await StoreModel.findByIdAndUpdate(previousOrder.storeId, {
           $inc: {
@@ -279,7 +282,7 @@ const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
           }
         });
         
-        console.log(`✅ Balance updated: +৳${vendorEarning} for store ${previousOrder.storeId}`);
+        console.log(`✅ Balance updated: +৳${vendorEarning} for store ${previousOrder.storeId}. (Total: ${previousOrder.totalAmount}, Delivery: ${deliveryCharge})`);
       }
     }
 
@@ -385,7 +388,7 @@ const getOrderByIdFromDB = async (id: string) => {
           },
           { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
 
-          // Merge product docs into each orderDetail so productId is populated
+          // Merge product docs into each orderDetail
           {
             $project: {
               orderId: 1,
@@ -725,32 +728,25 @@ const requestReturnInDB = async (orderId: string, reason: string) => {
 // ================================================================
 const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
   try {
-    // ১. আইডি ভ্যালিড কি না চেক করা
     if (!Types.ObjectId.isValid(vendorId)) {
       throw new Error('আইডির ফরম্যাট সঠিক নয়।');
     }
 
     const vId = new Types.ObjectId(vendorId);
 
-    // ২. প্রথমে সরাসরি vendorId দিয়ে স্টোর খোঁজা
     let store = await StoreModel.findOne({ vendorId: vId });
 
-    // ৩. যদি না পাওয়া যায়, তবে চেক করা এই আইডিটি কি ইউজারের? 
-    // যদি ইউজারের হয়, তবে তার প্রোফাইল থেকে vendorInfo (Vendor ID) নিয়ে স্টোর খোঁজা।
     if (!store) {
-      // User এখন ডিফাইন করা আছে, তাই আর এরর দিবে না
       const userWithVendor = await User.findById(vId).select('vendorInfo');
       if (userWithVendor && userWithVendor.vendorInfo) {
         store = await StoreModel.findOne({ vendorId: userWithVendor.vendorInfo });
       }
     }
 
-    // ৪. স্টোর না পাওয়া গেলে এরর থ্রো করা
     if (!store) {
       throw new Error('আপনার অ্যাকাউন্টের বিপরীতে কোনো স্টোর খুঁজে পাওয়া যায়নি।');
     }
 
-    // ৫. অর্ডারের এগ্রিগেশন (সব স্ট্যাটাসের অর্ডার আসবে)
     const orders = await OrderModel.aggregate([
       { $match: { storeId: store._id } },
       { $sort: { createdAt: -1 } },
