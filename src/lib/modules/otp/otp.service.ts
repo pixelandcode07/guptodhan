@@ -2,6 +2,7 @@ import axios from "axios";
 import nodemailer from "nodemailer";
 import bcrypt from "bcrypt";
 import { OtpModel } from "./otp.model";
+import { sendSMS } from "../../utils/smsPortal"; // ✅ সেন্ট্রাল SMS পোর্টাল ইমপোর্ট করা হলো
 
 // ========================================
 // 📧 Email Configuration
@@ -85,27 +86,19 @@ const sendPhoneOtpService = async (phone: string) => {
     expiresAt: new Date(Date.now() + parseInt(process.env.OTP_EXPIRY_MINUTES || '5') * 60 * 1000),
   });
 
-  // SMS Sending Logic
+  // ✅ SMS Sending Logic (Updated to use smsPortal.ts)
   const shouldSendSMS = process.env.FORCE_SMS_SEND === 'true' || process.env.NODE_ENV !== 'development';
 
   if (shouldSendSMS) {
-    try {
-      const url = "https://api.sms.net.bd/sendsms";
-      const messageContent = `${otp} is your verification code. Valid for 5 minutes.`;
+    const messageContent = `${otp} is your verification code. Valid for 5 minutes.`;
+    
+    // সেন্ট্রাল ফাংশন কল করা হচ্ছে
+    const smsResult = await sendSMS(phone, messageContent);
 
-      const response = await axios.post(url, {
-        api_key: process.env.SMS_API_KEY,
-        msg: messageContent, 
-        to: formattedPhone,
-      });
-
-      if (response.data.error === 0) {
-        console.log(`✅ SMS Sent Successfully! Msg ID: ${response.data.msg_id}`);
-      } else {
-        console.warn(`⚠️ SMS Gateway Warning:`, response.data);
-      }
-    } catch (error: any) {
-      console.error("❌ SMS Network Error:", error.message);
+    if (smsResult.success) {
+      console.log(`✅ SMS Sent Successfully via KhudeBarta!`);
+    } else {
+      console.warn(`⚠️ SMS Gateway Warning:`, smsResult.data || smsResult.error);
     }
   } else {
     console.log("⚠️ SMS Skipped (Dev Mode). Set FORCE_SMS_SEND='true' in .env to send real SMS.");
@@ -179,21 +172,19 @@ const sendEmailOtpService = async (email: string) => {
   };
 };
 
-// src/lib/modules/otp/otp.service.ts
-
+// ========================================
+// 🛡️ Verify OTP Service
+// ========================================
 const verifyOtpService = async (identifier: string, otp: number, shouldDelete = false) => {
-  // 🔥 DEBUG LOG 1: ইনপুট কী আসছে?
   console.log(`🔍 [DEBUG] Verifying: ID=${identifier}, InputOTP=${otp}, Type=${typeof otp}`);
 
   const record = await OtpModel.findOne({ identifier }).sort({ createdAt: -1 });
 
-  // 🔥 DEBUG LOG 2: ডাটাবেসে রেকর্ড পাওয়া গেছে কি?
   if (!record) {
     console.log(`❌ [DEBUG] No OTP record found for: ${identifier}`);
     return { status: false, message: "OTP not found or already used" };
   }
 
-  // 🔥 DEBUG LOG 3: ডাটাবেসের ডাটা কী?
   console.log(`📄 [DEBUG] DB Record: OTP=${record.otp}, Expired=${record.expiresAt < new Date()}`);
 
   if (record.isBlocked) return { status: false, message: "Too many wrong attempts." };
@@ -205,18 +196,15 @@ const verifyOtpService = async (identifier: string, otp: number, shouldDelete = 
   if (shouldHashOtp && typeof record.otp === 'string') {
     isMatch = await bcrypt.compare(otp.toString(), record.otp);
   } else {
-    // 🔥 DEBUG LOG 4: ম্যাচিং চেক
     console.log(`⚖️ [DEBUG] Comparing: ${record.otp} (DB) === ${otp} (Input)`);
     isMatch = Number(record.otp) === Number(otp);
   }
 
   if (!isMatch) {
     console.log(`❌ [DEBUG] OTP Mismatch!`);
-    // ... (rest of the blocked logic)
     return { status: false, message: "Invalid OTP" };
   }
 
-  // ... (Success logic)
   if (shouldDelete) {
       await OtpModel.deleteMany({ identifier });
       console.log(`✅ OTP verified and DELETED`);
