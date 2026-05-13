@@ -76,18 +76,21 @@ const getPublicAdByIdFromDB = async (id: string) => {
   return ad;
 };
 
-// ✅ UPDATE: ৪টি প্যারামিটার, কিন্তু শুধুমাত্র OWNER এডিট করতে পারবে
+// ✅ UPDATE: Owner এডিট করলে অ্যাড অটোমেটিক Pending হয়ে যাবে
 const updateAdInDB = async (adId: string, userId: string, userRole: string, payload: Partial<IClassifiedAd>) => {
   const ad = await ClassifiedAd.findById(adId);
   if (!ad) throw new Error('Ad not found!');
 
   // লজিক: শুধুমাত্র অ্যাড-এর মালিক (Owner) কন্টেন্ট এডিট করতে পারবে
-  // Admin স্ট্যাটাস চেঞ্জ করতে পারবে (সেটা অন্য API), কিন্তু কন্টেন্ট এডিট করতে পারবে না।
   const isOwner = ad.user.toString() === userId;
 
   if (!isOwner) {
     throw new Error('Forbidden: Only the owner can edit the ad details.');
   }
+
+  // 🔐 নতুন সিকিউরিটি লজিক: ইউজার এডিট করলে স্ট্যাটাস আবার 'pending' হয়ে যাবে!
+  // যাতে অ্যাডমিন রিভিউ করে তারপর আবার 'active' করতে পারে।
+  payload.status = 'pending';
 
   return await ClassifiedAd.findByIdAndUpdate(adId, payload, { new: true });
 };
