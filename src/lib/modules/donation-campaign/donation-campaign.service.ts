@@ -5,9 +5,6 @@ import dbConnect from '@/lib/db';
 import '@/lib/modules/donation-category/donation-category.model';
 import '@/lib/modules/user/user.model';
 
-/**
- * ✅ Create campaign with pending status and inactive
- */
 const createCampaignInDB = async (payload: Partial<IDonationCampaign>) => {
   await dbConnect();
 
@@ -18,19 +15,15 @@ const createCampaignInDB = async (payload: Partial<IDonationCampaign>) => {
     }
   }
 
-  // ✅ Ensure campaign is created with proper initial state
   const result = await DonationCampaign.create({
     ...payload,
     moderationStatus: 'pending',
-    status: 'inactive', // Explicitly set to inactive
+    status: 'inactive', 
   });
 
   return result;
 };
 
-/**
- * ✅ Get pending campaigns for admin review
- */
 const getPendingCampaignsFromDB = async () => {
   await dbConnect();
   return await DonationCampaign.find({ moderationStatus: 'pending' })
@@ -39,14 +32,11 @@ const getPendingCampaignsFromDB = async () => {
     .sort({ createdAt: -1 });
 };
 
-/**
- * ✅ Get only approved AND active campaigns (public view)
- */
 const getApprovedCampaignsFromDB = async () => {
   await dbConnect();
   return await DonationCampaign.find({
     moderationStatus: 'approved',
-    status: 'active', // ✅ Changed from $ne: 'archived' to explicit 'active'
+    status: 'active', 
   })
     .populate('creator', 'name profilePicture')
     .populate('category', 'name')
@@ -54,9 +44,6 @@ const getApprovedCampaignsFromDB = async () => {
     .lean();
 };
 
-/**
- * ✅ Get all campaigns (admin panel)
- */
 const getAllCampaignsFromDB = async () => {
   await dbConnect();
   return await DonationCampaign.find({})
@@ -66,9 +53,6 @@ const getAllCampaignsFromDB = async () => {
     .lean();
 };
 
-/**
- * ✅ Get campaign by ID (with proper checks)
- */
 const getCampaignByIdFromDB = async (id: string) => {
   await dbConnect();
 
@@ -88,9 +72,6 @@ const getCampaignByIdFromDB = async (id: string) => {
   return campaign;
 };
 
-/**
- * ✅ Approve campaign - sets moderationStatus to 'approved' AND status to 'active'
- */
 const approveCampaignInDB = async (id: string, adminId: string) => {
   await dbConnect();
 
@@ -100,7 +81,7 @@ const approveCampaignInDB = async (id: string, adminId: string) => {
       moderationStatus: 'approved',
       approvedAt: new Date(),
       approvedBy: new mongoose.Types.ObjectId(adminId),
-      status: 'active', // ✅ Only here it becomes active
+      status: 'active', 
     },
     { new: true }
   )
@@ -114,9 +95,6 @@ const approveCampaignInDB = async (id: string, adminId: string) => {
   return result;
 };
 
-/**
- * ✅ Reject campaign - sets moderationStatus to 'rejected' AND status to 'inactive'
- */
 const rejectCampaignInDB = async (id: string, reason: string) => {
   await dbConnect();
 
@@ -139,9 +117,6 @@ const rejectCampaignInDB = async (id: string, reason: string) => {
   return result;
 };
 
-/**
- * ✅ Complete campaign (when goal reached)
- */
 const completeCampaignInDB = async (id: string) => {
   await dbConnect();
 
@@ -161,9 +136,6 @@ const completeCampaignInDB = async (id: string) => {
   return result;
 };
 
-/**
- * ✅ Archive campaign
- */
 const archiveCampaignInDB = async (id: string) => {
   await dbConnect();
 
@@ -182,10 +154,8 @@ const archiveCampaignInDB = async (id: string) => {
   return result;
 };
 
-/**
- * ✅ Update campaign (only pending campaigns can be updated)
- */
-const updateCampaignInDB = async (id: string, payload: Partial<IDonationCampaign>) => {
+// ✅ UPDATE: Owner সিকিউরিটি এবং Pending লজিক অ্যাড করা হয়েছে
+const updateCampaignInDB = async (id: string, userId: string, userRole: string, payload: Partial<IDonationCampaign>) => {
   await dbConnect();
 
   const campaign = await DonationCampaign.findById(id);
@@ -194,33 +164,44 @@ const updateCampaignInDB = async (id: string, payload: Partial<IDonationCampaign
     throw new Error('Campaign not found');
   }
 
-  if (campaign.moderationStatus !== 'pending') {
-    throw new Error('Only pending campaigns can be updated');
+  // ✅ Ownership Check (শুধুমাত্র ক্যাম্পেইনের মালিক এডিট করতে পারবে)
+  const isOwner = campaign.creator.toString() === userId;
+  if (!isOwner) {
+    throw new Error('Forbidden: Only the creator can edit this campaign.');
   }
+
+  // ✅ এডিট করলেই আবার পেন্ডিং ও ইনঅ্যাক্টিভ হয়ে যাবে (Admin রিভিউয়ের জন্য)
+  payload.moderationStatus = 'pending';
+  payload.status = 'inactive';
 
   const result = await DonationCampaign.findByIdAndUpdate(id, payload, { new: true });
 
   return result;
 };
 
-/**
- * ✅ Delete campaign
- */
-const deleteCampaignFromDB = async (id: string) => {
+// ✅ DELETE: Owner এবং Admin সিকিউরিটি অ্যাড করা হয়েছে
+const deleteCampaignFromDB = async (id: string, userId: string, userRole: string) => {
   await dbConnect();
 
-  const result = await DonationCampaign.findByIdAndDelete(id);
+  const campaign = await DonationCampaign.findById(id);
 
-  if (!result) {
+  if (!campaign) {
     throw new Error('Campaign not found to delete');
   }
+
+  // ✅ Security Check
+  const isOwner = campaign.creator.toString() === userId;
+  const isAdmin = userRole === 'admin';
+
+  if (!isOwner && !isAdmin) {
+    throw new Error('Forbidden: You are not allowed to delete this campaign.');
+  }
+
+  const result = await DonationCampaign.findByIdAndDelete(id);
 
   return result;
 };
 
-/**
- * ✅ Increment donor count and check if goal reached
- */
 const incrementDonorCount = async (campaignId: string, amount: number) => {
   await dbConnect();
 
@@ -235,7 +216,6 @@ const incrementDonorCount = async (campaignId: string, amount: number) => {
     { new: true }
   );
 
-  // Auto-complete if goal reached
   if (result && result.goalAmount && result.raisedAmount >= result.goalAmount) {
     result.status = 'completed';
     result.completedAt = new Date();
