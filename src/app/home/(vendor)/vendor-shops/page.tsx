@@ -1,6 +1,5 @@
-
 // src/app/home/(vendor)/vendor-shops/page.tsx
-// ✅ FULLY FIXED & CLEANED: Production-ready version without debug logs
+// ✅ FULLY FIXED & CLEANED: Production-ready version without debug logs and fixed pagination alignment
 
 import VendorStoreCard from "@/components/ReusableComponents/VendorStoreCard";
 import StickyNavTrigger from "../components/StickyNavTrigger";
@@ -233,7 +232,7 @@ export default async function VendorShopsPage({
                   />
                 </PaginationItem>
 
-                {/* Page Numbers */}
+                {/* ✅ FIXED: Pagination Numbers and Ellipsis alignment */}
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .filter(
                     (page) =>
@@ -241,27 +240,37 @@ export default async function VendorShopsPage({
                       page === totalPages ||
                       Math.abs(page - validPage) <= 1
                   )
-                  .map((page, idx, arr) => (
-                    <PaginationItem key={`page-${page}`}>
-                      {/* Show ellipsis if gap between page numbers */}
-                      {idx > 0 && page - arr[idx - 1] > 1 && (
-                        <PaginationEllipsis key={`ellipsis-${page}`} />
-                      )}
+                  .flatMap((page, idx, arr) => {
+                    const items = [];
 
-                      {/* Page Link */}
-                      <PaginationLink
-                        href={`?page=${page}`}
-                        isActive={page === validPage}
-                        className={
-                          page === validPage
-                            ? "bg-[#0097E9] text-white hover:bg-[#0097E9]/90 border-none shadow-md cursor-pointer"
-                            : "hover:text-[#0097E9] border-none bg-white shadow-sm cursor-pointer"
-                        }
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
+                    // Show ellipsis if gap between page numbers
+                    if (idx > 0 && page - arr[idx - 1] > 1) {
+                      items.push(
+                        <PaginationItem key={`ellipsis-${page}`}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
+                    }
+
+                    // Page Link
+                    items.push(
+                      <PaginationItem key={`page-${page}`}>
+                        <PaginationLink
+                          href={`?page=${page}`}
+                          isActive={page === validPage}
+                          className={
+                            page === validPage
+                              ? "bg-[#0097E9] text-white hover:bg-[#0097E9]/90 border-none shadow-md cursor-pointer"
+                              : "hover:text-[#0097E9] border-none bg-white shadow-sm cursor-pointer"
+                          }
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+
+                    return items;
+                  })}
 
                 {/* Next Button */}
                 <PaginationItem>
