@@ -33,7 +33,6 @@ export default function ProductCard({ product, index }: ProductCardProps) {
   const [isAdding, setIsAdding] = useState(false);
 
   // ✅ FIX: সঠিক page route path ব্যবহার করছি
-  // এটা `/products/[slug]` page route এর সাথে match করবে
   const productUrl = product?.slug ? `/product/${product.slug}` : '#';
 
   // Price Logic
@@ -109,12 +108,15 @@ export default function ProductCard({ product, index }: ProductCardProps) {
       >
         
         {/* Image Section */}
-        <div className="relative aspect-[1/1] bg-gray-50 overflow-hidden">
+        {/* ✅ FIX: Background changed to bg-white to blend transparent PNGs naturally */}
+        <div className="relative aspect-[1/1] bg-white overflow-hidden border-b border-gray-100">
+            {/* ✅ FIX: object-cover changed to object-contain, added padding, reduced zoom scale */}
             <Image
                 src={product?.thumbnailImage || '/placeholder.png'}
                 alt={product?.productTitle || 'Product'}
                 fill
-                className="object-cover transition-transform duration-500 group-hover:scale-110"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="object-contain p-3 sm:p-5 transition-transform duration-500 group-hover:scale-105"
             />
             
              <div className="pointer-events-none absolute inset-0 hidden sm:block bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
