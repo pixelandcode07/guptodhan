@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import BuyandSellHome from "./components/BuyandSellHome";
 import { generateGuptodhanMetadata } from "@/lib/metadata/generateGuptodhanMetadata";
 
