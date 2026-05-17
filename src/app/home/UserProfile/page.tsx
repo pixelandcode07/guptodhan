@@ -5,7 +5,7 @@ import RecentOrdersList from '../../../components/UserProfile/ProfileDashboard/R
 import { useSession } from 'next-auth/react'
 import api from '@/lib/axios'
 import Link from 'next/link'
-import { ShoppingBag } from 'lucide-react' // ✅ আইকনের জন্য ইম্পোর্ট করা হলো
+import { ShoppingBag } from 'lucide-react'
 
 type DashboardOrder = {
     id: string
@@ -18,6 +18,8 @@ type DashboardOrder = {
     color: string
     price: string
     quantity: number
+    totalPrice: string // ✅ নতুন যোগ করা হয়েছে
+    totalItems: number // ✅ নতুন যোগ করা হয়েছে
 }
 
 const hasVariant = (v: string | undefined): boolean => {
@@ -54,6 +56,7 @@ export default function UserProfilePage() {
                 _id?: string
                 storeId?: { storeName?: string; verified?: boolean } | string
                 orderStatus?: string
+                totalAmount?: number // ✅ API থেকে Total Amount রিসিভ করা
                 orderDetails?: Array<{
                     productId?: { productTitle?: string; thumbnailImage?: string; photoGallery?: string[]; productPrice?: number; discountPrice?: number }
                     quantity?: number
@@ -72,6 +75,15 @@ export default function UserProfilePage() {
                 const size = firstItem?.size != null && hasVariant(firstItem.size) ? firstItem.size : ''
                 const color = firstItem?.color != null && hasVariant(firstItem.color) ? firstItem.color : ''
 
+                // ✅ মোট আইটেম এবং মোট দাম হিসাব করা
+                const totalItemsCount = Array.isArray(o.orderDetails) 
+                    ? o.orderDetails.reduce((sum, item) => sum + (item.quantity || 1), 0) 
+                    : (firstItem?.quantity || 1);
+                
+                const orderTotal = o.totalAmount != null 
+                    ? o.totalAmount 
+                    : (typeof priceNumber === 'number' ? priceNumber * (firstItem?.quantity || 1) : 0);
+
                 return {
                     id: String(o._id || ''),
                     seller: (typeof o.storeId === 'object' && o.storeId && 'storeName' in o.storeId) ? (o.storeId.storeName || 'Store') : 'Store',
@@ -83,6 +95,8 @@ export default function UserProfilePage() {
                     color,
                     price: typeof priceNumber === 'number' ? `৳ ${priceNumber.toLocaleString()}` : '৳ 0',
                     quantity: firstItem?.quantity || 1,
+                    totalPrice: `৳ ${orderTotal.toLocaleString()}`, // ✅
+                    totalItems: totalItemsCount, // ✅
                 }
             })
 
@@ -111,7 +125,6 @@ export default function UserProfilePage() {
 
     return (
         <div className="">
-            {/* ✅ Dashboard Heading এবং Shop Now বাটন */}
             <div className="flex items-center justify-between px-4 mt-2 mb-4">
                 <h1 className="text-xl font-semibold">Dashboard</h1>
                 
