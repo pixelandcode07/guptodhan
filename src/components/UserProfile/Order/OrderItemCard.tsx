@@ -14,7 +14,6 @@ interface OrderItemCardProps {
 }
 
 export default function OrderItemCard({ order, onReturnClick }: OrderItemCardProps) {
-  const firstItem = order.items[0];
   const totalItems = order.items.length;
   const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
   
@@ -34,6 +33,7 @@ export default function OrderItemCard({ order, onReturnClick }: OrderItemCardPro
   return (
     <div className="border rounded-md overflow-hidden bg-white shadow-sm transition-shadow hover:shadow-md">
       
+      {/* Header Section */}
       <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
         <div className="text-sm font-medium flex items-center gap-2">
           <span className="text-gray-900">{order.storeName}</span>
@@ -53,23 +53,24 @@ export default function OrderItemCard({ order, onReturnClick }: OrderItemCardPro
         </div>
       </div>
 
+      {/* ✅ সবগুলো প্রোডাক্ট শো করানো হচ্ছে */}
       <div className="flex flex-col">
         {order.items.map((item, idx) => (
-           <div key={idx} className="flex gap-4 p-4 items-start border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
-              <Link href={`/product/${(item as any).productSlug || item.id}`} className="shrink-0 relative border rounded bg-white block">
+           <Link key={idx} href={`/product/${(item as any).productSlug || item.id}`} className="flex gap-4 p-4 items-start border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors block">
+              <div className="shrink-0 relative border rounded bg-white block">
                 <Image 
                   src={item.thumbnailUrl || '/img/product/p-1.png'} 
                   alt={item.title || 'Product'} 
                   width={72} height={72} 
                   className="rounded object-cover h-[72px] w-[72px] hover:opacity-80 transition-opacity" 
                 />
-              </Link>
+              </div>
               
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start">
-                  <Link href={`/product/${(item as any).productSlug || item.id}`} className="text-sm font-medium text-gray-900 line-clamp-2 hover:text-[#0097E9] transition-colors pr-2">
+                  <div className="text-sm font-medium text-gray-900 line-clamp-2 hover:text-[#0097E9] transition-colors pr-2">
                     {item.title || 'Product Name Unavailable'}
-                  </Link>
+                  </div>
                   <div className="text-sm text-slate-900 font-semibold whitespace-nowrap ml-2">
                     {item.priceFormatted || '৳ 0'}
                   </div>
@@ -89,10 +90,11 @@ export default function OrderItemCard({ order, onReturnClick }: OrderItemCardPro
                   </div>
                 </div>
               </div>
-           </div>
+           </Link>
         ))}
       </div>
 
+      {/* Footer Section */}
       <div className="px-4 py-3 border-t bg-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="text-xs font-medium text-gray-500 flex flex-col gap-1">
           <span>{totalItems > 1 ? `${totalQuantity} Items ordered` : '1 Item ordered'}</span>
@@ -110,10 +112,10 @@ export default function OrderItemCard({ order, onReturnClick }: OrderItemCardPro
           </div>
 
           <div className="flex items-center gap-2">
-            {/* ✅ এখানে slug এর সমস্যাটি সমাধান করা হয়েছে */}
-            {isDelivered && (firstItem as any)?.productSlug && (
+            {/* ✅ Write a Review Button (আগের জায়গায় এবং slug ফিক্সড) */}
+            {isDelivered && order.items.length > 0 && (
               <Link 
-                href={`/product/${(firstItem as any).productSlug}#reviews`}
+                href={`/product/${(order.items[0] as any).productSlug || order.items[0].id}#reviews`}
                 onClick={(e) => e.stopPropagation()} 
                 className="h-8 text-xs font-bold text-[#0097E9] bg-blue-50 hover:bg-[#0097E9] hover:text-white border border-blue-100 px-3 py-2 rounded-md transition-all flex items-center gap-1.5 whitespace-nowrap"
               >
