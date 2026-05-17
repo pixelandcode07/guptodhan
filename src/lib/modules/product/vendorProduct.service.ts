@@ -1018,66 +1018,70 @@ const getLandingPageProductsFromDB = async () => {
 // 🔍 GET LIVE SUGGESTIONS (NO POPULATE - AGGREGATION)
 // ===================================
 
-const getLiveSuggestionsFromDB = async (searchTerm: string) => {
-  // ✅ FIX: Removed split and join("|"). Now it searches for the EXACT phrase the user typed.
-  // escapeRegExp is used so if a user types brackets or symbols, it won't crash the DB query.
-  const escapeRegExp = (text: string) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-  const regex = new RegExp(escapeRegExp(searchTerm), "i");
+// ─── vendorProduct.service.ts ─────────────────────────────────────────────────
+// শুধু search-related দুটো function replace করো
 
-  // ✅ Use aggregation instead of populate
+const getLiveSuggestionsFromDB = async (searchTerm: string) => {
+  const escapeRegExp = (text: string) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+
+  // ✅ Word-based OR regex: "bluetooth speaker" → matches "bluetooth" OR "speaker"
+  // এতে partial match-ও কাজ করে
+  const words = searchTerm.trim().split(/\s+/).map(escapeRegExp);
+  const regex = new RegExp(words.join("|"), "i");
+
   const suggestions = await VendorProductModel.aggregate([
     {
       $match: {
         status: "active",
-        productTitle: { $regex: regex }, // Now it properly matches the full title
+        productTitle: { $regex: regex },
       },
     },
     { $sort: { createdAt: -1 } },
-    { $limit: 10 }, // Increased limit slightly to show better suggestions
-    
+    { $limit: 10 },
+
     // Lookup category
     {
       $lookup: {
-        from: 'categorymodels',
-        localField: 'category',
-        foreignField: '_id',
-        as: 'category',
+        from: "categorymodels",
+        localField: "category",
+        foreignField: "_id",
+        as: "category",
       },
     },
-    { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
-    
+    { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+
     // Lookup subcategory
     {
       $lookup: {
-        from: 'subcategorymodels',
-        localField: 'subCategory',
-        foreignField: '_id',
-        as: 'subCategory',
+        from: "subcategorymodels",
+        localField: "subCategory",
+        foreignField: "_id",
+        as: "subCategory",
       },
     },
-    { $unwind: { path: '$subCategory', preserveNullAndEmptyArrays: true } },
-    
+    { $unwind: { path: "$subCategory", preserveNullAndEmptyArrays: true } },
+
     // Lookup childcategory
     {
       $lookup: {
-        from: 'childcategorymodels',
-        localField: 'childCategory',
-        foreignField: '_id',
-        as: 'childCategory',
+        from: "childcategorymodels",
+        localField: "childCategory",
+        foreignField: "_id",
+        as: "childCategory",
       },
     },
-    { $unwind: { path: '$childCategory', preserveNullAndEmptyArrays: true } },
-    
-    // Project only needed fields
+    { $unwind: { path: "$childCategory", preserveNullAndEmptyArrays: true } },
+
     {
       $project: {
         productTitle: 1,
         thumbnailImage: 1,
-        productPrice: 1, // Make sure your frontend reads this (or change to 'price' in frontend)
-        'category.slug': 1,
-        'subCategory.slug': 1,
-        'childCategory.slug': 1,
-        slug: 1 // Add slug here if your DB has it, otherwise _id is sent by default
+        productPrice: 1,
+        discountPrice: 1,   // ✅ discountPrice যোগ হলো
+        slug: 1,
+        "category.slug": 1,
+        "subCategory.slug": 1,
+        "childCategory.slug": 1,
       },
     },
   ]);
@@ -1085,15 +1089,19 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
   return suggestions;
 };
 
+
 const getSearchResultsFromDB = async (searchTerm: string) => {
   const cacheKey = CacheKeys.PRODUCT.SEARCH(searchTerm);
-  
+
   return getCachedData(
     cacheKey,
     async () => {
-      // ✅ FIX: Same logic here. We want exact phrase matches, not just OR conditions for every word.
       const escapeRegExp = (text: string) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-      const regex = new RegExp(escapeRegExp(searchTerm), "i");
+
+      // ✅ Word-based OR: প্রতিটি word আলাদাভাবে match করে
+      // "bluetooth speaker" → title-এ "bluetooth" অথবা "speaker" থাকলে আসবে
+      const words = searchTerm.trim().split(/\s+/).map(escapeRegExp);
+      const regex = new RegExp(words.join("|"), "i");
 
       const results = await VendorProductModel.aggregate([
         {
@@ -1102,8 +1110,9 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
             $or: [
               { productTitle: { $regex: regex } },
               { shortDescription: { $regex: regex } },
-              // If tags are arrays of strings, we check if any tag matches the exact regex
-              { productTag: { $regex: regex } }, 
+              // ✅ productTag array of strings হলে এভাবে match করে
+              // productTag array of ObjectIds হলে এই line বাদ দাও
+              { productTag: { $elemMatch: { $regex: regex } } },
             ],
           },
         },
