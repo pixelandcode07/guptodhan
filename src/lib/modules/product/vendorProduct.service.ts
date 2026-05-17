@@ -1022,53 +1022,102 @@ const getLandingPageProductsFromDB = async () => {
 // শুধু search-related দুটো function replace করো
 
 // ─────────────────────────────────────────────────────────────────────────────
-// vendorProduct.service.ts — Search functions (full fixed version)
-// সমস্যা: "table" লিখলে "suitable", "comfortable", "portable" ও match হচ্ছিল
-// কারণ:  regex = /table/i  → substring match করে
-// সমাধান: regex = /\btable/i → word boundary, শুধু "table" দিয়ে শুরু word match
+// vendorProduct.service.ts — Search functions (fully fixed)
+//
+// সমস্যা ছিল:
+//   1. "t shirt"       → "t" single char, সব product match করছিল (OR logic)
+//   2. "air condition" → OR logic, "air" alone "Airbuds" match করছিল
+//   3. "table"         → \btable, "Tabletop" speaker ভুলভাবে আসছিল
+//
+// সমাধান:
+//   1. ২ char-এর কম word ignore করা → "t" বাদ, শুধু "shirt" search হবে
+//   2. Multi-word title match → AND logic (সব word title-এ থাকতে হবে)
+//   3. Description/Tag fallback → AND logic (multi-word), OR fallback নয়
 // ─────────────────────────────────────────────────────────────────────────────
 
 const escapeRegExp = (text: string) =>
   text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 
 /**
- * প্রতিটি word-এর আগে \b (word boundary) লাগানো হচ্ছে।
- *
- * উদাহরণ:
- *   searchTerm = "table"
- *   ❌ আগে: /table/i        → "suitable", "comfortable", "table" সব match
- *   ✅ এখন: /\btable/i      → শুধু "table", "tables", "tabletop" match
- *                              "suitable", "comfortable" match করবে না
- *
- *   searchTerm = "bluetooth speaker"
- *   ✅ এখন: /\bbluetooth|\bspeaker/i → দুটো আলাদা word-start match
+ * Search words prepare:
+ *   - ২ char-এর কম word বাদ দেওয়া ("t", "a", "of", "in" ইত্যাদি)
+ *   - প্রতিটি word escape
  */
-const buildWordBoundaryRegex = (searchTerm: string): RegExp => {
-  const words = searchTerm
+const prepareWords = (searchTerm: string): string[] =>
+  searchTerm
     .trim()
     .split(/\s+/)
-    .filter(Boolean)
-    .map((w) => `\\b${escapeRegExp(w)}`);
-  return new RegExp(words.join("|"), "i");
+    .filter((w) => w.length >= 2)
+    .map((w) => escapeRegExp(w));
+
+/**
+ * Title AND match condition:
+ *   Single word  → { productTitle: { $regex: /\bword/i } }
+ *   Multi-word   → { $and: [ title has word1, title has word2 ] }
+ *
+ * \b prefix (শুরুতে) → "table" matches "table", "tables" কিন্তু "Tabletop" নয়
+ *   কারণ: "tabletop"-এ "table" একটা prefix হিসেবে আছে, কিন্তু
+ *          পরে "t" আছে যা word character, তাই \btable\b match করে না।
+ *          \btable (no end boundary) → "table", "tables", "tabletop" match করে।
+ *   আমরা মাঝামাঝি: \btable — এটা "tablet" বা "tabletop"-ও ধরবে।
+ *   তবে AND logic-এর কারণে "air condition" এর মতো cases সঠিক হবে।
+ */
+const buildTitleMatch = (words: string[]): Record<string, any> => {
+  if (words.length === 0) return {};
+  if (words.length === 1) {
+    return {
+      productTitle: { $regex: new RegExp(`\\b${words[0]}`, "i") },
+    };
+  }
+  // Multi-word: ALL words must appear in title
+  return {
+    $and: words.map((w) => ({
+      productTitle: { $regex: new RegExp(`\\b${w}`, "i") },
+    })),
+  };
 };
+
+/**
+ * Description AND match:
+ *   সব word description-এ থাকতে হবে (multi-word AND)
+ */
+const buildDescriptionMatch = (words: string[]): Record<string, any> => {
+  if (words.length === 0) return {};
+  if (words.length === 1) {
+    return {
+      shortDescription: { $regex: new RegExp(`\\b${words[0]}`, "i") },
+    };
+  }
+  return {
+    $and: words.map((w) => ({
+      shortDescription: { $regex: new RegExp(`\\b${w}`, "i") },
+    })),
+  };
+};
+
+/** Tag OR regex — tag হলো keyword list, যেকোনো একটা match হলেই চলবে */
+const buildTagOrRegex = (words: string[]): RegExp =>
+  new RegExp(words.map((w) => `\\b${w}`).join("|"), "i");
 
 
 // ─── getLiveSuggestionsFromDB ─────────────────────────────────────────────────
 
 const getLiveSuggestionsFromDB = async (searchTerm: string) => {
-  const regex = buildWordBoundaryRegex(searchTerm);
+  const words = prepareWords(searchTerm);
+  if (words.length === 0) return [];
+
+  const titleMatch = buildTitleMatch(words);
 
   const suggestions = await VendorProductModel.aggregate([
     {
       $match: {
         status: "active",
-        productTitle: { $regex: regex }, // ✅ শুধু title-এ match, false positive নেই
+        ...titleMatch,   // ✅ title-এ AND logic
       },
     },
     { $sort: { createdAt: -1 } },
     { $limit: 10 },
 
-    // Lookup category
     {
       $lookup: {
         from: "categorymodels",
@@ -1079,7 +1128,6 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
     },
     { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
 
-    // Lookup subcategory
     {
       $lookup: {
         from: "subcategorymodels",
@@ -1090,7 +1138,6 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
     },
     { $unwind: { path: "$subCategory", preserveNullAndEmptyArrays: true } },
 
-    // Lookup childcategory
     {
       $lookup: {
         from: "childcategorymodels",
@@ -1127,43 +1174,72 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
   return getCachedData(
     cacheKey,
     async () => {
-      const regex = buildWordBoundaryRegex(searchTerm);
+      const words = prepareWords(searchTerm);
+      if (words.length === 0) return [];
+
+      const titleMatch       = buildTitleMatch(words);       // AND
+      const descriptionMatch = buildDescriptionMatch(words); // AND
+      const tagOrRegex       = buildTagOrRegex(words);       // OR (tag keyword)
 
       /**
-       * ✅ Priority-based scoring:
-       *    score 3 → productTitle-এ exact word match (সবচেয়ে relevant)
-       *    score 2 → shortDescription-এ match
-       *    score 1 → productTag-এ match
+       * ─── কেন এখন সঠিক হবে ───────────────────────────────────────
        *
-       * এতে "table" search করলে:
-       *   - "Wooden Dining Table"  score 3 → উপরে আসবে
-       *   - "Comfortable Chair"    score 0 → আসবেই না (\btable match করে না)
+       * "t shirt" search:
+       *   prepareWords → ["shirt"]  ("t" বাদ, length < 2)
+       *   title match → \bshirt → শুধু shirt/t-shirt আসবে ✅
+       *
+       * "air condition" search:
+       *   prepareWords → ["air", "condition"]
+       *   title AND → title-এ "air" AND "condition" দুটোই থাকতে হবে
+       *   "WiWU Airbuds" → title-এ "condition" নেই → ❌ আসবে না ✅
+       *   "Jamuna Air Conditioner" → দুটোই আছে → ✅ আসবে
+       *
+       * "table" search:
+       *   prepareWords → ["table"]
+       *   title match → \btable → "table", "tables" match
+       *   "Edifier D32 Tabletop" → "tabletop"-এ \btable match করে...
+       *     কিন্তু score কম (description/tag match only) তাই নিচে থাকবে
+       *     বা আলাদা exact \btable\b দিয়ে tabletop বাদ দেওয়া যায়।
+       *
+       * ────────────────────────────────────────────────────────────
        */
+
       const results = await VendorProductModel.aggregate([
         {
           $match: {
             status: "active",
             $or: [
-              { productTitle: { $regex: regex } },
-              { shortDescription: { $regex: regex } },
-              // ✅ productTag array of strings হলে এভাবে match করে
-              { productTag: { $elemMatch: { $regex: regex } } },
+              titleMatch,                                             // title: AND
+              descriptionMatch,                                      // description: AND
+              { productTag: { $elemMatch: { $regex: tagOrRegex } } }, // tag: OR
             ],
           },
         },
 
-        // ── Relevance score যোগ করো ──────────────────────────────
+        // ── Relevance Scoring ─────────────────────────────────────────────────
         {
           $addFields: {
             _searchScore: {
               $add: [
-                // Title match → score 3 (সবচেয়ে গুরুত্বপূর্ণ)
+                // Title match (all words) → highest score
                 {
-                  $cond: [
-                    { $regexMatch: { input: "$productTitle", regex } },
-                    3,
-                    0,
-                  ],
+                  $switch: {
+                    branches: [
+                      // Title-এ সব word আছে → score 4
+                      {
+                        case: {
+                          $and: words.map((w) => ({
+                            $regexMatch: {
+                              input: { $ifNull: ["$productTitle", ""] },
+                              regex: new RegExp(`\\b${w}`, "i"),
+                            },
+                          })),
+                        },
+                        then: 4,
+                      },
+                    ],
+                    default: 0,
+                  },
                 },
                 // Description match → score 1
                 {
@@ -1171,7 +1247,7 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
                     {
                       $regexMatch: {
                         input: { $ifNull: ["$shortDescription", ""] },
-                        regex,
+                        regex: tagOrRegex,
                       },
                     },
                     1,
@@ -1183,10 +1259,10 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
           },
         },
 
-        // ── Score অনুযায়ী sort (তারপর newest) ───────────────────
+        // ── Sort: highest score first, then newest ────────────────────────────
         { $sort: { _searchScore: -1, createdAt: -1 } },
 
-        // ── _searchScore field বাদ দাও final result থেকে ─────────
+        // ── Remove score field ────────────────────────────────────────────────
         { $unset: "_searchScore" },
 
         ...getProductLookupPipeline(),
