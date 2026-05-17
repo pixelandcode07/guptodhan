@@ -5,21 +5,22 @@ import { Search, Loader2, X, ShoppingBag, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import debounce from "lodash/debounce";
-import { cn } from "@/lib/utils"; 
+import { cn } from "@/lib/utils";
 
 interface Suggestion {
   _id: string;
-  slug?: string; 
+  slug?: string;
   productTitle: string;
-  thumbnailImage?: string; // ✅ FIX: matched with backend field
-  productPrice?: number;   // ✅ FIX: matched with backend field
+  thumbnailImage?: string;
+  productPrice?: number;
   discountPrice?: number;
-  category?: { slug: string };
-  subCategory?: { slug: string };
-  childCategory?: { slug: string };
 }
 
-export default function SearchBar() {
+interface SearchBarProps {
+  onSearch?: () => void; // optional — mobile overlay এ pass করলে close হবে
+}
+
+export default function SearchBar({ onSearch }: SearchBarProps) {
   const [query, setQuery] = React.useState("");
   const [suggestions, setSuggestions] = React.useState<Suggestion[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -29,6 +30,7 @@ export default function SearchBar() {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
+  // ── Close dropdown on outside click ──────────────────────────────────────────
   React.useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
@@ -39,6 +41,7 @@ export default function SearchBar() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // ── Fetch suggestions (debounced) ─────────────────────────────────────────────
   const fetchSuggestions = React.useCallback(
     debounce(async (q: string) => {
       const queryText = q.trim();
@@ -62,8 +65,7 @@ export default function SearchBar() {
         const json = await res.json();
         setSuggestions(json.success ? json.data || [] : []);
       } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          console.error(err);
+        if (err.name !== "AbortError") {
           setSuggestions([]);
         }
       } finally {
@@ -83,47 +85,41 @@ export default function SearchBar() {
     };
   }, [query, fetchSuggestions]);
 
-  const goToProduct = (item: Suggestion) => {
-    setShowDropdown(false);
-    setQuery("");
-    const identifier = item.slug || item._id; 
-    if (identifier) {
-      router.push(`/product/${identifier}`);
-    }
-  };
+  // ── Navigate to /search page ──────────────────────────────────────────────────
+  const goToSearch = React.useCallback(
+    (q: string) => {
+      if (!q.trim()) return;
+      setShowDropdown(false);
+      setQuery("");
+      router.push(`/search?q=${encodeURIComponent(q.trim())}`);
+      onSearch?.(); // mobile overlay বন্ধ করবে (যদি pass করা থাকে)
+    },
+    [router, onSearch]
+  );
+
+  // ── Navigate directly to product page ────────────────────────────────────────
+  const goToProduct = React.useCallback(
+    (item: Suggestion) => {
+      setShowDropdown(false);
+      setQuery("");
+      router.push(`/product/${item.slug ?? item._id}`);
+      onSearch?.();
+    },
+    [router, onSearch]
+  );
 
   const clearSearch = () => {
     setQuery("");
     setSuggestions([]);
+    setShowDropdown(false);
     inputRef.current?.focus();
   };
 
-  const goToCategoryPage = () => {
-    if (!query.trim()) return;
-
-    let targetUrl = "/search";
-    if (suggestions.length > 0) {
-      const first = suggestions[0];
-      if (first.childCategory?.slug) {
-        targetUrl = `/childcategory/${first.childCategory.slug}`;
-      } else if (first.subCategory?.slug) {
-        targetUrl = `/subcategory/${first.subCategory.slug}`;
-      } else if (first.category?.slug) {
-        targetUrl = `/category/${first.category.slug}`;
-      }
-    }
-    const params = new URLSearchParams({ q: query.trim() });
-    router.push(`${targetUrl}?${params.toString()}`);
-    setShowDropdown(false);
-    setQuery("");
-  };
-
+  // ── Highlight matched text ────────────────────────────────────────────────────
   const highlight = (text: string, term: string) => {
     if (!term || !text) return text;
-    const escapeRegExp = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const safeTerm = escapeRegExp(term);
-    const parts = text.split(new RegExp(`(${safeTerm})`, "gi"));
-    
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const parts = text.split(new RegExp(`(${escaped})`, "gi"));
     return parts.map((p, i) =>
       p.toLowerCase() === term.toLowerCase() ? (
         <span key={i} className="text-[#00005E] font-bold bg-yellow-100 px-0.5 rounded-sm">
@@ -135,8 +131,12 @@ export default function SearchBar() {
     );
   };
 
+  // ─────────────────────────────────────────────────────────────────────────────
+
   return (
     <div className="relative w-full max-w-3xl mx-auto z-50" ref={wrapperRef}>
+
+      {/* ── Input Row ──────────────────────────────────────────────────────────── */}
       <div
         className={cn(
           "relative flex items-center w-full h-12 rounded-full border-2 transition-all duration-200 bg-white overflow-hidden",
@@ -160,56 +160,74 @@ export default function SearchBar() {
             setShowDropdown(true);
           }}
           onFocus={() => query && setShowDropdown(true)}
-          onKeyDown={(e) => e.key === "Enter" && goToCategoryPage()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") goToSearch(query);
+            if (e.key === "Escape") { setShowDropdown(false); inputRef.current?.blur(); }
+          }}
         />
 
         {query && (
           <button
             onClick={clearSearch}
             className="p-2 mr-1 text-gray-400 hover:text-red-500 transition-colors"
+            aria-label="Clear search"
           >
             <X className="w-4 h-4" />
           </button>
         )}
 
         <button
-          onClick={goToCategoryPage}
+          onClick={() => goToSearch(query)}
           className="h-[calc(100%-8px)] mr-1 px-6 bg-[#00005E] hover:bg-[#000045] text-white rounded-full font-medium text-sm transition-colors flex items-center gap-2"
+          aria-label="Search"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
         </button>
       </div>
 
+      {/* ── Suggestions Dropdown ───────────────────────────────────────────────── */}
       {showDropdown && query && (
         <div className="absolute top-full left-0 right-0 bg-white border-x-2 border-b-2 border-[#00005E] rounded-b-[20px] shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-          
+
+          {/* Loading state */}
           {loading && suggestions.length === 0 ? (
             <div className="py-12 flex flex-col items-center justify-center text-gray-500">
               <Loader2 className="w-8 h-8 animate-spin text-[#00005E] mb-2" />
               <p className="text-sm">Searching for best matches...</p>
             </div>
+
           ) : suggestions.length === 0 ? (
+            /* No results */
             <div className="py-10 flex flex-col items-center justify-center text-gray-500">
               <ShoppingBag className="w-10 h-10 mb-3 text-gray-300" />
               <p className="text-base font-medium text-gray-600">No products found</p>
-              <p className="text-sm text-gray-400">Try checking your spelling or use different keywords.</p>
+              <p className="text-sm text-gray-400">
+                Try checking your spelling or use different keywords.
+              </p>
             </div>
+
           ) : (
             <>
+              {/* Header */}
               <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Top Suggestions</span>
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Top Suggestions
+                </span>
                 <span className="text-xs text-gray-400">{suggestions.length} results</span>
               </div>
 
-              <ul className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+              {/* Product list */}
+              <ul className="max-h-[60vh] overflow-y-auto">
                 {suggestions.map((item) => (
                   <li
                     key={item._id}
-                    onClick={() => goToProduct(item)} 
+                    onMouseDown={(e) => e.preventDefault()} // input blur আটকায়
+                    onClick={() => goToProduct(item)}
                     className="group flex items-center gap-4 p-3 hover:bg-blue-50/50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors duration-150"
                   >
+                    {/* Thumbnail */}
                     <div className="relative w-12 h-12 flex-shrink-0 bg-white rounded-md border border-gray-200 overflow-hidden group-hover:border-blue-200">
-                      {item.thumbnailImage ? ( // ✅ FIX: used thumbnailImage
+                      {item.thumbnailImage ? (
                         <Image
                           src={item.thumbnailImage}
                           alt={item.productTitle}
@@ -223,11 +241,11 @@ export default function SearchBar() {
                       )}
                     </div>
 
+                    {/* Text */}
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                       <p className="text-sm font-medium text-gray-800 truncate group-hover:text-[#00005E] transition-colors">
                         {highlight(item.productTitle, query)}
                       </p>
-                      
                       <div className="flex items-center gap-2 mt-0.5">
                         {item.discountPrice ? (
                           <>
@@ -235,30 +253,33 @@ export default function SearchBar() {
                               ৳{item.discountPrice.toLocaleString()}
                             </span>
                             <span className="text-xs text-gray-400 line-through">
-                              ৳{item.productPrice?.toLocaleString()} {/* ✅ FIX */}
+                              ৳{item.productPrice?.toLocaleString()}
                             </span>
                           </>
                         ) : (
                           <span className="text-sm font-bold text-gray-700">
-                            ৳{item.productPrice?.toLocaleString() || 0} {/* ✅ FIX */}
+                            ৳{item.productPrice?.toLocaleString() ?? 0}
                           </span>
                         )}
                       </div>
                     </div>
-                    
+
+                    {/* Arrow */}
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity pr-2 text-[#00005E]">
-                        <ArrowRight className="w-4 h-4" />
+                      <ArrowRight className="w-4 h-4" />
                     </div>
                   </li>
                 ))}
               </ul>
 
+              {/* See all results → always /search?q=... */}
               <div
-                onClick={goToCategoryPage}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => goToSearch(query)}
                 className="p-3 bg-gray-50 hover:bg-[#00005E] group cursor-pointer border-t border-gray-100 transition-colors duration-200 flex items-center justify-center gap-2"
               >
                 <span className="text-sm font-medium text-[#00005E] group-hover:text-white">
-                  See all results for "{query}"
+                  See all results for &ldquo;{query}&rdquo;
                 </span>
                 <ArrowRight className="w-4 h-4 text-[#00005E] group-hover:text-white" />
               </div>
