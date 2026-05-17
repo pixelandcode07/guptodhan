@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useTransition, useState } from 'react';
-import { ShoppingCart, Package, Filter, X, Loader2 } from 'lucide-react';
+import { ShoppingCart, Package, Filter, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -19,12 +19,12 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { useCart } from '@/hooks/useCart'; // ✅ Import useCart
-import { toast } from 'sonner'; // ✅ Import Toast
+import { useCart } from '@/hooks/useCart';
+import { toast } from 'sonner';
 
 interface Product {
     _id: string;
-    slug: string; // ✅ Added Slug
+    slug?: string; // ✅ টাইপ সেফটির জন্য অপশনাল স্লাগ করা হলো
     productId: string;
     productTitle: string;
     thumbnailImage: string;
@@ -36,7 +36,7 @@ interface Product {
     brand?: { name: string } | null;
     productOptions?: Array<{
         size?: Array<{ name: string }>;
-        color?: Array<{ name: string }>; // ✅ Added color for type safety
+        color?: Array<{ name: string }>;
         price: number;
         discountPrice: number;
     }>;
@@ -77,13 +77,11 @@ function extractFilters(products: Product[]) {
     };
 }
 
-// ✅ Updated Product Card with Smart Logic
 function ProductCard({ product }: { product: Product }) {
     const router = useRouter();
     const { addToCart } = useCart();
     const [isAdding, setIsAdding] = useState(false);
 
-    // ✅ FIXED: Using Slug for URL
     const productUrl = `/product/${product.slug || product._id}`;
 
     const hasDiscount = product.discountPrice > 0 && product.discountPrice < product.productPrice;
@@ -91,10 +89,8 @@ function ProductCard({ product }: { product: Product }) {
         ? Math.round(((product.productPrice - product.discountPrice) / product.productPrice) * 100)
         : 0;
 
-    // ✅ Check for Variants
     const hasVariants = product.productOptions && product.productOptions.length > 0;
 
-    // ✅ Add to Cart Handler
     const handleAddToCart = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -104,21 +100,19 @@ function ProductCard({ product }: { product: Product }) {
             return;
         }
 
-        // 🔴 Case 1: Variants exist -> Redirect using Slug
         if (hasVariants) {
             toast.info("Please select options", {
                 description: "Choose your size or color on the details page.",
                 duration: 2500,
                 action: {
                     label: "Go",
-                    onClick: () => router.push(productUrl) // ✅ Use Slug URL
+                    onClick: () => router.push(productUrl)
                 }
             });
-            router.push(productUrl); // ✅ Use Slug URL
+            router.push(productUrl);
             return;
         }
 
-        // 🟢 Case 2: Simple Product -> Add to Cart
         setIsAdding(true);
         try {
             await addToCart(product._id, 1, { skipModal: false });
@@ -141,7 +135,6 @@ function ProductCard({ product }: { product: Product }) {
                         sizes="(max-width: 768px) 50vw, 33vw"
                     />
                     
-                    {/* Badges */}
                     <div className="absolute top-2 left-2 flex flex-col gap-1 pointer-events-none">
                         {hasDiscount && (
                             <span className="px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full">
@@ -155,7 +148,6 @@ function ProductCard({ product }: { product: Product }) {
                         )}
                     </div>
 
-                    {/* ✅ SMART ADD TO CART BUTTON */}
                     <div className="absolute bottom-3 right-3 z-10 translate-y-0 md:translate-y-10 md:opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
                         <Button
                             onClick={handleAddToCart}
@@ -242,7 +234,6 @@ function FilterSidebar({ filters }: { filters: any }) {
                 </Button>
             )}
 
-            {/* Brand Filter */}
             {filters.brands.length > 0 && (
                 <div>
                     <h3 className="font-semibold text-lg mb-4">Brand</h3>
@@ -261,7 +252,6 @@ function FilterSidebar({ filters }: { filters: any }) {
                 </div>
             )}
 
-            {/* Size Filter */}
             {filters.sizes.length > 0 && (
                 <div>
                     <h3 className="font-semibold text-lg mb-4">Size</h3>
@@ -276,7 +266,6 @@ function FilterSidebar({ filters }: { filters: any }) {
                 </div>
             )}
 
-            {/* Price Range */}
             <div>
                 <h3 className="font-semibold text-lg mb-4">Price Range</h3>
                 <div className="px-2 mb-5">
@@ -313,11 +302,9 @@ export default function ChildCategoryClient({ initialData }: { initialData: Chil
 
     return (
         <>
-            {/* Custom Loading Bar */}
             <div className={`fixed top-0 left-0 h-1 bg-gradient-to-r from-indigo-600 to-pink-600 z-50 transition-all duration-500 ${isPending ? 'w-full' : 'w-0'}`} />
 
             <div className="min-h-screen bg-gray-50">
-                {/* Breadcrumb */}
                 <div className="bg-white border-b">
                     <div className="max-w-7xl mx-auto px-4 py-4">
                         <Breadcrumb>
@@ -330,7 +317,6 @@ export default function ChildCategoryClient({ initialData }: { initialData: Chil
                     </div>
                 </div>
 
-                {/* Hero Section */}
                 <div className="bg-gradient-to-r from-indigo-900 to-pink-900 text-white py-16">
                     <div className="max-w-7xl mx-auto px-4 text-center">
                         <h1 className="text-4xl md:text-5xl font-bold mb-2">{initialData.childCategory.name}</h1>
@@ -338,7 +324,6 @@ export default function ChildCategoryClient({ initialData }: { initialData: Chil
                     </div>
                 </div>
 
-                {/* Mobile Filter */}
                 <div className="md:hidden sticky top-0 z-40 bg-white border-b shadow-sm">
                     <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
                         <span className="text-sm text-gray-600">Showing {initialData.products.length} products</span>
@@ -352,10 +337,8 @@ export default function ChildCategoryClient({ initialData }: { initialData: Chil
                     </div>
                 </div>
 
-                {/* Main Content */}
                 <div className="max-w-7xl mx-auto px-4 py-8">
                     <div className="flex gap-8">
-                        {/* Desktop Sidebar */}
                         <aside className="hidden md:block w-80 flex-shrink-0">
                             <div className="sticky top-4 bg-white rounded-xl shadow-md p-6 h-[calc(100vh-8rem)] overflow-y-auto">
                                 <h3 className="font-bold text-xl mb-6">Filters</h3>
@@ -363,7 +346,6 @@ export default function ChildCategoryClient({ initialData }: { initialData: Chil
                             </div>
                         </aside>
 
-                        {/* Products Grid */}
                         <div className="flex-1">
                             {initialData.products.length === 0 ? (
                                 <div className="text-center py-24">
