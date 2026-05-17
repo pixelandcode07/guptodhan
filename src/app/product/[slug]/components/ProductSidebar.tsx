@@ -294,13 +294,26 @@ export default function ProductMainInfo({
     }
   };
 
+  // ✅ আপডেট করা HandleAddToCart ফাংশন
   const handleAddToCart = async () => {
     if (availableColors.length > 0 && !selectedColor) return toast.error('Please select a color');
     if (availableSizes.length > 0 && !selectedSize) return toast.error('Please select a size');
-    await addToCart(product._id, quantity, {
-      color: selectedColor || undefined,
-      size: selectedSize || undefined,
-    });
+
+    try {
+      await addToCart(product._id, quantity, {
+        skipModal: true, // 🛑 Modal বন্ধ করা হলো
+        silent: true,    // 🛑 Context এর ডিফল্ট মেসেজ বন্ধ করা হলো
+        color: selectedColor || undefined,
+        size: selectedSize || undefined,
+      });
+      
+      // 🔥 সুন্দর একটি টোস্ট মেসেজ দেখানো হলো
+      toast.success('Successfully added to cart! 🛒', {
+        description: `${quantity}x ${product.productTitle.slice(0, 30)}...`,
+      });
+    } catch (error) {
+      toast.error('Failed to add product to cart');
+    }
   };
 
   // ─── Variant Logic ────────────────────────────────────────────────────────────
