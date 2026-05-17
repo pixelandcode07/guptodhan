@@ -4,6 +4,7 @@ import ChildCategoryClient from './ChildCategoryClient';
 
 interface Product {
   _id: string;
+  slug?: string; // ✅ টাইপ সেফটির জন্য অপশনাল স্লাগ যোগ করা হলো
   productId: string;
   productTitle: string;
   thumbnailImage: string;
@@ -12,10 +13,11 @@ interface Product {
   stock: number;
   sellCount: number;
   rewardPoints: number;
-  brand?: string | null;
+  brand?: { name: string } | null; // ✅ ক্লায়েন্টের সাথে টাইপ মিলানো হলো
   childCategory?: { name: string };
   productOptions?: Array<{
     size?: Array<{ name: string }>;
+    color?: Array<{ name: string }>; // ✅ ক্লায়েন্টের সাথে টাইপ মিলানো হলো
     price: number;
     discountPrice: number;
   }>;
@@ -36,6 +38,11 @@ async function getChildCategoryProducts(
   searchParams: Record<string, string> = {}
 ): Promise<ChildCategoryData | null> {
   const params = new URLSearchParams(searchParams);
+  
+  if (!params.has('limit')) {
+    params.set('limit', '100');
+  }
+
   const url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/ecommerce-category/ecomChildCategory/slug/${slug}?${params.toString()}`;
 
   try {
