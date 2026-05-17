@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import SearchResults from "./SearchResults";
 import type { Metadata } from "next";
+import SearchResults from "./SearchResults";
 
 interface PageProps {
   searchParams: { q?: string };
