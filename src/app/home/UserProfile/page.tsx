@@ -7,7 +7,6 @@ import api from '@/lib/axios'
 import Link from 'next/link'
 import { ShoppingBag } from 'lucide-react'
 
-// ✅ DashboardOrder টাইপ আপডেট করা হলো (একাধিক আইটেমের জন্য)
 export type DashboardOrder = {
     id: string
     seller: string
@@ -70,7 +69,7 @@ export default function UserProfilePage() {
             }>
 
             const mapped: DashboardOrder[] = apiOrders.map((o) => {
-                // ✅ সবগুলো প্রোডাক্ট ম্যাপ করা হচ্ছে
+                // ✅ অর্ডারের সবগুলো প্রোডাক্ট ম্যাপ করা হচ্ছে
                 const orderItems = (o.orderDetails || []).map((detail) => {
                     const product = detail.productId && typeof detail.productId === 'object' ? detail.productId : undefined;
                     const priceNumber = product?.discountPrice != null && product?.productPrice != null && product.discountPrice < product.productPrice
@@ -90,7 +89,6 @@ export default function UserProfilePage() {
                 });
 
                 const totalItemsCount = orderItems.reduce((sum, item) => sum + item.quantity, 0);
-                
                 const orderTotal = o.totalAmount != null 
                     ? o.totalAmount 
                     : orderItems.reduce((sum, item) => sum + (Number(item.price.replace(/[^0-9]/g, '')) * item.quantity), 0);
