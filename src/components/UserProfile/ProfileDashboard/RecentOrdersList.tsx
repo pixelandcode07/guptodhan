@@ -84,8 +84,8 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
                 </div>
 
                 <div className="flex gap-2">
-                   {/* ✅ Write a Review Button (আগের মতো নিচে আনা হয়েছে) */}
-                   {order.status === 'delivered' && order.items.length > 0 && (
+                   {/* ✅ এখানে slug এর সমস্যাটি সমাধান করা হয়েছে */}
+                   {order.status === 'delivered' && order.items.length > 0 && order.items[0].productSlug && (
                      <Link href={`/product/${order.items[0].productSlug}#reviews`} className="text-xs font-bold text-[#0097E9] bg-blue-50 hover:bg-[#0097E9] hover:text-white border border-blue-100 px-4 py-2 rounded-md transition-all flex items-center gap-1.5 whitespace-nowrap">
                        <Star className="w-3.5 h-3.5" /> Write a Review
                      </Link>
