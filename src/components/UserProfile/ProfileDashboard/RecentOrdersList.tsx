@@ -1,7 +1,7 @@
 import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CheckCircle, Store } from 'lucide-react' // ✅ Store আইকন যোগ করা হলো
+import { CheckCircle, Store, Star } from 'lucide-react' // ✅ Star আইকন যোগ করা হলো
 
 interface Order {
   id: string
@@ -10,12 +10,13 @@ interface Order {
   status: 'pending' | 'processing' | 'delivered' | 'cancelled'
   productName: string
   productImage: string
+  productSlug?: string // ✅
   size?: string
   color?: string
   price: string
   quantity: number
-  totalPrice?: string // ✅
-  totalItems?: number // ✅
+  totalPrice?: string
+  totalItems?: number
 }
 
 interface RecentOrdersListProps {
@@ -95,14 +96,28 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
               </div>
             </Link>
 
-            {/* ── Footer: Order Total ── */}
-            <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-white">
+            {/* ── Footer: Order Total & Review Button ── */}
+            <div className="px-4 py-3 border-t border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white gap-3">
               <div className="text-xs font-medium text-gray-500">
                 {order.totalItems && order.totalItems > 1 ? `${order.totalItems} Items` : '1 Item'}
               </div>
-              <div className="text-sm flex items-center gap-2">
-                <span className="text-gray-600 font-medium">Total Order:</span>
-                <span className="text-lg font-bold text-[#EF4A23]">{order.totalPrice || order.price}</span>
+              
+              <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4 w-full sm:w-auto">
+                <div className="text-sm flex items-center gap-2">
+                  <span className="text-gray-600 font-medium">Total Order:</span>
+                  <span className="text-lg font-bold text-[#EF4A23]">{order.totalPrice || order.price}</span>
+                </div>
+
+                {/* ✅ শুধুমাত্র Delivered হলেই Review বাটন শো করবে */}
+                {order.status === 'delivered' && order.productSlug && (
+                  <Link 
+                    href={`/product/${order.productSlug}#reviews`}
+                    className="text-xs font-bold text-[#0097E9] bg-blue-50 hover:bg-[#0097E9] hover:text-white border border-blue-100 hover:border-[#0097E9] px-4 py-2 rounded-md transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap"
+                  >
+                    <Star className="w-3.5 h-3.5" />
+                    Write a Review
+                  </Link>
+                )}
               </div>
             </div>
             
