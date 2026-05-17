@@ -7,6 +7,8 @@ import OrderList from '@/components/UserProfile/Order/OrderList'
 import OrderFilters from '@/components/UserProfile/Order/OrderFilters'
 import type { OrderStatus, OrderSummary } from '@/components/UserProfile/Order/types'
 import OrdersSkeleton from '@/components/UserProfile/Order/OrdersSkeleton'
+import Link from 'next/link' // ✅ Link ইম্পোর্ট করা হলো
+import { ShoppingBag } from 'lucide-react' // ✅ 아이কন ইম্পোর্ট করা হলো
 
 // Helper function to map backend status to UI status
 function mapOrderStatusToUI(status: string): OrderStatus {
@@ -192,7 +194,18 @@ export default function UserOrdersPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-xl font-semibold px-4 mt-1 mb-4">My Orders</h1>
+      {/* ✅ My Orders Heading এবং Shop Now বাটন */}
+      <div className="flex items-center justify-between px-4 mt-1 mb-4">
+        <h1 className="text-xl font-semibold">My Orders</h1>
+        
+        <Link 
+          href="/products" 
+          className="flex items-center gap-2 bg-[#0097E9] hover:bg-[#0097E9]/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap"
+        >
+          <ShoppingBag className="w-4 h-4" />
+          Shop Now
+        </Link>
+      </div>
       
       <div className="px-4 mb-4">
         <OrderFilters value={filter} onChange={setFilter} />

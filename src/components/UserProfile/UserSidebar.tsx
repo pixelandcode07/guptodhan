@@ -36,7 +36,7 @@ const items = [
   { title: 'Donation Stats', url: '/home/UserProfile/donation-dashboard', icon: HeartHandshake },
   { title: 'My Campaigns', url: '/home/UserProfile/my-campaigns', icon: Gift },
   { title: 'My Requests', url: '/home/UserProfile/my-claims', icon: Hand },
-  { title: 'Support Tickets', url: '/home/UserProfile/support-tickets', icon: Headset },
+  // { title: 'Support Tickets', url: '/home/UserProfile/support-tickets', icon: Headset },
   { title: 'Saved Address', url: '/home/UserProfile/addresses', icon: MapPin },
   { title: 'Change Password', url: '/home/UserProfile/change-password', icon: KeyRound },
   { title: 'Delete Account', url: '/page/account-deletion', icon: UserX }, // ✅ Added Delete Account link

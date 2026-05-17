@@ -3,7 +3,8 @@ import React, { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import api from '@/lib/axios'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Heart, Gift, CheckCircle, Clock } from 'lucide-react'
+import { Heart, Gift, CheckCircle, Clock, ShoppingBag } from 'lucide-react' // ✅ ShoppingBag আইকন ইম্পোর্ট করা হলো
+import Link from 'next/link' // ✅ Link ইম্পোর্ট করা হলো
 
 export default function DonationDashboardPage() {
     const { data: session } = useSession()
@@ -18,6 +19,7 @@ export default function DonationDashboardPage() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const token = (session as any)?.accessToken
                 if (!token) return
 
@@ -42,7 +44,18 @@ export default function DonationDashboardPage() {
 
     return (
         <div className="p-6">
-            <h1 className="text-2xl font-bold mb-6 text-gray-800">Donation Overview</h1>
+            {/* ✅ Donation Overview Heading এবং Shop Now বাটন */}
+            <div className="flex items-center justify-between mb-6">
+                <h1 className="text-xl font-semibold text-gray-800">Donation Overview</h1>
+                
+                <Link 
+                    href="/products" 
+                    className="flex items-center gap-2 bg-[#0097E9] hover:bg-[#0097E9]/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap"
+                >
+                    <ShoppingBag className="w-4 h-4" />
+                    Shop Now
+                </Link>
+            </div>
             
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {/* Total Campaigns */}

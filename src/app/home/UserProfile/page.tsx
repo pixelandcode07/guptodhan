@@ -1,9 +1,11 @@
 "use client"
-import React, { useEffect, useMemo, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import OrderSummaryCards from '../../../components/UserProfile/ProfileDashboard/OrderSummaryCards'
 import RecentOrdersList from '../../../components/UserProfile/ProfileDashboard/RecentOrdersList'
 import { useSession } from 'next-auth/react'
 import api from '@/lib/axios'
+import Link from 'next/link'
+import { ShoppingBag } from 'lucide-react' // ✅ আইকনের জন্য ইম্পোর্ট করা হলো
 
 type DashboardOrder = {
     id: string
@@ -109,7 +111,19 @@ export default function UserProfilePage() {
 
     return (
         <div className="">
-            <h1 className="text-xl font-semibold px-4 mt-1">Dashboard</h1>
+            {/* ✅ Dashboard Heading এবং Shop Now বাটন */}
+            <div className="flex items-center justify-between px-4 mt-2 mb-4">
+                <h1 className="text-xl font-semibold">Dashboard</h1>
+                
+                <Link 
+                    href="/products" 
+                    className="flex items-center gap-2 bg-[#0097E9] hover:bg-[#0097E9]/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                >
+                    <ShoppingBag className="w-4 h-4" />
+                    Shop Now
+                </Link>
+            </div>
+
             <OrderSummaryCards
                 pending={counts.pending}
                 processing={counts.processing}
@@ -120,5 +134,3 @@ export default function UserProfilePage() {
         </div>
     )
 }
-
-
