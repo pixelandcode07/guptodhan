@@ -9,7 +9,6 @@ import Image from 'next/image';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import LogInRegister from '../../LogInAndRegister/LogIn_Register';
-import SearchBar from './SearchBar';
 import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -21,6 +20,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import axios from 'axios';
+import SearchBar from './SearchBar';
 
 export default function NavMain() {
   const { data: session } = useSession();
@@ -453,10 +453,10 @@ export default function NavMain() {
                   <X size={20} />
                 </button>
                 <div className="flex-1">
-                  {/*
-                    ✅ KEY: onSearch closes the mobile overlay
-                    after user navigates (product click or Enter)
-                  */}
+                 {/* Desktop */}
+                  <SearchBar />
+
+                  {/* Mobile overlay */}
                   <SearchBar onSearch={() => setMobileSearchOpen(false)} />
                 </div>
               </div>
