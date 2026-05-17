@@ -41,7 +41,7 @@ const items = [
   { title: 'Change Password', url: '/home/UserProfile/change-password', icon: KeyRound },
   { title: 'Delete Account', url: '/page/account-deletion', icon: UserX }, // ✅ Added Delete Account link
 ]
-
+ 
 export default function UserSidebar() {
   const { data: session } = useSession()
   const pathname = usePathname()
