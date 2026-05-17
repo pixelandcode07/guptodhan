@@ -1,47 +1,67 @@
-// app/search/page.tsx
-import { Metadata } from 'next'
-import Link from 'next/link'
+import { Suspense } from "react";
+import SearchResults from "./SearchResults";
+import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-    title: 'Search Results',
+interface PageProps {
+  searchParams: { q?: string };
 }
 
-export default async function SearchPage({
-    searchParams,
-}: {
-    searchParams: { q?: string }
-}) {
-    const query = searchParams.q || ''
-    const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/v1/product/liveSearch?q=${encodeURIComponent(query)}&type=results`,
-        { cache: 'no-store' }
-    )
-    const result = await res.json()
+// ─── SEO Metadata ──────────────────────────────────────────────────────────────
 
-    return (
-        <div className="container mx-auto py-8">
-            <h1 className="text-2xl font-bold mb-6">
-                Search Results for: <span className="text-blue-600">"{query}"</span>
-            </h1>
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const q = searchParams.q || "";
+  return {
+    title: q ? `"${q}" - Search Results | Guptodhan` : "Search Products | Guptodhan",
+    description: q
+      ? `Guptodhan-এ "${q}" সার্চের ফলাফল দেখুন। সেরা দামে পণ্য কিনুন।`
+      : "Guptodhan-এ পণ্য সার্চ করুন।",
+  };
+}
 
-            {result.success && result.data.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {result.data.map((product: any) => (
-                        <Link href={`/product/${product.slug}`} key={product._id}>
-                            <div className="border rounded-lg overflow-hidden hover:shadow-lg transition">
-                                <img src={product.thumbnailImage || product.productImage} alt="" className="w-full h-48 object-cover" />
-                                <div className="p-4">
-                                    <h3 className="font-semibold truncate">{product.productTitle}</h3>
-                                    <p className="text-sm text-gray-600 mt-1">{product.vendorStoreId?.storeName}</p>
-                                    <p className="text-lg font-bold text-green-600 mt-2">₹{product.discountPrice || product.productPrice}</p>
-                                </div>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
-            ) : (
-                <p className="text-center text-gray-500 text-lg">No products found.</p>
-            )}
+// ─── Loading Skeleton (Suspense fallback) ──────────────────────────────────────
+
+function PageSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-[95vw] xl:container mx-auto px-4 py-6">
+        {/* Header skeleton */}
+        <div className="h-7 w-72 bg-gray-200 rounded-lg animate-pulse mb-5" />
+
+        {/* Sort bar skeleton */}
+        <div className="bg-white rounded-xl border border-gray-100 px-4 py-3 mb-5 flex gap-3 animate-pulse">
+          <div className="h-5 w-16 bg-gray-100 rounded" />
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-7 w-28 bg-gray-100 rounded-lg" />
+          ))}
         </div>
-    )
+
+        {/* Product grid skeleton */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+          {[...Array(10)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-xl overflow-hidden border border-gray-100 animate-pulse"
+            >
+              <div className="aspect-square bg-gray-100" />
+              <div className="p-3 space-y-2">
+                <div className="h-3 bg-gray-100 rounded w-full" />
+                <div className="h-3 bg-gray-100 rounded w-4/5" />
+                <div className="h-5 bg-gray-100 rounded w-2/5 mt-3" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ──────────────────────────────────────────────────────────────────────
+
+export default function SearchPage({ searchParams }: PageProps) {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <SearchResults query={searchParams.q || ""} />
+    </Suspense>
+  );
 }
