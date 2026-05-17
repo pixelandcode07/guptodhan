@@ -43,18 +43,19 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
               </span>
             </div>
 
+            {/* ✅ সবগুলো প্রোডাক্ট শো করানো হচ্ছে */}
             <div className="flex flex-col">
               {order.items.map((item, idx) => (
-                <div key={idx} className="p-4 flex gap-4 border-b border-gray-50 last:border-0 hover:bg-gray-50/80 transition-colors">
-                  <Link href={`/product/${item.productSlug}`} className="relative h-20 w-20 shrink-0 border border-gray-200 rounded-md overflow-hidden bg-white block">
+                <Link key={idx} href={`/product/${item.productSlug}`} className="p-4 flex gap-4 border-b border-gray-50 last:border-0 hover:bg-gray-50/80 transition-colors block">
+                  <div className="relative h-20 w-20 shrink-0 border border-gray-200 rounded-md overflow-hidden bg-white block">
                     <Image src={item.productImage} alt={item.productName} fill className="object-cover hover:scale-105 transition-transform" />
-                  </Link>
+                  </div>
                   
                   <div className="flex-1 flex flex-col sm:flex-row sm:justify-between gap-3">
                     <div className="space-y-1">
-                      <Link href={`/product/${item.productSlug}`} className="text-sm font-medium text-gray-800 line-clamp-2 hover:text-[#0097E9] transition-colors">
+                      <div className="text-sm font-medium text-gray-800 line-clamp-2 hover:text-[#0097E9] transition-colors">
                         {item.productName}
-                      </Link>
+                      </div>
                       {(item.size || item.color) && (
                         <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
                           {item.color && <span>Color: {item.color}</span>}
@@ -68,7 +69,7 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
                       <div className="text-xs text-gray-500 mt-1">Qty: {item.quantity}</div>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
 
@@ -84,9 +85,13 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
                 </div>
 
                 <div className="flex gap-2">
-                   {/* ✅ এখানে slug এর সমস্যাটি সমাধান করা হয়েছে */}
+                   {/* ✅ Review Button (আগের জায়গায়) */}
                    {order.status === 'delivered' && order.items.length > 0 && order.items[0].productSlug && (
-                     <Link href={`/product/${order.items[0].productSlug}#reviews`} className="text-xs font-bold text-[#0097E9] bg-blue-50 hover:bg-[#0097E9] hover:text-white border border-blue-100 px-4 py-2 rounded-md transition-all flex items-center gap-1.5 whitespace-nowrap">
+                     <Link 
+                        href={`/product/${order.items[0].productSlug}#reviews`} 
+                        onClick={(e) => e.stopPropagation()} 
+                        className="text-xs font-bold text-[#0097E9] bg-blue-50 hover:bg-[#0097E9] hover:text-white border border-blue-100 px-4 py-2 rounded-md transition-all flex items-center gap-1.5 whitespace-nowrap"
+                     >
                        <Star className="w-3.5 h-3.5" /> Write a Review
                      </Link>
                    )}
