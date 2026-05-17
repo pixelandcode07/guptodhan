@@ -1014,54 +1014,7 @@ const getLandingPageProductsFromDB = async () => {
   );
 };
 
-// ===================================
-// 🔍 GET LIVE SUGGESTIONS (NO POPULATE - AGGREGATION)
-// ===================================
 
-// ─── vendorProduct.service.ts ─────────────────────────────────────────────────
-// শুধু search-related দুটো function replace করো
-
-// ─────────────────────────────────────────────────────────────────────────────
-// vendorProduct.service.ts — Search functions (fully fixed)
-//
-// সমস্যা ছিল:
-//   1. "t shirt"       → "t" single char, সব product match করছিল (OR logic)
-//   2. "air condition" → OR logic, "air" alone "Airbuds" match করছিল
-//   3. "table"         → \btable, "Tabletop" speaker ভুলভাবে আসছিল
-//
-// সমাধান:
-//   1. ২ char-এর কম word ignore করা → "t" বাদ, শুধু "shirt" search হবে
-//   2. Multi-word title match → AND logic (সব word title-এ থাকতে হবে)
-//   3. Description/Tag fallback → AND logic (multi-word), OR fallback নয়
-// ─────────────────────────────────────────────────────────────────────────────
-
-const escapeRegExp = (text: string) =>
-  text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-
-/**
- * Search words prepare:
- *   - ২ char-এর কম word বাদ দেওয়া ("t", "a", "of", "in" ইত্যাদি)
- *   - প্রতিটি word escape
- */
-const prepareWords = (searchTerm: string): string[] =>
-  searchTerm
-    .trim()
-    .split(/\s+/)
-    .filter((w) => w.length >= 2)
-    .map((w) => escapeRegExp(w));
-
-/**
- * Title AND match condition:
- *   Single word  → { productTitle: { $regex: /\bword/i } }
- *   Multi-word   → { $and: [ title has word1, title has word2 ] }
- *
- * \b prefix (শুরুতে) → "table" matches "table", "tables" কিন্তু "Tabletop" নয়
- *   কারণ: "tabletop"-এ "table" একটা prefix হিসেবে আছে, কিন্তু
- *          পরে "t" আছে যা word character, তাই \btable\b match করে না।
- *          \btable (no end boundary) → "table", "tables", "tabletop" match করে।
- *   আমরা মাঝামাঝি: \btable — এটা "tablet" বা "tabletop"-ও ধরবে।
- *   তবে AND logic-এর কারণে "air condition" এর মতো cases সঠিক হবে।
- */
 const buildTitleMatch = (words: string[]): Record<string, any> => {
   if (words.length === 0) return {};
   if (words.length === 1) {
@@ -1077,10 +1030,7 @@ const buildTitleMatch = (words: string[]): Record<string, any> => {
   };
 };
 
-/**
- * Description AND match:
- *   সব word description-এ থাকতে হবে (multi-word AND)
- */
+
 const buildDescriptionMatch = (words: string[]): Record<string, any> => {
   if (words.length === 0) return {};
   if (words.length === 1) {
@@ -1181,29 +1131,7 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
       const descriptionMatch = buildDescriptionMatch(words); // AND
       const tagOrRegex       = buildTagOrRegex(words);       // OR (tag keyword)
 
-      /**
-       * ─── কেন এখন সঠিক হবে ───────────────────────────────────────
-       *
-       * "t shirt" search:
-       *   prepareWords → ["shirt"]  ("t" বাদ, length < 2)
-       *   title match → \bshirt → শুধু shirt/t-shirt আসবে ✅
-       *
-       * "air condition" search:
-       *   prepareWords → ["air", "condition"]
-       *   title AND → title-এ "air" AND "condition" দুটোই থাকতে হবে
-       *   "WiWU Airbuds" → title-এ "condition" নেই → ❌ আসবে না ✅
-       *   "Jamuna Air Conditioner" → দুটোই আছে → ✅ আসবে
-       *
-       * "table" search:
-       *   prepareWords → ["table"]
-       *   title match → \btable → "table", "tables" match
-       *   "Edifier D32 Tabletop" → "tabletop"-এ \btable match করে...
-       *     কিন্তু score কম (description/tag match only) তাই নিচে থাকবে
-       *     বা আলাদা exact \btable\b দিয়ে tabletop বাদ দেওয়া যায়।
-       *
-       * ────────────────────────────────────────────────────────────
-       */
-
+      
       const results = await VendorProductModel.aggregate([
         {
           $match: {
