@@ -14,12 +14,13 @@ type DashboardOrder = {
     status: 'pending' | 'processing' | 'delivered' | 'cancelled'
     productName: string
     productImage: string
+    productSlug: string // ✅ নতুন যোগ করা হয়েছে রিভিউ লিংকের জন্য
     size: string
     color: string
     price: string
     quantity: number
-    totalPrice: string // ✅ নতুন যোগ করা হয়েছে
-    totalItems: number // ✅ নতুন যোগ করা হয়েছে
+    totalPrice: string
+    totalItems: number
 }
 
 const hasVariant = (v: string | undefined): boolean => {
@@ -56,9 +57,10 @@ export default function UserProfilePage() {
                 _id?: string
                 storeId?: { storeName?: string; verified?: boolean } | string
                 orderStatus?: string
-                totalAmount?: number // ✅ API থেকে Total Amount রিসিভ করা
+                totalAmount?: number
                 orderDetails?: Array<{
-                    productId?: { productTitle?: string; thumbnailImage?: string; photoGallery?: string[]; productPrice?: number; discountPrice?: number }
+                    // ✅ slug এবং _id অ্যাড করা হয়েছে
+                    productId?: { _id?: string; slug?: string; productTitle?: string; thumbnailImage?: string; photoGallery?: string[]; productPrice?: number; discountPrice?: number }
                     quantity?: number
                     size?: string
                     color?: string
@@ -75,7 +77,6 @@ export default function UserProfilePage() {
                 const size = firstItem?.size != null && hasVariant(firstItem.size) ? firstItem.size : ''
                 const color = firstItem?.color != null && hasVariant(firstItem.color) ? firstItem.color : ''
 
-                // ✅ মোট আইটেম এবং মোট দাম হিসাব করা
                 const totalItemsCount = Array.isArray(o.orderDetails) 
                     ? o.orderDetails.reduce((sum, item) => sum + (item.quantity || 1), 0) 
                     : (firstItem?.quantity || 1);
@@ -84,6 +85,9 @@ export default function UserProfilePage() {
                     ? o.totalAmount 
                     : (typeof priceNumber === 'number' ? priceNumber * (firstItem?.quantity || 1) : 0);
 
+                // ✅ প্রোডাক্টের স্লাগ বা আইডি বের করা
+                const slugOrId = product?.slug || product?._id || '';
+
                 return {
                     id: String(o._id || ''),
                     seller: (typeof o.storeId === 'object' && o.storeId && 'storeName' in o.storeId) ? (o.storeId.storeName || 'Store') : 'Store',
@@ -91,12 +95,13 @@ export default function UserProfilePage() {
                     status: (o.orderStatus?.toLowerCase() as DashboardOrder['status']) || 'pending',
                     productName: product?.productTitle || 'Product',
                     productImage: img || '/img/product/p-1.png',
+                    productSlug: slugOrId, // ✅
                     size,
                     color,
                     price: typeof priceNumber === 'number' ? `৳ ${priceNumber.toLocaleString()}` : '৳ 0',
                     quantity: firstItem?.quantity || 1,
-                    totalPrice: `৳ ${orderTotal.toLocaleString()}`, // ✅
-                    totalItems: totalItemsCount, // ✅
+                    totalPrice: `৳ ${orderTotal.toLocaleString()}`,
+                    totalItems: totalItemsCount,
                 }
             })
 
