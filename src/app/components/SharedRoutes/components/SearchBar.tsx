@@ -17,7 +17,7 @@ interface Suggestion {
 }
 
 interface SearchBarProps {
-  onSearch?: () => void; // optional — mobile overlay এ pass করলে close হবে
+  onSearch?: () => void;
 }
 
 export default function SearchBar({ onSearch }: SearchBarProps) {
@@ -85,29 +85,30 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
     };
   }, [query, fetchSuggestions]);
 
-  // ── Navigate to /search page ──────────────────────────────────────────────────
+  // ── Navigate to /search — query bar-এ থাকবে ─────────────────────────────────
   const goToSearch = React.useCallback(
     (q: string) => {
       if (!q.trim()) return;
       setShowDropdown(false);
-      setQuery("");
+      // ✅ setQuery("") নেই — search করার পর query bar-এ থাকবে, edit করা যাবে
       router.push(`/search?q=${encodeURIComponent(q.trim())}`);
-      onSearch?.(); // mobile overlay বন্ধ করবে (যদি pass করা থাকে)
+      onSearch?.();
     },
     [router, onSearch]
   );
 
-  // ── Navigate directly to product page ────────────────────────────────────────
+  // ── Navigate to product page — query bar-এ থাকবে ────────────────────────────
   const goToProduct = React.useCallback(
     (item: Suggestion) => {
       setShowDropdown(false);
-      setQuery("");
+      // ✅ setQuery("") নেই — product page-এ গেলেও query থাকবে
       router.push(`/product/${item.slug ?? item._id}`);
       onSearch?.();
     },
     [router, onSearch]
   );
 
+  // ── X button — manually clear করার option ────────────────────────────────────
   const clearSearch = () => {
     setQuery("");
     setSuggestions([]);
@@ -130,8 +131,6 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
       )
     );
   };
-
-  // ─────────────────────────────────────────────────────────────────────────────
 
   return (
     <div className="relative w-full max-w-3xl mx-auto z-50" ref={wrapperRef}>
@@ -189,7 +188,6 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
       {showDropdown && query && (
         <div className="absolute top-full left-0 right-0 bg-white border-x-2 border-b-2 border-[#00005E] rounded-b-[20px] shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
 
-          {/* Loading state */}
           {loading && suggestions.length === 0 ? (
             <div className="py-12 flex flex-col items-center justify-center text-gray-500">
               <Loader2 className="w-8 h-8 animate-spin text-[#00005E] mb-2" />
@@ -197,7 +195,6 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
             </div>
 
           ) : suggestions.length === 0 ? (
-            /* No results */
             <div className="py-10 flex flex-col items-center justify-center text-gray-500">
               <ShoppingBag className="w-10 h-10 mb-3 text-gray-300" />
               <p className="text-base font-medium text-gray-600">No products found</p>
@@ -208,7 +205,6 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
 
           ) : (
             <>
-              {/* Header */}
               <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Top Suggestions
@@ -216,16 +212,14 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
                 <span className="text-xs text-gray-400">{suggestions.length} results</span>
               </div>
 
-              {/* Product list */}
               <ul className="max-h-[60vh] overflow-y-auto">
                 {suggestions.map((item) => (
                   <li
                     key={item._id}
-                    onMouseDown={(e) => e.preventDefault()} // input blur আটকায়
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => goToProduct(item)}
                     className="group flex items-center gap-4 p-3 hover:bg-blue-50/50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors duration-150"
                   >
-                    {/* Thumbnail */}
                     <div className="relative w-12 h-12 flex-shrink-0 bg-white rounded-md border border-gray-200 overflow-hidden group-hover:border-blue-200">
                       {item.thumbnailImage ? (
                         <Image
@@ -241,7 +235,6 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
                       )}
                     </div>
 
-                    {/* Text */}
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                       <p className="text-sm font-medium text-gray-800 truncate group-hover:text-[#00005E] transition-colors">
                         {highlight(item.productTitle, query)}
@@ -264,7 +257,6 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
                       </div>
                     </div>
 
-                    {/* Arrow */}
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity pr-2 text-[#00005E]">
                       <ArrowRight className="w-4 h-4" />
                     </div>
@@ -272,7 +264,6 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
                 ))}
               </ul>
 
-              {/* See all results → always /search?q=... */}
               <div
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => goToSearch(query)}
