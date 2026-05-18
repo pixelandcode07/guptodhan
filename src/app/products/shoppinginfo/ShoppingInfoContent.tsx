@@ -10,7 +10,6 @@ import OrderErrorModal from './components/OrderErrorModal'
 import InfoForm from './components/InfoForm'
 import ShoppingInfoSkeleton from './components/ShoppingInfoSkeleton'
 import ShippingAddressCard from './components/ShippingAddressCard'
-import { parseAddress, serializeAddress, AddressJSON } from './addressHelpers'
 import { useSession } from 'next-auth/react'
 import axios from 'axios'
 import { toast } from 'sonner'
@@ -19,6 +18,7 @@ import { useGeoData } from '@/hooks/useGeoData'
 import { useUpazilas } from '@/hooks/useUpazilas'
 import { placeOrder, initiateSSLCommerzPayment } from './utils/payment'
 import { CheckCircle2, ChevronUp, AlertCircle } from 'lucide-react'
+import { AddressJSON, parseAddress, serializeAddress } from './components/addressHelpers'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
