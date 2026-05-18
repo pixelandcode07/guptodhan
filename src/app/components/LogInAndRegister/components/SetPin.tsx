@@ -8,8 +8,8 @@ import { FieldErrors, SubmitHandler, UseFormHandleSubmit, UseFormRegister } from
 import { FormStep } from '../LogIn_Register'
 import axios from 'axios'
 import { toast } from 'sonner'
-import { signIn } from 'next-auth/react' // ✅ অটো-লগইনের জন্য ইমপোর্ট করা হলো
-import { useRouter } from 'next/navigation' // ✅ সেশন রিফ্রেশ করার জন্য
+import { signIn } from 'next-auth/react' 
+import { useRouter } from 'next/navigation' 
 
 interface SetPinFormData {
     pin: string 
@@ -43,7 +43,7 @@ export default function SetPin({
 
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-    const router = useRouter() // ✅ রাউটার ইনিশিয়ালাইজ
+    const router = useRouter() 
 
     const onSubmitPassword: SubmitHandler<SetPinFormData> = async (data) => {
         if (data.pin !== data.confirmPin) {
@@ -100,12 +100,17 @@ export default function SetPin({
                 toast.dismiss('register-toast')
                 toast.loading('Logging you in automatically...', { id: 'auto-login' })
 
+                // ডাটাবেস সিঙ্ক হওয়ার জন্য ১ সেকেন্ড অপেক্ষা (যাতে auto-login ফেইল না করে)
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
                 // ==========================================
-                // ✅ CRITICAL UPDATE: Auto-Login Logic
+                // ✅ CRITICAL FIX: এখানে `pin` এবং `password` দুটোই পাঠানো হয়েছে 
+                // যাতে LogIn.tsx এর সাথে কোনো কনফ্লিক্ট না হয়!
                 // ==========================================
                 const signInResult = await signIn('credentials', {
                     identifier: identifier,
-                    password: data.pin,
+                    pin: data.pin,           // ✅ Fixed Key
+                    password: data.pin,      // Fallback Key
                     redirect: false,
                 })
 
@@ -125,13 +130,13 @@ export default function SetPin({
                     // Cleanup
                     localStorage.removeItem(`otp_${identifier}`);
                     
-                    // Trigger modal close
+                    // Modal close করার জন্য onSuccess কল
                     if (onSuccess) {
                         onSuccess(data.pin);
                     }
                     
-                    // ✅ সেশন গ্লোবালি আপডেট করার জন্য পেজ রিফ্রেশ
-                    router.refresh();
+                    // ✅ পেজ রিফ্রেশ করে সেশন আপডেট করা হচ্ছে
+                    window.location.reload(); 
                 }
             }
         } catch (error: any) {
