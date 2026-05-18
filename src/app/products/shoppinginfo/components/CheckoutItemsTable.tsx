@@ -108,6 +108,7 @@ function CheckoutItemRow({
             className="w-full h-full object-cover"
           />
           <button
+            type="button" // ✅ Added type="button"
             onClick={handleRemove}
             className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
             aria-label="Remove item"
@@ -146,6 +147,7 @@ function CheckoutItemRow({
       <td className="py-4 px-2">
         <div className="flex items-center border border-gray-300 rounded-md w-fit">
           <Button
+            type="button" // ✅ Added type="button"
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0 hover:bg-gray-100"
@@ -158,6 +160,7 @@ function CheckoutItemRow({
             {quantity}
           </span>
           <Button
+            type="button" // ✅ Added type="button"
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0 hover:bg-gray-100"
@@ -175,6 +178,7 @@ function CheckoutItemRow({
       </td>
       <td className="py-4 px-2">
         <Button
+          type="button" // ✅ Added type="button"
           variant="ghost"
           size="sm"
           className="text-gray-600 hover:text-red-500 p-1"
@@ -250,6 +254,7 @@ function CheckoutItemMobileCard({
       <div className="mt-3 flex items-center justify-between">
         <div className="flex items-center rounded-md border border-gray-300">
           <Button
+            type="button" // ✅ Added type="button"
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0 hover:bg-gray-100"
@@ -262,6 +267,7 @@ function CheckoutItemMobileCard({
             {quantity}
           </span>
           <Button
+            type="button" // ✅ Added type="button"
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0 hover:bg-gray-100"
@@ -272,6 +278,7 @@ function CheckoutItemMobileCard({
           </Button>
         </div>
         <Button
+          type="button" // ✅ Added type="button"
           variant="ghost"
           size="sm"
           className="p-1 text-gray-600 hover:text-red-500"
