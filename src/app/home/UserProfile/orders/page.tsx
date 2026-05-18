@@ -7,18 +7,17 @@ import OrderList from '@/components/UserProfile/Order/OrderList'
 import OrderFilters from '@/components/UserProfile/Order/OrderFilters'
 import type { OrderStatus, OrderSummary } from '@/components/UserProfile/Order/types'
 import OrdersSkeleton from '@/components/UserProfile/Order/OrdersSkeleton'
-import Link from 'next/link' // ✅ Link ইম্পোর্ট করা হলো
-import { ShoppingBag } from 'lucide-react' // ✅ 아이কন ইম্পোর্ট করা হলো
+import Link from 'next/link' 
+import { ShoppingBag } from 'lucide-react' 
 
-// Helper function to map backend status to UI status
 function mapOrderStatusToUI(status: string): OrderStatus {
   const s = status.toLowerCase()
   if (s === 'delivered') return 'delivered'
   if (s === 'cancelled' || s === 'canceled') return 'cancelled'
   if (s === 'shipped') return 'to_receive'
   if (s === 'processing') return 'to_ship'
-  if (s === 'return request') return 'return_refund' // Map new status
-  if (s === 'returned') return 'return_refund' // Map new status
+  if (s === 'return request') return 'return_refund' 
+  if (s === 'returned') return 'return_refund' 
   return 'to_pay'
 }
 
@@ -40,6 +39,7 @@ type ApiOrder = {
     _id: string
     productId?: {
       _id: string
+      slug?: string // ✅ Slug ফিল্ড যুক্ত করা হলো
       productTitle?: string
       thumbnailImage?: string
       productPrice?: number
@@ -62,11 +62,9 @@ export default function UserOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<OrderStatus>('all')
   
-  // ✅ FIX 1: Get status from useSession
   const { data: session, status } = useSession()
 
   const fetchUserOrders = useCallback(async () => {
-    // ✅ FIX 2: Wait for session to be authenticated
     if (status === 'loading') return
     if (status === 'unauthenticated') {
       setLoading(false)
@@ -81,7 +79,6 @@ export default function UserOrdersPage() {
       const userRole = userLike.role
       
       if (!userId) {
-        console.error('Authenticated but no user ID found in session')
         setOrders([])
         setLoading(false)
         return
@@ -97,22 +94,18 @@ export default function UserOrdersPage() {
       const apiOrders = (response.data?.data ?? []) as ApiOrder[]
       
       const mappedOrders: OrderSummary[] = apiOrders.map((order) => {
-        // Map order items
         const items = (order.orderDetails || []).map((detail, index) => {
           let product: any = null
           
-          // Handle populated product logic
           if (detail.productId) {
             if (typeof detail.productId === 'object' && detail.productId !== null) {
               const productObj = detail.productId as Record<string, unknown>
-              // Check for product fields to confirm population
               if ('productTitle' in productObj || 'thumbnailImage' in productObj) {
                 product = productObj
               }
             }
           }
           
-          // Fallback image logic
           let productImage = '/img/product/p-1.png'
           if (product) {
             if (product.thumbnailImage) {
@@ -125,8 +118,12 @@ export default function UserOrdersPage() {
           const productName = product?.productTitle || order.shippingName || `Product ${index + 1}`
           const productPrice = detail.unitPrice || product?.productPrice || 0
           
+          // ✅ প্রোডাক্টের সঠিক স্লাগ বের করা হচ্ছে
+          const productSlug = product?.slug || product?._id || ''
+          
           return {
             id: detail._id || `${order._id}_${index}`,
+            slug: productSlug, // ✅ কার্ডের জন্য স্লাগ পাস করা হলো
             title: productName,
             thumbnailUrl: productImage,
             priceFormatted: `৳ ${productPrice.toLocaleString('en-US')}`,
@@ -136,9 +133,9 @@ export default function UserOrdersPage() {
           }
         })
         
-        // Fallback if no items found
         const orderItems = items.length > 0 ? items : [{
           id: order._id,
+          slug: '',
           title: `Order #${order.orderId}`,
           thumbnailUrl: '/img/product/p-1.png',
           priceFormatted: `৳ ${(order.totalAmount || 0).toLocaleString('en-US')}`,
@@ -164,14 +161,12 @@ export default function UserOrdersPage() {
       
       setOrders(mappedOrders)
     } catch (error) {
-      console.error('Error fetching orders:', error)
       setOrders([])
     } finally {
       setLoading(false)
     }
   }, [session, status])
 
-  // ✅ FIX 3: Depend on status for initial fetch
   useEffect(() => {
     if (status === 'authenticated') {
       fetchUserOrders()
@@ -194,7 +189,6 @@ export default function UserOrdersPage() {
 
   return (
     <div className="p-6">
-      {/* ✅ My Orders Heading এবং Shop Now বাটন */}
       <div className="flex items-center justify-between px-4 mt-1 mb-4">
         <h1 className="text-xl font-semibold">My Orders</h1>
         
@@ -212,7 +206,6 @@ export default function UserOrdersPage() {
       </div>
       
       <div className="px-4">
-        {/* Pass refresh function to handle return updates */}
         <OrderList orders={orders} filter={filter} onRefresh={fetchUserOrders} />
       </div>
       
