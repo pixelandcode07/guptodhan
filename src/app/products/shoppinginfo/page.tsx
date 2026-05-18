@@ -1,5 +1,7 @@
+import React from 'react';
 import ShoppingInfoClient from './components/ShoppingInfoClient';
 
+export default function ShoppingInfoPage() {
 
   return (
     <>
