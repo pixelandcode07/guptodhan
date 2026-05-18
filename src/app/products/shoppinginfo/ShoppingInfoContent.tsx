@@ -10,6 +10,7 @@ import OrderErrorModal from './components/OrderErrorModal'
 import InfoForm from './components/InfoForm'
 import ShoppingInfoSkeleton from './components/ShoppingInfoSkeleton'
 import ShippingAddressCard from './components/ShippingAddressCard'
+import { parseAddress, serializeAddress, AddressJSON } from './addressHelpers'
 import { useSession } from 'next-auth/react'
 import axios from 'axios'
 import { toast } from 'sonner'
@@ -17,8 +18,7 @@ import { AppliedCoupon } from './components/CouponSection'
 import { useGeoData } from '@/hooks/useGeoData'
 import { useUpazilas } from '@/hooks/useUpazilas'
 import { placeOrder, initiateSSLCommerzPayment } from './utils/payment'
-import { CheckCircle2, ChevronUp } from 'lucide-react'
-import { AddressJSON, parseAddress, serializeAddress } from './components/addressHelpers'
+import { CheckCircle2, ChevronUp, AlertCircle } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,7 +38,7 @@ interface UserProfile {
     name: string;
     email?: string;
     phoneNumber?: string;
-    address: string;        // stored as JSON string
+    address: string;   // JSON string: {"street":"...","district":"...","upazila":"...",...}
     profilePicture?: string;
     isVerified: boolean;
     isActive: boolean;
@@ -46,23 +46,26 @@ interface UserProfile {
     rewardPoints: number;
 }
 
-/** Full flat form state used internally */
 interface FormData {
     name: string;
     phone: string;
     email: string;
-    // Location
     district: string;
     upazila: string;
     city: string;
     postalCode: string;
     country: string;
-    // Street
-    address: string;
+    address: string;   // street / detail address
 }
 
-const isValidObjectId = (id: string | undefined): boolean =>
-    !!id && /^[0-9a-fA-F]{24}$/.test(id)
+const EMPTY_FORM: FormData = {
+    name: '', phone: '', email: '',
+    district: '', upazila: '',
+    city: 'Dhaka', postalCode: '1000', country: 'Bangladesh',
+    address: '',
+}
+
+const isValidObjectId = (id?: string) => !!id && /^[0-9a-fA-F]{24}$/.test(id)
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -77,30 +80,21 @@ export default function ShoppingInfoContent({
 }) {
     const { data: session } = useSession()
 
-    // ── State ─────────────────────────────────────────────────────────────────
+    // ── Core state ────────────────────────────────────────────────────────────
 
     const [selectedDelivery, setSelectedDelivery] = useState<DeliveryOption>('standard')
-    const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+    const [userProfile, setUserProfile]   = useState<UserProfile | null>(null)
     const [profileLoading, setProfileLoading] = useState(true)
 
-    // true  = show InfoForm (editing mode)
-    // false = show ShippingAddressCard (confirmed mode)
     const [isEditingAddress, setIsEditingAddress] = useState(true)
-    const [isSavingAddress, setIsSavingAddress] = useState(false)
+    const [isSavingAddress, setIsSavingAddress]   = useState(false)
+    const [addressSaveError, setAddressSaveError] = useState<string | null>(null)
 
-    /**
-     * Flat form state.
-     * `address` = street/detail address (NOT the JSON blob).
-     * district, upazila etc. are separate fields.
-     */
-    const [formData, setFormData] = useState<FormData>({
-        name: '', phone: '', email: '',
-        district: '', upazila: '',
-        city: 'Dhaka', postalCode: '1000', country: 'Bangladesh',
-        address: '',
-    })
+    const [formData, setFormData] = useState<FormData>(EMPTY_FORM)
 
-    // Structured address derived from formData (used by card + serialisation)
+    // formKey forces InfoForm to re-mount with correct initialData after profile loads
+    const [formKey, setFormKey] = useState(0)
+
     const structuredAddress: AddressJSON = useMemo(() => ({
         street:     formData.address,
         district:   formData.district,
@@ -111,7 +105,7 @@ export default function ShoppingInfoContent({
     }), [formData])
 
     const { geoData, geoLoading } = useGeoData()
-    const { upazilas } = useUpazilas(formData.district)   // reactive to district
+    const { upazilas } = useUpazilas(formData.district)
 
     // ── Delivery charges ──────────────────────────────────────────────────────
 
@@ -123,8 +117,8 @@ export default function ShoppingInfoContent({
             headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' }
         })
         .then(r => r.json())
-        .then(data => { if (Array.isArray(data?.data)) setApiDeliveryCharges(data.data) })
-        .catch(err => console.error('Failed to fetch delivery charges', err))
+        .then(d => { if (Array.isArray(d?.data)) setApiDeliveryCharges(d.data) })
+        .catch(() => {})
     }, [])
 
     const matchedCharge = apiDeliveryCharges.find(c => c.districtName === formData.district)
@@ -132,16 +126,16 @@ export default function ShoppingInfoContent({
         ? matchedCharge.deliveryCharge
         : (formData.district ? 130 : 0)
 
-    // ── Order UI state ────────────────────────────────────────────────────────
+    // ── Order modals ──────────────────────────────────────────────────────────
 
     const [successModalOpen, setSuccessModalOpen] = useState(false)
-    const [successOrderId, setSuccessOrderId] = useState('')
-    const [errorModalOpen, setErrorModalOpen] = useState(false)
-    const [errorMessage, setErrorMessage] = useState('')
+    const [successOrderId, setSuccessOrderId]     = useState('')
+    const [errorModalOpen, setErrorModalOpen]     = useState(false)
+    const [errorMessage, setErrorMessage]         = useState('')
     const [lastPaymentMethod, setLastPaymentMethod] = useState<'cod' | 'card'>('cod')
-    const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null)
+    const [appliedCoupon, setAppliedCoupon]       = useState<AppliedCoupon | null>(null)
 
-    // ── Enrich cart with shippingCost ─────────────────────────────────────────
+    // ── Enrich cart ───────────────────────────────────────────────────────────
 
     const [enrichedCartItems, setEnrichedCartItems] = useState<CartItem[]>(cartItems)
     const isFetchedRef = useRef(false)
@@ -154,16 +148,17 @@ export default function ShoppingInfoContent({
                 if (res.data?.success && res.data?.data) {
                     return { ...item, product: { ...item.product, shippingCost: res.data.data.shippingCost || 0 } }
                 }
-                return item
-            } catch { return item }
-        })).then(updated => { setEnrichedCartItems(updated); isFetchedRef.current = true })
-          .catch(err => console.error('Failed to refresh cart items', err))
+            } catch { /* keep original */ }
+            return item
+        }))
+        .then(updated => { setEnrichedCartItems(updated); isFetchedRef.current = true })
+        .catch(console.error)
     }, [cartItems.length])
 
-    // ── Load user profile + parse JSON address ────────────────────────────────
+    // ── Load profile + parse JSON address ─────────────────────────────────────
 
     useEffect(() => {
-        const fetchUserProfile = async () => {
+        const load = async () => {
             try {
                 setProfileLoading(true)
                 if (!session?.user) return
@@ -180,66 +175,92 @@ export default function ShoppingInfoContent({
                 const profile: UserProfile = res.data.data
                 setUserProfile(profile)
 
-                // ✅ Parse JSON address → get all fields including district & upazila
+                // ✅ Parse JSON → restore ALL fields (district, upazila, etc.)
                 const parsed = parseAddress(profile.address)
 
-                setFormData({
+                const filled: FormData = {
                     name:       profile.name        || '',
                     phone:      profile.phoneNumber || '',
                     email:      profile.email       || '',
-                    // ✅ All location fields restored from JSON
                     address:    parsed.street,
                     district:   parsed.district,
                     upazila:    parsed.upazila,
                     city:       parsed.city,
                     postalCode: parsed.postalCode,
                     country:    parsed.country,
-                })
+                }
+                setFormData(filled)
+                setFormKey(k => k + 1)  // remount InfoForm with new initialData
 
-                // ✅ Show card if address + district saved, else show form
-                const hasFullAddress = !!parsed.street && !!parsed.district
+                // Show card if street + district both present
+                const hasFullAddress = !!parsed.street.trim() && !!parsed.district.trim()
                 setIsEditingAddress(!hasFullAddress)
 
             } catch (err) {
-                console.error('Error fetching user profile:', err)
+                console.error('Profile load error:', err)
             } finally {
                 setProfileLoading(false)
             }
         }
-        fetchUserProfile()
+        load()
     }, [session])
 
-    // ── Confirm & save address ────────────────────────────────────────────────
+    // ── Save address to DB ────────────────────────────────────────────────────
+    // ✅ FIX: Uses dedicated /api/v1/profile/address endpoint.
+    //         Errors are shown to the user — NOT swallowed silently.
 
     const handleConfirmAddress = async () => {
-        if (!formData.name.trim())    { toast.error('Name is required');          return }
-        if (!formData.phone.trim())   { toast.error('Phone number is required');  return }
-        if (!formData.district)       { toast.error('Please select a district');  return }
-        if (!formData.upazila)        { toast.error('Please select an upazila');  return }
+        setAddressSaveError(null)
+
+        // Validate
+        if (!formData.name.trim())    { toast.error('Name is required');           return }
+        if (!formData.phone.trim())   { toast.error('Phone number is required');   return }
+        if (!formData.district)       { toast.error('Please select a District');   return }
+        if (!formData.upazila)        { toast.error('Please select an Upazila');   return }
         if (!formData.address.trim()) { toast.error('Street address is required'); return }
 
-        setIsSavingAddress(true)
-        try {
-            if (userProfile?._id) {
-                // ✅ Save ALL fields as JSON — district & upazila included
-                const addressJSON = serializeAddress(structuredAddress)
+        if (!userProfile?._id) {
+            toast.error('User profile not loaded. Please refresh.')
+            return
+        }
 
-                await axios.patch(
-                    '/api/v1/profile/me',
-                    { address: addressJSON },
-                    { headers: { 'x-user-id': userProfile._id } }
-                )
-                // Update local profile so card reflects new address immediately
-                setUserProfile(prev => prev ? { ...prev, address: addressJSON } : prev)
+        setIsSavingAddress(true)
+
+        try {
+            // ✅ Serialize all fields as JSON
+            const addressJSON = serializeAddress(structuredAddress)
+
+            // ✅ Call dedicated address endpoint — not profile/me generic PATCH
+            const res = await axios.patch(
+                '/api/v1/profile/address',
+                { address: addressJSON },
+                { headers: { 'x-user-id': userProfile._id } }
+            )
+
+            // ✅ Check actual API response — no silent fail
+            if (!res.data.success) {
+                const msg = res.data.message || 'Failed to save address. Please try again.'
+                setAddressSaveError(msg)
+                toast.error(msg)
+                return   // ← Stay in edit mode; don't show card
             }
-        } catch (err) {
-            console.warn('Address save to profile failed (continuing anyway):', err)
+
+            // ✅ Update local profile so card shows immediately
+            setUserProfile(prev => prev ? { ...prev, address: addressJSON } : prev)
+            setIsEditingAddress(false)
+            toast.success('Address saved successfully!')
+
+        } catch (err: any) {
+            // ✅ Network / server error — show to user
+            const msg = err?.response?.data?.message
+                || err?.message
+                || 'Network error. Please check your connection and try again.'
+            setAddressSaveError(msg)
+            toast.error('Failed to save address: ' + msg)
+            // Stay in edit mode
         } finally {
             setIsSavingAddress(false)
         }
-
-        setIsEditingAddress(false)
-        toast.success('Address saved & confirmed!')
     }
 
     // ── Calculations ──────────────────────────────────────────────────────────
@@ -261,11 +282,11 @@ export default function ShoppingInfoContent({
         if (!appliedCoupon) return 0
         const pct = appliedCoupon.type.toLowerCase().includes('percentage')
         return pct
-            ? Math.round((subtotal * appliedCoupon.value / 100) * 100) / 100
+            ? Math.round(subtotal * appliedCoupon.value / 100 * 100) / 100
             : Math.min(appliedCoupon.value, subtotal)
     })()
 
-    // ── Modals ────────────────────────────────────────────────────────────────
+    // ── Order ─────────────────────────────────────────────────────────────────
 
     const showSuccessModal = async (orderId: string) => {
         setSuccessOrderId(orderId); setSuccessModalOpen(true); setErrorModalOpen(false)
@@ -279,13 +300,11 @@ export default function ShoppingInfoContent({
         setErrorMessage(msg); setErrorModalOpen(true); setSuccessModalOpen(false)
     }
 
-    // ── Place order ───────────────────────────────────────────────────────────
-
     const validateOrder = (method: 'cod' | 'card') => {
         const errs: string[] = []
-        if (!session?.user)      errs.push('Please log in to place an order')
-        if (!userProfile?._id)   errs.push('User profile is missing')
-        if (isEditingAddress)    errs.push('Please confirm your shipping address first')
+        if (!session?.user)    errs.push('Please log in to place an order')
+        if (!userProfile?._id) errs.push('User profile is missing')
+        if (isEditingAddress)  errs.push('Please confirm your shipping address first')
         if (!formData.name || !formData.phone || !formData.address || !formData.district || !formData.upazila)
             errs.push('Please fill in all required delivery fields')
         if (method === 'cod' && enrichedCartItems.length === 0)
@@ -309,40 +328,39 @@ export default function ShoppingInfoContent({
         try {
             setLastPaymentMethod(paymentMethod)
             const errs = validateOrder(paymentMethod)
-            if (errs.length > 0) { showError(errs.join(', ')); return }
+            if (errs.length > 0) { showError(errs.join('\n')); return }
 
             const resolvedStoreId = await resolveStoreId()
-            const addressDetail = [formData.address, formData.upazila, formData.district]
-                .filter(Boolean).join(', ')
+            const addressDetail = [formData.address, formData.upazila, formData.district].filter(Boolean).join(', ')
 
             const orderData = {
                 userId: userProfile!._id,
                 ...(resolvedStoreId ? { storeId: resolvedStoreId } : {}),
-                deliveryMethodId:     selectedDelivery,
-                shippingName:         formData.name,
-                shippingPhone:        formData.phone,
-                shippingEmail:        formData.email,
+                deliveryMethodId:      selectedDelivery,
+                shippingName:          formData.name,
+                shippingPhone:         formData.phone,
+                shippingEmail:         formData.email,
                 shippingStreetAddress: formData.address,
-                shippingCity:         formData.city,
-                shippingDistrict:     formData.district,
-                shippingPostalCode:   formData.postalCode,
-                shippingCountry:      formData.country,
-                addressDetails:       addressDetail,
-                deliveryCharge:       finalDeliveryCharge,
-                totalAmount:          subtotal - couponDiscount + finalDeliveryCharge,
-                paymentStatus:        'Pending' as const,
-                orderStatus:          'Pending' as const,
-                orderForm:            'Website' as const,
-                orderDate:            new Date(),
-                deliveryDate:         new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-                products:             enrichedCartItems.map(item => ({
-                    productId:    item.product.id,
-                    vendorId:     item.id,
-                    quantity:     item.product.quantity,
-                    unitPrice:    item.product.originalPrice,
+                shippingCity:          formData.city,
+                shippingDistrict:      formData.district,
+                shippingPostalCode:    formData.postalCode,
+                shippingCountry:       formData.country,
+                addressDetails:        addressDetail,
+                deliveryCharge:        finalDeliveryCharge,
+                totalAmount:           subtotal - couponDiscount + finalDeliveryCharge,
+                paymentStatus:         'Pending' as const,
+                orderStatus:           'Pending' as const,
+                orderForm:             'Website' as const,
+                orderDate:             new Date(),
+                deliveryDate:          new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+                products:              enrichedCartItems.map(item => ({
+                    productId:     item.product.id,
+                    vendorId:      item.id,
+                    quantity:      item.product.quantity,
+                    unitPrice:     item.product.originalPrice,
                     discountPrice: item.product.price,
-                    size:         item.product.size,
-                    color:        item.product.color,
+                    size:          item.product.size,
+                    color:         item.product.color,
                 })),
                 couponId: appliedCoupon?._id || undefined,
             }
@@ -366,8 +384,8 @@ export default function ShoppingInfoContent({
 
             const { data } = await axios.post('/api/v1/product-order', orderData)
             if (data.success) {
-                const primary = Array.isArray(data.data) ? data.data[0] : data.data
-                const orderId = primary.orderId
+                const primary  = Array.isArray(data.data) ? data.data[0] : data.data
+                const orderId  = primary.orderId
                 if (selectedDelivery === 'steadfast') {
                     try {
                         const sf = await axios.post('/api/v1/product-order/steadfast', { orderId })
@@ -386,11 +404,11 @@ export default function ShoppingInfoContent({
             }
         } catch (err) {
             console.error('Order error:', err)
-            showError('Failed to place order.')
+            showError('Failed to place order. Please try again.')
         }
     }
 
-    // ── Guards ────────────────────────────────────────────────────────────────
+    // ── Loading / Error guards ────────────────────────────────────────────────
 
     if (profileLoading || geoLoading) return <ShoppingInfoSkeleton />
 
@@ -412,30 +430,29 @@ export default function ShoppingInfoContent({
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
                 <div className="space-y-4 lg:col-span-2 lg:space-y-6">
 
-                    {/* ══════════════════════════════════════════════════
-                        SHIPPING ADDRESS
-                    ══════════════════════════════════════════════════ */}
+                    {/* ══ SHIPPING ADDRESS ══════════════════════════════ */}
                     {!isEditingAddress ? (
 
-                        /* ── Confirmed card ── */
                         <ShippingAddressCard
                             name={formData.name}
                             phone={formData.phone}
                             email={formData.email}
                             address={structuredAddress}
-                            onEdit={() => setIsEditingAddress(true)}
+                            onEdit={() => {
+                                setAddressSaveError(null)
+                                setIsEditingAddress(true)
+                            }}
                         />
 
                     ) : (
 
-                        /* ── Edit form ── */
                         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                            {/* Header */}
                             <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 bg-gray-50/60">
                                 <h2 className="text-sm font-semibold text-gray-800">Shipping & Billing</h2>
-                                {/* Collapse back if address already saved */}
                                 {structuredAddress.street && structuredAddress.district && (
                                     <button
-                                        onClick={() => setIsEditingAddress(false)}
+                                        onClick={() => { setAddressSaveError(null); setIsEditingAddress(false) }}
                                         className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1"
                                     >
                                         <ChevronUp className="w-3.5 h-3.5" />
@@ -446,20 +463,21 @@ export default function ShoppingInfoContent({
 
                             <div className="p-5">
                                 {/*
-                                  ✅ Pass district + upazila in initialData so InfoForm
-                                     can pre-select them on mount.
-                                     InfoForm must read these from initialData for dropdowns.
+                                  `key={formKey}` — InfoForm remounts only when profile data
+                                  first loads, NOT on every keystroke.
+                                  district + upazila passed in initialData so InfoForm
+                                  can pre-select the saved values.
                                 */}
                                 <InfoForm
-                                    key={`${formData.district}-${formData.upazila}`} // force remount when location changes
+                                    key={formKey}
                                     onFormDataChange={setFormData}
                                     initialData={{
                                         name:       formData.name,
                                         phone:      formData.phone,
                                         email:      formData.email,
                                         address:    formData.address,
-                                        district:   formData.district,   // ✅ pre-fill district
-                                        upazila:    formData.upazila,    // ✅ pre-fill upazila
+                                        district:   formData.district,   // ✅ pre-select saved district
+                                        upazila:    formData.upazila,    // ✅ pre-select saved upazila
                                         city:       formData.city,
                                         postalCode: formData.postalCode,
                                         country:    formData.country,
@@ -469,7 +487,15 @@ export default function ShoppingInfoContent({
                                 />
                             </div>
 
-                            {/* ✅ Confirm button */}
+                            {/* ✅ Error banner (shown only if API fails) */}
+                            {addressSaveError && (
+                                <div className="mx-5 mb-4 flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+                                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                    <span>{addressSaveError}</span>
+                                </div>
+                            )}
+
+                            {/* Confirm button */}
                             <div className="px-5 pb-5">
                                 <button
                                     onClick={handleConfirmAddress}
@@ -486,7 +512,7 @@ export default function ShoppingInfoContent({
                                     {isSavingAddress ? (
                                         <>
                                             <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                                            Saving...
+                                            Saving to database...
                                         </>
                                     ) : (
                                         <>
