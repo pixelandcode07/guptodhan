@@ -48,12 +48,10 @@ export default function ShoppingInfoClient() {
     return cartItems;
   }, [cartItems, isBuyNow]);
 
-  // ✅ ডাবল টোস্ট মেসেজ রিমুভ করা হলো (কারণ CartContext থেকে অলরেডি টোস্ট দেওয়া আছে)
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
     await updateQuantity(itemId, newQuantity);
   };
 
-  // ✅ ডাবল টোস্ট রিমুভ করা হলো
   const handleRemoveItem = async (itemId: string) => {
     await removeFromCart(itemId);
     if (displayItems.length <= 1) {
@@ -61,7 +59,10 @@ export default function ShoppingInfoClient() {
     }
   };
 
-  if (isLoading || !isReady) {
+  // 🔥 FIX: এখানে কন্ডিশন চেঞ্জ করা হয়েছে!
+  // এখন শুধু প্রথমবার লোড হওয়ার সময়ই স্পিনার দেখাবে। 
+  // কার্টে অলরেডি আইটেম থাকলে Quantity চেঞ্জ করার সময় আর স্পিনার এসে পেজ রিলোডের মতো ফিল দিবে না!
+  if (!isReady || (isLoading && cartItems.length === 0)) {
     return (
       <div className="min-h-[60vh] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
