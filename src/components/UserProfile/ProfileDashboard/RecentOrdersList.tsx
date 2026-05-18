@@ -43,43 +43,56 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
               </span>
             </div>
 
-            {/* ✅ সবগুলো প্রোডাক্ট শো করানো হচ্ছে */}
+            {/* ✅ সবগুলো প্রোডাক্ট শো করানো হচ্ছে (Total Item Price সহ) */}
             <div className="flex flex-col">
-              {order.items.map((item, idx) => (
-                <div key={idx} className="p-4 flex gap-4 border-b border-gray-50 last:border-0 hover:bg-gray-50/80 transition-colors">
-                  
-                  {/* ✅ Image Clickable */}
-                  <Link href={`/product/${item.productSlug}`} className="relative h-20 w-20 shrink-0 border border-gray-200 rounded-md overflow-hidden bg-white block">
-                    <Image src={item.productImage} alt={item.productName} fill className="object-cover hover:opacity-80 transition-opacity" />
-                  </Link>
-                  
-                  <div className="flex-1 flex flex-col sm:flex-row sm:justify-between gap-3 min-w-0">
-                    <div className="space-y-1 min-w-0">
-                      {/* ✅ Title Clickable */}
-                      <Link href={`/product/${item.productSlug}`} className="text-sm font-medium text-gray-800 line-clamp-2 hover:text-[#0097E9] transition-colors">
-                        {item.productName}
-                      </Link>
-                      
-                      {(item.size || item.color) && (
-                        <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
-                          {item.color && <span>Color: {item.color}</span>}
-                          {item.size && item.color && <span className="text-gray-300">|</span>}
-                          {item.size && <span>Size: {item.size}</span>}
+              {order.items.map((item, idx) => {
+                // 🔥 প্রতিটি আইটেমের নিজস্ব টোটাল প্রাইস (Unit Price * Quantity) হিসাব করা হচ্ছে
+                const numericPrice = Number(item.price.replace(/[^0-9]/g, '')) || 0;
+                const itemTotal = numericPrice * (item.quantity || 1);
+                const itemTotalFormatted = `৳ ${itemTotal.toLocaleString('en-US')}`;
+
+                return (
+                  <div key={idx} className="p-4 flex gap-4 border-b border-gray-50 last:border-0 hover:bg-gray-50/80 transition-colors">
+                    
+                    {/* Image Clickable */}
+                    <Link href={`/product/${item.productSlug}`} className="relative h-20 w-20 shrink-0 border border-gray-200 rounded-md bg-white block overflow-hidden">
+                      <Image src={item.productImage} alt={item.productName} fill className="object-cover hover:scale-105 transition-transform duration-300" />
+                    </Link>
+                    
+                    <div className="flex-1 flex flex-col sm:flex-row sm:justify-between gap-3 min-w-0">
+                      <div className="space-y-1 min-w-0">
+                        {/* Title Clickable */}
+                        <Link href={`/product/${item.productSlug}`} className="text-sm font-medium text-gray-800 line-clamp-2 hover:text-[#0097E9] transition-colors">
+                          {item.productName}
+                        </Link>
+                        
+                        {(item.size || item.color) && (
+                          <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
+                            {item.color && <span>Color: {item.color}</span>}
+                            {item.size && item.color && <span className="text-gray-300">|</span>}
+                            {item.size && <span>Size: {item.size}</span>}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ✅ ডানপাশে আইটেমের টোটাল প্রাইস এবং Qty */}
+                      <div className="text-left sm:text-right shrink-0">
+                        <div className="text-sm text-slate-900 font-bold whitespace-nowrap">
+                          {itemTotalFormatted}
                         </div>
-                      )}
-                    </div>
-                    <div className="text-left sm:text-right shrink-0">
-                      <div className="text-sm font-semibold text-gray-900">{item.price}</div>
-                      <div className="text-xs text-gray-500 mt-1">Qty: {item.quantity}</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Qty: {item.quantity}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            <div className="px-4 py-3 border-t border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white gap-3">
+            <div className="px-4 py-3 border-t border-gray-100 bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="text-xs font-medium text-gray-500">
-                {order.totalItems && order.totalItems > 1 ? `${order.totalItems} Items` : '1 Item'}
+                {order.totalItems && order.totalItems > 1 ? `${order.totalItems} Items ordered` : '1 Item ordered'}
               </div>
               
               <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4 w-full sm:w-auto">
@@ -90,7 +103,11 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
 
                 <div className="flex gap-2">
                    {order.status === 'delivered' && order.items.length > 0 && order.items[0].productSlug && (
-                     <Link href={`/product/${order.items[0].productSlug}#reviews`} className="text-xs font-bold text-[#0097E9] bg-blue-50 hover:bg-[#0097E9] hover:text-white border border-blue-100 px-4 py-2 rounded-md transition-all flex items-center gap-1.5 whitespace-nowrap">
+                     <Link 
+                        href={`/product/${order.items[0].productSlug}#reviews`} 
+                        onClick={(e) => e.stopPropagation()} 
+                        className="text-xs font-bold text-[#0097E9] bg-blue-50 hover:bg-[#0097E9] hover:text-white border border-blue-100 px-4 py-2 rounded-md transition-all flex items-center gap-1.5 whitespace-nowrap"
+                     >
                        <Star className="w-3.5 h-3.5" /> Write a Review
                      </Link>
                    )}
