@@ -122,14 +122,12 @@ export default function ShoppingInfoContent({
     const [enrichedCartItems, setEnrichedCartItems] = useState<CartItem[]>(cartItems)
     const isFetchedRef = useRef(false)
 
-    // 🔥 FIX: কার্ট আপডেট হলে সিঙ্ক করার লজিক
     useEffect(() => {
         if (cartItems.length === 0) {
             setEnrichedCartItems([]);
             return;
         }
 
-        // যদি আগে শিপিং কস্ট ফেচ করা না থাকে, তাহলে ফেচ করবে
         if (!isFetchedRef.current) {
             Promise.all(cartItems.map(async (item) => {
                 try {
@@ -146,7 +144,6 @@ export default function ShoppingInfoContent({
             })
             .catch(console.error)
         } else {
-            // 🔥 যদি আগে ফেচ করা থাকে, তাহলে শুধু Quantity এবং মেইন ডাটা সিঙ্ক করবে (শিপিং কস্ট রেখে দিবে)
             setEnrichedCartItems(current => {
                 return cartItems.map(incomingItem => {
                     const existing = current.find(e => e.id === incomingItem.id);
@@ -162,7 +159,7 @@ export default function ShoppingInfoContent({
         }
     }, [cartItems])
 
-    // ✅ Load Profile Directly from Database (No Local Storage)
+    // ✅ Load Profile Directly from Database
     useEffect(() => {
         const load = async () => {
             try {
@@ -173,8 +170,10 @@ export default function ShoppingInfoContent({
                 const userId = userLike.id || userLike._id
                 if (!userId) return
 
-                const res = await axios.get('/api/v1/profile/me', {
-                    headers: { 'x-user-id': userId }
+                // ক্যাশ এড়ানোর জন্য টাইমস্ট্যাম্প পাঠানো হচ্ছে
+                const timestamp = new Date().getTime();
+                const res = await axios.get(`/api/v1/profile/me?t=${timestamp}`, {
+                    headers: { 'x-user-id': userId, 'Cache-Control': 'no-cache' }
                 })
                 
                 if (res.data.success && res.data.data) {
@@ -212,7 +211,6 @@ export default function ShoppingInfoContent({
         load()
     }, [session])
 
-    // ✅ Confirm and Save Address strictly to Database
     const handleConfirmAddress = async () => {
         if (!formData.name.trim())    { toast.error('Name is required');           return }
         if (!formData.phone.trim())   { toast.error('Phone number is required');   return }
