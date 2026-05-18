@@ -53,11 +53,11 @@ export default function OrderItemCard({ order, onReturnClick }: OrderItemCardPro
         </div>
       </div>
 
-      {/* ✅ Product Items List */}
+      {/* ✅ Product List (ড্যাশবোর্ডের মতো সেম ডিজাইন) */}
       <div className="flex flex-col">
         {order.items.map((item, idx) => {
-           // 🔥 Slug Fix: slug অথবা productSlug বের করা হচ্ছে
-           const productSlug = (item as any).slug || (item as any).productSlug || item.id;
+           // 🔥 সঠিক স্লাগ ফেচ করা হচ্ছে (যেটা page.tsx থেকে আসলো)
+           const productSlug = (item as any).slug || item.id;
            
            // 🔥 Item Total Price
            const numericPrice = Number(item.priceFormatted.replace(/[^0-9]/g, '')) || 0;
@@ -67,7 +67,7 @@ export default function OrderItemCard({ order, onReturnClick }: OrderItemCardPro
            return (
              <div key={idx} className="flex gap-4 p-4 items-start border-b border-gray-50 last:border-0 hover:bg-gray-50/80 transition-colors">
                 
-                {/* Image Clickable (Using Slug) */}
+                {/* ✅ Image Clickable (Using Slug) */}
                 <Link href={`/product/${productSlug}`} className="shrink-0 relative border border-gray-200 rounded-md bg-white block overflow-hidden">
                   <Image 
                     src={item.thumbnailUrl || '/img/product/p-1.png'} 
@@ -79,7 +79,7 @@ export default function OrderItemCard({ order, onReturnClick }: OrderItemCardPro
                 
                 <div className="flex-1 flex flex-col sm:flex-row sm:justify-between gap-3 min-w-0">
                   <div className="space-y-1 min-w-0">
-                    {/* Title Clickable (Using Slug) */}
+                    {/* ✅ Title Clickable (Using Slug) */}
                     <Link href={`/product/${productSlug}`} className="text-sm font-medium text-gray-800 line-clamp-2 hover:text-[#0097E9] transition-colors pr-2">
                       {item.title || 'Product Name Unavailable'}
                     </Link>
@@ -131,7 +131,7 @@ export default function OrderItemCard({ order, onReturnClick }: OrderItemCardPro
           <div className="flex items-center gap-2">
             {isDelivered && order.items.length > 0 && (
               <Link 
-                href={`/product/${(order.items[0] as any).slug || (order.items[0] as any).productSlug || order.items[0].id}#reviews`}
+                href={`/product/${(order.items[0] as any).slug || order.items[0].id}#reviews`}
                 onClick={(e) => e.stopPropagation()} 
                 className="h-8 text-xs font-bold text-[#0097E9] bg-blue-50 hover:bg-[#0097E9] hover:text-white border border-blue-100 hover:border-[#0097E9] px-3 py-2 rounded-md transition-all flex items-center gap-1.5 whitespace-nowrap"
               >
