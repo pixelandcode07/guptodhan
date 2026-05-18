@@ -79,9 +79,11 @@ function CheckoutItemRow({
   onRemoveItem: (itemId: string) => void;
 }) {
   const [quantity, setQuantity] = React.useState(item.product.quantity);
+  
   React.useEffect(() => {
     setQuantity(item.product.quantity);
   }, [item.product.quantity]);
+  
   const subtotal = item.product.price * quantity;
   const savings = (item.product.originalPrice - item.product.price) * quantity;
 
@@ -90,10 +92,6 @@ function CheckoutItemRow({
       setQuantity(newQuantity);
       onUpdateQuantity(item.id, newQuantity);
     }
-  };
-
-  const handleRemove = () => {
-    onRemoveItem(item.id);
   };
 
   return (
@@ -107,9 +105,14 @@ function CheckoutItemRow({
             height={64}
             className="w-full h-full object-cover"
           />
+          {/* ✅ e.preventDefault() যুক্ত করা হলো */}
           <button
-            type="button" // ✅ Added type="button"
-            onClick={handleRemove}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onRemoveItem(item.id);
+            }}
             className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
             aria-label="Remove item"
           >
@@ -146,12 +149,17 @@ function CheckoutItemRow({
       </td>
       <td className="py-4 px-2">
         <div className="flex items-center border border-gray-300 rounded-md w-fit">
+          {/* ✅ e.preventDefault() যুক্ত করা হলো */}
           <Button
-            type="button" // ✅ Added type="button"
+            type="button"
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0 hover:bg-gray-100"
-            onClick={() => handleQuantityChange(Math.max(1, quantity - 1))}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleQuantityChange(Math.max(1, quantity - 1));
+            }}
             aria-label="Decrease quantity"
           >
             <Minus className="w-3 h-3" />
@@ -159,12 +167,17 @@ function CheckoutItemRow({
           <span className="px-3 py-1 text-sm font-medium min-w-8 text-center border-x border-gray-300">
             {quantity}
           </span>
+          {/* ✅ e.preventDefault() যুক্ত করা হলো */}
           <Button
-            type="button" // ✅ Added type="button"
+            type="button"
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0 hover:bg-gray-100"
-            onClick={() => handleQuantityChange(quantity + 1)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleQuantityChange(quantity + 1);
+            }}
             aria-label="Increase quantity"
           >
             <Plus className="w-3 h-3" />
@@ -177,12 +190,17 @@ function CheckoutItemRow({
         </div>
       </td>
       <td className="py-4 px-2">
+        {/* ✅ e.preventDefault() যুক্ত করা হলো */}
         <Button
-          type="button" // ✅ Added type="button"
+          type="button"
           variant="ghost"
           size="sm"
           className="text-gray-600 hover:text-red-500 p-1"
-          onClick={handleRemove}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onRemoveItem(item.id);
+          }}
           aria-label="Remove from checkout"
         >
           <Trash2 className="w-4 h-4" />
@@ -202,6 +220,7 @@ function CheckoutItemMobileCard({
   onRemoveItem: (itemId: string) => void;
 }) {
   const [quantity, setQuantity] = React.useState(item.product.quantity);
+  
   React.useEffect(() => {
     setQuantity(item.product.quantity);
   }, [item.product.quantity]);
@@ -253,12 +272,17 @@ function CheckoutItemMobileCard({
 
       <div className="mt-3 flex items-center justify-between">
         <div className="flex items-center rounded-md border border-gray-300">
+          {/* ✅ e.preventDefault() যুক্ত করা হলো */}
           <Button
-            type="button" // ✅ Added type="button"
+            type="button"
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0 hover:bg-gray-100"
-            onClick={() => handleQuantityChange(Math.max(1, quantity - 1))}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleQuantityChange(Math.max(1, quantity - 1));
+            }}
             aria-label="Decrease quantity"
           >
             <Minus className="h-3 w-3" />
@@ -266,23 +290,33 @@ function CheckoutItemMobileCard({
           <span className="min-w-8 border-x border-gray-300 px-3 py-1 text-center text-sm font-medium">
             {quantity}
           </span>
+          {/* ✅ e.preventDefault() যুক্ত করা হলো */}
           <Button
-            type="button" // ✅ Added type="button"
+            type="button"
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0 hover:bg-gray-100"
-            onClick={() => handleQuantityChange(quantity + 1)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleQuantityChange(quantity + 1);
+            }}
             aria-label="Increase quantity"
           >
             <Plus className="h-3 w-3" />
           </Button>
         </div>
+        {/* ✅ e.preventDefault() যুক্ত করা হলো */}
         <Button
-          type="button" // ✅ Added type="button"
+          type="button"
           variant="ghost"
           size="sm"
           className="p-1 text-gray-600 hover:text-red-500"
-          onClick={() => onRemoveItem(item.id)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onRemoveItem(item.id);
+          }}
           aria-label="Remove from checkout"
         >
           <Trash2 className="h-4 w-4" />
