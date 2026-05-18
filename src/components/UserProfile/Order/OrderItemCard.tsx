@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { CheckCircle, Package, RotateCcw, Star, ArrowRight } from 'lucide-react';
+import { CheckCircle, Package, RotateCcw, Star, ArrowRight } from 'lucide-react'; 
 import type { OrderSummary } from './types';
 import OrderStatusBadge from './OrderStatusBadge';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ interface OrderItemCardProps {
 }
 
 export default function OrderItemCard({ order, onReturnClick }: OrderItemCardProps) {
+  const firstItem = order.items[0];
   const totalItems = order.items.length;
   const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
   
@@ -34,7 +35,7 @@ export default function OrderItemCard({ order, onReturnClick }: OrderItemCardPro
     <div className="border rounded-md overflow-hidden bg-white shadow-sm transition-shadow hover:shadow-md">
       
       {/* Header Section */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
+      <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b">
         <div className="text-sm font-medium flex items-center gap-2">
           <span className="text-gray-900">{order.storeName}</span>
           {order.storeVerified && (
@@ -56,21 +57,25 @@ export default function OrderItemCard({ order, onReturnClick }: OrderItemCardPro
       {/* ✅ সবগুলো প্রোডাক্ট শো করানো হচ্ছে */}
       <div className="flex flex-col">
         {order.items.map((item, idx) => (
-           <Link key={idx} href={`/product/${(item as any).productSlug || item.id}`} className="flex gap-4 p-4 items-start border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors block">
-              <div className="shrink-0 relative border rounded bg-white block">
+           <div key={idx} className="flex gap-4 p-4 items-start border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
+              
+              {/* ✅ Image Clickable */}
+              <Link href={`/product/${(item as any).productSlug || item.id}`} className="shrink-0 relative border rounded bg-white block">
                 <Image 
                   src={item.thumbnailUrl || '/img/product/p-1.png'} 
                   alt={item.title || 'Product'} 
                   width={72} height={72} 
                   className="rounded object-cover h-[72px] w-[72px] hover:opacity-80 transition-opacity" 
                 />
-              </div>
+              </Link>
               
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start">
-                  <div className="text-sm font-medium text-gray-900 line-clamp-2 hover:text-[#0097E9] transition-colors pr-2">
+                  {/* ✅ Title Clickable */}
+                  <Link href={`/product/${(item as any).productSlug || item.id}`} className="text-sm font-medium text-gray-900 line-clamp-2 hover:text-[#0097E9] transition-colors pr-2">
                     {item.title || 'Product Name Unavailable'}
-                  </div>
+                  </Link>
+                  
                   <div className="text-sm text-slate-900 font-semibold whitespace-nowrap ml-2">
                     {item.priceFormatted || '৳ 0'}
                   </div>
@@ -90,7 +95,7 @@ export default function OrderItemCard({ order, onReturnClick }: OrderItemCardPro
                   </div>
                 </div>
               </div>
-           </Link>
+           </div>
         ))}
       </div>
 
@@ -106,18 +111,16 @@ export default function OrderItemCard({ order, onReturnClick }: OrderItemCardPro
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-3 w-full sm:w-auto">
-          <div className="text-sm flex items-center gap-2 mr-2">
-            <span className="text-gray-600 font-medium">Total:</span>
+          <div className="text-sm flex items-center gap-2 mr-1">
+            <span className="text-gray-600 font-medium">Total Order:</span>
             <span className="text-base font-bold text-[#EF4A23]">{displayTotal}</span>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* ✅ Write a Review Button (আগের জায়গায় এবং slug ফিক্সড) */}
             {isDelivered && order.items.length > 0 && (
               <Link 
                 href={`/product/${(order.items[0] as any).productSlug || order.items[0].id}#reviews`}
-                onClick={(e) => e.stopPropagation()} 
-                className="h-8 text-xs font-bold text-[#0097E9] bg-blue-50 hover:bg-[#0097E9] hover:text-white border border-blue-100 px-3 py-2 rounded-md transition-all flex items-center gap-1.5 whitespace-nowrap"
+                className="h-8 text-xs font-bold text-[#0097E9] bg-blue-50 hover:bg-[#0097E9] hover:text-white border border-blue-100 hover:border-[#0097E9] px-3 py-2 rounded-md transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap"
               >
                 <Star className="w-3.5 h-3.5" /> Write a Review
               </Link>
@@ -129,7 +132,7 @@ export default function OrderItemCard({ order, onReturnClick }: OrderItemCardPro
               </Button>
             )}
             
-            <Link href={`/home/UserProfile/orders/${order.id}`} className="h-8 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 px-4 py-2 rounded-md transition-all flex items-center gap-1.5">
+            <Link href={`/home/UserProfile/orders/${order.id}`} className="h-8 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 px-4 py-2 rounded-md transition-all flex items-center gap-1.5 whitespace-nowrap">
               View Order <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
