@@ -43,10 +43,9 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
               </span>
             </div>
 
-            {/* ✅ সবগুলো প্রোডাক্ট শো করানো হচ্ছে (Total Item Price সহ) */}
+            {/* ✅ Product List */}
             <div className="flex flex-col">
               {order.items.map((item, idx) => {
-                // 🔥 প্রতিটি আইটেমের নিজস্ব টোটাল প্রাইস (Unit Price * Quantity) হিসাব করা হচ্ছে
                 const numericPrice = Number(item.price.replace(/[^0-9]/g, '')) || 0;
                 const itemTotal = numericPrice * (item.quantity || 1);
                 const itemTotalFormatted = `৳ ${itemTotal.toLocaleString('en-US')}`;
@@ -65,7 +64,13 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
                         <Link href={`/product/${item.productSlug}`} className="text-sm font-medium text-gray-800 line-clamp-2 hover:text-[#0097E9] transition-colors">
                           {item.productName}
                         </Link>
+
+                        {/* ✅ Qty Moved Here (Under Title) */}
+                        <div className="text-xs text-gray-500 mt-1">
+                          Qty: {item.quantity || 1}
+                        </div>
                         
+                        {/* Variants */}
                         {(item.size || item.color) && (
                           <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
                             {item.color && <span>Color: {item.color}</span>}
@@ -75,13 +80,10 @@ export default function RecentOrdersList({ orders = [] }: RecentOrdersListProps)
                         )}
                       </div>
 
-                      {/* ✅ ডানপাশে আইটেমের টোটাল প্রাইস এবং Qty */}
+                      {/* ✅ Right Side: Only Total Item Price */}
                       <div className="text-left sm:text-right shrink-0">
                         <div className="text-sm text-slate-900 font-bold whitespace-nowrap">
                           {itemTotalFormatted}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          Qty: {item.quantity}
                         </div>
                       </div>
                     </div>
