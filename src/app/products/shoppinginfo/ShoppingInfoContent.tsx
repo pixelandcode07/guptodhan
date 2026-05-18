@@ -137,7 +137,7 @@ export default function ShoppingInfoContent({
         .catch(console.error)
     }, [cartItems.length])
 
-    // ✅ Load Profile & LocalStorage Fallback
+    // ✅ Load Profile Directly from Database (No Local Storage)
     useEffect(() => {
         const load = async () => {
             try {
@@ -152,43 +152,33 @@ export default function ShoppingInfoContent({
                     headers: { 'x-user-id': userId }
                 })
                 
-                let profile: UserProfile | null = null;
                 if (res.data.success && res.data.data) {
-                    profile = res.data.data;
+                    const profile: UserProfile = res.data.data;
                     setUserProfile(profile)
+
+                    // ডাটাবেস থেকে পাওয়া JSON অ্যাড্রেস পার্স করা হচ্ছে
+                    const parsed = parseAddress(profile.address)
+                    const hasDbAddress = !!parsed.street.trim() && !!parsed.district.trim()
+
+                    const filled: FormData = {
+                        name:       profile.name        || '',
+                        phone:      profile.phoneNumber || '',
+                        email:      profile.email       || '',
+                        address:    parsed.street,
+                        district:   parsed.district,
+                        upazila:    parsed.upazila,
+                        city:       hasDbAddress ? parsed.city : 'Dhaka',
+                        postalCode: hasDbAddress ? parsed.postalCode : '1000',
+                        country:    hasDbAddress ? parsed.country : 'Bangladesh',
+                    }
+
+                    setFormData(filled)
+                    setFormKey(k => k + 1) 
+
+                    // ডাটাবেসে অ্যাড্রেস সম্পূর্ণ থাকলে কার্ড মোড দেখাবে, না থাকলে এডিট মোড (ফর্ম)
+                    const hasFullAddress = !!filled.address.trim() && !!filled.district.trim() && !!filled.phone.trim()
+                    setIsEditingAddress(!hasFullAddress)
                 }
-
-                // 🌟 Local Storage Check (API ফেইল করলেও এখান থেকে ডাটা নিয়ে নিবে)
-                let localSaved: Partial<FormData> = {}
-                try {
-                    const localData = localStorage.getItem('guptodhan_checkout_address')
-                    if (localData) localSaved = JSON.parse(localData)
-                } catch (e) {}
-
-                const parsed = parseAddress(profile?.address)
-                const hasDbAddress = !!parsed.street.trim() && !!parsed.district.trim()
-
-                const finalAddress = hasDbAddress ? parsed.street : (localSaved.address || '')
-                const finalDistrict = hasDbAddress ? parsed.district : (localSaved.district || '')
-                const finalUpazila = hasDbAddress ? parsed.upazila : (localSaved.upazila || '')
-
-                const filled: FormData = {
-                    name:       profile?.name        || localSaved.name || '',
-                    phone:      profile?.phoneNumber || localSaved.phone || '',
-                    email:      profile?.email       || localSaved.email || '',
-                    address:    finalAddress,
-                    district:   finalDistrict,
-                    upazila:    finalUpazila,
-                    city:       hasDbAddress ? parsed.city : (localSaved.city || 'Dhaka'),
-                    postalCode: hasDbAddress ? parsed.postalCode : (localSaved.postalCode || '1000'),
-                    country:    hasDbAddress ? parsed.country : (localSaved.country || 'Bangladesh'),
-                }
-
-                setFormData(filled)
-                setFormKey(k => k + 1) 
-
-                const hasFullAddress = !!filled.address.trim() && !!filled.district.trim() && !!filled.phone.trim()
-                setIsEditingAddress(!hasFullAddress)
 
             } catch (err) {
                 console.error('Profile load error:', err)
@@ -199,7 +189,7 @@ export default function ShoppingInfoContent({
         load()
     }, [session])
 
-    // ✅ Confirm Address
+    // ✅ Confirm and Save Address strictly to Database
     const handleConfirmAddress = async () => {
         if (!formData.name.trim())    { toast.error('Name is required');           return }
         if (!formData.phone.trim())   { toast.error('Phone number is required');   return }
@@ -207,31 +197,37 @@ export default function ShoppingInfoContent({
         if (!formData.upazila)        { toast.error('Please select an Upazila');   return }
         if (!formData.address.trim()) { toast.error('Street address is required'); return }
 
-        setIsSavingAddress(true)
-
-        // 🌟 Save to Local Storage Immediately (No reload issues anymore!)
-        try {
-            localStorage.setItem('guptodhan_checkout_address', JSON.stringify(formData));
-        } catch (e) {}
-
-        if (userProfile?._id) {
-            try {
-                const addressJSON = serializeAddress(structuredAddress)
-                await axios.patch(
-                    '/api/v1/profile/address',
-                    { address: addressJSON, phone: formData.phone, name: formData.name },
-                    { headers: { 'x-user-id': userProfile._id } }
-                )
-                setUserProfile(prev => prev ? { ...prev, address: addressJSON, phoneNumber: formData.phone } : prev)
-            } catch (err: any) {
-                console.warn('API save failed, but saved locally.', err);
-                // API 404 হলেও আমরা ইউজারকে আটকে রাখবো না, কারণ লোকাল স্টোরেজে ডাটা সেভ হয়ে গেছে!
-            }
+        if (!userProfile?._id) {
+            toast.error('User profile missing. Please reload the page.')
+            return
         }
 
-        setIsEditingAddress(false)
-        toast.success('Address confirmed!')
-        setIsSavingAddress(false)
+        setIsSavingAddress(true)
+
+        try {
+            const addressJSON = serializeAddress(structuredAddress)
+            
+            // ডাটাবেসে সেভ করার API কল
+            const res = await axios.patch(
+                '/api/v1/profile/address',
+                { address: addressJSON, phone: formData.phone, name: formData.name },
+                { headers: { 'x-user-id': userProfile._id } }
+            )
+
+            if (res.data.success) {
+                // ডাটাবেসে সেভ হলে লোকাল স্টেট আপডেট করে কার্ড মোডে চলে যাবে
+                setUserProfile(prev => prev ? { ...prev, address: addressJSON, phoneNumber: formData.phone, name: formData.name } : prev)
+                setIsEditingAddress(false)
+                toast.success('Address saved to database successfully!')
+            } else {
+                toast.error(res.data.message || 'Failed to save address.')
+            }
+        } catch (err: any) {
+            console.error('API Error:', err);
+            toast.error('Network Error: Failed to save address to database. Please check your API.')
+        } finally {
+            setIsSavingAddress(false)
+        }
     }
 
     const subtotal = enrichedCartItems.reduce((s, i) => s + i.product.price * i.product.quantity, 0)
@@ -371,9 +367,11 @@ export default function ShoppingInfoContent({
     if (!userProfile && session?.user) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded text-center">
-                    <p className="font-bold">Profile Information Required</p>
-                    <p className="text-sm">Please complete your profile first.</p>
+                <div className="text-center">
+                    <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+                        <p className="font-bold">Profile Information Required</p>
+                        <p className="text-sm">Please complete your profile.</p>
+                    </div>
                 </div>
             </div>
         )
@@ -435,7 +433,7 @@ export default function ShoppingInfoContent({
                                     {isSavingAddress ? (
                                         <>
                                             <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                                            Confirming Address...
+                                            Saving to database...
                                         </>
                                     ) : (
                                         <>
