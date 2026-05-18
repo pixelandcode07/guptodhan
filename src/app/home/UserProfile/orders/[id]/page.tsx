@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import React from 'react';
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
@@ -60,6 +60,7 @@ type ApiOrder = {
     orderDetailsId?: string
     productId?: {
       _id: string
+      slug?: string // ✅ slug যুক্ত করা হলো
       productTitle?: string
       thumbnailImage?: string
       photoGallery?: string[]
@@ -90,7 +91,6 @@ export default function OrderDetailsPage() {
       const userId = userLike._id || userLike.id
       if (!userId || !orderId) return
 
-      // Optional token like other routes
       const token = (session as { accessToken?: string })?.accessToken
       const headers: Record<string, string> = { 'x-user-id': userId }
       if (token) headers['Authorization'] = `Bearer ${token}`
@@ -106,19 +106,13 @@ export default function OrderDetailsPage() {
 
         setOrderData(found)
 
-        // Map all order items, not just the first one
-        // Product data comes from orderDetails.productId (populated from VendorProductModel)
-        // User data comes from order model (shippingName, etc.)
         const items = (found.orderDetails || []).map((detail, index) => {
-          // Extract product from orderDetails.productId
-          // productId should be an object when populated (contains product data like productTitle)
           const product = detail.productId && 
                          typeof detail.productId === 'object' && 
                          'productTitle' in detail.productId
-            ? detail.productId as { productTitle?: string; thumbnailImage?: string; photoGallery?: string[] | string; productPrice?: number; _id?: string }
+            ? detail.productId
             : null
           
-          // Get product image - check populated product object first
           let productImage = '/img/product/p-1.png'
           if (product?.thumbnailImage) {
             productImage = product.thumbnailImage
@@ -129,29 +123,26 @@ export default function OrderDetailsPage() {
             }
           }
           
-          // Get product name - use populated product title if available
           const productName = product?.productTitle || found.shippingName || 'Product'
+          const productSlug = product?.slug || product?._id || '' // ✅ slug বের করা হচ্ছে
           
-          // Get price from orderDetails or product
           const unitPrice = detail.unitPrice || (detail.totalPrice && detail.quantity ? detail.totalPrice / detail.quantity : 0) || product?.productPrice || 0
-          
-          // Calculate item subtotal from orderDetails
           const itemSubtotal = detail.totalPrice || (unitPrice * (detail.quantity || 1))
 
           return {
             id: detail._id || detail.orderDetailsId || `item_${index}`,
             title: productName,
             thumbnailUrl: productImage,
+            slug: productSlug, // ✅ slug ম্যাপ করা হলো
             priceFormatted: formatCurrency(unitPrice),
-            quantity: detail.quantity || 1, // From orderDetails model
+            quantity: detail.quantity || 1,
             size: detail.size?.trim() && detail.size !== '—' ? detail.size : '',
             color: detail.color?.trim() && detail.color !== '—' ? detail.color : '',
-            unitPrice, // Store actual price for calculations
-            subtotal: itemSubtotal, // Store subtotal for display
+            unitPrice,
+            subtotal: itemSubtotal, 
           }
         })
 
-        // Calculate totals from actual order data
         const subtotal = found.orderDetails?.reduce((sum, detail) => sum + (detail.totalPrice || 0), 0) || 0
         const deliveryCharge = found.deliveryCharge || 0
         const discount = subtotal + deliveryCharge - (found.totalAmount || 0)
@@ -189,7 +180,6 @@ export default function OrderDetailsPage() {
       <h1 className="text-xl font-semibold px-4 mt-1 mb-4">Order Details</h1>
 
       <div className="bg-white border rounded-md">
-        {/* Header row: store + status */}
         <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
           <div className="text-sm font-medium flex items-center gap-2">
             <span>{order?.storeName ?? 'Store'}</span>
@@ -203,44 +193,65 @@ export default function OrderDetailsPage() {
           <OrderStatusBadge status={(order?.status ?? 'to_pay') as OrderStatus} />
         </div>
 
-        {/* All Order Items */}
         <div className="divide-y">
           {order?.items && order.items.length > 0 ? (
-            order.items.map((item) => (
-              <div key={item.id} className="p-4 flex items-start gap-4">
-                <Image 
-                  src={item.thumbnailUrl || '/img/product/p-1.png'} 
-                  alt={item.title || 'Product'} 
-                  width={88} 
-                  height={88} 
-                  className="rounded flex-shrink-0" 
-                />
-                <div className="flex-1 text-sm">
-                  <div className="font-medium leading-5">{item.title || 'Product'}</div>
-                  {(item.size || item.color) && (
-                    <div className="text-gray-600 mt-1">
-                      {item.size && <span>Size: {item.size}</span>}
-                      {item.size && item.color && ' · '}
-                      {item.color && <span>Color: {item.color}</span>}
-                    </div>
-                  )}
+            order.items.map((item: any) => (
+              <div key={item.id} className="p-4 flex items-start gap-4 hover:bg-gray-50/50 transition-colors">
+                {/* ✅ Image Clickable */}
+                <Link href={`/product/${item.slug}`} className="shrink-0 block border border-gray-100 rounded bg-white">
+                  <Image 
+                    src={item.thumbnailUrl || '/img/product/p-1.png'} 
+                    alt={item.title || 'Product'} 
+                    width={88} 
+                    height={88} 
+                    className="rounded object-cover hover:opacity-80 transition-opacity" 
+                  />
+                </Link>
+                
+                <div className="flex-1 text-sm min-w-0">
+                  {/* ✅ Title Clickable */}
+                  <Link href={`/product/${item.slug}`} className="font-medium text-gray-900 leading-5 line-clamp-2 hover:text-[#0097E9] transition-colors">
+                    {item.title || 'Product'}
+                  </Link>
+                  
                   <div className="text-blue-600 font-semibold mt-1">
                     {item.priceFormatted || '৳ 0'}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
                     Quantity: {item.quantity || 1}
                   </div>
+                  
+                  {(item.size || item.color) && (
+                    <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
+                      {item.color && <span>Color: {item.color}</span>}
+                      {item.size && item.color && <span className="text-gray-300">|</span>}
+                      {item.size && <span>Size: {item.size}</span>}
+                    </div>
+                  )}
+                  
                   <div className="text-xs text-gray-600 mt-1">
-                    Subtotal: {formatCurrency((item as OrderItemSummary & { subtotal?: number; unitPrice?: number }).subtotal || 0)}
+                    Subtotal: {formatCurrency(item.subtotal || 0)}
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                  {order?.status === 'delivered' && item === order.items[0] && (
-                    <Link href="#" className="text-xs text-blue-600 font-medium underline-offset-4 hover:underline">
+
+                {/* ✅ Right Side: Total Price & Review Button */}
+                <div className="flex flex-col items-end gap-3 shrink-0 ml-4">
+                  {/* ডানপাশে প্রোডাক্টের টোটাল প্রাইস (Subtotal) */}
+                  <div className="font-bold text-[#EF4A23] text-base">
+                    {formatCurrency(item.subtotal || 0)}
+                  </div>
+
+                  {/* Delivered হলে Review অপশন (প্রতিটি আইটেমের জন্য আলাদাভাবে) */}
+                  {order?.status === 'delivered' && (
+                    <Link 
+                      href={`/product/${item.slug}#reviews`} 
+                      className="text-xs text-[#0097E9] font-bold uppercase hover:underline underline-offset-4"
+                    >
                       WRITE A REVIEW
                     </Link>
                   )}
-                  {orderData?.deliveryMethodId === 'steadfast' && orderData?.trackingId && item === order.items[0] && (
+                  
+                  {orderData?.deliveryMethodId === 'steadfast' && orderData?.trackingId && (
                     <Link 
                       href={`/products/tracking?trackingId=${orderData.trackingId}`}
                       className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium underline-offset-4 hover:underline"
@@ -258,9 +269,7 @@ export default function OrderDetailsPage() {
           )}
         </div>
 
-        {/* Meta + totals grid */}
         <div className="grid grid-cols-1 md:grid-cols-2">
-          {/* Left: Order meta and address */}
           <div className="border-t md:border-t-0 md:border-r">
             <div className="px-4 py-3 bg-gray-50 border-t md:border-t-0"> 
               <div className="text-xs text-gray-700">Order {order?.orderId ?? order?.id ?? ''}</div>
@@ -287,7 +296,6 @@ export default function OrderDetailsPage() {
             </div>
           </div>
 
-          {/* Right: Totals */}
           <div className="border-t md:border-t-0">
             <div className="px-4 py-3 space-y-2 text-sm">
               <div className="flex items-center justify-between">
@@ -326,5 +334,3 @@ export default function OrderDetailsPage() {
     </div>
   )
 }
-
-
