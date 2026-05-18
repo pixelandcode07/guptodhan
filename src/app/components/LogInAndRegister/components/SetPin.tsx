@@ -8,8 +8,9 @@ import { FieldErrors, SubmitHandler, UseFormHandleSubmit, UseFormRegister } from
 import { FormStep } from '../LogIn_Register'
 import axios from 'axios'
 import { toast } from 'sonner'
+import { signIn } from 'next-auth/react' // ✅ অটো-লগইনের জন্য ইমপোর্ট করা হলো
+import { useRouter } from 'next/navigation' // ✅ সেশন রিফ্রেশ করার জন্য
 
-// ✅ Updated Interface: Added 'name' and kept 'pin' as password
 interface SetPinFormData {
     pin: string 
     confirmPin: string
@@ -42,6 +43,7 @@ export default function SetPin({
 
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+    const router = useRouter() // ✅ রাউটার ইনিশিয়ালাইজ
 
     const onSubmitPassword: SubmitHandler<SetPinFormData> = async (data) => {
         if (data.pin !== data.confirmPin) {
@@ -52,15 +54,14 @@ export default function SetPin({
         }
 
         setLoading(true)
-        toast.loading('Creating your account...')
+        toast.loading('Creating your account...', { id: 'register-toast' })
 
         try {
-            // 1. Prepare Identifier (Exactly same logic as VerifyOTP)
+            // 1. Prepare Identifier
             let identifier = registeredPhone.trim();
             const isEmail = identifier.includes('@');
 
             if (!isEmail) {
-                // Normalize phone for BD
                 if (identifier.startsWith('01')) identifier = '+880' + identifier.slice(1);
                 else if (identifier.startsWith('8801')) identifier = '+' + identifier;
             }
@@ -68,22 +69,22 @@ export default function SetPin({
             // 2. Prepare User Data Payload
             let userData: any = {
                 name: data.name,
-                password: data.pin, // Using 'pin' field as password
+                password: data.pin, 
                 role: 'user'
             };
 
             if (isEmail) userData.email = identifier;
             else userData.phoneNumber = identifier;
 
-            // 3. ✅ Retrieve Valid OTP from LocalStorage
+            // 3. Retrieve Valid OTP
             const storedOtp = localStorage.getItem(`otp_${identifier}`);
             
             if (!storedOtp) {
-                toast.dismiss();
+                toast.dismiss('register-toast');
                 toast.error("Session expired or OTP missing.", {
                     description: "Please verify your phone number again."
                 });
-                setStep('verifyOtp'); // Send back to verify step
+                setStep('verifyOtp');
                 setLoading(false);
                 return;
             }
@@ -91,25 +92,50 @@ export default function SetPin({
             // 4. Final API Call to Create Account
             const res = await axios.post('/api/v1/user/verify-otp', {
                 identifier: identifier,
-                otp: storedOtp, // Sending the real OTP
+                otp: storedOtp,
                 userData: userData
             })
 
             if (res.data.success) {
-                toast.dismiss()
-                toast.success('Account created successfully!', {
-                    description: 'Welcome to Guptodhan! You are now logged in.',
-                    duration: 6000,
+                toast.dismiss('register-toast')
+                toast.loading('Logging you in automatically...', { id: 'auto-login' })
+
+                // ==========================================
+                // ✅ CRITICAL UPDATE: Auto-Login Logic
+                // ==========================================
+                const signInResult = await signIn('credentials', {
+                    identifier: identifier,
+                    password: data.pin,
+                    redirect: false,
                 })
-                
-                // Cleanup
-                localStorage.removeItem(`otp_${identifier}`);
-                
-                // Trigger auto-login
-                onSuccess?.(data.pin)
+
+                toast.dismiss('auto-login')
+
+                if (signInResult?.error) {
+                    toast.error('Account created, but auto-login failed.', {
+                        description: 'Please log in manually.',
+                    })
+                    setStep('login')
+                } else {
+                    toast.success('Account created successfully!', {
+                        description: 'Welcome to Guptodhan! You are now logged in.',
+                        duration: 4000,
+                    })
+                    
+                    // Cleanup
+                    localStorage.removeItem(`otp_${identifier}`);
+                    
+                    // Trigger modal close
+                    if (onSuccess) {
+                        onSuccess(data.pin);
+                    }
+                    
+                    // ✅ সেশন গ্লোবালি আপডেট করার জন্য পেজ রিফ্রেশ
+                    router.refresh();
+                }
             }
         } catch (error: any) {
-            toast.dismiss()
+            toast.dismiss('register-toast')
             const message = error.response?.data?.message || 'Failed to create account'
             
             if (message.includes('already exists')) {
@@ -234,6 +260,7 @@ export default function SetPin({
                     size="sm"
                     onClick={() => setStep('login')}
                     className="text-sm"
+                    disabled={loading}
                 >
                     Already have an account? Log in
                 </Button>
