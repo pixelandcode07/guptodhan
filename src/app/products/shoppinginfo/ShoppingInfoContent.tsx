@@ -122,20 +122,45 @@ export default function ShoppingInfoContent({
     const [enrichedCartItems, setEnrichedCartItems] = useState<CartItem[]>(cartItems)
     const isFetchedRef = useRef(false)
 
+    // 🔥 FIX: কার্ট আপডেট হলে সিঙ্ক করার লজিক
     useEffect(() => {
-        if (cartItems.length === 0 || isFetchedRef.current) return
-        Promise.all(cartItems.map(async (item) => {
-            try {
-                const res = await axios.get(`/api/v1/product/${item.product.id}`)
-                if (res.data?.success && res.data?.data) {
-                    return { ...item, product: { ...item.product, shippingCost: res.data.data.shippingCost || 0 } }
-                }
-            } catch { /* keep original */ }
-            return item
-        }))
-        .then(updated => { setEnrichedCartItems(updated); isFetchedRef.current = true })
-        .catch(console.error)
-    }, [cartItems.length])
+        if (cartItems.length === 0) {
+            setEnrichedCartItems([]);
+            return;
+        }
+
+        // যদি আগে শিপিং কস্ট ফেচ করা না থাকে, তাহলে ফেচ করবে
+        if (!isFetchedRef.current) {
+            Promise.all(cartItems.map(async (item) => {
+                try {
+                    const res = await axios.get(`/api/v1/product/${item.product.id}`)
+                    if (res.data?.success && res.data?.data) {
+                        return { ...item, product: { ...item.product, shippingCost: res.data.data.shippingCost || 0 } }
+                    }
+                } catch { /* keep original */ }
+                return item
+            }))
+            .then(updated => { 
+                setEnrichedCartItems(updated); 
+                isFetchedRef.current = true; 
+            })
+            .catch(console.error)
+        } else {
+            // 🔥 যদি আগে ফেচ করা থাকে, তাহলে শুধু Quantity এবং মেইন ডাটা সিঙ্ক করবে (শিপিং কস্ট রেখে দিবে)
+            setEnrichedCartItems(current => {
+                return cartItems.map(incomingItem => {
+                    const existing = current.find(e => e.id === incomingItem.id);
+                    return {
+                        ...incomingItem,
+                        product: {
+                            ...incomingItem.product,
+                            shippingCost: existing?.product?.shippingCost || 0
+                        }
+                    };
+                });
+            });
+        }
+    }, [cartItems])
 
     // ✅ Load Profile Directly from Database (No Local Storage)
     useEffect(() => {
@@ -156,7 +181,6 @@ export default function ShoppingInfoContent({
                     const profile: UserProfile = res.data.data;
                     setUserProfile(profile)
 
-                    // ডাটাবেস থেকে পাওয়া JSON অ্যাড্রেস পার্স করা হচ্ছে
                     const parsed = parseAddress(profile.address)
                     const hasDbAddress = !!parsed.street.trim() && !!parsed.district.trim()
 
@@ -175,7 +199,6 @@ export default function ShoppingInfoContent({
                     setFormData(filled)
                     setFormKey(k => k + 1) 
 
-                    // ডাটাবেসে অ্যাড্রেস সম্পূর্ণ থাকলে কার্ড মোড দেখাবে, না থাকলে এডিট মোড (ফর্ম)
                     const hasFullAddress = !!filled.address.trim() && !!filled.district.trim() && !!filled.phone.trim()
                     setIsEditingAddress(!hasFullAddress)
                 }
@@ -207,7 +230,6 @@ export default function ShoppingInfoContent({
         try {
             const addressJSON = serializeAddress(structuredAddress)
             
-            // ডাটাবেসে সেভ করার API কল
             const res = await axios.patch(
                 '/api/v1/profile/address',
                 { address: addressJSON, phone: formData.phone, name: formData.name },
@@ -215,7 +237,6 @@ export default function ShoppingInfoContent({
             )
 
             if (res.data.success) {
-                // ডাটাবেসে সেভ হলে লোকাল স্টেট আপডেট করে কার্ড মোডে চলে যাবে
                 setUserProfile(prev => prev ? { ...prev, address: addressJSON, phoneNumber: formData.phone, name: formData.name } : prev)
                 setIsEditingAddress(false)
                 toast.success('Address saved to database successfully!')
