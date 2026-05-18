@@ -48,32 +48,16 @@ export default function ShoppingInfoClient() {
     return cartItems;
   }, [cartItems, isBuyNow]);
 
+  // ✅ ডাবল টোস্ট মেসেজ রিমুভ করা হলো (কারণ CartContext থেকে অলরেডি টোস্ট দেওয়া আছে)
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
-    try {
-      await updateQuantity(itemId, newQuantity);
-      toast.success('Quantity updated successfully');
-    } catch (error) {
-      console.error('Update quantity error:', error);
-      toast.error('Could not update quantity', {
-        description: 'Something went wrong while updating the product quantity. Please try again.',
-        duration: 4000,
-      });
-    }
+    await updateQuantity(itemId, newQuantity);
   };
 
+  // ✅ ডাবল টোস্ট রিমুভ করা হলো
   const handleRemoveItem = async (itemId: string) => {
-    try {
-      await removeFromCart(itemId);
-      if (displayItems.length <= 1) {
-        router.push('/products/shopping-cart');
-      }
-      toast.success('Item removed from checkout');
-    } catch (error) {
-      console.error('Remove item error:', error);
-      toast.error('Failed to remove item', {
-        description: 'We encountered an issue removing this item from your cart. Please refresh and try again.',
-        duration: 4000,
-      });
+    await removeFromCart(itemId);
+    if (displayItems.length <= 1) {
+      router.push('/products/shopping-cart');
     }
   };
 
