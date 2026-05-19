@@ -100,52 +100,66 @@ export default function SetPin({
                 toast.dismiss('register-toast')
                 toast.loading('Logging you in automatically...', { id: 'auto-login' })
 
-                try {
-                    // =================================================================
-                    // 🔥 CRITICAL FIX: Custom JWT Cookie Set + NextAuth Session Sync
-                    // =================================================================
-                    
-                    // ১. প্রথমে আপনার কাস্টম ব্যাকএন্ডে লগইন রিকোয়েস্ট পাঠিয়ে ব্রাউজারে accessToken ও refreshToken কুকি সেট করা হচ্ছে
-                    await axios.post('/api/v1/auth/login', {
-                        identifier: identifier,
-                        password: data.pin
-                    });
+                // =================================================================
+                // 🔥 CRITICAL FIX: Database Race Condition সলভ করার জন্য Delay & Retry
+                // =================================================================
+                
+                // ডাটাবেস সিঙ্ক হওয়ার জন্য ২ সেকেন্ড অপেক্ষা (খুবই জরুরি)
+                await new Promise(resolve => setTimeout(resolve, 2000));
 
-                    // ২. এরপর NextAuth সেশন সিঙ্ক করা হচ্ছে
-                    const signInResult = await signIn('credentials', {
-                        identifier: identifier,
-                        password: data.pin, 
-                        redirect: false,
-                    });
+                let success = false;
+                let signInResult;
 
-                    toast.dismiss('auto-login')
+                // 🔄 ৩ বার ট্রাই করবে লগইন করার (যদি প্রথমবার ফেইল হয়)
+                for (let i = 0; i < 3; i++) {
+                    try {
+                        // ১. API থেকে কুকি সেট করা
+                        await axios.post('/api/v1/auth/login', {
+                            identifier: identifier,
+                            password: data.pin
+                        });
 
-                    if (signInResult?.error) {
-                        toast.error('Auto-login failed.', {
-                            description: 'Account created, please log in manually.',
-                        })
-                        setStep('login')
-                    } else {
-                        toast.success('Account created successfully!', {
-                            description: 'Welcome to Guptodhan! You are now logged in.',
-                            duration: 4000,
-                        })
-                        
-                        // Cleanup
-                        localStorage.removeItem(`otp_${identifier}`);
-                        
-                        // Modal close করার জন্য onSuccess কল
-                        if (onSuccess) {
-                            onSuccess(data.pin);
+                        // ২. NextAuth সেশন সিঙ্ক করা
+                        signInResult = await signIn('credentials', {
+                            identifier: identifier,
+                            password: data.pin, 
+                            redirect: false,
+                        });
+
+                        if (!signInResult?.error) {
+                            success = true;
+                            break; // সফল হলে লুপ থেকে বের হয়ে যাবে
                         }
-                        
-                        // ✅ কুকি এবং সেশন রিফ্রেশ করার জন্য পেজ রিলোড দেওয়া হচ্ছে
-                        window.location.reload(); 
+                    } catch (e) {
+                        console.warn(`Auto-login attempt ${i + 1} failed, retrying...`);
                     }
-                } catch (loginError) {
-                    toast.dismiss('auto-login');
-                    toast.error('Please login manually.');
-                    setStep('login');
+                    
+                    // ফেইল হলে পরের বার ট্রাই করার আগে ১.৫ সেকেন্ড অপেক্ষা করবে
+                    if (!success) {
+                        await new Promise(resolve => setTimeout(resolve, 1500));
+                    }
+                }
+
+                toast.dismiss('auto-login')
+
+                if (!success) {
+                    toast.error('Account created successfully!', {
+                        description: 'But auto-login failed. Please log in manually.',
+                    })
+                    setStep('login')
+                } else {
+                    toast.success('Account created successfully!', {
+                        description: 'Welcome to Guptodhan! You are now logged in.',
+                        duration: 4000,
+                    })
+                    
+                    // Cleanup
+                    localStorage.removeItem(`otp_${identifier}`);
+                    
+                    if (onSuccess) onSuccess(data.pin);
+                    
+                    // ✅ কুকি এবং সেশন রিফ্রেশ করার জন্য পেজ রিলোড
+                    window.location.reload(); 
                 }
             }
         } catch (error: any) {
