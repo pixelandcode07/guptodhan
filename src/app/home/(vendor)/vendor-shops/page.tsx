@@ -28,8 +28,6 @@ import Image from "next/image";
 import Link from "next/link";
 
 const ITEMS_PER_PAGE = 6;
-
-// ✅ Single source of truth — banner never changes between renders
 const BANNER_IMAGE = "/vendor_shop.jpg.jpeg";
 
 interface VendorShopsPageProps {
@@ -114,7 +112,7 @@ export default async function VendorShopsPage({
       `?page=${page}${searchQuery ? `&search=${searchQuery}` : ""}`;
 
     // ===================================================================
-    // ✅ SHARED BLOCKS — same banner & header in ALL render paths
+    // ✅ SHARED BLOCKS — reused in every render path
     // ===================================================================
     const HeroBanner = (
       <section className="relative w-full aspect-[1920/600] min-h-[300px] max-h-[600px] overflow-hidden bg-gray-900">
@@ -153,9 +151,8 @@ export default async function VendorShopsPage({
           </BreadcrumbList>
         </Breadcrumb>
 
-        {/* ✅ Title LEFT — Search RIGHT — vertically CENTER aligned */}
+        {/* Title LEFT — Search RIGHT — items-center */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          {/* Left: Title block */}
           <div className="shrink-0">
             <h1 className="text-3xl md:text-4xl font-extrabold text-[#00005E] leading-tight">
               Explore Our Trusted Vendor Stores
@@ -164,8 +161,6 @@ export default async function VendorShopsPage({
               Discover quality products directly from our verified sellers.
             </p>
           </div>
-
-          {/* Right: Search bar — fixed width, center aligned vertically */}
           <div className="w-full md:w-80 lg:w-96 shrink-0">
             <VendorSearch />
           </div>
