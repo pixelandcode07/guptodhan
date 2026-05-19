@@ -65,10 +65,9 @@ export default function VendorSearch() {
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
                     className="
-                        w-full h-full
-                        pl-9 pr-2
-                        bg-transparent
-                        text-sm text-[#00005E] placeholder-gray-400
+                        w-full h-full pl-9 pr-2
+                        bg-transparent text-sm
+                        text-[#00005E] placeholder-gray-400
                         outline-none border-none rounded-xl
                     "
                 />
