@@ -29,6 +29,9 @@ import Link from "next/link";
 
 const ITEMS_PER_PAGE = 6;
 
+// ✅ Single source of truth — banner never changes between renders
+const BANNER_IMAGE = "/vendor_shop.jpg.jpeg";
+
 interface VendorShopsPageProps {
   searchParams: Promise<{ page?: string; search?: string }>;
 }
@@ -88,7 +91,9 @@ export default async function VendorShopsPage({
     // Calculate pagination
     // ===================================================================
     const totalPages =
-      vendorData.length > 0 ? Math.ceil(vendorData.length / ITEMS_PER_PAGE) : 1;
+      vendorData.length > 0
+        ? Math.ceil(vendorData.length / ITEMS_PER_PAGE)
+        : 1;
 
     const validPage = Math.max(1, Math.min(currentPage, totalPages || 1));
 
@@ -105,75 +110,90 @@ export default async function VendorShopsPage({
     }));
 
     // Helper: build page URL preserving search query
-    const getPageUrl = (page: number) => {
-      return `?page=${page}${searchQuery ? `&search=${searchQuery}` : ""}`;
-    };
+    const getPageUrl = (page: number) =>
+      `?page=${page}${searchQuery ? `&search=${searchQuery}` : ""}`;
 
     // ===================================================================
-    // RENDER: Empty state
+    // ✅ SHARED COMPONENTS — same in ALL renders, banner never disappears
+    // ===================================================================
+    const HeroBanner = (
+      <section className="relative w-full aspect-[1920/600] min-h-[300px] max-h-[600px] overflow-hidden bg-gray-900">
+        <Image
+          src={BANNER_IMAGE}
+          alt="Vendor Stores Banner"
+          fill
+          className="object-cover object-center"
+          priority
+        />
+      </section>
+    );
+
+    const PageHeader = (
+      <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pt-10 pb-6">
+        <Breadcrumb className="mb-4">
+          <BreadcrumbList className="flex items-center gap-2 text-sm md:text-base">
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link
+                  href="/"
+                  className="flex items-center gap-2 hover:text-[#0097E9] transition-colors"
+                >
+                  <Home size={18} />
+                  Home
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage className="font-medium text-gray-900 uppercase tracking-wider">
+                Vendor Stores
+              </BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        {/* Title left — Search right */}
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-[#00005E]">
+              Explore Our Trusted Vendor Stores
+            </h1>
+            <p className="text-gray-500 mt-2">
+              Discover quality products directly from our verified sellers.
+            </p>
+          </div>
+          <div className="w-full md:max-w-xs lg:max-w-sm">
+            <VendorSearch />
+          </div>
+        </div>
+      </div>
+    );
+
+    // ===================================================================
+    // RENDER: Empty state — search কিছু না পেলেও banner থাকবে
     // ===================================================================
     if (vendorData.length === 0) {
       return (
         <div className="container mx-auto">
-          {/* Hero Banner */}
-          <section className="relative w-full aspect-[1920/600] min-h-[300px] max-h-[600px] overflow-hidden bg-gray-900">
-            <Image
-              src="https://res.cloudinary.com/donrqkwe5/image/upload/v1766044937/uqm2xd1jbicyjxkriwxl.jpg"
-              alt="Vendor Stores Banner"
-              fill
-              className="object-cover object-center"
-              priority
-            />
-          </section>
+          {HeroBanner}
+          {PageHeader}
 
-          {/* Breadcrumb & Title + Search */}
-          <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pt-10 pb-6">
-            <Breadcrumb className="mb-4">
-              <BreadcrumbList className="flex items-center gap-2 text-sm md:text-base">
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild>
-                    <Link
-                      href="/"
-                      className="flex items-center gap-2 hover:text-[#0097E9] transition-colors"
-                    >
-                      <Home size={18} />
-                      Home
-                    </Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage className="font-medium text-gray-900 uppercase tracking-wider">
-                    Vendor Stores
-                  </BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-
-            {/* Title left — Search right */}
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-extrabold text-[#00005E]">
-                  Explore Our Trusted Vendor Stores
-                </h1>
-                <p className="text-gray-500 mt-2">
-                  Discover quality products directly from our verified sellers.
-                </p>
-              </div>
-              <div className="w-full md:max-w-sm lg:max-w-md">
-                <VendorSearch />
-              </div>
-            </div>
-          </div>
-
-          {/* Empty State Message */}
           <section className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pb-20">
-            <div className="text-center py-32 bg-white rounded-2xl border border-dashed">
+            <div className="text-center py-32 bg-white rounded-2xl border border-dashed border-gray-200">
+              <div className="text-5xl mb-4">🔍</div>
               <p className="text-xl text-gray-400">
                 {searchQuery
                   ? `No stores found matching "${searchQuery}"`
                   : "No stores available at the moment. Please check back soon!"}
               </p>
+              {searchQuery && (
+                <Link
+                  href="/home/vendor-shops?page=1"
+                  className="inline-block mt-6 px-6 py-2 bg-[#0097E9] text-white rounded-lg hover:bg-[#007ec5] transition-colors text-sm font-medium"
+                >
+                  Clear Search
+                </Link>
+              )}
             </div>
           </section>
         </div>
@@ -185,56 +205,8 @@ export default async function VendorShopsPage({
     // ===================================================================
     return (
       <div className="container mx-auto">
-        {/* Hero Banner */}
-        <section className="relative w-full aspect-[1920/600] min-h-[300px] max-h-[600px] overflow-hidden bg-gray-900">
-          <Image
-            src="/vendor_shop.jpg.jpeg"
-            alt="Vendor Stores Banner"
-            fill
-            className="object-cover object-center"
-            priority
-          />
-        </section>
-
-        {/* Breadcrumb & Title + Search */}
-        <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pt-10 pb-6">
-          <Breadcrumb className="mb-4">
-            <BreadcrumbList className="flex items-center gap-2 text-sm md:text-base">
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link
-                    href="/"
-                    className="flex items-center gap-2 hover:text-[#0097E9] transition-colors"
-                  >
-                    <Home size={18} />
-                    Home
-                  </Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage className="font-medium text-gray-900 uppercase tracking-wider">
-                  Vendor Stores
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-
-          {/* Title left — Search right */}
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-extrabold text-[#00005E]">
-                Explore Our Trusted Vendor Stores
-              </h1>
-              <p className="text-gray-500 mt-2">
-                Discover quality products directly from our verified sellers.
-              </p>
-            </div>
-            <div className="w-full md:max-w-sm lg:max-w-md">
-              <VendorSearch />
-            </div>
-          </div>
-        </div>
+        {HeroBanner}
+        {PageHeader}
 
         {/* Sticky Nav */}
         {categoryData && categoryData.length > 0 && (
@@ -330,10 +302,9 @@ export default async function VendorShopsPage({
     return (
       <div className="container mx-auto">
         <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pt-10 pb-20">
-          {/* Hero Banner */}
           <section className="relative w-full aspect-[1920/600] min-h-[300px] max-h-[600px] overflow-hidden bg-gray-900">
             <Image
-              src="/vendor_shop.jpg.jpeg"
+              src={BANNER_IMAGE}
               alt="Vendor Stores Banner"
               fill
               className="object-cover object-center"
@@ -341,7 +312,6 @@ export default async function VendorShopsPage({
             />
           </section>
 
-          {/* Breadcrumb & Title */}
           <div className="pt-10 pb-6">
             <Breadcrumb className="mb-4">
               <BreadcrumbList className="flex items-center gap-2 text-sm md:text-base">
@@ -364,13 +334,11 @@ export default async function VendorShopsPage({
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
-
             <h1 className="text-3xl md:text-4xl font-extrabold text-[#00005E]">
               Oops! Something went wrong
             </h1>
           </div>
 
-          {/* Error State */}
           <section className="pb-20">
             <div className="text-center py-32 bg-white rounded-2xl border border-red-200">
               <div className="text-red-500 text-6xl mb-4">⚠️</div>
