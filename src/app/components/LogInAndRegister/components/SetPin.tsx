@@ -96,53 +96,30 @@ export default function SetPin({
                 userData: userData
             })
 
-            if (res.data.success) {
+            // ✅ যদি একাউন্ট সফলভাবে ক্রিয়েট হয়, তাহলে ওই ডাটা দিয়েই সরাসরি সেশন তৈরি করবো
+            if (res.data.success && res.data.data) {
+                const newUser = res.data.data;
+                
                 toast.dismiss('register-toast')
                 toast.loading('Logging you in automatically...', { id: 'auto-login' })
 
                 // =================================================================
-                // 🔥 CRITICAL FIX: Database Race Condition সলভ করার জন্য Delay & Retry
+                // 🔥 SMART SOLUTION: সরাসরি NextAuth এর সেশন তৈরি করা হচ্ছে
                 // =================================================================
-                
-                // ডাটাবেস সিঙ্ক হওয়ার জন্য ২ সেকেন্ড অপেক্ষা (খুবই জরুরি)
-                await new Promise(resolve => setTimeout(resolve, 2000));
-
-                let success = false;
-                let signInResult;
-
-                // 🔄 ৩ বার ট্রাই করবে লগইন করার (যদি প্রথমবার ফেইল হয়)
-                for (let i = 0; i < 3; i++) {
-                    try {
-                        // ১. API থেকে কুকি সেট করা
-                        await axios.post('/api/v1/auth/login', {
-                            identifier: identifier,
-                            password: data.pin
-                        });
-
-                        // ২. NextAuth সেশন সিঙ্ক করা
-                        signInResult = await signIn('credentials', {
-                            identifier: identifier,
-                            password: data.pin, 
-                            redirect: false,
-                        });
-
-                        if (!signInResult?.error) {
-                            success = true;
-                            break; // সফল হলে লুপ থেকে বের হয়ে যাবে
-                        }
-                    } catch (e) {
-                        console.warn(`Auto-login attempt ${i + 1} failed, retrying...`);
-                    }
-                    
-                    // ফেইল হলে পরের বার ট্রাই করার আগে ১.৫ সেকেন্ড অপেক্ষা করবে
-                    if (!success) {
-                        await new Promise(resolve => setTimeout(resolve, 1500));
-                    }
-                }
+                const signInResult = await signIn('credentials', {
+                    userId: newUser._id,
+                    role: newUser.role,
+                    name: newUser.name,
+                    email: newUser.email || '',
+                    phoneNumber: newUser.phoneNumber || '',
+                    profilePicture: newUser.profilePicture || '',
+                    address: newUser.address || '',
+                    redirect: false, // পেজ রিডাইরেক্ট অফ করে রাখলাম
+                });
 
                 toast.dismiss('auto-login')
 
-                if (!success) {
+                if (signInResult?.error) {
                     toast.error('Account created successfully!', {
                         description: 'But auto-login failed. Please log in manually.',
                     })
@@ -153,12 +130,12 @@ export default function SetPin({
                         duration: 4000,
                     })
                     
-                    // Cleanup
+                    // Cleanup OTP
                     localStorage.removeItem(`otp_${identifier}`);
                     
                     if (onSuccess) onSuccess(data.pin);
                     
-                    // ✅ কুকি এবং সেশন রিফ্রেশ করার জন্য পেজ রিলোড
+                    // ✅ সেশন কুকিতে সেভ হওয়ার পর পেজ রিলোড
                     window.location.reload(); 
                 }
             }
