@@ -114,7 +114,7 @@ export default async function VendorShopsPage({
       `?page=${page}${searchQuery ? `&search=${searchQuery}` : ""}`;
 
     // ===================================================================
-    // ✅ SHARED COMPONENTS — same in ALL renders, banner never disappears
+    // ✅ SHARED BLOCKS — same banner & header in ALL render paths
     // ===================================================================
     const HeroBanner = (
       <section className="relative w-full aspect-[1920/600] min-h-[300px] max-h-[600px] overflow-hidden bg-gray-900">
@@ -129,8 +129,9 @@ export default async function VendorShopsPage({
     );
 
     const PageHeader = (
-      <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pt-10 pb-6">
-        <Breadcrumb className="mb-4">
+      <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pt-8 pb-6">
+        {/* Breadcrumb */}
+        <Breadcrumb className="mb-5">
           <BreadcrumbList className="flex items-center gap-2 text-sm md:text-base">
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
@@ -152,17 +153,20 @@ export default async function VendorShopsPage({
           </BreadcrumbList>
         </Breadcrumb>
 
-        {/* Title left — Search right */}
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-[#00005E]">
+        {/* ✅ Title LEFT — Search RIGHT — vertically CENTER aligned */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          {/* Left: Title block */}
+          <div className="shrink-0">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-[#00005E] leading-tight">
               Explore Our Trusted Vendor Stores
             </h1>
-            <p className="text-gray-500 mt-2">
+            <p className="text-gray-500 mt-1.5 text-sm md:text-base">
               Discover quality products directly from our verified sellers.
             </p>
           </div>
-          <div className="w-full md:max-w-xs lg:max-w-sm">
+
+          {/* Right: Search bar — fixed width, center aligned vertically */}
+          <div className="w-full md:w-80 lg:w-96 shrink-0">
             <VendorSearch />
           </div>
         </div>
@@ -170,7 +174,7 @@ export default async function VendorShopsPage({
     );
 
     // ===================================================================
-    // RENDER: Empty state — search কিছু না পেলেও banner থাকবে
+    // RENDER: Empty state
     // ===================================================================
     if (vendorData.length === 0) {
       return (
@@ -249,7 +253,6 @@ export default async function VendorShopsPage({
                   )
                   .flatMap((page, idx, arr) => {
                     const items = [];
-
                     if (idx > 0 && page - arr[idx - 1] > 1) {
                       items.push(
                         <PaginationItem key={`ellipsis-${page}`}>
@@ -257,7 +260,6 @@ export default async function VendorShopsPage({
                         </PaginationItem>
                       );
                     }
-
                     items.push(
                       <PaginationItem key={`page-${page}`}>
                         <PaginationLink
@@ -273,7 +275,6 @@ export default async function VendorShopsPage({
                         </PaginationLink>
                       </PaginationItem>
                     );
-
                     return items;
                   })}
 
