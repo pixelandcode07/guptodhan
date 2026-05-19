@@ -18,10 +18,13 @@ type Store = {
   positiveRating: number;
 };
 
-// ✅ Blue verified badge — VendorStoreCard-এর মতো
+// ✅ Blue verified badge — Facebook style (একদম পারফেক্ট সাইজ ও কালার)
 function VerifiedBadge() {
   return (
-   <span className='w-5 h-5 text-white fill-[#0097E9] shrink-0'><BadgeCheck/></span>
+    <BadgeCheck 
+      className="w-5 h-5 text-white fill-[#0097E9] shrink-0" 
+      aria-label="Verified Store" 
+    />
   );
 }
 
@@ -87,11 +90,11 @@ export default function StoreHeader({ store }: { store: Store }) {
         {/* Store Name & Meta */}
         <div className="pb-1">
           {/* Name + Badge */}
-          <div className="flex items-center gap-2 mt-8">
+          <div className="flex items-center gap-1.5 mt-8">
             <h1 className="text-xl font-bold text-[#00005E] leading-tight">
               {store.storeName}
             </h1>
-            {/* ✅ Same blue verified badge as VendorStoreCard */}
+            {/* ✅ Verified Badge called here */}
             <VerifiedBadge />
           </div>
 
