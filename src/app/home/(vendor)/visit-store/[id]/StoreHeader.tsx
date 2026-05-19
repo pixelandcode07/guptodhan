@@ -18,26 +18,28 @@ type Store = {
   positiveRating: number;
 };
 
-// ✅ Blue verified badge — VendorStoreCard-এর মতো
-function VerifiedBadge() {
+// ✅ Facebook-style verified badge
+function VerifiedBadge({ size = 20 }: { size?: number }) {
   return (
-    <span
-      title="Verified Store"
-      className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#0097E9] shadow-sm shadow-[#0097E9]/40 flex-shrink-0"
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      title="Verified"
     >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
+      {/* Outer blue circle */}
+      <circle cx="12" cy="12" r="12" fill="#0097E9" />
+      {/* White checkmark — same weight as Facebook */}
+      <path
+        d="M7 12.5L10.5 16L17 9"
         stroke="white"
-        strokeWidth="2.8"
+        strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="w-3 h-3"
-      >
-        <polyline points="20 6 9 17 4 12" />
-      </svg>
-    </span>
+      />
+    </svg>
   );
 }
 
@@ -103,12 +105,12 @@ export default function StoreHeader({ store }: { store: Store }) {
         {/* Store Name & Meta */}
         <div className="pb-1">
           {/* Name + Badge */}
-          <div className="flex items-center gap-2 mt-8">
+          <div className="flex items-center gap-1.5 mt-8">
             <h1 className="text-xl font-bold text-[#00005E] leading-tight">
               {store.storeName}
             </h1>
-            {/* ✅ Same blue verified badge as VendorStoreCard */}
-            <VerifiedBadge />
+            {/* ✅ Facebook-style verified badge */}
+            <VerifiedBadge size={20} />
           </div>
 
           {/* Rating */}
