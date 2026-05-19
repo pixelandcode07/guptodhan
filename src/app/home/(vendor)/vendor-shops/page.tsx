@@ -88,7 +88,13 @@ export default async function VendorShopsPage({
     // ===================================================================
     const startIndex = (validPage - 1) * ITEMS_PER_PAGE;
     const endIndex = validPage * ITEMS_PER_PAGE;
-    const paginatedStores = vendorData.slice(startIndex, endIndex);
+    
+    // ✅ ফিক্স: সব ভেন্ডরকে ফোর্সভালি Verified করে দেওয়া হলো
+    const paginatedStores = vendorData.slice(startIndex, endIndex).map(store => ({
+      ...store,
+      isVerified: true, 
+      verified: true
+    }));
 
     // ===================================================================
     // RENDER: Empty state
