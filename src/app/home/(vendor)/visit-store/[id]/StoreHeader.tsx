@@ -21,7 +21,7 @@ type Store = {
 // ✅ Blue verified badge — VendorStoreCard-এর মতো
 function VerifiedBadge() {
   return (
-   <span><BadgeCheck/></span>
+   <span className='w-5 h-5 text-white fill-[#0097E9] shrink-0'><BadgeCheck/></span>
   );
 }
 
