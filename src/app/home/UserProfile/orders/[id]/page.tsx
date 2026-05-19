@@ -1,14 +1,16 @@
 "use client"
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useParams } from 'next/navigation'
 import api from '@/lib/axios'
-import { CheckCircle, Package, ExternalLink } from 'lucide-react'
-import type { OrderStatus, OrderSummary, OrderItemSummary } from '@/components/UserProfile/Order/types'
+import { CheckCircle, Package, ExternalLink, RotateCcw } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import type { OrderStatus, OrderSummary } from '@/components/UserProfile/Order/types'
 import OrderStatusBadge from '@/components/UserProfile/Order/OrderStatusBadge'
+import ReturnRequestModal from '@/components/UserProfile/Order/ReturnRequestModal' // ✅ Return Modal Import
 
 function mapOrderStatusToUI(status: string): OrderStatus {
   const s = status.toLowerCase()
@@ -16,6 +18,7 @@ function mapOrderStatusToUI(status: string): OrderStatus {
   if (s === 'cancelled' || s === 'canceled') return 'cancelled'
   if (s === 'shipped') return 'to_receive'
   if (s === 'processing') return 'to_ship'
+  if (s === 'return request' || s === 'returned') return 'return_refund'
   return 'to_pay'
 }
 
@@ -60,7 +63,7 @@ type ApiOrder = {
     orderDetailsId?: string
     productId?: {
       _id: string
-      slug?: string // ✅ slug যুক্ত করা হলো
+      slug?: string 
       productTitle?: string
       thumbnailImage?: string
       photoGallery?: string[]
@@ -81,99 +84,116 @@ type ApiOrder = {
 export default function OrderDetailsPage() {
   const [order, setOrder] = React.useState<OrderWithDetails | null>(null)
   const [orderData, setOrderData] = React.useState<ApiOrder | null>(null)
+  
+  // ✅ Return Modal States
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+
   const { data: session } = useSession()
   const params = useParams()
   const orderId = params?.id as string
 
-  React.useEffect(() => {
-    const fetchOrder = async () => {
-      const userLike = (session?.user ?? {}) as { id?: string; _id?: string }
-      const userId = userLike._id || userLike.id
-      if (!userId || !orderId) return
+  const fetchOrder = React.useCallback(async () => {
+    const userLike = (session?.user ?? {}) as { id?: string; _id?: string }
+    const userId = userLike._id || userLike.id
+    if (!userId || !orderId) return
 
-      const token = (session as { accessToken?: string })?.accessToken
-      const headers: Record<string, string> = { 'x-user-id': userId }
-      if (token) headers['Authorization'] = `Bearer ${token}`
+    const token = (session as { accessToken?: string })?.accessToken
+    const headers: Record<string, string> = { 'x-user-id': userId }
+    if (token) headers['Authorization'] = `Bearer ${token}`
 
-      try {
-        const res = await api.get(`/product-order/${orderId}`, { headers })
-        const found = (res.data?.data ?? null) as ApiOrder | null
-        if (!found) { 
-          setOrder(null)
-          setOrderData(null)
-          return 
-        }
-
-        setOrderData(found)
-
-        const items = (found.orderDetails || []).map((detail, index) => {
-          const product = detail.productId && 
-                         typeof detail.productId === 'object' && 
-                         'productTitle' in detail.productId
-            ? detail.productId
-            : null
-          
-          let productImage = '/img/product/p-1.png'
-          if (product?.thumbnailImage) {
-            productImage = product.thumbnailImage
-          } else if (product?.photoGallery) {
-            const gallery = Array.isArray(product.photoGallery) ? product.photoGallery : [product.photoGallery]
-            if (gallery.length > 0) {
-              productImage = gallery[0]
-            }
-          }
-          
-          const productName = product?.productTitle || found.shippingName || 'Product'
-          const productSlug = product?.slug || product?._id || '' // ✅ slug বের করা হচ্ছে
-          
-          const unitPrice = detail.unitPrice || (detail.totalPrice && detail.quantity ? detail.totalPrice / detail.quantity : 0) || product?.productPrice || 0
-          const itemSubtotal = detail.totalPrice || (unitPrice * (detail.quantity || 1))
-
-          return {
-            id: detail._id || detail.orderDetailsId || `item_${index}`,
-            title: productName,
-            thumbnailUrl: productImage,
-            slug: productSlug, // ✅ slug ম্যাপ করা হলো
-            priceFormatted: formatCurrency(unitPrice),
-            quantity: detail.quantity || 1,
-            size: detail.size?.trim() && detail.size !== '—' ? detail.size : '',
-            color: detail.color?.trim() && detail.color !== '—' ? detail.color : '',
-            unitPrice,
-            subtotal: itemSubtotal, 
-          }
-        })
-
-        const subtotal = found.orderDetails?.reduce((sum, detail) => sum + (detail.totalPrice || 0), 0) || 0
-        const deliveryCharge = found.deliveryCharge || 0
-        const discount = subtotal + deliveryCharge - (found.totalAmount || 0)
-
-        const mapped: OrderWithDetails = {
-          id: found._id,
-          orderId: found.orderId || found._id,
-          storeName: found.storeId?.storeName || found.storeName || 'Store',
-          storeVerified: !!found.storeVerified,
-          status: mapOrderStatusToUI(found.orderStatus || 'Pending'),
-          paymentStatus: found.paymentStatus || 'Pending',
-          deliveryMethod: found.deliveryMethodId || 'COD',
-          createdAt: new Date(found.orderDate ?? found.createdAt ?? Date.now()).toLocaleString(),
-          trackingId: found.trackingId,
-          parcelId: found.parcelId,
-          items,
-          subtotal,
-          deliveryCharge,
-          discount: discount > 0 ? discount : 0,
-          totalAmount: found.totalAmount || 0,
-        }
-        setOrder(mapped)
-      } catch (error) {
-        console.error('Error fetching order:', error)
+    try {
+      const res = await api.get(`/product-order/${orderId}`, { headers })
+      const found = (res.data?.data ?? null) as ApiOrder | null
+      if (!found) { 
         setOrder(null)
         setOrderData(null)
+        return 
       }
-    }
 
+      setOrderData(found)
+
+      const items = (found.orderDetails || []).map((detail, index) => {
+        const product = detail.productId && 
+                       typeof detail.productId === 'object' && 
+                       'productTitle' in detail.productId
+          ? detail.productId
+          : null
+        
+        let productImage = '/img/product/p-1.png'
+        if (product?.thumbnailImage) {
+          productImage = product.thumbnailImage
+        } else if (product?.photoGallery) {
+          const gallery = Array.isArray(product.photoGallery) ? product.photoGallery : [product.photoGallery]
+          if (gallery.length > 0) {
+            productImage = gallery[0]
+          }
+        }
+        
+        const productName = product?.productTitle || found.shippingName || 'Product'
+        const productSlug = product?.slug || product?._id || '' 
+        
+        const unitPrice = detail.unitPrice || (detail.totalPrice && detail.quantity ? detail.totalPrice / detail.quantity : 0) || product?.productPrice || 0
+        const itemSubtotal = detail.totalPrice || (unitPrice * (detail.quantity || 1))
+
+        return {
+          id: detail._id || detail.orderDetailsId || `item_${index}`,
+          title: productName,
+          thumbnailUrl: productImage,
+          slug: productSlug, 
+          priceFormatted: formatCurrency(unitPrice),
+          quantity: detail.quantity || 1,
+          size: detail.size?.trim() && detail.size !== '—' ? detail.size : '',
+          color: detail.color?.trim() && detail.color !== '—' ? detail.color : '',
+          unitPrice,
+          subtotal: itemSubtotal, 
+        }
+      })
+
+      const subtotal = found.orderDetails?.reduce((sum, detail) => sum + (detail.totalPrice || 0), 0) || 0
+      const deliveryCharge = found.deliveryCharge || 0
+      const discount = subtotal + deliveryCharge - (found.totalAmount || 0)
+
+      const mapped: OrderWithDetails = {
+        id: found._id,
+        orderId: found.orderId || found._id,
+        storeName: found.storeId?.storeName || found.storeName || 'Store',
+        storeVerified: !!found.storeVerified,
+        status: mapOrderStatusToUI(found.orderStatus || 'Pending'),
+        paymentStatus: found.paymentStatus || 'Pending',
+        deliveryMethod: found.deliveryMethodId || 'COD',
+        createdAt: new Date(found.orderDate ?? found.createdAt ?? Date.now()).toLocaleString(),
+        trackingId: found.trackingId,
+        parcelId: found.parcelId,
+        items,
+        subtotal,
+        deliveryCharge,
+        discount: discount > 0 ? discount : 0,
+        totalAmount: found.totalAmount || 0,
+      }
+      setOrder(mapped)
+    } catch (error) {
+      console.error('Error fetching order:', error)
+      setOrder(null)
+      setOrderData(null)
+    }
+  }, [session, orderId])
+
+  React.useEffect(() => {
     fetchOrder()
-  }, [session, orderId, params])
+  }, [fetchOrder])
+
+  // ✅ Return Button Click Handler
+  const handleReturnClick = (id: string) => {
+    setSelectedOrderId(id); 
+    setIsReturnModalOpen(true);
+  };
+
+  const handleReturnSuccess = () => {
+    fetchOrder(); // Refresh data after successful return request
+  };
+
+  const isReturnRequested = order?.status === 'return_refund';
 
   return (
     <div className="p-6">
@@ -190,14 +210,22 @@ export default function OrderDetailsPage() {
               </span>
             )}
           </div>
-          <OrderStatusBadge status={(order?.status ?? 'to_pay') as OrderStatus} />
+          <div className="flex items-center gap-2">
+             {isReturnRequested && (
+                <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-0.5 rounded">
+                  Return Requested
+                </span>
+             )}
+             <OrderStatusBadge status={(order?.status ?? 'to_pay') as OrderStatus} />
+          </div>
         </div>
 
         <div className="divide-y">
           {order?.items && order.items.length > 0 ? (
             order.items.map((item: any) => (
               <div key={item.id} className="p-4 flex items-start gap-4 hover:bg-gray-50/50 transition-colors">
-                {/* ✅ Image Clickable */}
+                
+                {/* Image Clickable */}
                 <Link href={`/product/${item.slug}`} className="shrink-0 block border border-gray-100 rounded bg-white">
                   <Image 
                     src={item.thumbnailUrl || '/img/product/p-1.png'} 
@@ -209,16 +237,16 @@ export default function OrderDetailsPage() {
                 </Link>
                 
                 <div className="flex-1 text-sm min-w-0">
-                  {/* ✅ Title Clickable */}
+                  {/* Title Clickable */}
                   <Link href={`/product/${item.slug}`} className="font-medium text-gray-900 leading-5 line-clamp-2 hover:text-[#0097E9] transition-colors">
                     {item.title || 'Product'}
                   </Link>
                   
-                  <div className="text-blue-600 font-semibold mt-1">
-                    {item.priceFormatted || '৳ 0'}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    Quantity: {item.quantity || 1}
+                  {/* ✅ Fixed: Quantity and Unit Price combined */}
+                  <div className="text-xs text-gray-500 mt-2 flex items-center gap-2">
+                    <span>Qty: {item.quantity || 1}</span>
+                    <span className="text-gray-300">|</span>
+                    <span>Unit Price: <span className="font-medium text-gray-700">{formatCurrency(item.unitPrice)}</span></span>
                   </div>
                   
                   {(item.size || item.color) && (
@@ -228,27 +256,35 @@ export default function OrderDetailsPage() {
                       {item.size && <span>Size: {item.size}</span>}
                     </div>
                   )}
-                  
-                  <div className="text-xs text-gray-600 mt-1">
-                    Subtotal: {formatCurrency(item.subtotal || 0)}
-                  </div>
                 </div>
 
-                {/* ✅ Right Side: Total Price & Review Button */}
+                {/* Right Side: Total Price & Buttons */}
                 <div className="flex flex-col items-end gap-3 shrink-0 ml-4">
-                  {/* ডানপাশে প্রোডাক্টের টোটাল প্রাইস (Subtotal) */}
+                  {/* Subtotal */}
                   <div className="font-bold text-[#EF4A23] text-base">
                     {formatCurrency(item.subtotal || 0)}
                   </div>
 
-                  {/* Delivered হলে Review অপশন (প্রতিটি আইটেমের জন্য আলাদাভাবে) */}
+                  {/* ✅ Write a Review AND Return Buttons */}
                   {order?.status === 'delivered' && (
-                    <Link 
-                      href={`/product/${item.slug}#reviews`} 
-                      className="text-xs text-[#0097E9] font-bold uppercase hover:underline underline-offset-4"
-                    >
-                      WRITE A REVIEW
-                    </Link>
+                    <div className="flex flex-col items-end gap-2">
+                      <Link 
+                        href={`/product/${item.slug}#reviews`} 
+                        className="text-xs text-[#0097E9] font-bold uppercase hover:underline underline-offset-4"
+                      >
+                        WRITE A REVIEW
+                      </Link>
+
+                      {/* ✅ Return Button Restored */}
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => handleReturnClick(order.id)} 
+                        className="h-7 text-[10px] uppercase font-bold text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 gap-1.5 bg-white px-2 mt-1"
+                      >
+                        <RotateCcw className="h-3 w-3" /> Return Item
+                      </Button>
+                    </div>
                   )}
                   
                   {orderData?.deliveryMethodId === 'steadfast' && orderData?.trackingId && (
@@ -331,6 +367,16 @@ export default function OrderDetailsPage() {
           </div>
         </div>
       </div>
+
+      {/* ✅ Return Request Modal */}
+      {selectedOrderId && (
+        <ReturnRequestModal 
+          isOpen={isReturnModalOpen}
+          onClose={() => setIsReturnModalOpen(false)}
+          orderId={selectedOrderId}
+          onSuccess={handleReturnSuccess}
+        />
+      )}
     </div>
   )
 }
