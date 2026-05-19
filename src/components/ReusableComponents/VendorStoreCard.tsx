@@ -1,6 +1,7 @@
 'use client';
 
-import { Facebook, Instagram, Linkedin, MessageCircle, Store, ExternalLink } from "lucide-react";
+// ✅ BadgeCheck আইকনটি ইমপোর্ট করা হলো
+import { Facebook, Instagram, Linkedin, MessageCircle, Store, ExternalLink, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Image from "next/image";
@@ -14,6 +15,8 @@ type VendorStore = {
     storeBanner: string;
     storeAddress?: string | null;
     vendorShortDescription?: string | null;
+    isVerified?: boolean; // ✅ ভেরিফিকেশন চেক করার জন্য টাইপ অ্যাড করা হলো
+    verified?: boolean;   // ✅ ফলব্যাক টাইপ
     storeSocialLinks?: {
         facebook?: string | null;
         instagram?: string | null;
@@ -25,15 +28,16 @@ type VendorStore = {
 };
 
 export default function VendorStoreCard({ store }: { store: VendorStore }) {
-    // ✅ FIXED: Safe check for social links
     const socialLinks = store?.storeSocialLinks || {};
     const hasSocial = Object.values(socialLinks).some(link => link && typeof link === 'string' && link.trim() !== "");
 
-    // ✅ Guard: Check if store exists and has required fields
     if (!store || !store._id || !store.storeName) {
         console.warn("⚠️ VendorStoreCard: Invalid store data", store);
         return null;
     }
+
+    // ✅ স্টোরটি ভেরিফাইড কিনা তা চেক করা হচ্ছে
+    const isStoreVerified = store.isVerified || store.verified;
 
     return (
         <motion.div
@@ -44,7 +48,7 @@ export default function VendorStoreCard({ store }: { store: VendorStore }) {
             className="group h-full"
         >
             <Card className="h-full overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border-0 flex flex-col">
-                {/* Banner - Image already fixed */}
+                {/* Banner */}
                 <div className="relative h-48 bg-gray-200 overflow-hidden">
                     <Image
                         src={store.storeBanner || '/default-banner.jpg'}
@@ -58,9 +62,9 @@ export default function VendorStoreCard({ store }: { store: VendorStore }) {
                     <div className="overlay absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                 </div>
 
-                {/* Content Area - Even tighter padding */}
+                {/* Content Area */}
                 <div className="relative flex-1 px-3 pb-4 flex flex-col">
-                    {/* Logo - Smaller & less overlap */}
+                    {/* Logo */}
                     <div className="absolute left-1/2 -translate-x-1/2 -top-12">
                         <div className="w-26 h-26 rounded-full overflow-hidden ring-6 ring-white shadow-xl bg-white">
                             <Image
@@ -76,12 +80,18 @@ export default function VendorStoreCard({ store }: { store: VendorStore }) {
                         </div>
                     </div>
 
-                    {/* Info Section - Very compact */}
+                    {/* Info Section */}
                     <div className="mt-14 text-center space-y-2 flex-1 flex flex-col justify-between">
                         <div className="space-y-2">
-                            {/* Store Name */}
-                            <h3 className="text-xl font-bold text-gray-800 pt-2 line-clamp-1">
-                                {store.storeName}
+                            {/* ✅ Store Name with Facebook-style Blue Badge */}
+                            <h3 className="text-xl font-bold text-gray-800 pt-2 flex items-center justify-center gap-1.5">
+                                <span className="line-clamp-1">{store.storeName}</span>
+                                {isStoreVerified && (
+                                    <BadgeCheck 
+                                        className="w-5 h-5 text-white fill-[#0097E9] shrink-0" 
+                                        aria-label="Verified Store" 
+                                    />
+                                )}
                             </h3>
 
                             {/* Address */}
@@ -163,7 +173,7 @@ export default function VendorStoreCard({ store }: { store: VendorStore }) {
                         </div>
                     </div>
 
-                    {/* Visit Button - Minimal top margin */}
+                    {/* Visit Button */}
                     <div className="mt-4">
                         <Link href={`/home/visit-store/${store._id}`}>
                             <Button
