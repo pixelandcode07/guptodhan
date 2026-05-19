@@ -2,13 +2,16 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, X } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export default function VendorSearch() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
     const [isFocused, setIsFocused] = useState(false);
+
+    // ✅ isMounted ref — initial mount-এ useEffect চলবে না
+    const isMounted = useRef(false);
 
     const updateSearch = useCallback(
         (value: string) => {
@@ -25,9 +28,16 @@ export default function VendorSearch() {
     );
 
     useEffect(() => {
+        // ✅ First render skip — শুধু user টাইপ করলেই চলবে
+        if (!isMounted.current) {
+            isMounted.current = true;
+            return;
+        }
+
         const timer = setTimeout(() => {
             updateSearch(searchTerm);
         }, 500);
+
         return () => clearTimeout(timer);
     }, [searchTerm]); // eslint-disable-line react-hooks/exhaustive-deps
 
