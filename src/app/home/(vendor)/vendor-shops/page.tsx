@@ -1,8 +1,7 @@
 // src/app/home/(vendor)/vendor-shops/page.tsx
-// ✅ FULLY FIXED & CLEANED: Production-ready version with Search and Pagination without removing existing code
 
 import VendorStoreCard from "@/components/ReusableComponents/VendorStoreCard";
-import VendorSearch from "@/components/ReusableComponents/VendorSearch"; // ✅ Added Search component import
+import VendorSearch from "@/components/ReusableComponents/VendorSearch";
 import StickyNavTrigger from "../components/StickyNavTrigger";
 import { fetchNavigationCategoryData } from "@/lib/MainHomePage";
 import { fetchAllPublicStores } from "@/lib/MultiVendorApis/fetchAllStore";
@@ -31,7 +30,7 @@ import Link from "next/link";
 const ITEMS_PER_PAGE = 6;
 
 interface VendorShopsPageProps {
-  searchParams: Promise<{ page?: string; search?: string }>; // ✅ Updated to support search parameter
+  searchParams: Promise<{ page?: string; search?: string }>;
 }
 
 export default async function VendorShopsPage({
@@ -43,7 +42,7 @@ export default async function VendorShopsPage({
     // ===================================================================
     const params = await searchParams;
     const pageParam = params?.page;
-    const searchQuery = params?.search?.toLowerCase() || ""; // ✅ Extracted search query safely
+    const searchQuery = params?.search?.toLowerCase() || "";
     const currentPage = pageParam ? Number(pageParam) : 1;
 
     if (isNaN(currentPage) || currentPage < 1) {
@@ -77,7 +76,7 @@ export default async function VendorShopsPage({
     const categoryData = Array.isArray(categories) ? categories : [];
 
     // ===================================================================
-    // 🔥 SERVER-SIDE FILTERING (Search logic implemented seamlessly)
+    // Server-side filtering
     // ===================================================================
     if (searchQuery) {
       vendorData = vendorData.filter((store) =>
@@ -88,10 +87,9 @@ export default async function VendorShopsPage({
     // ===================================================================
     // Calculate pagination
     // ===================================================================
-    const totalPages = vendorData.length > 0 
-      ? Math.ceil(vendorData.length / ITEMS_PER_PAGE) 
-      : 1;
-    
+    const totalPages =
+      vendorData.length > 0 ? Math.ceil(vendorData.length / ITEMS_PER_PAGE) : 1;
+
     const validPage = Math.max(1, Math.min(currentPage, totalPages || 1));
 
     // ===================================================================
@@ -99,15 +97,14 @@ export default async function VendorShopsPage({
     // ===================================================================
     const startIndex = (validPage - 1) * ITEMS_PER_PAGE;
     const endIndex = validPage * ITEMS_PER_PAGE;
-    
-    // ✅ All vendors mapping kept safely for blue verification badge alignment
-    const paginatedStores = vendorData.slice(startIndex, endIndex).map(store => ({
+
+    const paginatedStores = vendorData.slice(startIndex, endIndex).map((store) => ({
       ...store,
-      isVerified: true, 
-      verified: true
+      isVerified: true,
+      verified: true,
     }));
 
-    // Helper function to dynamically append search query inside pagination items
+    // Helper: build page URL preserving search query
     const getPageUrl = (page: number) => {
       return `?page=${page}${searchQuery ? `&search=${searchQuery}` : ""}`;
     };
@@ -129,7 +126,7 @@ export default async function VendorShopsPage({
             />
           </section>
 
-          {/* Breadcrumb & Title */}
+          {/* Breadcrumb & Title + Search */}
           <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pt-10 pb-6">
             <Breadcrumb className="mb-4">
               <BreadcrumbList className="flex items-center gap-2 text-sm md:text-base">
@@ -153,22 +150,27 @@ export default async function VendorShopsPage({
               </BreadcrumbList>
             </Breadcrumb>
 
-            <h1 className="text-3xl md:text-4xl font-extrabold text-[#00005E]">
-              Explore Our Trusted Vendor Stores
-            </h1>
-            <p className="text-gray-500 mt-2">
-              Discover quality products directly from our verified sellers.
-            </p>
-
-            {/* ✅ Search input also rendered here for empty matching states */}
-            <VendorSearch />
+            {/* Title left — Search right */}
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-extrabold text-[#00005E]">
+                  Explore Our Trusted Vendor Stores
+                </h1>
+                <p className="text-gray-500 mt-2">
+                  Discover quality products directly from our verified sellers.
+                </p>
+              </div>
+              <div className="w-full md:max-w-sm lg:max-w-md">
+                <VendorSearch />
+              </div>
+            </div>
           </div>
 
           {/* Empty State Message */}
           <section className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pb-20">
             <div className="text-center py-32 bg-white rounded-2xl border border-dashed">
               <p className="text-xl text-gray-400">
-                {searchQuery 
+                {searchQuery
                   ? `No stores found matching "${searchQuery}"`
                   : "No stores available at the moment. Please check back soon!"}
               </p>
@@ -194,7 +196,7 @@ export default async function VendorShopsPage({
           />
         </section>
 
-        {/* Breadcrumb & Title Section */}
+        {/* Breadcrumb & Title + Search */}
         <div className="max-w-[95vw] xl:max-w-[90vw] mx-auto px-4 pt-10 pb-6">
           <Breadcrumb className="mb-4">
             <BreadcrumbList className="flex items-center gap-2 text-sm md:text-base">
@@ -218,18 +220,23 @@ export default async function VendorShopsPage({
             </BreadcrumbList>
           </Breadcrumb>
 
-          <h1 className="text-3xl md:text-4xl font-extrabold text-[#00005E]">
-            Explore Our Trusted Vendor Stores
-          </h1>
-          <p className="text-gray-500 mt-2">
-            Discover quality products directly from our verified sellers.
-          </p>
-
-          {/* ✅ Integrated Vendor Search bar layout */}
-          <VendorSearch />
+          {/* Title left — Search right */}
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-extrabold text-[#00005E]">
+                Explore Our Trusted Vendor Stores
+              </h1>
+              <p className="text-gray-500 mt-2">
+                Discover quality products directly from our verified sellers.
+              </p>
+            </div>
+            <div className="w-full md:max-w-sm lg:max-w-md">
+              <VendorSearch />
+            </div>
+          </div>
         </div>
 
-        {/* Sticky Nav - Only render if categories exist */}
+        {/* Sticky Nav */}
         {categoryData && categoryData.length > 0 && (
           <StickyNavTrigger categories={categoryData} />
         )}
@@ -239,18 +246,16 @@ export default async function VendorShopsPage({
           {/* Stores Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
             {paginatedStores.map((store) => {
-              if (!store || !store._id) {
-                return null;
-              }
+              if (!store || !store._id) return null;
               return <VendorStoreCard key={store._id} store={store} />;
             })}
           </div>
 
-          {/* Pagination Section - Only show if multiple pages */}
+          {/* Pagination — only if multiple pages */}
           {totalPages > 1 && (
             <Pagination className="mt-10">
               <PaginationContent>
-                {/* Previous Button */}
+                {/* Previous */}
                 <PaginationItem>
                   <PaginationPrevious
                     href={validPage > 1 ? getPageUrl(validPage - 1) : "#"}
@@ -262,7 +267,7 @@ export default async function VendorShopsPage({
                   />
                 </PaginationItem>
 
-                {/* Pagination Numbers and Ellipsis alignment */}
+                {/* Page Numbers */}
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .filter(
                     (page) =>
@@ -273,7 +278,6 @@ export default async function VendorShopsPage({
                   .flatMap((page, idx, arr) => {
                     const items = [];
 
-                    // Show ellipsis if gap between page numbers
                     if (idx > 0 && page - arr[idx - 1] > 1) {
                       items.push(
                         <PaginationItem key={`ellipsis-${page}`}>
@@ -282,7 +286,6 @@ export default async function VendorShopsPage({
                       );
                     }
 
-                    // Page Link
                     items.push(
                       <PaginationItem key={`page-${page}`}>
                         <PaginationLink
@@ -302,10 +305,12 @@ export default async function VendorShopsPage({
                     return items;
                   })}
 
-                {/* Next Button */}
+                {/* Next */}
                 <PaginationItem>
                   <PaginationNext
-                    href={validPage < totalPages ? getPageUrl(validPage + 1) : "#"}
+                    href={
+                      validPage < totalPages ? getPageUrl(validPage + 1) : "#"
+                    }
                     className={
                       validPage >= totalPages
                         ? "pointer-events-none opacity-40 cursor-not-allowed"
