@@ -100,43 +100,52 @@ export default function SetPin({
                 toast.dismiss('register-toast')
                 toast.loading('Logging you in automatically...', { id: 'auto-login' })
 
-                // ডাটাবেস সিঙ্ক হওয়ার জন্য ১ সেকেন্ড অপেক্ষা (যাতে auto-login ফেইল না করে)
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                // ==========================================
-                // ✅ CRITICAL FIX: এখানে `pin` এবং `password` দুটোই পাঠানো হয়েছে 
-                // যাতে LogIn.tsx এর সাথে কোনো কনফ্লিক্ট না হয়!
-                // ==========================================
-                const signInResult = await signIn('credentials', {
-                    identifier: identifier,
-                    pin: data.pin,           // ✅ Fixed Key
-                    password: data.pin,      // Fallback Key
-                    redirect: false,
-                })
-
-                toast.dismiss('auto-login')
-
-                if (signInResult?.error) {
-                    toast.error('Account created, but auto-login failed.', {
-                        description: 'Please log in manually.',
-                    })
-                    setStep('login')
-                } else {
-                    toast.success('Account created successfully!', {
-                        description: 'Welcome to Guptodhan! You are now logged in.',
-                        duration: 4000,
-                    })
+                try {
+                    // =================================================================
+                    // 🔥 CRITICAL FIX: Custom JWT Cookie Set + NextAuth Session Sync
+                    // =================================================================
                     
-                    // Cleanup
-                    localStorage.removeItem(`otp_${identifier}`);
-                    
-                    // Modal close করার জন্য onSuccess কল
-                    if (onSuccess) {
-                        onSuccess(data.pin);
+                    // ১. প্রথমে আপনার কাস্টম ব্যাকএন্ডে লগইন রিকোয়েস্ট পাঠিয়ে ব্রাউজারে accessToken ও refreshToken কুকি সেট করা হচ্ছে
+                    await axios.post('/api/v1/auth/login', {
+                        identifier: identifier,
+                        password: data.pin
+                    });
+
+                    // ২. এরপর NextAuth সেশন সিঙ্ক করা হচ্ছে
+                    const signInResult = await signIn('credentials', {
+                        identifier: identifier,
+                        password: data.pin, 
+                        redirect: false,
+                    });
+
+                    toast.dismiss('auto-login')
+
+                    if (signInResult?.error) {
+                        toast.error('Auto-login failed.', {
+                            description: 'Account created, please log in manually.',
+                        })
+                        setStep('login')
+                    } else {
+                        toast.success('Account created successfully!', {
+                            description: 'Welcome to Guptodhan! You are now logged in.',
+                            duration: 4000,
+                        })
+                        
+                        // Cleanup
+                        localStorage.removeItem(`otp_${identifier}`);
+                        
+                        // Modal close করার জন্য onSuccess কল
+                        if (onSuccess) {
+                            onSuccess(data.pin);
+                        }
+                        
+                        // ✅ কুকি এবং সেশন রিফ্রেশ করার জন্য পেজ রিলোড দেওয়া হচ্ছে
+                        window.location.reload(); 
                     }
-                    
-                    // ✅ পেজ রিফ্রেশ করে সেশন আপডেট করা হচ্ছে
-                    window.location.reload(); 
+                } catch (loginError) {
+                    toast.dismiss('auto-login');
+                    toast.error('Please login manually.');
+                    setStep('login');
                 }
             }
         } catch (error: any) {
