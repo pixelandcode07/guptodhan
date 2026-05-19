@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import { BadgeCheck, ChevronRight } from 'lucide-react';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -18,28 +18,10 @@ type Store = {
   positiveRating: number;
 };
 
-// ✅ Facebook-style verified badge
-function VerifiedBadge({ size = 20 }: { size?: number }) {
+// ✅ Blue verified badge — VendorStoreCard-এর মতো
+function VerifiedBadge() {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      title="Verified"
-    >
-      {/* Outer blue circle */}
-      <circle cx="12" cy="12" r="12" fill="#0097E9" />
-      {/* White checkmark — same weight as Facebook */}
-      <path
-        d="M7 12.5L10.5 16L17 9"
-        stroke="white"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+   <span><BadgeCheck/></span>
   );
 }
 
@@ -105,12 +87,12 @@ export default function StoreHeader({ store }: { store: Store }) {
         {/* Store Name & Meta */}
         <div className="pb-1">
           {/* Name + Badge */}
-          <div className="flex items-center gap-1.5 mt-8">
+          <div className="flex items-center gap-2 mt-8">
             <h1 className="text-xl font-bold text-[#00005E] leading-tight">
               {store.storeName}
             </h1>
-            {/* ✅ Facebook-style verified badge */}
-            <VerifiedBadge size={20} />
+            {/* ✅ Same blue verified badge as VendorStoreCard */}
+            <VerifiedBadge />
           </div>
 
           {/* Rating */}
