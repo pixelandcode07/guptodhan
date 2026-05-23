@@ -53,38 +53,39 @@ export default function OrderItemCard({ order, onReturnClick }: OrderItemCardPro
         </div>
       </div>
 
-      {/* ✅ Product List (ড্যাশবোর্ডের মতো সেম ডিজাইন) */}
+      {/* ✅ Product List (Entire Row Clickable to Order Details) */}
       <div className="flex flex-col">
         {order.items.map((item, idx) => {
-           // 🔥 সঠিক স্লাগ ফেচ করা হচ্ছে (যেটা page.tsx থেকে আসলো)
-           const productSlug = (item as any).slug || item.id;
-           
            // 🔥 Item Total Price
            const numericPrice = Number(item.priceFormatted.replace(/[^0-9]/g, '')) || 0;
            const itemTotal = numericPrice * (item.quantity || 1);
            const itemTotalFormatted = `৳ ${itemTotal.toLocaleString('en-US')}`;
 
            return (
-             <div key={idx} className="flex gap-4 p-4 items-start border-b border-gray-50 last:border-0 hover:bg-gray-50/80 transition-colors">
+             <Link 
+               key={idx} 
+               href={`/home/UserProfile/orders/${order.id}`}
+               className="flex gap-4 p-4 items-start border-b border-gray-50 last:border-0 hover:bg-gray-50/80 transition-colors cursor-pointer group block"
+             >
                 
-                {/* ✅ Image Clickable (Using Slug) */}
-                <Link href={`/product/${productSlug}`} className="shrink-0 relative border border-gray-200 rounded-md bg-white block overflow-hidden">
+                {/* Image */}
+                <div className="shrink-0 relative border border-gray-200 rounded-md bg-white block overflow-hidden">
                   <Image 
                     src={item.thumbnailUrl || '/img/product/p-1.png'} 
                     alt={item.title || 'Product'} 
                     width={72} height={72} 
-                    className="rounded-md object-cover h-[72px] w-[72px] hover:scale-105 transition-transform duration-300" 
+                    className="rounded-md object-cover h-[72px] w-[72px] group-hover:scale-105 transition-transform duration-300" 
                   />
-                </Link>
+                </div>
                 
                 <div className="flex-1 flex flex-col sm:flex-row sm:justify-between gap-3 min-w-0">
                   <div className="space-y-1 min-w-0">
-                    {/* ✅ Title Clickable (Using Slug) */}
-                    <Link href={`/product/${productSlug}`} className="text-sm font-medium text-gray-800 line-clamp-2 hover:text-[#0097E9] transition-colors pr-2">
+                    {/* Title */}
+                    <h3 className="text-sm font-medium text-gray-800 line-clamp-2 group-hover:text-[#0097E9] transition-colors pr-2">
                       {item.title || 'Product Name Unavailable'}
-                    </Link>
+                    </h3>
 
-                    {/* ✅ Qty Moved Here (Under Title) */}
+                    {/* Qty */}
                     <div className="text-xs text-gray-500 mt-1">
                       Qty: {item.quantity || 1}
                     </div>
@@ -99,14 +100,14 @@ export default function OrderItemCard({ order, onReturnClick }: OrderItemCardPro
                     )}
                   </div>
 
-                  {/* ✅ Right Side: Only Total Item Price */}
+                  {/* Right Side: Total Item Price */}
                   <div className="text-left sm:text-right shrink-0">
                     <div className="text-sm text-slate-900 font-bold whitespace-nowrap">
                       {itemTotalFormatted}
                     </div>
                   </div>
                 </div>
-             </div>
+             </Link>
            );
         })}
       </div>
