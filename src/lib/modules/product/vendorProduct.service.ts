@@ -1048,7 +1048,15 @@ const buildDescriptionMatch = (words: string[]): Record<string, any> => {
 /** Tag OR regex — tag হলো keyword list, যেকোনো একটা match হলেই চলবে */
 const buildTagOrRegex = (words: string[]): RegExp =>
   new RegExp(words.map((w) => `\\b${w}`).join("|"), "i");
-
+// ─── prepareWords ─────────────────────────────────────────────────────────────
+const prepareWords = (searchTerm: string): string[] => {
+  return searchTerm
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)                        // স্পেস দিয়ে ভাগ করা
+    .map((w) => w.replace(/[^\w\u0980-\u09FF]/g, "")) // special chars বাদ
+    .filter((w) => w.length > 0);        // খালি string বাদ
+};
 
 // ─── getLiveSuggestionsFromDB ─────────────────────────────────────────────────
 
