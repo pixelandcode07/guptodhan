@@ -791,6 +791,296 @@ const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
   }
 };
 
+
+const getAdminDashboardReportFromDB = async (filters: {
+  startDate?: string;
+  endDate?: string;
+  orderStatus?: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
+}) => {
+  // ── 1. Shared $match filter ──────────────────────────────────────
+  const match: Record<string, any> = {};
+ 
+  if (filters.startDate || filters.endDate) {
+    match.orderDate = {};
+    if (filters.startDate) {
+      match.orderDate.$gte = new Date(filters.startDate);
+    }
+    if (filters.endDate) {
+      const end = new Date(filters.endDate);
+      end.setHours(23, 59, 59, 999);
+      match.orderDate.$lte = end;
+    }
+  }
+ 
+  if (filters.orderStatus?.trim())   match.orderStatus   = filters.orderStatus.trim();
+  if (filters.paymentStatus?.trim()) match.paymentStatus = filters.paymentStatus.trim();
+  if (filters.paymentMethod?.trim()) {
+    match.paymentMethod = { $regex: filters.paymentMethod.trim(), $options: 'i' };
+  }
+ 
+  // ── Run all 3 pipelines in parallel ─────────────────────────────
+  const [vendorBreakdown, customerBreakdown, summaryRaw] = await Promise.all([
+ 
+    // ── PIPELINE 1: Vendor Breakdown ─────────────────────────────
+    // Orders → join StoreModel (commission) → group by storeId
+    OrderModel.aggregate([
+      { $match: match },
+ 
+      // Join store to get commission rate
+      {
+        $lookup: {
+          from: 'storemodels',
+          localField: 'storeId',
+          foreignField: '_id',
+          as: 'store',
+        },
+      },
+      { $unwind: { path: '$store', preserveNullAndEmptyArrays: true } },
+ 
+      // Compute per-order financials
+      {
+        $addFields: {
+          // productTotal = totalAmount - deliveryCharge
+          productTotal: { $subtract: ['$totalAmount', { $ifNull: ['$deliveryCharge', 0] }] },
+          commissionRate: { $ifNull: ['$store.commission', 0] },
+        },
+      },
+      {
+        $addFields: {
+          // Admin commission earned from this order
+          adminEarned: {
+            $multiply: [
+              '$productTotal',
+              { $divide: ['$commissionRate', 100] },
+            ],
+          },
+          // Vendor net earnings from this order
+          vendorNet: {
+            $multiply: [
+              '$productTotal',
+              {
+                $subtract: [1, { $divide: ['$commissionRate', 100] }],
+              },
+            ],
+          },
+        },
+      },
+ 
+      // Group by vendor store
+      {
+        $group: {
+          _id: '$storeId',
+          storeName:          { $first: '$store.storeName' },
+          storeEmail:         { $first: '$store.storeEmail' },
+          storeLogo:          { $first: '$store.storeLogo' },
+          commissionRate:     { $first: '$commissionRate' },
+          totalOrders:        { $sum: 1 },
+          deliveredOrders:    { $sum: { $cond: [{ $eq: ['$orderStatus', 'Delivered'] }, 1, 0] } },
+          cancelledOrders:    { $sum: { $cond: [{ $eq: ['$orderStatus', 'Cancelled'] }, 1, 0] } },
+          totalRevenue:       { $sum: '$totalAmount' },
+          totalProductRevenue:{ $sum: '$productTotal' },
+          totalDeliveryCharge:{ $sum: { $ifNull: ['$deliveryCharge', 0] } },
+          // Admin commission = sum of all per-order adminEarned
+          adminEarned:        { $sum: '$adminEarned' },
+          // Vendor net = sum of all per-order vendorNet
+          vendorNet:          { $sum: '$vendorNet' },
+        },
+      },
+ 
+      { $sort: { totalRevenue: -1 } },
+ 
+      // Clean up the shape
+      {
+        $project: {
+          _id: 0,
+          storeId:             '$_id',
+          storeName:           { $ifNull: ['$storeName', 'Unknown Store'] },
+          storeEmail:          1,
+          storeLogo:           1,
+          commissionRate:      1,
+          totalOrders:         1,
+          deliveredOrders:     1,
+          cancelledOrders:     1,
+          totalRevenue:        { $round: ['$totalRevenue', 2] },
+          totalProductRevenue: { $round: ['$totalProductRevenue', 2] },
+          totalDeliveryCharge: { $round: ['$totalDeliveryCharge', 2] },
+          adminEarned:         { $round: ['$adminEarned', 2] },
+          vendorNet:           { $round: ['$vendorNet', 2] },
+        },
+      },
+    ]),
+ 
+    // ── PIPELINE 2: Customer Breakdown ───────────────────────────
+    // Orders → join OrderDetails (quantity sum) → group by userId
+    OrderModel.aggregate([
+      { $match: match },
+ 
+      // Join orderDetails to get per-order product quantities
+      {
+        $lookup: {
+          from: 'orderdetails',
+          localField: 'orderDetails',
+          foreignField: '_id',
+          as: 'detailDocs',
+        },
+      },
+ 
+      // Sum of all product quantities in this order
+      {
+        $addFields: {
+          totalProductsInOrder: { $sum: '$detailDocs.quantity' },
+          uniqueProductsInOrder: { $size: { $ifNull: ['$detailDocs', []] } },
+        },
+      },
+ 
+      // Group by customer (userId)
+      {
+        $group: {
+          _id: '$userId',
+          // Use shippingName/Phone from most recent order
+          customerName:     { $first: '$shippingName' },
+          customerPhone:    { $first: '$shippingPhone' },
+          totalOrders:      { $sum: 1 },
+          deliveredOrders:  { $sum: { $cond: [{ $eq: ['$orderStatus', 'Delivered'] }, 1, 0] } },
+          cancelledOrders:  { $sum: { $cond: [{ $eq: ['$orderStatus', 'Cancelled'] }, 1, 0] } },
+          totalSpent:       { $sum: '$totalAmount' },
+          // Total individual product units purchased
+          totalProducts:    { $sum: '$totalProductsInOrder' },
+          // Total unique product lines across all orders
+          uniqueProducts:   { $sum: '$uniqueProductsInOrder' },
+          lastOrderDate:    { $max: '$orderDate' },
+          firstOrderDate:   { $min: '$orderDate' },
+          // Cities ordered from (for geo insight)
+          cities:           { $addToSet: '$shippingCity' },
+        },
+      },
+ 
+      { $sort: { totalSpent: -1 } },
+ 
+      {
+        $project: {
+          _id: 0,
+          userId:          '$_id',
+          customerName:    1,
+          customerPhone:   1,
+          totalOrders:     1,
+          deliveredOrders: 1,
+          cancelledOrders: 1,
+          totalSpent:      { $round: ['$totalSpent', 2] },
+          totalProducts:   1,
+          uniqueProducts:  1,
+          lastOrderDate:   1,
+          firstOrderDate:  1,
+          cities:          1,
+        },
+      },
+    ]),
+ 
+    // ── PIPELINE 3: Summary ──────────────────────────────────────
+    // All orders → join StoreModel → compute totals
+    OrderModel.aggregate([
+      { $match: match },
+ 
+      // Join store for commission rate
+      {
+        $lookup: {
+          from: 'storemodels',
+          localField: 'storeId',
+          foreignField: '_id',
+          as: 'store',
+        },
+      },
+      { $unwind: { path: '$store', preserveNullAndEmptyArrays: true } },
+ 
+      {
+        $addFields: {
+          productTotal:  { $subtract: ['$totalAmount', { $ifNull: ['$deliveryCharge', 0] }] },
+          commissionRate: { $ifNull: ['$store.commission', 0] },
+        },
+      },
+      {
+        $addFields: {
+          adminEarned: {
+            $multiply: ['$productTotal', { $divide: ['$commissionRate', 100] }],
+          },
+        },
+      },
+ 
+      // Single-group totals
+      {
+        $group: {
+          _id: null,
+          totalRevenue:       { $sum: '$totalAmount' },
+          totalDeliveryRevenue: { $sum: { $ifNull: ['$deliveryCharge', 0] } },
+          totalProductRevenue:  { $sum: '$productTotal' },
+          totalAdminProfit:   { $sum: '$adminEarned' },
+          totalOrders:        { $sum: 1 },
+          deliveredOrders:    { $sum: { $cond: [{ $eq: ['$orderStatus', 'Delivered'] }, 1, 0] } },
+          pendingOrders:      { $sum: { $cond: [{ $eq: ['$orderStatus', 'Pending'] }, 1, 0] } },
+          processingOrders:   { $sum: { $cond: [{ $eq: ['$orderStatus', 'Processing'] }, 1, 0] } },
+          shippedOrders:      { $sum: { $cond: [{ $eq: ['$orderStatus', 'Shipped'] }, 1, 0] } },
+          cancelledOrders:    { $sum: { $cond: [{ $eq: ['$orderStatus', 'Cancelled'] }, 1, 0] } },
+          returnedOrders:     { $sum: { $cond: [{ $in:  ['$orderStatus', ['Returned', 'Return Request']] }, 1, 0] } },
+          paidOrders:         { $sum: { $cond: [{ $eq: ['$paymentStatus', 'Paid'] }, 1, 0] } },
+          unpaidOrders:       { $sum: { $cond: [{ $eq: ['$paymentStatus', 'Pending'] }, 1, 0] } },
+          uniqueCustomers:    { $addToSet: '$userId' },
+          uniqueVendors:      { $addToSet: '$storeId' },
+        },
+      },
+ 
+      {
+        $project: {
+          _id: 0,
+          totalRevenue:         { $round: ['$totalRevenue', 2] },
+          totalDeliveryRevenue: { $round: ['$totalDeliveryRevenue', 2] },
+          totalProductRevenue:  { $round: ['$totalProductRevenue', 2] },
+          totalAdminProfit:     { $round: ['$totalAdminProfit', 2] },
+          totalOrders:          1,
+          deliveredOrders:      1,
+          pendingOrders:        1,
+          processingOrders:     1,
+          shippedOrders:        1,
+          cancelledOrders:      1,
+          returnedOrders:       1,
+          paidOrders:           1,
+          unpaidOrders:         1,
+          // $size on $addToSet result gives unique count
+          uniqueCustomersCount: { $size: '$uniqueCustomers' },
+          uniqueVendorsCount:   { $size: '$uniqueVendors' },
+        },
+      },
+    ]),
+  ]);
+ 
+  // ── 2. Build summary (fallback if no orders matched) ────────────
+  const summary = summaryRaw[0] ?? {
+    totalRevenue:          0,
+    totalDeliveryRevenue:  0,
+    totalProductRevenue:   0,
+    totalAdminProfit:      0,
+    totalOrders:           0,
+    deliveredOrders:       0,
+    pendingOrders:         0,
+    processingOrders:      0,
+    shippedOrders:         0,
+    cancelledOrders:       0,
+    returnedOrders:        0,
+    paidOrders:            0,
+    unpaidOrders:          0,
+    uniqueCustomersCount:  0,
+    uniqueVendorsCount:    0,
+  };
+ 
+  return {
+    summary,
+    vendorBreakdown,
+    customerBreakdown,
+  };
+};
+ 
+
 // ================================================================
 // 📤 EXPORTS
 // ================================================================
@@ -805,5 +1095,6 @@ export const OrderServices = {
   getReturnedOrdersByUserFromDB,
   getFilteredOrdersFromDB,
   requestReturnInDB,
-  getVendorStoreAndOrdersFromDBVendor
+  getVendorStoreAndOrdersFromDBVendor,
+  getAdminDashboardReportFromDB,
 };
