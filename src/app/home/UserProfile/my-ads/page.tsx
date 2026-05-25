@@ -69,7 +69,7 @@ export default function MyAdsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <h1 className="text-xl font-semibold text-gray-800">My Ads (Buy & Sell)</h1>
                 <Link 
-                    href="/buy-sell/post-ad" 
+                    href="/buy-sell/select/category" 
                     className="flex items-center justify-center gap-2 bg-[#EF4A23] hover:bg-[#d43d1a] text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap"
                 >
                     <Megaphone className="w-4 h-4" />
@@ -88,7 +88,7 @@ export default function MyAdsPage() {
                         You haven't posted any classified ads yet. Start selling your items today!
                     </p>
                     <Link 
-                        href="/buy-sell/post-ad" 
+                        href="/buy-sell/select/category" 
                         className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-md text-sm font-medium transition-colors"
                     >
                         Post an Ad Now
