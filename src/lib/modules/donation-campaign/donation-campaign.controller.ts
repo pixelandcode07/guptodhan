@@ -254,18 +254,44 @@ const moderateCampaign = async (
   }
 };
 
-// ✅ UPDATE CAMPAIGN
 const updateCampaign = async (
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) => {
   await dbConnect();
   try {
-    const { userId, role } = getUserDetailsFromToken(req); // 🔐 টোকেন থেকে ইউজার ডাটা বের করা
+    const { userId } = getUserDetailsFromToken(req); 
     const { id } = await context.params;
-    const body = await req.json();
+    
+    const formData = await req.formData();
+    const payload: any = {};
 
-    const result = await DonationCampaignServices.updateCampaignInDB(id, userId, role, body);
+    // 1. Handle Text Fields
+    payload.title = formData.get('title');
+    payload.item = formData.get('item');
+    payload.description = formData.get('description');
+    payload.goalAmount = Number(formData.get('goalAmount'));
+    payload.category = new Types.ObjectId(formData.get('category') as string);
+
+    // 2. Handle Images (Existing + New)
+    const existingImages = formData.getAll('existingImages') as string[];
+    const newImageFiles = formData.getAll('newImages') as File[];
+
+    let finalImages = [...existingImages];
+
+    if (newImageFiles.length > 0) {
+      const uploadResults = await Promise.all(
+        newImageFiles.map(async (file) => {
+          const buffer = Buffer.from(await file.arrayBuffer());
+          return uploadToCloudinary(buffer, 'donation-campaigns');
+        })
+      );
+      finalImages = [...finalImages, ...uploadResults.map(r => r.secure_url)];
+    }
+    payload.images = finalImages;
+
+    // 3. Service Call
+    const result = await DonationCampaignServices.updateCampaignInDB(id, userId, payload);
 
     return sendResponse({
       success: true,
