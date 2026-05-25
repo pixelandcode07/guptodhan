@@ -154,8 +154,7 @@ const archiveCampaignInDB = async (id: string) => {
   return result;
 };
 
-// ✅ UPDATE: Owner সিকিউরিটি এবং Pending লজিক অ্যাড করা হয়েছে
-const updateCampaignInDB = async (id: string, userId: string, userRole: string, payload: Partial<IDonationCampaign>) => {
+const updateCampaignInDB = async (id: string, userId: string, payload: Partial<IDonationCampaign> & { newImages?: string[] }) => {
   await dbConnect();
 
   const campaign = await DonationCampaign.findById(id);
@@ -164,18 +163,25 @@ const updateCampaignInDB = async (id: string, userId: string, userRole: string, 
     throw new Error('Campaign not found');
   }
 
-  // ✅ Ownership Check (শুধুমাত্র ক্যাম্পেইনের মালিক এডিট করতে পারবে)
+  // ✅ Ownership Check (Only creator can edit)
   const isOwner = campaign.creator.toString() === userId;
   if (!isOwner) {
     throw new Error('Forbidden: Only the creator can edit this campaign.');
   }
 
-  // ✅ এডিট করলেই আবার পেন্ডিং ও ইনঅ্যাক্টিভ হয়ে যাবে (Admin রিভিউয়ের জন্য)
-  payload.moderationStatus = 'pending';
-  payload.status = 'inactive';
+  // ✅ Strict Whitelist: শুধুমাত্র এই ফিল্ডগুলোই ইউজার এডিট করতে পারবে
+  const updateFields: any = {
+    title: payload.title,
+    category: payload.category,
+    item: payload.item,
+    description: payload.description,
+    goalAmount: payload.goalAmount,
+    images: payload.images, // এখানে মার্জ করা ছবিগুলো আসবে
+    moderationStatus: 'pending', // এডিট করলে আবার পেন্ডিং হবে
+    status: 'inactive',          // এডিট করলে আবার ইনঅ্যাক্টিভ হবে
+  };
 
-  const result = await DonationCampaign.findByIdAndUpdate(id, payload, { new: true });
-
+  const result = await DonationCampaign.findByIdAndUpdate(id, updateFields, { new: true });
   return result;
 };
 
