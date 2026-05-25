@@ -147,35 +147,80 @@ const getSingleAd = async (req: NextRequest, { params }: { params: Promise<{ id:
 };
 
 // 4. Update Ad
+// 4. Update Ad (Content Update -> Owner Only)
 const updateAd = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
   
   const { userId, role } = getUserDetailsFromToken(req);
-
   const { id } = await params;
-  const body = await req.json();
-  const validatedData = updateAdValidationSchema.parse(body);
 
-  const payloadForService: Partial<IClassifiedAd> = {
-    ...validatedData,
-    category: validatedData.category ? new Types.ObjectId(validatedData.category) : undefined,
-    subCategory: validatedData.subCategory ? new Types.ObjectId(validatedData.subCategory) : undefined,
-    brand: validatedData.brand,
-    productModel: validatedData.productModel,
-    edition: validatedData.edition,
-    contactDetails: validatedData.contactDetails
-      ? {
-          name: validatedData.contactDetails.name ?? '',
-          phone: validatedData.contactDetails.phone ?? '',
-          email: validatedData.contactDetails.email,
-          isPhoneHidden: validatedData.contactDetails.isPhoneHidden ?? false,
-        }
-      : undefined,
-  };
+  // ✅ JSON এর বদলে FormData রিসিভ করা হচ্ছে (কারন ছবি থাকতে পারে)
+  const formData = await req.formData();
+  const payload: any = {};
 
-  const result = await ClassifiedAdServices.updateAdInDB(id, userId, role, payloadForService);
+  // Text Fields Extract
+  const simpleFields = [
+    'title', 'division', 'district', 'upazila', 
+    'condition', 'authenticity', 'brand', 'productModel', 
+    'edition', 'description'
+  ];
 
-  return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad updated successfully. Waiting for admin approval.', data: result });
+  simpleFields.forEach(field => {
+    if (formData.has(field)) payload[field] = formData.get(field);
+  });
+
+  if (formData.has('price')) payload.price = Number(formData.get('price'));
+  if (formData.has('isNegotiable')) payload.isNegotiable = formData.get('isNegotiable') === 'true';
+
+  // Object IDs (Category & Subcategory)
+  if (formData.has('category')) payload.category = new Types.ObjectId(formData.get('category') as string);
+  if (formData.has('subCategory')) payload.subCategory = new Types.ObjectId(formData.get('subCategory') as string);
+
+  // Arrays (Features)
+  const features = formData.getAll('features');
+  if (features.length > 0) payload.features = features;
+
+  // Contact Details Extract
+  if (formData.has('contactName') || formData.has('contactPhone')) {
+    payload.contactDetails = {
+      name: formData.get('contactName') as string || '',
+      phone: formData.get('contactPhone') as string || '',
+      email: formData.get('contactEmail') as string || undefined,
+      isPhoneHidden: formData.get('isPhoneHidden') === 'true',
+    };
+  }
+
+  // ✅ Image Handling (Existing + New)
+  const existingImages = formData.getAll('existingImages') as string[];
+  const newImageFiles = formData.getAll('newImages') as File[];
+
+  let finalImages = [...existingImages];
+
+  // যদি নতুন ছবি আপলোড করে থাকে, সেগুলো ক্লাউডিনারিতে আপলোড করে লিংকে কনভার্ট করুন
+  if (newImageFiles.length > 0) {
+    const uploadResults = await Promise.all(
+      newImageFiles.map(async file => uploadToCloudinary(Buffer.from(await file.arrayBuffer()), 'classified-ads'))
+    );
+    const newImageUrls = uploadResults.map(r => r.secure_url);
+    finalImages = [...finalImages, ...newImageUrls];
+  }
+
+  if (finalImages.length > 0) {
+    payload.images = finalImages;
+  }
+
+  // ✅ Zod Validation (Optional: Call your update validation schema here if needed)
+  // const validatedData = updateAdValidationSchema.parse(payload);
+
+  // Send to Service
+  const result = await ClassifiedAdServices.updateAdInDB(id, userId, role, payload);
+
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'Ad updated successfully. Waiting for admin approval.', 
+    data: result 
+  });
 };
 
 // 5. Delete Ad
