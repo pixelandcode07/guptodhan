@@ -5,11 +5,17 @@ import { deleteFromCloudinary } from '@/lib/utils/cloudinary';
 import mongoose, { Types } from 'mongoose';
 
 const createAdInDB = async (payload: Partial<IClassifiedAd>) => {
-  return await ClassifiedAd.create(payload);
+  return await ClassifiedAd.create({ ...payload, status: 'pending' });
 };
 
-const searchAdsInDB = async (filters: Record<string, any>) => {
+const searchAdsInDB = async (filters: Record<string, any>, options: { onlyActive?: boolean } = { onlyActive: true }) => {
   const query: Record<string, any> = {};
+
+  if (options.onlyActive) {
+    query.status = 'active';
+  }
+
+  if (filters.user) query.user = new Types.ObjectId(filters.user);
 
   if (filters.category) query.category = new Types.ObjectId(filters.category);
   
@@ -64,43 +70,40 @@ const getAllPublicAdsFromDB = async () => {
 
 const getPublicAdByIdFromDB = async (id: string) => {
   const ad = await ClassifiedAd.findById(id)
-    .populate('user', 'name profilePicture')
+    .populate('user', 'name profilePicture phoneNumber')
     .populate('category', 'name')
     .populate('subCategory', 'name')
     .populate('brand', 'name')
     .populate('productModel', 'name');
 
-  if (!ad || ad.status !== 'active') {
-    throw new Error('Ad not found or is not active.');
+  if (!ad) {
+    throw new Error('Ad not found.');
   }
   return ad;
 };
 
-// ✅ UPDATE: Owner এডিট করলে অ্যাড অটোমেটিক Pending হয়ে যাবে
 const updateAdInDB = async (adId: string, userId: string, userRole: string, payload: Partial<IClassifiedAd>) => {
   const ad = await ClassifiedAd.findById(adId);
   if (!ad) throw new Error('Ad not found!');
 
-  // লজিক: শুধুমাত্র অ্যাড-এর মালিক (Owner) কন্টেন্ট এডিট করতে পারবে
   const isOwner = ad.user.toString() === userId;
+  const isAdmin = userRole === 'admin';
 
-  if (!isOwner) {
+  if (!isOwner && !isAdmin) {
     throw new Error('Forbidden: Only the owner can edit the ad details.');
   }
 
-  // 🔐 নতুন সিকিউরিটি লজিক: ইউজার এডিট করলে স্ট্যাটাস আবার 'pending' হয়ে যাবে!
-  // যাতে অ্যাডমিন রিভিউ করে তারপর আবার 'active' করতে পারে।
-  payload.status = 'pending';
+  if (!isAdmin) {
+    payload.status = 'pending';
+  }
 
   return await ClassifiedAd.findByIdAndUpdate(adId, payload, { new: true });
 };
 
-// ✅ DELETE: Owner এবং Admin উভয়েই ডিলিট করতে পারবে
 const deleteAdFromDB = async (adId: string, userId: string, userRole: string) => {
   const ad = await ClassifiedAd.findById(adId);
   if (!ad) throw new Error('Ad not found!');
 
-  // লজিক: মালিক অথবা এডমিন - যেই হোক ডিলিট করতে পারবে
   const isOwner = ad.user.toString() === userId;
   const isAdmin = userRole === 'admin';
 
@@ -195,16 +198,21 @@ const getAllAdsForAdminFromDB = async () => {
     .sort({ createdAt: -1 });
 }
 
-// ✅ UPDATE STATUS: Admin Only (Controller checks permission)
+// ✅ UPDATE STATUS: Admin Only
 const updateAdStatusInDB = async (adId: string, status: string) => {
   const ad = await ClassifiedAd.findById(adId);
   if (!ad) {
     throw new Error('Ad not found!');
   }
-  // Type assertion to match model definition
   ad.status = status as 'pending' | 'active' | 'sold' | 'inactive';
   await ad.save();
   return ad;
+};
+
+const getMyAdsFromDB = async (userId: string) => {
+  return await ClassifiedAd.find({ user: new Types.ObjectId(userId) })
+    .populate('category', 'name')
+    .sort({ createdAt: -1 });
 };
 
 export const ClassifiedAdServices = {
@@ -219,4 +227,5 @@ export const ClassifiedAdServices = {
   getFiltersForCategoryFromDB,
   getAllAdsForAdminFromDB,
   updateAdStatusInDB,
+  getMyAdsFromDB, 
 };
