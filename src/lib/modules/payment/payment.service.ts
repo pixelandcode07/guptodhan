@@ -23,13 +23,12 @@ const initPayment = async (orderId: string) => {
     const user = order.userId as any;
 
     if (order.transactionId) {
-      console.warn("⚠️ Payment already initiated for this order, re-using session...");
       const existingUrl = await initPaymentSession({
         total_amount:  order.totalAmount,
         tran_id:       order.transactionId,
         cus_name:      user?.name || order.shippingName || "Customer",
         cus_email:     user?.email || order.shippingEmail || "customer@example.com",
-        cus_add1:      "Dhaka", // Pass dummy to gateway to avoid crash
+        cus_add1:      "Dhaka", // Dummy to avoid crash
         cus_phone:     user?.phoneNumber || order.shippingPhone || "01700000000",
         product_name:  `Guptodhan Order #${order.orderId}`,
       });
@@ -54,14 +53,12 @@ const initPayment = async (orderId: string) => {
       { orderId: order.orderId },
       {
         transactionId,
-        paymentStatus: "Pending", // Keep pending until money is received
+        paymentStatus: "Pending", 
       },
       { new: true }
     );
 
-    if (!updatedOrder) {
-      throw new Error("Failed to save transaction ID to order.");
-    }
+    if (!updatedOrder) throw new Error("Failed to save transaction ID to order.");
 
     return gatewayUrl;
   } catch (error: any) {
@@ -105,17 +102,25 @@ const handleSuccessfulPayment = async (transactionId: string) => {
   }
 };
 
-// ✅ Handle Failed Payment
+// ✅ Handle Failed Payment (🔥 CRITICAL FIX: DELETE FAKE ORDER)
 const handleFailedPayment = async (transactionId: string) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const order = await OrderModel.findOneAndUpdate(
-      { transactionId },
-      { paymentStatus: "Failed" },
-      { new: true, session }
-    );
+    console.log("📝 Deleting failed order for transaction:", transactionId);
+
+    const order = await OrderModel.findOne({ transactionId }).session(session);
+
+    if (order) {
+      // 1. Delete associated order details first
+      if (mongoose.models.OrderDetails) {
+          await mongoose.models.OrderDetails.deleteMany({ orderId: order._id }).session(session);
+      }
+      // 2. Delete the main order
+      await OrderModel.findByIdAndDelete(order._id).session(session);
+      console.log(`❌ Order completely deleted due to failed payment: ${transactionId}`);
+    }
 
     await session.commitTransaction();
     return order;
@@ -127,17 +132,25 @@ const handleFailedPayment = async (transactionId: string) => {
   }
 };
 
-// ✅ Handle Cancelled Payment
+// ✅ Handle Cancelled Payment (🔥 CRITICAL FIX: DELETE FAKE ORDER)
 const handleCancelledPayment = async (transactionId: string) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const order = await OrderModel.findOneAndUpdate(
-      { transactionId },
-      { paymentStatus: "Cancelled" },
-      { new: true, session }
-    );
+    console.log("📝 Deleting cancelled order for transaction:", transactionId);
+
+    const order = await OrderModel.findOne({ transactionId }).session(session);
+
+    if (order) {
+      // 1. Delete associated order details first
+      if (mongoose.models.OrderDetails) {
+          await mongoose.models.OrderDetails.deleteMany({ orderId: order._id }).session(session);
+      }
+      // 2. Delete the main order
+      await OrderModel.findByIdAndDelete(order._id).session(session);
+      console.log(`🚫 Order completely deleted due to cancelled payment: ${transactionId}`);
+    }
 
     await session.commitTransaction();
     return order;
@@ -158,11 +171,10 @@ const validateAndProcessIPN = async (ipnData: any) => {
     const validationResult = await validatePayment(ipnData);
 
     if (!validationResult || (validationResult.status !== "VALID" && validationResult.status !== "Success")) {
-      throw new Error(`IPN Validation Failed: ${validationResult?.status || "Unknown status"}`);
+      throw new Error(`IPN Validation Failed`);
     }
 
     const order = await OrderModel.findOne({ transactionId: ipnData.tran_id }).session(session);
-
     if (!order) throw new Error("Order not found for this transaction.");
     
     if (order.paymentStatus === "Paid") {
@@ -172,7 +184,7 @@ const validateAndProcessIPN = async (ipnData: any) => {
 
     const ipnAmount = parseFloat(ipnData.amount);
     if (Math.abs(ipnAmount - order.totalAmount) > 0.01) {
-      throw new Error(`Payment amount mismatch. Expected: ${order.totalAmount}, Received: ${ipnAmount}`);
+      throw new Error(`Payment amount mismatch.`);
     }
 
     const updatedOrder = await OrderModel.findOneAndUpdate(
