@@ -18,7 +18,8 @@ const getCredentials = () => {
   return { store_id, store_passwd, is_live };
 };
 
-const SSLCZ_SANDBOX_URL = "https://sandbox.sslcommerz.com/gwprocess/v3/api.php";
+// 🔥 FIX: Changed v3 to v4 for Sandbox URL
+const SSLCZ_SANDBOX_URL = "https://sandbox.sslcommerz.com/gwprocess/v4/api.php";
 const SSLCZ_LIVE_URL    = "https://securepay.sslcommerz.com/gwprocess/v4/api.php";
 
 export const initPaymentSession = async (payload: ISSLCommerzPayload) => {
@@ -96,22 +97,28 @@ export const initPaymentSession = async (payload: ISSLCommerzPayload) => {
     });
 
     console.log("📥 SSLCommerz HTTP Status:", response.status);
-    console.log("📥 SSLCommerz Response:", JSON.stringify(response.data, null, 2));
+    
+    // Check if the response is actually an object before trying to JSON.stringify
+    if (typeof response.data === 'object') {
+        console.log("📥 SSLCommerz Response:", JSON.stringify(response.data, null, 2));
+    } else {
+        console.log("📥 SSLCommerz Response (Raw/HTML):", response.data.substring(0, 200) + '...');
+    }
 
     if (response.status !== 200) {
       throw new Error(
         `SSLCommerz returned HTTP ${response.status}. ` +
-        `Response: ${JSON.stringify(response.data)}`
+        `Response: ${typeof response.data === 'object' ? JSON.stringify(response.data) : 'HTML/Invalid format'}`
       );
     }
 
     const apiResponse = response.data;
 
-    if (!apiResponse?.GatewayPageURL) {
-      const reason = apiResponse?.failedreason || apiResponse?.status || JSON.stringify(apiResponse);
+    // Safety check if response is HTML instead of JSON
+    if (typeof apiResponse !== 'object' || !apiResponse?.GatewayPageURL) {
+      const reason = apiResponse?.failedreason || apiResponse?.status || "Invalid response format from SSLCommerz";
       console.error("❌ SSLCommerz: No GatewayPageURL in response");
       console.error("   failedreason:", apiResponse?.failedreason);
-      console.error("   status:", apiResponse?.status);
       throw new Error(`SSLCommerz rejected the request: ${reason}`);
     }
 
