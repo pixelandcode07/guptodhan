@@ -18,7 +18,6 @@ const getCredentials = () => {
   return { store_id, store_passwd, is_live };
 };
 
-// 🔥 FIX: Changed v3 to v4 for Sandbox URL
 const SSLCZ_SANDBOX_URL = "https://sandbox.sslcommerz.com/gwprocess/v4/api.php";
 const SSLCZ_LIVE_URL    = "https://securepay.sslcommerz.com/gwprocess/v4/api.php";
 
@@ -39,11 +38,17 @@ export const initPaymentSession = async (payload: ISSLCommerzPayload) => {
 
   const apiUrl = is_live ? SSLCZ_LIVE_URL : SSLCZ_SANDBOX_URL;
 
-  // ✅ Build form-urlencoded string manually — no external dependency needed
-  const params: Record<string, string> = {
+  // 🔥 FIX 1: Clean special characters that might break SSLCommerz PHP backend
+  const safeProductName = (payload.product_name || "Guptodhan Product").replace(/[^a-zA-Z0-9 \-]/g, "");
+  const safePhone = (payload.cus_phone || "01700000000").replace(/[^a-zA-Z0-9]/g, "");
+
+  // 🔥 FIX 2: Force exact 2 decimal places for the amount
+  const formattedAmount = Number(payload.total_amount).toFixed(2);
+
+  const paymentData = {
     store_id,
     store_passwd,
-    total_amount:     String(payload.total_amount),
+    total_amount:     formattedAmount,
     currency:         "BDT",
     tran_id:          payload.tran_id,
     success_url:      `${baseUrl}/api/v1/payment/success/${payload.tran_id}`,
@@ -51,7 +56,7 @@ export const initPaymentSession = async (payload: ISSLCommerzPayload) => {
     cancel_url:       `${baseUrl}/api/v1/payment/cancel/${payload.tran_id}`,
     ipn_url:          `${baseUrl}/api/v1/payment/ipn`,
     shipping_method:  "Courier",
-    product_name:     payload.product_name     || "Guptodhan Product",
+    product_name:     safeProductName,
     product_category: "E-commerce",
     product_profile:  "general",
     cus_name:         payload.cus_name         || "Customer",
@@ -61,8 +66,8 @@ export const initPaymentSession = async (payload: ISSLCommerzPayload) => {
     cus_state:        "Dhaka",
     cus_postcode:     "1000",
     cus_country:      "Bangladesh",
-    cus_phone:        payload.cus_phone        || "01700000000",
-    cus_fax:          payload.cus_phone        || "01700000000",
+    cus_phone:        safePhone,
+    cus_fax:          safePhone,
     ship_name:        payload.cus_name         || "Customer",
     ship_add1:        payload.cus_add1         || "Dhaka",
     ship_city:        "Dhaka",
@@ -71,54 +76,38 @@ export const initPaymentSession = async (payload: ISSLCommerzPayload) => {
     ship_country:     "Bangladesh",
   };
 
-  // ✅ URLSearchParams — built into Node.js, no npm package needed
-  const body = new URLSearchParams(params).toString();
-
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log("📤 SSLCommerz Request");
   console.log("   URL:       ", apiUrl);
   console.log("   Mode:      ", is_live ? "🔴 LIVE" : "🟡 SANDBOX");
   console.log("   store_id:  ", store_id);
-  console.log("   tran_id:   ", params.tran_id);
-  console.log("   amount:    ", params.total_amount, "BDT");
-  console.log("   success_url:", params.success_url);
+  console.log("   tran_id:   ", paymentData.tran_id);
+  console.log("   amount:    ", paymentData.total_amount, "BDT");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
   try {
-    const response = await axios.post(apiUrl, body, {
+    // 🔥 FIX 3: Passed directly as an object, Axios will auto-encode it to x-www-form-urlencoded
+    const response = await axios.post(apiUrl, paymentData, {
       headers: {
-        "Content-Type":  "application/x-www-form-urlencoded",
-        "Accept":        "application/json",
-        "Cache-Control": "no-cache",
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      timeout: 20000, // 20 seconds
-      // ✅ Don't throw on 4xx/5xx — handle manually so we can log details
+      timeout: 20000, 
+      // Do not throw error on 500 so we can log the exact HTML
       validateStatus: () => true,
     });
 
     console.log("📥 SSLCommerz HTTP Status:", response.status);
-    
-    // Check if the response is actually an object before trying to JSON.stringify
-    if (typeof response.data === 'object') {
-        console.log("📥 SSLCommerz Response:", JSON.stringify(response.data, null, 2));
-    } else {
-        console.log("📥 SSLCommerz Response (Raw/HTML):", response.data.substring(0, 200) + '...');
-    }
 
     if (response.status !== 200) {
-      throw new Error(
-        `SSLCommerz returned HTTP ${response.status}. ` +
-        `Response: ${typeof response.data === 'object' ? JSON.stringify(response.data) : 'HTML/Invalid format'}`
-      );
+      console.error("❌ SSLCommerz 500 Error Body:", response.data);
+      throw new Error(`SSLCommerz Server Error (HTTP ${response.status}). Please try again.`);
     }
 
     const apiResponse = response.data;
 
-    // Safety check if response is HTML instead of JSON
     if (typeof apiResponse !== 'object' || !apiResponse?.GatewayPageURL) {
-      const reason = apiResponse?.failedreason || apiResponse?.status || "Invalid response format from SSLCommerz";
-      console.error("❌ SSLCommerz: No GatewayPageURL in response");
-      console.error("   failedreason:", apiResponse?.failedreason);
+      const reason = apiResponse?.failedreason || "Invalid response format from SSLCommerz";
+      console.error("❌ SSLCommerz: No GatewayPageURL. Raw response:", apiResponse);
       throw new Error(`SSLCommerz rejected the request: ${reason}`);
     }
 
@@ -126,14 +115,9 @@ export const initPaymentSession = async (payload: ISSLCommerzPayload) => {
     return apiResponse.GatewayPageURL as string;
 
   } catch (error: any) {
-    // Network-level error (DNS, timeout, connection refused)
-    if (error.code === "ECONNREFUSED") {
-      throw new Error("Cannot connect to SSLCommerz. Check VPS network/firewall.");
+    if (error.code === "ECONNREFUSED" || error.code === "ETIMEDOUT" || error.code === "ECONNABORTED") {
+      throw new Error("Cannot connect to SSLCommerz. Please check internet connection or try again.");
     }
-    if (error.code === "ETIMEDOUT" || error.code === "ECONNABORTED") {
-      throw new Error("SSLCommerz request timed out. Check VPS outbound connection.");
-    }
-    // Re-throw our own errors
     throw error;
   }
 };
