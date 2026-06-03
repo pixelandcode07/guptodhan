@@ -109,8 +109,10 @@ export default function ShoppingInfoContent({
         .catch(() => {})
     }, [])
 
-    const matchedCharge = apiDeliveryCharges.find(c => c.districtName === formData.district)
-    const baseDistrictCharge = matchedCharge ? matchedCharge.deliveryCharge : (formData.district ? 130 : 0)
+    const matchedCharge   = apiDeliveryCharges.find(c => c.districtName === formData.district)
+    const baseDistrictCharge = matchedCharge
+        ? matchedCharge.deliveryCharge
+        : (formData.district ? 130 : 0)
 
     const [successModalOpen, setSuccessModalOpen] = useState(false)
     const [successOrderId, setSuccessOrderId]     = useState('')
@@ -133,33 +135,36 @@ export default function ShoppingInfoContent({
                 try {
                     const res = await axios.get(`/api/v1/product/${item.product.id}`)
                     if (res.data?.success && res.data?.data) {
-                        return { ...item, product: { ...item.product, shippingCost: res.data.data.shippingCost || 0 } }
+                        return {
+                            ...item,
+                            product: { ...item.product, shippingCost: res.data.data.shippingCost || 0 }
+                        }
                     }
                 } catch { /* keep original */ }
                 return item
             }))
-            .then(updated => { 
-                setEnrichedCartItems(updated); 
-                isFetchedRef.current = true; 
+            .then(updated => {
+                setEnrichedCartItems(updated);
+                isFetchedRef.current = true;
             })
             .catch(console.error)
         } else {
-            setEnrichedCartItems(current => {
-                return cartItems.map(incomingItem => {
+            setEnrichedCartItems(current =>
+                cartItems.map(incomingItem => {
                     const existing = current.find(e => e.id === incomingItem.id);
                     return {
                         ...incomingItem,
                         product: {
                             ...incomingItem.product,
-                            shippingCost: existing?.product?.shippingCost || 0
-                        }
+                            shippingCost: existing?.product?.shippingCost || 0,
+                        },
                     };
-                });
-            });
+                })
+            );
         }
     }, [cartItems])
 
-    // ✅ Load Profile Directly from Database
+    // Load user profile from DB
     useEffect(() => {
         const load = async () => {
             try {
@@ -167,15 +172,14 @@ export default function ShoppingInfoContent({
                 if (!session?.user) return
 
                 const userLike = session.user as { id?: string; _id?: string }
-                const userId = userLike.id || userLike._id
+                const userId   = userLike.id || userLike._id
                 if (!userId) return
 
-                // ক্যাশ এড়ানোর জন্য টাইমস্ট্যাম্প পাঠানো হচ্ছে
                 const timestamp = new Date().getTime();
                 const res = await axios.get(`/api/v1/profile/me?t=${timestamp}`, {
-                    headers: { 'x-user-id': userId, 'Cache-Control': 'no-cache' }
+                    headers: { 'x-user-id': userId, 'Cache-Control': 'no-cache' },
                 })
-                
+
                 if (res.data.success && res.data.data) {
                     const profile: UserProfile = res.data.data;
                     setUserProfile(profile)
@@ -190,18 +194,20 @@ export default function ShoppingInfoContent({
                         address:    parsed.street,
                         district:   parsed.district,
                         upazila:    parsed.upazila,
-                        city:       hasDbAddress ? parsed.city : 'Dhaka',
+                        city:       hasDbAddress ? parsed.city       : 'Dhaka',
                         postalCode: hasDbAddress ? parsed.postalCode : '1000',
-                        country:    hasDbAddress ? parsed.country : 'Bangladesh',
+                        country:    hasDbAddress ? parsed.country    : 'Bangladesh',
                     }
 
                     setFormData(filled)
-                    setFormKey(k => k + 1) 
+                    setFormKey(k => k + 1)
 
-                    const hasFullAddress = !!filled.address.trim() && !!filled.district.trim() && !!filled.phone.trim()
+                    const hasFullAddress =
+                        !!filled.address.trim() &&
+                        !!filled.district.trim() &&
+                        !!filled.phone.trim()
                     setIsEditingAddress(!hasFullAddress)
                 }
-
             } catch (err) {
                 console.error('Profile load error:', err)
             } finally {
@@ -227,7 +233,7 @@ export default function ShoppingInfoContent({
 
         try {
             const addressJSON = serializeAddress(structuredAddress)
-            
+
             const res = await axios.patch(
                 '/api/v1/profile/address',
                 { address: addressJSON, phone: formData.phone, name: formData.name },
@@ -235,23 +241,27 @@ export default function ShoppingInfoContent({
             )
 
             if (res.data.success) {
-                setUserProfile(prev => prev ? { ...prev, address: addressJSON, phoneNumber: formData.phone, name: formData.name } : prev)
+                setUserProfile(prev =>
+                    prev
+                        ? { ...prev, address: addressJSON, phoneNumber: formData.phone, name: formData.name }
+                        : prev
+                )
                 setIsEditingAddress(false)
-                toast.success('Address saved to database successfully!')
+                toast.success('Address saved successfully!')
             } else {
                 toast.error(res.data.message || 'Failed to save address.')
             }
         } catch (err: any) {
-            console.error('API Error:', err);
-            toast.error('Network Error: Failed to save address to database. Please check your API.')
+            console.error('Address save error:', err);
+            toast.error('Network Error: Failed to save address. Please try again.')
         } finally {
             setIsSavingAddress(false)
         }
     }
 
-    const subtotal = enrichedCartItems.reduce((s, i) => s + i.product.price * i.product.quantity, 0)
-    const totalSavings = enrichedCartItems.reduce((s, i) => s + (i.product.originalPrice - i.product.price) * i.product.quantity, 0)
-    const totalItems = enrichedCartItems.reduce((s, i) => s + i.product.quantity, 0)
+    const subtotal       = enrichedCartItems.reduce((s, i) => s + i.product.price * i.product.quantity, 0)
+    const totalSavings   = enrichedCartItems.reduce((s, i) => s + (i.product.originalPrice - i.product.price) * i.product.quantity, 0)
+    const totalItems     = enrichedCartItems.reduce((s, i) => s + i.product.quantity, 0)
 
     const finalDeliveryCharge = (() => {
         const custom = enrichedCartItems.reduce((s, i) => s + (i.product.shippingCost || 0) * i.product.quantity, 0)
@@ -261,29 +271,35 @@ export default function ShoppingInfoContent({
     const couponDiscount = (() => {
         if (!appliedCoupon) return 0
         const pct = appliedCoupon.type.toLowerCase().includes('percentage')
-        return pct ? Math.round(subtotal * appliedCoupon.value / 100 * 100) / 100 : Math.min(appliedCoupon.value, subtotal)
+        return pct
+            ? Math.round(subtotal * appliedCoupon.value / 100 * 100) / 100
+            : Math.min(appliedCoupon.value, subtotal)
     })()
 
     const showSuccessModal = async (orderId: string) => {
-        setSuccessOrderId(orderId); setSuccessModalOpen(true); setErrorModalOpen(false)
+        setSuccessOrderId(orderId);
+        setSuccessModalOpen(true);
+        setErrorModalOpen(false);
         if (typeof window !== 'undefined') sessionStorage.removeItem('buyNowProductId')
         if (userProfile?._id) {
             try { await axios.delete(`/api/v1/add-to-cart/get-cart/${userProfile._id}`) }
             catch (e) {}
         }
     }
-    
+
     const showError = (msg: string) => {
-        setErrorMessage(msg); setErrorModalOpen(true); setSuccessModalOpen(false)
+        setErrorMessage(msg);
+        setErrorModalOpen(true);
+        setSuccessModalOpen(false);
     }
 
     const validateOrder = (method: 'cod' | 'card') => {
         const errs: string[] = []
-        if (!session?.user)    errs.push('Please log in to place an order')
-        if (isEditingAddress)  errs.push('Please confirm your shipping address first')
+        if (!session?.user)   errs.push('Please log in to place an order')
+        if (isEditingAddress) errs.push('Please confirm your shipping address first')
         if (!formData.name || !formData.phone || !formData.address || !formData.district || !formData.upazila)
             errs.push('Please fill in all required delivery fields')
-        if (method === 'cod' && enrichedCartItems.length === 0)
+        if (enrichedCartItems.length === 0)
             errs.push('Your cart is empty')
         return errs
     }
@@ -291,24 +307,32 @@ export default function ShoppingInfoContent({
     const handlePlaceOrder = async (paymentMethod: 'cod' | 'card') => {
         try {
             setLastPaymentMethod(paymentMethod)
+
             const errs = validateOrder(paymentMethod)
             if (errs.length > 0) { showError(errs.join('\n')); return }
 
+            // Resolve storeId from first product
             let resolvedStoreId = undefined;
             try {
                 const id = enrichedCartItems[0]?.product.id
                 if (id) {
                     const { data } = await axios.get(`/api/v1/product/${id}`)
                     const p = data?.data
-                    if (p?.vendorStoreId && isValidObjectId(p.vendorStoreId)) resolvedStoreId = p.vendorStoreId
-                    else if (p?.vendorId && isValidObjectId(p.vendorId)) resolvedStoreId = p.vendorId
+                    if (p?.vendorStoreId && isValidObjectId(p.vendorStoreId))
+                        resolvedStoreId = p.vendorStoreId
+                    else if (p?.vendorId && isValidObjectId(p.vendorId))
+                        resolvedStoreId = p.vendorId
                 }
             } catch {}
 
-            const addressDetail = [formData.address, formData.upazila, formData.district].filter(Boolean).join(', ')
+            const addressDetail = [formData.address, formData.upazila, formData.district]
+                .filter(Boolean)
+                .join(', ')
+
+            const totalAmountFinal = subtotal - couponDiscount + finalDeliveryCharge
 
             const orderData = {
-                userId: userProfile!._id,
+                userId:               userProfile!._id,
                 ...(resolvedStoreId ? { storeId: resolvedStoreId } : {}),
                 deliveryMethodId:      selectedDelivery,
                 shippingName:          formData.name,
@@ -321,8 +345,13 @@ export default function ShoppingInfoContent({
                 shippingCountry:       formData.country,
                 addressDetails:        addressDetail,
                 deliveryCharge:        finalDeliveryCharge,
-                totalAmount:           subtotal - couponDiscount + finalDeliveryCharge,
-                paymentStatus:         'Pending' as const,
+                totalAmount:           totalAmountFinal,
+                // ✅ FIX: Card payment order starts as 'Initiated' (NOT 'Pending').
+                // 'Pending' is only for COD orders.
+                // 'Initiated' means: order created, user redirected to SSLCommerz,
+                // but payment not yet confirmed. Status changes to 'Paid' via
+                // SSLCommerz success callback or IPN.
+                paymentStatus:         paymentMethod === 'card' ? 'Initiated' : 'Pending',
                 orderStatus:           'Pending' as const,
                 orderForm:             'Website' as const,
                 orderDate:             new Date(),
@@ -339,27 +368,55 @@ export default function ShoppingInfoContent({
                 couponId: appliedCoupon?._id || undefined,
             }
 
+            // ================================================================
+            // 💳 CARD / ONLINE PAYMENT FLOW
+            // ================================================================
             if (paymentMethod === 'card') {
-                toast.loading('Redirecting to payment gateway...', { id: 'pay' })
+                const toastId = 'pay-redirect'
+                toast.loading('Creating order and redirecting to payment gateway...', { id: toastId })
+
                 try {
-                    const placed = await placeOrder(orderData)
-                    const o = Array.isArray(placed) ? placed[0] : placed
+                    // Step 1: Create order with 'Initiated' status
+                    const placed  = await placeOrder(orderData as any)
+                    const o       = Array.isArray(placed) ? placed[0] : placed
                     const orderId = o?.orderId || o?._id
-                    if (!orderId) throw new Error('Order ID missing')
-                    const url = await initiateSSLCommerzPayment(orderId)
-                    toast.dismiss('pay')
-                    window.location.href = url
+
+                    if (!orderId) throw new Error('Order ID missing from server response')
+
+                    console.log('✅ Order created with Initiated status:', orderId)
+
+                    // Step 2: Initiate SSLCommerz payment session
+                    const gatewayUrl = await initiateSSLCommerzPayment(orderId)
+
+                    toast.dismiss(toastId)
+                    console.log('✅ Redirecting to SSLCommerz:', gatewayUrl)
+
+                    // Step 3: Redirect user to SSLCommerz payment page
+                    // Order status will be updated to 'Paid' by the success callback
+                    window.location.href = gatewayUrl
+
                 } catch (err: any) {
-                    toast.dismiss('pay')
-                    showError(err?.message || 'Failed to initialize payment.')
+                    toast.dismiss(toastId)
+                    console.error('❌ Card payment error:', err?.message)
+
+                    // ✅ If payment init fails AFTER order was created,
+                    // user can retry — the backend reuses the existing transactionId
+                    showError(err?.message || 'Failed to initialize payment. Please try again.')
                 }
-                return
+
+                return // ← important: don't fall through to COD logic
             }
 
+            // ================================================================
+            // 💵 COD FLOW
+            // ================================================================
             const { data } = await axios.post('/api/v1/product-order', orderData)
+
             if (data.success) {
-                const primary  = Array.isArray(data.data) ? data.data[0] : data.data
-                const orderId  = primary.orderId
+                const primary = Array.isArray(data.data) ? data.data[0] : data.data
+                const orderId = primary.orderId
+
+                // Steadfast integration for COD
                 if (selectedDelivery === 'steadfast') {
                     try {
                         const sf = await axios.post('/api/v1/product-order/steadfast', { orderId })
@@ -372,11 +429,14 @@ export default function ShoppingInfoContent({
                         }
                     } catch (e) {}
                 }
+
                 showSuccessModal(orderId)
             } else {
-                showError(data.message || 'Order failed')
+                showError(data.message || 'Order failed. Please try again.')
             }
+
         } catch (err) {
+            console.error('❌ Order placement error:', err)
             showError('Failed to place order. Please try again.')
         }
     }
@@ -432,8 +492,8 @@ export default function ShoppingInfoContent({
                                         phone:      formData.phone,
                                         email:      formData.email,
                                         address:    formData.address,
-                                        district:   formData.district,  
-                                        upazila:    formData.upazila,    
+                                        district:   formData.district,
+                                        upazila:    formData.upazila,
                                         city:       formData.city,
                                         postalCode: formData.postalCode,
                                         country:    formData.country,
@@ -494,8 +554,17 @@ export default function ShoppingInfoContent({
                 </div>
             </div>
 
-            <OrderSuccessModal open={successModalOpen} onOpenChange={() => setSuccessModalOpen(false)} orderId={successOrderId} />
-            <OrderErrorModal open={errorModalOpen} onOpenChange={setErrorModalOpen} errorMessage={errorMessage} onRetry={() => handlePlaceOrder(lastPaymentMethod)} />
+            <OrderSuccessModal
+                open={successModalOpen}
+                onOpenChange={() => setSuccessModalOpen(false)}
+                orderId={successOrderId}
+            />
+            <OrderErrorModal
+                open={errorModalOpen}
+                onOpenChange={setErrorModalOpen}
+                errorMessage={errorMessage}
+                onRetry={() => handlePlaceOrder(lastPaymentMethod)}
+            />
         </div>
     )
 }
