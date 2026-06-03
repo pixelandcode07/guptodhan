@@ -11,7 +11,7 @@ export type DashboardOrder = {
     id: string
     seller: string
     sellerVerified: boolean
-    status: 'pending' | 'processing' | 'delivered' | 'cancelled'
+    status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'return request' | 'returned'
     items: Array<{
         productName: string
         productImage: string
@@ -69,7 +69,6 @@ export default function UserProfilePage() {
             }>
 
             const mapped: DashboardOrder[] = apiOrders.map((o) => {
-                // ✅ অর্ডারের সবগুলো প্রোডাক্ট ম্যাপ করা হচ্ছে
                 const orderItems = (o.orderDetails || []).map((detail) => {
                     const product = detail.productId && typeof detail.productId === 'object' ? detail.productId : undefined;
                     const priceNumber = product?.discountPrice != null && product?.productPrice != null && product.discountPrice < product.productPrice
@@ -98,7 +97,7 @@ export default function UserProfilePage() {
                     seller: (typeof o.storeId === 'object' && o.storeId && 'storeName' in o.storeId) ? (o.storeId.storeName || 'Store') : 'Store',
                     sellerVerified: (typeof o.storeId === 'object' && o.storeId && 'verified' in o.storeId) ? Boolean((o.storeId as { verified?: boolean }).verified) : true,
                     status: (o.orderStatus?.toLowerCase() as DashboardOrder['status']) || 'pending',
-                    items: orderItems, // ✅ সবগুলো আইটেম পাস করা হলো
+                    items: orderItems,
                     totalPrice: `৳ ${orderTotal.toLocaleString()}`,
                     totalItems: totalItemsCount,
                 }
@@ -116,16 +115,23 @@ export default function UserProfilePage() {
         fetchOrders()
     }, [fetchOrders])
 
+    // ✅ FIXED: Counting Logic (Shipped goes to Processing, Return Request added)
     const counts = orders.reduce(
         (acc, o) => {
-            acc.pending += o.status === 'pending' ? 1 : 0
-            acc.processing += o.status === 'processing' ? 1 : 0
-            acc.delivered += o.status === 'delivered' ? 1 : 0
-            acc.cancelled += o.status === 'cancelled' ? 1 : 0
-            return acc
+            const status = o.status.toLowerCase();
+            if (status === 'pending') acc.pending++;
+            else if (status === 'processing' || status === 'shipped') acc.processing++;
+            else if (status === 'delivered') acc.delivered++;
+            else if (status === 'cancelled') acc.cancelled++;
+            else if (status === 'return request' || status === 'returned') acc.returns++;
+            return acc;
         },
-        { pending: 0, processing: 0, delivered: 0, cancelled: 0 }
+        { pending: 0, processing: 0, delivered: 0, cancelled: 0, returns: 0 }
     )
+
+    if (loading) {
+        return <div className="p-8 text-center text-gray-500">Loading your dashboard...</div>;
+    }
 
     return (
         <div className="">
@@ -136,7 +142,16 @@ export default function UserProfilePage() {
                     Shop Now
                 </Link>
             </div>
-            <OrderSummaryCards pending={counts.pending} processing={counts.processing} delivered={counts.delivered} cancelled={counts.cancelled} />
+            
+            {/* ✅ Updated Prop passed down */}
+            <OrderSummaryCards 
+                pending={counts.pending} 
+                processing={counts.processing} 
+                delivered={counts.delivered} 
+                cancelled={counts.cancelled} 
+                returns={counts.returns} 
+            />
+            
             <RecentOrdersList orders={orders} />
         </div>
     )
