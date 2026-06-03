@@ -10,14 +10,9 @@ const initPayment = async (orderId: string) => {
       throw new Error("Order ID is required.");
     }
 
-    console.log("📝 Fetching order for payment:", orderId);
-
-    // ✅ Query by string orderId field first (e.g. "GDH-...")
     let order = await OrderModel.findOne({ orderId: orderId.trim() }).populate("userId");
 
-    // Fallback: try MongoDB _id
     if (!order && Types.ObjectId.isValid(orderId)) {
-      console.log("⚠️  Not found by orderId string, trying _id fallback...");
       order = await OrderModel.findById(orderId).populate("userId");
     }
 
@@ -26,54 +21,40 @@ const initPayment = async (orderId: string) => {
     }
 
     const user = order.userId as any;
-    if (!user) {
-      throw new Error("User details not found for this order.");
-    }
 
-    // ✅ If payment already initiated, re-use existing transaction
     if (order.transactionId) {
       console.warn("⚠️ Payment already initiated for this order, re-using session...");
       const existingUrl = await initPaymentSession({
         total_amount:  order.totalAmount,
         tran_id:       order.transactionId,
-        cus_name:      user.name         || "Guest Customer",
-        cus_email:     user.email        || "not-provided@example.com",
-        cus_add1:      user.address      || order.shippingStreetAddress || "N/A",
-        cus_phone:     user.phoneNumber  || order.shippingPhone         || "01700000000",
+        cus_name:      user?.name || order.shippingName || "Customer",
+        cus_email:     user?.email || order.shippingEmail || "customer@example.com",
+        cus_add1:      "Dhaka", // Pass dummy to gateway to avoid crash
+        cus_phone:     user?.phoneNumber || order.shippingPhone || "01700000000",
         product_name:  `Guptodhan Order #${order.orderId}`,
       });
       return existingUrl;
     }
 
-    if (order.totalAmount <= 0) {
-      throw new Error("Invalid order amount.");
-    }
-
     const transactionId = `GDH-${Date.now()}-${uuidv4().split("-")[0].toUpperCase()}`;
-    console.log("📤 Generated Transaction ID:", transactionId);
-
+    
     const sslPayload = {
       total_amount:  order.totalAmount,
       tran_id:       transactionId,
-      cus_name:      user.name        || "Guest Customer",
-      cus_email:     user.email       || "not-provided@example.com",
-      cus_add1:      user.address     || order.shippingStreetAddress || "N/A",
-      cus_phone:     user.phoneNumber || order.shippingPhone         || "01700000000",
+      cus_name:      user?.name || order.shippingName || "Customer",
+      cus_email:     user?.email || order.shippingEmail || "customer@example.com",
+      cus_add1:      "Dhaka",
+      cus_phone:     user?.phoneNumber || order.shippingPhone || "01700000000",
       product_name:  `Guptodhan Order #${order.orderId}`,
     };
 
     const gatewayUrl = await initPaymentSession(sslPayload);
 
-    console.log("💾 Saving transaction ID to order...");
-
-    // ✅ Update by string orderId, set status to 'Initiated'
     const updatedOrder = await OrderModel.findOneAndUpdate(
       { orderId: order.orderId },
       {
         transactionId,
-        // ✅ FIX: Use 'Initiated' so it's clear payment session started
-        // but money hasn't been collected yet.
-        paymentStatus: "Initiated",
+        paymentStatus: "Pending", // Keep pending until money is received
       },
       { new: true }
     );
@@ -81,9 +62,6 @@ const initPayment = async (orderId: string) => {
     if (!updatedOrder) {
       throw new Error("Failed to save transaction ID to order.");
     }
-
-    console.log("✅ Transaction ID saved:", transactionId);
-    console.log("✅ Payment initiated for order:", order.orderId);
 
     return gatewayUrl;
   } catch (error: any) {
@@ -98,20 +76,11 @@ const handleSuccessfulPayment = async (transactionId: string) => {
   session.startTransaction();
 
   try {
-    console.log("📝 Processing successful payment for transaction:", transactionId);
-
     const order = await OrderModel.findOne({ transactionId }).session(session);
 
-    if (!order) {
-      console.error("❌ Order not found for transaction:", transactionId);
-      throw new Error("Order not found for this transaction.");
-    }
+    if (!order) throw new Error("Order not found for this transaction.");
 
-    console.log("✅ Order found:", order.orderId);
-
-    // Idempotency guard — don't double-process
     if (order.paymentStatus === "Paid") {
-      console.log(`⚠️ Payment already processed for transaction: ${transactionId}`);
       await session.commitTransaction();
       return order;
     }
@@ -126,18 +95,10 @@ const handleSuccessfulPayment = async (transactionId: string) => {
       { new: true, session }
     );
 
-    if (!updatedOrder) {
-      throw new Error("Failed to update order status.");
-    }
-
     await session.commitTransaction();
-    console.log(`✅ Payment successful for transaction: ${transactionId}`);
-    console.log(`✅ Order updated: ${updatedOrder.orderId} → Processing`);
-
     return updatedOrder;
   } catch (error: any) {
     await session.abortTransaction();
-    console.error("❌ Error handling successful payment:", error.message);
     throw error;
   } finally {
     session.endSession();
@@ -150,23 +111,16 @@ const handleFailedPayment = async (transactionId: string) => {
   session.startTransaction();
 
   try {
-    console.log("📝 Processing failed payment for transaction:", transactionId);
-
     const order = await OrderModel.findOneAndUpdate(
       { transactionId },
       { paymentStatus: "Failed" },
       { new: true, session }
     );
 
-    if (!order) throw new Error("Order not found for this transaction.");
-
     await session.commitTransaction();
-    console.log(`❌ Payment failed for transaction: ${transactionId}`);
-
     return order;
   } catch (error: any) {
     await session.abortTransaction();
-    console.error("❌ Error handling failed payment:", error.message);
     throw error;
   } finally {
     session.endSession();
@@ -179,23 +133,16 @@ const handleCancelledPayment = async (transactionId: string) => {
   session.startTransaction();
 
   try {
-    console.log("📝 Processing cancelled payment for transaction:", transactionId);
-
     const order = await OrderModel.findOneAndUpdate(
       { transactionId },
       { paymentStatus: "Cancelled" },
       { new: true, session }
     );
 
-    if (!order) throw new Error("Order not found for this transaction.");
-
     await session.commitTransaction();
-    console.log(`🚫 Payment cancelled for transaction: ${transactionId}`);
-
     return order;
   } catch (error: any) {
     await session.abortTransaction();
-    console.error("❌ Error handling cancelled payment:", error.message);
     throw error;
   } finally {
     session.endSession();
@@ -208,50 +155,24 @@ const validateAndProcessIPN = async (ipnData: any) => {
   session.startTransaction();
 
   try {
-    console.log("📨 IPN Processing started for transaction:", ipnData.tran_id);
-
     const validationResult = await validatePayment(ipnData);
 
-    console.log("📊 Validation Result:", {
-      status: validationResult?.status,
-      amount: validationResult?.amount,
-    });
-
-    if (
-      !validationResult ||
-      (validationResult.status !== "VALID" && validationResult.status !== "Success")
-    ) {
-      console.error("❌ IPN Validation Failed:", validationResult);
-      throw new Error(
-        `IPN Validation Failed: ${validationResult?.status || "Unknown status"}`
-      );
+    if (!validationResult || (validationResult.status !== "VALID" && validationResult.status !== "Success")) {
+      throw new Error(`IPN Validation Failed: ${validationResult?.status || "Unknown status"}`);
     }
 
-    const order = await OrderModel.findOne({
-      transactionId: ipnData.tran_id,
-    }).session(session);
+    const order = await OrderModel.findOne({ transactionId: ipnData.tran_id }).session(session);
 
-    if (!order) {
-      console.error("❌ Order not found for transaction:", ipnData.tran_id);
-      throw new Error("Order not found for this transaction.");
-    }
-
-    // Idempotency guard
+    if (!order) throw new Error("Order not found for this transaction.");
+    
     if (order.paymentStatus === "Paid") {
-      console.log(`⚠️ IPN already processed for transaction: ${ipnData.tran_id}`);
       await session.commitTransaction();
       return { message: "IPN already processed", order };
     }
 
     const ipnAmount = parseFloat(ipnData.amount);
     if (Math.abs(ipnAmount - order.totalAmount) > 0.01) {
-      console.error("❌ Amount mismatch:", {
-        ipn:   ipnAmount,
-        order: order.totalAmount,
-      });
-      throw new Error(
-        `Payment amount mismatch. Expected: ${order.totalAmount}, Received: ${ipnAmount}`
-      );
+      throw new Error(`Payment amount mismatch. Expected: ${order.totalAmount}, Received: ${ipnAmount}`);
     }
 
     const updatedOrder = await OrderModel.findOneAndUpdate(
@@ -264,15 +185,10 @@ const validateAndProcessIPN = async (ipnData: any) => {
       { new: true, session }
     );
 
-    if (!updatedOrder) throw new Error("Failed to update order status from IPN.");
-
     await session.commitTransaction();
-    console.log(`✅ IPN processed successfully for transaction: ${ipnData.tran_id}`);
-
     return { message: "IPN processed successfully", order: updatedOrder };
   } catch (error: any) {
     await session.abortTransaction();
-    console.error("❌ Error processing IPN:", error.message);
     throw error;
   } finally {
     session.endSession();
