@@ -24,7 +24,7 @@
     totalAmount: number;
 
     // Statuses
-    paymentStatus: 'Pending' | 'Paid' | 'Failed' | 'Refunded' | 'Cancelled';
+    paymentStatus: 'Pending' | 'Paid' | 'Failed' | 'Refunded' | 'Cancelled'| "Initiated";
     // ✅ Added 'Return Request'
     orderStatus: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned' | 'Return Request';
     
