@@ -18,7 +18,7 @@ const getCredentials = () => {
   return { store_id, store_passwd, is_live };
 };
 
-const SSLCZ_SANDBOX_URL = "https://sandbox.sslcommerz.com/gwprocess/v4/api.php";
+const SSLCZ_SANDBOX_URL = "https://sandbox.sslcommerz.com/gwprocess/v3/api.php";
 const SSLCZ_LIVE_URL    = "https://securepay.sslcommerz.com/gwprocess/v4/api.php";
 
 export const initPaymentSession = async (payload: ISSLCommerzPayload) => {
