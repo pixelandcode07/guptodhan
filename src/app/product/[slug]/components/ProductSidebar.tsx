@@ -294,10 +294,20 @@ export default function ProductMainInfo({
     }
   };
 
-  // ✅ আপডেট করা HandleAddToCart ফাংশন
+  // ✅ আপডেট করা HandleAddToCart ফাংশন (Login Check + Double Toast Fixed)
   const handleAddToCart = async () => {
     if (availableColors.length > 0 && !selectedColor) return toast.error('Please select a color');
     if (availableSizes.length > 0 && !selectedSize) return toast.error('Please select a size');
+
+    // ✅ FIX 1: ইউজার লগইন না থাকলে এখানেই আটকে যাবে এবং লগইন মোডাল ওপেন হবে
+    if (!session?.user) {
+      toast.error('Please login to add items to your cart');
+      const loginButton =
+        document.getElementById('login-modal-btn') ||
+        document.getElementById('login-modal-btn-mobile');
+      if (loginButton) loginButton.click();
+      return; 
+    }
 
     try {
       await addToCart(product._id, quantity, {
@@ -307,7 +317,7 @@ export default function ProductMainInfo({
         size: selectedSize || undefined,
       });
       
-      // 🔥 সুন্দর একটি টোস্ট মেসেজ দেখানো হলো
+      // 🔥 শুধুমাত্র সফল হলেই এই টোস্ট মেসেজটি দেখাবে
       toast.success('Successfully added to cart! 🛒', {
         description: `${quantity}x ${product.productTitle.slice(0, 30)}...`,
       });
