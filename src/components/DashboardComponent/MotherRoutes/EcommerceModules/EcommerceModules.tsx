@@ -94,7 +94,7 @@ export function EcommerceModules({
                           <Link href={subItem.url}>
                             <span>{subItem.title}</span>
                             
-                            {/* ✅ কাউন্ট থাকলে কাউন্ট দেখাবে */}
+                            
                             {subItem.count && (
                               <span className="ml-auto text-xs px-2 py-1 rounded bg-orange-500 text-white">
                                 {subItem.count}
