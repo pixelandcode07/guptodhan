@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image'; // ✅ Added Image import
 import { Plus, Search, Pencil, Trash2, Globe, ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -162,7 +163,7 @@ export default function CountriesPage() {
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
                       <TableCell><Skeleton className="h-4 w-6" /></TableCell>
-                      <TableCell><Skeleton className="h-7 w-8 rounded" /></TableCell>
+                      <TableCell><Skeleton className="h-7 w-10 rounded" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-36" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-10" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
@@ -194,11 +195,24 @@ export default function CountriesPage() {
                         {idx + 1}
                       </TableCell>
 
-                      {/* Flag */}
+                      {/* ✅ FIX: Displaying Image properly instead of raw URL string */}
                       <TableCell>
-                        <span className="text-2xl leading-none">
-                          {country.flag || '🌐'}
-                        </span>
+                        {country.flag && (country.flag.startsWith('http') || country.flag.startsWith('/')) ? (
+                          <div className="relative w-10 h-7 overflow-hidden rounded border border-gray-200 shadow-sm">
+                            <Image 
+                              src={country.flag} 
+                              alt={`${country.name} flag`}
+                              fill
+                              sizes="40px"
+                              className="object-cover"
+                              unoptimized // ✅ Bypass Next.js image domain config for external CDNs
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-2xl leading-none">
+                            {country.flag || '🌐'}
+                          </span>
+                        )}
                       </TableCell>
 
                       {/* Name */}
