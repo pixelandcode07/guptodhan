@@ -35,6 +35,7 @@ export const MENU_CONFIG: MenuConfig = {
       { title: 'Product Brands', url: '/general/view/all/brands' },
       { title: 'Models of Brand', url: '/general/view/all/models' },
       { title: 'Product Flags', url: '/general/view/all/flags' },
+      { title: 'Countries', url: '/general/view/all/countries' },
       // { title: 'Contact Config', url: '/general/contact/config' },
     ],
   },
