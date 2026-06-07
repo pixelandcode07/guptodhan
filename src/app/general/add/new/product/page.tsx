@@ -12,8 +12,8 @@ import { ProductSimTypeServices } from '@/lib/modules/product-config/services/pr
 import { ProductSizeServices } from '@/lib/modules/product-config/services/productSize.service';
 import { DeviceConditionServices } from '@/lib/modules/product-config/services/deviceCondition.service';
 import { StorageTypeServices } from '@/lib/modules/product-config/services/storageType.service';
-import { ProductCountryService } from '@/lib/modules/product-config/services/productCountry.service';
 import ProductForm from './Components/ProductForm';
+import { ProductCountryService } from '@/lib/modules/product-config/country/productCountry.service';
 
 export default async function AddProductPage() {
   await dbConnect();
