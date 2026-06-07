@@ -10,12 +10,10 @@ import { StorageType } from "../product-config/models/storageType.model";
 import { DeviceConditionModel } from "../product-config/models/deviceCondition.model";
 import { ProductSimTypeModel } from "../product-config/models/productSimType.model";
 import { ProductWarrantyModel } from "../product-config/models/warranty.model";
-
-
-// ✅ Import Redis cache helpers
 import { getCachedData, deleteCacheKey, deleteCachePattern } from '@/lib/redis/cache-helpers';
 import { CacheKeys, CacheTTL } from '@/lib/redis/cache-keys';
 import { BrandModel } from "@/lib/models-index";
+import { ProductCountryModel } from "../product-config/country/productCountry.model";
 
 // ===================================
 // 🔧 HELPER FUNCTIONS
@@ -26,6 +24,7 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
 
   const colorIds = new Set<string>();
   const sizeIds = new Set<string>();
+  const countryIds = new Set<string>(); // ✅ NEW
   const storageIds = new Set<string>();
   const simTypeIds = new Set<string>();
   const conditionIds = new Set<string>();
@@ -44,23 +43,25 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
             if(id && mongoose.Types.ObjectId.isValid(id)) sizeIds.add(String(id));
         });
       }
-      // Storage ID
+      // ✅ NEW: Country IDs collect kora
+      if (Array.isArray(opt.country)) {
+        opt.country.forEach((id: any) => {
+            if(id && mongoose.Types.ObjectId.isValid(id)) countryIds.add(String(id));
+        });
+      }
       if (opt.storage && mongoose.Types.ObjectId.isValid(opt.storage)) {
         storageIds.add(String(opt.storage));
       }
-      // SimType IDs
       if (Array.isArray(opt.simType)) {
         opt.simType.forEach((id: any) => {
             if(id && mongoose.Types.ObjectId.isValid(id)) simTypeIds.add(String(id));
         });
       }
-      // Condition IDs
       if (Array.isArray(opt.condition)) {
         opt.condition.forEach((id: any) => {
             if(id && mongoose.Types.ObjectId.isValid(id)) conditionIds.add(String(id));
         });
       }
-      // Warranty ID
       if (opt.warranty && mongoose.Types.ObjectId.isValid(opt.warranty)) {
         warrantyIds.add(String(opt.warranty));
       }
@@ -68,9 +69,11 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
   }
 
   // ২. ডাটাবেস থেকে সব ডাটা আনা (Fetch all data from DB)
-  const [colors, sizes, storages, simTypes, conditions, warranties] = await Promise.all([
+  // 🔥 FIX: 'countries' ভেরিয়েবলটি এখানে যুক্ত করা হয়েছে!
+  const [colors, sizes, countries, storages, simTypes, conditions, warranties] = await Promise.all([
     colorIds.size ? ProductColor.find({ _id: { $in: Array.from(colorIds) } }).lean() : [],
     sizeIds.size ? ProductSize.find({ _id: { $in: Array.from(sizeIds) } }).lean() : [],
+    countryIds.size ? ProductCountryModel.find({ _id: { $in: Array.from(countryIds) } }).lean() : [], // ✅ NEW
     storageIds.size ? StorageType.find({ _id: { $in: Array.from(storageIds) } }).lean() : [],
     simTypeIds.size ? ProductSimTypeModel.find({ _id: { $in: Array.from(simTypeIds) } }).lean() : [],
     conditionIds.size ? DeviceConditionModel.find({ _id: { $in: Array.from(conditionIds) } }).lean() : [],
@@ -79,6 +82,7 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
 
   const colorMap = new Map(colors.map((c: any) => [String(c._id), c])); 
   const sizeMap = new Map(sizes.map((s: any) => [String(s._id), s]));
+  const countryMap = new Map(countries.map((c: any) => [String(c._id), c])); // ✅ NEW
   const storageMap = new Map(storages.map((st: any) => [String(st._id), st]));
   const simTypeMap = new Map(simTypes.map((sim: any) => [String(sim._id), sim]));
   const conditionMap = new Map(conditions.map((cond: any) => [String(cond._id), cond]));
@@ -88,10 +92,8 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
   return products.map((p: any) => ({
     ...p,
     productOptions: p.productOptions?.map((opt: any) => ({
-      // ✅ CRITICAL FIX: ...opt ব্যবহার করা হয়েছে যাতে unit, simType, condition হারিয়ে না যায়
       ...opt, 
       
-      // Color Populate - Return string values only (FIXED: was returning objects)
       color: Array.isArray(opt.color) 
         ? opt.color.map((id: any) => {
             const c = colorMap.get(String(id));
@@ -99,22 +101,27 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
           })
         : [],
 
-      // Size Populate - Return string values only (FIXED: was returning objects)
       size: Array.isArray(opt.size) 
         ? opt.size.map((id: any) => {
             const s = sizeMap.get(String(id));
             return s ? s.name : id;
           })
         : [],
-      
-      // ✅ Storage Populate - Return formatted string (FIXED: was returning objects)
+        
+      // ✅ NEW: Country Populate - Return string values
+      country: Array.isArray(opt.country) 
+        ? opt.country.map((id: any) => {
+            const c = countryMap.get(String(id));
+            return c ? c.name : id;
+          })
+        : [],
+
       storage: (() => {
         if (!opt.storage) return undefined;
         const st = storageMap.get(String(opt.storage));
         return st ? `${st.ram}GB / ${st.rom}GB` : opt.storage;
       })(),
 
-      // ✅ SimType Populate - Return string values only (FIXED: was returning objects)
       simType: Array.isArray(opt.simType) 
         ? opt.simType.map((id: any) => {
             const sim = simTypeMap.get(String(id));
@@ -122,7 +129,6 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
           })
         : [],
 
-      // ✅ Condition Populate - Return string values only (FIXED: was returning objects)
       condition: Array.isArray(opt.condition) 
         ? opt.condition.map((id: any) => {
             const cond = conditionMap.get(String(id));
@@ -130,14 +136,12 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
           })
         : [],
 
-      // ✅ Warranty Populate - Return string value (FIXED: was returning object)
       warranty: (() => {
         if (!opt.warranty) return undefined;
         const war = warrantyMap.get(String(opt.warranty));
         return war ? war.warrantyName : opt.warranty;
       })(),
       
-      // ✅ Preserve unit array
       unit: opt.unit || []
     })) || [],
   }));
