@@ -1,33 +1,32 @@
-// src/lib/modules/product-config/controllers/productCountry.controller.ts
-
 import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
-import { ZodError } from 'zod';
 import { sendResponse } from '@/lib/utils/sendResponse';
 import dbConnect from '@/lib/db';
 import { createProductCountrySchema, updateProductCountrySchema } from './productCountry.validation';
 import { ProductCountryService } from './productCountry.service';
 
 // ─── Helper: multipart form parse ────────────────────────────────────────────
-// req.formData() দিয়ে fields আর file একসাথে নেওয়া হচ্ছে
 const parseFormData = async (req: NextRequest) => {
   const formData = await req.formData();
 
-  // Text fields
-  const name       = formData.get('name') as string | null;
-  const code       = formData.get('code') as string | null;
-  const status     = formData.get('status') as string | null;
+  // Convert null to undefined to prevent Zod errors
+  const name   = (formData.get('name') as string) || undefined;
+  const code   = (formData.get('code') as string) || undefined;
+  const status = (formData.get('status') as string) || undefined;
 
-  // Flag file (optional)
+  // Flag file processing
   const flagEntry  = formData.get('flag');
   let flagFile: { buffer: Buffer; mimeType: string } | undefined;
 
-  if (flagEntry && flagEntry instanceof File && flagEntry.size > 0) {
-    const arrayBuffer = await flagEntry.arrayBuffer();
-    flagFile = {
-      buffer:   Buffer.from(arrayBuffer),
-      mimeType: flagEntry.type,
-    };
+  if (flagEntry && typeof flagEntry === 'object' && 'arrayBuffer' in flagEntry) {
+    const file = flagEntry as File;
+    if (file.size > 0) {
+      const arrayBuffer = await file.arrayBuffer();
+      flagFile = {
+        buffer:   Buffer.from(arrayBuffer),
+        mimeType: file.type,
+      };
+    }
   }
 
   return { name, code, status, flagFile };
@@ -43,7 +42,6 @@ const createCountry = async (req: NextRequest) => {
     await dbConnect();
     const { name, code, status, flagFile } = await parseFormData(req);
 
-    // Zod validation — text fields only
     const validated = createProductCountrySchema.parse({ name, code, status });
 
     const result = await ProductCountryService.createCountryInDB(validated, flagFile);
@@ -54,19 +52,22 @@ const createCountry = async (req: NextRequest) => {
       message: 'Country created successfully!',
       data: result,
     });
-  } catch (err) {
-    if (err instanceof ZodError) {
+  } catch (err: any) {
+    console.error("❌ Country Create Error:", err);
+    
+    if (err.name === 'ZodError' || err.issues) {
       return sendResponse({
         success: false,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: err.issues.map((i) => i.message).join('; '),
+        message: err.issues?.map((i: any) => i.message).join('; ') || 'Validation error',
         data: err.issues,
       });
     }
+
     return sendResponse({
       success: false,
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-      message: err instanceof Error ? err.message : 'Something went wrong.',
+      message: err?.message || 'Something went wrong.',
       data: null,
     });
   }
@@ -123,12 +124,12 @@ const updateCountry = async (
     const { id } = await params;
     const { name, code, status, flagFile } = await parseFormData(req);
 
-    // Zod — text fields only, all optional for update
-    const validated = updateProductCountrySchema.parse({
-      ...(name   && { name }),
-      ...(code   && { code }),
-      ...(status && { status }),
-    });
+    const updatePayload: any = {};
+    if (name) updatePayload.name = name;
+    if (code) updatePayload.code = code;
+    if (status) updatePayload.status = status;
+
+    const validated = updateProductCountrySchema.parse(updatePayload);
 
     const result = await ProductCountryService.updateCountryInDB(id, validated, flagFile);
 
@@ -147,19 +148,22 @@ const updateCountry = async (
       message: 'Country updated successfully!',
       data: result,
     });
-  } catch (err) {
-    if (err instanceof ZodError) {
+  } catch (err: any) {
+    console.error("❌ Country Update Error:", err);
+
+    if (err.name === 'ZodError' || err.issues) {
       return sendResponse({
         success: false,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: err.issues.map((i) => i.message).join('; '),
+        message: err.issues?.map((i: any) => i.message).join('; ') || 'Validation error',
         data: err.issues,
       });
     }
+
     return sendResponse({
       success: false,
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-      message: err instanceof Error ? err.message : 'Something went wrong.',
+      message: err?.message || 'Something went wrong.',
       data: null,
     });
   }
