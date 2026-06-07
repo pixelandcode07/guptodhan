@@ -36,6 +36,7 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
     const payload: Partial<IVendorProduct> = {
       ...validatedData,
       slug: finalSlug, // ✅ স্লাগটি পে-লোডে যুক্ত করা হলো
+      callForPrice: validatedData.callForPrice || false,
       
       vendorStoreId: new Types.ObjectId(validatedData.vendorStoreId),
       category: new Types.ObjectId(validatedData.category),
@@ -77,7 +78,11 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
         size: option.size
           ? (Array.isArray(option.size) ? option.size.map((id: string) => new Types.ObjectId(id)) : [new Types.ObjectId(option.size)])
           : [],
+          country: option.country
+      ? (Array.isArray(option.country) ? option.country.map((id: string) => new Types.ObjectId(id)) : [new Types.ObjectId(option.country)])
+      : [],
         storage: option.storage || undefined,
+        
         warranty: option.warranty || undefined,
         stock: option.stock || undefined,
         price: option.price || undefined,
