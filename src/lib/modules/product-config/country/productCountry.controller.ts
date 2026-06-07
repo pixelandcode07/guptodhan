@@ -1,23 +1,52 @@
 // src/lib/modules/product-config/controllers/productCountry.controller.ts
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { StatusCodes } from 'http-status-codes';
 import { ZodError } from 'zod';
 import { sendResponse } from '@/lib/utils/sendResponse';
-
 import dbConnect from '@/lib/db';
 import { createProductCountrySchema, updateProductCountrySchema } from './productCountry.validation';
 import { ProductCountryService } from './productCountry.service';
 
-// ===========================
-// POST - Create Country
-// ===========================
+// ─── Helper: multipart form parse ────────────────────────────────────────────
+// req.formData() দিয়ে fields আর file একসাথে নেওয়া হচ্ছে
+const parseFormData = async (req: NextRequest) => {
+  const formData = await req.formData();
+
+  // Text fields
+  const name       = formData.get('name') as string | null;
+  const code       = formData.get('code') as string | null;
+  const status     = formData.get('status') as string | null;
+
+  // Flag file (optional)
+  const flagEntry  = formData.get('flag');
+  let flagFile: { buffer: Buffer; mimeType: string } | undefined;
+
+  if (flagEntry && flagEntry instanceof File && flagEntry.size > 0) {
+    const arrayBuffer = await flagEntry.arrayBuffer();
+    flagFile = {
+      buffer:   Buffer.from(arrayBuffer),
+      mimeType: flagEntry.type,
+    };
+  }
+
+  return { name, code, status, flagFile };
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONTROLLERS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── POST  /api/v1/product-config/country ─────────────────────────────────────
 const createCountry = async (req: NextRequest) => {
   try {
     await dbConnect();
-    const body = await req.json();
-    const validated = createProductCountrySchema.parse(body);
-    const result = await ProductCountryService.createCountryInDB(validated);
+    const { name, code, status, flagFile } = await parseFormData(req);
+
+    // Zod validation — text fields only
+    const validated = createProductCountrySchema.parse({ name, code, status });
+
+    const result = await ProductCountryService.createCountryInDB(validated, flagFile);
 
     return sendResponse({
       success: true,
@@ -43,16 +72,11 @@ const createCountry = async (req: NextRequest) => {
   }
 };
 
-// ===========================
-// GET ALL - List Countries
-// ===========================
+// ── GET  /api/v1/product-config/country ──────────────────────────────────────
 const getAllCountries = async (req: NextRequest) => {
   await dbConnect();
   const { searchParams } = new URL(req.url);
-  
-  // ?active=true দিলে শুধু active country আসবে (product form dropdown এর জন্য)
   const onlyActive = searchParams.get('active') === 'true';
-  
   const result = await ProductCountryService.getAllCountriesFromDB(onlyActive);
 
   return sendResponse({
@@ -63,9 +87,7 @@ const getAllCountries = async (req: NextRequest) => {
   });
 };
 
-// ===========================
-// GET ONE - By ID
-// ===========================
+// ── GET  /api/v1/product-config/country/:id ──────────────────────────────────
 const getCountryById = async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -91,9 +113,7 @@ const getCountryById = async (
   });
 };
 
-// ===========================
-// PATCH - Update Country
-// ===========================
+// ── PATCH  /api/v1/product-config/country/:id ────────────────────────────────
 const updateCountry = async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -101,10 +121,16 @@ const updateCountry = async (
   try {
     await dbConnect();
     const { id } = await params;
-    const body = await req.json();
-    const validated = updateProductCountrySchema.parse(body);
+    const { name, code, status, flagFile } = await parseFormData(req);
 
-    const result = await ProductCountryService.updateCountryInDB(id, validated);
+    // Zod — text fields only, all optional for update
+    const validated = updateProductCountrySchema.parse({
+      ...(name   && { name }),
+      ...(code   && { code }),
+      ...(status && { status }),
+    });
+
+    const result = await ProductCountryService.updateCountryInDB(id, validated, flagFile);
 
     if (!result) {
       return sendResponse({
@@ -139,9 +165,7 @@ const updateCountry = async (
   }
 };
 
-// ===========================
-// DELETE - Remove Country
-// ===========================
+// ── DELETE  /api/v1/product-config/country/:id ───────────────────────────────
 const deleteCountry = async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -167,6 +191,7 @@ const deleteCountry = async (
   });
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
 export const ProductCountryController = {
   createCountry,
   getAllCountries,
