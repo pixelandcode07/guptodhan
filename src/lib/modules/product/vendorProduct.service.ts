@@ -192,7 +192,11 @@ const getProductLookupPipeline = () => [
       productId: 1, productTitle: 1, slug: 1, vendorName: 1, shortDescription: 1, fullDescription: 1,
       specification: 1, warrantyPolicy: 1, productTag: 1, videoUrl: 1, photoGallery: 1,
       thumbnailImage: 1, productPrice: 1, discountPrice: 1, stock: 1, sku: 1, rewardPoints: 1,
-      shippingCost: 1, offerDeadline: 1, metaTitle: 1, metaKeyword: 1, metaDescription: 1,
+      
+      shippingCost: 1, 
+      callForPrice: 1, // ✅ FIX: Added here
+      
+      offerDeadline: 1, metaTitle: 1, metaKeyword: 1, metaDescription: 1,
       status: 1, sellCount: 1, 
       productOptions: 1,
       createdAt: 1, updatedAt: 1,
@@ -1115,6 +1119,7 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
         thumbnailImage: 1,
         productPrice: 1,
         discountPrice: 1,
+        callForPrice: 1, // ✅ FIX: Added here
         slug: 1,
         "category.slug": 1,
         "subCategory.slug": 1,
@@ -1453,6 +1458,9 @@ const getVendorStoreAndProductsFromDB = async (
   const skip = (page - 1) * limit;
 
   // ✅ Updated Pipeline with Projection
+  // (ফাইলের একটু নিচের দিকে getVendorStoreAndProductsFromDB ফাংশনের ভেতরের $project স্টেজটি রিপ্লেস করুন)
+
+  // ✅ Updated Pipeline with Projection
   const products = await VendorProductModel.aggregate([
     { $match: filter },
     { $sort: sortObj },
@@ -1464,10 +1472,11 @@ const getVendorStoreAndProductsFromDB = async (
       $project: {
         _id: 1,
         productTitle: 1,
-        slug: 1, // ✅ Slug added
+        slug: 1,
         thumbnailImage: 1,
         productPrice: 1,
         discountPrice: 1,
+        callForPrice: 1, // ✅ FIX: Added here
         stock: 1,
         sellCount: 1,
         rewardPoints: 1,
