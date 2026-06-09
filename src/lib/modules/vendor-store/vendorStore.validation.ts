@@ -70,4 +70,5 @@ export const updateStoreValidationSchema = z.object({
   storeMetaKeywords: z.array(z.string()).optional(),
   storeMetaDescription: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),
+  callForPricePermission: z.boolean().optional(),
 });
