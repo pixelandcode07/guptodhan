@@ -1,299 +1,236 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  SortingState,
-  useReactTable,
-  RowSelectionState,
-} from '@tanstack/react-table';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Search,
-  Trash2, // ✅ Added Trash2 icon for Delete button
-} from 'lucide-react';
+import { cn } from "@/lib/utils";
+import { ColumnDef } from "@tanstack/react-table";
+import { Edit, X, Eye } from "lucide-react";
+import { Button } from "../ui/button";
+import Image from "next/image";
+import Link from "next/link";
+import { StoreInterface } from "@/types/StoreInterface";
+import { confirmDelete } from "../ReusableComponents/ConfirmToast";
+import { toast } from "sonner";
+import axios from "axios";
+import { useState } from "react";
+import { Switch } from "../ui/switch";
+import { Checkbox } from "../ui/checkbox"; // ✅ Checkbox Import
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
-  data: TData[];
-  setData?: React.Dispatch<React.SetStateAction<any>>;
-  initialPageIndex?: number;   
-  onPageChange?: (pageIndex: number) => void;  
-  // ✅ NEW: Bulk Delete Handle করার জন্য Prop
-  onBulkDelete?: (selectedRows: TData[]) => void; 
-}
+// =========================================================================
+// ✅ 1. Call For Price Toggle Component
+// =========================================================================
+const CallForPriceToggle = ({ store }: { store: StoreInterface }) => {
+  const [isChecked, setIsChecked] = useState(store.callForPricePermission || false);
+  const [isLoading, setIsLoading] = useState(false);
 
-export function DataTable<TData, TValue>({
-  columns,
-  data,
-  initialPageIndex = 0,
-  onPageChange,
-  onBulkDelete, // ✅ Receive the prop
-}: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting]           = React.useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = React.useState('');
-  const [pageSize, setPageSize]         = React.useState(10);
-  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
+  const handleToggle = async (checked: boolean) => {
+    setIsLoading(true);
+    setIsChecked(checked); // Optimistic UI Update
 
-  const [pageIndex, setPageIndex] = React.useState(initialPageIndex);
+    try {
+      const formData = new FormData();
+      formData.append('callForPricePermission', String(checked));
 
-  React.useEffect(() => {
-    setPageIndex(initialPageIndex);
-    table.setPageIndex(initialPageIndex);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialPageIndex]);
+      const res = await axios.patch(`/api/v1/vendor-store/${store._id}`, formData);
 
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel:      getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel:    getSortedRowModel(),
-    getFilteredRowModel:  getFilteredRowModel(),
-    onSortingChange:      setSorting,
-    onGlobalFilterChange: setGlobalFilter,
-    onRowSelectionChange: setRowSelection,
-    onPaginationChange: (updater) => {
-      const newState =
-        typeof updater === 'function'
-          ? updater({ pageIndex, pageSize })
-          : updater;
-      setPageIndex(newState.pageIndex);
-      if (newState.pageSize !== pageSize) setPageSize(newState.pageSize);
-      if (onPageChange) onPageChange(newState.pageIndex);
-    },
-    state: {
-      sorting,
-      globalFilter,
-      rowSelection,
-      pagination: { pageIndex, pageSize },
-    },
-    manualPagination: false,
-    enableRowSelection: true,
-  });
-
-  const pageCount  = table.getPageCount();
-  const totalRows  = table.getFilteredRowModel().rows.length;
-  const startRow   = pageIndex * pageSize + 1;
-  const endRow     = Math.min((pageIndex + 1) * pageSize, totalRows);
+      if (res.data.success) {
+        toast.success(`${checked ? 'Granted' : 'Revoked'} Call for Price permission for ${store.storeName}`);
+      } else {
+        throw new Error('Update failed');
+      }
+    } catch (error) {
+      setIsChecked(!checked); // Rollback if failed
+      toast.error('Failed to update permission');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="w-full space-y-3">
-      {/* ── Top Controls ── */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-white px-4 py-3 rounded-xl border border-gray-200 shadow-sm">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <span>Show</span>
-          <select
-            value={pageSize}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              setPageSize(val);
-              table.setPageSize(val);
-            }}
-            className="h-8 w-16 rounded-md border border-gray-300 text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-          >
-            {[10, 25, 50, 100].map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-          <span>entries</span>
-        </div>
-
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          {/* ✅ Bulk Delete Button: শুধু তখনি দেখাবে যখন মার্ক করা হবে */}
-          {onBulkDelete && Object.keys(rowSelection).length > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              className="h-9 px-3 shrink-0 bg-red-500 hover:bg-red-600 text-white font-medium"
-              onClick={() => {
-                const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
-                onBulkDelete(selectedData);
-                // অ্যাকশনের পর সিলেকশন ক্লিয়ার করে দেওয়া
-                table.toggleAllRowsSelected(false); 
-              }}
-            >
-              <Trash2 size={16} className="mr-2" />
-              Delete Selected ({Object.keys(rowSelection).length})
-            </Button>
-          )}
-
-          <div className="relative w-full sm:w-64">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <Input
-              placeholder="Search products..."
-              value={globalFilter}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="h-9 pl-8 border-gray-300 focus:ring-blue-500 text-sm"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* ── Table ── */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
-          <Table className="min-w-[1400px] w-full border-collapse">
-            <TableHeader>
-              {table.getHeaderGroups().map((hg) => (
-                <TableRow key={hg.id} className="bg-gray-50 border-b border-gray-200 hover:bg-gray-50">
-                  {hg.headers.map((h) => (
-                    <TableHead
-                      key={h.id}
-                      onClick={h.column.getToggleSortingHandler()}
-                      className="h-11 px-3 text-[11px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap cursor-pointer select-none"
-                    >
-                      <div className="flex items-center gap-1">
-                        {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
-                        {h.column.getCanSort() && (
-                          <span className="text-gray-400 text-[10px]">
-                            {h.column.getIsSorted() === 'asc' ? ' ↑' : h.column.getIsSorted() === 'desc' ? ' ↓' : ' ↕'}
-                          </span>
-                        )}
-                      </div>
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row, i) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() ? 'selected' : undefined}
-                    className={`border-b border-gray-100 last:border-0 transition-colors hover:bg-blue-50/30 ${
-                      row.getIsSelected() ? 'bg-blue-50' : i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
-                    }`}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="px-3 py-2.5 text-sm text-gray-700 whitespace-nowrap">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-32 text-center text-gray-400 italic text-sm">
-                    No entries found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
-      {/* ── Bottom Controls ── */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white px-4 py-3 rounded-xl border border-gray-200 shadow-sm">
-        <div className="text-sm text-gray-500">
-          {totalRows > 0 ? (
-            <>
-              Showing <span className="font-medium text-gray-700">{startRow}</span>
-              {' '}to{' '}
-              <span className="font-medium text-gray-700">{endRow}</span>
-              {' '}of{' '}
-              <span className="font-medium text-gray-700">{totalRows}</span>
-              {' '}entries
-              {Object.keys(rowSelection).length > 0 && (
-                <span className="ml-2 text-blue-600">({Object.keys(rowSelection).length} selected)</span>
-              )}
-            </>
-          ) : (
-            'No entries'
-          )}
-        </div>
-
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline" size="sm"
-            onClick={() => table.setPageIndex(0)}
-            disabled={!table.getCanPreviousPage()}
-            className="h-8 w-8 p-0 border-gray-300"
-          >
-            <ChevronsLeft size={14} />
-          </Button>
-          <Button
-            variant="outline" size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            className="h-8 px-3 border-gray-300 text-xs"
-          >
-            <ChevronLeft size={14} className="mr-1" /> Previous
-          </Button>
-
-          {Array.from({ length: Math.min(pageCount, 5) }, (_, i) => {
-            let pageNum: number;
-            if (pageCount <= 5)          pageNum = i;
-            else if (pageIndex < 3)      pageNum = i;
-            else if (pageIndex > pageCount - 4) pageNum = pageCount - 5 + i;
-            else                         pageNum = pageIndex - 2 + i;
-            return (
-              <Button
-                key={pageNum}
-                variant={pageIndex === pageNum ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => table.setPageIndex(pageNum)}
-                className={`h-8 w-8 p-0 text-xs border-gray-300 ${
-                  pageIndex === pageNum ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700' : ''
-                }`}
-              >
-                {pageNum + 1}
-              </Button>
-            );
-          })}
-
-          {pageCount > 5 && pageIndex < pageCount - 3 && (
-            <span className="text-gray-400 text-xs px-1">...</span>
-          )}
-          {pageCount > 5 && pageIndex < pageCount - 3 && (
-            <Button
-              variant="outline" size="sm"
-              onClick={() => table.setPageIndex(pageCount - 1)}
-              className="h-8 w-8 p-0 text-xs border-gray-300"
-            >
-              {pageCount}
-            </Button>
-          )}
-
-          <Button
-            variant="outline" size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            className="h-8 px-3 border-gray-300 text-xs"
-          >
-            Next <ChevronRight size={14} className="ml-1" />
-          </Button>
-          <Button
-            variant="outline" size="sm"
-            onClick={() => table.setPageIndex(pageCount - 1)}
-            disabled={!table.getCanNextPage()}
-            className="h-8 w-8 p-0 border-gray-300"
-          >
-            <ChevronsRight size={14} />
-          </Button>
-        </div>
-      </div>
-    </div>
+    <Switch 
+      checked={isChecked} 
+      onCheckedChange={handleToggle} 
+      disabled={isLoading}
+      className={isChecked ? 'bg-blue-600' : 'bg-gray-300'}
+    />
   );
-}
+};
+
+// =========================================================================
+// 🚀 ALL STORE COLUMNS DEFINITION
+// =========================================================================
+export const all_store_columns: ColumnDef<StoreInterface>[] = [
+  // ✅ 4. Checkbox Column added at the beginning
+  {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+        className="translate-y-[2px]"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Select row"
+        className="translate-y-[2px]"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
+    accessorKey: "serial",
+    header: "Serial",
+    cell: ({ row }) => {
+      const index = row.index + 1;
+      return <span className="font-medium text-xs">{index}</span>;
+    },
+  },
+  {
+    accessorKey: "storeLogo",
+    header: "Store Logo",
+    cell: ({ row }) => {
+      const logoUrl = row.getValue("storeLogo") as string;
+      return logoUrl ? (
+        <Image
+          src={logoUrl}
+          alt="Store Logo"
+          width={40}
+          height={40}
+          className="rounded-md object-cover border border-gray-100 shadow-sm"
+          unoptimized // Added to avoid next/image domain errors
+        />
+      ) : (
+        <div className="bg-gray-100 border-2 border-dashed border-gray-200 rounded-md w-10 h-10 flex items-center justify-center">
+          <span className="text-[10px] text-gray-400">No Logo</span>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "storeName",
+    header: "Store Name",
+    cell: ({ row }) => <span className="font-bold text-gray-800">{row.getValue("storeName")}</span>,
+  },
+  {
+    accessorKey: "storeAddress",
+    header: "Address",
+    cell: ({ row }) => {
+      const address = row.getValue("storeAddress") as string;
+      return <span className="text-gray-600 max-w-[150px] truncate block" title={address}>{address}</span>;
+    }
+  },
+  // ✅ 2. Phone Number Column Added
+  {
+    accessorKey: "storePhone",
+    header: "Phone Number",
+    cell: ({ row }) => <span className="text-gray-700 font-medium">{row.getValue("storePhone") || "N/A"}</span>,
+  },
+  {
+    accessorKey: "storeEmail",
+    header: "Email",
+  },
+  {
+    accessorKey: "commission",
+    header: "Commission",
+    cell: ({ row }) => {
+      const commission = row.getValue("commission") as number;
+      return <span className="font-bold text-blue-600">{commission}%</span>;
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.getValue("status") as string;
+      return (
+        <div
+          className={cn(
+            `px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase w-max tracking-wider`,
+            status === "active" && "bg-green-100 text-green-700",
+            status === "pending" && "bg-yellow-100 text-yellow-700",
+            status === "inactive" && "bg-red-100 text-red-700"
+          )}
+        >
+          {status}
+        </div>
+      );
+    },
+  },
+  // ✅ 1. Call For Price Toggle Column Added
+  {
+    id: "callForPricePermission",
+    header: "Call For Price",
+    cell: ({ row }) => <CallForPriceToggle store={row.original} />,
+  },
+  {
+    accessorKey: "createdAt",
+    header: "Created At",
+    cell: ({ row }) => {
+      const date = new Date(row.getValue("createdAt") as string);
+      return (
+        <span className="text-xs text-gray-500 font-medium">
+          {date.toLocaleDateString("en-GB")}
+        </span>
+      );
+    },
+  },
+  {
+    id: "actions",
+    header: "Action",
+    cell: ({ row, table }) => {
+      const store = row.original;
+
+      const handleDelete = async (store: StoreInterface) => {
+        const confirmed = await confirmDelete(`Delete "${store.storeName}"?`);
+        if (!confirmed) return;
+
+        try {
+          await toast.promise(
+            axios.delete(`/api/v1/vendor-store/${store._id}`),
+            {
+              loading: "Deleting...",
+              success: "Store deleted successfully!",
+              error: (err) => err.response?.data?.message || "Failed to delete store",
+            }
+          );
+          
+          // @ts-ignore
+          const setData = table.options.meta?.setData as React.Dispatch<React.SetStateAction<StoreInterface[]>> | undefined;
+
+          if (setData) {
+            setData((prev) => prev.filter((item) => item._id !== store._id));
+          }
+        } catch (error) {
+          console.error("Delete error:", error);
+        }
+      };
+
+      return (
+        <div className="flex items-center gap-1.5">
+          {/* ✅ 3. Visit Store Eye Icon Added */}
+          <Link href={`/home/visit-store/${store._id}`} target="_blank">
+            <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200" title="Visit Store">
+              <Eye className="h-4 w-4" />
+            </Button>
+          </Link>
+
+          <Link href={`/general/edit/store/${store._id}`}>
+            <Button size="sm" variant="EditBtn" className="h-8 w-8 p-0" title="Edit Store">
+              <Edit className="h-4 w-4" />
+            </Button>
+          </Link>
+          
+          <Button onClick={() => handleDelete(store)} size="sm" variant="DeleteBtn" className="h-8 w-8 p-0" title="Delete Store">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      );
+    } 
+  }
+];
