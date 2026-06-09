@@ -35,5 +35,6 @@ export interface IStore extends Document {
   storeMetaKeywords: string[];
   storeMetaDescription: string;
   status: "active" | "inactive";
+  callForPricePermission?: boolean;
   createdAt: Date;
 }
