@@ -28,15 +28,17 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Search,
+  Trash2,
 } from 'lucide-react';
 
+// ✅ FIX: এখানে onBulkDelete প্রপার্টি অ্যাড করা হয়েছে
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   setData?: React.Dispatch<React.SetStateAction<any>>;
-  // ✅ NEW: pagination persistence এর জন্য
-  initialPageIndex?: number;   // URL থেকে আসা page (0-indexed)
-  onPageChange?: (pageIndex: number) => void;  // page change হলে URL update
+  initialPageIndex?: number;   
+  onPageChange?: (pageIndex: number) => void;  
+  onBulkDelete?: (selectedRows: TData[]) => void; 
 }
 
 export function DataTable<TData, TValue>({
@@ -44,16 +46,15 @@ export function DataTable<TData, TValue>({
   data,
   initialPageIndex = 0,
   onPageChange,
+  onBulkDelete, 
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting]           = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState('');
   const [pageSize, setPageSize]         = React.useState(10);
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
 
-  // ✅ initialPageIndex দিয়ে table শুরু হবে
   const [pageIndex, setPageIndex] = React.useState(initialPageIndex);
 
-  // ✅ parent (URL) থেকে initialPageIndex change হলে sync করা
   React.useEffect(() => {
     setPageIndex(initialPageIndex);
     table.setPageIndex(initialPageIndex);
@@ -71,7 +72,6 @@ export function DataTable<TData, TValue>({
     onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: setRowSelection,
     onPaginationChange: (updater) => {
-      // ✅ page change হলে URL update করা
       const newState =
         typeof updater === 'function'
           ? updater({ pageIndex, pageSize })
@@ -117,14 +117,33 @@ export function DataTable<TData, TValue>({
           <span>entries</span>
         </div>
 
-        <div className="relative w-full sm:w-64">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <Input
-            placeholder="Search products..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="h-9 pl-8 border-gray-300 focus:ring-blue-500 text-sm"
-          />
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          {/* ✅ Bulk Delete Button */}
+          {onBulkDelete && Object.keys(rowSelection).length > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="h-9 px-3 shrink-0 bg-red-500 hover:bg-red-600 text-white font-medium"
+              onClick={() => {
+                const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
+                onBulkDelete(selectedData);
+                table.toggleAllRowsSelected(false); 
+              }}
+            >
+              <Trash2 size={16} className="mr-2" />
+              Delete Selected ({Object.keys(rowSelection).length})
+            </Button>
+          )}
+
+          <div className="relative w-full sm:w-64">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Input
+              placeholder="Search..."
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="h-9 pl-8 border-gray-300 focus:ring-blue-500 text-sm"
+            />
+          </div>
         </div>
       </div>
 
