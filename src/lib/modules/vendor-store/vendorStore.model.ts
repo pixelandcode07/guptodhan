@@ -81,6 +81,10 @@ const storeSchema = new Schema<IStore>(
       default: 'active'
       // ✅ NO index: true here - covered by compound indexes
     },
+    callForPricePermission: { 
+      type: Boolean, 
+      default: false 
+    },
   },
   { timestamps: true }
 );
