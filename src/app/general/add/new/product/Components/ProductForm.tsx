@@ -2,7 +2,7 @@
 
 // src/app/general/add/new/product/Components/ProductForm.tsx
 
-import React, { useState, FormEvent, useEffect, useRef } from "react";
+import React, { useState, FormEvent, useEffect, useRef, useMemo } from "react";
 import axios from "axios";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -118,7 +118,6 @@ export default function ProductForm({
   const [videoUrl,      setVideoUrl]      = useState("");
   const [shippingCost,  setShippingCost]  = useState<number | undefined>(undefined);
 
-  // ✅ NEW: Call for Price
   const [callForPrice, setCallForPrice] = useState(false);
 
   // ── Dropdown States ────────────────────────────────────────────────────────
@@ -157,6 +156,13 @@ export default function ProductForm({
   const isInitialLoad      = useRef(true);
   const initialModelId     = useRef<string | null>(null);
   const initialSubcategoryId = useRef<string | null>(null);
+
+  // ✅ NEW: Check if selected store has permission
+  const hasCallForPricePermission = useMemo(() => {
+    if (!store) return false;
+    const selectedStoreObj = listStores.find((s: any) => getIdFromRef(s) === store);
+    return selectedStoreObj?.callForPricePermission === true;
+  }, [store, listStores]);
 
   // ── 1. Load existing product (edit mode) ──────────────────────────────────
   useEffect(() => {
@@ -212,7 +218,7 @@ export default function ProductForm({
         setShippingCost(p.shippingCost);
         setVideoUrl(p.videoUrl || "");
 
-        // ✅ NEW: callForPrice restore
+        // Call for Price restore
         setCallForPrice(!!p.callForPrice);
 
         // Special Offer
@@ -301,7 +307,6 @@ export default function ProductForm({
             const rawSimType   = Array.isArray(opt.simType)  ? opt.simType[0]  : opt.simType;
             const rawCondition = Array.isArray(opt.condition)? opt.condition[0]: opt.condition;
             const rawWarranty  = opt.warranty;
-            // ✅ NEW: country restore
             const rawCountry   = Array.isArray(opt.country)  ? opt.country[0]  : opt.country;
 
             const colorId     = resolveOptionId(rawColor,     currentVariantOptions?.colors       || [], ["colorName", "name"]);
@@ -310,8 +315,14 @@ export default function ProductForm({
             const simTypeId   = resolveOptionId(rawSimType,   currentVariantOptions?.simTypes     || [], ["name"]);
             const conditionId = resolveOptionId(rawCondition, currentVariantOptions?.conditions   || [], ["deviceCondition", "name"]);
             const warrantyId  = resolveOptionId(rawWarranty,  currentVariantOptions?.warranties   || [], ["warrantyName", "name"]);
-            // ✅ NEW: country resolve
             const countryId   = resolveOptionId(rawCountry,   currentVariantOptions?.countries    || [], ["name"]);
+
+            const finalStorageId = storageId || (() => {
+              if (!rawStorage) return "";
+              const rawStr = typeof rawStorage === "string" ? rawStorage.trim() : getIdFromRef(rawStorage);
+              if (!rawStr) return "";
+              return "CUSTOM_" + rawStr;
+            })();
 
             return {
               id:            Date.now() + idx,
@@ -322,7 +333,7 @@ export default function ProductForm({
               simType:       simTypeId,
               condition:     conditionId,
               warranty:      warrantyId,
-              country:       countryId, // ✅ NEW
+              country:       countryId,
               stock:         opt.stock         || 0,
               price:         opt.price         || 0,
               discountPrice: opt.discountPrice || 0,
@@ -331,7 +342,6 @@ export default function ProductForm({
 
           setVariants(mappedVariants);
 
-          // Storage fallback (existing logic unchanged)
           const missingStorageOptions: any[] = [];
           p.productOptions.forEach((opt: any) => {
             const rawStorage = opt.storage;
@@ -522,13 +532,16 @@ export default function ProductForm({
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!token)              return toast.error("⚠️ Authentication required.");
+    if (!token) return toast.error("⚠️ Authentication required.");
     if (!isEditMode && !thumbnail) return toast.error("⚠️ Thumbnail image is required.");
     if (!title || !store || !category) return toast.error("⚠️ Please fill all required fields (*).");
 
-    // ✅ Price validation: callForPrice ON হলে price required না
-    if (!callForPrice && (!price || price <= 0))
-      return toast.error("⚠️ Price is required (or enable Call for Price).");
+    // ✅ NEW: Price validation based on final permission state
+    const finalCallForPrice = hasCallForPricePermission ? callForPrice : false;
+    
+    if (!finalCallForPrice && (!price || price <= 0)) {
+      return toast.error("⚠️ Price is required unless 'Call for Price' is active.");
+    }
 
     const selectedStore = listStores.find((s: any) => getIdFromRef(s) === store);
     const vendorName    = selectedStore?.storeName || "";
@@ -568,8 +581,7 @@ export default function ProductForm({
         sku:              productCode   || undefined,
         rewardPoints:     rewardPoints  || 0,
         shippingCost:     shippingCost  || 0,
-        // ✅ NEW: callForPrice
-        callForPrice,
+        callForPrice:     finalCallForPrice, // ✅ Use evaluated permission
         category,
         subCategory:      subcategory   || undefined,
         childCategory:    childCategory || undefined,
@@ -594,12 +606,11 @@ export default function ProductForm({
                   productImage:  uploadedImage,
                   color:         safeId(variant.color)     ? [variant.color]     : [],
                   size:          safeId(variant.size)      ? [variant.size]      : [],
+                  country:       safeId(variant.country)   ? [variant.country]   : [],
                   storage:       safeId(variant.storage),
                   simType:       safeId(variant.simType)   ? [variant.simType]   : [],
                   condition:     safeId(variant.condition) ? [variant.condition] : [],
                   warranty:      safeId(variant.warranty),
-                  // ✅ NEW: country — ObjectId হলেই পাঠাবে
-                  country:       safeId(variant.country)   ? [variant.country]   : [],
                   stock:         variant.stock,
                   price:         variant.price,
                   discountPrice: variant.discountPrice,
@@ -654,62 +665,11 @@ export default function ProductForm({
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="animate-spin h-10 w-10 text-blue-500" />
-        <span className="ml-3 text-gray-600">Loading product data...</span>
       </div>
     );
 
-  // ── Debug Panel ────────────────────────────────────────────────────────────
-  const DebugPanel = () => {
-    if (process.env.NODE_ENV !== "development") return null;
-    if (!showDebug)
-      return (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setShowDebug(true)}
-          className="fixed bottom-4 right-4 z-50 bg-yellow-100 hover:bg-yellow-200 border-yellow-400"
-        >
-          🐛 Debug
-        </Button>
-      );
-    return (
-      <div className="fixed bottom-4 right-4 z-50 bg-white border-2 border-yellow-400 rounded-lg shadow-xl p-4 max-w-md max-h-[80vh] overflow-auto">
-        <div className="flex justify-between items-center mb-3 pb-2 border-b">
-          <h3 className="font-bold text-sm">🐛 Debug Panel</h3>
-          <Button type="button" variant="ghost" size="sm" onClick={() => setShowDebug(false)}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="space-y-2 text-xs">
-          <div className="bg-gray-50 p-2 rounded">
-            <p className="font-semibold">Product Details:</p>
-            <p>Store: {store || "❌ Empty"}</p>
-            <p>Category: {category || "❌ Empty"}</p>
-            <p>Call for Price: {callForPrice ? "✅ Yes" : "❌ No"}</p>
-          </div>
-          <div className="bg-gray-50 p-2 rounded">
-            <p className="font-semibold">Variants:</p>
-            <p>Has Variants: {hasVariant ? "✅ Yes" : "❌ No"}</p>
-            <p>Count: {variants.length}</p>
-            {variants.map((v, i) => (
-              <div key={v.id} className="border-t pt-1 mt-1 text-[10px]">
-                <p className="font-semibold">Variant {i + 1}:</p>
-                <p>Color: {v.color || "❌"}</p>
-                <p>Country: {v.country || "❌"}</p>
-                <p>Storage: {v.storage || "❌"}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <>
-      <DebugPanel />
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
 
         {/* Sticky action bar */}
@@ -739,7 +699,6 @@ export default function ProductForm({
                 <div className="space-y-2">
                   <Label>Short Description (Max 255)</Label>
                   <Textarea value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} maxLength={255} className="min-h-[100px] resize-none" />
-                  <div className="text-xs text-gray-500 text-right">{shortDescription.length}/255</div>
                 </div>
                 <div className="space-y-2">
                   <Label>Product Tags</Label>
@@ -756,26 +715,10 @@ export default function ProductForm({
               </CardHeader>
               <CardContent className="pt-6 flex-1">
                 <label htmlFor="thumbnail-upload" className="cursor-pointer group block w-full h-full">
-                  <div className="flex items-center justify-center w-full h-full min-h-[300px] border-2 border-dashed border-gray-300 rounded-lg p-4 transition-colors hover:border-blue-400 hover:bg-blue-50/50">
+                  <div className="flex items-center justify-center w-full h-full min-h-[300px] border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 hover:bg-blue-50/50">
                     {thumbnailPreview ? (
                       <div className="relative w-full h-full min-h-[300px] rounded-md overflow-hidden">
                         <Image src={thumbnailPreview} alt="Thumbnail" fill style={{ objectFit: "contain" }} className="rounded-md" />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-2 right-2 h-8 w-8 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (!thumbnail && thumbnailPreview) setRemovedThumbnailUrl((prev) => prev ?? thumbnailPreview);
-                            setInitialThumbnailUrl(null);
-                            setThumbnail(null);
-                            setThumbnailPreview(null);
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
                       </div>
                     ) : (
                       <div className="text-center text-gray-500">
@@ -816,31 +759,25 @@ export default function ProductForm({
               </CardHeader>
               <CardContent className="pt-6 space-y-4 flex-1">
 
-                {/* ✅ NEW: Call for Price toggle — pricing-এর উপরে */}
-                <div className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <PhoneCall className="w-4 h-4 text-amber-600" />
-                      <Label className="font-semibold text-amber-800 cursor-pointer">Call for Price</Label>
+                {/* ✅ SHOW CALL FOR PRICE ONLY IF STORE HAS PERMISSION */}
+                {hasCallForPricePermission && (
+                  <div className="flex items-center justify-between bg-blue-50/50 p-4 border border-blue-100 rounded-lg mb-4">
+                    <div>
+                      <Label className="text-blue-900 font-bold text-sm">Call for Price</Label>
+                      <p className="text-xs text-blue-700 mt-0.5">Hide price and show call button</p>
                     </div>
-                    <p className="text-xs text-amber-600 mt-0.5">
-                      Enable করলে price hidden থাকবে, "Call for Price" button দেখাবে
-                    </p>
+                    <Switch checked={callForPrice} onCheckedChange={setCallForPrice} />
                   </div>
-                  <Switch
-                    checked={callForPrice}
-                    onCheckedChange={setCallForPrice}
-                  />
-                </div>
+                )}
 
-                {/* Pricing fields — callForPrice ON হলে visually dimmed */}
-                <div className={callForPrice ? "opacity-40 pointer-events-none" : ""}>
+                {/* ✅ SHOW PRICING IF NO PERMISSION OR TOGGLE IS OFF */}
+                {(!hasCallForPricePermission || !callForPrice) && (
                   <PricingInventory
                     formData={pricingFormData}
                     handleInputChange={handlePricingInputChange}
                     handleNumberChange={handlePricingNumberChange}
                   />
-                </div>
+                )}
 
                 <div className="space-y-2">
                   <Label>Product Code (SKU)</Label>
@@ -850,7 +787,6 @@ export default function ProductForm({
             </Card>
           </div>
 
-          {/* Row 3: Gallery + Product Details */}
           <div className={`grid gap-4 sm:gap-6 ${hasVariant ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"}`}>
             {!hasVariant && (
               <ProductImageGallery
@@ -870,7 +806,6 @@ export default function ProductForm({
               </CardHeader>
               <CardContent className="pt-6 flex-1">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Store */}
                   <div className="space-y-2">
                     <Label>Store <span className="text-red-500">*</span></Label>
                     <Select value={store} onValueChange={setStore}>
@@ -882,8 +817,6 @@ export default function ProductForm({
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Category */}
                   <div className="space-y-2">
                     <Label>Category <span className="text-red-500">*</span></Label>
                     <Select value={category} onValueChange={(val) => { setCategory(val); if (!isInitialLoad.current) { setSubcategory(""); setChildCategory(""); } }}>
@@ -895,8 +828,6 @@ export default function ProductForm({
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Subcategory */}
                   <div className="space-y-2">
                     <Label>Subcategory</Label>
                     <Select value={subcategory} onValueChange={(val) => { setSubcategory(val); if (!isInitialLoad.current) setChildCategory(""); }} disabled={!category}>
@@ -908,8 +839,6 @@ export default function ProductForm({
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Child Category */}
                   <div className="space-y-2">
                     <Label>Child Category</Label>
                     <Select value={childCategory} onValueChange={setChildCategory} disabled={!subcategory}>
@@ -921,8 +850,6 @@ export default function ProductForm({
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Brand */}
                   <div className="space-y-2">
                     <Label>Brand</Label>
                     <Select value={brand} onValueChange={(val) => { setBrand(val); if (!isInitialLoad.current) setModel(""); }}>
@@ -934,8 +861,6 @@ export default function ProductForm({
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Model */}
                   <div className="space-y-2">
                     <Label>Model</Label>
                     <Select value={model} onValueChange={setModel} disabled={!brand}>
@@ -947,8 +872,6 @@ export default function ProductForm({
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Flag */}
                   <div className="space-y-2">
                     <Label>Flag</Label>
                     <Select value={flag} onValueChange={setFlag}>
@@ -960,8 +883,6 @@ export default function ProductForm({
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Unit */}
                   <div className="space-y-2">
                     <Label>Unit</Label>
                     <Select value={unit} onValueChange={setUnit}>
@@ -973,8 +894,6 @@ export default function ProductForm({
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Warranty */}
                   <div className="space-y-2">
                     <Label>Warranty</Label>
                     <Select value={warranty} onValueChange={setWarranty}>
@@ -986,15 +905,12 @@ export default function ProductForm({
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Video URL */}
                   <div className="space-y-2">
                     <Label>Video URL</Label>
                     <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} className="h-11" />
                   </div>
                 </div>
 
-                {/* Special Offer */}
                 <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100">
                   <div>
                     <Label>Special Offer</Label>
@@ -1012,7 +928,6 @@ export default function ProductForm({
             </Card>
           </div>
 
-          {/* Variant Section */}
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-center space-x-3 mb-4">
@@ -1024,12 +939,12 @@ export default function ProductForm({
                   variants={variants}
                   setVariants={setVariants}
                   variantData={variantOptions}
+                  isCallForPrice={hasCallForPricePermission ? callForPrice : false} // ✅ Dynamic pricing hide based on permission
                 />
               )}
             </CardContent>
           </Card>
 
-          {/* SEO */}
           <Card className="shadow-sm border-gray-200">
             <CardHeader className="pb-4 border-b border-gray-100">
               <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">SEO Information</CardTitle>
@@ -1052,7 +967,6 @@ export default function ProductForm({
             </CardContent>
           </Card>
 
-          {/* Bottom action */}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="destructive" onClick={() => router.back()}>
               <X className="mr-2 h-4 w-4" /> Discard
