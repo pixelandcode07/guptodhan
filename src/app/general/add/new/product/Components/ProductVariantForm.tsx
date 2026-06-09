@@ -44,6 +44,7 @@ export interface IProductOption {
 interface ProductVariantFormProps {
   variants: IProductOption[];
   setVariants: React.Dispatch<React.SetStateAction<IProductOption[]>>;
+  isCallForPrice?: boolean;
   variantData: {
     warranties:   VariantOption[];
     conditions:   VariantOption[];
@@ -53,6 +54,7 @@ interface ProductVariantFormProps {
     storageTypes: VariantOption[];
     // ✅ NEW
     countries:    VariantOption[];
+    
   };
 }
 
