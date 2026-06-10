@@ -187,14 +187,16 @@ const getProductLookupPipeline = () => [
       'subCategory._id': 1, 'subCategory.name': 1, 'subCategory.slug': 1,
       'childCategory._id': 1, 'childCategory.name': 1, 'childCategory.slug': 1,
       'weightUnit._id': 1, 'weightUnit.name': 1,
-      'vendorStoreId._id': 1, 'vendorStoreId.storeName': 1, 'vendorStoreId.storeLogo': 1,
+      
+      // ✅ FIX: storePhone যুক্ত করা হলো এখানে
+      'vendorStoreId._id': 1, 'vendorStoreId.storeName': 1, 'vendorStoreId.storeLogo': 1, 'vendorStoreId.storePhone': 1,
 
       productId: 1, productTitle: 1, slug: 1, vendorName: 1, shortDescription: 1, fullDescription: 1,
       specification: 1, warrantyPolicy: 1, productTag: 1, videoUrl: 1, photoGallery: 1,
       thumbnailImage: 1, productPrice: 1, discountPrice: 1, stock: 1, sku: 1, rewardPoints: 1,
       
       shippingCost: 1, 
-      callForPrice: 1, // ✅ FIX: Added here
+      callForPrice: 1, 
       
       offerDeadline: 1, metaTitle: 1, metaKeyword: 1, metaDescription: 1,
       status: 1, sellCount: 1, 
