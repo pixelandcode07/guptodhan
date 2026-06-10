@@ -31,14 +31,14 @@ import {
   Trash2,
 } from 'lucide-react';
 
-// ✅ FIX: এখানে onBulkDelete প্রপার্টি অ্যাড করা হয়েছে
+// ✅ FIX: onBulkDelete এখন Promise রিটার্ন করতে পারবে
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   setData?: React.Dispatch<React.SetStateAction<any>>;
   initialPageIndex?: number;   
   onPageChange?: (pageIndex: number) => void;  
-  onBulkDelete?: (selectedRows: TData[]) => void; 
+  onBulkDelete?: (selectedRows: TData[]) => void | Promise<void>; 
 }
 
 export function DataTable<TData, TValue>({
