@@ -92,7 +92,7 @@ export default function OrderSuccessModal({ open, onOpenChange, orderId }: {
 
           {/* Primary button */}
           <Link
-            href={orderId ? `/home/UserProfile/orders/${orderId}` : '/home/UserProfile/orders'}
+           href={orderId ? `/home/UserProfile/orders/${orderId}` : '/home/UserProfile/orders'}
             className="block w-full mb-2.5"
           >
             <button className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold transition-colors">
