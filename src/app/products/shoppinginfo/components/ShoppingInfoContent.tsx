@@ -239,7 +239,8 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
       const createdOrderData = await placeOrder(orderPayload);
       
       const gatewayOrderId = extractOrderId(createdOrderData);
-      // ✅ FIX: URL-এ পাঠানোর জন্য আমরা ডাটাবেসের অরিজিনাল MongoDB ID (_id) ব্যবহার করবো
+      
+      // ✅ FIX: Heavily check for MongoDB অরিজিনাল _id field jate bhul link na jay
       const urlOrderId = createdOrderData?.data?._id || createdOrderData?._id || gatewayOrderId;
 
       toast.dismiss('order-toast');
@@ -253,7 +254,7 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
       }
 
       toast.success('Order placed successfully!');
-      await showSuccessModal(urlOrderId); // ✅ Pushing the actual DB ID for routing
+      await showSuccessModal(urlOrderId); // ✅ Pass MongoDB original ID here
 
     } catch (error: any) {
       toast.dismiss('order-toast');
