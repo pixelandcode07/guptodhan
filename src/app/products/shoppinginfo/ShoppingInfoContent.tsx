@@ -338,17 +338,11 @@ export default function ShoppingInfoContent({
             if (paymentMethod === 'card') {
                 toast.loading('Initializing secure payment...', { id: 'pay' })
                 try {
-                    // 1. Order Create (Database-এ টেম্পোরারি সেভ হবে)
                     const placed = await placeOrder(orderData)
                     const o = Array.isArray(placed) ? placed[0] : placed
                     const orderId = o?.orderId || o?._id
                     if (!orderId) throw new Error('Order ID missing')
 
-                    // 🔥 CRITICAL FIX: DO NOT CLEAR CART HERE!
-                    // পেমেন্ট সফল হওয়ার পরই কেবলমাত্র Success পেজ থেকে কার্ট ক্লিয়ার করা হবে।
-                    // ফলে পেমেন্ট ফেইল হলে ইউজার আবার কার্ট থেকে পে করতে পারবে।
-
-                    // 2. Redirect to SSLCommerz
                     const url = await initiateSSLCommerzPayment(orderId)
                     toast.dismiss('pay')
                     window.location.href = url
@@ -359,25 +353,30 @@ export default function ShoppingInfoContent({
                 return
             }
 
-            // ✅ COD LOGIC (এখানে কার্ট ক্লিয়ার করা হবে কারণ পেমেন্ট দরকার নেই)
+            // ✅ COD LOGIC (এখানে কার্ট ক্লিয়ার করা হবে কারণ পেমেন্ট দরকার নেই)
             const { data } = await axios.post('/api/v1/product-order', orderData)
             if (data.success) {
                 const primary  = Array.isArray(data.data) ? data.data[0] : data.data
-                const orderId  = primary.orderId
+                const trackingOrderId  = primary.orderId // ORD-12345...
+                
+                // 🔥 FIX: Extract Original MongoDB _id robustly
+                const realMongoDbId = primary._id?.$oid || primary._id;
+
                 if (selectedDelivery === 'steadfast') {
                     try {
-                        const sf = await axios.post('/api/v1/product-order/steadfast', { orderId })
+                        const sf = await axios.post('/api/v1/product-order/steadfast', { orderId: trackingOrderId })
                         if (sf.data.success) {
                             localStorage.setItem('lastOrderTracking', JSON.stringify({
-                                orderId,
+                                orderId: trackingOrderId,
                                 trackingId:  sf.data.data.trackingCode,
                                 trackingUrl: `https://portal.packzy.com/track/${sf.data.data.trackingCode}`,
                             }))
                         }
                     } catch (e) {}
                 }
-                // COD এর ক্ষেত্রে সরাসরি success modal দেখানো হচ্ছে
-                showSuccessModal(orderId)
+                
+                // ✅ COD এর ক্ষেত্রে success modal-এ অরিজিনাল ডাটাবেস _id পাস করা হচ্ছে
+                showSuccessModal(realMongoDbId || trackingOrderId)
             } else {
                 showError(data.message || 'Order failed')
             }
@@ -461,7 +460,7 @@ export default function ShoppingInfoContent({
                                         </>
                                     ) : (
                                         <>
-                                            <CheckCircle2 className="w-4 h-4" /> Confirm Address & Continue
+                                            <span className="w-4 h-4"><CheckCircle2 /></span> Confirm Address & Continue
                                         </>
                                     )}
                                 </button>
