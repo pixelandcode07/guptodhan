@@ -238,10 +238,11 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
       toast.loading('Creating your order...', { id: 'order-toast' });
       const createdOrderData = await placeOrder(orderPayload);
       
-      const gatewayOrderId = extractOrderId(createdOrderData);
+      // ✅ FIX: একদম স্পেসিফিকভাবে MongoDB এর _id কেই বের করে আনছি
+      const realMongoDbId = createdOrderData?.data?._id || createdOrderData?.data?.[0]?._id || createdOrderData?._id;
       
-      // ✅ FIX: Heavily check for MongoDB অরিজিনাল _id field jate bhul link na jay
-      const urlOrderId = createdOrderData?.data?._id || createdOrderData?._id || gatewayOrderId;
+      // Payment Gateway এর জন্য ORD-... স্ট্রিংটি লাগবে
+      const gatewayOrderId = extractOrderId(createdOrderData);
 
       toast.dismiss('order-toast');
 
@@ -254,7 +255,9 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
       }
 
       toast.success('Order placed successfully!');
-      await showSuccessModal(urlOrderId); // ✅ Pass MongoDB original ID here
+      
+      // ✅ SUCCESS MODAL এ অরিজিনাল MongoDB ID (যেমন: 69f5ca45...) পাস করা হলো
+      await showSuccessModal(realMongoDbId); 
 
     } catch (error: any) {
       toast.dismiss('order-toast');
