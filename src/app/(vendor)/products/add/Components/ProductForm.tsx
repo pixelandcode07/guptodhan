@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, FormEvent, useEffect, useRef } from "react";
+import React, { useState, FormEvent, useEffect, useRef, useMemo } from "react";
 import axios from "axios";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import RichTextEditor from "@/components/ReusableComponents/RichTextEditor";
-import { Loader2, Save, X, UploadCloud } from "lucide-react";
+import { Loader2, Save, X, UploadCloud, PhoneCall } from "lucide-react";
 import Image from "next/image";
 import ProductVariantForm, { IProductOption } from "./ProductVariantForm";
 import ProductImageGallery from "./ProductImageGallery";
@@ -120,6 +120,8 @@ export default function ProductForm({
   const [videoUrl, setVideoUrl] = useState("");
   const [shippingCost, setShippingCost] = useState<number | undefined>(undefined);
 
+  const [callForPrice, setCallForPrice] = useState(false);
+
   const [store, setStore] = useState("");
   const [category, setCategory] = useState("");
   const [subcategory, setSubcategory] = useState("");
@@ -148,12 +150,18 @@ export default function ProductForm({
   const [isLoadingProduct, setIsLoadingProduct] = useState(isEditMode);
   const [showDebug, setShowDebug] = useState(false);
   
-  // ✅ Form Error State - লাল বর্ডার দেখানোর জন্য
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
 
   const isInitialLoad = useRef(true);
   const initialModelId = useRef<string | null>(null);
   const initialSubcategoryId = useRef<string | null>(null);
+
+  // ✅ Call For Price Permission Check
+  const hasCallForPricePermission = useMemo(() => {
+    if (!store) return false;
+    const selectedStoreObj = listStores.find((s: any) => getIdFromRef(s) === store);
+    return selectedStoreObj?.callForPricePermission === true;
+  }, [store, listStores]);
 
   useEffect(() => {
     if (!isEditMode && listStores.length > 0 && !store) {
@@ -187,6 +195,9 @@ export default function ProductForm({
         setSpecification(p.specification || "");
         setWarrantyPolicy(p.warrantyPolicy || "");
         setProductTags(Array.isArray(p.productTag) ? p.productTag : []);
+        
+        setCallForPrice(!!p.callForPrice);
+
         setMetaTitle(p.metaTitle || "");
         setMetaDescription(p.metaDescription || "");
         setMetaKeywordTags(
@@ -279,6 +290,7 @@ export default function ProductForm({
           const mappedVariants = p.productOptions.map((opt: any, idx: number) => {
             const rawColor = Array.isArray(opt.color) ? opt.color[0] : opt.color;
             const rawSize = Array.isArray(opt.size) ? opt.size[0] : opt.size;
+            const rawCountry = Array.isArray(opt.country) ? opt.country[0] : opt.country; // ✅ Country Support
             const rawStorage = opt.storage;
             const rawSimType = Array.isArray(opt.simType) ? opt.simType[0] : opt.simType;
             const rawCondition = Array.isArray(opt.condition) ? opt.condition[0] : opt.condition;
@@ -286,6 +298,7 @@ export default function ProductForm({
 
             const colorId = resolveOptionId(rawColor, currentVariantOptions?.colors || [], ["colorName", "name"]);
             const sizeId = resolveOptionId(rawSize, currentVariantOptions?.sizes || [], ["name"]);
+            const countryId = resolveOptionId(rawCountry, currentVariantOptions?.countries || [], ["name"]); // ✅ Country Resolve
             const storageId = resolveOptionId(rawStorage, currentVariantOptions?.storageTypes || [], ["name", "ram", "rom"]);
             const simTypeId = resolveOptionId(rawSimType, currentVariantOptions?.simTypes || [], ["name"]);
             const conditionId = resolveOptionId(rawCondition, currentVariantOptions?.conditions || [], ["deviceCondition", "name"]);
@@ -296,6 +309,7 @@ export default function ProductForm({
               imageUrl: opt.productImage || "",
               color: colorId,
               size: sizeId,
+              country: countryId, // ✅ Add to variants mapping
               storage: storageId,
               simType: simTypeId,
               condition: conditionId,
@@ -488,11 +502,9 @@ export default function ProductForm({
     }
   };
 
-  // --- SUBMIT WITH FRONTEND VALIDATION ---
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // ✅ Frontend Custom Validation Check
     const newErrors: Record<string, boolean> = {};
     let firstErrorId = "";
 
@@ -514,9 +526,14 @@ export default function ProductForm({
     }
     if (!store) newErrors.store = true;
     if (!category) newErrors.category = true;
-    if (!price || price <= 0) newErrors.price = true;
 
-    // If there are errors, stop and focus on the empty field
+    // ✅ Evaluate Final Call For Price
+    const finalCallForPrice = hasCallForPricePermission ? callForPrice : false;
+    
+    if (!finalCallForPrice && (!price || price <= 0)) {
+      newErrors.price = true;
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setFormErrors(newErrors);
       toast.error("⚠️ Please fill all required fields correctly.");
@@ -532,7 +549,7 @@ export default function ProductForm({
       return;
     }
 
-    setFormErrors({}); // Clear errors if validation passed
+    setFormErrors({});
 
     if (!token) return toast.error("⚠️ Authentication required.");
     const selectedStore = listStores.find((s: any) => getIdFromRef(s) === store);
@@ -571,6 +588,7 @@ export default function ProductForm({
         sku: productCode || undefined,
         rewardPoints: rewardPoints || 0,
         shippingCost: shippingCost || 0,
+        callForPrice: finalCallForPrice, // ✅ Sent to backend
         category,
         subCategory: subcategory || undefined,
         childCategory: childCategory || undefined,
@@ -598,6 +616,7 @@ export default function ProductForm({
                   productImage: uploadedImage,
                   color: safeId(variant.color) ? [variant.color] : [],
                   size: safeId(variant.size) ? [variant.size] : [],
+                  country: safeId(variant.country) ? [variant.country] : [], // ✅ Send country to backend
                   storage: safeId(variant.storage),
                   simType: safeId(variant.simType) ? [variant.simType] : [],
                   condition: safeId(variant.condition) ? [variant.condition] : [],
@@ -661,56 +680,8 @@ export default function ProductForm({
       </div>
     );
 
-  // Debug Panel
-  const DebugPanel = () => {
-    if (process.env.NODE_ENV !== "development") return null;
-    if (!showDebug) {
-      return (
-        <Button type="button" variant="outline" size="sm" onClick={() => setShowDebug(true)}
-          className="fixed bottom-4 right-4 z-50 bg-yellow-100 hover:bg-yellow-200 border-yellow-400">
-          🐛 Debug
-        </Button>
-      );
-    }
-    return (
-      <div className="fixed bottom-4 right-4 z-50 bg-white border-2 border-yellow-400 rounded-lg shadow-xl p-4 max-w-md max-h-[80vh] overflow-auto">
-        <div className="flex justify-between items-center mb-3 pb-2 border-b">
-          <h3 className="font-bold text-sm">🐛 Debug Panel</h3>
-          <Button type="button" variant="ghost" size="sm" onClick={() => setShowDebug(false)}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="space-y-2 text-xs">
-          <div className="bg-gray-50 p-2 rounded">
-            <p className="font-semibold">Product Details:</p>
-            <p>Store: {store || "❌ Empty"}</p>
-            <p>Category: {category || "❌ Empty"}</p>
-            <p>Subcategory: {subcategory || "❌ Empty"}</p>
-            <p>Brand: {brand || "❌ Empty"}</p>
-            <p>Model: {model || "❌ Empty"}</p>
-          </div>
-          <div className="bg-gray-50 p-2 rounded">
-            <p className="font-semibold">Variants:</p>
-            <p>Has Variants: {hasVariant ? "✅ Yes" : "❌ No"}</p>
-            <p>Count: {variants.length}</p>
-            {variants.map((v, i) => (
-              <div key={v.id} className="border-t pt-1 mt-1 text-[10px]">
-                <p className="font-semibold">Variant {i + 1}:</p>
-                <p>Color: {v.color || "❌"}</p>
-                <p>Size: {v.size || "❌"}</p>
-                <p>Storage: {v.storage || "❌"}</p>
-                <p>Warranty: {v.warranty || "❌"}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <>
-      <DebugPanel />
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         <div className="flex justify-end gap-2 sticky top-4 z-10 bg-gray-50/80 backdrop-blur-sm py-2 px-4 rounded-lg shadow-sm -mt-4">
           <Button type="button" variant="destructive" onClick={() => router.back()}>
@@ -723,7 +694,6 @@ export default function ProductForm({
         </div>
 
         <div className="space-y-4 sm:space-y-6">
-          {/* Section 1: Basic Info + Thumbnail */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <Card className="shadow-sm border-gray-200 flex flex-col h-full">
               <CardHeader className="pb-4 border-b border-gray-100">
@@ -807,7 +777,6 @@ export default function ProductForm({
             </Card>
           </div>
 
-          {/* Section 2: Detailed Info + Pricing */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <Card className="shadow-sm border-gray-200 flex flex-col h-full" id="detailedInformationContainer">
               <CardHeader className="pb-4 border-b border-gray-100">
@@ -849,11 +818,34 @@ export default function ProductForm({
                 <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">Pricing & Inventory</CardTitle>
               </CardHeader>
               <CardContent className="pt-6 space-y-4 flex-1">
-                <PricingInventory
-                  formData={pricingFormData}
-                  handleInputChange={handlePricingInputChange}
-                  handleNumberChange={handlePricingNumberChange}
-                />
+                {/* ✅ Render Call for Price toggle only if permitted */}
+                {hasCallForPricePermission && (
+                  <div className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <PhoneCall className="w-4 h-4 text-amber-600" />
+                        <Label className="font-semibold text-amber-800 cursor-pointer">Call for Price</Label>
+                      </div>
+                      <p className="text-xs text-amber-600 mt-0.5">
+                        Enable করলে price hidden থাকবে, "Call for Price" button দেখাবে
+                      </p>
+                    </div>
+                    <Switch
+                      checked={callForPrice}
+                      onCheckedChange={setCallForPrice}
+                    />
+                  </div>
+                )}
+
+                {/* ✅ Hide / Disable Pricing Fields if Call for Price is ON */}
+                <div className={callForPrice && hasCallForPricePermission ? "opacity-40 pointer-events-none" : ""}>
+                  <PricingInventory
+                    formData={pricingFormData}
+                    handleInputChange={handlePricingInputChange}
+                    handleNumberChange={handlePricingNumberChange}
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label>Product Code (SKU)</Label>
                   <Input value={productCode} onChange={(e) => setProductCode(e.target.value)} className="h-11" />
@@ -862,7 +854,6 @@ export default function ProductForm({
             </Card>
           </div>
 
-          {/* Section 3: Gallery + Product Details */}
           <div className={`grid gap-4 sm:gap-6 ${hasVariant ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"}`}>
             {!hasVariant && (
               <ProductImageGallery
@@ -1002,7 +993,6 @@ export default function ProductForm({
             </Card>
           </div>
 
-          {/* Variants */}
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-center space-x-3 mb-4">
@@ -1014,12 +1004,12 @@ export default function ProductForm({
                   variants={variants}
                   setVariants={setVariants}
                   variantData={variantOptions}
+                  isCallForPrice={hasCallForPricePermission ? callForPrice : false} // ✅ Pass dynamically to hide prices
                 />
               )}
             </CardContent>
           </Card>
 
-          {/* SEO */}
           <Card className="shadow-sm border-gray-200">
             <CardHeader className="pb-4 border-b border-gray-100">
               <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">SEO Information</CardTitle>
@@ -1042,7 +1032,6 @@ export default function ProductForm({
             </CardContent>
           </Card>
 
-          {/* Bottom Buttons */}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="destructive" onClick={() => router.back()}>
               <X className="mr-2 h-4 w-4" /> Discard
