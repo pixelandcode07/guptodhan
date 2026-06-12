@@ -10,7 +10,7 @@ import { CheckCircle, Package, ExternalLink, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { OrderStatus, OrderSummary } from '@/components/UserProfile/Order/types'
 import OrderStatusBadge from '@/components/UserProfile/Order/OrderStatusBadge'
-import ReturnRequestModal from '@/components/UserProfile/Order/ReturnRequestModal' // ✅ Return Modal Import
+import ReturnRequestModal from '@/components/UserProfile/Order/ReturnRequestModal' 
 
 function mapOrderStatusToUI(status: string): OrderStatus {
   const s = status.toLowerCase()
@@ -84,8 +84,8 @@ type ApiOrder = {
 export default function OrderDetailsPage() {
   const [order, setOrder] = React.useState<OrderWithDetails | null>(null)
   const [orderData, setOrderData] = React.useState<ApiOrder | null>(null)
+  const [isLoading, setIsLoading] = React.useState(true) // ✅ FIX: Added Loading state
   
-  // ✅ Return Modal States
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
 
@@ -102,9 +102,14 @@ export default function OrderDetailsPage() {
     const headers: Record<string, string> = { 'x-user-id': userId }
     if (token) headers['Authorization'] = `Bearer ${token}`
 
+    setIsLoading(true) // ✅ Show loading spinner
     try {
       const res = await api.get(`/product-order/${orderId}`, { headers })
-      const found = (res.data?.data ?? null) as ApiOrder | null
+      
+      // ✅ Handle both array and object responses gracefully
+      const rawData = res.data?.data;
+      const found = (Array.isArray(rawData) ? rawData[0] : rawData) as ApiOrder | null;
+      
       if (!found) { 
         setOrder(null)
         setOrderData(null)
@@ -176,6 +181,8 @@ export default function OrderDetailsPage() {
       console.error('Error fetching order:', error)
       setOrder(null)
       setOrderData(null)
+    } finally {
+      setIsLoading(false) // ✅ Hide loading spinner
     }
   }, [session, orderId])
 
@@ -183,17 +190,42 @@ export default function OrderDetailsPage() {
     fetchOrder()
   }, [fetchOrder])
 
-  // ✅ Return Button Click Handler
   const handleReturnClick = (id: string) => {
     setSelectedOrderId(id); 
     setIsReturnModalOpen(true);
   };
 
   const handleReturnSuccess = () => {
-    fetchOrder(); // Refresh data after successful return request
+    fetchOrder(); 
   };
 
   const isReturnRequested = order?.status === 'return_refund';
+
+  // ✅ Show Loading State gracefully
+  if (isLoading) {
+    return (
+      <div className="p-10 flex flex-col justify-center items-center h-[60vh]">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#0097E9]"></div>
+        <p className="text-gray-500 mt-4 text-sm">Loading order details...</p>
+      </div>
+    );
+  }
+
+  // ✅ Show Not Found message if API fails
+  if (!order) {
+    return (
+      <div className="p-10 flex flex-col justify-center items-center h-[60vh] text-center">
+        <div className="text-gray-300 mb-4">
+          <Package size={64} className="mx-auto" />
+        </div>
+        <h2 className="text-xl font-bold text-gray-700">Order Not Found</h2>
+        <p className="text-sm text-gray-500 mt-2 mb-6">We couldn't find the details for this order. It might have been removed or the ID is incorrect.</p>
+        <Link href="/home/UserProfile/orders">
+          <Button className="bg-[#0097E9] hover:bg-blue-600">View All Orders</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -225,7 +257,6 @@ export default function OrderDetailsPage() {
             order.items.map((item: any) => (
               <div key={item.id} className="p-4 flex items-start gap-4 hover:bg-gray-50/50 transition-colors">
                 
-                {/* Image Clickable */}
                 <Link href={`/product/${item.slug}`} className="shrink-0 block border border-gray-100 rounded bg-white">
                   <Image 
                     src={item.thumbnailUrl || '/img/product/p-1.png'} 
@@ -237,12 +268,10 @@ export default function OrderDetailsPage() {
                 </Link>
                 
                 <div className="flex-1 text-sm min-w-0">
-                  {/* Title Clickable */}
                   <Link href={`/product/${item.slug}`} className="font-medium text-gray-900 leading-5 line-clamp-2 hover:text-[#0097E9] transition-colors">
                     {item.title || 'Product'}
                   </Link>
                   
-                  {/* ✅ Fixed: Quantity and Unit Price combined */}
                   <div className="text-xs text-gray-500 mt-2 flex items-center gap-2">
                     <span>Qty: {item.quantity || 1}</span>
                     <span className="text-gray-300">|</span>
@@ -258,14 +287,11 @@ export default function OrderDetailsPage() {
                   )}
                 </div>
 
-                {/* Right Side: Total Price & Buttons */}
                 <div className="flex flex-col items-end gap-3 shrink-0 ml-4">
-                  {/* Subtotal */}
                   <div className="font-bold text-[#EF4A23] text-base">
                     {formatCurrency(item.subtotal || 0)}
                   </div>
 
-                  {/* ✅ Write a Review AND Return Buttons */}
                   {order?.status === 'delivered' && (
                     <div className="flex flex-col items-end gap-2">
                       <Link 
@@ -275,7 +301,6 @@ export default function OrderDetailsPage() {
                         WRITE A REVIEW
                       </Link>
 
-                      {/* ✅ Return Button Restored */}
                       <Button 
                         size="sm" 
                         variant="outline" 
@@ -368,8 +393,7 @@ export default function OrderDetailsPage() {
         </div>
       </div>
 
-      {/* ✅ Return Request Modal */}
-      {selectedOrderId && (
+      {isReturnModalOpen && selectedOrderId && (
         <ReturnRequestModal 
           isOpen={isReturnModalOpen}
           onClose={() => setIsReturnModalOpen(false)}
