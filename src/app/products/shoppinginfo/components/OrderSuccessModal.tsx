@@ -26,7 +26,8 @@ export default function OrderSuccessModal({ open, onOpenChange, orderId }: {
           if (prev <= 1) {
             clearInterval(timer)
             if (isOpenRef.current) {
-              window.location.href = '/home/UserProfile/orders'
+              // ✅ FIX: Redirect to Order Details page instead of list page
+              window.location.href = orderId ? `/home/UserProfile/orders/${orderId}` : '/home/UserProfile/orders'
             }
             return 0
           }
@@ -37,7 +38,7 @@ export default function OrderSuccessModal({ open, onOpenChange, orderId }: {
     } else {
       setCountdown(3)
     }
-  }, [open])
+  }, [open, orderId])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
