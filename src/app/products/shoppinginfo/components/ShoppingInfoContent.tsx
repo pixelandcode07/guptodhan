@@ -92,7 +92,7 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
   const [lastPaymentMethod, setLastPaymentMethod] = useState<'cod' | 'card'>('cod');
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  // Add this alongside subtotal and totalSavings calculations
+
   const totalItems = cartItems.reduce((sum, item) => sum + (item?.product?.quantity || 0), 0);
 
   const subtotal = cartItems.reduce((sum, item) => {
@@ -184,14 +184,12 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
     setLastPaymentMethod(paymentMethod);
 
     try {
-      // ── Validate ──────────────────────────────────────────────────
       const validationErrors = validateOrder();
       if (validationErrors.length > 0) {
         showError(validationErrors.join(' '));
         return;
       }
 
-      // ── Resolve store ID ──────────────────────────────────────────
       let resolvedStoreId: string | undefined;
       if (cartItems[0]?.product?.id) {
         try {
@@ -199,11 +197,10 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
           const storeId = productResp?.data?.data?.vendorStoreId;
           if (storeId) resolvedStoreId = storeId;
         } catch {
-          // non-fatal — continue without store ID
+          // non-fatal
         }
       }
 
-      // ── Build order payload ───────────────────────────────────────
       const orderPayload: CreateOrderPayload = {
         userId: userProfile!._id,
         ...(resolvedStoreId ? { storeId: resolvedStoreId } : {}),
@@ -238,38 +235,27 @@ export default function ShoppingInfoContent({ cartItems }: { cartItems: CartItem
         couponId: appliedCoupon?._id,
       };
 
-      // ── STEP 1: Create order ──────────────────────────────────────
-      console.log('📝 Creating order...');
       toast.loading('Creating your order...', { id: 'order-toast' });
-
       const createdOrderData = await placeOrder(orderPayload);
-
-      // ✅ FIX: extractOrderId prefers string orderId over MongoDB _id
-      const orderId = extractOrderId(createdOrderData);
+      
+      const gatewayOrderId = extractOrderId(createdOrderData);
+      // ✅ FIX: URL-এ পাঠানোর জন্য আমরা ডাটাবেসের অরিজিনাল MongoDB ID (_id) ব্যবহার করবো
+      const urlOrderId = createdOrderData?.data?._id || createdOrderData?._id || gatewayOrderId;
 
       toast.dismiss('order-toast');
-      console.log('✅ Order created, orderId:', orderId);
 
-      // ── STEP 2a: Card payment → redirect to gateway ───────────────
       if (paymentMethod === 'card') {
         toast.loading('Redirecting to payment gateway...', { id: 'order-toast' });
-
-        console.log('📤 Initiating payment for orderId:', orderId);
-        const gatewayUrl = await initiateSSLCommerzPayment(orderId);
-
-        console.log('✅ Redirecting to payment gateway...');
+        const gatewayUrl = await initiateSSLCommerzPayment(gatewayOrderId);
         toast.dismiss('order-toast');
         window.location.href = gatewayUrl;
-        return; // don't setIsProcessing(false) — page is navigating away
+        return; 
       }
 
-      // ── STEP 2b: COD → show success modal ────────────────────────
-      console.log('✅ COD order placed successfully');
       toast.success('Order placed successfully!');
-      await showSuccessModal(orderId);
+      await showSuccessModal(urlOrderId); // ✅ Pushing the actual DB ID for routing
 
     } catch (error: any) {
-      console.error('❌ Order flow error:', error);
       toast.dismiss('order-toast');
       const msg = error?.response?.data?.message || error?.message || 'Something went wrong. Please try again.';
       toast.error('Order failed', { description: msg, duration: 4000 });
