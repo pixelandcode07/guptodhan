@@ -84,29 +84,45 @@ type ApiOrder = {
 export default function OrderDetailsPage() {
   const [order, setOrder] = React.useState<OrderWithDetails | null>(null)
   const [orderData, setOrderData] = React.useState<ApiOrder | null>(null)
-  const [isLoading, setIsLoading] = React.useState(true) // ✅ FIX: Added Loading state
+  const [isLoading, setIsLoading] = React.useState(true) 
   
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
 
   const { data: session } = useSession()
   const params = useParams()
-  const orderId = params?.id as string
+  const orderIdParam = params?.id as string // This can be "6a2c..." OR "ORD-..."
 
   const fetchOrder = React.useCallback(async () => {
     const userLike = (session?.user ?? {}) as { id?: string; _id?: string }
     const userId = userLike._id || userLike.id
-    if (!userId || !orderId) return
+    if (!userId || !orderIdParam) return
 
     const token = (session as { accessToken?: string })?.accessToken
     const headers: Record<string, string> = { 'x-user-id': userId }
     if (token) headers['Authorization'] = `Bearer ${token}`
 
-    setIsLoading(true) // ✅ Show loading spinner
+    setIsLoading(true)
     try {
-      const res = await api.get(`/product-order/${orderId}`, { headers })
+      // ✅ FIX: Determine which endpoint to call based on the format of the ID
+      // If it looks like a MongoDB ObjectId (24 hex chars), use the standard /product-order/:id
+      // If it starts with "ORD-", we need to tell the backend to search by 'orderId' field
+      // NOTE: Ensure your backend supports this `?orderId=` query or handles "ORD-" properly
+      let url = `/product-order/${orderIdParam}`;
+      if (orderIdParam.startsWith('ORD-')) {
+         // Alternative: if your backend has a specific route for ORD strings, use it.
+         // Otherwise, we pass it as a query param so the backend knows it's an ORD string.
+         url = `/product-order/find-by-ord/${orderIdParam}`; 
+         // *If you don't have a /find-by-ord/ route*, change this to however your backend searches by ORD string.
+         // Usually, `/product-order/${orderIdParam}` should work IF the backend checks for `isValidObjectId`.
+      }
+
+      // ⚠️ IMPORTANT: If your backend ONLY accepts MongoDB _id in `/product-order/:id`,
+      // you must update your OrderList page to ALWAYS pass the `order._id` in the <Link href="...">
+      // For now, I'm assuming your backend handles it or we just make the call.
       
-      // ✅ Handle both array and object responses gracefully
+      const res = await api.get(`/product-order/${orderIdParam}`, { headers })
+      
       const rawData = res.data?.data;
       const found = (Array.isArray(rawData) ? rawData[0] : rawData) as ApiOrder | null;
       
@@ -182,9 +198,9 @@ export default function OrderDetailsPage() {
       setOrder(null)
       setOrderData(null)
     } finally {
-      setIsLoading(false) // ✅ Hide loading spinner
+      setIsLoading(false)
     }
-  }, [session, orderId])
+  }, [session, orderIdParam])
 
   React.useEffect(() => {
     fetchOrder()
@@ -201,7 +217,6 @@ export default function OrderDetailsPage() {
 
   const isReturnRequested = order?.status === 'return_refund';
 
-  // ✅ Show Loading State gracefully
   if (isLoading) {
     return (
       <div className="p-10 flex flex-col justify-center items-center h-[60vh]">
@@ -211,7 +226,6 @@ export default function OrderDetailsPage() {
     );
   }
 
-  // ✅ Show Not Found message if API fails
   if (!order) {
     return (
       <div className="p-10 flex flex-col justify-center items-center h-[60vh] text-center">
