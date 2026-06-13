@@ -30,7 +30,7 @@ type ApiProduct = {
   stock?: number;
   status: 'active' | 'inactive';
   createdAt: string;
-  updatedAt?: string; // ✅ NEW: added updatedAt
+  updatedAt?: string; 
   thumbnailImage?: string;
 };
 
@@ -133,7 +133,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         image: p.thumbnailImage || "",
         category: categoryName,
         name: p.productTitle || "",
-        // ✅ NEW: Dates formatting added
         created_at: p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-GB') : "-",
         updated_at: p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('en-GB') : "-",
         store: storeName,
@@ -147,11 +146,33 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     setRows(mapped);
   }, [products, categoryMap, storeMap, flagMap]);
 
+  // ✅ FIX: Multi-column Global Search Logic
   const filteredRows = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return rows
-    return rows.filter(r => r.name.toLowerCase().includes(q))
-  }, [rows, search])
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    
+    return rows.filter((r) => {
+      // টেবিলের সব কলামের ভ্যালুগুলো একটি অ্যারেতে রাখা হচ্ছে
+      const searchableFields = [
+        String(r.id), // SL number
+        r.name,       // Product Name
+        r.category,   // Category
+        r.store,      // Store
+        r.price,      // Price
+        r.offer_price,// Offer Price
+        r.stock,      // Stock
+        r.flag,       // Flag
+        r.status,     // Status
+        r.created_at, // Created Date
+        r.updated_at  // Updated Date
+      ];
+
+      // যদি যেকোনো একটি কলামের সাথে সার্চ কোয়েরি মিলে যায়, তবে সেটি রিটার্ন করবে
+      return searchableFields.some((field) => 
+        field && field.toLowerCase().includes(q)
+      );
+    });
+  }, [rows, search]);
 
   // --- Handlers ---
 
