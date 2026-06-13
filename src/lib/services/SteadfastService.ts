@@ -18,6 +18,7 @@ export interface SteadfastOrderData {
 export interface SteadfastResponse {
     status: number;
     message: string;
+    errors?: Record<string, string[]>;
     consignment?: {
         consignment_id: number;
         invoice: string;
@@ -79,11 +80,30 @@ export class SteadfastService { // <-- Named export remains
             return response.data;
 
         } catch (error: unknown) {
-            console.error('❌ Steadfast API error:', error);
+            // ✅ FIX: Surface the REAL error from Steadfast instead of a generic 500.
+            // Steadfast returns 4xx/422 with a `message` and sometimes an `errors`
+            // object describing exactly which field failed validation
+            // (e.g. recipient_phone format, recipient_address too short, etc).
+            if (axios.isAxiosError(error)) {
+                console.error('❌ Steadfast API error status:', error.response?.status);
+                console.error('❌ Steadfast API error data:', JSON.stringify(error.response?.data, null, 2));
+
+                const data = error.response?.data;
+
+                return {
+                    status: error.response?.status || 500,
+                    message:
+                        data?.message ||
+                        (data?.errors ? JSON.stringify(data.errors) : 'Failed to create Steadfast order'),
+                    errors: data?.errors,
+                };
+            }
+
+            console.error('❌ Steadfast API unknown error:', error);
 
             return {
                 status: 500,
-                message: 'Failed to create Steadfast order',
+                message: error instanceof Error ? error.message : 'Failed to create Steadfast order',
             };
         }
     }
@@ -105,7 +125,12 @@ export class SteadfastService { // <-- Named export remains
 
             return response.data;
         } catch (error: unknown) {
-            console.error('❌ Steadfast tracking error:', error);
+            if (axios.isAxiosError(error)) {
+                console.error('❌ Steadfast tracking error status:', error.response?.status);
+                console.error('❌ Steadfast tracking error data:', JSON.stringify(error.response?.data, null, 2));
+            } else {
+                console.error('❌ Steadfast tracking error:', error);
+            }
             return {
                 status: 500,
                 delivery_status: 'unknown',
