@@ -29,9 +29,10 @@ import {
   ChevronsRight,
   Search,
   Trash2,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
 
-// ✅ FIX: onBulkDelete এখন Promise রিটার্ন করতে পারবে
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
@@ -39,6 +40,7 @@ interface DataTableProps<TData, TValue> {
   initialPageIndex?: number;   
   onPageChange?: (pageIndex: number) => void;  
   onBulkDelete?: (selectedRows: TData[]) => void | Promise<void>; 
+  onBulkStatusChange?: (selectedRows: TData[], status: 'active' | 'inactive') => void | Promise<void>; // ✅ NEW
 }
 
 export function DataTable<TData, TValue>({
@@ -47,6 +49,7 @@ export function DataTable<TData, TValue>({
   initialPageIndex = 0,
   onPageChange,
   onBulkDelete, 
+  onBulkStatusChange, // ✅ NEW
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting]           = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState('');
@@ -117,22 +120,58 @@ export function DataTable<TData, TValue>({
           <span>entries</span>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          {/* ✅ Bulk Delete Button */}
-          {onBulkDelete && Object.keys(rowSelection).length > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              className="h-9 px-3 shrink-0 bg-red-500 hover:bg-red-600 text-white font-medium"
-              onClick={() => {
-                const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
-                onBulkDelete(selectedData);
-                table.toggleAllRowsSelected(false); 
-              }}
-            >
-              <Trash2 size={16} className="mr-2" />
-              Delete Selected ({Object.keys(rowSelection).length})
-            </Button>
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          
+          {/* ✅ Bulk Action Buttons */}
+          {Object.keys(rowSelection).length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {onBulkStatusChange && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 px-3 shrink-0 bg-green-50 hover:bg-green-100 text-green-700 border-green-200 font-medium"
+                    onClick={() => {
+                      const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
+                      onBulkStatusChange(selectedData, 'active');
+                      table.toggleAllRowsSelected(false); 
+                    }}
+                  >
+                    <CheckCircle size={16} className="mr-2" />
+                    Activate
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 px-3 shrink-0 bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200 font-medium"
+                    onClick={() => {
+                      const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
+                      onBulkStatusChange(selectedData, 'inactive');
+                      table.toggleAllRowsSelected(false); 
+                    }}
+                  >
+                    <XCircle size={16} className="mr-2" />
+                    Deactivate
+                  </Button>
+                </>
+              )}
+
+              {onBulkDelete && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="h-9 px-3 shrink-0 bg-red-500 hover:bg-red-600 text-white font-medium"
+                  onClick={() => {
+                    const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
+                    onBulkDelete(selectedData);
+                    table.toggleAllRowsSelected(false); 
+                  }}
+                >
+                  <Trash2 size={16} className="mr-2" />
+                  Delete ({Object.keys(rowSelection).length})
+                </Button>
+              )}
+            </div>
           )}
 
           <div className="relative w-full sm:w-64">
