@@ -30,6 +30,7 @@ type ApiProduct = {
   stock?: number;
   status: 'active' | 'inactive';
   createdAt: string;
+  updatedAt?: string; // ✅ NEW: added updatedAt
   thumbnailImage?: string;
 };
 
@@ -47,7 +48,6 @@ interface ProductTableClientProps {
 }
 
 export default function ProductTableClient({ initialData }: ProductTableClientProps) {
-  // ✅ Initialize state directly with Server Data (Fastest)
   const [products, setProducts] = useState<ApiProduct[]>(initialData.products || []);
   const [rows, setRows] = useState<Product[]>([]);
   
@@ -92,7 +92,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
 
   // 2. Map Products to Table Rows
   useEffect(() => {
-    // Safety check to prevent .map crash
     if (!Array.isArray(products)) {
         console.error("Products is not an array:", products);
         setRows([]);
@@ -100,7 +99,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     }
 
     const mapped: Product[] = products.map((p, idx) => {
-      // Logic to resolve Category Name
       let categoryName = '';
       if (typeof p.category === 'string') {
         categoryName = categoryMap[p.category] || p.category;
@@ -109,7 +107,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       }
       categoryName = categoryName || 'N/A';
       
-      // Logic to resolve Store Name
       let storeName = '';
       if (p.vendorName) {
         storeName = p.vendorName;
@@ -120,7 +117,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       }
       storeName = storeName || 'N/A';
       
-      // Logic to resolve Flag Name
       let flagName = "";
       if (typeof p.flag === "string") {
         flagName = flagMap[p.flag] || p.flag;
@@ -137,20 +133,19 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         image: p.thumbnailImage || "",
         category: categoryName,
         name: p.productTitle || "",
+        // ✅ NEW: Dates formatting added
+        created_at: p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-GB') : "-",
+        updated_at: p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('en-GB') : "-",
         store: storeName,
         price: p.productPrice != null ? String(p.productPrice) : "",
         offer_price: p.discountPrice != null ? String(p.discountPrice) : "",
         stock: p.stock != null ? String(p.stock) : "",
         flag: flagName,
         status: p.status === 'active' ? 'Active' : 'Inactive',
-        created_at: p.createdAt ? new Date(p.createdAt).toLocaleString() : "",
       };
     });
     setRows(mapped);
   }, [products, categoryMap, storeMap, flagMap]);
-
-  // REMOVED: The initial useEffect that calls fetchProductsInitial().
-  // Reason: We already have data from SSR. Fetching again causes flickering and lag.
 
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -211,10 +206,9 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       setStatusToggleOpen(false);
       setProductToToggle(null);
       
-      // Optimistic Update (No need to refetch everything)
       setProducts(prev => prev.map(p => p._id === productId ? { ...p, status: newStatus as 'active' | 'inactive' } : p));
       
-      router.refresh(); // Tells Server Components to refresh data in background
+      router.refresh(); 
     } catch (error: any) {
       console.error("Error toggling product status:", error);
       const msg = error.response?.data?.message || "Failed to update product status";
@@ -242,10 +236,9 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       setDeleteOpen(false);
       setProductToDelete(null);
 
-      // Optimistic Update
       setProducts(prev => prev.filter(p => p._id !== productId));
       
-      router.refresh(); // Refresh server data
+      router.refresh();
     } catch (error: any) {
       console.error("Error deleting product:", error);
       const msg = error.response?.data?.message || "Failed to delete product";
