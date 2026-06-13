@@ -11,13 +11,14 @@ export type Product = {
   category: string
   slug?: string;
   name: string
+  created_at: string // ✅ NEW: Created Date
+  updated_at: string // ✅ NEW: Updated Date
   store: string
   price: string
   offer_price: string
   stock: string
   flag: string
   status: "Active" | "Inactive"
-  created_at: string
 }
 
 export type ProductColumnHandlers = {
@@ -74,6 +75,22 @@ export const getProductColumns = ({ onView, onEdit, onDelete, onToggleStatus }: 
           {name}
         </button>
       );
+    },
+  },
+  // ✅ NEW: Created At Column
+  {
+    accessorKey: "created_at",
+    header: "Created At",
+    cell: ({ row }) => {
+      return <div className="text-xs text-gray-500 whitespace-nowrap">{row.getValue("created_at")}</div>;
+    },
+  },
+  // ✅ NEW: Updated At Column
+  {
+    accessorKey: "updated_at",
+    header: "Updated At",
+    cell: ({ row }) => {
+      return <div className="text-xs text-gray-500 whitespace-nowrap">{row.getValue("updated_at")}</div>;
     },
   },
   {
