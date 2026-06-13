@@ -262,6 +262,17 @@ export default function OrderDetailsPage() {
                   Return Requested
                 </span>
              )}
+             {orderData?.trackingId && (
+                <Link href={`/track-order?trackingId=${orderData.trackingId}`}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[10px] uppercase font-bold text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 gap-1.5 bg-white px-2"
+                  >
+                    <Package className="h-3 w-3" /> Track Order
+                  </Button>
+                </Link>
+             )}
              <OrderStatusBadge status={(order?.status ?? 'to_pay') as OrderStatus} />
           </div>
         </div>
