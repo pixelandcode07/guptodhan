@@ -146,31 +146,17 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     setRows(mapped);
   }, [products, categoryMap, storeMap, flagMap]);
 
-  // ✅ FIX: Multi-column Global Search Logic
+  // Global Search Logic
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return rows;
     
     return rows.filter((r) => {
-      // টেবিলের সব কলামের ভ্যালুগুলো একটি অ্যারেতে রাখা হচ্ছে
       const searchableFields = [
-        String(r.id), // SL number
-        r.name,       // Product Name
-        r.category,   // Category
-        r.store,      // Store
-        r.price,      // Price
-        r.offer_price,// Offer Price
-        r.stock,      // Stock
-        r.flag,       // Flag
-        r.status,     // Status
-        r.created_at, // Created Date
-        r.updated_at  // Updated Date
+        String(r.id), r.name, r.category, r.store, r.price, 
+        r.offer_price, r.stock, r.flag, r.status, r.created_at, r.updated_at
       ];
-
-      // যদি যেকোনো একটি কলামের সাথে সার্চ কোয়েরি মিলে যায়, তবে সেটি রিটার্ন করবে
-      return searchableFields.some((field) => 
-        field && field.toLowerCase().includes(q)
-      );
+      return searchableFields.some((field) => field && field.toLowerCase().includes(q));
     });
   }, [rows, search]);
 
@@ -201,6 +187,57 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     setProductToToggle(product);
     setStatusToggleOpen(true);
   }, []);
+
+  // ✅ NEW: Bulk Action Handlers
+  const handleBulkStatusChange = async (selectedRows: Product[], status: 'active' | 'inactive') => {
+    if (selectedRows.length === 0) return;
+    const toastId = toast.loading(`Updating ${selectedRows.length} products to ${status}...`);
+
+    try {
+      const headers = {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(userRole ? { 'x-user-role': userRole } : {}),
+      };
+
+      const promises = selectedRows.map(p => axios.patch(`/api/v1/product/${p._id}`, { status }, { headers }));
+      await Promise.all(promises);
+
+      toast.success(`Successfully updated ${selectedRows.length} products to ${status}!`, { id: toastId });
+      
+      const updatedIds = selectedRows.map(p => p._id);
+      setProducts(prev => prev.map(p => updatedIds.includes(p._id) ? { ...p, status } : p));
+      
+      router.refresh(); 
+    } catch (error) {
+      toast.error("Failed to update some products.", { id: toastId });
+    }
+  };
+
+  const handleBulkDelete = async (selectedRows: Product[]) => {
+    if (selectedRows.length === 0) return;
+    
+    if (!window.confirm(`Are you sure you want to delete ${selectedRows.length} products permanently?`)) return;
+
+    const toastId = toast.loading(`Deleting ${selectedRows.length} products...`);
+    try {
+      const headers = {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(userRole ? { 'x-user-role': userRole } : {}),
+      };
+
+      const promises = selectedRows.map(p => axios.delete(`/api/v1/product/${p._id}`, { headers }));
+      await Promise.all(promises);
+
+      toast.success(`Successfully deleted ${selectedRows.length} products!`, { id: toastId });
+      
+      const deletedIds = selectedRows.map(p => p._id);
+      setProducts(prev => prev.filter(p => !deletedIds.includes(p._id)));
+      
+      router.refresh(); 
+    } catch (error) {
+      toast.error("Failed to delete some products.", { id: toastId });
+    }
+  };
 
   const confirmStatusToggle = useCallback(async () => {
     if (!productToToggle) return;
@@ -291,7 +328,13 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       <div className="mb-4 sm:mb-6">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
           <div className="min-w-[840px]">
-            <DataTable columns={columns} data={filteredRows} />
+            {/* ✅ PASS BULK ACTION PROPS TO DATA TABLE */}
+            <DataTable 
+              columns={columns} 
+              data={filteredRows} 
+              onBulkDelete={handleBulkDelete}
+              onBulkStatusChange={handleBulkStatusChange}
+            />
           </div>
         </div>
       </div>
