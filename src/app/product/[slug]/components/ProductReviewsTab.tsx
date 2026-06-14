@@ -211,7 +211,16 @@ export default function ProductReviewsTab({
             Please login to write a review. Only verified buyers can review this product.
           </p>
           <Button
-            onClick={() => router.push('/auth/login')}
+            onClick={() => {
+              // ✅ FIX: Redirect এর বদলে Login Modal ওপেন করার লজিক
+              const loginButton = document.getElementById('login-modal-btn') || document.getElementById('login-modal-btn-mobile');
+              if (loginButton) {
+                loginButton.click();
+              } else {
+                toast.info("Please login to continue.");
+                router.push('/auth/login'); // Fallback
+              }
+            }}
             className="bg-[#EF4A23] hover:bg-[#d43d1a] text-white"
           >
             Login to Write Review
