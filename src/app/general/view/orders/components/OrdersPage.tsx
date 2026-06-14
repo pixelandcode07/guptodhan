@@ -18,7 +18,6 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
     const [ordersData, setOrdersData] = useState<OrderRow[]>([]);
     const [selectedOrders, setSelectedOrders] = useState<OrderRow[]>([]);
 
-    // ✅ Filter State Lifted Up here
     const [filters, setFilters] = useState<FilterState>({
         orderNo: '',
         source: '',
@@ -29,13 +28,11 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
         orderedProduct: '',
         deliveryMethod: '',
         couponCode: '',
-        dateRange: ''
+        dateRange: '' // Will be split into startDate and endDate
     });
 
     const handleFilterChange = (field: keyof FilterState, value: string) => {
         setFilters(prev => ({ ...prev, [field]: value }));
-        // Optional: Trigger refresh automatically on filter change if desired
-        // setRefreshKey(prev => prev + 1); 
     };
 
     const clearFilters = () => {
@@ -51,14 +48,12 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
         toast.success('Orders refreshed successfully');
     };
 
-    // ... Export Logic (Same as before) ...
     const handleExport = () => {
         const ordersToExport = selectedOrders.length > 0 ? selectedOrders : ordersData;
         if (ordersToExport.length === 0) {
             toast.error('No orders to export');
             return;
         }
-        // ... (CSV Export logic from your original file)
         const headers = ['SL', 'Order No', 'Order Date', 'Customer Name', 'Phone', 'Email', 'Total Amount', 'Payment Status', 'Order Status', 'Delivery Method', 'Tracking ID', 'Parcel ID'];
         const csvRows = [headers.join(',')];
         ordersToExport.forEach(order => {
@@ -143,7 +138,6 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                         onExport={handleExport}
                         onFilter={handleFilter}
                         onPrint={handlePrintSelected}
-                        // showBulkCourierEntry={normalizedStatus === 'ready-to-ship'}
                     />
                 </div>
             </div>
@@ -153,7 +147,7 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                 <OrdersTable 
                     key={refreshKey}
                     initialStatus={normalizedStatus}
-                    filters={filters} // ✅ Pass Filters
+                    filters={filters}
                     onDataChange={setOrdersData}
                     onSelectionChange={setSelectedOrders}
                 />
