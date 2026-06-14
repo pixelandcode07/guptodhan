@@ -473,7 +473,7 @@ export default function PaymentHistory() {
                     
                     {/* ✅ NEW: Action Column */}
                     <td className="px-4 py-3.5 text-center">
-                      <Link href={`/home/UserProfile/orders/${o._id}`} target="_blank">
+                      <Link href={`/general/view/orders/${o._id}`} target="_blank">
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded-md" title="View Details">
                            <Eye className="h-3.5 w-3.5" />
                         </Button>
