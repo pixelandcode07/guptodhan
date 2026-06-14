@@ -14,19 +14,16 @@ import { CacheKeys, CacheTTL } from '@/lib/redis/cache-keys';
 import { User } from '../../user/user.model';
 
 // ================================================================
-// 📝 CREATE ORDER (WITHOUT TRANSACTIONS) ✅ FIXED
+// 📝 CREATE ORDER (WITHOUT TRANSACTIONS)
 // ================================================================
 const createOrderInDB = async (payload: Partial<IOrder>) => {
   try {
-    // Simple create without transaction - works on any MongoDB setup
     const result = await OrderModel.create(payload);
 
-    // 🗑️ Clear user's order cache
     if (payload.userId) {
       await deleteCachePattern(`orders:user:${payload.userId}*`);
     }
     
-    // Clear all orders cache
     await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
 
     console.log('✅ Order created successfully:', result._id);
@@ -52,7 +49,6 @@ const getAllOrdersFromDB = async (status?: string) => {
           filter.orderStatus = status;
         }
 
-        // ✅ Use aggregation instead of populate
         const result = await OrderModel.aggregate([
           { $match: filter },
           { $sort: { orderDate: -1 } },
@@ -110,7 +106,7 @@ const getAllOrdersFromDB = async (status?: string) => {
           },
           { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
 
-          // Project needed fields
+          // ✅ Project needed fields (Added products.productTitle & transactionId)
           {
             $project: {
               orderId: 1,
@@ -125,12 +121,14 @@ const getAllOrdersFromDB = async (status?: string) => {
               orderDate: 1,
               deliveryDate: 1,
               orderDetails: 1,
+              'products.productTitle': 1, // ✅ FIX for Product Name Column
               'couponId.code': 1,
               'couponId.value': 1,
               shippingName: 1,
               shippingPhone: 1,
               shippingCity: 1,
               createdAt: 1,
+              transactionId: 1, // ✅ FIX for Transaction ID Column
             },
           },
         ]);
@@ -159,7 +157,6 @@ const getOrdersByUserFromDB = async (userId: string) => {
           { $match: { userId: new Types.ObjectId(userId) } },
           { $sort: { orderDate: -1 } },
 
-          // Lookup order details
           {
             $lookup: {
               from: 'orderdetails',
@@ -169,7 +166,6 @@ const getOrdersByUserFromDB = async (userId: string) => {
             },
           },
 
-          // Lookup products
           {
             $lookup: {
               from: 'vendorproductmodels',
@@ -179,7 +175,6 @@ const getOrdersByUserFromDB = async (userId: string) => {
             },
           },
 
-          // Lookup store
           {
             $lookup: {
               from: 'storemodels',
@@ -190,7 +185,6 @@ const getOrdersByUserFromDB = async (userId: string) => {
           },
           { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
 
-          // Merge product docs into each orderDetail
           {
             $project: {
               _id: 1,
@@ -243,21 +237,18 @@ const getOrdersByUserFromDB = async (userId: string) => {
 };
 
 // ================================================================
-// ✏️ UPDATE ORDER (WITH WALLET BALANCE LOGIC FIXED)
+// ✏️ UPDATE ORDER
 // ================================================================
 const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
   try {
-    // ✅ Step 1: আগের order data নিয়ে রাখো
     const previousOrder = await OrderModel.findById(id).lean() as any;
     
     if (!previousOrder) {
       throw new Error('Order not found to update.');
     }
 
-    // ✅ Step 2: Order update করো
     const result = await OrderModel.findByIdAndUpdate(id, payload, { new: true });
 
-    // ✅ Step 3: Delivered হলে balance update করো
     if (
       payload.orderStatus === 'Delivered' && 
       previousOrder.orderStatus !== 'Delivered' &&
@@ -267,12 +258,9 @@ const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
       
       if (store) {
         const commissionRate = store.commission || 0;
-        const deliveryCharge = previousOrder.deliveryCharge || 0; // ✅ ডেলিভারি চার্জ বের করা হলো
+        const deliveryCharge = previousOrder.deliveryCharge || 0; 
         
-        // ✅ ডেলিভারি চার্জ বাদ দিয়ে শুধুমাত্র প্রোডাক্টের মোট দাম বের করা হচ্ছে
         const productTotal = previousOrder.totalAmount - deliveryCharge;
-        
-        // ✅ শুধুমাত্র প্রোডাক্টের দামের ওপর কমিশন কাটা হচ্ছে
         const vendorEarning = productTotal * (1 - commissionRate / 100);
 
         await StoreModel.findByIdAndUpdate(previousOrder.storeId, {
@@ -281,12 +269,9 @@ const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
             totalEarned: vendorEarning,
           }
         });
-        
-        console.log(`✅ Balance updated: +৳${vendorEarning} for store ${previousOrder.storeId}. (Total: ${previousOrder.totalAmount}, Delivery: ${deliveryCharge})`);
       }
     }
 
-    // 🗑️ Clear caches
     await deleteCacheKey(CacheKeys.ORDER.BY_ID(id));
     if (result?.userId) {
       await deleteCachePattern(`orders:user:${result.userId}*`);
@@ -311,10 +296,7 @@ const deleteOrderFromDB = async (id: string) => {
       throw new Error('Order not found to delete.');
     }
 
-    // 🗑️ Clear caches
     await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
-
-    console.log('✅ Order deleted successfully:', id);
     return null;
   } catch (error) {
     console.error('❌ Error deleting order:', error);
@@ -323,7 +305,7 @@ const deleteOrderFromDB = async (id: string) => {
 };
 
 // ================================================================
-// 🔍 GET ORDER BY ID (WITH CACHE + AGGREGATION)
+// 🔍 GET ORDER BY ID
 // ================================================================
 const getOrderByIdFromDB = async (id: string) => {
   const cacheKey = CacheKeys.ORDER.BY_ID(id);
@@ -334,8 +316,6 @@ const getOrderByIdFromDB = async (id: string) => {
       try {
         const result = await OrderModel.aggregate([
           { $match: { _id: new Types.ObjectId(id) } },
-
-          // Lookup user
           {
             $lookup: {
               from: 'users',
@@ -345,8 +325,6 @@ const getOrderByIdFromDB = async (id: string) => {
             },
           },
           { $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } },
-
-          // Lookup store
           {
             $lookup: {
               from: 'storemodels',
@@ -356,8 +334,6 @@ const getOrderByIdFromDB = async (id: string) => {
             },
           },
           { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
-
-          // Lookup order details
           {
             $lookup: {
               from: 'orderdetails',
@@ -366,8 +342,6 @@ const getOrderByIdFromDB = async (id: string) => {
               as: 'orderDetails',
             },
           },
-
-          // Lookup products
           {
             $lookup: {
               from: 'vendorproductmodels',
@@ -376,8 +350,6 @@ const getOrderByIdFromDB = async (id: string) => {
               as: 'products',
             },
           },
-
-          // Lookup coupon
           {
             $lookup: {
               from: 'promocodemodels',
@@ -387,8 +359,6 @@ const getOrderByIdFromDB = async (id: string) => {
             },
           },
           { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
-
-          // Merge product docs into each orderDetail
           {
             $project: {
               orderId: 1,
@@ -456,7 +426,7 @@ const getOrderByIdFromDB = async (id: string) => {
 };
 
 // ================================================================
-// 📊 GET SALES REPORT (WITH CACHE + AGGREGATION)
+// 📊 GET SALES REPORT 
 // ================================================================
 const getSalesReportFromDB = async (filters: {
   startDate?: string;
@@ -494,8 +464,6 @@ const getSalesReportFromDB = async (filters: {
         const result = await OrderModel.aggregate([
           { $match: match },
           { $sort: { orderDate: -1 } },
-
-          // Lookups (same as getAllOrders)
           {
             $lookup: {
               from: 'users',
@@ -505,7 +473,6 @@ const getSalesReportFromDB = async (filters: {
             },
           },
           { $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } },
-
           {
             $lookup: {
               from: 'storemodels',
@@ -515,7 +482,6 @@ const getSalesReportFromDB = async (filters: {
             },
           },
           { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
-
           {
             $lookup: {
               from: 'orderdetails',
@@ -524,7 +490,6 @@ const getSalesReportFromDB = async (filters: {
               as: 'orderDetails',
             },
           },
-
           {
             $lookup: {
               from: 'promocodemodels',
@@ -547,7 +512,7 @@ const getSalesReportFromDB = async (filters: {
 };
 
 // ================================================================
-// 🔄 GET RETURNED ORDERS (WITH CACHE + AGGREGATION)
+// 🔄 GET RETURNED ORDERS 
 // ================================================================
 const getReturnedOrdersByUserFromDB = async (userId: string) => {
   const cacheKey = `orders:user:${userId}:returned`;
@@ -564,8 +529,6 @@ const getReturnedOrdersByUserFromDB = async (userId: string) => {
             },
           },
           { $sort: { updatedAt: -1 } },
-
-          // Lookup order details
           {
             $lookup: {
               from: 'orderdetails',
@@ -574,8 +537,6 @@ const getReturnedOrdersByUserFromDB = async (userId: string) => {
               as: 'orderDetails',
             },
           },
-
-          // Lookup products
           {
             $lookup: {
               from: 'vendorproductmodels',
@@ -584,8 +545,6 @@ const getReturnedOrdersByUserFromDB = async (userId: string) => {
               as: 'products',
             },
           },
-
-          // Lookup store
           {
             $lookup: {
               from: 'storemodels',
@@ -608,7 +567,7 @@ const getReturnedOrdersByUserFromDB = async (userId: string) => {
 };
 
 // ================================================================
-// 🔍 GET FILTERED ORDERS (NO CACHE - DYNAMIC FILTERS)
+// 🔍 GET FILTERED ORDERS
 // ================================================================
 const getFilteredOrdersFromDB = async (filters: any) => {
   const match: any = {};
@@ -635,15 +594,16 @@ const getFilteredOrdersFromDB = async (filters: any) => {
       $gte: new Date(filters.startDate),
       $lte: new Date(filters.endDate),
     };
+  } else if (filters.startDate) {
+      match.orderDate = { $gte: new Date(filters.startDate) };
+  } else if (filters.endDate) {
+      match.orderDate = { $lte: new Date(filters.endDate) };
   }
 
-  // ✅ Use aggregation
   try {
     const orders = await OrderModel.aggregate([
       { $match: match },
       { $sort: { orderDate: -1 } },
-
-      // Lookups
       {
         $lookup: {
           from: 'users',
@@ -653,7 +613,6 @@ const getFilteredOrdersFromDB = async (filters: any) => {
         },
       },
       { $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } },
-
       {
         $lookup: {
           from: 'storemodels',
@@ -663,7 +622,6 @@ const getFilteredOrdersFromDB = async (filters: any) => {
         },
       },
       { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
-
       {
         $lookup: {
           from: 'orderdetails',
@@ -672,7 +630,14 @@ const getFilteredOrdersFromDB = async (filters: any) => {
           as: 'orderDetails',
         },
       },
-
+      {
+        $lookup: {
+          from: 'vendorproductmodels',
+          localField: 'orderDetails.productId',
+          foreignField: '_id',
+          as: 'products',
+        },
+      },
       {
         $lookup: {
           from: 'promocodemodels',
@@ -682,6 +647,32 @@ const getFilteredOrdersFromDB = async (filters: any) => {
         },
       },
       { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
+      
+      // ✅ Project similar to getAllOrdersFromDB for uniformity
+      {
+        $project: {
+          orderId: 1,
+          'userId.name': 1,
+          'userId.email': 1,
+          'userId.phoneNumber': 1,
+          'storeId.storeName': 1,
+          orderStatus: 1,
+          paymentStatus: 1,
+          paymentMethod: 1,
+          totalAmount: 1,
+          orderDate: 1,
+          deliveryDate: 1,
+          orderDetails: 1,
+          'products.productTitle': 1, // ✅ FIX for Product Name Column
+          'couponId.code': 1,
+          'couponId.value': 1,
+          shippingName: 1,
+          shippingPhone: 1,
+          shippingCity: 1,
+          createdAt: 1,
+          transactionId: 1, // ✅ FIX for Transaction ID Column
+        },
+      },
     ]);
 
     return orders;
@@ -709,13 +700,11 @@ const requestReturnInDB = async (orderId: string, reason: string) => {
     
     await order.save();
 
-    // 🗑️ Clear caches
     await deleteCacheKey(CacheKeys.ORDER.BY_ID(orderId));
     if (order.userId) {
       await deleteCachePattern(`orders:user:${order.userId}*`);
     }
 
-    console.log('✅ Return request created for order:', orderId);
     return order;
   } catch (error) {
     console.error('❌ Error requesting return:', error);
@@ -729,7 +718,7 @@ const requestReturnInDB = async (orderId: string, reason: string) => {
 const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
   try {
     if (!Types.ObjectId.isValid(vendorId)) {
-      throw new Error('আইডির ফরম্যাট সঠিক নয়।');
+      throw new Error('আইডির ফরম্যাট সঠিক নয়।');
     }
 
     const vId = new Types.ObjectId(vendorId);
@@ -744,7 +733,7 @@ const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
     }
 
     if (!store) {
-      throw new Error('আপনার অ্যাকাউন্টের বিপরীতে কোনো স্টোর খুঁজে পাওয়া যায়নি।');
+      throw new Error('আপনার অ্যাকাউন্টের বিপরীতে কোনো স্টোর খুঁজে পাওয়া যায়নি।');
     }
 
     const orders = await OrderModel.aggregate([
@@ -791,7 +780,6 @@ const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
   }
 };
 
-
 const getAdminDashboardReportFromDB = async (filters: {
   startDate?: string;
   endDate?: string;
@@ -799,7 +787,6 @@ const getAdminDashboardReportFromDB = async (filters: {
   paymentStatus?: string;
   paymentMethod?: string;
 }) => {
-  // ── 1. Shared $match filter ──────────────────────────────────────
   const match: Record<string, any> = {};
  
   if (filters.startDate || filters.endDate) {
@@ -820,15 +807,11 @@ const getAdminDashboardReportFromDB = async (filters: {
     match.paymentMethod = { $regex: filters.paymentMethod.trim(), $options: 'i' };
   }
  
-  // ── Run all 3 pipelines in parallel ─────────────────────────────
   const [vendorBreakdown, customerBreakdown, summaryRaw] = await Promise.all([
  
-    // ── PIPELINE 1: Vendor Breakdown ─────────────────────────────
-    // Orders → join StoreModel (commission) → group by storeId
     OrderModel.aggregate([
       { $match: match },
  
-      // Join store to get commission rate
       {
         $lookup: {
           from: 'storemodels',
@@ -839,24 +822,20 @@ const getAdminDashboardReportFromDB = async (filters: {
       },
       { $unwind: { path: '$store', preserveNullAndEmptyArrays: true } },
  
-      // Compute per-order financials
       {
         $addFields: {
-          // productTotal = totalAmount - deliveryCharge
           productTotal: { $subtract: ['$totalAmount', { $ifNull: ['$deliveryCharge', 0] }] },
           commissionRate: { $ifNull: ['$store.commission', 0] },
         },
       },
       {
         $addFields: {
-          // Admin commission earned from this order
           adminEarned: {
             $multiply: [
               '$productTotal',
               { $divide: ['$commissionRate', 100] },
             ],
           },
-          // Vendor net earnings from this order
           vendorNet: {
             $multiply: [
               '$productTotal',
@@ -868,7 +847,6 @@ const getAdminDashboardReportFromDB = async (filters: {
         },
       },
  
-      // Group by vendor store
       {
         $group: {
           _id: '$storeId',
@@ -882,16 +860,13 @@ const getAdminDashboardReportFromDB = async (filters: {
           totalRevenue:       { $sum: '$totalAmount' },
           totalProductRevenue:{ $sum: '$productTotal' },
           totalDeliveryCharge:{ $sum: { $ifNull: ['$deliveryCharge', 0] } },
-          // Admin commission = sum of all per-order adminEarned
           adminEarned:        { $sum: '$adminEarned' },
-          // Vendor net = sum of all per-order vendorNet
           vendorNet:          { $sum: '$vendorNet' },
         },
       },
  
       { $sort: { totalRevenue: -1 } },
  
-      // Clean up the shape
       {
         $project: {
           _id: 0,
@@ -912,12 +887,9 @@ const getAdminDashboardReportFromDB = async (filters: {
       },
     ]),
  
-    // ── PIPELINE 2: Customer Breakdown ───────────────────────────
-    // Orders → join OrderDetails (quantity sum) → group by userId
     OrderModel.aggregate([
       { $match: match },
  
-      // Join orderDetails to get per-order product quantities
       {
         $lookup: {
           from: 'orderdetails',
@@ -927,7 +899,6 @@ const getAdminDashboardReportFromDB = async (filters: {
         },
       },
  
-      // Sum of all product quantities in this order
       {
         $addFields: {
           totalProductsInOrder: { $sum: '$detailDocs.quantity' },
@@ -935,24 +906,19 @@ const getAdminDashboardReportFromDB = async (filters: {
         },
       },
  
-      // Group by customer (userId)
       {
         $group: {
           _id: '$userId',
-          // Use shippingName/Phone from most recent order
           customerName:     { $first: '$shippingName' },
           customerPhone:    { $first: '$shippingPhone' },
           totalOrders:      { $sum: 1 },
           deliveredOrders:  { $sum: { $cond: [{ $eq: ['$orderStatus', 'Delivered'] }, 1, 0] } },
           cancelledOrders:  { $sum: { $cond: [{ $eq: ['$orderStatus', 'Cancelled'] }, 1, 0] } },
           totalSpent:       { $sum: '$totalAmount' },
-          // Total individual product units purchased
           totalProducts:    { $sum: '$totalProductsInOrder' },
-          // Total unique product lines across all orders
           uniqueProducts:   { $sum: '$uniqueProductsInOrder' },
           lastOrderDate:    { $max: '$orderDate' },
           firstOrderDate:   { $min: '$orderDate' },
-          // Cities ordered from (for geo insight)
           cities:           { $addToSet: '$shippingCity' },
         },
       },
@@ -978,12 +944,9 @@ const getAdminDashboardReportFromDB = async (filters: {
       },
     ]),
  
-    // ── PIPELINE 3: Summary ──────────────────────────────────────
-    // All orders → join StoreModel → compute totals
     OrderModel.aggregate([
       { $match: match },
  
-      // Join store for commission rate
       {
         $lookup: {
           from: 'storemodels',
@@ -1008,7 +971,6 @@ const getAdminDashboardReportFromDB = async (filters: {
         },
       },
  
-      // Single-group totals
       {
         $group: {
           _id: null,
@@ -1046,7 +1008,6 @@ const getAdminDashboardReportFromDB = async (filters: {
           returnedOrders:       1,
           paidOrders:           1,
           unpaidOrders:         1,
-          // $size on $addToSet result gives unique count
           uniqueCustomersCount: { $size: '$uniqueCustomers' },
           uniqueVendorsCount:   { $size: '$uniqueVendors' },
         },
@@ -1054,7 +1015,6 @@ const getAdminDashboardReportFromDB = async (filters: {
     ]),
   ]);
  
-  // ── 2. Build summary (fallback if no orders matched) ────────────
   const summary = summaryRaw[0] ?? {
     totalRevenue:          0,
     totalDeliveryRevenue:  0,
@@ -1079,11 +1039,7 @@ const getAdminDashboardReportFromDB = async (filters: {
     customerBreakdown,
   };
 };
- 
 
-// ================================================================
-// 📤 EXPORTS
-// ================================================================
 export const OrderServices = {
   createOrderInDB,
   getAllOrdersFromDB,
