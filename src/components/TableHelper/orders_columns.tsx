@@ -124,7 +124,6 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
 
   return (
     <div className="flex items-center gap-1">
-      {/* View Details Button */}
       <Link
         href={`/general/view/orders/${order.id}`}
         className="p-1.5 rounded bg-blue-500/10 text-blue-600 hover:bg-blue-500/20"
@@ -133,12 +132,8 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
         <Eye size={14} />
       </Link>
       
-      {/* ==============================================
-          STEADFAST DELIVERY METHOD ACTIONS
-          ============================================== */}
       {isSteadfastOrder && (
         <>
-          {/* Create Steadfast Parcel */}
           {!hasParcelId && (
             <button 
               onClick={handleCreateSteadfastParcel}
@@ -150,7 +145,6 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
             </button>
           )}
           
-          {/* Track Order */}
           {hasTrackingId && (
             <button 
               onClick={handleTrackOrder}
@@ -161,7 +155,6 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
             </button>
           )}
           
-          {/* Order Actions based on Status */}
           {order.status === 'Pending' && (
             <button 
               onClick={() => handleSteadfastAction('accept')}
@@ -195,7 +188,6 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
             </button>
           )}
           
-          {/* Cancel Order */}
           {order.status !== 'Delivered' && order.status !== 'Cancelled' && (
             <button 
               onClick={() => handleSteadfastAction('cancel')}
@@ -209,9 +201,6 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
         </>
       )}
       
-      {/* ==============================================
-          NON-STEADFAST (Regular/COD) DELIVERY ACTIONS
-          ============================================== */}
       {!isSteadfastOrder && (
         <>
           <button 
@@ -247,17 +236,29 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
 }
 
 export const ordersColumns: ColumnDef<OrderRow>[] = [
+  // ✅ FIX: Using TanStack Table's default row selection handlers
   {
     id: "select",
-    header: () => <input type="checkbox" className="cursor-pointer" />,
+    header: ({ table }) => (
+      <input
+        type="checkbox"
+        className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        checked={table.getIsAllPageRowsSelected()}
+        onChange={table.getToggleAllPageRowsSelectedHandler()}
+        aria-label="Select all"
+      />
+    ),
     cell: ({ row }) => (
-      <input 
-        type="checkbox" 
-        className="cursor-pointer"
-        data-order-id={row.original.id}
+      <input
+        type="checkbox"
+        className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        checked={row.getIsSelected()}
+        onChange={row.getToggleSelectedHandler()}
+        aria-label="Select row"
       />
     ),
     enableSorting: false,
+    enableHiding: false,
   },
   { accessorKey: "sl", header: () => <span>SL</span> },
   { 
