@@ -105,7 +105,6 @@ export default function ProductCard({ product, index }: ProductCardProps) {
       >
         
         {/* Image Section */}
-        {/* ✅ FIX: Aspect ratio changed to aspect-[4/5] and sm:aspect-[3/4] to make the image taller/longer */}
         <div className="relative aspect-[4/5] sm:aspect-[3/4] bg-white overflow-hidden border-b border-gray-100">
             <Image
                 src={product?.thumbnailImage || '/placeholder.png'}
@@ -140,12 +139,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                 )}
             </div>
 
-             {/* Low Stock Badge */}
-             {product?.stock !== undefined && product.stock > 0 && product.stock < 10 && (
-                <div className="absolute top-10 left-2 sm:left-3 rounded-full bg-orange-500 px-2 py-0.5 text-[10px] sm:text-xs font-semibold text-white shadow animate-pulse pointer-events-none">
-                    {product.stock} left
-                </div>
-            )}
+            {/* ✅ Note: "Low Stock Badge (x left)" has been completely removed as requested */}
 
             {/* Add To Cart Button */}
             <div className="absolute bottom-3 right-3 z-10 translate-y-0 sm:translate-y-10 sm:opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
@@ -219,7 +213,6 @@ export default function ProductCard({ product, index }: ProductCardProps) {
             )}
 
             {/* Price Section */}
-            {/* ✅ FIX: Made this sit at the bottom using mt-auto */}
             <div className="mt-auto pt-1">
                 <div className="flex items-baseline gap-2 flex-wrap">
                     <p className="text-base sm:text-lg font-bold text-blue-600">
@@ -233,7 +226,6 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                     )}
                 </div>
             </div>
-            {/* ✅ Note: Countdown and Ready button sections completely removed as requested */}
         </div>
       </Link>
     </motion.div>
