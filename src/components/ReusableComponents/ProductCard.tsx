@@ -2,11 +2,9 @@
 
 import {
   Zap,
-  Clock,
   Star,
   Tag,
   ShoppingBag,
-  PackageCheck,
   ShoppingCart,
   Loader2
 } from 'lucide-react';
@@ -17,7 +15,7 @@ import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Product } from '@/types/ProductType';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -32,7 +30,6 @@ export default function ProductCard({ product, index }: ProductCardProps) {
   const { addToCart } = useCart();
   const [isAdding, setIsAdding] = useState(false);
 
-  // ✅ FIX: সঠিক page route path ব্যবহার করছি
   const productUrl = product?.slug ? `/product/${product.slug}` : '#';
 
   // Price Logic
@@ -100,7 +97,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ delay: index * 0.04, type: 'spring', stiffness: 160 }}
       whileHover={{ y: -4 }}
-      className="group relative"
+      className="group relative h-full flex flex-col"
     >
       <Link
         href={productUrl}
@@ -108,9 +105,8 @@ export default function ProductCard({ product, index }: ProductCardProps) {
       >
         
         {/* Image Section */}
-        {/* ✅ FIX: Background changed to bg-white to blend transparent PNGs naturally */}
-        <div className="relative aspect-[1/1] bg-white overflow-hidden border-b border-gray-100">
-            {/* ✅ FIX: object-cover changed to object-contain, added padding, reduced zoom scale */}
+        {/* ✅ FIX: Aspect ratio changed to aspect-[4/5] and sm:aspect-[3/4] to make the image taller/longer */}
+        <div className="relative aspect-[4/5] sm:aspect-[3/4] bg-white overflow-hidden border-b border-gray-100">
             <Image
                 src={product?.thumbnailImage || '/placeholder.png'}
                 alt={product?.productTitle || 'Product'}
@@ -177,13 +173,13 @@ export default function ProductCard({ product, index }: ProductCardProps) {
         </div>
 
         {/* Content Section */}
-        <div className="flex flex-grow flex-col space-y-1.5 sm:space-y-2 p-2.5 sm:p-3">
-            <h3 className="line-clamp-2 text-[13px] sm:text-sm font-semibold leading-snug transition-colors group-hover:text-blue-600 h-10">
+        <div className="flex flex-grow flex-col p-2.5 sm:p-3">
+            <h3 className="line-clamp-2 text-[13px] sm:text-sm font-semibold leading-snug transition-colors group-hover:text-blue-600 mb-1.5 sm:mb-2 min-h-[36px] sm:min-h-[40px]">
                 {product?.productTitle}
             </h3>
 
             {/* Brand & Flag */}
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1 mb-1.5 sm:mb-2">
                 {product?.brand && (
                     <Badge variant="secondary" className="text-[10px] sm:text-xs py-0">
                         {typeof product.brand === 'object'
@@ -204,7 +200,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
             </div>
 
             {/* Rating */}
-            <div className="flex items-center gap-1.5 text-[11px] sm:text-sm">
+            <div className="flex items-center gap-1.5 text-[11px] sm:text-sm mb-1.5 sm:mb-2">
                 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
                 <span className="font-medium">
                     {averageRating.toFixed(1)}
@@ -216,14 +212,15 @@ export default function ProductCard({ product, index }: ProductCardProps) {
 
              {/* Sold Count */}
              {product?.sellCount !== undefined && product.sellCount > 0 && (
-                <div className="flex items-center gap-1 text-[11px] sm:text-xs text-gray-600">
+                <div className="flex items-center gap-1 text-[11px] sm:text-xs text-gray-600 mb-1.5 sm:mb-2">
                     <ShoppingBag className="h-3.5 w-3.5" />
                     {(product.sellCount || 0).toLocaleString()} sold
                 </div>
             )}
 
             {/* Price Section */}
-            <div className="mt-auto">
+            {/* ✅ FIX: Made this sit at the bottom using mt-auto */}
+            <div className="mt-auto pt-1">
                 <div className="flex items-baseline gap-2 flex-wrap">
                     <p className="text-base sm:text-lg font-bold text-blue-600">
                         ৳{(sellingPrice).toLocaleString()}
@@ -236,50 +233,11 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                     )}
                 </div>
             </div>
-
-             {/* Bottom: Countdown or Status */}
-             <div className="flex justify-between items-center pt-0.5">
-                {hasOffer ? (
-                    <div className="flex items-center gap-1 text-[11px] sm:text-xs font-medium text-red-600">
-                        <Clock className="h-3.5 w-3.5" />
-                        <Countdown deadline={product.offerDeadline!} />
-                    </div>
-                ) : (
-                    <div className="flex-1"></div>
-                )}
-
-                <div className={cn("flex items-center gap-1 text-xs text-gray-500")}>
-                    <PackageCheck className="h-3.5 w-3.5" />
-                    Ready
-                </div>
-            </div>
+            {/* ✅ Note: Countdown and Ready button sections completely removed as requested */}
         </div>
       </Link>
     </motion.div>
   );
-}
-
-function Countdown({ deadline }: { deadline: string }) {
-    const [timeLeft, setTimeLeft] = useState('');
-
-    useEffect(() => {
-        const calc = () => {
-            const diff = new Date(deadline).getTime() - Date.now();
-            if (diff <= 0) return setTimeLeft('Ended');
-
-            const d = Math.floor(diff / 86400000);
-            const h = Math.floor((diff % 86400000) / 3600000);
-            const m = Math.floor((diff % 3600000) / 60000);
-
-            setTimeLeft(d > 0 ? `${d}d ${h}h` : `${h}h ${m}m`);
-        };
-
-        calc();
-        const t = setInterval(calc, 60000);
-        return () => clearInterval(t);
-    }, [deadline]);
-
-    return <span>{timeLeft}</span>;
 }
 
 
