@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { DataTable } from '@/components/TableHelper/data-table'
-import { OrderRow, ordersColumns } from '@/components/TableHelper/orders_columns'
 import { ColumnDef } from '@tanstack/react-table'
 import api from '@/lib/axios'
 import FancyLoadingPage from '@/app/general/loading'
@@ -9,6 +8,7 @@ import { FilterState } from './OrdersFilters'
 import { Button } from '@/components/ui/button'
 import { Edit, CheckCircle, XCircle } from 'lucide-react'
 import OrderUpdateModal from './OrderUpdateModal'
+import { OrderRow, ordersColumns } from '@/components/TableHelper/orders_columns'
 
 type ApiOrder = {
     _id: string
