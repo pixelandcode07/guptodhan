@@ -33,6 +33,7 @@ import {
   XCircle,
 } from 'lucide-react';
 
+// ✅ FIX: Added onRowSelectionChange to the interface
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
@@ -40,7 +41,8 @@ interface DataTableProps<TData, TValue> {
   initialPageIndex?: number;   
   onPageChange?: (pageIndex: number) => void;  
   onBulkDelete?: (selectedRows: TData[]) => void | Promise<void>; 
-  onBulkStatusChange?: (selectedRows: TData[], status: 'active' | 'inactive') => void | Promise<void>; // ✅ NEW
+  onBulkStatusChange?: (selectedRows: TData[], status: 'active' | 'inactive') => void | Promise<void>; 
+  onRowSelectionChange?: (selectedRows: TData[]) => void; 
 }
 
 export function DataTable<TData, TValue>({
@@ -49,7 +51,8 @@ export function DataTable<TData, TValue>({
   initialPageIndex = 0,
   onPageChange,
   onBulkDelete, 
-  onBulkStatusChange, // ✅ NEW
+  onBulkStatusChange,
+  onRowSelectionChange, // ✅ Received the prop here
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting]           = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState('');
@@ -92,6 +95,15 @@ export function DataTable<TData, TValue>({
     manualPagination: false,
     enableRowSelection: true,
   });
+
+  // ✅ FIX: Pass selected rows back to parent component
+  React.useEffect(() => {
+    if (onRowSelectionChange) {
+      const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
+      onRowSelectionChange(selectedData);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowSelection]);
 
   const pageCount  = table.getPageCount();
   const totalRows  = table.getFilteredRowModel().rows.length;
