@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
@@ -42,14 +42,35 @@ export default function ProductReviewsTab({
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   
-  // ✅ Review Eligibility States
   const [canReview, setCanReview] = useState(false);
   const [isCheckingEligibility, setIsCheckingEligibility] = useState(true);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ===================================================================
-  // 🔥 Check if User has Bought the Product & Order is Delivered
+  // 🔥 RATING CALCULATIONS (Daraz Style)
+  // ===================================================================
+  const totalReviews = reviews.length;
+  
+  const averageRating = useMemo(() => {
+    if (totalReviews === 0) return '0';
+    const total = reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
+    return (total / totalReviews).toFixed(1);
+  }, [reviews, totalReviews]);
+
+  const ratingCounts = useMemo(() => {
+    const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    reviews.forEach(r => {
+      if (r.rating >= 1 && r.rating <= 5) {
+        counts[r.rating as keyof typeof counts]++;
+      }
+    });
+    return counts;
+  }, [reviews]);
+
+
+  // ===================================================================
+  // 🔥 Check Eligibility
   // ===================================================================
   useEffect(() => {
     const checkEligibility = async () => {
@@ -68,7 +89,6 @@ export default function ProductReviewsTab({
           return;
         }
 
-        // Fetch User's Orders
         const res = await fetch(`/api/v1/product-order?userId=${userId}`, {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -80,7 +100,6 @@ export default function ProductReviewsTab({
         if (json.success && json.data) {
           const orders = json.data;
           
-          // Check for "Delivered" status AND matching productId
           const hasBoughtAndDelivered = orders.some((order: any) => {
             const isDelivered = order.orderStatus?.toLowerCase() === 'delivered';
             if (!isDelivered) return false;
@@ -195,15 +214,12 @@ export default function ProductReviewsTab({
     }
   };
 
-  // ===================================================================
-  // ✅ DYNAMIC REVIEW FORM RENDERER (Based on Eligibility)
-  // ===================================================================
   const renderReviewFormArea = () => {
     if (!session?.user) {
       return (
-        <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+        <div className="text-center py-10 bg-white rounded-lg border border-dashed border-gray-300">
           <div className="flex justify-center mb-4">
-            <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center">
+            <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center">
               <ShoppingBag size={28} className="text-blue-600" />
             </div>
           </div>
@@ -212,13 +228,12 @@ export default function ProductReviewsTab({
           </p>
           <Button
             onClick={() => {
-              // ✅ FIX: Redirect এর বদলে Login Modal ওপেন করার লজিক
               const loginButton = document.getElementById('login-modal-btn') || document.getElementById('login-modal-btn-mobile');
               if (loginButton) {
                 loginButton.click();
               } else {
                 toast.info("Please login to continue.");
-                router.push('/auth/login'); // Fallback
+                router.push('/auth/login');
               }
             }}
             className="bg-[#EF4A23] hover:bg-[#d43d1a] text-white"
@@ -231,7 +246,7 @@ export default function ProductReviewsTab({
 
     if (isCheckingEligibility) {
       return (
-        <div className="flex justify-center items-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex justify-center items-center py-12 bg-white rounded-lg border border-gray-200">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#EF4A23]"></div>
           <span className="ml-3 text-gray-500 font-medium">Checking purchase history...</span>
         </div>
@@ -240,9 +255,9 @@ export default function ProductReviewsTab({
 
     if (!canReview) {
       return (
-        <div className="text-center py-10 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="text-center py-10 bg-white rounded-lg border border-gray-200">
           <div className="flex justify-center mb-4">
-            <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center">
+            <div className="w-14 h-14 bg-orange-50 rounded-full flex items-center justify-center">
               <FileText size={28} className="text-orange-500" />
             </div>
           </div>
@@ -257,7 +272,7 @@ export default function ProductReviewsTab({
     }
 
     return (
-      <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 shadow-sm">
+      <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
         <h4 className="font-bold text-gray-800 mb-4">
           {reviews.length === 0 ? "Be the first to write a review" : "Write a Review"}
         </h4>
@@ -345,59 +360,107 @@ export default function ProductReviewsTab({
   }
 
   return (
-    <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="space-y-8">
+    <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="space-y-6">
       
-      {/* 1. Review Form Area */}
-      {renderReviewFormArea()}
+      {/* ============================================================ */}
+      {/* 1. DARAZ STYLE RATING & REVIEW SUMMARY AREA */}
+      {/* ============================================================ */}
+      <div className="bg-white p-5 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
+        <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-6">
+          Ratings & Reviews of {product.productTitle}
+        </h3>
 
-      {/* 2. Customer Reviews List Area */}
-      <div>
-        <div className="flex items-center gap-2 py-4 border-b border-gray-200 mb-6">
-          <h4 className="font-bold text-gray-800 text-lg">Customer Reviews</h4>
-          <span className="bg-[#00005E] text-white text-xs font-bold px-3 py-1 rounded-full">
-            {reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}
-          </span>
+        <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
+          
+          {/* Left: Average Score */}
+          <div className="flex flex-col items-center md:items-start w-full md:w-1/3">
+            <div className="flex items-baseline gap-1">
+              <span className="text-5xl font-medium text-gray-800">{averageRating}</span>
+              <span className="text-2xl text-gray-400">/5</span>
+            </div>
+            
+            <div className="flex gap-0.5 mt-2 mb-1">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <Star
+                  key={s}
+                  size={24}
+                  fill={s <= Math.round(Number(averageRating)) ? '#facc15' : '#e5e7eb'}
+                  className={s <= Math.round(Number(averageRating)) ? 'text-yellow-400' : 'text-gray-200'}
+                />
+              ))}
+            </div>
+            
+            <span className="text-sm text-gray-500">{totalReviews} Ratings</span>
+          </div>
+
+          {/* Right: Star Distribution Progress Bars */}
+          <div className="flex flex-col w-full md:w-2/3 space-y-2">
+            {[5, 4, 3, 2, 1].map((starLevel) => {
+              const count = ratingCounts[starLevel as keyof typeof ratingCounts];
+              const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+              
+              return (
+                <div key={starLevel} className="flex items-center gap-3">
+                  <div className="flex gap-0.5 w-24 shrink-0 justify-end">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star
+                        key={s}
+                        size={14}
+                        fill={s <= starLevel ? '#facc15' : '#e5e7eb'}
+                        className={s <= starLevel ? 'text-yellow-400' : 'text-gray-200'}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex-1 h-3 bg-gray-100 rounded-sm overflow-hidden">
+                    <div className="h-full bg-yellow-400 transition-all duration-500" style={{ width: `${percentage}%` }}></div>
+                  </div>
+                  <span className="text-sm text-gray-500 w-6 text-right">{count}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
+      </div>
+
+      {/* ============================================================ */}
+      {/* 2. REVIEWS LIST OR EMPTY STATE (Daraz Style) */}
+      {/* ============================================================ */}
+      <div className="bg-white p-5 sm:p-6 rounded-lg border border-gray-200 shadow-sm">
+        <h4 className="font-bold text-gray-800 text-base mb-4">Product Reviews</h4>
 
         {reviews.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            No reviews yet for this product.
+          <div className="text-center py-12 border-t border-gray-100">
+            <div className="flex justify-center mb-4">
+              {/* Daraz style generic Smiley SVG */}
+              <svg className="w-16 h-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="text-gray-500 text-sm">This product has no reviews.</p>
+            <p className="text-gray-500 text-sm">Let others know what do you think and be the first to write a review.</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 border-t border-gray-100 pt-6">
             {reviews.map((review) => (
-              <div key={review._id} className="border border-gray-200 rounded-lg p-5 bg-white hover:shadow-sm transition-shadow">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden relative shrink-0 border border-gray-300">
-                      {review.userImage && review.userImage.includes('http') ? (
-                        <Image
-                          src={review.userImage}
-                          alt={review.userName}
-                          fill
-                          className="object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
+              <div key={review._id} className="border-b border-gray-100 pb-5 last:border-0 last:pb-0">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex flex-col">
+                    <div className="flex text-yellow-400 text-xs mb-1 gap-0.5">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          size={12}
+                          fill={i < review.rating ? '#facc15' : '#e5e7eb'}
+                          className={i < review.rating ? 'text-yellow-400' : 'text-gray-200'}
                         />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center font-bold text-gray-500 text-sm bg-gray-200">
-                          {review.userName.charAt(0).toUpperCase()}
-                        </div>
-                      )}
+                      ))}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <h5 className="font-bold text-gray-800 text-sm truncate">{review.userName}</h5>
-                      <div className="flex text-yellow-400 text-xs mt-0.5">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            size={12}
-                            fill={i < review.rating ? 'currentColor' : 'none'}
-                            className={i >= review.rating ? 'text-gray-300' : ''}
-                          />
-                        ))}
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400">
+                        {review.userName}
+                      </span>
+                      {/* Daraz Verified Buyer badge style can be added here if needed */}
+                      <span className="text-[10px] text-green-600 font-semibold bg-green-50 px-1.5 rounded">Verified Purchase</span>
                     </div>
                   </div>
                   <span className="text-xs text-gray-400 shrink-0 ml-2">
@@ -405,14 +468,14 @@ export default function ProductReviewsTab({
                   </span>
                 </div>
 
-                <p className="text-gray-600 text-sm leading-relaxed">{review.comment}</p>
+                <p className="text-gray-800 text-sm leading-relaxed mt-2">{review.comment}</p>
 
                 {review.reviewImages && review.reviewImages.length > 0 && (
                   <div className="flex gap-2 mt-3">
                     {review.reviewImages.map((img, i) => (
                       <div
                         key={i}
-                        className="relative w-20 h-20 rounded border border-gray-100 overflow-hidden cursor-zoom-in hover:opacity-90 transition-opacity"
+                        className="relative w-16 h-16 sm:w-20 sm:h-20 rounded border border-gray-200 overflow-hidden cursor-zoom-in hover:opacity-90 transition-opacity"
                       >
                         <Image src={img} alt={`Review ${i}`} fill className="object-cover" />
                       </div>
@@ -424,6 +487,11 @@ export default function ProductReviewsTab({
           </div>
         )}
       </div>
+
+      {/* ============================================================ */}
+      {/* 3. REVIEW SUBMISSION FORM */}
+      {/* ============================================================ */}
+      {renderReviewFormArea()}
       
     </motion.div>
   );
