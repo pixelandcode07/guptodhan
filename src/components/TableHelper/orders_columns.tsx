@@ -1,348 +1,399 @@
-'use client';
+"use client"
 
-import * as React from 'react';
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  SortingState,
-  useReactTable,
-  RowSelectionState,
-} from '@tanstack/react-table';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Search,
-  Trash2,
-  CheckCircle,
-  XCircle,
-} from 'lucide-react';
+import { ColumnDef } from "@tanstack/react-table"
+import { Eye, Truck, CheckCircle2, Trash2, Package, ExternalLink } from "lucide-react"
+import { useState } from "react"
+import { toast } from "sonner"
+import axios from "axios"
+import Link from "next/link"
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
-  data: TData[];
-  setData?: React.Dispatch<React.SetStateAction<any>>;
-  initialPageIndex?: number;   
-  onPageChange?: (pageIndex: number) => void;  
-  onBulkDelete?: (selectedRows: TData[]) => void | Promise<void>; 
-  onBulkStatusChange?: (selectedRows: TData[], status: 'active' | 'inactive') => void | Promise<void>;
-  onRowSelectionChange?: (selectedRows: TData[]) => void; // ✅ FIX: Added this prop
+// ✅ FIX: Exported OrderRow so it can be imported in other files
+export type OrderRow = {
+  id: string
+  sl: number
+  orderNo: string
+  orderDate: string
+  from: string
+  name: string
+  phone: string
+  email?: string
+  total: number
+  deliveryCharge?: number
+  payment: string
+  status: string
+  deliveryMethod?: string
+  trackingId?: string
+  parcelId?: string
+  customer?: {
+    name: string
+    email: string
+    phone: string
+  }
+  store?: {
+    name: string
+    id: string
+  }
 }
 
-export function DataTable<TData, TValue>({
-  columns,
-  data,
-  initialPageIndex = 0,
-  onPageChange,
-  onBulkDelete, 
-  onBulkStatusChange,
-  onRowSelectionChange, // ✅ FIX: Added this prop
-}: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting]           = React.useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = React.useState('');
-  const [pageSize, setPageSize]         = React.useState(10);
-  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
+// Action handlers component
+const SteadfastActions = ({ order }: { order: OrderRow }) => {
+  const [loading, setLoading] = useState<string | null>(null)
 
-  const [pageIndex, setPageIndex] = React.useState(initialPageIndex);
-
-  React.useEffect(() => {
-    setPageIndex(initialPageIndex);
-    table.setPageIndex(initialPageIndex);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialPageIndex]);
-
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel:      getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel:    getSortedRowModel(),
-    getFilteredRowModel:  getFilteredRowModel(),
-    onSortingChange:      setSorting,
-    onGlobalFilterChange: setGlobalFilter,
-    onRowSelectionChange: setRowSelection,
-    onPaginationChange: (updater) => {
-      const newState =
-        typeof updater === 'function'
-          ? updater({ pageIndex, pageSize })
-          : updater;
-      setPageIndex(newState.pageIndex);
-      if (newState.pageSize !== pageSize) setPageSize(newState.pageSize);
-      if (onPageChange) onPageChange(newState.pageIndex);
-    },
-    state: {
-      sorting,
-      globalFilter,
-      rowSelection,
-      pagination: { pageIndex, pageSize },
-    },
-    manualPagination: false,
-    enableRowSelection: true,
-  });
-
-  // ✅ FIX: Send selected rows to parent component whenever selection changes
-  React.useEffect(() => {
-    if (onRowSelectionChange) {
-      const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
-      onRowSelectionChange(selectedData);
+  // Status Update Function
+  const handleSteadfastAction = async (action: string) => {
+    try {
+      setLoading(action)
+      
+      const response = await axios.patch(`/api/v1/product-order/${order.id}`, {
+        orderStatus: action === 'accept' ? 'Processing' : 
+                    action === 'ship' ? 'Shipped' : 
+                    action === 'deliver' ? 'Delivered' : 
+                    action === 'cancel' ? 'Cancelled' : 'Pending'
+      })
+      
+      if (response.data.success) {
+        toast.success(`Order ${action}ed successfully`)
+        window.location.reload()
+      } else {
+        toast.error(response.data.message || `Failed to ${action} order`)
+      }
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || 'Something went wrong. Action failed!';
+      toast.error(errorMsg);
+    } finally {
+      setLoading(null)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rowSelection]); 
+  }
 
-  const pageCount  = table.getPageCount();
-  const totalRows  = table.getFilteredRowModel().rows.length;
-  const startRow   = pageIndex * pageSize + 1;
-  const endRow     = Math.min((pageIndex + 1) * pageSize, totalRows);
+  // Delete Order Function
+  const handleDeleteOrder = async () => {
+    const isConfirmed = window.confirm('Are you sure you want to delete this order? This action cannot be undone.');
+    if (!isConfirmed) return;
+
+    try {
+      setLoading('delete')
+      
+      const response = await axios.delete(`/api/v1/product-order/${order.id}`);
+      
+      if (response.data.success) {
+        toast.success('Order deleted successfully')
+        window.location.reload()
+      } else {
+        toast.error(response.data.message || 'Failed to delete order')
+      }
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || 'Error deleting the order!';
+      toast.error(errorMsg);
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  const handleTrackOrder = () => {
+    if (order.trackingId && order.trackingId !== '-') {
+      window.open(`/products/tracking?trackingId=${order.trackingId}`, '_blank')
+    } else {
+      toast.error('No tracking ID available for this order')
+    }
+  }
+
+  const handleCreateSteadfastParcel = async () => {
+    try {
+      setLoading('create')
+      
+      const response = await axios.post('/api/v1/product-order/steadfast', {
+        orderId: order.orderNo
+      })
+      
+      if (response.data.success) {
+        toast.success('Steadfast parcel created successfully')
+        window.location.reload()
+      } else {
+        toast.error(response.data.message || 'Failed to create Steadfast parcel')
+      }
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || 'Failed to create Steadfast parcel';
+      toast.error(errorMsg);
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  const isSteadfastOrder = order.deliveryMethod?.toLowerCase() === 'steadfast'
+  const hasTrackingId = order.trackingId && order.trackingId !== '-'
+  const hasParcelId = order.parcelId && order.parcelId !== '-'
 
   return (
-    <div className="w-full space-y-3">
-      {/* ── Top Controls ── */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-white px-4 py-3 rounded-xl border border-gray-200 shadow-sm">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <span>Show</span>
-          <select
-            value={pageSize}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              setPageSize(val);
-              table.setPageSize(val);
-            }}
-            className="h-8 w-16 rounded-md border border-gray-300 text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-          >
-            {[10, 25, 50, 100].map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-          <span>entries</span>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-          
-          {/* ✅ Bulk Action Buttons (Mainly for Product table) */}
-          {Object.keys(rowSelection).length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {onBulkStatusChange && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 px-3 shrink-0 bg-green-50 hover:bg-green-100 text-green-700 border-green-200 font-medium"
-                    onClick={() => {
-                      const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
-                      onBulkStatusChange(selectedData, 'active');
-                      table.toggleAllRowsSelected(false); 
-                    }}
-                  >
-                    <CheckCircle size={16} className="mr-2" />
-                    Activate
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 px-3 shrink-0 bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200 font-medium"
-                    onClick={() => {
-                      const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
-                      onBulkStatusChange(selectedData, 'inactive');
-                      table.toggleAllRowsSelected(false); 
-                    }}
-                  >
-                    <XCircle size={16} className="mr-2" />
-                    Deactivate
-                  </Button>
-                </>
-              )}
-
-              {onBulkDelete && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="h-9 px-3 shrink-0 bg-red-500 hover:bg-red-600 text-white font-medium"
-                  onClick={() => {
-                    const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
-                    onBulkDelete(selectedData);
-                    table.toggleAllRowsSelected(false); 
-                  }}
-                >
-                  <Trash2 size={16} className="mr-2" />
-                  Delete ({Object.keys(rowSelection).length})
-                </Button>
-              )}
-            </div>
-          )}
-
-          <div className="relative w-full sm:w-64">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <Input
-              placeholder="Search..."
-              value={globalFilter}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="h-9 pl-8 border-gray-300 focus:ring-blue-500 text-sm"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* ── Table ── */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
-          <Table className="min-w-[1400px] w-full border-collapse">
-            <TableHeader>
-              {table.getHeaderGroups().map((hg) => (
-                <TableRow key={hg.id} className="bg-gray-50 border-b border-gray-200 hover:bg-gray-50">
-                  {hg.headers.map((h) => (
-                    <TableHead
-                      key={h.id}
-                      onClick={h.column.getToggleSortingHandler()}
-                      className="h-11 px-3 text-[11px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap cursor-pointer select-none"
-                    >
-                      <div className="flex items-center gap-1">
-                        {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
-                        {h.column.getCanSort() && (
-                          <span className="text-gray-400 text-[10px]">
-                            {h.column.getIsSorted() === 'asc' ? ' ↑' : h.column.getIsSorted() === 'desc' ? ' ↓' : ' ↕'}
-                          </span>
-                        )}
-                      </div>
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row, i) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() ? 'selected' : undefined}
-                    className={`border-b border-gray-100 last:border-0 transition-colors hover:bg-blue-50/30 ${
-                      row.getIsSelected() ? 'bg-blue-50' : i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
-                    }`}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="px-3 py-2.5 text-sm text-gray-700 whitespace-nowrap">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-32 text-center text-gray-400 italic text-sm">
-                    No entries found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
-      {/* ── Bottom Controls ── */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white px-4 py-3 rounded-xl border border-gray-200 shadow-sm">
-        <div className="text-sm text-gray-500">
-          {totalRows > 0 ? (
-            <>
-              Showing <span className="font-medium text-gray-700">{startRow}</span>
-              {' '}to{' '}
-              <span className="font-medium text-gray-700">{endRow}</span>
-              {' '}of{' '}
-              <span className="font-medium text-gray-700">{totalRows}</span>
-              {' '}entries
-              {Object.keys(rowSelection).length > 0 && (
-                <span className="ml-2 text-blue-600">({Object.keys(rowSelection).length} selected)</span>
-              )}
-            </>
-          ) : (
-            'No entries'
-          )}
-        </div>
-
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline" size="sm"
-            onClick={() => table.setPageIndex(0)}
-            disabled={!table.getCanPreviousPage()}
-            className="h-8 w-8 p-0 border-gray-300"
-          >
-            <ChevronsLeft size={14} />
-          </Button>
-          <Button
-            variant="outline" size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            className="h-8 px-3 border-gray-300 text-xs"
-          >
-            <ChevronLeft size={14} className="mr-1" /> Previous
-          </Button>
-
-          {Array.from({ length: Math.min(pageCount, 5) }, (_, i) => {
-            let pageNum: number;
-            if (pageCount <= 5)          pageNum = i;
-            else if (pageIndex < 3)      pageNum = i;
-            else if (pageIndex > pageCount - 4) pageNum = pageCount - 5 + i;
-            else                         pageNum = pageIndex - 2 + i;
-            return (
-              <Button
-                key={pageNum}
-                variant={pageIndex === pageNum ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => table.setPageIndex(pageNum)}
-                className={`h-8 w-8 p-0 text-xs border-gray-300 ${
-                  pageIndex === pageNum ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700' : ''
-                }`}
-              >
-                {pageNum + 1}
-              </Button>
-            );
-          })}
-
-          {pageCount > 5 && pageIndex < pageCount - 3 && (
-            <span className="text-gray-400 text-xs px-1">...</span>
-          )}
-          {pageCount > 5 && pageIndex < pageCount - 3 && (
-            <Button
-              variant="outline" size="sm"
-              onClick={() => table.setPageIndex(pageCount - 1)}
-              className="h-8 w-8 p-0 text-xs border-gray-300"
+    <div className="flex items-center gap-1">
+      <Link
+        href={`/general/view/orders/${order.id}`}
+        className="p-1.5 rounded bg-blue-500/10 text-blue-600 hover:bg-blue-500/20"
+        title="Order details"
+      >
+        <Eye size={14} />
+      </Link>
+      
+      {isSteadfastOrder && (
+        <>
+          {!hasParcelId && (
+            <button 
+              onClick={handleCreateSteadfastParcel}
+              disabled={loading === 'create'}
+              className="p-1.5 rounded bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 disabled:opacity-50" 
+              title="Create Steadfast Parcel"
             >
-              {pageCount}
-            </Button>
+              <Package size={14} />
+            </button>
           )}
-
-          <Button
-            variant="outline" size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            className="h-8 px-3 border-gray-300 text-xs"
+          
+          {hasTrackingId && (
+            <button 
+              onClick={handleTrackOrder}
+              className="p-1.5 rounded bg-teal-500/10 text-teal-600 hover:bg-teal-500/20" 
+              title="Track Order"
+            >
+              <ExternalLink size={14} />
+            </button>
+          )}
+          
+          {order.status === 'Pending' && (
+            <button 
+              onClick={() => handleSteadfastAction('accept')}
+              disabled={loading === 'accept'}
+              className="p-1.5 rounded bg-green-500/10 text-green-600 hover:bg-green-500/20 disabled:opacity-50" 
+              title="Accept Order"
+            >
+              <CheckCircle2 size={14} />
+            </button>
+          )}
+          
+          {order.status === 'Processing' && (
+            <button 
+              onClick={() => handleSteadfastAction('ship')}
+              disabled={loading === 'ship'}
+              className="p-1.5 rounded bg-purple-500/10 text-purple-600 hover:bg-purple-500/20 disabled:opacity-50" 
+              title="Ship Order"
+            >
+              <Truck size={14} />
+            </button>
+          )}
+          
+          {order.status === 'Shipped' && (
+            <button 
+              onClick={() => handleSteadfastAction('deliver')}
+              disabled={loading === 'deliver'}
+              className="p-1.5 rounded bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 disabled:opacity-50" 
+              title="Mark as Delivered"
+            >
+              <CheckCircle2 size={14} />
+            </button>
+          )}
+          
+          {order.status !== 'Delivered' && order.status !== 'Cancelled' && (
+            <button 
+              onClick={() => handleSteadfastAction('cancel')}
+              disabled={loading === 'cancel'}
+              className="p-1.5 rounded bg-red-600/10 text-red-700 hover:bg-red-600/20 disabled:opacity-50" 
+              title="Cancel Order"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </>
+      )}
+      
+      {!isSteadfastOrder && (
+        <>
+          <button 
+            onClick={() => handleSteadfastAction('ship')}
+            disabled={loading === 'ship'}
+            className="p-1.5 rounded bg-teal-500/10 text-teal-600 hover:bg-teal-500/20 disabled:opacity-50" 
+            title="Mark as Shipped"
           >
-            Next <ChevronRight size={14} className="ml-1" />
-          </Button>
-          <Button
-            variant="outline" size="sm"
-            onClick={() => table.setPageIndex(pageCount - 1)}
-            disabled={!table.getCanNextPage()}
-            className="h-8 w-8 p-0 border-gray-300"
+            <Truck size={14} />
+          </button>
+          
+          <button 
+            onClick={() => handleSteadfastAction('deliver')}
+            disabled={loading === 'deliver'}
+            className="p-1.5 rounded bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 disabled:opacity-50" 
+            title="Mark as Delivered"
           >
-            <ChevronsRight size={14} />
-          </Button>
-        </div>
-      </div>
+            <CheckCircle2 size={14} />
+          </button>
+          
+          <button 
+            onClick={handleDeleteOrder}
+            disabled={loading === 'delete'}
+            className="p-1.5 rounded bg-red-600/10 text-red-700 hover:bg-red-600/20 disabled:opacity-50" 
+            title="Delete Order"
+          >
+            <Trash2 size={14} />
+          </button>
+        </>
+      )}
     </div>
-  );
+  )
 }
+
+// ✅ FIX: Exported ordersColumns so it can be imported in other files
+export const ordersColumns: ColumnDef<OrderRow>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <input
+        type="checkbox"
+        className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        checked={table.getIsAllPageRowsSelected()}
+        onChange={table.getToggleAllPageRowsSelectedHandler()}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <input
+        type="checkbox"
+        className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        checked={row.getIsSelected()}
+        onChange={row.getToggleSelectedHandler()}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  { accessorKey: "sl", header: () => <span>SL</span> },
+  { 
+    accessorKey: "orderNo", 
+    header: () => <span>Order No</span>,
+    cell: ({ row }) => (
+      <div className="font-mono text-sm font-medium text-blue-600">
+        {row.getValue("orderNo")}
+      </div>
+    )
+  },
+  { accessorKey: "orderDate", header: () => <span>Order Date</span> },
+  { accessorKey: "from", header: () => <span>From</span> },
+  { 
+    accessorKey: "name", 
+    header: () => <span>Name</span>,
+    cell: ({ row }) => (
+      <div className="max-w-xs truncate" title={row.getValue("name") as string}>
+        {row.getValue("name")}
+      </div>
+    )
+  },
+  { 
+    accessorKey: "phone", 
+    header: () => <span>Phone</span>,
+    cell: ({ row }) => (
+      <div className="font-mono text-sm">
+        {row.getValue("phone")}
+      </div>
+    )
+  },
+  { 
+    accessorKey: "total", 
+    header: () => <span>Total</span>,
+    cell: ({ row }) => {
+      const total = row.getValue("total") as number;
+      return (
+        <div className="font-mono text-sm font-semibold text-green-600">
+          ৳{total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </div>
+      );
+    }
+  },
+  { 
+    accessorKey: "payment", 
+    header: () => <span>Payment</span>,
+    cell: ({ row }) => {
+      const payment = row.getValue("payment") as string;
+      const isPaid = payment.toLowerCase().includes('paid') || payment.toLowerCase().includes('success');
+      return (
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          isPaid ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+        }`}>
+          {payment}
+        </span>
+      );
+    }
+  },
+  { 
+    accessorKey: "deliveryMethod", 
+    header: () => <span>Delivery</span>,
+    cell: ({ row }) => {
+      const method = row.getValue("deliveryMethod") as string;
+      const isCOD = method?.toLowerCase() === 'cod';
+      const isSteadfast = method?.toLowerCase() === 'steadfast';
+      return (
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          isCOD ? "bg-orange-100 text-orange-800" : 
+          isSteadfast ? "bg-purple-100 text-purple-800" : 
+          "bg-blue-100 text-blue-800"
+        }`}>
+          {method || 'COD'}
+        </span>
+      );
+    }
+  },
+  { 
+    accessorKey: "trackingId", 
+    header: () => <span>Tracking ID</span>,
+    cell: ({ row }) => {
+      const trackingId = row.getValue("trackingId") as string;
+      return (
+        <div className="font-mono text-xs">
+          {trackingId === '-' ? (
+            <span className="text-gray-400">N/A</span>
+          ) : (
+            <span className="text-blue-600">{trackingId}</span>
+          )}
+        </div>
+      );
+    }
+  },
+  { 
+    accessorKey: "parcelId", 
+    header: () => <span>Parcel ID</span>,
+    cell: ({ row }) => {
+      const parcelId = row.getValue("parcelId") as string;
+      return (
+        <div className="font-mono text-xs">
+          {parcelId === '-' ? (
+            <span className="text-gray-400">N/A</span>
+          ) : (
+            <span className="text-green-600">{parcelId}</span>
+          )}
+        </div>
+      );
+    }
+  },
+  { 
+    accessorKey: "status", 
+    header: () => <span>Status</span>,
+    cell: ({ row }) => {
+      const status = row.getValue("status") as string;
+      const getStatusStyle = (status: string) => {
+        switch (status.toLowerCase()) {
+          case 'pending': return "bg-yellow-100 text-yellow-800";
+          case 'processing': return "bg-blue-100 text-blue-800";
+          case 'shipped': return "bg-purple-100 text-purple-800";
+          case 'delivered': return "bg-green-100 text-green-800";
+          case 'cancelled': return "bg-red-100 text-red-800";
+          default: return "bg-gray-100 text-gray-800";
+        }
+      };
+      return (
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusStyle(status)}`}>
+          {status}
+        </span>
+      );
+    }
+  },
+  {
+    id: "actions",
+    header: () => <span>Action</span>,
+    cell: ({ row }) => <SteadfastActions order={row.original} />,
+    enableSorting: false,
+  },
+]
