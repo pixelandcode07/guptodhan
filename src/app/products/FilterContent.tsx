@@ -17,6 +17,7 @@ export type Product = {
   productOptions?: { color: string[]; size: string[] }[];
   status: string;
   slug: string;
+  callForPrice?: boolean; // ✅ NEW: Added callForPrice type
 };
 export type BackendColor = {
   _id: string; productColorId: string; colorName: string; colorCode: string; status: string;
@@ -45,7 +46,7 @@ function ProductCard({ product }: { product: Product }) {
       className="group bg-white rounded-2xl border border-gray-100 hover:border-blue-200 hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col"
     >
       <div className="relative bg-gray-50 overflow-hidden" style={{ aspectRatio: '1 / 1' }}>
-        {discount && (
+        {discount && !product.callForPrice && (
           <span className="absolute top-2 left-2 z-10 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
             -{discount}%
           </span>
@@ -69,7 +70,12 @@ function ProductCard({ product }: { product: Product }) {
           {product.productTitle}
         </h3>
         <div className="flex items-center gap-2 mt-1 flex-wrap">
-          {product.discountPrice ? (
+          {/* ✅ NEW: Call For Price Logic added here */}
+          {product.callForPrice ? (
+            <span className="text-sm sm:text-base font-bold text-blue-600">
+              Call for Price
+            </span>
+          ) : product.discountPrice ? (
             <>
               <span className="text-base font-bold text-blue-600">
                 ৳{product.discountPrice.toLocaleString()}
