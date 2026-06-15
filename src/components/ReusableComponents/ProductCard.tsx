@@ -6,7 +6,8 @@ import {
   Tag,
   ShoppingBag,
   ShoppingCart,
-  Loader2
+  Loader2,
+  PhoneCall // ✅ NEW: Phone icon import
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -55,6 +56,12 @@ export default function ProductCard({ product, index }: ProductCardProps) {
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // ✅ NEW: If Call for price is active, redirect to product details
+    if (product.callForPrice) {
+      if(product.slug) router.push(productUrl);
+      return;
+    }
 
     if (product.stock === 0) {
       toast.error("Out of stock!");
@@ -131,7 +138,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                     )}
                 </div>
 
-                {discountPct > 0 && (
+                {discountPct > 0 && !product?.callForPrice && (
                     <div className="flex items-center gap-0.5 rounded-full bg-emerald-600 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-white shadow-sm">
                         <Tag className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                         -{discountPct}%
@@ -139,26 +146,26 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                 )}
             </div>
 
-            {/* ✅ Note: "Low Stock Badge (x left)" has been completely removed as requested */}
-
-            {/* Add To Cart Button */}
+            {/* Add To Cart / Call Button */}
             <div className="absolute bottom-3 right-3 z-10 translate-y-0 sm:translate-y-10 sm:opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
                 <Button
                     onClick={handleAddToCart}
-                    disabled={isAdding || product.stock === 0}
+                    disabled={isAdding || (!product?.callForPrice && product.stock === 0)}
                     size="icon"
                     className={cn(
                         "h-9 w-9 sm:h-10 sm:w-10 rounded-full shadow-lg transition-transform active:scale-95",
-                        product.stock === 0 
-                            ? "bg-gray-400 cursor-not-allowed" 
-                            : hasVariants 
+                        !product?.callForPrice && product.stock === 0 
+                            ? "bg-gray-400 cursor-not-allowed border-none text-white" 
+                            : product?.callForPrice || hasVariants 
                                 ? "bg-white text-gray-700 hover:bg-gray-800 hover:text-white border border-gray-200" 
                                 : "bg-white text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-100"
                     )}
-                    title={hasVariants ? "Select Options" : "Add to Cart"}
+                    title={product?.callForPrice ? "Call for Price" : hasVariants ? "Select Options" : "Add to Cart"}
                 >
                     {isAdding ? (
                         <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                    ) : product?.callForPrice ? (
+                        <PhoneCall className="h-4 w-4 sm:h-5 sm:w-5" /> // ✅ Show Phone icon for Call For Price
                     ) : (
                         <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
                     )}
@@ -215,14 +222,23 @@ export default function ProductCard({ product, index }: ProductCardProps) {
             {/* Price Section */}
             <div className="mt-auto pt-1">
                 <div className="flex items-baseline gap-2 flex-wrap">
-                    <p className="text-base sm:text-lg font-bold text-blue-600">
-                        ৳{(sellingPrice).toLocaleString()}
-                    </p>
-                    
-                    {hasValidDiscount && (
-                        <p className="text-[11px] sm:text-xs text-gray-400 line-through">
-                            ৳{(originalPrice).toLocaleString()}
+                    {/* ✅ NEW: Check for Call For Price */}
+                    {product?.callForPrice ? (
+                        <p className="text-sm sm:text-base font-bold text-blue-600">
+                            Call for Price
                         </p>
+                    ) : (
+                        <>
+                            <p className="text-base sm:text-lg font-bold text-blue-600">
+                                ৳{(sellingPrice).toLocaleString()}
+                            </p>
+                            
+                            {hasValidDiscount && (
+                                <p className="text-[11px] sm:text-xs text-gray-400 line-through">
+                                    ৳{(originalPrice).toLocaleString()}
+                                </p>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
