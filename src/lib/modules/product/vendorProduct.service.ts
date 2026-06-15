@@ -867,6 +867,46 @@ const updateVendorProductInDB = async (
   id: string,
   payload: Partial<IVendorProduct>
 ) => {
+  // ✅ FIX: callForPrice ON থাকলে এবং price 0 আসলে DB থেকে existing price রাখো
+  // এটা backend safety net — frontend ঠিক থাকলেও এটা double protection দেবে
+  if (payload.callForPrice === true) {
+    const existingProduct = await VendorProductModel.findById(id)
+      .select("productPrice discountPrice stock productOptions")
+      .lean() as any;
+
+    if (existingProduct) {
+      // Main price preserve
+      if (
+        (payload.productPrice === 0 || payload.productPrice === undefined || payload.productPrice === null) &&
+        existingProduct.productPrice > 0
+      ) {
+        payload.productPrice = existingProduct.productPrice;
+      }
+
+      // ✅ Variant prices preserve — callForPrice ON থাকলে variant price 0 আসলে পুরনো রাখো
+      if (
+        Array.isArray(payload.productOptions) &&
+        Array.isArray(existingProduct.productOptions) &&
+        payload.productOptions.length === existingProduct.productOptions.length
+      ) {
+        payload.productOptions = payload.productOptions.map((opt: any, idx: number) => {
+          const existingOpt = existingProduct.productOptions[idx];
+          if (!existingOpt) return opt;
+
+          return {
+            ...opt,
+            price: (opt.price === 0 || opt.price === undefined || opt.price === null) && existingOpt.price > 0
+              ? existingOpt.price
+              : opt.price,
+            discountPrice: (opt.discountPrice === 0 || opt.discountPrice === undefined || opt.discountPrice === null) && existingOpt.discountPrice > 0
+              ? existingOpt.discountPrice
+              : opt.discountPrice,
+          };
+        });
+      }
+    }
+  }
+
   await VendorProductModel.findByIdAndUpdate(id, payload, {
     new: true,
     runValidators: true,
@@ -883,17 +923,17 @@ const updateVendorProductInDB = async (
 
   await deleteCacheKey(CacheKeys.PRODUCT.BY_ID(id));
   await deleteCachePattern(CacheKeys.PATTERNS.PRODUCTS_ALL);
-  
+
   await deleteCacheKey(CacheKeys.PRODUCT.LANDING_PAGE);
   await deleteCacheKey(CacheKeys.PRODUCT.OFFERS);
   await deleteCacheKey(CacheKeys.PRODUCT.BEST_SELLING);
   await deleteCacheKey(CacheKeys.PRODUCT.FOR_YOU);
-  
+
   if (updatedProduct.slug) {
     const cleanSlug = decodeURIComponent(updatedProduct.slug.trim()).toLowerCase();
     await deleteCacheKey(`product:details:${cleanSlug}`);
   }
-  await deleteCacheKey(`product:details:${id}`)
+  await deleteCacheKey(`product:details:${id}`);
 
   return await populateColorAndSizeNames(updatedProduct);
 };
