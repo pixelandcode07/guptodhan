@@ -64,6 +64,10 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   const [productToToggle, setProductToToggle] = useState<Product | null>(null);
   const [isToggling, setIsToggling] = useState(false);
   const [search, setSearch] = useState<string>("");
+
+  // ✅ FIX: Page Memory State
+  const [savedPage, setSavedPage] = useState(0);
+  const [isPageLoaded, setIsPageLoaded] = useState(false);
   
   const router = useRouter();
   const { data: session } = useSession();
@@ -72,7 +76,20 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   const token = s?.accessToken;
   const userRole = s?.user?.role;
 
-  // 1. Setup Maps
+  // ✅ Retrieve last visited page from session storage
+  useEffect(() => {
+    const pg = sessionStorage.getItem('adminProductListPageIdx');
+    if (pg) {
+      setSavedPage(Number(pg));
+    }
+    setIsPageLoaded(true);
+  }, []);
+
+  // ✅ Save page index on change
+  const handlePageChange = (pageIndex: number) => {
+    sessionStorage.setItem('adminProductListPageIdx', String(pageIndex));
+  };
+
   useEffect(() => {
     const activeCategories = initialData.categories.filter(c => c.status === 'active');
     const cMap: Record<string, string> = {};
@@ -90,7 +107,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     setFlagMap(fMap);
   }, [initialData]);
 
-  // 2. Map Products to Table Rows
   useEffect(() => {
     if (!Array.isArray(products)) {
         console.error("Products is not an array:", products);
@@ -146,7 +162,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     setRows(mapped);
   }, [products, categoryMap, storeMap, flagMap]);
 
-  // Global Search Logic
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return rows;
@@ -159,8 +174,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       return searchableFields.some((field) => field && field.toLowerCase().includes(q));
     });
   }, [rows, search]);
-
-  // --- Handlers ---
 
   const onView = useCallback((product: Product) => {
     if (product._id) {
@@ -188,7 +201,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     setStatusToggleOpen(true);
   }, []);
 
-  // ✅ NEW: Bulk Action Handlers
   const handleBulkStatusChange = async (selectedRows: Product[], status: 'active' | 'inactive') => {
     if (selectedRows.length === 0) return;
     const toastId = toast.loading(`Updating ${selectedRows.length} products to ${status}...`);
@@ -269,8 +281,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       router.refresh(); 
     } catch (error: any) {
       console.error("Error toggling product status:", error);
-      const msg = error.response?.data?.message || "Failed to update product status";
-      toast.error(msg);
+      toast.error(error.response?.data?.message || "Failed to update product status");
     } finally {
       setIsToggling(false);
     }
@@ -299,8 +310,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       router.refresh();
     } catch (error: any) {
       console.error("Error deleting product:", error);
-      const msg = error.response?.data?.message || "Failed to delete product";
-      toast.error(msg);
+      toast.error(error.response?.data?.message || "Failed to delete product");
     } finally {
       setIsDeleting(false);
     }
@@ -328,13 +338,17 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       <div className="mb-4 sm:mb-6">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
           <div className="min-w-[840px]">
-            {/* ✅ PASS BULK ACTION PROPS TO DATA TABLE */}
-            <DataTable 
-              columns={columns} 
-              data={filteredRows} 
-              onBulkDelete={handleBulkDelete}
-              onBulkStatusChange={handleBulkStatusChange}
-            />
+            {/* ✅ Render DataTable only after session storage is loaded */}
+            {isPageLoaded && (
+              <DataTable 
+                columns={columns} 
+                data={filteredRows} 
+                onBulkDelete={handleBulkDelete}
+                onBulkStatusChange={handleBulkStatusChange}
+                initialPageIndex={savedPage}
+                onPageChange={handlePageChange}
+              />
+            )}
           </div>
         </div>
       </div>
