@@ -77,6 +77,10 @@ export interface Product {
   sku: string;
   slug?: string;
   rewardPoints: number;
+  
+  // ✅ NEW: Added callForPrice to fix the TypeScript error
+  callForPrice?: boolean; 
+  
   category: Category;
   brand: Brand;
   productModel: string | null;
