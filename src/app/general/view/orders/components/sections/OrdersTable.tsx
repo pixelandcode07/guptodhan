@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useCallback } from 'react'
 import { DataTable } from '@/components/TableHelper/data-table'
 import { ColumnDef } from '@tanstack/react-table'
@@ -6,7 +8,7 @@ import FancyLoadingPage from '@/app/general/loading'
 import { toast } from 'sonner'
 import { FilterState } from './OrdersFilters'
 import { Button } from '@/components/ui/button'
-import { Edit, CheckCircle, XCircle } from 'lucide-react'
+import { Edit } from 'lucide-react'
 import OrderUpdateModal from './OrderUpdateModal'
 import { OrderRow, ordersColumns } from '@/components/TableHelper/orders_columns'
 
@@ -51,11 +53,9 @@ export default function OrdersTable({ initialStatus, filters, onDataChange, onSe
     const [error, setError] = useState<string | null>(null)
     const [selectedRows, setSelectedRows] = useState<OrderRow[]>([])
     
-    // Modal State
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedOrderForEdit, setSelectedOrderForEdit] = useState<{id: string, orderNo: string, orderStatus: string, paymentStatus: string} | null>(null);
 
-    // Bulk Action States
     const [bulkOrderStatus, setBulkOrderStatus] = useState('');
     const [bulkPaymentStatus, setBulkPaymentStatus] = useState('');
     const [isBulkUpdating, setIsBulkUpdating] = useState(false);
@@ -82,16 +82,15 @@ export default function OrdersTable({ initialStatus, filters, onDataChange, onSe
             const apiStatus = initialStatus ? mapSlugToApiStatus(initialStatus.toLowerCase()) : undefined
             if (apiStatus) params.append('orderStatus', apiStatus);
 
+            // ✅ Append all filters correctly
             if (filters.orderNo) params.append('orderId', filters.orderNo);
-            if (filters.source) params.append('source', filters.source);
+            if (filters.source) params.append('orderForm', filters.source); // Backend expects orderForm for Website/App
             if (filters.paymentStatus) params.append('paymentStatus', filters.paymentStatus);
             if (filters.orderStatus) params.append('orderStatus', filters.orderStatus); 
             if (filters.customerName) params.append('customerName', filters.customerName);
             if (filters.customerPhone) params.append('customerPhone', filters.customerPhone);
             if (filters.deliveryMethod) params.append('deliveryMethod', filters.deliveryMethod);
-            if (filters.couponCode) params.append('couponCode', filters.couponCode);
             
-            // ✅ Date Range Logic (YYYY-MM-DD to YYYY-MM-DD)
             if (filters.dateRange) {
                 const dates = filters.dateRange.split(' to ');
                 if (dates[0]) params.append('startDate', dates[0]);
@@ -140,9 +139,13 @@ export default function OrdersTable({ initialStatus, filters, onDataChange, onSe
         }
     }, [initialStatus, filters, onDataChange])
 
+    // ✅ Debounce effect so it doesn't fetch on every single keystroke instantly
     useEffect(() => {
-        fetchOrders()
-    }, [fetchOrders])
+        const timeoutId = setTimeout(() => {
+            fetchOrders();
+        }, 500); // Wait 500ms after user stops typing
+        return () => clearTimeout(timeoutId);
+    }, [fetchOrders, filters]);
 
     const actionColumn: ColumnDef<OrderRow> = {
         id: "actions",
@@ -173,7 +176,6 @@ export default function OrdersTable({ initialStatus, filters, onDataChange, onSe
 
     const tableColumns = [...ordersColumns, actionColumn];
 
-    // ✅ BULK STATUS UPDATE LOGIC
     const handleBulkStatusUpdate = async () => {
       if (selectedRows.length === 0) return;
       if (!bulkOrderStatus && !bulkPaymentStatus) {
@@ -208,7 +210,6 @@ export default function OrdersTable({ initialStatus, filters, onDataChange, onSe
       }
     };
 
-    // ✅ BULK DELETE LOGIC (Reused from data-table if needed, but defining here for completeness)
     const handleBulkDelete = async (rowsToDelete: OrderRow[]) => {
       if (rowsToDelete.length === 0) return;
       
@@ -233,13 +234,12 @@ export default function OrdersTable({ initialStatus, filters, onDataChange, onSe
       }
     };
 
-    // Keep parent informed of selection
     const handleRowSelection = (rows: OrderRow[]) => {
       setSelectedRows(rows);
       if (onSelectionChange) onSelectionChange(rows);
     };
 
-    if (loading) return <FancyLoadingPage />;
+    if (loading && rows.length === 0) return <FancyLoadingPage />;
 
     if (error) {
         return (
@@ -257,8 +257,6 @@ export default function OrdersTable({ initialStatus, filters, onDataChange, onSe
 
     return (
         <div className="w-full">
-
-            {/* ✅ Bulk Update Status Bar (Visible only when rows are selected) */}
             {selectedRows.length > 0 && (
               <div className="flex flex-wrap items-center gap-3 p-3 bg-blue-50 border-b border-blue-100 rounded-t-lg">
                 <span className="text-sm font-semibold text-blue-800 bg-white px-2 py-1 rounded shadow-sm">
@@ -304,15 +302,12 @@ export default function OrdersTable({ initialStatus, filters, onDataChange, onSe
                   columns={tableColumns} 
                   data={rows} 
                   onBulkDelete={handleBulkDelete} 
-                  onRowSelectionChange={handleRowSelection} // ✅ Custom prop for data-table if needed, otherwise rely on the cell handlers inside orders_columns
+                  onRowSelectionChange={handleRowSelection} 
                 />
                 
                 {rows.length === 0 && !loading && (
                     <div className="px-3 py-8 text-center text-gray-500">
-                        <p>No orders found.</p>
-                        <button onClick={fetchOrders} className="mt-2 px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors">
-                            Refresh
-                        </button>
+                        <p>No orders found matching your filters.</p>
                     </div>
                 )}
             </div>
