@@ -43,12 +43,16 @@ type ApiOrder = {
 interface OrdersTableProps {
     initialStatus?: string;
     filters: FilterState; 
-    searchTerm?: string; // ✅ NEW
+    searchTerm?: string; 
+    startDate?: string; // ✅ NEW
+    endDate?: string;   // ✅ NEW
     onDataChange?: (data: OrderRow[]) => void;
     onSelectionChange?: (selectedRows: OrderRow[]) => void;
 }
 
-export default function OrdersTable({ initialStatus, filters, searchTerm, onDataChange, onSelectionChange }: OrdersTableProps) {
+export default function OrdersTable({ 
+    initialStatus, filters, searchTerm, startDate, endDate, onDataChange, onSelectionChange 
+}: OrdersTableProps) {
     const [rows, setRows] = useState<OrderRow[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -91,11 +95,9 @@ export default function OrdersTable({ initialStatus, filters, searchTerm, onData
             if (filters.customerPhone) params.append('customerPhone', filters.customerPhone);
             if (filters.deliveryMethod) params.append('deliveryMethod', filters.deliveryMethod);
             
-            if (filters.dateRange) {
-                const dates = filters.dateRange.split(' to ');
-                if (dates[0]) params.append('startDate', dates[0]);
-                if (dates[1]) params.append('endDate', dates[1]);
-            }
+            // ✅ Use explicit startDate and endDate for API
+            if (startDate) params.append('startDate', startDate);
+            if (endDate) params.append('endDate', endDate);
 
             const response = await api.get(`/product-order?${params.toString()}`)
             const list = (response.data?.data ?? []) as ApiOrder[]
@@ -137,16 +139,15 @@ export default function OrdersTable({ initialStatus, filters, searchTerm, onData
         } finally {
             setLoading(false)
         }
-    }, [initialStatus, filters, onDataChange])
+    }, [initialStatus, filters, startDate, endDate, onDataChange])
 
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             fetchOrders();
         }, 500); 
         return () => clearTimeout(timeoutId);
-    }, [fetchOrders, filters]);
+    }, [fetchOrders, filters, startDate, endDate]); // ✅ Added startDate and endDate dependencies
 
-    // ✅ NEW: Dynamically filter rows based on Toolbar's Search Box
     const filteredRows = useMemo(() => {
         if (!searchTerm || searchTerm.trim() === '') return rows;
         const q = searchTerm.trim().toLowerCase();
@@ -319,7 +320,7 @@ export default function OrdersTable({ initialStatus, filters, searchTerm, onData
             <div className="overflow-x-auto">
                 <DataTable 
                   columns={tableColumns} 
-                  data={filteredRows} // ✅ Passed filtered data here
+                  data={filteredRows} 
                   onBulkDelete={handleBulkDelete} 
                   onRowSelectionChange={handleRowSelection} 
                 />
