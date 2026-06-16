@@ -569,26 +569,44 @@ const getReturnedOrdersByUserFromDB = async (userId: string) => {
 // ================================================================
 // 🔍 GET FILTERED ORDERS
 // ================================================================
+// ================================================================
+// 🔍 GET FILTERED ORDERS
+// ================================================================
 const getFilteredOrdersFromDB = async (filters: any) => {
   const match: any = {};
 
-  if (filters.orderId?.trim()) match.orderId = filters.orderId.trim();
-  if (filters.orderForm) match.orderForm = filters.orderForm;
-  if (filters.paymentStatus) match.paymentStatus = filters.paymentStatus;
-  if (filters.orderStatus) match.orderStatus = filters.orderStatus;
-
-  if (filters.customerName) match.shippingName = { $regex: filters.customerName, $options: 'i' };
-  if (filters.customerPhone) match.shippingPhone = { $regex: filters.customerPhone, $options: 'i' };
-  if (filters.deliveryMethod) match.deliveryMethodId = filters.deliveryMethod;
-
-  if (filters.orderedProduct && Types.ObjectId.isValid(filters.orderedProduct)) {
-    match.orderDetails = { $in: [filters.orderedProduct] };
+  // ✅ Order ID (Exact or Partial match support)
+  if (filters.orderId?.trim()) {
+    match.orderId = { $regex: filters.orderId.trim(), $options: 'i' };
   }
 
-  if (filters.couponCode) {
-    match['coupon.code'] = filters.couponCode.toUpperCase();
+  // ✅ Order Form (Source)
+  if (filters.orderForm?.trim()) {
+    match.orderForm = { $regex: `^${filters.orderForm.trim()}$`, $options: 'i' };
   }
 
+  // ✅ Payment Status & Order Status
+  if (filters.paymentStatus?.trim()) {
+    match.paymentStatus = { $regex: `^${filters.paymentStatus.trim()}$`, $options: 'i' };
+  }
+  if (filters.orderStatus?.trim()) {
+    match.orderStatus = { $regex: `^${filters.orderStatus.trim()}$`, $options: 'i' };
+  }
+
+  // ✅ Customer Name & Phone (Partial Match using regex)
+  if (filters.customerName?.trim()) {
+    match.shippingName = { $regex: filters.customerName.trim(), $options: 'i' };
+  }
+  if (filters.customerPhone?.trim()) {
+    match.shippingPhone = { $regex: filters.customerPhone.trim(), $options: 'i' };
+  }
+
+  // ✅ Delivery Method
+  if (filters.deliveryMethod?.trim()) {
+    match.deliveryMethodId = { $regex: `^${filters.deliveryMethod.trim()}$`, $options: 'i' };
+  }
+
+  // ✅ Date Filters
   if (filters.startDate && filters.endDate) {
     match.orderDate = {
       $gte: new Date(filters.startDate),
@@ -648,7 +666,6 @@ const getFilteredOrdersFromDB = async (filters: any) => {
       },
       { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
       
-      // ✅ Project similar to getAllOrdersFromDB for uniformity
       {
         $project: {
           orderId: 1,
@@ -663,14 +680,15 @@ const getFilteredOrdersFromDB = async (filters: any) => {
           orderDate: 1,
           deliveryDate: 1,
           orderDetails: 1,
-          'products.productTitle': 1, // ✅ FIX for Product Name Column
+          'products.productTitle': 1, 
           'couponId.code': 1,
           'couponId.value': 1,
           shippingName: 1,
           shippingPhone: 1,
           shippingCity: 1,
+          orderForm: 1, 
           createdAt: 1,
-          transactionId: 1, // ✅ FIX for Transaction ID Column
+          transactionId: 1, 
         },
       },
     ]);
