@@ -10,9 +10,13 @@ interface OrdersToolbarProps {
     onExport?: () => void
     onFilter?: () => void
     onPrint?: () => void
-    // ✅ NEW: Search props added
     searchTerm?: string
     setSearchTerm?: (val: string) => void
+    // ✅ NEW: Quick Date Filters
+    startDate?: string
+    endDate?: string
+    setStartDate?: (val: string) => void
+    setEndDate?: (val: string) => void
 }
 
 export default function OrdersToolbar({ 
@@ -23,8 +27,12 @@ export default function OrdersToolbar({
     onExport,
     onFilter,
     onPrint,
-    searchTerm = '', // ✅ NEW
-    setSearchTerm    // ✅ NEW
+    searchTerm = '', 
+    setSearchTerm,
+    startDate = '',
+    endDate = '',
+    setStartDate,
+    setEndDate
 }: OrdersToolbarProps) {
     const router = useRouter();
     const normalized = (initialStatus || '').toLowerCase().replace(/\s+/g, '-');
@@ -87,36 +95,21 @@ export default function OrdersToolbar({
                     
                     <div className="flex items-center gap-2 flex-shrink-0">
                         {onRefresh && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={onRefresh}
-                                className="flex items-center gap-1.5"
-                            >
+                            <Button variant="outline" size="sm" onClick={onRefresh} className="flex items-center gap-1.5">
                                 <RefreshCw className="h-4 w-4" />
                                 <span className="hidden sm:inline">Refresh</span>
                             </Button>
                         )}
                         
                         {onFilter && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={onFilter}
-                                className="flex items-center gap-1.5"
-                            >
+                            <Button variant="outline" size="sm" onClick={onFilter} className="flex items-center gap-1.5">
                                 <Filter className="h-4 w-4" />
-                                <span className="hidden sm:inline">Filter</span>
+                                <span className="hidden sm:inline">Advanced Filters</span>
                             </Button>
                         )}
                         
                         {onExport && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={onExport}
-                                className="flex items-center gap-1.5"
-                            >
+                            <Button variant="outline" size="sm" onClick={onExport} className="flex items-center gap-1.5">
                                 <Download className="h-4 w-4" />
                                 <span className="hidden sm:inline">Export</span>
                             </Button>
@@ -142,43 +135,20 @@ export default function OrdersToolbar({
                     
                     {/* Action Buttons */}
                     <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
-                        <Button 
-                            variant="default" 
-                            size="sm" 
-                            className="h-9 rounded-md px-3 text-xs md:text-sm bg-gray-900 text-white hover:bg-gray-800 whitespace-nowrap"
-                            onClick={() => {}}
-                        >
+                        <Button variant="default" size="sm" className="h-9 rounded-md px-3 text-xs md:text-sm bg-gray-900 text-white hover:bg-gray-800 whitespace-nowrap" onClick={() => {}}>
                             <span className="hidden lg:inline">Change Selected Orders</span>
                             <span className="lg:hidden">Change</span>
                         </Button>
-                        
-                        <Button 
-                            variant="default" 
-                            size="sm" 
-                            className="h-9 rounded-md px-3 text-xs md:text-sm bg-gray-900 text-white hover:bg-gray-800 whitespace-nowrap"
-                            onClick={onPrint}
-                        >
+                        <Button variant="default" size="sm" className="h-9 rounded-md px-3 text-xs md:text-sm bg-gray-900 text-white hover:bg-gray-800 whitespace-nowrap" onClick={onPrint}>
                             <span className="hidden lg:inline">Print Selected</span>
                             <span className="lg:hidden">Print</span>
                         </Button>
-                        
-                        <Button 
-                            variant="default" 
-                            size="sm" 
-                            className="h-9 rounded-md px-3 text-xs md:text-sm bg-gray-900 text-white hover:bg-gray-800 whitespace-nowrap"
-                            onClick={() => {}}
-                        >
+                        <Button variant="default" size="sm" className="h-9 rounded-md px-3 text-xs md:text-sm bg-gray-900 text-white hover:bg-gray-800 whitespace-nowrap" onClick={() => {}}>
                             <span className="hidden lg:inline">Courier Status</span>
                             <span className="lg:hidden">Courier</span>
                         </Button>
-                        
                         {showBulkCourierEntry && (
-                            <Button 
-                                variant="default" 
-                                size="sm" 
-                                className="h-9 rounded-md px-3 text-xs md:text-sm bg-blue-600 text-white hover:bg-blue-700 whitespace-nowrap"
-                                onClick={() => {}}
-                            >
+                            <Button variant="default" size="sm" className="h-9 rounded-md px-3 text-xs md:text-sm bg-blue-600 text-white hover:bg-blue-700 whitespace-nowrap" onClick={() => {}}>
                                 <span className="hidden lg:inline">Bulk Courier Entry</span>
                                 <span className="lg:hidden">Bulk</span>
                             </Button>
@@ -197,14 +167,41 @@ export default function OrdersToolbar({
                     </div>
                 </div>
                 
-                {/* Search Bar */}
-                <div className="mt-2">
+                {/* ✅ FIX: Visible Date Filters and Search Bar side-by-side */}
+                <div className="mt-3 flex flex-col md:flex-row items-center gap-3">
+                    
+                    {/* Visible Date Filters */}
+                    <div className="flex items-center gap-2 w-full md:w-auto bg-gray-50 border border-gray-200 rounded-md p-1 shadow-sm flex-shrink-0">
+                        <div className="flex items-center gap-1 bg-white px-2 py-1 rounded border border-gray-200">
+                            <span className="text-xs text-gray-500 font-medium">From:</span>
+                            <input 
+                                type="date" 
+                                value={startDate} 
+                                onChange={(e) => setStartDate && setStartDate(e.target.value)} 
+                                className="text-xs outline-none text-gray-700 bg-transparent cursor-pointer"
+                                title="From Date"
+                            />
+                        </div>
+                        <span className="text-gray-400 text-xs font-bold">-</span>
+                        <div className="flex items-center gap-1 bg-white px-2 py-1 rounded border border-gray-200">
+                            <span className="text-xs text-gray-500 font-medium">To:</span>
+                            <input 
+                                type="date" 
+                                value={endDate} 
+                                onChange={(e) => setEndDate && setEndDate(e.target.value)} 
+                                className="text-xs outline-none text-gray-700 bg-transparent cursor-pointer"
+                                title="To Date"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Search Bar */}
                     <input
                         type="text"
                         placeholder="Search orders by Order No, Name, Phone..."
-                        value={searchTerm} // ✅ Dynamically bound
-                        onChange={(e) => setSearchTerm && setSearchTerm(e.target.value)} // ✅ Dynamically bound
-                        className="w-full h-9 border border-gray-300 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={searchTerm} 
+                        onChange={(e) => setSearchTerm && setSearchTerm(e.target.value)} 
+                        className="w-full md:flex-1 h-9 border border-gray-300 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
             </div>
