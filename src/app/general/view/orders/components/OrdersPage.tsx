@@ -12,11 +12,14 @@ import { toast } from 'sonner';
 
 export default function OrdersPage({ initialStatus }: { initialStatus?: string }) {
     const normalizedStatus = useMemo(() => initialStatus?.toLowerCase(), [initialStatus]);
-    const [showFilters, setShowFilters] = useState<boolean>(true); // ✅ Changed to true so filters are visible by default
+    const [showFilters, setShowFilters] = useState<boolean>(false); 
     const [showStats, setShowStats] = useState<boolean>(true);
     const [refreshKey, setRefreshKey] = useState(0);
     const [ordersData, setOrdersData] = useState<OrderRow[]>([]);
     const [selectedOrders, setSelectedOrders] = useState<OrderRow[]>([]);
+
+    // ✅ NEW: Search State for the Toolbar Search Box
+    const [searchTerm, setSearchTerm] = useState('');
 
     const [filters, setFilters] = useState<FilterState>({
         orderNo: '',
@@ -40,6 +43,7 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
             orderNo: '', source: '', paymentStatus: '', customerName: '', customerPhone: '',
             orderStatus: '', orderedProduct: '', deliveryMethod: '', couponCode: '', dateRange: ''
         });
+        setSearchTerm(''); // Clear global search as well
         setRefreshKey(prev => prev + 1);
     };
 
@@ -135,6 +139,8 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                         onExport={handleExport}
                         onFilter={handleFilter}
                         onPrint={handlePrintSelected}
+                        searchTerm={searchTerm}           // ✅ NEW
+                        setSearchTerm={setSearchTerm}     // ✅ NEW
                     />
                 </div>
             </div>
@@ -144,6 +150,7 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                     key={refreshKey}
                     initialStatus={normalizedStatus}
                     filters={filters}
+                    searchTerm={searchTerm} // ✅ NEW
                     onDataChange={setOrdersData}
                     onSelectionChange={setSelectedOrders}
                 />
