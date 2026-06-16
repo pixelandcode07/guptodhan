@@ -10,6 +10,9 @@ interface OrdersToolbarProps {
     onExport?: () => void
     onFilter?: () => void
     onPrint?: () => void
+    // ✅ NEW: Search props added
+    searchTerm?: string
+    setSearchTerm?: (val: string) => void
 }
 
 export default function OrdersToolbar({ 
@@ -19,7 +22,9 @@ export default function OrdersToolbar({
     onRefresh,
     onExport,
     onFilter,
-    onPrint
+    onPrint,
+    searchTerm = '', // ✅ NEW
+    setSearchTerm    // ✅ NEW
 }: OrdersToolbarProps) {
     const router = useRouter();
     const normalized = (initialStatus || '').toLowerCase().replace(/\s+/g, '-');
@@ -196,7 +201,9 @@ export default function OrdersToolbar({
                 <div className="mt-2">
                     <input
                         type="text"
-                        placeholder="Search orders..."
+                        placeholder="Search orders by Order No, Name, Phone..."
+                        value={searchTerm} // ✅ Dynamically bound
+                        onChange={(e) => setSearchTerm && setSearchTerm(e.target.value)} // ✅ Dynamically bound
                         className="w-full h-9 border border-gray-300 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
@@ -204,5 +211,3 @@ export default function OrdersToolbar({
         </div>
     )
 }
-
-
