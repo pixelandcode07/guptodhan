@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 
 export default function OrdersPage({ initialStatus }: { initialStatus?: string }) {
     const normalizedStatus = useMemo(() => initialStatus?.toLowerCase(), [initialStatus]);
-    const [showFilters, setShowFilters] = useState<boolean>(false);
+    const [showFilters, setShowFilters] = useState<boolean>(true); // ✅ Changed to true so filters are visible by default
     const [showStats, setShowStats] = useState<boolean>(true);
     const [refreshKey, setRefreshKey] = useState(0);
     const [ordersData, setOrdersData] = useState<OrderRow[]>([]);
@@ -28,7 +28,7 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
         orderedProduct: '',
         deliveryMethod: '',
         couponCode: '',
-        dateRange: '' // Will be split into startDate and endDate
+        dateRange: '' 
     });
 
     const handleFilterChange = (field: keyof FilterState, value: string) => {
@@ -96,7 +96,6 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
 
     return (
         <div className="space-y-4 md:space-y-6 w-full max-w-full overflow-x-hidden">
-            {/* Stats Section */}
             {!normalizedStatus && (
                 <section className="rounded-lg border border-[#e4e7eb] bg-white/60 backdrop-blur-sm shadow-sm">
                     <header className="flex items-center justify-between px-3 py-2 md:px-4 md:py-3 border-b border-[#e4e7eb]">
@@ -109,7 +108,6 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                 </section>
             )}
 
-            {/* Filters Section */}
             <section className="rounded-lg border border-[#e4e7eb] bg-white/60 backdrop-blur-sm shadow-sm">
                 <header className="flex items-center justify-between px-3 py-2 md:px-4 md:py-3 border-b border-[#e4e7eb]">
                     <p className="text-sm font-medium text-gray-800">Advanced Filters</p>
@@ -128,7 +126,6 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                 )}
             </section>
 
-            {/* Toolbar */}
             <div className="sticky top-0 z-10 bg-white/90 backdrop-blur rounded-lg border border-[#e4e7eb] mb-4 shadow-sm">
                 <div className="px-3 py-2">
                     <OrdersToolbar 
@@ -142,7 +139,6 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                 </div>
             </div>
 
-            {/* Table */}
             <div className="rounded-lg border border-[#e4e7eb] bg-white shadow-sm">
                 <OrdersTable 
                     key={refreshKey}
