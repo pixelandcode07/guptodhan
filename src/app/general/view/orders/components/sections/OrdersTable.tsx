@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { DataTable } from '@/components/TableHelper/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import api from '@/lib/axios'
@@ -43,11 +43,12 @@ type ApiOrder = {
 interface OrdersTableProps {
     initialStatus?: string;
     filters: FilterState; 
+    searchTerm?: string; // ✅ NEW
     onDataChange?: (data: OrderRow[]) => void;
     onSelectionChange?: (selectedRows: OrderRow[]) => void;
 }
 
-export default function OrdersTable({ initialStatus, filters, onDataChange, onSelectionChange }: OrdersTableProps) {
+export default function OrdersTable({ initialStatus, filters, searchTerm, onDataChange, onSelectionChange }: OrdersTableProps) {
     const [rows, setRows] = useState<OrderRow[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -82,9 +83,8 @@ export default function OrdersTable({ initialStatus, filters, onDataChange, onSe
             const apiStatus = initialStatus ? mapSlugToApiStatus(initialStatus.toLowerCase()) : undefined
             if (apiStatus) params.append('orderStatus', apiStatus);
 
-            // ✅ Append all filters correctly
             if (filters.orderNo) params.append('orderId', filters.orderNo);
-            if (filters.source) params.append('orderForm', filters.source); // Backend expects orderForm for Website/App
+            if (filters.source) params.append('orderForm', filters.source); 
             if (filters.paymentStatus) params.append('paymentStatus', filters.paymentStatus);
             if (filters.orderStatus) params.append('orderStatus', filters.orderStatus); 
             if (filters.customerName) params.append('customerName', filters.customerName);
@@ -139,13 +139,32 @@ export default function OrdersTable({ initialStatus, filters, onDataChange, onSe
         }
     }, [initialStatus, filters, onDataChange])
 
-    // ✅ Debounce effect so it doesn't fetch on every single keystroke instantly
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             fetchOrders();
-        }, 500); // Wait 500ms after user stops typing
+        }, 500); 
         return () => clearTimeout(timeoutId);
     }, [fetchOrders, filters]);
+
+    // ✅ NEW: Dynamically filter rows based on Toolbar's Search Box
+    const filteredRows = useMemo(() => {
+        if (!searchTerm || searchTerm.trim() === '') return rows;
+        const q = searchTerm.trim().toLowerCase();
+        
+        return rows.filter((r) => {
+            const searchableFields = [
+                r.orderNo,
+                r.name,
+                r.phone,
+                r.status,
+                r.payment,
+                r.customer?.email,
+                r.trackingId,
+                r.parcelId
+            ];
+            return searchableFields.some(field => field && String(field).toLowerCase().includes(q));
+        });
+    }, [rows, searchTerm]);
 
     const actionColumn: ColumnDef<OrderRow> = {
         id: "actions",
@@ -300,14 +319,14 @@ export default function OrdersTable({ initialStatus, filters, onDataChange, onSe
             <div className="overflow-x-auto">
                 <DataTable 
                   columns={tableColumns} 
-                  data={rows} 
+                  data={filteredRows} // ✅ Passed filtered data here
                   onBulkDelete={handleBulkDelete} 
                   onRowSelectionChange={handleRowSelection} 
                 />
                 
-                {rows.length === 0 && !loading && (
+                {filteredRows.length === 0 && !loading && (
                     <div className="px-3 py-8 text-center text-gray-500">
-                        <p>No orders found matching your filters.</p>
+                        <p>No orders found matching your search.</p>
                     </div>
                 )}
             </div>
