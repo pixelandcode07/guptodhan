@@ -12,14 +12,17 @@ import { toast } from 'sonner';
 
 export default function OrdersPage({ initialStatus }: { initialStatus?: string }) {
     const normalizedStatus = useMemo(() => initialStatus?.toLowerCase(), [initialStatus]);
-    const [showFilters, setShowFilters] = useState<boolean>(false); 
+    const [showFilters, setShowFilters] = useState<boolean>(false);
     const [showStats, setShowStats] = useState<boolean>(true);
     const [refreshKey, setRefreshKey] = useState(0);
     const [ordersData, setOrdersData] = useState<OrderRow[]>([]);
     const [selectedOrders, setSelectedOrders] = useState<OrderRow[]>([]);
 
-    // ✅ NEW: Search State for the Toolbar Search Box
     const [searchTerm, setSearchTerm] = useState('');
+    
+    // ✅ NEW: Explicit Date States for quick filtering
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     const [filters, setFilters] = useState<FilterState>({
         orderNo: '',
@@ -43,7 +46,9 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
             orderNo: '', source: '', paymentStatus: '', customerName: '', customerPhone: '',
             orderStatus: '', orderedProduct: '', deliveryMethod: '', couponCode: '', dateRange: ''
         });
-        setSearchTerm(''); // Clear global search as well
+        setSearchTerm('');
+        setStartDate(''); // ✅ Clear dates as well
+        setEndDate('');
         setRefreshKey(prev => prev + 1);
     };
 
@@ -139,8 +144,12 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                         onExport={handleExport}
                         onFilter={handleFilter}
                         onPrint={handlePrintSelected}
-                        searchTerm={searchTerm}           // ✅ NEW
-                        setSearchTerm={setSearchTerm}     // ✅ NEW
+                        searchTerm={searchTerm}           
+                        setSearchTerm={setSearchTerm} 
+                        startDate={startDate}             // ✅ Passed to Toolbar
+                        endDate={endDate}                 // ✅ Passed to Toolbar
+                        setStartDate={setStartDate}       // ✅ Passed to Toolbar
+                        setEndDate={setEndDate}           // ✅ Passed to Toolbar
                     />
                 </div>
             </div>
@@ -150,7 +159,9 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                     key={refreshKey}
                     initialStatus={normalizedStatus}
                     filters={filters}
-                    searchTerm={searchTerm} // ✅ NEW
+                    searchTerm={searchTerm} 
+                    startDate={startDate}             // ✅ Passed to Table for API call
+                    endDate={endDate}                 // ✅ Passed to Table for API call
                     onDataChange={setOrdersData}
                     onSelectionChange={setSelectedOrders}
                 />
