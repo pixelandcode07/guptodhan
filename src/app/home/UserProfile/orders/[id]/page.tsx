@@ -4,10 +4,13 @@ import React, { useState } from 'react';
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation' // ✅ Router added for redirect
 import api from '@/lib/axios'
+import axios from 'axios' // ✅ Added for Cancel API
 import { CheckCircle, Package, ExternalLink, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'; // ✅ Added for Cancel Modal
+import { toast } from 'sonner' // ✅ Added for Toast
 import type { OrderStatus, OrderSummary } from '@/components/UserProfile/Order/types'
 import OrderStatusBadge from '@/components/UserProfile/Order/OrderStatusBadge'
 import ReturnRequestModal from '@/components/UserProfile/Order/ReturnRequestModal' 
@@ -81,6 +84,114 @@ type ApiOrder = {
   parcelId?: string
 }
 
+// ================================================================
+// ✅ NEW: UserOrderCancel Component integrated
+// ================================================================
+function UserOrderCancel({ orderId, orderStatus, userId }: { orderId: string, orderStatus: string, userId: string }) {
+    const router = useRouter();
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const [cancelReason, setCancelReason] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    // Common Daraz-style reasons
+    const cancelReasonsList = [
+        "Changed my mind",
+        "Found a better price elsewhere",
+        "Delivery is taking too long",
+        "Ordered by mistake / Duplicate order",
+        "Forgot to apply coupon code",
+        "Other reasons"
+    ];
+
+    const handleCancelOrder = async () => {
+        if (!cancelReason) {
+            toast.error("Please select a reason for cancellation.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const response = await axios.patch(`/api/v1/product-order/${orderId}/cancel`, {
+                userId: userId, 
+                reason: cancelReason
+            });
+
+            if (response.data.success) {
+                toast.success("Order cancelled successfully!");
+                setIsCancelModalOpen(false);
+                window.location.reload(); // Reload to fetch fresh data
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to cancel order.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 💡 Rule: Only allow cancellation if status is Pending (to_pay) or Processing (to_ship)
+    if (orderStatus !== 'to_pay' && orderStatus !== 'to_ship') {
+        return null; 
+    }
+
+    return (
+        <>
+            <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={() => setIsCancelModalOpen(true)}
+                className="bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border border-red-100 h-7 text-xs font-semibold px-3"
+            >
+                Cancel Order
+            </Button>
+
+            <Dialog open={isCancelModalOpen} onOpenChange={setIsCancelModalOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Cancel Order</DialogTitle>
+                    </DialogHeader>
+                    
+                    <div className="py-4">
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                            Why do you want to cancel this order? <span className="text-red-500">*</span>
+                        </label>
+                        <div className="space-y-2 mt-3">
+                            {cancelReasonsList.map((reason, idx) => (
+                                <label key={idx} className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <input 
+                                        type="radio" 
+                                        name="cancelReason" 
+                                        value={reason}
+                                        checked={cancelReason === reason}
+                                        onChange={(e) => setCancelReason(e.target.value)}
+                                        className="w-4 h-4 text-red-600 focus:ring-red-500 cursor-pointer"
+                                    />
+                                    <span className="text-sm text-gray-700">{reason}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsCancelModalOpen(false)} disabled={loading}>
+                            Keep Order
+                        </Button>
+                        <Button 
+                            variant="destructive" 
+                            onClick={handleCancelOrder} 
+                            disabled={loading || !cancelReason}
+                        >
+                            {loading ? "Cancelling..." : "Confirm Cancellation"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+}
+
+// ================================================================
+// Main Page Component
+// ================================================================
 export default function OrderDetailsPage() {
   const [order, setOrder] = React.useState<OrderWithDetails | null>(null)
   const [orderData, setOrderData] = React.useState<ApiOrder | null>(null)
@@ -91,7 +202,7 @@ export default function OrderDetailsPage() {
 
   const { data: session } = useSession()
   const params = useParams()
-  const orderIdParam = params?.id as string // This can be "6a2c..." OR "ORD-..."
+  const orderIdParam = params?.id as string 
 
   const fetchOrder = React.useCallback(async () => {
     const userLike = (session?.user ?? {}) as { id?: string; _id?: string }
@@ -104,24 +215,12 @@ export default function OrderDetailsPage() {
 
     setIsLoading(true)
     try {
-      // ✅ FIX: Determine which endpoint to call based on the format of the ID
-      // If it looks like a MongoDB ObjectId (24 hex chars), use the standard /product-order/:id
-      // If it starts with "ORD-", we need to tell the backend to search by 'orderId' field
-      // NOTE: Ensure your backend supports this `?orderId=` query or handles "ORD-" properly
       let url = `/product-order/${orderIdParam}`;
       if (orderIdParam.startsWith('ORD-')) {
-         // Alternative: if your backend has a specific route for ORD strings, use it.
-         // Otherwise, we pass it as a query param so the backend knows it's an ORD string.
          url = `/product-order/find-by-ord/${orderIdParam}`; 
-         // *If you don't have a /find-by-ord/ route*, change this to however your backend searches by ORD string.
-         // Usually, `/product-order/${orderIdParam}` should work IF the backend checks for `isValidObjectId`.
       }
-
-      // ⚠️ IMPORTANT: If your backend ONLY accepts MongoDB _id in `/product-order/:id`,
-      // you must update your OrderList page to ALWAYS pass the `order._id` in the <Link href="...">
-      // For now, I'm assuming your backend handles it or we just make the call.
       
-      const res = await api.get(`/product-order/${orderIdParam}`, { headers })
+      const res = await api.get(url, { headers })
       
       const rawData = res.data?.data;
       const found = (Array.isArray(rawData) ? rawData[0] : rawData) as ApiOrder | null;
@@ -216,6 +315,9 @@ export default function OrderDetailsPage() {
   };
 
   const isReturnRequested = order?.status === 'return_refund';
+  
+  const userLike = (session?.user ?? {}) as { id?: string; _id?: string }
+  const currentUserId = userLike._id || userLike.id || '';
 
   if (isLoading) {
     return (
@@ -245,25 +347,31 @@ export default function OrderDetailsPage() {
     <div className="p-6">
       <h1 className="text-xl font-semibold px-4 mt-1 mb-4">Order Details</h1>
 
-      <div className="bg-white border rounded-md">
-        <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
+      <div className="bg-white border rounded-md shadow-sm">
+        <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
           <div className="text-sm font-medium flex items-center gap-2">
-            <span>{order?.storeName ?? 'Store'}</span>
+            <span className="text-gray-700">{order?.storeName ?? 'Store'}</span>
             {order?.storeVerified && (
-              <span className="text-blue-600 text-xs inline-flex items-center gap-1">
-                Verified Seller
-                <CheckCircle className="h-3 w-3" />
+              <span className="text-blue-600 text-[10px] uppercase font-bold inline-flex items-center gap-1 bg-blue-50 px-1.5 py-0.5 rounded">
+                Verified <CheckCircle className="h-3 w-3" />
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
-             {isReturnRequested && (
+          <div className="flex items-center gap-3">
+              {/* ✅ NEW: Cancel Button Component Rendered Here */}
+              <UserOrderCancel 
+                orderId={order.id} 
+                orderStatus={order.status} 
+                userId={currentUserId} 
+              />
+
+              {isReturnRequested && (
                 <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-0.5 rounded">
                   Return Requested
                 </span>
-             )}
-             {orderData?.trackingId && (
-                <Link href={`/track-order?trackingId=${orderData.trackingId}`}>
+              )}
+              {orderData?.trackingId && (
+                <Link href={`/products/tracking?trackingId=${orderData.trackingId}`}>
                   <Button
                     size="sm"
                     variant="outline"
@@ -272,8 +380,8 @@ export default function OrderDetailsPage() {
                     <Package className="h-3 w-3" /> Track Order
                   </Button>
                 </Link>
-             )}
-             <OrderStatusBadge status={(order?.status ?? 'to_pay') as OrderStatus} />
+              )}
+              <OrderStatusBadge status={(order?.status ?? 'to_pay') as OrderStatus} />
           </div>
         </div>
 
@@ -355,64 +463,71 @@ export default function OrderDetailsPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 bg-gray-50/50">
           <div className="border-t md:border-t-0 md:border-r">
-            <div className="px-4 py-3 bg-gray-50 border-t md:border-t-0"> 
-              <div className="text-xs text-gray-700">Order {order?.orderId ?? order?.id ?? ''}</div>
-              <div className="text-xs text-gray-500">Placed on {order?.createdAt ?? ''}</div>
+            <div className="px-4 py-3 border-t md:border-t-0 border-b border-gray-100"> 
+              <div className="text-xs text-gray-700 font-medium">Order: <span className="font-mono">{order?.orderId ?? order?.id ?? ''}</span></div>
+              <div className="text-xs text-gray-500 mt-0.5">Placed on {order?.createdAt ?? ''}</div>
               {orderData?.deliveryMethodId === 'steadfast' && orderData?.trackingId && (
-                <div className="text-xs text-blue-600 mt-1">
+                <div className="text-xs text-blue-600 mt-2 font-medium bg-blue-50 inline-block px-2 py-1 rounded">
                   <Package className="h-3 w-3 inline mr-1" />
                   Tracking: {orderData.trackingId}
                 </div>
               )}
             </div>
             <div className="px-4 py-3 text-sm">
-              <div className="font-medium mb-1">{orderData?.shippingName || 'N/A'}</div>
-              <div className="text-gray-600">
+              <div className="font-medium text-gray-800 mb-1">Shipping Details</div>
+              <div className="font-medium text-gray-700 text-xs mt-2">{orderData?.shippingName || 'N/A'}</div>
+              <div className="text-gray-500 text-xs mt-1 leading-relaxed">
                 {orderData?.shippingStreetAddress || ''}
                 {orderData?.shippingCity ? `, ${orderData.shippingCity}` : ''}
                 {orderData?.shippingDistrict ? `, ${orderData.shippingDistrict}` : ''}
                 {orderData?.shippingPostalCode ? ` ${orderData.shippingPostalCode}` : ''}
               </div>
-              <div className="text-gray-600">{orderData?.shippingPhone || 'N/A'}</div>
+              <div className="text-gray-500 text-xs mt-1">{orderData?.shippingPhone || 'N/A'}</div>
               {orderData?.shippingEmail && (
-                <div className="text-gray-600">{orderData.shippingEmail}</div>
+                <div className="text-gray-500 text-xs">{orderData.shippingEmail}</div>
               )}
             </div>
           </div>
 
-          <div className="border-t md:border-t-0">
-            <div className="px-4 py-3 space-y-2 text-sm">
-              <div className="flex items-center justify-between">
+          <div className="border-t md:border-t-0 p-4">
+            <div className="font-medium text-gray-800 text-sm mb-3">Order Summary</div>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center justify-between text-xs">
                 <span className="text-gray-600">Subtotal</span>
-                <span className="text-blue-600">{formatCurrency(order?.subtotal || 0)}</span>
+                <span className="font-medium text-gray-800">{formatCurrency(order?.subtotal || 0)}</span>
               </div>
               {(order?.discount ?? 0) > 0 && (
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-600">Discount</span>
-                  <span className="text-green-600">-{formatCurrency(order?.discount || 0)}</span>
+                  <span className="text-green-600 font-medium">-{formatCurrency(order?.discount || 0)}</span>
                 </div>
               )}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between text-xs">
                 <span className="text-gray-600">Shipping</span>
-                <span className="text-blue-600">
+                <span className="font-medium text-gray-800">
                   {order?.deliveryCharge ? formatCurrency(order.deliveryCharge) : 'FREE'}
                 </span>
               </div>
-              <div className="flex items-center justify-between border-t pt-2">
-                <span className="font-medium">Total:</span>
-                <span className="text-blue-600 font-semibold">{formatCurrency(order?.totalAmount || orderData?.totalAmount || 0)}</span>
+              <div className="flex items-center justify-between border-t border-gray-200 mt-2 pt-2">
+                <span className="font-bold text-gray-800">Total:</span>
+                <span className="text-[#EF4A23] font-bold text-base">{formatCurrency(order?.totalAmount || orderData?.totalAmount || 0)}</span>
               </div>
-              {order?.paymentStatus === 'Paid' || order?.status === 'delivered' ? (
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>Paid by {orderData?.deliveryMethodId === 'steadfast' ? 'Cash on Delivery (Steadfast)' : 'Cash on Delivery'}</span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>Payment: {order?.paymentStatus || 'Pending'}</span>
-                </div>
-              )}
+              
+              <div className="mt-4 pt-3 border-t border-gray-200">
+                {order?.paymentStatus === 'Paid' || order?.status === 'delivered' ? (
+                  <div className="flex items-center justify-between text-xs font-medium text-gray-700">
+                    <span>Payment Method:</span>
+                    <span>{orderData?.deliveryMethodId === 'steadfast' ? 'Steadfast COD' : 'Cash on Delivery'}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between text-xs font-medium text-gray-700">
+                    <span>Payment Status:</span>
+                    <span className="text-orange-600 bg-orange-50 px-2 py-0.5 rounded">{order?.paymentStatus || 'Pending'}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
