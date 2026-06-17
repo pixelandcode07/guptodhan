@@ -30,6 +30,7 @@
     
     // ✅ New Field for Return Logic
     returnReason?: string;
+    cancelReason?: string;
 
     // Meta
     orderForm: 'Website' | 'App';
