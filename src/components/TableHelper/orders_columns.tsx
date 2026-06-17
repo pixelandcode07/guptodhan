@@ -7,7 +7,6 @@ import { toast } from "sonner"
 import axios from "axios"
 import Link from "next/link"
 
-// ✅ FIX: Exported OrderRow so it can be imported in other files
 export type OrderRow = {
   id: string
   sl: number
@@ -24,6 +23,7 @@ export type OrderRow = {
   deliveryMethod?: string
   trackingId?: string
   parcelId?: string
+  cancelReason?: string // ✅ NEW: Type added
   customer?: {
     name: string
     email: string
@@ -35,11 +35,9 @@ export type OrderRow = {
   }
 }
 
-// Action handlers component
 const SteadfastActions = ({ order }: { order: OrderRow }) => {
   const [loading, setLoading] = useState<string | null>(null)
 
-  // Status Update Function
   const handleSteadfastAction = async (action: string) => {
     try {
       setLoading(action)
@@ -58,21 +56,18 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
         toast.error(response.data.message || `Failed to ${action} order`)
       }
     } catch (error: any) {
-      const errorMsg = error.response?.data?.message || 'Something went wrong. Action failed!';
-      toast.error(errorMsg);
+      toast.error(error.response?.data?.message || 'Something went wrong. Action failed!');
     } finally {
       setLoading(null)
     }
   }
 
-  // Delete Order Function
   const handleDeleteOrder = async () => {
     const isConfirmed = window.confirm('Are you sure you want to delete this order? This action cannot be undone.');
     if (!isConfirmed) return;
 
     try {
       setLoading('delete')
-      
       const response = await axios.delete(`/api/v1/product-order/${order.id}`);
       
       if (response.data.success) {
@@ -82,8 +77,7 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
         toast.error(response.data.message || 'Failed to delete order')
       }
     } catch (error: any) {
-      const errorMsg = error.response?.data?.message || 'Error deleting the order!';
-      toast.error(errorMsg);
+      toast.error(error.response?.data?.message || 'Error deleting the order!');
     } finally {
       setLoading(null)
     }
@@ -100,7 +94,6 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
   const handleCreateSteadfastParcel = async () => {
     try {
       setLoading('create')
-      
       const response = await axios.post('/api/v1/product-order/steadfast', {
         orderId: order.orderNo
       })
@@ -112,8 +105,7 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
         toast.error(response.data.message || 'Failed to create Steadfast parcel')
       }
     } catch (error: any) {
-      const errorMsg = error.response?.data?.message || 'Failed to create Steadfast parcel';
-      toast.error(errorMsg);
+      toast.error(error.response?.data?.message || 'Failed to create Steadfast parcel');
     } finally {
       setLoading(null)
     }
@@ -236,7 +228,6 @@ const SteadfastActions = ({ order }: { order: OrderRow }) => {
   )
 }
 
-// ✅ FIX: Exported ordersColumns so it can be imported in other files
 export const ordersColumns: ColumnDef<OrderRow>[] = [
   {
     id: "select",
@@ -368,11 +359,14 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
       );
     }
   },
+  // ✅ NEW: Showing Cancel Reason dynamically under Status
   { 
     accessorKey: "status", 
     header: () => <span>Status</span>,
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
+      const cancelReason = row.original.cancelReason;
+      
       const getStatusStyle = (status: string) => {
         switch (status.toLowerCase()) {
           case 'pending': return "bg-yellow-100 text-yellow-800";
@@ -384,9 +378,16 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
         }
       };
       return (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusStyle(status)}`}>
-          {status}
-        </span>
+        <div className="flex flex-col gap-1 items-start">
+          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusStyle(status)}`}>
+            {status}
+          </span>
+          {status.toLowerCase() === 'cancelled' && cancelReason && (
+            <span className="text-[10px] text-red-500 font-medium max-w-[120px] truncate" title={cancelReason}>
+              Reason: {cancelReason}
+            </span>
+          )}
+        </div>
       );
     }
   },
