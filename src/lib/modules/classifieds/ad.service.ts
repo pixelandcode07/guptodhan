@@ -93,7 +93,11 @@ const updateAdInDB = async (adId: string, userId: string, userRole: string, payl
     throw new Error('Forbidden: Only the owner can edit the ad details.');
   }
 
-  if (!isAdmin) {
+  // ✅ Owner's own edit always goes back to pending for re-review,
+  // regardless of whether the owner also happens to be an admin.
+  // If an admin edits someone else's ad (not the owner) for moderation/correction,
+  // pending is not forced.
+  if (isOwner) {
     payload.status = 'pending';
   }
 
