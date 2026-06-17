@@ -28,6 +28,7 @@ type ApiOrder = {
     deliveryMethodId?: string
     trackingId?: string
     parcelId?: string
+    cancelReason?: string // ✅ NEW: Added cancelReason
     userId?: {
         _id: string
         name: string
@@ -44,8 +45,8 @@ interface OrdersTableProps {
     initialStatus?: string;
     filters: FilterState; 
     searchTerm?: string; 
-    startDate?: string; // ✅ NEW
-    endDate?: string;   // ✅ NEW
+    startDate?: string; 
+    endDate?: string;   
     onDataChange?: (data: OrderRow[]) => void;
     onSelectionChange?: (selectedRows: OrderRow[]) => void;
 }
@@ -95,7 +96,6 @@ export default function OrdersTable({
             if (filters.customerPhone) params.append('customerPhone', filters.customerPhone);
             if (filters.deliveryMethod) params.append('deliveryMethod', filters.deliveryMethod);
             
-            // ✅ Use explicit startDate and endDate for API
             if (startDate) params.append('startDate', startDate);
             if (endDate) params.append('endDate', endDate);
 
@@ -118,6 +118,7 @@ export default function OrdersTable({
                 deliveryMethod: o.deliveryMethodId || 'COD',
                 trackingId: o.trackingId || '-',
                 parcelId: o.parcelId || '-',
+                cancelReason: o.cancelReason, // ✅ NEW: Mapped cancel reason
                 customer: o.userId ? {
                     name: o.userId.name || '-',
                     email: o.userId.email || '-',
@@ -146,7 +147,7 @@ export default function OrdersTable({
             fetchOrders();
         }, 500); 
         return () => clearTimeout(timeoutId);
-    }, [fetchOrders, filters, startDate, endDate]); // ✅ Added startDate and endDate dependencies
+    }, [fetchOrders, filters, startDate, endDate]); 
 
     const filteredRows = useMemo(() => {
         if (!searchTerm || searchTerm.trim() === '') return rows;
@@ -342,4 +343,4 @@ export default function OrdersTable({
             )}
         </div>
     )
-}  
+}
