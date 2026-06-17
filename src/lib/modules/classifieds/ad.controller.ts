@@ -107,7 +107,6 @@ const getAllAds = async (req: NextRequest) => {
 
   let result;
   if (isMyAdsRequest) {
-    // ✅ যদি ইউজারের নিজের অ্যাড হয়, তাহলে active, pending সবই আনবে
     try {
       const { userId } = getUserDetailsFromToken(req);
       result = await ClassifiedAdServices.searchAdsInDB({ user: userId }, { onlyActive: false });
@@ -115,7 +114,6 @@ const getAllAds = async (req: NextRequest) => {
       throw new Error('Unauthorized to view my ads');
     }
   } else {
-    // ✅ পাবলিক সার্চের ক্ষেত্রে শুধু active গুলো আনবে
     result = await ClassifiedAdServices.searchAdsInDB({}, { onlyActive: true });
   }
 
@@ -128,7 +126,6 @@ const getSingleAd = async (req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const result = await ClassifiedAdServices.getSingleAdFromDB(id);
 
-  // Security Check: If ad is not active, only owner or admin can view it
   if (result && result.status !== 'active') {
     try {
       const { userId, role } = getUserDetailsFromToken(req);
@@ -147,18 +144,15 @@ const getSingleAd = async (req: NextRequest, { params }: { params: Promise<{ id:
 };
 
 // 4. Update Ad
-// 4. Update Ad (Content Update -> Owner Only)
 const updateAd = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
   
   const { userId, role } = getUserDetailsFromToken(req);
   const { id } = await params;
 
-  // ✅ JSON এর বদলে FormData রিসিভ করা হচ্ছে (কারন ছবি থাকতে পারে)
   const formData = await req.formData();
   const payload: any = {};
 
-  // Text Fields Extract
   const simpleFields = [
     'title', 'division', 'district', 'upazila', 
     'condition', 'authenticity', 'brand', 'productModel', 
@@ -172,15 +166,12 @@ const updateAd = async (req: NextRequest, { params }: { params: Promise<{ id: st
   if (formData.has('price')) payload.price = Number(formData.get('price'));
   if (formData.has('isNegotiable')) payload.isNegotiable = formData.get('isNegotiable') === 'true';
 
-  // Object IDs (Category & Subcategory)
   if (formData.has('category')) payload.category = new Types.ObjectId(formData.get('category') as string);
   if (formData.has('subCategory')) payload.subCategory = new Types.ObjectId(formData.get('subCategory') as string);
 
-  // Arrays (Features)
   const features = formData.getAll('features');
   if (features.length > 0) payload.features = features;
 
-  // Contact Details Extract
   if (formData.has('contactName') || formData.has('contactPhone')) {
     payload.contactDetails = {
       name: formData.get('contactName') as string || '',
@@ -190,13 +181,11 @@ const updateAd = async (req: NextRequest, { params }: { params: Promise<{ id: st
     };
   }
 
-  // ✅ Image Handling (Existing + New)
   const existingImages = formData.getAll('existingImages') as string[];
   const newImageFiles = formData.getAll('newImages') as File[];
 
   let finalImages = [...existingImages];
 
-  // যদি নতুন ছবি আপলোড করে থাকে, সেগুলো ক্লাউডিনারিতে আপলোড করে লিংকে কনভার্ট করুন
   if (newImageFiles.length > 0) {
     const uploadResults = await Promise.all(
       newImageFiles.map(async file => uploadToCloudinary(Buffer.from(await file.arrayBuffer()), 'classified-ads'))
@@ -209,10 +198,11 @@ const updateAd = async (req: NextRequest, { params }: { params: Promise<{ id: st
     payload.images = finalImages;
   }
 
-  // ✅ Zod Validation (Optional: Call your update validation schema here if needed)
-  // const validatedData = updateAdValidationSchema.parse(payload);
+  // ✅ FIX: Force status to 'pending' if the user is not an admin
+  if (role !== 'admin') {
+    payload.status = 'pending';
+  }
 
-  // Send to Service
   const result = await ClassifiedAdServices.updateAdInDB(id, userId, role, payload);
 
   return sendResponse({ 
@@ -354,7 +344,6 @@ const searchAds = async (req: NextRequest) => {
   if (searchParams.get('maxPrice')) filters.maxPrice = searchParams.get('maxPrice');
   if (searchParams.get('title')) filters.title = searchParams.get('title');
 
-  // ✅ পাবলিক সার্চের ক্ষেত্রে onlyActive: true দিয়ে ফিল্টার করবে
   const result = await ClassifiedAdServices.searchAdsInDB(filters, { onlyActive: true });
 
   return sendResponse({
@@ -365,7 +354,7 @@ const searchAds = async (req: NextRequest) => {
   });
 };
 
-// 13. ✅ NEW: Get User's Own Ads
+// 13. Get User's Own Ads
 const getMyAds = async (req: NextRequest) => {
   await dbConnect();
   try {
