@@ -95,6 +95,9 @@ const orderSchema = new Schema<IOrder>(
     returnReason: {
       type: String,
     },
+    cancelReason: {
+      type: String,
+    },
     orderForm: {
       type:    String,
       enum:    ["Website", "App"],
