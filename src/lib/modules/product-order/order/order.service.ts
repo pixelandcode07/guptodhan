@@ -730,6 +730,44 @@ const requestReturnInDB = async (orderId: string, reason: string) => {
   }
 };
 
+
+// ================================================================
+// 🚫 CANCEL ORDER BY USER
+// ================================================================
+const cancelOrderByUserInDB = async (orderId: string, userId: string, reason: string) => {
+  try {
+    const order = await OrderModel.findById(orderId);
+    
+    if (!order) throw new Error('Order not found');
+
+    // Security Check: ইউজার শুধু নিজের অর্ডারই ক্যানসেল করতে পারবে
+    if (order.userId.toString() !== userId) {
+      throw new Error('You are not authorized to cancel this order.');
+    }
+
+    // Condition Check: অর্ডার শিফট বা ডেলিভার হয়ে গেলে ক্যানসেল করা যাবে না
+    if (['Shipped', 'Delivered', 'Returned', 'Cancelled'].includes(order.orderStatus)) {
+      throw new Error(`Order cannot be cancelled because it is already ${order.orderStatus}.`);
+    }
+
+    // Update Status & Reason
+    order.orderStatus = 'Cancelled';
+    order.cancelReason = reason;
+    
+    await order.save();
+
+    // 🗑️ Clear caches
+    await deleteCacheKey(CacheKeys.ORDER.BY_ID(orderId));
+    await deleteCachePattern(`orders:user:${userId}*`);
+    await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
+
+    return order;
+  } catch (error) {
+    console.error('❌ Error cancelling order:', error);
+    throw error;
+  }
+};
+
 // ================================================================
 // 🏪 GET VENDOR STORE AND ORDERS
 // ================================================================
@@ -1067,6 +1105,7 @@ export const OrderServices = {
   deleteOrderFromDB,
   getSalesReportFromDB,
   getReturnedOrdersByUserFromDB,
+  cancelOrderByUserInDB,
   getFilteredOrdersFromDB,
   requestReturnInDB,
   getVendorStoreAndOrdersFromDBVendor,
