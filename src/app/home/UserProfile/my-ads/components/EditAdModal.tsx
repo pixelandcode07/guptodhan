@@ -40,8 +40,6 @@ export default function EditAdModal({ ad, onClose, onSuccess }: any) {
     // ==========================================
     // 2. Category States (Pre-loaded IDs)
     // ==========================================
-    // Note: If you have a specific component for Category, you can swap this, 
-    // but preserving the existing IDs ensures it doesn't break if not changed.
     const [categoryId, setCategoryId] = useState(ad.category?._id || ad.category || '')
     const [subCategoryId, setSubCategoryId] = useState(ad.subCategory?._id || ad.subCategory || '')
 
@@ -157,7 +155,6 @@ export default function EditAdModal({ ad, onClose, onSuccess }: any) {
             const token = (session as any)?.accessToken
             const formData = new FormData()
 
-            // Append Text Fields
             formData.append('title', title)
             formData.append('price', price.toString())
             formData.append('isNegotiable', isNegotiable.toString())
@@ -168,32 +165,26 @@ export default function EditAdModal({ ad, onClose, onSuccess }: any) {
             if (productModel) formData.append('productModel', productModel)
             if (edition) formData.append('edition', edition)
             
-            // Append Location
             formData.append('division', division.value)
             formData.append('district', district.value)
             formData.append('upazila', upazila.value)
 
-            // Append Categories
             if (categoryId) formData.append('category', categoryId)
             if (subCategoryId) formData.append('subCategory', subCategoryId)
 
-            // Append Contact Details
             formData.append('contactName', contactName)
             formData.append('contactPhone', contactPhone)
             if (contactEmail) formData.append('contactEmail', contactEmail)
             formData.append('isPhoneHidden', isPhoneHidden.toString())
 
-            // Append Features (Comma separated string to array)
             if (features.trim()) {
                 const featureArray = features.split(',').map(f => f.trim()).filter(f => f !== '')
                 featureArray.forEach(f => formData.append('features', f))
             }
 
-            // Append Images
             existingImages.forEach(img => formData.append('existingImages', img))
             newImages.forEach(file => formData.append('newImages', file))
 
-            // API Call
             const res = await api.patch(`/classifieds/ads/${ad._id}`, formData, { 
                 headers: { 
                     Authorization: `Bearer ${token}`,
@@ -202,7 +193,14 @@ export default function EditAdModal({ ad, onClose, onSuccess }: any) {
             })
 
             if (res.data.success) {
-                toast.success("Ad updated successfully! Waiting for admin review.")
+                // ✅ Server-er returned status onujayi message dekhano hocche,
+                // hardcoded "Waiting for admin review" sob khetre na dekhiye.
+                const newStatus = res.data.data?.status
+                toast.success(
+                    newStatus === 'pending'
+                        ? "Ad updated successfully! Waiting for admin review."
+                        : "Ad updated successfully!"
+                )
                 onSuccess()
             }
         } catch (error: any) {
@@ -362,7 +360,6 @@ export default function EditAdModal({ ad, onClose, onSuccess }: any) {
                             </div>
                             
                             <div className="flex flex-wrap gap-4">
-                                {/* Existing Images */}
                                 {existingImages.map((img, idx) => (
                                     <div key={`exist-${idx}`} className="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200 group shadow-sm">
                                         <Image src={img} alt="Existing" fill className="object-cover" />
@@ -373,7 +370,6 @@ export default function EditAdModal({ ad, onClose, onSuccess }: any) {
                                     </div>
                                 ))}
 
-                                {/* New Image Previews */}
                                 {newImagePreviews.map((url, idx) => (
                                     <div key={`new-${idx}`} className="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200 group shadow-sm">
                                         <Image src={url} alt="New" fill className="object-cover" />
@@ -384,7 +380,6 @@ export default function EditAdModal({ ad, onClose, onSuccess }: any) {
                                     </div>
                                 ))}
 
-                                {/* Upload Button */}
                                 {(existingImages.length + newImages.length) < 5 && (
                                     <div 
                                         className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-500 hover:bg-blue-50 hover:border-[#0097E9] hover:text-[#0097E9] transition cursor-pointer" 
