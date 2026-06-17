@@ -1,5 +1,5 @@
 // src/app/home/(vendor)/vendor-shops/page.tsx
-
+export const dynamic = 'force-dynamic';
 import VendorStoreCard from "@/components/ReusableComponents/VendorStoreCard";
 import VendorSearch from "@/components/ReusableComponents/VendorSearch";
 import StickyNavTrigger from "../components/StickyNavTrigger";
