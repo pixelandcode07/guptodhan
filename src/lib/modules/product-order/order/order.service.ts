@@ -690,6 +690,7 @@ const getFilteredOrdersFromDB = async (filters: any) => {
           orderForm: 1, 
           createdAt: 1,
           transactionId: 1, 
+          cancelReason: 1,
         },
       },
     ]);
