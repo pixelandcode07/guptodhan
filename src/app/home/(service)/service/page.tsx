@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import React, { Suspense } from 'react'
 import ServiceBanner from '../components/ServiceBanner'
 import ServiceCards from '../components/ServiceCards'
