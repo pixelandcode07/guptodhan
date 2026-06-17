@@ -411,6 +411,22 @@ const requestReturn = async (req: NextRequest) => {
   }
 };
 
+const cancelOrderByUser = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    await dbConnect();
+    const { id } = await params;
+    const body = await req.json();
+    const { userId, reason } = body;
+
+    const result = await OrderServices.cancelOrderByUserInDB(id, userId, reason);
+
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Order cancelled successfully!',
+        data: result,
+    });
+};
+
 // --- 10. Get Vendor Store and Orders ---
 const getVendorStoreAndOrdersVendor = async (
   req: NextRequest,
@@ -484,6 +500,7 @@ export const OrderController = {
   getSalesReport,
   getReturnedOrdersByUser,
   requestReturn,
+  cancelOrderByUser,
   getVendorStoreAndOrdersVendor,
   getAdminDashboardReport,
 };
