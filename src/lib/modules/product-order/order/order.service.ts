@@ -128,7 +128,8 @@ const getAllOrdersFromDB = async (status?: string) => {
               shippingPhone: 1,
               shippingCity: 1,
               createdAt: 1,
-              transactionId: 1, // ✅ FIX for Transaction ID Column
+              transactionId: 1, 
+              cancelReason: 1,
             },
           },
         ]);
