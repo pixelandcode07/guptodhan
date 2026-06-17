@@ -1,7 +1,7 @@
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { buySellListing_columns } from '@/components/TableHelper/buySellListing_columns'
 import { DataTable } from '@/components/TableHelper/data-table'
-import { fetchClassifiedAds } from '@/lib/BuyandSellApis/fetchClassifiedAds'
+import { fetchAllClassifiedAdsForAdmin } from '@/lib/BuyandSellApis/fetchClassifiedAds' // ✅ Updated Import
 import { ClassifiedAdListing } from '@/types/ClassifiedAdsType'
 import { getServerSession } from 'next-auth'
 
@@ -9,10 +9,9 @@ export default async function BuySellListing() {
     const session = await getServerSession(authOptions)
     const token = session?.accessToken as string | undefined;
     
-    // ডাটা ফেচ করা হচ্ছে
-    const rawListing: ClassifiedAdListing[] = await fetchClassifiedAds(token)
+    // ✅ ডাটা ফেচ করা হচ্ছে অ্যাডমিন API থেকে (Pending সহ সব আসবে)
+    const rawListing: ClassifiedAdListing[] = await fetchAllClassifiedAdsForAdmin(token)
     
-
     const safeListing = Array.isArray(rawListing) 
         ? rawListing.filter(ad => ad && ad.user !== null && ad.user !== undefined)
         : [];
