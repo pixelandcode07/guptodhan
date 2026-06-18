@@ -23,7 +23,7 @@ export type OrderRow = {
   deliveryMethod?: string
   trackingId?: string
   parcelId?: string
-  cancelReason?: string // ✅ NEW: Type added
+  cancelReason?: string 
   customer?: {
     name: string
     email: string
@@ -359,13 +359,31 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
       );
     }
   },
-  // ✅ NEW: Showing Cancel Reason dynamically under Status
+  // ✅ NEW: Added Cancel Reason as a separate column
+  { 
+    accessorKey: "cancelReason", 
+    header: () => <span className="text-red-500 font-semibold">Cancel Reason</span>,
+    cell: ({ row }) => {
+      const cancelReason = row.getValue("cancelReason") as string;
+      const status = row.original.status.toLowerCase();
+      
+      // শুধুমাত্র স্ট্যাটাস Cancelled হলেই কারণটি দেখাবে
+      if (status !== 'cancelled' || !cancelReason) {
+        return <span className="text-gray-400 text-xs">-</span>;
+      }
+
+      return (
+        <div className="text-xs text-red-600 font-medium max-w-[150px] whitespace-normal">
+          {cancelReason}
+        </div>
+      );
+    }
+  },
   { 
     accessorKey: "status", 
     header: () => <span>Status</span>,
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
-      const cancelReason = row.original.cancelReason;
       
       const getStatusStyle = (status: string) => {
         switch (status.toLowerCase()) {
@@ -377,17 +395,11 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
           default: return "bg-gray-100 text-gray-800";
         }
       };
+      
       return (
-        <div className="flex flex-col gap-1 items-start">
-          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusStyle(status)}`}>
-            {status}
-          </span>
-          {status.toLowerCase() === 'cancelled' && cancelReason && (
-            <span className="text-[10px] text-red-500 font-medium max-w-[120px] truncate" title={cancelReason}>
-              Reason: {cancelReason}
-            </span>
-          )}
-        </div>
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusStyle(status)}`}>
+          {status}
+        </span>
       );
     }
   },
