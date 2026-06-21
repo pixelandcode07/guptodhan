@@ -1,18 +1,18 @@
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-import { buySellListing_columns } from '@/components/TableHelper/buySellListing_columns'
-import { DataTable } from '@/components/TableHelper/data-table'
-import { fetchClassifiedAds } from '@/lib/BuyandSellApis/fetchClassifiedAds'
+import { fetchAllClassifiedAdsForAdmin } from '@/lib/BuyandSellApis/fetchClassifiedAds' // Use the correct fetch function
 import { ClassifiedAdListing } from '@/types/ClassifiedAdsType'
 import { getServerSession } from 'next-auth'
+import ListingClient from './components/ListingClient'
+
+export const dynamic = 'force-dynamic'; // Prevent Next.js 15 build errors
 
 export default async function BuySellListing() {
     const session = await getServerSession(authOptions)
     const token = session?.accessToken as string | undefined;
     
     // ডাটা ফেচ করা হচ্ছে
-    const rawListing: ClassifiedAdListing[] = await fetchClassifiedAds(token)
+    const rawListing: ClassifiedAdListing[] = await fetchAllClassifiedAdsForAdmin(token)
     
-
     const safeListing = Array.isArray(rawListing) 
         ? rawListing.filter(ad => ad && ad.user !== null && ad.user !== undefined)
         : [];
@@ -25,10 +25,8 @@ export default async function BuySellListing() {
                 </h1>
             </div>
 
-            <div>
-                {/* ফিল্টার করা সেফ ডাটা পাঠানো হচ্ছে */}
-                <DataTable columns={buySellListing_columns} data={safeListing} />
-            </div>
+            {/* ✅ Pass data to Client Component for Bulk Actions */}
+            <ListingClient initialListing={safeListing} />
         </>
     )
 }
