@@ -1,8 +1,8 @@
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-import { fetchAllClassifiedAdsForAdmin } from '@/lib/BuyandSellApis/fetchClassifiedAds' // Use the correct fetch function
 import { ClassifiedAdListing } from '@/types/ClassifiedAdsType'
 import { getServerSession } from 'next-auth'
 import ListingClient from './components/ListingClient'
+import { fetchClassifiedAds } from '@/lib/BuyandSellApis/fetchClassifiedAds';
 
 export const dynamic = 'force-dynamic'; // Prevent Next.js 15 build errors
 
@@ -11,7 +11,7 @@ export default async function BuySellListing() {
     const token = session?.accessToken as string | undefined;
     
     // ডাটা ফেচ করা হচ্ছে
-    const rawListing: ClassifiedAdListing[] = await fetchAllClassifiedAdsForAdmin(token)
+    const rawListing: ClassifiedAdListing[] = await fetchClassifiedAds(token)
     
     const safeListing = Array.isArray(rawListing) 
         ? rawListing.filter(ad => ad && ad.user !== null && ad.user !== undefined)
