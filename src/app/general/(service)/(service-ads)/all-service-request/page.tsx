@@ -3,7 +3,8 @@ import { fetchAllServiceAds } from '@/lib/ServicePageApis/fetchAllServiceAds';
 import { getServerSession } from 'next-auth';
 import React from 'react';
 import ClientDataTable from '../components/ClientDataTable';
-import { redirect } from 'next/navigation'; // For redirecting if needed
+
+export const dynamic = 'force-dynamic'; // Prevents Next.js caching issues
 
 export default async function AllServiceAds() {
     const session = await getServerSession(authOptions);
