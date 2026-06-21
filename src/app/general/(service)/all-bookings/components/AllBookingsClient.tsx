@@ -38,6 +38,10 @@ export default function AllBookingsClient({ token }: { token: string }) {
   const [cancelNote, setCancelNote] = useState('');
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
+  
+  // Bulk Cancel States
+  const [isBulkCancel, setIsBulkCancel] = useState(false);
+  const [bulkCancelTargets, setBulkCancelTargets] = useState<Booking[]>([]);
 
   const fetchBookings = async () => {
     try {
@@ -67,8 +71,6 @@ export default function AllBookingsClient({ token }: { token: string }) {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success('Booking confirmed!');
-      
-      // Instant UI Update
       setBookings(prev => prev.map(b => b._id === id ? { ...b, status: 'Confirmed' } : b));
     } catch {
       toast.error('Failed to confirm booking');
@@ -86,8 +88,6 @@ export default function AllBookingsClient({ token }: { token: string }) {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success('Booking marked as completed!');
-      
-      // Instant UI Update
       setBookings(prev => prev.map(b => b._id === id ? { ...b, status: 'Completed' } : b));
     } catch {
       toast.error('Failed to complete booking');
@@ -98,6 +98,7 @@ export default function AllBookingsClient({ token }: { token: string }) {
 
   const openCancelModal = (id: string) => {
     setCancelTargetId(id);
+    setIsBulkCancel(false);
     setShowCancelDialog(true);
   };
 
@@ -113,8 +114,6 @@ export default function AllBookingsClient({ token }: { token: string }) {
       toast.success('Booking cancelled!');
       setShowCancelDialog(false);
       setCancelNote('');
-      
-      // Instant UI Update
       setBookings(prev => prev.map(b => b._id === cancelTargetId ? { ...b, status: 'Cancelled', provider_rejection_message: cancelNote } : b));
     } catch {
       toast.error('Failed to cancel booking');
@@ -123,18 +122,79 @@ export default function AllBookingsClient({ token }: { token: string }) {
     }
   };
 
-  // --- Bulk Actions ---
-  const handleBulkDelete = async (selectedRows: Booking[]) => {
-      // NOTE: You don't have a delete API in your provided code for bookings.
-      // Assuming you might add it later. For now, it will just show a success message or you can write the Axios call here.
-      toast.info(`Bulk Delete selected for ${selectedRows.length} bookings. (API endpoint required)`);
+  // --- 🌟 Bulk Status Update Handler ---
+  const handleCustomBulkStatus = async (selectedRows: Booking[], newStatus: string) => {
+    if (selectedRows.length === 0) return;
+
+    if (newStatus === 'Cancelled') {
+        setBulkCancelTargets(selectedRows);
+        setIsBulkCancel(true);
+        setShowCancelDialog(true);
+        return;
+    }
+
+    const toastId = toast.loading(`Marking ${selectedRows.length} bookings as ${newStatus}...`);
+
+    try {
+        const actionPath = newStatus === 'Confirmed' ? 'confirmed' : 'complete';
+        const payload = newStatus === 'Completed' ? { provider_notes: 'Service completed via bulk action' } : {};
+
+        const promises = selectedRows.map(row => 
+            axios.patch(
+                `/api/v1/service-section/service-provider-manage/${actionPath}/${row._id}`, 
+                payload,
+                { headers: { Authorization: `Bearer ${token}` } }
+            )
+        );
+        
+        await Promise.all(promises);
+
+        const updatedIds = selectedRows.map(r => r._id);
+        setBookings(prev => prev.map(b => 
+            updatedIds.includes(b._id) ? { ...b, status: newStatus } : b
+        ));
+
+        toast.success(`Bookings marked as ${newStatus} successfully!`, { id: toastId });
+    } catch (error) {
+        console.error(error);
+        toast.error("Failed to update status for some bookings.", { id: toastId });
+    }
   };
 
-  const handleBulkStatusChange = async (selectedRows: Booking[], newStatus: 'active' | 'inactive') => {
-      // Since booking status is 'Confirmed', 'Completed', etc., mapping 'active/inactive' directly might not work.
-      // You can customize this logic based on your backend.
-      toast.info(`Bulk Status Update triggered for ${selectedRows.length} bookings.`);
+  const handleBulkCancel = async () => {
+    if (bulkCancelTargets.length === 0) return;
+    
+    setProcessingId('bulk-cancel');
+    const toastId = toast.loading(`Cancelling ${bulkCancelTargets.length} bookings...`);
+
+    try {
+        const promises = bulkCancelTargets.map(row => 
+            axios.patch(
+                `/api/v1/service-section/service-provider-manage/cancel/${row._id}`,
+                { provider_rejection_message: cancelNote },
+                { headers: { Authorization: `Bearer ${token}` } }
+            )
+        );
+        
+        await Promise.all(promises);
+
+        const updatedIds = bulkCancelTargets.map(r => r._id);
+        setBookings(prev => prev.map(b => 
+            updatedIds.includes(b._id) ? { ...b, status: 'Cancelled', provider_rejection_message: cancelNote } : b
+        ));
+
+        toast.success(`Bookings cancelled successfully!`, { id: toastId });
+        setShowCancelDialog(false);
+        setCancelNote('');
+        setIsBulkCancel(false);
+    } catch (error) {
+        console.error(error);
+        toast.error("Failed to cancel some bookings.", { id: toastId });
+    } finally {
+        setProcessingId(null);
+    }
   };
+
 
   if (loading) {
     return (
@@ -155,14 +215,24 @@ export default function AllBookingsClient({ token }: { token: string }) {
 
   return (
     <div>
-      {/* ── Dynamic Data Table ── */}
-      <DataTable 
-          columns={columns} 
-          data={bookings} 
-          setData={setBookings}
-          onBulkDelete={handleBulkDelete}
-          // onBulkStatusChange={handleBulkStatusChange} // Enable if you want to use the default active/inactive bulk change
-      />
+      {/* ── Dynamic Data Table with Custom Bulk Status ── */}
+      <div className="mb-4">
+            <DataTable 
+                columns={columns} 
+                data={bookings} 
+                setData={setBookings}
+                
+                // ✅ Passes our custom booking statuses to the global DataTable
+                onBulkStatusChangeCustom={{
+                  options: [
+                    { label: "Confirm Booking", value: "Confirmed" },
+                    { label: "Mark Completed", value: "Completed" },
+                    { label: "Cancel Booking", value: "Cancelled" }
+                  ],
+                  handler: handleCustomBulkStatus
+                }}
+            />
+      </div>
 
       {/* ── Detail Dialog ── */}
       <Dialog open={!!selectedBooking} onOpenChange={() => setSelectedBooking(null)}>
@@ -233,7 +303,7 @@ export default function AllBookingsClient({ token }: { token: string }) {
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Cancel Booking</DialogTitle>
+            <DialogTitle>{isBulkCancel ? "Bulk Cancel Bookings" : "Cancel Booking"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-gray-600">Please provide a reason for cancellation:</p>
@@ -249,7 +319,7 @@ export default function AllBookingsClient({ token }: { token: string }) {
               </Button>
               <Button
                 variant="destructive"
-                onClick={handleCancel}
+                onClick={isBulkCancel ? handleBulkCancel : handleCancel}
                 disabled={!cancelNote.trim() || !!processingId}
               >
                 {processingId ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
