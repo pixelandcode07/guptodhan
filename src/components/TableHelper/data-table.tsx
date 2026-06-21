@@ -41,6 +41,13 @@ interface DataTableProps<TData, TValue> {
   onPageChange?: (pageIndex: number) => void;  
   onBulkDelete?: (selectedRows: TData[]) => void | Promise<void>; 
   onBulkStatusChange?: (selectedRows: TData[], status: 'active' | 'inactive') => void | Promise<void>; 
+  
+  // ✅ NEW: Added for flexible custom bulk status updates (Used in Bookings)
+  onBulkStatusChangeCustom?: {
+    options: { label: string; value: string }[];
+    handler: (selectedRows: TData[], status: string) => void | Promise<void>;
+  };
+
   onRowSelectionChange?: (selectedRows: TData[]) => void; 
 }
 
@@ -51,12 +58,16 @@ export function DataTable<TData, TValue>({
   onPageChange,
   onBulkDelete, 
   onBulkStatusChange,
+  onBulkStatusChangeCustom, // ✅ NEW
   onRowSelectionChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting]           = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState('');
   const [pageSize, setPageSize]         = React.useState(10);
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
+
+  // ✅ NEW: State for the custom dropdown selector
+  const [customBulkStatus, setCustomBulkStatus] = React.useState('');
 
   const [pageIndex, setPageIndex] = React.useState(initialPageIndex);
 
@@ -146,45 +157,83 @@ export function DataTable<TData, TValue>({
 
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           {Object.keys(rowSelection).length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {onBulkStatusChange && (
+            <div className="flex flex-wrap gap-2 items-center bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+              <span className="text-xs font-semibold text-gray-700 mr-1">
+                {Object.keys(rowSelection).length} selected
+              </span>
+
+              {/* 1. Default Active/Inactive Bulk Option */}
+              {onBulkStatusChange && !onBulkStatusChangeCustom && (
                 <>
                   <Button
                     variant="outline" size="sm"
-                    className="h-9 px-3 shrink-0 bg-green-50 hover:bg-green-100 text-green-700 border-green-200 font-medium"
+                    className="h-8 px-3 shrink-0 bg-green-50 hover:bg-green-100 text-green-700 border-green-200 font-medium text-xs"
                     onClick={() => {
                       const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
                       onBulkStatusChange(selectedData, 'active');
                       table.toggleAllRowsSelected(false); 
                     }}
                   >
-                    <CheckCircle size={16} className="mr-2" /> Activate
+                    <CheckCircle size={14} className="mr-1.5" /> Activate
                   </Button>
                   <Button
                     variant="outline" size="sm"
-                    className="h-9 px-3 shrink-0 bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200 font-medium"
+                    className="h-8 px-3 shrink-0 bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200 font-medium text-xs"
                     onClick={() => {
                       const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
                       onBulkStatusChange(selectedData, 'inactive');
                       table.toggleAllRowsSelected(false); 
                     }}
                   >
-                    <XCircle size={16} className="mr-2" /> Deactivate
+                    <XCircle size={14} className="mr-1.5" /> Deactivate
                   </Button>
                 </>
               )}
 
+              {/* ✅ 2. NEW: Custom Bulk Status Dropdown (For Bookings) */}
+              {onBulkStatusChangeCustom && (
+                <div className="flex items-center gap-2 border-l border-gray-300 pl-3 ml-1">
+                  <select
+                    value={customBulkStatus}
+                    onChange={(e) => setCustomBulkStatus(e.target.value)}
+                    className="h-8 text-xs border border-gray-300 rounded px-2 outline-none focus:ring-1 focus:ring-blue-500 text-gray-700"
+                  >
+                    <option value="">Update Status...</option>
+                    {onBulkStatusChangeCustom.options.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <Button 
+                    size="sm" 
+                    disabled={!customBulkStatus}
+                    onClick={() => {
+                      const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
+                      onBulkStatusChangeCustom.handler(selectedData, customBulkStatus);
+                      table.toggleAllRowsSelected(false); 
+                      setCustomBulkStatus(''); // Reset dropdown
+                    }} 
+                    className="h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3"
+                  >
+                    Apply
+                  </Button>
+                </div>
+              )}
+
+              {/* 3. Bulk Delete Option */}
               {onBulkDelete && (
                 <Button
                   variant="destructive" size="sm"
-                  className="h-9 px-3 shrink-0 bg-red-500 hover:bg-red-600 text-white font-medium"
+                  className="h-8 px-3 shrink-0 bg-red-500 hover:bg-red-600 text-white font-medium text-xs ml-1"
                   onClick={() => {
                     const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
                     onBulkDelete(selectedData);
                     table.toggleAllRowsSelected(false); 
                   }}
                 >
-                  <Trash2 size={16} className="mr-2" /> Delete ({Object.keys(rowSelection).length})
+                  <Trash2 size={14} className="mr-1.5" /> Delete
                 </Button>
               )}
             </div>
@@ -195,8 +244,8 @@ export function DataTable<TData, TValue>({
             <Input
               placeholder="Search..."
               value={globalFilter}
-              onChange={handleSearchChange} // ✅ Used updated handler
-              className="h-9 pl-8 border-gray-300 focus:ring-blue-500 text-sm"
+              onChange={handleSearchChange}
+              className="h-9 pl-8 border-gray-300 focus:ring-blue-500 text-sm bg-white"
             />
           </div>
         </div>
@@ -205,7 +254,7 @@ export function DataTable<TData, TValue>({
       {/* ── Table ── */}
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
-          <Table className="min-w-[1400px] w-full border-collapse">
+          <Table className="min-w-[1000px] w-full border-collapse">
             <TableHeader>
               {table.getHeaderGroups().map((hg) => (
                 <TableRow key={hg.id} className="bg-gray-50 border-b border-gray-200 hover:bg-gray-50">
