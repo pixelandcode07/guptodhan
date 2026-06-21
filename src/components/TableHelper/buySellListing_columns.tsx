@@ -15,20 +15,18 @@ import { confirmDelete } from "../ReusableComponents/ConfirmToast";
 import { cn } from "@/lib/utils";
 import { ClassifiedAdListing } from "@/types/ClassifiedAdsType";
 
-// You need to create/update these server actions
-// (same pattern as approveAd, rejectAd, etc.)
 import {
   approveAd,
   rejectAd,
   deleteAd,
   markAdAsSold,
-  markAdAsPending,     // new
-  markAdAsActive,       // new
-  markAdAsInactive,     // new
+  markAdAsPending,
+  markAdAsActive,
+  markAdAsInactive,
 } from "@/lib/BuyandSellApis/fetchBuyAndSellAction";
 
 // ────────────────────────────────────────────────
-//  Server Action Handlers (you need to implement these)
+//  Server Action Handlers
 // ────────────────────────────────────────────────
 
 const handleApprove = async (id: string) => {
@@ -84,6 +82,30 @@ const handleDelete = async (id: string) => {
 };
 
 export const buySellListing_columns: ColumnDef<ClassifiedAdListing>[] = [
+  // ✅ NEW: Checkbox Column Added Here
+  {
+    id: "select",
+    header: ({ table }) => (
+      <input
+        type="checkbox"
+        className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        checked={table.getIsAllPageRowsSelected()}
+        onChange={table.getToggleAllPageRowsSelectedHandler()}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <input
+        type="checkbox"
+        className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        checked={row.getIsSelected()}
+        onChange={row.getToggleSelectedHandler()}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
   // Serial
   {
     id: "serial",
@@ -179,12 +201,12 @@ export const buySellListing_columns: ColumnDef<ClassifiedAdListing>[] = [
       const user = row.original.user;
       return (
         <div className="flex items-center gap-2">
-          {user.profilePicture ? (
+          {user?.profilePicture ? (
             <Image src={user.profilePicture} alt={user.name} width={28} height={28} className="rounded-full" />
           ) : (
             <div className="w-7 h-7 bg-gray-300 rounded-full" />
           )}
-          <span className="text-sm font-medium">{user.name || "Unknown"}</span>
+          <span className="text-sm font-medium">{user?.name || "Unknown"}</span>
         </div>
       );
     },
@@ -206,8 +228,6 @@ export const buySellListing_columns: ColumnDef<ClassifiedAdListing>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-
-            {/* Make Pending — useful for rejected or inactive ads */}
             {(status === "rejected" || status === "inactive" || status === "active") && (
               <DropdownMenuItem
                 className="flex items-center gap-2 text-amber-600 cursor-pointer"
@@ -217,7 +237,6 @@ export const buySellListing_columns: ColumnDef<ClassifiedAdListing>[] = [
               </DropdownMenuItem>
             )}
 
-            {/* Make Active */}
             {(status === "pending" || status === "inactive" || status === "rejected") && (
               <DropdownMenuItem
                 className="flex items-center gap-2 text-green-600 cursor-pointer"
@@ -227,7 +246,6 @@ export const buySellListing_columns: ColumnDef<ClassifiedAdListing>[] = [
               </DropdownMenuItem>
             )}
 
-            {/* Make Inactive */}
             {status === "active" && (
               <DropdownMenuItem
                 className="flex items-center gap-2 text-orange-600 cursor-pointer"
@@ -237,7 +255,6 @@ export const buySellListing_columns: ColumnDef<ClassifiedAdListing>[] = [
               </DropdownMenuItem>
             )}
 
-            {/* Mark as Sold */}
             {status === "active" && (
               <DropdownMenuItem
                 className="flex items-center gap-2 text-purple-600 cursor-pointer"
@@ -247,7 +264,6 @@ export const buySellListing_columns: ColumnDef<ClassifiedAdListing>[] = [
               </DropdownMenuItem>
             )}
 
-            {/* Reject */}
             {(status === "pending" || status === "active") && (
               <DropdownMenuItem
                 className="flex items-center gap-2 text-red-600 cursor-pointer"
@@ -257,7 +273,6 @@ export const buySellListing_columns: ColumnDef<ClassifiedAdListing>[] = [
               </DropdownMenuItem>
             )}
 
-            {/* Delete */}
             <DropdownMenuItem
               className="flex items-center gap-2 text-red-700 font-medium cursor-pointer mt-1 border-t pt-1"
               onClick={() => handleDelete(id)}
