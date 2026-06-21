@@ -54,13 +54,15 @@ export const getBookingColumns = (
   {
     id: "select",
     header: ({ table }) => (
-      <input
-        type="checkbox"
-        className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-        checked={table.getIsAllPageRowsSelected()}
-        onChange={table.getToggleAllPageRowsSelectedHandler()}
-        aria-label="Select all"
-      />
+      <div className="flex items-center space-x-2">
+         <input
+            type="checkbox"
+            className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            checked={table.getIsAllPageRowsSelected()}
+            onChange={table.getToggleAllPageRowsSelectedHandler()}
+            aria-label="Select all"
+         />
+      </div>
     ),
     cell: ({ row }) => (
       <input
