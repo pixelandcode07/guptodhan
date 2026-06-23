@@ -8,13 +8,29 @@ export type SupportTicketRow = {
   sl: number;
   ticketNo: string;
   customer: string;
-  customerImage?: string; // ✅ NEW: Profile picture url
+  customerImage?: string; 
   subject: string;
   attachment: string | null;
   status: string;
-  createdAt: string; // ✅ NEW: Date added
+  createdAt: string; 
 }
 
+// Helper function to safely format the attachment URL
+const getSafeUrl = (link: string) => {
+  if (!link) return "#";
+  // If it already starts with http/https, return as is
+  if (link.startsWith("http://") || link.startsWith("https://")) {
+    return link;
+  }
+  // Remove any leading slashes or stray 'h' characters if they accidentally exist before the path
+  let cleanPath = link.replace(/^[h/]+/, ""); 
+  
+  // Combine with base domain securely
+  return `https://guptodhan.com/${cleanPath}`;
+};
+
+// Wrap columns in a function if we need to pass external state, but for now standard array is fine
+// since Bulk Actions are handled in the Client Component via DataTable props.
 export const support_tickets_columns: ColumnDef<SupportTicketRow>[] = [
   // ✅ 1. Checkbox Column added
   {
@@ -55,7 +71,7 @@ export const support_tickets_columns: ColumnDef<SupportTicketRow>[] = [
     cell: ({ row }) => <span className="font-mono text-sm text-blue-600 font-semibold">{row.getValue("ticketNo")}</span>
   },
   
-  // ✅ 2. Customer Column with Image
+  // Customer Column with Image
   { 
     accessorKey: "customer", 
     header: () => <span>Customer</span>,
@@ -85,28 +101,25 @@ export const support_tickets_columns: ColumnDef<SupportTicketRow>[] = [
     cell: ({ row }) => <span className="text-sm text-gray-700 truncate max-w-[150px] inline-block" title={row.getValue("subject")}>{row.getValue("subject")}</span>
   },
   
-  // Attachment
+  // ✅ Attachment (Fixed URL Logic)
   { 
     accessorKey: "attachment", 
     header: () => <span>Attachment</span>,
     cell: ({ row }) => {
       const link = row.getValue("attachment") as string;
       if (!link || link === '-') return <span className="text-gray-400 text-xs">-</span>;
+      
+      const safeLink = getSafeUrl(link);
+
       return (
-        <a 
-        href={link.startsWith('http') ? link : `https://guptodhan.com${link}`} 
-        target="_blank" 
-        rel="noopener noreferrer" 
-        className="text-blue-500 hover:underline text-xs truncate max-w-[150px] inline-block" 
-        title={link}
-      >
-        View File
-      </a>
+        <a href={safeLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs truncate max-w-[150px] inline-block" title={safeLink}>
+          View File
+        </a>
       );
     }
   },
 
-  // ✅ 3. Created At / Updated At
+  // Created At / Updated At
   { 
     accessorKey: "createdAt", 
     header: () => <span>Date</span>,
