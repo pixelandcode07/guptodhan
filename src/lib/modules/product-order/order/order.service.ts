@@ -35,7 +35,7 @@ const createOrderInDB = async (payload: Partial<IOrder>) => {
 };
 
 // ================================================================
-// 📋 GET ALL ORDERS (WITH CACHE + AGGREGATION)
+// 📋 GET ALL ORDERS
 // ================================================================
 const getAllOrdersFromDB = async (status?: string) => {
   const cacheKey = status ? `orders:all:status:${status}` : CacheKeys.ORDER.ALL;
@@ -53,7 +53,6 @@ const getAllOrdersFromDB = async (status?: string) => {
           { $match: filter },
           { $sort: { orderDate: -1 } },
 
-          // Lookup user
           {
             $lookup: {
               from: 'users',
@@ -64,7 +63,6 @@ const getAllOrdersFromDB = async (status?: string) => {
           },
           { $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } },
 
-          // Lookup store
           {
             $lookup: {
               from: 'storemodels',
@@ -75,7 +73,6 @@ const getAllOrdersFromDB = async (status?: string) => {
           },
           { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
 
-          // Lookup order details
           {
             $lookup: {
               from: 'orderdetails',
@@ -84,8 +81,6 @@ const getAllOrdersFromDB = async (status?: string) => {
               as: 'orderDetails',
             },
           },
-
-          // Lookup products in order details
           {
             $lookup: {
               from: 'vendorproductmodels',
@@ -94,8 +89,6 @@ const getAllOrdersFromDB = async (status?: string) => {
               as: 'products',
             },
           },
-
-          // Lookup coupon
           {
             $lookup: {
               from: 'promocodemodels',
@@ -106,7 +99,24 @@ const getAllOrdersFromDB = async (status?: string) => {
           },
           { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
 
-          // ✅ Project needed fields (Added products.productTitle & transactionId)
+          // ✅ NEW CALCULATION FIELDS
+          {
+            $addFields: {
+              productTotal: { $subtract: ['$totalAmount', { $ifNull: ['$deliveryCharge', 0] }] },
+              commissionRate: { $ifNull: ['$storeId.commission', 0] },
+            },
+          },
+          {
+            $addFields: {
+              adminEarned: {
+                $multiply: ['$productTotal', { $divide: ['$commissionRate', 100] }],
+              },
+              vendorNet: {
+                $multiply: ['$productTotal', { $subtract: [1, { $divide: ['$commissionRate', 100] }] }],
+              },
+            },
+          },
+
           {
             $project: {
               orderId: 1,
@@ -118,10 +128,14 @@ const getAllOrdersFromDB = async (status?: string) => {
               paymentStatus: 1,
               paymentMethod: 1,
               totalAmount: 1,
+              deliveryCharge: 1,
+              productTotal: { $round: ['$productTotal', 2] },
+              adminEarned: { $round: ['$adminEarned', 2] },
+              vendorNet: { $round: ['$vendorNet', 2] },
               orderDate: 1,
               deliveryDate: 1,
               orderDetails: 1,
-              'products.productTitle': 1, // ✅ FIX for Product Name Column
+              'products.productTitle': 1, 
               'couponId.code': 1,
               'couponId.value': 1,
               shippingName: 1,
@@ -570,44 +584,31 @@ const getReturnedOrdersByUserFromDB = async (userId: string) => {
 // ================================================================
 // 🔍 GET FILTERED ORDERS
 // ================================================================
-// ================================================================
-// 🔍 GET FILTERED ORDERS
-// ================================================================
 const getFilteredOrdersFromDB = async (filters: any) => {
   const match: any = {};
 
-  // ✅ Order ID (Exact or Partial match support)
   if (filters.orderId?.trim()) {
     match.orderId = { $regex: filters.orderId.trim(), $options: 'i' };
   }
-
-  // ✅ Order Form (Source)
   if (filters.orderForm?.trim()) {
     match.orderForm = { $regex: `^${filters.orderForm.trim()}$`, $options: 'i' };
   }
-
-  // ✅ Payment Status & Order Status
   if (filters.paymentStatus?.trim()) {
     match.paymentStatus = { $regex: `^${filters.paymentStatus.trim()}$`, $options: 'i' };
   }
   if (filters.orderStatus?.trim()) {
     match.orderStatus = { $regex: `^${filters.orderStatus.trim()}$`, $options: 'i' };
   }
-
-  // ✅ Customer Name & Phone (Partial Match using regex)
   if (filters.customerName?.trim()) {
     match.shippingName = { $regex: filters.customerName.trim(), $options: 'i' };
   }
   if (filters.customerPhone?.trim()) {
     match.shippingPhone = { $regex: filters.customerPhone.trim(), $options: 'i' };
   }
-
-  // ✅ Delivery Method
   if (filters.deliveryMethod?.trim()) {
     match.deliveryMethodId = { $regex: `^${filters.deliveryMethod.trim()}$`, $options: 'i' };
   }
 
-  // ✅ Date Filters
   if (filters.startDate && filters.endDate) {
     match.orderDate = {
       $gte: new Date(filters.startDate),
@@ -667,6 +668,24 @@ const getFilteredOrdersFromDB = async (filters: any) => {
       },
       { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
       
+      // ✅ NEW CALCULATION FIELDS
+      {
+        $addFields: {
+          productTotal: { $subtract: ['$totalAmount', { $ifNull: ['$deliveryCharge', 0] }] },
+          commissionRate: { $ifNull: ['$storeId.commission', 0] },
+        },
+      },
+      {
+        $addFields: {
+          adminEarned: {
+            $multiply: ['$productTotal', { $divide: ['$commissionRate', 100] }],
+          },
+          vendorNet: {
+            $multiply: ['$productTotal', { $subtract: [1, { $divide: ['$commissionRate', 100] }] }],
+          },
+        },
+      },
+
       {
         $project: {
           orderId: 1,
@@ -678,6 +697,10 @@ const getFilteredOrdersFromDB = async (filters: any) => {
           paymentStatus: 1,
           paymentMethod: 1,
           totalAmount: 1,
+          deliveryCharge: 1,
+          productTotal: { $round: ['$productTotal', 2] },
+          adminEarned: { $round: ['$adminEarned', 2] },
+          vendorNet: { $round: ['$vendorNet', 2] },
           orderDate: 1,
           deliveryDate: 1,
           orderDetails: 1,
