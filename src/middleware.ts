@@ -63,6 +63,7 @@ const adminRoutes = [
   '/api/v1/delivery-charge/',
   '/api/v1/admin/redis/flush',
   '/api/v1/terms-condition',
+  '/api/v1/users/admin-create',
 ];
 
 // 🔥 Vendor Routes
