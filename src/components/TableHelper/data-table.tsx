@@ -33,8 +33,9 @@ import {
   XCircle,
 } from 'lucide-react';
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+// ✅ FIX: Make ColumnDef more permissive to avoid strict type mismatch errors
+interface DataTableProps<TData extends Record<string, any>, TValue = any> {
+  columns: ColumnDef<TData, TValue>[] | any[]; 
   data: TData[];
   setData?: React.Dispatch<React.SetStateAction<any>>;
   initialPageIndex?: number;   
@@ -42,7 +43,6 @@ interface DataTableProps<TData, TValue> {
   onBulkDelete?: (selectedRows: TData[]) => void | Promise<void>; 
   onBulkStatusChange?: (selectedRows: TData[], status: 'active' | 'inactive') => void | Promise<void>; 
   
-  // ✅ NEW: Added for flexible custom bulk status updates (Used in Bookings)
   onBulkStatusChangeCustom?: {
     options: { label: string; value: string }[];
     handler: (selectedRows: TData[], status: string) => void | Promise<void>;
@@ -51,14 +51,14 @@ interface DataTableProps<TData, TValue> {
   onRowSelectionChange?: (selectedRows: TData[]) => void; 
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends Record<string, any>, TValue = any>({
   columns,
   data,
   initialPageIndex = 0,
   onPageChange,
   onBulkDelete, 
   onBulkStatusChange,
-  onBulkStatusChangeCustom, // ✅ NEW
+  onBulkStatusChangeCustom,
   onRowSelectionChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting]           = React.useState<SortingState>([]);
@@ -66,9 +66,7 @@ export function DataTable<TData, TValue>({
   const [pageSize, setPageSize]         = React.useState(10);
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
 
-  // ✅ NEW: State for the custom dropdown selector
   const [customBulkStatus, setCustomBulkStatus] = React.useState('');
-
   const [pageIndex, setPageIndex] = React.useState(initialPageIndex);
 
   React.useEffect(() => {
@@ -81,7 +79,7 @@ export function DataTable<TData, TValue>({
 
   const table = useReactTable({
     data,
-    columns,
+    columns: columns as ColumnDef<TData, TValue>[], // Type assertion to bypass strict generic checks
     getCoreRowModel:      getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel:    getSortedRowModel(),
@@ -90,7 +88,6 @@ export function DataTable<TData, TValue>({
     onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: setRowSelection,
     
-    // ✅ FIX: Prevents pagination from resetting to page 1 when data updates (like status toggle)
     autoResetPageIndex: false, 
 
     onPaginationChange: (updater) => {
@@ -112,7 +109,6 @@ export function DataTable<TData, TValue>({
     enableRowSelection: true,
   });
 
-  // Sync row selection back to parent component
   React.useEffect(() => {
     if (onRowSelectionChange) {
       const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
@@ -121,7 +117,6 @@ export function DataTable<TData, TValue>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rowSelection]);
 
-  // ✅ FIX: Reset to page 0 automatically if user types in search box
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setGlobalFilter(e.target.value);
     setPageIndex(0);
@@ -162,7 +157,6 @@ export function DataTable<TData, TValue>({
                 {Object.keys(rowSelection).length} selected
               </span>
 
-              {/* 1. Default Active/Inactive Bulk Option */}
               {onBulkStatusChange && !onBulkStatusChangeCustom && (
                 <>
                   <Button
@@ -190,7 +184,6 @@ export function DataTable<TData, TValue>({
                 </>
               )}
 
-              {/* ✅ 2. NEW: Custom Bulk Status Dropdown (For Bookings) */}
               {onBulkStatusChangeCustom && (
                 <div className="flex items-center gap-2 border-l border-gray-300 pl-3 ml-1">
                   <select
@@ -213,7 +206,7 @@ export function DataTable<TData, TValue>({
                       const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
                       onBulkStatusChangeCustom.handler(selectedData, customBulkStatus);
                       table.toggleAllRowsSelected(false); 
-                      setCustomBulkStatus(''); // Reset dropdown
+                      setCustomBulkStatus(''); 
                     }} 
                     className="h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3"
                   >
@@ -222,7 +215,6 @@ export function DataTable<TData, TValue>({
                 </div>
               )}
 
-              {/* 3. Bulk Delete Option */}
               {onBulkDelete && (
                 <Button
                   variant="destructive" size="sm"
@@ -297,7 +289,7 @@ export function DataTable<TData, TValue>({
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className="h-32 text-center text-gray-400 italic text-sm">
+                  <TableCell colSpan={columns.length as number} className="h-32 text-center text-gray-400 italic text-sm">
                     No entries found.
                   </TableCell>
                 </TableRow>
