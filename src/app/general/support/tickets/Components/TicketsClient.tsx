@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { DataTable } from '@/components/TableHelper/data-table';
 import { support_tickets_columns } from '@/components/TableHelper/support_tickets_columns';
 import { Button } from '@/components/ui/button';
-import { Check, Eye, Loader2, Plus, Trash2, XIcon, Search as SearchIcon, PauseCircle } from 'lucide-react'; // ✅ PauseCircle আইকন যোগ করা হয়েছে
+import { Check, Eye, Loader2, Plus, Trash2, XIcon, Search as SearchIcon, PauseCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -12,15 +12,15 @@ import { useSession } from 'next-auth/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import Link from 'next/link';
 
-// টাইপ (আপনার schema অনুযায়ী)
+// টাইপ (আপনার schema অনুযায়ী)
 type SupportTicket = {
   _id: string;
   ticketNo: string;
   createdAt: string;
-  reporter: { name: string };
+  reporter?: { name?: string; profilePicture?: string }; // ✅ Updated reporter type
   subject: string;
+  attachment?: string[];
   status: 'Pending' | 'In Progress' | 'Solved' | 'Rejected' | 'On Hold';
 };
 
@@ -125,9 +125,22 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
     });
   };
 
+  // ✅ Mapping raw backend tickets to match our column definitions perfectly
+  const mappedTickets = tickets.map((t, index) => ({
+    _id: t._id,
+    sl: index + 1,
+    ticketNo: t.ticketNo,
+    customer: t.reporter?.name || "Unknown",
+    customerImage: t.reporter?.profilePicture || "", // Passed image here
+    subject: t.subject,
+    attachment: t.attachment && t.attachment.length > 0 ? t.attachment[0] : null,
+    status: t.status,
+    createdAt: t.createdAt
+  }));
+
   // --- টেবিলের কলাম ডেফিনিশন (অ্যাকশন বাটন সহ) ---
-  const columnsWithActions: ColumnDef<SupportTicket>[] = [
-    ...(support_tickets_columns as ColumnDef<SupportTicket>[]),
+  const columnsWithActions: ColumnDef<any>[] = [
+    ...(support_tickets_columns as ColumnDef<any>[]),
     {
       id: 'actions',
       header: 'Actions',
@@ -136,28 +149,27 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
         const isLoading = loadingAction === ticket._id;
         
         if (isLoading) {
-            return <div className="flex justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+            return <div className="flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-blue-600" /></div>;
         }
 
-        // ✅ FIX: স্ট্যাটাস অনুযায়ী বাটন দেখানোর লজিক
         switch (ticket.status) {
           case 'Pending':
           case 'In Progress':
             return (
-              <div className="flex gap-1">
-                <Button variant="outline" size="icon" className="h-8 w-8 text-blue-600" onClick={() => router.push(`/general/support/tickets/view/${ticket._id}`)}>
+              <div className="flex gap-1.5 items-center">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={() => router.push(`/general/support/tickets/view/${ticket._id}`)} title="View">
                   <Eye className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8 text-green-600" onClick={() => handleUpdateStatus(ticket._id, 'Solved')}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:bg-green-50" onClick={() => handleUpdateStatus(ticket._id, 'Solved')} title="Mark Solved">
                   <Check className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8 text-gray-500" onClick={() => handleUpdateStatus(ticket._id, 'On Hold')}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-orange-500 hover:bg-orange-50" onClick={() => handleUpdateStatus(ticket._id, 'On Hold')} title="Put On Hold">
                   <PauseCircle className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8 text-red-600" onClick={() => handleUpdateStatus(ticket._id, 'Rejected')}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:bg-red-50" onClick={() => handleUpdateStatus(ticket._id, 'Rejected')} title="Reject">
                   <XIcon className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8 text-red-700" onClick={() => handleDelete(ticket._id)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-700 hover:bg-red-100" onClick={() => handleDelete(ticket._id)} title="Delete">
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
@@ -165,7 +177,7 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
           case 'Solved':
             return (
               <div className="flex gap-1">
-                <Button variant="outline" size="icon" className="h-8 w-8 text-blue-600" onClick={() => router.push(`/general/support/tickets/view/${ticket._id}`)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={() => router.push(`/general/support/tickets/view/${ticket._id}`)} title="View">
                   <Eye className="w-4 h-4" />
                 </Button>
               </div>
@@ -174,10 +186,10 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
           case 'On Hold':
             return (
               <div className="flex gap-1">
-                <Button variant="outline" size="icon" className="h-8 w-8 text-blue-600" onClick={() => router.push(`/general/support/tickets/view/${ticket._id}`)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={() => router.push(`/general/support/tickets/view/${ticket._id}`)} title="View">
                   <Eye className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8 text-red-700" onClick={() => handleDelete(ticket._id)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-700 hover:bg-red-100" onClick={() => handleDelete(ticket._id)} title="Delete">
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
@@ -189,7 +201,6 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
     },
   ];
 
-  // স্ট্যাটাস কার্ডের ডেটা
   const statCards = [
     { title: "All Tickets", count: stats.all },
     { title: "Pending", count: stats.Pending },
@@ -212,8 +223,8 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
           >
             <Card className={`hover:shadow-lg transition-shadow ${activeTab === card.title ? 'ring-2 ring-blue-600' : 'border-gray-200'}`}>
               <CardContent className="p-4">
-                <p className="text-xs text-gray-500">{card.title}</p>
-                <p className="text-2xl font-bold">{card.count}</p>
+                <p className="text-xs text-gray-500 font-semibold uppercase">{card.title}</p>
+                <p className="text-2xl font-bold text-gray-800 mt-1">{card.count}</p>
               </CardContent>
             </Card>
           </button>
@@ -221,13 +232,15 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
       </div>
 
       {/* --- টেবিল সেকশন --- */}
-      <div className="bg-white p-4 shadow-sm border rounded-md">
+      <div className="bg-white p-4 shadow-sm border rounded-xl">
         <div className="flex justify-between items-center mb-4">
             <div className="relative w-full max-w-sm">
-                <Input placeholder="Search tickets, customers..." className="pl-10" />
-                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                {/* Search Bar is actually handled internally by our DataTable component now, 
+                    but keeping this placeholder for layout if needed. 
+                    However, our DataTable already has a built-in search.
+                */}
             </div>
-            <Button onClick={() => router.push('/general/support/tickets/new')}>
+            <Button onClick={() => router.push('/general/support/tickets/new')} className="bg-blue-600 hover:bg-blue-700 text-white">
                 <Plus className="w-4 h-4 mr-2" /> New Ticket
             </Button>
         </div>
@@ -235,10 +248,28 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
         {/* টেবিল লোডার */}
         {loadingTable ? (
           <div className="flex justify-center items-center h-64">
-            <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+            <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
           </div>
         ) : (
-          <DataTable columns={columnsWithActions} data={tickets} />
+          <DataTable 
+             columns={columnsWithActions} 
+             data={mappedTickets} // ✅ Passing perfectly mapped data
+             
+             // Uncomment below if you want Bulk Action options later
+             /*
+             onBulkDelete={(rows) => console.log("Delete", rows)}
+             onBulkStatusChangeCustom={{
+                options: [
+                  { label: "Mark Solved", value: "Solved" },
+                  { label: "Put On Hold", value: "On Hold" },
+                  { label: "Reject Tickets", value: "Rejected" },
+                ],
+                handler: async (rows, status) => {
+                  // Run bulk patch requests here if needed
+                }
+             }}
+             */
+          />
         )}
       </div>
     </div>
