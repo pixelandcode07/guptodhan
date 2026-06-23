@@ -11,17 +11,15 @@ import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { confirmDelete } from '@/components/ReusableComponents/ConfirmToast';
 
-// টাইপ (আপনার schema অনুযায়ী)
 type SupportTicket = {
   _id: string;
   ticketNo: string;
   createdAt: string;
   reporter?: { name?: string; profilePicture?: string }; 
   subject: string;
-  attachment?: string[];
+  attachment?: string | string[]; // Can be string or array
   status: 'Pending' | 'In Progress' | 'Solved' | 'Rejected' | 'On Hold';
 };
 
@@ -50,9 +48,7 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
   const token = (session as any)?.accessToken;
   const router = useRouter();
 
-  // --- API কল ---
-
-  // ট্যাবে ক্লিক করলে টেবিল রিফ্রেশ করার ফাংশন
+  // Tab click filter
   const handleTabClick = async (status: string) => {
     setActiveTab(status);
     setLoadingTable(true);
@@ -70,7 +66,7 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
     }
   };
 
-  // স্ট্যাটাস বা ডিলিট করার পর সব ডেটা রিফ্রেশ করার ফাংশন
+  // Refresh data function
   const refreshData = async () => {
     try {
       const [ticketsRes, statsRes] = await Promise.all([
@@ -84,9 +80,6 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
     }
   };
 
-  // ==========================================
-  // Single Actions
-  // ==========================================
   const handleUpdateStatus = async (id: string, status: SupportTicket['status']) => {
     if (!token) return toast.error("Authentication required.");
     setLoadingAction(id);
@@ -96,10 +89,8 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success(`Ticket marked as ${status}!`);
-      
-      // Instant UI Update
       setTickets(prev => prev.map(t => t._id === id ? { ...t, status } : t));
-      refreshData(); // Silently refresh stats
+      refreshData();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update status.');
     } finally {
@@ -109,7 +100,6 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
 
   const handleDelete = async (id: string) => {
     if (!token) return toast.error("Authentication required.");
-    
     const isConfirmed = await confirmDelete("Are you sure you want to delete this ticket?");
     if (!isConfirmed) return;
 
@@ -119,8 +109,6 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
             headers: { Authorization: `Bearer ${token}` }
         });
         toast.success("Ticket deleted!");
-        
-        // Instant UI Update
         setTickets(prev => prev.filter(t => t._id !== id));
         refreshData();
     } catch (error: any) {
@@ -130,18 +118,13 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
     }
   };
 
-
-  // ==========================================
   // Bulk Actions
-  // ==========================================
   const handleBulkDelete = async (selectedRows: SupportTicketRow[]) => {
     if (selectedRows.length === 0) return;
-
     const isConfirmed = await confirmDelete(`Are you sure you want to delete ${selectedRows.length} tickets permanently?`);
     if (!isConfirmed) return;
 
     const toastId = toast.loading(`Deleting ${selectedRows.length} tickets...`);
-
     try {
         const promises = selectedRows.map(row => 
             axios.delete(`/api/v1/crm-modules/support-ticket/${row._id}`, {
@@ -149,24 +132,18 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
             })
         );
         await Promise.all(promises);
-
-        // Instant UI Update
         const deletedIds = selectedRows.map(r => r._id);
         setTickets(prev => prev.filter(t => !deletedIds.includes(t._id)));
         refreshData();
-
         toast.success("Tickets deleted successfully!", { id: toastId });
     } catch (error) {
-        console.error(error);
         toast.error("Failed to delete some tickets.", { id: toastId });
     }
   };
 
   const handleBulkStatusChange = async (selectedRows: SupportTicketRow[], newStatus: string) => {
     if (selectedRows.length === 0) return;
-
     const toastId = toast.loading(`Marking ${selectedRows.length} tickets as ${newStatus}...`);
-
     try {
         const promises = selectedRows.map(row => 
             axios.patch(
@@ -175,39 +152,43 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
                 { headers: { Authorization: `Bearer ${token}` } }
             )
         );
-        
         await Promise.all(promises);
-
-        // Instant UI Update
         const updatedIds = selectedRows.map(r => r._id);
         setTickets(prev => prev.map(t => 
             updatedIds.includes(t._id) ? { ...t, status: newStatus as SupportTicket['status'] } : t
         ));
         refreshData();
-
         toast.success(`Tickets marked as ${newStatus} successfully!`, { id: toastId });
     } catch (error) {
-        console.error(error);
         toast.error("Failed to update status for some tickets.", { id: toastId });
     }
   };
 
-  // ✅ Mapping raw backend tickets to match our column definitions perfectly
-  const mappedTickets: SupportTicketRow[] = tickets.map((t, index) => ({
-    _id: t._id,
-    sl: index + 1,
-    ticketNo: t.ticketNo,
-    customer: t.reporter?.name || "Unknown",
-    customerImage: t.reporter?.profilePicture || "", 
-    subject: t.subject,
-    attachment: t.attachment && t.attachment.length > 0 ? t.attachment[0] : null,
-    status: t.status,
-    createdAt: t.createdAt
-  }));
+  // ✅ FIX: Safe parsing for attachment (String or Array) to prevent 'h' single char slicing
+  const mappedTickets: SupportTicketRow[] = tickets.map((t, index) => {
+    let ticketAttachment: string | null = null;
+    if (typeof t.attachment === 'string') {
+      ticketAttachment = t.attachment;
+    } else if (Array.isArray(t.attachment) && t.attachment.length > 0) {
+      ticketAttachment = t.attachment[0];
+    }
 
-  // --- টেবিলের কলাম ডেফিনিশন (অ্যাকশন বাটন সহ) ---
-  const columnsWithActions: ColumnDef<any>[] = [
-    ...(support_tickets_columns as ColumnDef<any>[]),
+    return {
+      _id: t._id,
+      sl: index + 1,
+      ticketNo: t.ticketNo,
+      customer: t.reporter?.name || "Unknown",
+      customerImage: t.reporter?.profilePicture || "", 
+      subject: t.subject,
+      attachment: ticketAttachment, // ✅ Full URL passed securely
+      status: t.status,
+      createdAt: t.createdAt
+    };
+  });
+
+  // ✅ FIX: Changed ColumnDef typing to SupportTicketRow to fix strict generic mismatch
+  const columnsWithActions: ColumnDef<SupportTicketRow, any>[] = [
+    ...(support_tickets_columns as ColumnDef<SupportTicketRow, any>[]),
     {
       id: 'actions',
       header: 'Actions',
@@ -279,7 +260,7 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
 
   return (
     <div className="space-y-6">
-      {/* --- স্ট্যাটাস কার্ড (ট্যাব) সেকশন --- */}
+      {/* Tab Section */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {statCards.map(card => (
           <button 
@@ -298,7 +279,7 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
         ))}
       </div>
 
-      {/* --- টেবিল সেকশন --- */}
+      {/* Table Section */}
       <div className="bg-white p-4 shadow-sm border rounded-xl">
         <div className="flex justify-between items-center mb-4">
             <div className="relative w-full max-w-sm"></div>
@@ -307,7 +288,6 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
             </Button>
         </div>
         
-        {/* টেবিল লোডার */}
         {loadingTable ? (
           <div className="flex justify-center items-center h-64">
             <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
