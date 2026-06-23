@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { DataTable } from '@/components/TableHelper/data-table';
-import { support_tickets_columns } from '@/components/TableHelper/support_tickets_columns';
+import { support_tickets_columns, SupportTicketRow } from '@/components/TableHelper/support_tickets_columns';
 import { Button } from '@/components/ui/button';
 import { Check, Eye, Loader2, Plus, Trash2, XIcon, Search as SearchIcon, PauseCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -12,19 +12,19 @@ import { useSession } from 'next-auth/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { confirmDelete } from '@/components/ReusableComponents/ConfirmToast';
 
 // টাইপ (আপনার schema অনুযায়ী)
 type SupportTicket = {
   _id: string;
   ticketNo: string;
   createdAt: string;
-  reporter?: { name?: string; profilePicture?: string }; // ✅ Updated reporter type
+  reporter?: { name?: string; profilePicture?: string }; 
   subject: string;
   attachment?: string[];
   status: 'Pending' | 'In Progress' | 'Solved' | 'Rejected' | 'On Hold';
 };
 
-// স্ট্যাটাস কার্ডের টাইপ
 type TicketStats = {
   all: number;
   Pending: number;
@@ -84,6 +84,9 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
     }
   };
 
+  // ==========================================
+  // Single Actions
+  // ==========================================
   const handleUpdateStatus = async (id: string, status: SupportTicket['status']) => {
     if (!token) return toast.error("Authentication required.");
     setLoadingAction(id);
@@ -93,7 +96,10 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success(`Ticket marked as ${status}!`);
-      await refreshData();
+      
+      // Instant UI Update
+      setTickets(prev => prev.map(t => t._id === id ? { ...t, status } : t));
+      refreshData(); // Silently refresh stats
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update status.');
     } finally {
@@ -101,37 +107,98 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!token) return toast.error("Authentication required.");
-    toast("Are you sure you want to delete this ticket?", {
-        action: {
-            label: "Delete",
-            onClick: async () => {
-                setLoadingAction(id);
-                try {
-                    await axios.delete(`/api/v1/crm-modules/support-ticket/${id}`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    toast.success("Ticket deleted!");
-                    await refreshData();
-                } catch (error: any) {
-                    toast.error(error.response?.data?.message || 'Failed to delete.');
-                } finally {
-                    setLoadingAction(null);
-                }
-            }
-        },
-        cancel: { label: "Cancel", onClick: () => {} }
-    });
+    
+    const isConfirmed = await confirmDelete("Are you sure you want to delete this ticket?");
+    if (!isConfirmed) return;
+
+    setLoadingAction(id);
+    try {
+        await axios.delete(`/api/v1/crm-modules/support-ticket/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success("Ticket deleted!");
+        
+        // Instant UI Update
+        setTickets(prev => prev.filter(t => t._id !== id));
+        refreshData();
+    } catch (error: any) {
+        toast.error(error.response?.data?.message || 'Failed to delete.');
+    } finally {
+        setLoadingAction(null);
+    }
+  };
+
+
+  // ==========================================
+  // Bulk Actions
+  // ==========================================
+  const handleBulkDelete = async (selectedRows: SupportTicketRow[]) => {
+    if (selectedRows.length === 0) return;
+
+    const isConfirmed = await confirmDelete(`Are you sure you want to delete ${selectedRows.length} tickets permanently?`);
+    if (!isConfirmed) return;
+
+    const toastId = toast.loading(`Deleting ${selectedRows.length} tickets...`);
+
+    try {
+        const promises = selectedRows.map(row => 
+            axios.delete(`/api/v1/crm-modules/support-ticket/${row._id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+        );
+        await Promise.all(promises);
+
+        // Instant UI Update
+        const deletedIds = selectedRows.map(r => r._id);
+        setTickets(prev => prev.filter(t => !deletedIds.includes(t._id)));
+        refreshData();
+
+        toast.success("Tickets deleted successfully!", { id: toastId });
+    } catch (error) {
+        console.error(error);
+        toast.error("Failed to delete some tickets.", { id: toastId });
+    }
+  };
+
+  const handleBulkStatusChange = async (selectedRows: SupportTicketRow[], newStatus: string) => {
+    if (selectedRows.length === 0) return;
+
+    const toastId = toast.loading(`Marking ${selectedRows.length} tickets as ${newStatus}...`);
+
+    try {
+        const promises = selectedRows.map(row => 
+            axios.patch(
+                `/api/v1/crm-modules/support-ticket/${row._id}`, 
+                { status: newStatus },
+                { headers: { Authorization: `Bearer ${token}` } }
+            )
+        );
+        
+        await Promise.all(promises);
+
+        // Instant UI Update
+        const updatedIds = selectedRows.map(r => r._id);
+        setTickets(prev => prev.map(t => 
+            updatedIds.includes(t._id) ? { ...t, status: newStatus as SupportTicket['status'] } : t
+        ));
+        refreshData();
+
+        toast.success(`Tickets marked as ${newStatus} successfully!`, { id: toastId });
+    } catch (error) {
+        console.error(error);
+        toast.error("Failed to update status for some tickets.", { id: toastId });
+    }
   };
 
   // ✅ Mapping raw backend tickets to match our column definitions perfectly
-  const mappedTickets = tickets.map((t, index) => ({
+  const mappedTickets: SupportTicketRow[] = tickets.map((t, index) => ({
     _id: t._id,
     sl: index + 1,
     ticketNo: t.ticketNo,
     customer: t.reporter?.name || "Unknown",
-    customerImage: t.reporter?.profilePicture || "", // Passed image here
+    customerImage: t.reporter?.profilePicture || "", 
     subject: t.subject,
     attachment: t.attachment && t.attachment.length > 0 ? t.attachment[0] : null,
     status: t.status,
@@ -234,12 +301,7 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
       {/* --- টেবিল সেকশন --- */}
       <div className="bg-white p-4 shadow-sm border rounded-xl">
         <div className="flex justify-between items-center mb-4">
-            <div className="relative w-full max-w-sm">
-                {/* Search Bar is actually handled internally by our DataTable component now, 
-                    but keeping this placeholder for layout if needed. 
-                    However, our DataTable already has a built-in search.
-                */}
-            </div>
+            <div className="relative w-full max-w-sm"></div>
             <Button onClick={() => router.push('/general/support/tickets/new')} className="bg-blue-600 hover:bg-blue-700 text-white">
                 <Plus className="w-4 h-4 mr-2" /> New Ticket
             </Button>
@@ -253,22 +315,17 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
         ) : (
           <DataTable 
              columns={columnsWithActions} 
-             data={mappedTickets} // ✅ Passing perfectly mapped data
-             
-             // Uncomment below if you want Bulk Action options later
-             /*
-             onBulkDelete={(rows) => console.log("Delete", rows)}
+             data={mappedTickets}
+             onBulkDelete={handleBulkDelete}
              onBulkStatusChangeCustom={{
                 options: [
+                  { label: "Mark In Progress", value: "In Progress" },
                   { label: "Mark Solved", value: "Solved" },
                   { label: "Put On Hold", value: "On Hold" },
                   { label: "Reject Tickets", value: "Rejected" },
                 ],
-                handler: async (rows, status) => {
-                  // Run bulk patch requests here if needed
-                }
+                handler: handleBulkStatusChange
              }}
-             */
           />
         )}
       </div>
