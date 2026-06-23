@@ -15,11 +15,11 @@ export type SupportTicketRow = {
   createdAt: string; 
 }
 
-// ✅ FIX: Improved URL formatter specifically for your VPS setup
+// ✅ Safe URL Formatter for your VPS CDN Setup
 const getSafeUrl = (link: string) => {
-  if (!link) return "#";
+  if (!link || link === '-') return "#";
   
-  // If the link already starts with http/https, we trust it (like your cdn.guptodhan.com links)
+  // If the link already starts with http/https, return it as it is
   if (link.startsWith("http://") || link.startsWith("https://")) {
     return link;
   }
@@ -99,7 +99,7 @@ export const support_tickets_columns: ColumnDef<SupportTicketRow>[] = [
     cell: ({ row }) => <span className="text-sm text-gray-700 truncate max-w-[150px] inline-block" title={row.getValue("subject")}>{row.getValue("subject")}</span>
   },
   
-  // ✅ Attachment (Now properly routes to CDN)
+  // ✅ Attachment (Fixed and safe)
   { 
     accessorKey: "attachment", 
     header: () => <span>Attachment</span>,
@@ -110,14 +110,14 @@ export const support_tickets_columns: ColumnDef<SupportTicketRow>[] = [
       const safeLink = getSafeUrl(link);
 
       return (
-        <a href={safeLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs truncate max-w-[150px] inline-block" title={safeLink}>
+        <a href={safeLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs font-semibold" title={safeLink}>
           View File
         </a>
       );
     }
   },
 
-  // Created At
+  // Created At Date
   { 
     accessorKey: "createdAt", 
     header: () => <span>Date</span>,
