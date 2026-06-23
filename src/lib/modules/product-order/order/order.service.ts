@@ -837,6 +837,29 @@ const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
           as: 'details',
         },
       },
+      // ✅ NEW: Lookup Products to get Image and Name
+      {
+        $lookup: {
+          from: 'vendorproductmodels',
+          localField: 'details.productId',
+          foreignField: '_id',
+          as: 'products',
+        },
+      },
+      // ✅ NEW: Calculate Vendor Earnings
+      {
+        $addFields: {
+          productTotal: { $subtract: ['$totalAmount', { $ifNull: ['$deliveryCharge', 0] }] },
+          commissionRate: store.commission || 0,
+        }
+      },
+      {
+        $addFields: {
+          vendorEarned: {
+            $multiply: ['$productTotal', { $subtract: [1, { $divide: ['$commissionRate', 100] }] }]
+          }
+        }
+      },
       {
         $project: {
           _id: 1,
@@ -847,9 +870,15 @@ const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
           createdAt: 1,
           shippingName: 1,
           shippingPhone: 1,
+          deliveryMethodId: 1,
+          trackingId: 1,
+          parcelId: 1,
           'user.name': 1,
           'user.email': 1,
           orderDetails: '$details',
+          'products.productTitle': 1,
+          'products.thumbnailImage': 1,
+          vendorEarned: { $round: ['$vendorEarned', 2] }, // Rounded to 2 decimals
         },
       },
     ]);
