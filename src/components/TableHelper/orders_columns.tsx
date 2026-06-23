@@ -18,6 +18,9 @@ export type OrderRow = {
   email?: string
   total: number
   deliveryCharge?: number
+  productTotal?: number
+  adminEarned?: number
+  vendorEarned?: number
   payment: string
   status: string
   deliveryMethod?: string
@@ -282,18 +285,65 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
       </div>
     )
   },
+  
+  // ✅ 1. Product Price Column
+  { 
+    accessorKey: "productTotal", 
+    header: () => <span className="whitespace-nowrap">Product Price</span>,
+    cell: ({ row }) => (
+      <div className="font-mono text-sm font-medium text-gray-700">
+        ৳{Number(row.getValue("productTotal") || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </div>
+    )
+  },
+
+  // ✅ 2. Delivery Charge Column
+  { 
+    accessorKey: "deliveryCharge", 
+    header: () => <span className="whitespace-nowrap">Delivery Price</span>,
+    cell: ({ row }) => (
+      <div className="font-mono text-sm font-medium text-orange-600">
+        ৳{Number(row.getValue("deliveryCharge") || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </div>
+    )
+  },
+
+  // Existing Total
   { 
     accessorKey: "total", 
     header: () => <span>Total</span>,
     cell: ({ row }) => {
       const total = row.getValue("total") as number;
       return (
-        <div className="font-mono text-sm font-semibold text-green-600">
+        <div className="font-mono text-sm font-bold text-green-600">
           ৳{total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
       );
     }
   },
+
+  // ✅ 3. Admin Earn Column
+  { 
+    accessorKey: "adminEarned", 
+    header: () => <span className="whitespace-nowrap text-blue-600">Admin Earn</span>,
+    cell: ({ row }) => (
+      <div className="font-mono text-sm font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-center border border-blue-100">
+        ৳{Number(row.getValue("adminEarned") || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </div>
+    )
+  },
+
+  // ✅ 4. Vendor Earn Column
+  { 
+    accessorKey: "vendorEarned", 
+    header: () => <span className="whitespace-nowrap text-purple-600">Vendor Earn</span>,
+    cell: ({ row }) => (
+      <div className="font-mono text-sm font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded text-center border border-purple-100">
+        ৳{Number(row.getValue("vendorEarned") || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </div>
+    )
+  },
+
   { 
     accessorKey: "payment", 
     header: () => <span>Payment</span>,
@@ -329,7 +379,7 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
   },
   { 
     accessorKey: "trackingId", 
-    header: () => <span>Tracking ID</span>,
+    header: () => <span className="whitespace-nowrap">Tracking ID</span>,
     cell: ({ row }) => {
       const trackingId = row.getValue("trackingId") as string;
       return (
@@ -345,7 +395,7 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
   },
   { 
     accessorKey: "parcelId", 
-    header: () => <span>Parcel ID</span>,
+    header: () => <span className="whitespace-nowrap">Parcel ID</span>,
     cell: ({ row }) => {
       const parcelId = row.getValue("parcelId") as string;
       return (
@@ -359,15 +409,13 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
       );
     }
   },
-  // ✅ NEW: Added Cancel Reason as a separate column
   { 
     accessorKey: "cancelReason", 
-    header: () => <span className="text-red-500 font-semibold">Cancel Reason</span>,
+    header: () => <span className="text-red-500 font-semibold whitespace-nowrap">Cancel Reason</span>,
     cell: ({ row }) => {
       const cancelReason = row.getValue("cancelReason") as string;
       const status = row.original.status.toLowerCase();
       
-      // শুধুমাত্র স্ট্যাটাস Cancelled হলেই কারণটি দেখাবে
       if (status !== 'cancelled' || !cancelReason) {
         return <span className="text-gray-400 text-xs">-</span>;
       }
