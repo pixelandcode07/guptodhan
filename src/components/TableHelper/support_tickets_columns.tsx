@@ -93,9 +93,15 @@ export const support_tickets_columns: ColumnDef<SupportTicketRow>[] = [
       const link = row.getValue("attachment") as string;
       if (!link || link === '-') return <span className="text-gray-400 text-xs">-</span>;
       return (
-        <a href={link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xs truncate max-w-[150px] inline-block" title={link}>
-          View File
-        </a>
+        <a 
+        href={link.startsWith('http') ? link : `https://guptodhan.com${link}`} 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        className="text-blue-500 hover:underline text-xs truncate max-w-[150px] inline-block" 
+        title={link}
+      >
+        View File
+      </a>
       );
     }
   },
