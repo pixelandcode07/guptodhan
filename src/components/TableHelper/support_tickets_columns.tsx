@@ -15,24 +15,22 @@ export type SupportTicketRow = {
   createdAt: string; 
 }
 
-// Helper function to safely format the attachment URL
+// ✅ FIX: Improved URL formatter specifically for your VPS setup
 const getSafeUrl = (link: string) => {
   if (!link) return "#";
-  // If it already starts with http/https, return as is
+  
+  // If the link already starts with http/https, we trust it (like your cdn.guptodhan.com links)
   if (link.startsWith("http://") || link.startsWith("https://")) {
     return link;
   }
-  // Remove any leading slashes or stray 'h' characters if they accidentally exist before the path
+
+  // If it's just a path, attach the CDN base url directly
   let cleanPath = link.replace(/^[h/]+/, ""); 
-  
-  // Combine with base domain securely
-  return `https://guptodhan.com/${cleanPath}`;
+  return `https://cdn.guptodhan.com/${cleanPath}`;
 };
 
-// Wrap columns in a function if we need to pass external state, but for now standard array is fine
-// since Bulk Actions are handled in the Client Component via DataTable props.
 export const support_tickets_columns: ColumnDef<SupportTicketRow>[] = [
-  // ✅ 1. Checkbox Column added
+  // Checkbox Column
   {
     id: "select",
     header: ({ table }) => (
@@ -101,7 +99,7 @@ export const support_tickets_columns: ColumnDef<SupportTicketRow>[] = [
     cell: ({ row }) => <span className="text-sm text-gray-700 truncate max-w-[150px] inline-block" title={row.getValue("subject")}>{row.getValue("subject")}</span>
   },
   
-  // ✅ Attachment (Fixed URL Logic)
+  // ✅ Attachment (Now properly routes to CDN)
   { 
     accessorKey: "attachment", 
     header: () => <span>Attachment</span>,
@@ -119,7 +117,7 @@ export const support_tickets_columns: ColumnDef<SupportTicketRow>[] = [
     }
   },
 
-  // Created At / Updated At
+  // Created At
   { 
     accessorKey: "createdAt", 
     header: () => <span>Date</span>,
