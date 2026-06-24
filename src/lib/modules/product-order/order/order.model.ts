@@ -148,4 +148,4 @@ orderSchema.index({ storeId: 1, orderStatus: 1, createdAt: -1 });
 orderSchema.index({ orderDate: -1, orderStatus: 1, paymentStatus: 1 });
 orderSchema.index({ userId: 1, orderStatus: 1, updatedAt: -1 });
 
-export const OrderModel = models.Order || model<IOrder>("Order", orderSchema);
+export const  OrderModel = models.Order || model<IOrder>("Order", orderSchema);
