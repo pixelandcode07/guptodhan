@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { fetchAllPublicServiceCategories } from "@/lib/ServicePageApis/fetchAllPublicCategories";
 import ClientServiceRegister from "../components/ClientServiceRegister";
 

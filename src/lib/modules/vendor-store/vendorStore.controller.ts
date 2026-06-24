@@ -383,6 +383,11 @@ const updateStore = async (
       storePhone: (formData.get('storePhone') as string) || existingStore.storePhone,
       storeEmail: (formData.get('storeEmail') as string) || existingStore.storeEmail,
       status: validateStatus(formData.get('status')) || existingStore.status,
+      callForPricePermission: formData.get('callForPricePermission') === 'true' 
+                              ? true 
+                              : formData.get('callForPricePermission') === 'false' 
+                                ? false 
+                                : existingStore.callForPricePermission,
       vendorShortDescription:
         (formData.get('vendorShortDescription') as string) || existingStore.vendorShortDescription,
       fullDescription: (formData.get('fullDescription') as string) || existingStore.fullDescription,

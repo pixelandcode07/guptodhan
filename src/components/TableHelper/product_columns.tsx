@@ -11,13 +11,14 @@ export type Product = {
   category: string
   slug?: string;
   name: string
+  created_at: string 
+  updated_at: string 
   store: string
   price: string
   offer_price: string
   stock: string
   flag: string
   status: "Active" | "Inactive"
-  created_at: string
 }
 
 export type ProductColumnHandlers = {
@@ -28,6 +29,30 @@ export type ProductColumnHandlers = {
 }
 
 export const getProductColumns = ({ onView, onEdit, onDelete, onToggleStatus }: ProductColumnHandlers): ColumnDef<Product>[] => [
+  // ✅ NEW: Checkbox Column for Bulk Selection
+  {
+    id: "select",
+    header: ({ table }) => (
+      <input
+        type="checkbox"
+        className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        checked={table.getIsAllPageRowsSelected()}
+        onChange={table.getToggleAllPageRowsSelectedHandler()}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <input
+        type="checkbox"
+        className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        checked={row.getIsSelected()}
+        onChange={row.getToggleSelectedHandler()}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
   {
     accessorKey: "id",
     header: "SL",
@@ -74,6 +99,20 @@ export const getProductColumns = ({ onView, onEdit, onDelete, onToggleStatus }: 
           {name}
         </button>
       );
+    },
+  },
+  {
+    accessorKey: "created_at",
+    header: "Created At",
+    cell: ({ row }) => {
+      return <div className="text-xs text-gray-500 whitespace-nowrap">{row.getValue("created_at")}</div>;
+    },
+  },
+  {
+    accessorKey: "updated_at",
+    header: "Updated At",
+    cell: ({ row }) => {
+      return <div className="text-xs text-gray-500 whitespace-nowrap">{row.getValue("updated_at")}</div>;
     },
   },
   {

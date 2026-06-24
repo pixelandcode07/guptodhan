@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { fetchNavigationCategoryData } from '@/lib/MainHomePage';
 import Image from 'next/image';
 import Link from 'next/link';

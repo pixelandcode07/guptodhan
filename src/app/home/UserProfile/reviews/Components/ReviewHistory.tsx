@@ -1,83 +1,124 @@
-import React from 'react';
-const reviews = [
-  {
-    id: 1,
-    name: 'Braun Silk-épil 9 Cordless Epilator',
-    size: 'XL',
-    color: 'Green',
-    img: '/img/product/p-1.png',
-    rating: 4,
-    tag: 'Delightful',
-    review:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis.',
-  },
-  {
-    id: 2,
-    name: 'Braun Silk-épil 9 Cordless Epilator',
-    size: 'XL',
-    color: 'Green',
-    img: '/img/product/p-1.png',
-    rating: 4,
-    tag: 'Delightful',
-    review:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis.',
-  },
-  {
-    id: 3,
-    name: 'Braun Silk-épil 9 Cordless Epilator',
-    size: 'XL',
-    color: 'Green',
-    img: '/img/product/p-1.png',
-    rating: 4,
-    tag: 'Delightful',
-    review:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis.',
-  },
-  {
-    id: 4,
-    name: 'Braun Silk-épil 9 Cordless Epilator',
-    size: 'XL',
-    color: 'Green',
-    img: '/img/product/p-1.png',
-    rating: 4,
-    tag: 'Delightful',
-    review:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis.',
-  },
-];
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import Image from 'next/image';
+import { Star, Loader2, PackageSearch } from 'lucide-react';
+import axios from 'axios';
+
 export default function ReviewHistory() {
+  const { data: session } = useSession();
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!session?.user) {
+        setLoading(false);
+        return;
+      }
+
+      const user = session.user as any;
+      const userId = user.id || user._id;
+
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await axios.get(`/api/v1/product-review/product-review-user/${userId}`, {
+          headers: {
+            ...(user.accessToken ? { Authorization: `Bearer ${user.accessToken}` } : {})
+          }
+        });
+
+        if (res.data.success) {
+          setReviews(res.data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, [session]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <span className="ml-2 text-gray-500 font-medium">Loading your reviews...</span>
+      </div>
+    );
+  }
+
+  if (reviews.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-gray-500 bg-white rounded-lg border mt-2">
+        <PackageSearch className="w-16 h-16 mb-4 text-gray-300" />
+        <p className="font-medium text-gray-600">You haven't reviewed any products yet.</p>
+        <p className="text-xs text-gray-400 mt-1">Once you write a review, it will appear here.</p>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <h3 className="font-semibold py-2 ">Your product rating & review:</h3>
-      <div className="space-y-6 md:max-h-[500px] overflow-y-auto">
-        {reviews.map(item => (
-          <div key={item.id} className="border-b pb-4">
+    <div className="bg-white p-4 sm:p-6 rounded-lg border mt-2">
+      <h3 className="font-semibold text-gray-800 border-b pb-3 mb-4">Your Past Reviews</h3>
+      <div className="space-y-6 md:max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+        {reviews.map((item) => (
+          <div key={item._id} className="border-b border-gray-100 pb-5 last:border-0 last:pb-0">
             <div className="flex gap-4">
-              <img src={item.img} alt={item.name} className="w-16 h-16" />
-              <div>
-                <h3 className="font-semibold">{item.name}</h3>
-                <p className="text-sm text-gray-600">
-                  Size: {item.size}, Color: {item.color}
+              <div className="w-16 h-16 relative rounded-md border border-gray-200 overflow-hidden shrink-0">
+                <Image 
+                  src={item.productId?.thumbnailImage || '/img/product/p-1.png'} 
+                  alt={item.productId?.productTitle || 'Product'} 
+                  fill 
+                  className="object-cover"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm text-gray-800 line-clamp-2">
+                  {item.productId?.productTitle || 'Product'}
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Reviewed on: {new Date(item.uploadedTime || item.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </p>
               </div>
             </div>
 
-            <div className="mt-2 flex items-center gap-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <span
-                  key={i}
-                  className={`text-yellow-400 ${
-                    i < item.rating ? 'opacity-100' : 'opacity-30'
-                  }`}>
-                  ★
-                </span>
-              ))}
-              <span className="text-blue-500 text-sm">{item.tag}</span>
+            <div className="mt-3 flex items-center gap-2">
+              <div className="flex text-yellow-400">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star
+                    key={i}
+                    size={14}
+                    fill={i < item.rating ? 'currentColor' : 'none'}
+                    className={i >= item.rating ? 'text-gray-300' : ''}
+                  />
+                ))}
+              </div>
+              <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-xs font-medium">
+                {item.rating >= 4 ? 'Excellent' : item.rating === 3 ? 'Average' : 'Poor'}
+              </span>
             </div>
 
-            <div className="mt-2 bg-gray-100 p-3 text-sm text-gray-700">
-              {item.review}
+            <div className="mt-3 bg-gray-50 p-3 rounded text-sm text-gray-700 leading-relaxed border border-gray-100">
+              {item.comment || <span className="italic text-gray-400">No written feedback provided.</span>}
             </div>
+
+            {item.reviewImages && item.reviewImages.length > 0 && (
+              <div className="flex gap-2 mt-3">
+                {item.reviewImages.map((img: string, i: number) => (
+                  <div key={i} className="relative w-16 h-16 rounded border border-gray-200 overflow-hidden cursor-zoom-in hover:opacity-90">
+                    <Image src={img} alt={`Review Image ${i}`} fill className="object-cover" />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>

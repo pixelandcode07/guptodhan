@@ -2,6 +2,8 @@
 
 import { Button } from '@/components/ui/button';
 import { AddressData } from './handleComponent'; 
+import Link from 'next/link'; // ✅ Link ইম্পোর্ট করা হলো
+import { ShoppingBag } from 'lucide-react'; // ✅ আইকন ইম্পোর্ট করা হলো
 
 interface SavedAddressProps {
   addresses: AddressData[];
@@ -17,9 +19,18 @@ export default function SavedAddress({
   onDelete,
 }: SavedAddressProps) {
   return (
-    <div className="bg-white">
+    <div className="bg-white pt-6">
+      {/* ✅ Heading এবং Shop Now বাটন */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Saved Addresses ({addresses.length})</h2>
+        
+        <Link 
+          href="/products" 
+          className="flex items-center gap-2 bg-[#0097E9] hover:bg-[#0097E9]/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap"
+        >
+          <ShoppingBag className="w-4 h-4" />
+          Shop Now
+        </Link>
       </div>
 
       {addresses.length === 0 ? (

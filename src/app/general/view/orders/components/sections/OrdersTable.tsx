@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+'use client';
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { DataTable } from '@/components/TableHelper/data-table'
-import { OrderRow, ordersColumns } from '@/components/TableHelper/orders_columns'
 import { ColumnDef } from '@tanstack/react-table'
 import api from '@/lib/axios'
 import FancyLoadingPage from '@/app/general/loading'
@@ -9,7 +10,9 @@ import { FilterState } from './OrdersFilters'
 import { Button } from '@/components/ui/button'
 import { Edit } from 'lucide-react'
 import OrderUpdateModal from './OrderUpdateModal'
+import { OrderRow, ordersColumns } from '@/components/TableHelper/orders_columns'
 
+// ✅ NEW: Added new fields from backend to interface
 type ApiOrder = {
     _id: string
     orderId: string
@@ -21,11 +24,15 @@ type ApiOrder = {
     shippingEmail?: string
     totalAmount?: number
     deliveryCharge?: number
+    productTotal?: number
+    adminEarned?: number
+    vendorNet?: number
     paymentStatus?: string
     orderStatus?: string
     deliveryMethodId?: string
     trackingId?: string
     parcelId?: string
+    cancelReason?: string 
     userId?: {
         _id: string
         name: string
@@ -40,30 +47,36 @@ type ApiOrder = {
 
 interface OrdersTableProps {
     initialStatus?: string;
-    filters: FilterState; // ✅ প্যারেন্ট থেকে ফিল্টার রিসিভ
+    filters: FilterState; 
+    searchTerm?: string; 
+    startDate?: string; 
+    endDate?: string;   
     onDataChange?: (data: OrderRow[]) => void;
     onSelectionChange?: (selectedRows: OrderRow[]) => void;
 }
 
-export default function OrdersTable({ initialStatus, filters, onDataChange, onSelectionChange }: OrdersTableProps) {
-    const [rows, setRows] = React.useState<OrderRow[]>([])
-    const [loading, setLoading] = React.useState(false)
-    const [error, setError] = React.useState<string | null>(null)
-    const [selectedRows, setSelectedRows] = React.useState<OrderRow[]>([])
+export default function OrdersTable({ 
+    initialStatus, filters, searchTerm, startDate, endDate, onDataChange, onSelectionChange 
+}: OrdersTableProps) {
+    const [rows, setRows] = useState<OrderRow[]>([])
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [selectedRows, setSelectedRows] = useState<OrderRow[]>([])
     
-    // Modal State
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedOrderForEdit, setSelectedOrderForEdit] = useState<{id: string, orderNo: string, orderStatus: string, paymentStatus: string} | null>(null);
 
-    const fetchOrders = React.useCallback(async () => {
+    const [bulkOrderStatus, setBulkOrderStatus] = useState('');
+    const [bulkPaymentStatus, setBulkPaymentStatus] = useState('');
+    const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+
+    const fetchOrders = useCallback(async () => {
         try {
             setLoading(true)
             setError(null)
             
-            // Build Query Params
             const params = new URLSearchParams();
             
-            // 1. Initial Page Status (e.g. /ready-to-ship)
             const mapSlugToApiStatus = (value: string): string | undefined => {
                 switch (value) {
                     case 'pending': return 'Pending'
@@ -79,20 +92,21 @@ export default function OrdersTable({ initialStatus, filters, onDataChange, onSe
             const apiStatus = initialStatus ? mapSlugToApiStatus(initialStatus.toLowerCase()) : undefined
             if (apiStatus) params.append('orderStatus', apiStatus);
 
-            // 2. Apply Filters form Inputs
             if (filters.orderNo) params.append('orderId', filters.orderNo);
-            if (filters.source) params.append('source', filters.source);
+            if (filters.source) params.append('orderForm', filters.source); 
             if (filters.paymentStatus) params.append('paymentStatus', filters.paymentStatus);
-            if (filters.orderStatus) params.append('orderStatus', filters.orderStatus); // Override initial if selected
+            if (filters.orderStatus) params.append('orderStatus', filters.orderStatus); 
             if (filters.customerName) params.append('customerName', filters.customerName);
             if (filters.customerPhone) params.append('customerPhone', filters.customerPhone);
             if (filters.deliveryMethod) params.append('deliveryMethod', filters.deliveryMethod);
-            if (filters.couponCode) params.append('couponCode', filters.couponCode);
-            // Date range filter logic can be added here if needed
+            
+            if (startDate) params.append('startDate', startDate);
+            if (endDate) params.append('endDate', endDate);
 
             const response = await api.get(`/product-order?${params.toString()}`)
             const list = (response.data?.data ?? []) as ApiOrder[]
             
+            // ✅ NEW: Mapped new calculation values to rows
             const mapped: OrderRow[] = list.map((o, idx) => ({
                 id: o._id,
                 sl: idx + 1,
@@ -103,12 +117,16 @@ export default function OrdersTable({ initialStatus, filters, onDataChange, onSe
                 phone: o.shippingPhone || '-',
                 email: o.shippingEmail || '-',
                 total: typeof o.totalAmount === 'number' ? o.totalAmount : 0,
-                deliveryCharge: typeof o.deliveryCharge === 'number' ? o.deliveryCharge : undefined,
+                deliveryCharge: typeof o.deliveryCharge === 'number' ? o.deliveryCharge : 0,
+                productTotal: typeof o.productTotal === 'number' ? o.productTotal : 0,
+                adminEarned: typeof o.adminEarned === 'number' ? o.adminEarned : 0,
+                vendorEarned: typeof o.vendorNet === 'number' ? o.vendorNet : 0,
                 payment: o.paymentStatus || '-',
                 status: o.orderStatus || 'Pending',
                 deliveryMethod: o.deliveryMethodId || 'COD',
                 trackingId: o.trackingId || '-',
                 parcelId: o.parcelId || '-',
+                cancelReason: o.cancelReason, 
                 customer: o.userId ? {
                     name: o.userId.name || '-',
                     email: o.userId.email || '-',
@@ -130,13 +148,34 @@ export default function OrdersTable({ initialStatus, filters, onDataChange, onSe
         } finally {
             setLoading(false)
         }
-    }, [initialStatus, filters, onDataChange])
+    }, [initialStatus, filters, startDate, endDate, onDataChange])
 
-    React.useEffect(() => {
-        fetchOrders()
-    }, [fetchOrders])
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            fetchOrders();
+        }, 500); 
+        return () => clearTimeout(timeoutId);
+    }, [fetchOrders, filters, startDate, endDate]); 
 
-    // ✅ Action Column Definition
+    const filteredRows = useMemo(() => {
+        if (!searchTerm || searchTerm.trim() === '') return rows;
+        const q = searchTerm.trim().toLowerCase();
+        
+        return rows.filter((r) => {
+            const searchableFields = [
+                r.orderNo,
+                r.name,
+                r.phone,
+                r.status,
+                r.payment,
+                r.customer?.email,
+                r.trackingId,
+                r.parcelId
+            ];
+            return searchableFields.some(field => field && String(field).toLowerCase().includes(q));
+        });
+    }, [rows, searchTerm]);
+
     const actionColumn: ColumnDef<OrderRow> = {
         id: "actions",
         header: "Action",
@@ -164,52 +203,72 @@ export default function OrdersTable({ initialStatus, filters, onDataChange, onSe
         },
     };
 
-    // Append Action Column to existing columns
     const tableColumns = [...ordersColumns, actionColumn];
 
-    // Checkbox Logic
-    React.useEffect(() => {
-        const handleCheckboxChange = (e: Event) => {
-            const target = e.target as HTMLInputElement;
-            if (target.type === 'checkbox' && target.hasAttribute('data-order-id')) {
-                const orderId = target.getAttribute('data-order-id');
-                const order = rows.find(row => row.id === orderId);
-                if (order) {
-                    if (target.checked) {
-                        setSelectedRows(prev => {
-                            if (!prev.find(r => r.id === order.id)) return [...prev, order];
-                            return prev;
-                        });
-                    } else {
-                        setSelectedRows(prev => prev.filter(row => row.id !== order.id));
-                    }
-                }
-            }
-        };
+    const handleBulkStatusUpdate = async () => {
+      if (selectedRows.length === 0) return;
+      if (!bulkOrderStatus && !bulkPaymentStatus) {
+        toast.error("Please select a status to update");
+        return;
+      }
+  
+      setIsBulkUpdating(true);
+      const toastId = toast.loading(`Updating ${selectedRows.length} orders...`);
+  
+      try {
+        const updateData: any = {};
+        if (bulkOrderStatus) updateData.orderStatus = bulkOrderStatus;
+        if (bulkPaymentStatus) updateData.paymentStatus = bulkPaymentStatus;
+  
+        const promises = selectedRows.map(row => 
+          api.patch(`/product-order/${row.id}`, updateData)
+        );
+        
+        await Promise.all(promises);
+  
+        toast.success("Orders updated successfully!", { id: toastId });
+        setBulkOrderStatus('');
+        setBulkPaymentStatus('');
+        fetchOrders();
+  
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to update some orders.", { id: toastId });
+      } finally {
+        setIsBulkUpdating(false);
+      }
+    };
 
-        const handleSelectAll = (e: Event) => {
-            const target = e.target as HTMLInputElement;
-            const headerCheckbox = document.querySelector('thead input[type="checkbox"]') as HTMLInputElement;
-            if (headerCheckbox && target === headerCheckbox) {
-                if (target.checked) setSelectedRows(rows);
-                else setSelectedRows([]);
-            }
-        };
+    const handleBulkDelete = async (rowsToDelete: OrderRow[]) => {
+      if (rowsToDelete.length === 0) return;
+      
+      const isConfirmed = window.confirm(`Are you sure you want to delete ${rowsToDelete.length} orders?`);
+      if (!isConfirmed) return;
+  
+      const toastId = toast.loading(`Deleting ${rowsToDelete.length} orders...`);
+  
+      try {
+        const promises = rowsToDelete.map(row => 
+          api.delete(`/product-order/${row.id}`)
+        );
+        
+        await Promise.all(promises);
+  
+        toast.success("Orders deleted successfully!", { id: toastId });
+        fetchOrders();
+  
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to delete some orders.", { id: toastId });
+      }
+    };
 
-        document.addEventListener('change', handleCheckboxChange);
-        document.addEventListener('change', handleSelectAll);
+    const handleRowSelection = (rows: OrderRow[]) => {
+      setSelectedRows(rows);
+      if (onSelectionChange) onSelectionChange(rows);
+    };
 
-        return () => {
-            document.removeEventListener('change', handleCheckboxChange);
-            document.removeEventListener('change', handleSelectAll);
-        };
-    }, [rows]);
-
-    React.useEffect(() => {
-        if (onSelectionChange) onSelectionChange(selectedRows);
-    }, [selectedRows, onSelectionChange])
-
-    if (loading) return <FancyLoadingPage />;
+    if (loading && rows.length === 0) return <FancyLoadingPage />;
 
     if (error) {
         return (
@@ -227,19 +286,16 @@ export default function OrdersTable({ initialStatus, filters, onDataChange, onSe
 
     return (
         <div className="w-full">
+            {/* Same bulk update logic rendering */}
             <div className="overflow-x-auto">
-                <DataTable columns={tableColumns} data={rows} />
-                {rows.length === 0 && !loading && (
-                    <div className="px-3 py-8 text-center text-gray-500">
-                        <p>No orders found.</p>
-                        <button onClick={fetchOrders} className="mt-2 px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors">
-                            Refresh
-                        </button>
-                    </div>
-                )}
+                <DataTable 
+                  columns={tableColumns} 
+                  data={filteredRows} 
+                  onBulkDelete={handleBulkDelete} 
+                  onRowSelectionChange={handleRowSelection} 
+                />
             </div>
 
-            {/* ✅ Update Modal Integration */}
             {selectedOrderForEdit && (
                 <OrderUpdateModal 
                     isOpen={isEditOpen}

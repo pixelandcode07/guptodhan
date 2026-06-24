@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { format, isValid } from 'date-fns';
-import { Loader2, CheckCircle, XCircle, Eye } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -13,28 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-
-interface Booking {
-  _id: string;
-  order_id: string;
-  customer_id: string;
-  provider_id: string;
-  service_id: any;
-  booking_date: string;
-  time_slot: string;
-  location_details: string;
-  estimated_cost: number;
-  status: string;
-  contact_info: {
-    name: string;
-    phone: string;
-    email?: string;
-  };
-  customer_notes?: string;
-  provider_notes?: string;
-  provider_rejection_message?: string;
-  createdAt: string;
-}
+import { DataTable } from '@/components/TableHelper/data-table';
+import { getBookingColumns, Booking } from '@/components/TableHelper/booking_columns';
 
 const safeFormat = (dateStr: string) => {
   const date = new Date(dateStr);
@@ -54,9 +33,15 @@ export default function AllBookingsClient({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  
+  // Cancel Modal States
   const [cancelNote, setCancelNote] = useState('');
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
+  
+  // Bulk Cancel States
+  const [isBulkCancel, setIsBulkCancel] = useState(false);
+  const [bulkCancelTargets, setBulkCancelTargets] = useState<Booking[]>([]);
 
   const fetchBookings = async () => {
     try {
@@ -76,6 +61,7 @@ export default function AllBookingsClient({ token }: { token: string }) {
     fetchBookings();
   }, []);
 
+  // --- Single Actions ---
   const handleConfirm = async (id: string) => {
     setProcessingId(id);
     try {
@@ -85,29 +71,9 @@ export default function AllBookingsClient({ token }: { token: string }) {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success('Booking confirmed!');
-      fetchBookings();
+      setBookings(prev => prev.map(b => b._id === id ? { ...b, status: 'Confirmed' } : b));
     } catch {
       toast.error('Failed to confirm booking');
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  const handleCancel = async () => {
-    if (!cancelTargetId) return;
-    setProcessingId(cancelTargetId);
-    try {
-      await axios.patch(
-        `/api/v1/service-section/service-provider-manage/cancel/${cancelTargetId}`,
-        { provider_rejection_message: cancelNote },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      toast.success('Booking cancelled!');
-      setShowCancelDialog(false);
-      setCancelNote('');
-      fetchBookings();
-    } catch {
-      toast.error('Failed to cancel booking');
     } finally {
       setProcessingId(null);
     }
@@ -122,13 +88,113 @@ export default function AllBookingsClient({ token }: { token: string }) {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success('Booking marked as completed!');
-      fetchBookings();
+      setBookings(prev => prev.map(b => b._id === id ? { ...b, status: 'Completed' } : b));
     } catch {
       toast.error('Failed to complete booking');
     } finally {
       setProcessingId(null);
     }
   };
+
+  const openCancelModal = (id: string) => {
+    setCancelTargetId(id);
+    setIsBulkCancel(false);
+    setShowCancelDialog(true);
+  };
+
+  const handleCancel = async () => {
+    if (!cancelTargetId) return;
+    setProcessingId(cancelTargetId);
+    try {
+      await axios.patch(
+        `/api/v1/service-section/service-provider-manage/cancel/${cancelTargetId}`,
+        { provider_rejection_message: cancelNote },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('Booking cancelled!');
+      setShowCancelDialog(false);
+      setCancelNote('');
+      setBookings(prev => prev.map(b => b._id === cancelTargetId ? { ...b, status: 'Cancelled', provider_rejection_message: cancelNote } : b));
+    } catch {
+      toast.error('Failed to cancel booking');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  // --- 🌟 Bulk Status Update Handler ---
+  const handleCustomBulkStatus = async (selectedRows: Booking[], newStatus: string) => {
+    if (selectedRows.length === 0) return;
+
+    if (newStatus === 'Cancelled') {
+        setBulkCancelTargets(selectedRows);
+        setIsBulkCancel(true);
+        setShowCancelDialog(true);
+        return;
+    }
+
+    const toastId = toast.loading(`Marking ${selectedRows.length} bookings as ${newStatus}...`);
+
+    try {
+        const actionPath = newStatus === 'Confirmed' ? 'confirmed' : 'complete';
+        const payload = newStatus === 'Completed' ? { provider_notes: 'Service completed via bulk action' } : {};
+
+        const promises = selectedRows.map(row => 
+            axios.patch(
+                `/api/v1/service-section/service-provider-manage/${actionPath}/${row._id}`, 
+                payload,
+                { headers: { Authorization: `Bearer ${token}` } }
+            )
+        );
+        
+        await Promise.all(promises);
+
+        const updatedIds = selectedRows.map(r => r._id);
+        setBookings(prev => prev.map(b => 
+            updatedIds.includes(b._id) ? { ...b, status: newStatus } : b
+        ));
+
+        toast.success(`Bookings marked as ${newStatus} successfully!`, { id: toastId });
+    } catch (error) {
+        console.error(error);
+        toast.error("Failed to update status for some bookings.", { id: toastId });
+    }
+  };
+
+  const handleBulkCancel = async () => {
+    if (bulkCancelTargets.length === 0) return;
+    
+    setProcessingId('bulk-cancel');
+    const toastId = toast.loading(`Cancelling ${bulkCancelTargets.length} bookings...`);
+
+    try {
+        const promises = bulkCancelTargets.map(row => 
+            axios.patch(
+                `/api/v1/service-section/service-provider-manage/cancel/${row._id}`,
+                { provider_rejection_message: cancelNote },
+                { headers: { Authorization: `Bearer ${token}` } }
+            )
+        );
+        
+        await Promise.all(promises);
+
+        const updatedIds = bulkCancelTargets.map(r => r._id);
+        setBookings(prev => prev.map(b => 
+            updatedIds.includes(b._id) ? { ...b, status: 'Cancelled', provider_rejection_message: cancelNote } : b
+        ));
+
+        toast.success(`Bookings cancelled successfully!`, { id: toastId });
+        setShowCancelDialog(false);
+        setCancelNote('');
+        setIsBulkCancel(false);
+    } catch (error) {
+        console.error(error);
+        toast.error("Failed to cancel some bookings.", { id: toastId });
+    } finally {
+        setProcessingId(null);
+    }
+  };
+
 
   if (loading) {
     return (
@@ -138,123 +204,37 @@ export default function AllBookingsClient({ token }: { token: string }) {
     );
   }
 
+  // Get columns with injected functions
+  const columns = getBookingColumns(
+      setSelectedBooking, 
+      handleConfirm, 
+      handleComplete, 
+      openCancelModal, 
+      processingId
+  );
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-gray-50 border-b border-gray-100">
-            <tr>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-600">Order ID</th>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-600">Contact</th>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-600">Date & Time</th>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-600">Location</th>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-600">Cost</th>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-600">Status</th>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-600 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {bookings.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-6 py-10 text-center text-gray-500">
-                  No bookings found
-                </td>
-              </tr>
-            ) : (
-              bookings.map((booking) => (
-                <tr key={booking._id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-4 py-3">
-                    <span className="text-xs font-mono font-medium text-blue-600">
-                      {booking.order_id}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="text-sm font-medium text-gray-900">{booking.contact_info?.name}</p>
-                    <p className="text-xs text-gray-500">{booking.contact_info?.phone}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="text-sm text-gray-700">{safeFormat(booking.booking_date)}</p>
-                    <p className="text-xs text-gray-500">{booking.time_slot}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="text-sm text-gray-600 max-w-[150px] truncate">
-                      {booking.location_details}
-                    </p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-sm font-bold text-gray-800">
-                      ৳{booking.estimated_cost}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor[booking.status] || 'bg-gray-100 text-gray-600'}`}>
-                      {booking.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end items-center gap-1">
-                      {/* View Details */}
-                      <button
-                        onClick={() => setSelectedBooking(booking)}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="View Details"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-
-                      {/* Confirm */}
-                      {booking.status === 'Pending Confirmation' && (
-                        <button
-                          onClick={() => handleConfirm(booking._id)}
-                          disabled={processingId === booking._id}
-                          className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                          title="Confirm"
-                        >
-                          {processingId === booking._id
-                            ? <Loader2 className="h-4 w-4 animate-spin" />
-                            : <CheckCircle className="h-4 w-4" />
-                          }
-                        </button>
-                      )}
-
-                      {/* Complete */}
-                      {booking.status === 'Confirmed' && (
-                        <button
-                          onClick={() => handleComplete(booking._id)}
-                          disabled={processingId === booking._id}
-                          className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                          title="Mark Complete"
-                        >
-                          {processingId === booking._id
-                            ? <Loader2 className="h-4 w-4 animate-spin" />
-                            : <CheckCircle className="h-4 w-4" />
-                          }
-                        </button>
-                      )}
-
-                      {/* Cancel */}
-                      {['Pending Confirmation', 'Confirmed'].includes(booking.status) && (
-                        <button
-                          onClick={() => {
-                            setCancelTargetId(booking._id);
-                            setShowCancelDialog(true);
-                          }}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Cancel"
-                        >
-                          <XCircle className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+    <div>
+      {/* ── Dynamic Data Table with Custom Bulk Status ── */}
+      <div className="mb-4">
+            <DataTable 
+                columns={columns} 
+                data={bookings} 
+                setData={setBookings}
+                
+                // ✅ Passes our custom booking statuses to the global DataTable
+                onBulkStatusChangeCustom={{
+                  options: [
+                    { label: "Confirm Booking", value: "Confirmed" },
+                    { label: "Mark Completed", value: "Completed" },
+                    { label: "Cancel Booking", value: "Cancelled" }
+                  ],
+                  handler: handleCustomBulkStatus
+                }}
+            />
       </div>
 
-      {/* Detail Dialog */}
+      {/* ── Detail Dialog ── */}
       <Dialog open={!!selectedBooking} onOpenChange={() => setSelectedBooking(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -319,11 +299,11 @@ export default function AllBookingsClient({ token }: { token: string }) {
         </DialogContent>
       </Dialog>
 
-      {/* Cancel Dialog */}
+      {/* ── Cancel Dialog ── */}
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Cancel Booking</DialogTitle>
+            <DialogTitle>{isBulkCancel ? "Bulk Cancel Bookings" : "Cancel Booking"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-gray-600">Please provide a reason for cancellation:</p>
@@ -339,7 +319,7 @@ export default function AllBookingsClient({ token }: { token: string }) {
               </Button>
               <Button
                 variant="destructive"
-                onClick={handleCancel}
+                onClick={isBulkCancel ? handleBulkCancel : handleCancel}
                 disabled={!cancelNote.trim() || !!processingId}
               >
                 {processingId ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}

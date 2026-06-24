@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, FormEvent, useEffect, useRef } from "react";
+import React, { useState, FormEvent, useEffect, useRef, useMemo } from "react";
 import axios from "axios";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import RichTextEditor from "@/components/ReusableComponents/RichTextEditor";
-import { Loader2, Save, X, UploadCloud } from "lucide-react";
+import { Loader2, Save, X, UploadCloud, PhoneCall } from "lucide-react";
 import Image from "next/image";
 import ProductVariantForm, { IProductOption } from "./ProductVariantForm";
 import ProductImageGallery from "./ProductImageGallery";
@@ -41,10 +41,8 @@ const getIdFromRef = (value: unknown): string => {
   return "";
 };
 
-// ✅ Valid MongoDB ObjectId check
 const isObjectId = (val: string): boolean => /^[a-f\d]{24}$/i.test(val.trim());
 
-// ✅ ObjectId হলে সরাসরি return, না হলে name দিয়ে match করে ID বের করো
 const resolveOptionId = (
   rawVal: unknown,
   options: any[],
@@ -84,13 +82,11 @@ export default function ProductForm({
   // --- LISTS FROM PROPS ---
   const rawListStores = initialData?.stores || [];
   
-  // ✅ শুধু লগইন করা ভেন্ডরের স্টোর ফিল্টার করা হচ্ছে
   const vendorStores = rawListStores.filter((s: any) => {
     if (!currentVendorId) return false;
     const sVendorId = getIdFromRef(s.vendorId);
     return sVendorId === String(currentVendorId);
   });
-  // যদি ফিল্টার করার পর ডাটা পাওয়া যায় তবে সেটি, নাহলে ব্যাকএন্ড থেকে আসা ডাটা যদি ১টি থাকে তবে সেটিই নিবে।
   const listStores = vendorStores.length > 0 ? vendorStores : (rawListStores.length === 1 ? rawListStores : []);
 
   const listCategories = initialData?.categories || [];
@@ -124,6 +120,8 @@ export default function ProductForm({
   const [videoUrl, setVideoUrl] = useState("");
   const [shippingCost, setShippingCost] = useState<number | undefined>(undefined);
 
+  const [callForPrice, setCallForPrice] = useState(false);
+
   const [store, setStore] = useState("");
   const [category, setCategory] = useState("");
   const [subcategory, setSubcategory] = useState("");
@@ -151,19 +149,26 @@ export default function ProductForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingProduct, setIsLoadingProduct] = useState(isEditMode);
   const [showDebug, setShowDebug] = useState(false);
+  
+  const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
 
   const isInitialLoad = useRef(true);
   const initialModelId = useRef<string | null>(null);
   const initialSubcategoryId = useRef<string | null>(null);
 
-  // --- 0. AUTO-SELECT VENDOR STORE ---
+  // ✅ Call For Price Permission Check
+  const hasCallForPricePermission = useMemo(() => {
+    if (!store) return false;
+    const selectedStoreObj = listStores.find((s: any) => getIdFromRef(s) === store);
+    return selectedStoreObj?.callForPricePermission === true;
+  }, [store, listStores]);
+
   useEffect(() => {
     if (!isEditMode && listStores.length > 0 && !store) {
       setStore(getIdFromRef(listStores[0]));
     }
   }, [listStores, store, isEditMode]);
 
-  // --- 1. LOAD PRODUCT DATA ---
   useEffect(() => {
     const fetchExistingProduct = async () => {
       if (!isEditMode || !productId || !token) {
@@ -173,7 +178,6 @@ export default function ProductForm({
       }
 
       try {
-        // ✅ Standard endpoint — resolveOptionId দিয়ে name→ID handle করা হয়
         const res = await axios.get(`/api/v1/product/${productId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -185,15 +189,15 @@ export default function ProductForm({
           return;
         }
 
-        // 1. Basic Info
         setTitle(p.productTitle || "");
         setShortDescription(p.shortDescription || "");
         setFullDescription(p.fullDescription || "");
         setSpecification(p.specification || "");
         setWarrantyPolicy(p.warrantyPolicy || "");
         setProductTags(Array.isArray(p.productTag) ? p.productTag : []);
+        
+        setCallForPrice(!!p.callForPrice);
 
-        // SEO
         setMetaTitle(p.metaTitle || "");
         setMetaDescription(p.metaDescription || "");
         setMetaKeywordTags(
@@ -204,7 +208,6 @@ export default function ProductForm({
             : []
         );
 
-        // 2. Images & Pricing
         setThumbnailPreview(p.thumbnailImage || null);
         setInitialThumbnailUrl(p.thumbnailImage || null);
         setExistingGalleryUrls(Array.isArray(p.photoGallery) ? p.photoGallery : []);
@@ -216,7 +219,6 @@ export default function ProductForm({
         setShippingCost(p.shippingCost);
         setVideoUrl(p.videoUrl || "");
 
-        // Special Offer
         if (p.offerDeadline) {
           setSpecialOffer(true);
           const deadline = new Date(p.offerDeadline);
@@ -228,7 +230,6 @@ export default function ProductForm({
           setOfferEndTime(`${year}-${month}-${day}T${hours}:${minutes}`);
         }
 
-        // 3. IDs
         const catId = getIdFromRef(p.category);
         const subId = getIdFromRef(p.subCategory);
         const childId = getIdFromRef(p.childCategory);
@@ -237,7 +238,6 @@ export default function ProductForm({
         if (subId) initialSubcategoryId.current = subId;
         if (modelIdRef) initialModelId.current = modelIdRef;
 
-        // 4. Dependent list fetches
         const promises: Promise<void>[] = [];
         if (catId) {
           promises.push(
@@ -273,7 +273,6 @@ export default function ProductForm({
         }
         await Promise.all(promises);
 
-        // 5. Main IDs set
         if (getIdFromRef(p.vendorStoreId)) setStore(getIdFromRef(p.vendorStoreId));
         if (catId) setCategory(catId);
         if (subId) setSubcategory(subId);
@@ -284,7 +283,6 @@ export default function ProductForm({
         if (getIdFromRef(p.warranty)) setWarranty(getIdFromRef(p.warranty));
         if (childId) setChildCategory(childId);
 
-        // 6. ✅ Variants — resolveOptionId দিয়ে ObjectId বা plain name দুটোই handle
         if (p.productOptions?.length > 0) {
           setHasVariant(true);
           const currentVariantOptions = variantOptionsInitial;
@@ -292,6 +290,7 @@ export default function ProductForm({
           const mappedVariants = p.productOptions.map((opt: any, idx: number) => {
             const rawColor = Array.isArray(opt.color) ? opt.color[0] : opt.color;
             const rawSize = Array.isArray(opt.size) ? opt.size[0] : opt.size;
+            const rawCountry = Array.isArray(opt.country) ? opt.country[0] : opt.country; // ✅ Country Support
             const rawStorage = opt.storage;
             const rawSimType = Array.isArray(opt.simType) ? opt.simType[0] : opt.simType;
             const rawCondition = Array.isArray(opt.condition) ? opt.condition[0] : opt.condition;
@@ -299,6 +298,7 @@ export default function ProductForm({
 
             const colorId = resolveOptionId(rawColor, currentVariantOptions?.colors || [], ["colorName", "name"]);
             const sizeId = resolveOptionId(rawSize, currentVariantOptions?.sizes || [], ["name"]);
+            const countryId = resolveOptionId(rawCountry, currentVariantOptions?.countries || [], ["name"]); // ✅ Country Resolve
             const storageId = resolveOptionId(rawStorage, currentVariantOptions?.storageTypes || [], ["name", "ram", "rom"]);
             const simTypeId = resolveOptionId(rawSimType, currentVariantOptions?.simTypes || [], ["name"]);
             const conditionId = resolveOptionId(rawCondition, currentVariantOptions?.conditions || [], ["deviceCondition", "name"]);
@@ -309,6 +309,7 @@ export default function ProductForm({
               imageUrl: opt.productImage || "",
               color: colorId,
               size: sizeId,
+              country: countryId, // ✅ Add to variants mapping
               storage: storageId,
               simType: simTypeId,
               condition: conditionId,
@@ -321,7 +322,6 @@ export default function ProductForm({
 
           setVariants(mappedVariants);
 
-          // ✅ Missing storage option (যদি resolve না হয়) custom হিসেবে add করো
           const missingStorageOptions: any[] = [];
           p.productOptions.forEach((opt: any) => {
             const rawStorage = opt.storage;
@@ -373,10 +373,8 @@ export default function ProductForm({
     };
 
     fetchExistingProduct();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditMode, productId, token]);
 
-  // --- 2. FETCH SUBCATEGORIES (User change only) ---
   useEffect(() => {
     if (isInitialLoad.current) return;
     const fetchSubcategories = async () => {
@@ -399,7 +397,6 @@ export default function ProductForm({
     fetchSubcategories();
   }, [category, token]);
 
-  // --- 3. FETCH CHILD CATEGORIES (User change only) ---
   useEffect(() => {
     if (isInitialLoad.current) return;
     const fetchChildCategories = async () => {
@@ -420,7 +417,6 @@ export default function ProductForm({
     fetchChildCategories();
   }, [subcategory, token]);
 
-  // --- 4. FETCH MODELS (User change only) ---
   useEffect(() => {
     if (isInitialLoad.current) return;
     const fetchModels = async () => {
@@ -441,7 +437,6 @@ export default function ProductForm({
     fetchModels();
   }, [brand, token]);
 
-  // --- 5. SET MODEL AFTER MODELS LIST LOADED ---
   useEffect(() => {
     if (!isEditMode || !initialModelId.current) return;
     if (models.length > 0 && !model) {
@@ -454,7 +449,6 @@ export default function ProductForm({
     }
   }, [models, model, isEditMode]);
 
-  // --- 6. SET SUBCATEGORY AFTER LIST LOADED ---
   useEffect(() => {
     if (!isEditMode || !initialSubcategoryId.current) return;
     if (subcategories.length > 0 && !subcategory) {
@@ -467,7 +461,6 @@ export default function ProductForm({
     }
   }, [subcategories, subcategory, isEditMode]);
 
-  // --- PRICING ---
   const pricingFormData = {
     price: price ?? "",
     discountPrice: discountPrice ?? "",
@@ -509,14 +502,56 @@ export default function ProductForm({
     }
   };
 
-  // --- SUBMIT ---
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!token) return toast.error("⚠️ Authentication required.");
-    if (!isEditMode && !thumbnail) return toast.error("⚠️ Thumbnail image is required.");
-    if (!title || !store || !category) return toast.error("⚠️ Please fill all required fields (*).");
-    if (!price || price <= 0) return toast.error("⚠️ Price is required and must be greater than 0.");
 
+    const newErrors: Record<string, boolean> = {};
+    let firstErrorId = "";
+
+    if (!title.trim()) {
+      newErrors.title = true;
+      if (!firstErrorId) firstErrorId = "title";
+    }
+    if (!shortDescription.trim()) {
+      newErrors.shortDescription = true;
+      if (!firstErrorId) firstErrorId = "shortDescription";
+    }
+    if (!fullDescription || fullDescription === "<p><br></p>" || !fullDescription.trim()) {
+      newErrors.fullDescription = true;
+      if (!firstErrorId) firstErrorId = "detailedInformationContainer";
+    }
+    if (!isEditMode && !thumbnail && !thumbnailPreview) {
+      newErrors.thumbnail = true;
+      if (!firstErrorId) firstErrorId = "thumbnailContainer";
+    }
+    if (!store) newErrors.store = true;
+    if (!category) newErrors.category = true;
+
+    // ✅ Evaluate Final Call For Price
+    const finalCallForPrice = hasCallForPricePermission ? callForPrice : false;
+    
+    if (!finalCallForPrice && (!price || price <= 0)) {
+      newErrors.price = true;
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setFormErrors(newErrors);
+      toast.error("⚠️ Please fill all required fields correctly.");
+
+      const errorElement = document.getElementById(firstErrorId);
+      if (errorElement) {
+        if (firstErrorId === "title" || firstErrorId === "shortDescription") {
+          errorElement.focus();
+        } else {
+          errorElement.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }
+      return;
+    }
+
+    setFormErrors({});
+
+    if (!token) return toast.error("⚠️ Authentication required.");
     const selectedStore = listStores.find((s: any) => getIdFromRef(s) === store);
     const vendorName = selectedStore?.storeName || "";
 
@@ -553,6 +588,7 @@ export default function ProductForm({
         sku: productCode || undefined,
         rewardPoints: rewardPoints || 0,
         shippingCost: shippingCost || 0,
+        callForPrice: finalCallForPrice, // ✅ Sent to backend
         category,
         subCategory: subcategory || undefined,
         childCategory: childCategory || undefined,
@@ -566,7 +602,6 @@ export default function ProductForm({
         metaKeyword: metaKeywordTags.length > 0 ? metaKeywordTags.join(", ") : undefined,
         metaDescription: metaDescription || undefined,
         status: "active",
-        // ✅ Submit: শুধু valid ObjectId পাঠাও — plain string পাঠালে CastError হয়
         productOptions: hasVariant
           ? await Promise.all(
               variants.map(async (variant) => {
@@ -581,6 +616,7 @@ export default function ProductForm({
                   productImage: uploadedImage,
                   color: safeId(variant.color) ? [variant.color] : [],
                   size: safeId(variant.size) ? [variant.size] : [],
+                  country: safeId(variant.country) ? [variant.country] : [], // ✅ Send country to backend
                   storage: safeId(variant.storage),
                   simType: safeId(variant.simType) ? [variant.simType] : [],
                   condition: safeId(variant.condition) ? [variant.condition] : [],
@@ -629,6 +665,7 @@ export default function ProductForm({
       }
       setThumbnail(file);
       setThumbnailPreview(URL.createObjectURL(file));
+      setFormErrors((prev) => ({ ...prev, thumbnail: false }));
     } else {
       setThumbnail(null);
       setThumbnailPreview(null);
@@ -643,56 +680,8 @@ export default function ProductForm({
       </div>
     );
 
-  // Debug Panel
-  const DebugPanel = () => {
-    if (process.env.NODE_ENV !== "development") return null;
-    if (!showDebug) {
-      return (
-        <Button type="button" variant="outline" size="sm" onClick={() => setShowDebug(true)}
-          className="fixed bottom-4 right-4 z-50 bg-yellow-100 hover:bg-yellow-200 border-yellow-400">
-          🐛 Debug
-        </Button>
-      );
-    }
-    return (
-      <div className="fixed bottom-4 right-4 z-50 bg-white border-2 border-yellow-400 rounded-lg shadow-xl p-4 max-w-md max-h-[80vh] overflow-auto">
-        <div className="flex justify-between items-center mb-3 pb-2 border-b">
-          <h3 className="font-bold text-sm">🐛 Debug Panel</h3>
-          <Button type="button" variant="ghost" size="sm" onClick={() => setShowDebug(false)}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="space-y-2 text-xs">
-          <div className="bg-gray-50 p-2 rounded">
-            <p className="font-semibold">Product Details:</p>
-            <p>Store: {store || "❌ Empty"}</p>
-            <p>Category: {category || "❌ Empty"}</p>
-            <p>Subcategory: {subcategory || "❌ Empty"}</p>
-            <p>Brand: {brand || "❌ Empty"}</p>
-            <p>Model: {model || "❌ Empty"}</p>
-          </div>
-          <div className="bg-gray-50 p-2 rounded">
-            <p className="font-semibold">Variants:</p>
-            <p>Has Variants: {hasVariant ? "✅ Yes" : "❌ No"}</p>
-            <p>Count: {variants.length}</p>
-            {variants.map((v, i) => (
-              <div key={v.id} className="border-t pt-1 mt-1 text-[10px]">
-                <p className="font-semibold">Variant {i + 1}:</p>
-                <p>Color: {v.color || "❌"}</p>
-                <p>Size: {v.size || "❌"}</p>
-                <p>Storage: {v.storage || "❌"}</p>
-                <p>Warranty: {v.warranty || "❌"}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <>
-      <DebugPanel />
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         <div className="flex justify-end gap-2 sticky top-4 z-10 bg-gray-50/80 backdrop-blur-sm py-2 px-4 rounded-lg shadow-sm -mt-4">
           <Button type="button" variant="destructive" onClick={() => router.back()}>
@@ -705,7 +694,6 @@ export default function ProductForm({
         </div>
 
         <div className="space-y-4 sm:space-y-6">
-          {/* Section 1: Basic Info + Thumbnail */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <Card className="shadow-sm border-gray-200 flex flex-col h-full">
               <CardHeader className="pb-4 border-b border-gray-100">
@@ -713,14 +701,38 @@ export default function ProductForm({
               </CardHeader>
               <CardContent className="pt-6 space-y-5 flex-1">
                 <div className="space-y-2">
-                  <Label>Product Title <span className="text-red-500">*</span></Label>
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} required className="h-11" />
+                  <Label htmlFor="title">Product Title <span className="text-red-500">*</span></Label>
+                  <Input 
+                    id="title"
+                    value={title} 
+                    onChange={(e) => {
+                      setTitle(e.target.value);
+                      setFormErrors((prev) => ({ ...prev, title: false }));
+                    }} 
+                    className={`h-11 ${formErrors.title ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
+                  />
+                  {formErrors.title && <span className="text-red-500 text-xs">This field is required.</span>}
                 </div>
+                
                 <div className="space-y-2">
-                  <Label>Short Description (Max 255)</Label>
-                  <Textarea value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} maxLength={255} className="min-h-[100px] resize-none" />
+                  <Label htmlFor="shortDescription">
+                    Short Description <span className="text-red-500">*</span> 
+                    <span className="text-gray-500 text-xs font-normal ml-1">(Required, Max 255)</span>
+                  </Label>
+                  <Textarea 
+                    id="shortDescription"
+                    value={shortDescription} 
+                    onChange={(e) => {
+                      setShortDescription(e.target.value);
+                      setFormErrors((prev) => ({ ...prev, shortDescription: false }));
+                    }} 
+                    maxLength={255} 
+                    className={`min-h-[100px] resize-none ${formErrors.shortDescription ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
+                  />
+                  {formErrors.shortDescription && <span className="text-red-500 text-xs">This field is required.</span>}
                   <div className="text-xs text-gray-500 text-right">{shortDescription.length}/255</div>
                 </div>
+
                 <div className="space-y-2">
                   <Label>Product Tags</Label>
                   <TagInput value={productTags} onChange={setProductTags} />
@@ -728,7 +740,7 @@ export default function ProductForm({
               </CardContent>
             </Card>
 
-            <Card className="shadow-sm border-gray-200 flex flex-col h-full">
+            <Card className="shadow-sm border-gray-200 flex flex-col h-full" id="thumbnailContainer">
               <CardHeader className="pb-4 border-b border-gray-100">
                 <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
                   Thumbnail Image <span className="text-red-500">*</span>
@@ -736,7 +748,7 @@ export default function ProductForm({
               </CardHeader>
               <CardContent className="pt-6 flex-1">
                 <label htmlFor="thumbnail-upload" className="cursor-pointer group block w-full h-full">
-                  <div className="flex items-center justify-center w-full h-full min-h-[300px] border-2 border-dashed border-gray-300 rounded-lg p-4 transition-colors hover:border-blue-400 hover:bg-blue-50/50">
+                  <div className={`flex items-center justify-center w-full h-full min-h-[300px] border-2 border-dashed rounded-lg p-4 transition-colors hover:border-blue-400 hover:bg-blue-50/50 ${formErrors.thumbnail ? "border-red-500 bg-red-50/20" : "border-gray-300"}`}>
                     {thumbnailPreview ? (
                       <div className="relative w-full h-full min-h-[300px] rounded-md overflow-hidden">
                         <Image src={thumbnailPreview} alt="Thumbnail" fill style={{ objectFit: "contain" }} className="rounded-md" />
@@ -752,8 +764,10 @@ export default function ProductForm({
                       </div>
                     ) : (
                       <div className="text-center text-gray-500">
-                        <UploadCloud className="mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-2 text-gray-400" />
-                        <p className="text-sm font-medium">Click to upload</p>
+                        <UploadCloud className={`mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-2 ${formErrors.thumbnail ? "text-red-400" : "text-gray-400"}`} />
+                        <p className={`text-sm font-medium ${formErrors.thumbnail ? "text-red-500" : ""}`}>
+                          {formErrors.thumbnail ? "Image is required" : "Click to upload"}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -763,21 +777,31 @@ export default function ProductForm({
             </Card>
           </div>
 
-          {/* Section 2: Detailed Info + Pricing */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-            <Card className="shadow-sm border-gray-200 flex flex-col h-full">
+            <Card className="shadow-sm border-gray-200 flex flex-col h-full" id="detailedInformationContainer">
               <CardHeader className="pb-4 border-b border-gray-100">
-                <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">Detailed Information</CardTitle>
+                <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
+                  Detailed Information
+                </CardTitle>
               </CardHeader>
               <CardContent className="pt-6 flex-1">
                 <Tabs defaultValue="description" className="w-full h-full flex flex-col">
                   <TabsList className="grid w-full grid-cols-3 bg-gray-50 h-auto p-1">
-                    <TabsTrigger value="description" className="text-xs sm:text-sm py-2.5">Description</TabsTrigger>
+                    <TabsTrigger value="description" className={`text-xs sm:text-sm py-2.5 ${formErrors.fullDescription ? "text-red-500" : ""}`}>
+                      Description <span className="text-red-500 ml-1">*</span>
+                    </TabsTrigger>
                     <TabsTrigger value="specification" className="text-xs sm:text-sm py-2.5">Specification</TabsTrigger>
                     <TabsTrigger value="warranty" className="text-xs sm:text-sm py-2.5">Warranty</TabsTrigger>
                   </TabsList>
-                  <TabsContent value="description" className="mt-4 flex-1">
-                    <RichTextEditor value={fullDescription} onChange={setFullDescription} />
+                  <TabsContent value="description" className={`mt-4 flex-1 ${formErrors.fullDescription ? "border border-red-500 rounded-md p-1" : ""}`}>
+                    <RichTextEditor 
+                      value={fullDescription} 
+                      onChange={(val) => {
+                        setFullDescription(val);
+                        setFormErrors((prev) => ({ ...prev, fullDescription: false }));
+                      }} 
+                    />
+                    {formErrors.fullDescription && <span className="text-red-500 text-xs mt-1 block">Full description is required.</span>}
                   </TabsContent>
                   <TabsContent value="specification" className="mt-4 flex-1">
                     <RichTextEditor value={specification} onChange={setSpecification} />
@@ -794,11 +818,34 @@ export default function ProductForm({
                 <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">Pricing & Inventory</CardTitle>
               </CardHeader>
               <CardContent className="pt-6 space-y-4 flex-1">
-                <PricingInventory
-                  formData={pricingFormData}
-                  handleInputChange={handlePricingInputChange}
-                  handleNumberChange={handlePricingNumberChange}
-                />
+                {/* ✅ Render Call for Price toggle only if permitted */}
+                {hasCallForPricePermission && (
+                  <div className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <PhoneCall className="w-4 h-4 text-amber-600" />
+                        <Label className="font-semibold text-amber-800 cursor-pointer">Call for Price</Label>
+                      </div>
+                      <p className="text-xs text-amber-600 mt-0.5">
+                        Enable করলে price hidden থাকবে, "Call for Price" button দেখাবে
+                      </p>
+                    </div>
+                    <Switch
+                      checked={callForPrice}
+                      onCheckedChange={setCallForPrice}
+                    />
+                  </div>
+                )}
+
+                {/* ✅ Hide / Disable Pricing Fields if Call for Price is ON */}
+                <div className={callForPrice && hasCallForPricePermission ? "opacity-40 pointer-events-none" : ""}>
+                  <PricingInventory
+                    formData={pricingFormData}
+                    handleInputChange={handlePricingInputChange}
+                    handleNumberChange={handlePricingNumberChange}
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label>Product Code (SKU)</Label>
                   <Input value={productCode} onChange={(e) => setProductCode(e.target.value)} className="h-11" />
@@ -807,7 +854,6 @@ export default function ProductForm({
             </Card>
           </div>
 
-          {/* Section 3: Gallery + Product Details */}
           <div className={`grid gap-4 sm:gap-6 ${hasVariant ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"}`}>
             {!hasVariant && (
               <ProductImageGallery
@@ -828,7 +874,6 @@ export default function ProductForm({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Store <span className="text-red-500">*</span></Label>
-                    {/* ✅ লিস্টে ১টির বেশি স্টোর না থাকলে ড্রপডাউন ডিজেবলড হয়ে থাকবে */}
                     <Select value={store} onValueChange={setStore} disabled={listStores.length <= 1}>
                       <SelectTrigger className="h-11"><SelectValue placeholder="Select store" /></SelectTrigger>
                       <SelectContent>
@@ -948,7 +993,6 @@ export default function ProductForm({
             </Card>
           </div>
 
-          {/* Variants */}
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-center space-x-3 mb-4">
@@ -960,12 +1004,12 @@ export default function ProductForm({
                   variants={variants}
                   setVariants={setVariants}
                   variantData={variantOptions}
+                  isCallForPrice={hasCallForPricePermission ? callForPrice : false} // ✅ Pass dynamically to hide prices
                 />
               )}
             </CardContent>
           </Card>
 
-          {/* SEO */}
           <Card className="shadow-sm border-gray-200">
             <CardHeader className="pb-4 border-b border-gray-100">
               <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">SEO Information</CardTitle>
@@ -988,7 +1032,6 @@ export default function ProductForm({
             </CardContent>
           </Card>
 
-          {/* Bottom Buttons */}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="destructive" onClick={() => router.back()}>
               <X className="mr-2 h-4 w-4" /> Discard

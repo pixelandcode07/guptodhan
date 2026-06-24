@@ -86,14 +86,22 @@ export default function LogInRegister() {
 
   const [showPin, setShowPin] = useState<boolean>(false)
 
-  // ==========================================
-  // ✅ CORE FIX: Vendor হলে vendor-login endpoint ব্যবহার করে vendorId নিশ্চিত করা
-  // ==========================================
+  // ✅ FIXED: '0' + slice ছিল bug — এখন শুধু slice করে 01XXXXXXXXX বানাচ্ছি
+  // +8801816506070 → slice(3) → 01816506070 ✅ (আগে '0'+slice(3) = 001... ❌ ছিল)
+  const normalizePhone = (identifier: string): string => {
+    const trimmed = identifier.trim()
+    if (trimmed.includes('@')) return trimmed
+    if (trimmed.startsWith('+88')) return trimmed.slice(3)
+    if (trimmed.startsWith('88') && trimmed.length >= 13) return trimmed.slice(2)
+    return trimmed
+  }
+
   const performLogin = async (identifier: string, password: string) => {
-    // ১. প্রথমে vendor-login ট্রাই করো (vendor দের জন্য vendorId সহ আসে)
+    const cleanIdentifier = normalizePhone(identifier)
+
     try {
       const res = await axios.post('/api/v1/auth/vendor-login', {
-        identifier,
+        identifier: cleanIdentifier,
         password,
       })
       if (res?.data?.success) return res
@@ -101,17 +109,13 @@ export default function LogInRegister() {
       // vendor login fail হলে normal login ট্রাই করো
     }
 
-    // ২. Normal user login ট্রাই করো
     const res = await axios.post('/api/v1/auth/login', {
-      identifier,
+      identifier: cleanIdentifier,
       password,
     })
     return res
   }
 
-  // ==========================================
-  // ✅ FIXED: Login Submit Handler
-  // ==========================================
   const onSubmitLogin = async (data: LoginFormData) => {
     try {
       setLoading(true)
@@ -123,15 +127,10 @@ export default function LogInRegister() {
         const { user, accessToken } = res.data.data
 
         const resolvedUserId = user._id || user.id || ''
-
-        // ==========================================
-        // ✅ KEY FIX: vendor role কিন্তু vendorId নেই? → vendor store fetch করো
-        // ==========================================
         let resolvedVendorId = user.vendorId || ''
 
         if (user.role === 'vendor' && !resolvedVendorId) {
           try {
-            // vendorId বের করার জন্য vendor store info fetch করো
             const vendorRes = await axios.get('/api/v1/vendor/my-store', {
               headers: { Authorization: `Bearer ${accessToken}` },
             })
@@ -140,7 +139,6 @@ export default function LogInRegister() {
               vendorRes?.data?.data?._id ||
               ''
           } catch {
-            // fetch fail হলেও proceed করো, vendorId empty থাকবে
             console.warn('Could not fetch vendorId separately')
           }
         }
@@ -176,20 +174,17 @@ export default function LogInRegister() {
         })
 
         closeButtonRef.current?.click()
-
         await update()
 
-        // ==========================================
-        // ✅ ROLE-BASED REDIRECT LOGIC
-        // ==========================================
         const savedUrl = localStorage.getItem('redirectAfterLogin')
         let redirectPath = savedUrl || window.location.pathname
 
-        if (
-          (user.role === 'vendor' || user.role === 'admin') &&
-          !savedUrl
-        ) {
-          redirectPath = '/dashboard'
+        if (!savedUrl) {
+          if (user.role === 'admin') {
+            redirectPath = '/general'
+          } else if (user.role === 'vendor') {
+            redirectPath = '/dashboard'
+          }
         }
 
         localStorage.removeItem('redirectAfterLogin')
@@ -213,16 +208,11 @@ export default function LogInRegister() {
     }
   }
 
-  // ==========================================
-  // ✅ Handle Account Created (unchanged)
-  // ==========================================
   const handleAccountCreated = async (phone: string, pin: string) => {
     try {
       toast.loading('Setting up your account...', { id: 'setup-toast' })
 
-      const cleanPhone = phone.startsWith('0')
-        ? phone
-        : '0' + phone.replace('+88', '')
+      const cleanPhone = normalizePhone(phone)
 
       const loginRes = await axios.post('/api/v1/auth/login', {
         identifier: cleanPhone,
@@ -265,7 +255,6 @@ export default function LogInRegister() {
         })
 
         closeButtonRef.current?.click()
-
         await update()
 
         const redirectPath =

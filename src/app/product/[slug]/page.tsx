@@ -23,11 +23,10 @@ interface ProductPageProps {
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.guptodhan.com';
 
 // ─── API Fetch Function (Professional Next.js Fetch API for SSR) ──────────────
-// ✅ সরাসরি সার্ভিসের বদলে এই ফাংশনটি API থেকে ডাটা আনবে
 async function getProductBySlugFromAPI(slug: string) {
   try {
     const res = await fetch(`${BASE_URL}/api/v1/public/product/slug/${slug}`, {
-      cache: 'no-store', // ✅ SSR নিশ্চিত করবে এবং সবসময় ফ্রেশ ডাটা আনবে
+      cache: 'no-store', // ✅ SSR নিশ্চিত করবে এবং সবসময় ফ্রেশ ডাটা আনবে
     });
     
     if (!res.ok) return null;
@@ -153,7 +152,6 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     await dbConnect();
     const { slug } = await params;
 
-    // ✅ DB সার্ভিসের বদলে API কল করা হলো
     const product = await getProductBySlugFromAPI(slug);
 
     if (!product) {
@@ -237,7 +235,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     await dbConnect();
     const { slug } = await params;
 
-    // ✅ Parallel data fetching — DB সার্ভিসের বদলে API কল অ্যাড করা হলো
+    // ✅ Parallel data fetching
     const [
       rawProduct,
       categoriesData,
@@ -249,7 +247,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       colorsData,
       sizesData,
     ] = await Promise.all([
-      getProductBySlugFromAPI(slug), // ✅ Updated to use Next.js fetch API
+      getProductBySlugFromAPI(slug),
       CategoryServices.getAllCategoriesFromDB(),
       StoreServices.getAllStoresFromDB(),
       BrandServices.getAllBrandsFromDB(),
@@ -286,24 +284,47 @@ export default async function ProductPage({ params }: ProductPageProps) {
       relatedProducts,
     };
 
-    const categoriesInfo = JSON.parse(JSON.stringify(categoriesData || []))
+    // =====================================================================
+    // 🔥 CRITICAL FIX: Manually Populating Categories with Sub & Child
+    // =====================================================================
+    const parsedCategories = JSON.parse(JSON.stringify(categoriesData || []));
+    const parsedSubCategories = JSON.parse(JSON.stringify(subCategoriesData || []));
+    const parsedChildCategories = JSON.parse(JSON.stringify(childCategoriesData || []));
+
+    const categoriesInfo = parsedCategories
       .filter((cat: any) => cat?._id)
-      .map((cat: any, i: number) => ({
-        ...cat,
-        mainCategoryId: cat._id || `temp-cat-${i}`,
-        subCategories: (cat.subCategories || [])
-          .filter((sub: any) => sub?._id)
-          .map((sub: any, si: number) => ({
-            ...sub,
-            subCategoryId: sub._id || `temp-sub-${i}-${si}`,
-            children: (sub.children || [])
-              .filter((child: any) => child?._id)
-              .map((child: any, ci: number) => ({
+      .map((cat: any, i: number) => {
+        
+        // Match subcategories for this main category
+        const catSubs = parsedSubCategories.filter((sub: any) => {
+          const isParentMatch = sub.category === cat._id || sub.category?._id === cat._id || sub.categoryId === cat._id;
+          const isInArray = Array.isArray(cat.subCategories) && cat.subCategories.some((subItem: any) => subItem === sub._id || subItem?._id === sub._id);
+          return isParentMatch || isInArray;
+        });
+
+        return {
+          ...cat,
+          mainCategoryId: cat._id || `temp-cat-${i}`,
+          subCategories: catSubs.map((sub: any, si: number) => {
+            
+            // Match child categories for this subcategory
+            const subChildren = parsedChildCategories.filter((child: any) => {
+              const isParentMatch = child.subCategory === sub._id || child.subCategory?._id === sub._id || child.subCategoryId === sub._id;
+              const isInArray = Array.isArray(sub.children) && sub.children.some((childItem: any) => childItem === child._id || childItem?._id === child._id);
+              return isParentMatch || isInArray;
+            });
+
+            return {
+              ...sub,
+              subCategoryId: sub._id || `temp-sub-${i}-${si}`,
+              children: subChildren.map((child: any, ci: number) => ({
                 ...child,
                 childCategoryId: child._id || `temp-child-${i}-${si}-${ci}`,
               })),
-          })),
-      }));
+            };
+          }),
+        };
+      });
 
     const averageRating = rawProduct.ratingStats?.[0]?.averageRating || 0;
     const totalReviews = rawProduct.ratingStats?.[0]?.totalReviews || 0;
@@ -440,6 +461,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageSchema) }}
         />
 
+        {/* ✅ Updated Categories Info Passed Down Here */}
         <HeroNav categories={categoriesInfo} />
 
         <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-8">

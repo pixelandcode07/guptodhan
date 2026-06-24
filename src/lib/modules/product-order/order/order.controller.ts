@@ -411,6 +411,22 @@ const requestReturn = async (req: NextRequest) => {
   }
 };
 
+const cancelOrderByUser = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    await dbConnect();
+    const { id } = await params;
+    const body = await req.json();
+    const { userId, reason } = body;
+
+    const result = await OrderServices.cancelOrderByUserInDB(id, userId, reason);
+
+    return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: 'Order cancelled successfully!',
+        data: result,
+    });
+};
+
 // --- 10. Get Vendor Store and Orders ---
 const getVendorStoreAndOrdersVendor = async (
   req: NextRequest,
@@ -439,6 +455,41 @@ const getVendorStoreAndOrdersVendor = async (
   }
 };
 
+
+const getAdminDashboardReport = async (req: NextRequest) => {
+  try {
+    await dbConnect();
+ 
+    const { searchParams } = new URL(req.url);
+ 
+    const filters = {
+      startDate:     searchParams.get('startDate')     || undefined,
+      endDate:       searchParams.get('endDate')       || undefined,
+      orderStatus:   searchParams.get('orderStatus')   || undefined,
+      paymentStatus: searchParams.get('paymentStatus') || undefined,
+      paymentMethod: searchParams.get('paymentMethod') || undefined,
+    };
+ 
+    const result = await OrderServices.getAdminDashboardReportFromDB(filters);
+ 
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: 'Admin dashboard report retrieved successfully!',
+      data: result,
+    });
+  } catch (error: any) {
+    console.error('❌ Error in getAdminDashboardReport:', error);
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: error.message || 'Failed to retrieve admin dashboard report.',
+      data: null,
+    });
+  }
+};
+
+
 export const OrderController = {
   createOrderWithDetails,
   getAllOrders,
@@ -449,5 +500,7 @@ export const OrderController = {
   getSalesReport,
   getReturnedOrdersByUser,
   requestReturn,
-  getVendorStoreAndOrdersVendor
+  cancelOrderByUser,
+  getVendorStoreAndOrdersVendor,
+  getAdminDashboardReport,
 };

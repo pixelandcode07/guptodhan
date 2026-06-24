@@ -212,6 +212,40 @@ const getUserByIdFromDB = async (id: string): Promise<Partial<TUser> | null> => 
   return user;
 };
 
+
+/**
+ * 👑 Create User By Admin (Directly Verified, No OTP)
+ */
+const createUserByAdminInDB = async (payload: any): Promise<Partial<TUser> | null> => {
+  const query = [];
+  if (payload.email) query.push({ email: payload.email });
+  if (payload.phoneNumber) query.push({ phoneNumber: payload.phoneNumber });
+
+  // 1. Check if user already exists
+  if (query.length > 0) {
+    const isUserExist = await User.findOne({ $or: query }).lean();
+    if (isUserExist) {
+      throw new Error('A user with this email or phone number already exists!');
+    }
+  }
+
+  // 2. Set default verified status because Admin is creating it
+  payload.isVerified = true;
+  payload.isActive = true;
+
+  // 3. Create user (Password will be hashed automatically by pre-save hook in user.model.ts)
+  const newUser = await User.create(payload);
+  
+  // 4. Clear cache to update the Admin UI immediately
+  await deleteCachePattern(CacheKeys.PATTERNS.USERS_LIST);
+
+  const result = await User.findById(newUser._id)
+    .select('-password')
+    .lean();
+
+  return result;
+};
+
 export const UserServices = {
   createUserIntoDB,
   getAllUsersFromDB,
@@ -221,4 +255,5 @@ export const UserServices = {
   createServiceProviderIntoDB,
   updateUserByAdminInDB,
   getUserByIdFromDB,
+  createUserByAdminInDB,
 };

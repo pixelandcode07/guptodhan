@@ -153,8 +153,38 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import axios from "axios";
 import { IProvider } from "@/types/ProviderType";
+import React from "react";
 
-export const provider_management_columns: ColumnDef<IProvider>[] = [
+// ✅ Wrap columns in a function to receive setData for instant UI updates
+export const getProviderColumns = (
+  setData: React.Dispatch<React.SetStateAction<IProvider[]>>
+): ColumnDef<IProvider>[] => [
+
+  // ✅ 1. Checkbox Column for Bulk Actions
+  {
+    id: "select",
+    header: ({ table }) => (
+      <input
+        type="checkbox"
+        className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        checked={table.getIsAllPageRowsSelected()}
+        onChange={table.getToggleAllPageRowsSelectedHandler()}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <input
+        type="checkbox"
+        className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        checked={row.getIsSelected()}
+        onChange={row.getToggleSelectedHandler()}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+
   {
     accessorKey: "serial",
     header: "Serial",
@@ -230,28 +260,23 @@ export const provider_management_columns: ColumnDef<IProvider>[] = [
   {
     id: "actions",
     header: "Actions",
-    cell: ({ row, table }) => {
+    cell: ({ row }) => {
       const user = row.original;
-      const setData = (table.options.meta as any)?.setData;
 
       const handleStatusUpdate = async (action: "approve" | "reject") => {
         const apiUrl = `/api/v1/service-section/service-provider/${action}/${user._id}`;
+        const loadingToast = toast.loading(`${action === "approve" ? "Approving" : "Rejecting"} provider...`);
 
         try {
-          await toast.promise(
-            axios.patch(apiUrl, { id: user._id }),
-            {
-              loading: `${action === "approve" ? "Approving" : "Rejecting"} provider...`,
-              success: () => {
-                return action === "approve"
-                  ? "User status changed to active"
-                  : "User status changed to Inactive";
-              },
-              error: (err) => err.response?.data?.message || `Failed to ${action} provider`,
-              style: { background: "#fff", color: "#000" },
-            }
-          );
-          if (setData) {
+          const res = await axios.patch(apiUrl, { id: user._id });
+
+          if (res.data.success) {
+            toast.success(
+              action === "approve" ? "User status changed to Active" : "User status changed to Inactive",
+              { id: loadingToast }
+            );
+
+            // Instant UI Update
             setData((prev: IProvider[]) =>
               prev.map((item) =>
                 item._id === user._id
@@ -264,8 +289,9 @@ export const provider_management_columns: ColumnDef<IProvider>[] = [
               )
             );
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error(`${action} error:`, error);
+          toast.error(error.response?.data?.message || `Failed to ${action} provider`, { id: loadingToast });
         }
       };
 

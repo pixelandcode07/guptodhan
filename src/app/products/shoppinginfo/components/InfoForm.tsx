@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -38,20 +38,30 @@ interface InfoFormProps {
   upazilas?: Upazila[]
 }
 
-// Helper function to extract only the actual address from a stringified object format
+// JSON Array string parsing for Initial Address Data
 const extractCleanAddress = (rawAddress?: string) => {
   if (!rawAddress) return '';
-  // Check if the string contains the messy key-value format
-  if (rawAddress.includes('fullName:') || rawAddress.includes('address:')) {
-    const match = rawAddress.match(/address:\s*([^,]+)/);
-    if (match && match[1]) {
-      return match[1].trim();
+  
+  try {
+    const parsedData = JSON.parse(rawAddress);
+    if (Array.isArray(parsedData) && parsedData.length > 0) {
+      if (parsedData[0].address) return parsedData[0].address;
+    } else if (typeof parsedData === 'object' && parsedData !== null) {
+      if (parsedData.address) return parsedData.address;
+    }
+  } catch (error) {
+    if (rawAddress.includes('fullName:') || rawAddress.includes('address:')) {
+      const match = rawAddress.match(/address:\s*([^,}]+)/);
+      if (match && match[1]) {
+        return match[1].replace(/["']/g, '').trim();
+      }
     }
   }
+  
   return rawAddress;
 };
 
-export default function InfoForm({ onFormDataChange, initialData, districts = [], upazilas = [] }: InfoFormProps) {
+export default function InfoForm({ onFormDataChange, initialData, upazilas = [] }: InfoFormProps) {
   const { data: session } = useSession()
   const user = session?.user
   
@@ -67,37 +77,40 @@ export default function InfoForm({ onFormDataChange, initialData, districts = []
     country: initialData?.country || 'Bangladesh'
   })
 
+  // State for dynamic API districts
+  const [apiDistricts, setApiDistricts] = useState<string[]>([])
+
+  // Fetch Delivery Charges to get active districts directly from API
+  useEffect(() => {
+    const fetchApiDistricts = async () => {
+      try {
+        const res = await fetch('/api/v1/delivery-charge', {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        });
+        const data = await res.json();
+        if (data?.data && Array.isArray(data.data)) {
+          const fetchedDistricts = data.data.map((item: any) => item.districtName);
+          const uniqueDistricts = Array.from(new Set(fetchedDistricts)).sort() as string[];
+          setApiDistricts(uniqueDistricts);
+        }
+      } catch (err) {
+        console.error("Failed to fetch districts from delivery-charge API", err);
+      }
+    };
+    fetchApiDistricts();
+  }, []);
+
   // Helper function to get postal code based on district name
   const getPostalCodeByDistrict = (districtName: string) => {
     const postalCodeMap: { [key: string]: string } = {
-      'Dhaka': '1000',
-      'Chattogram': '4000',
-      'Sylhet': '3100',
-      'Rajshahi': '6000',
-      'Khulna': '9000',
-      'Barishal': '8200',
-      'Rangpur': '5400',
-      'Mymensingh': '2200',
-      'Cumilla': '3500',
-      'Bogura': '5800',
-      'Jessore': '7400',
-      'Dinajpur': '5200',
-      'Tangail': '1900',
-      'Kushtia': '7000',
-      'Pabna': '6600',
-      'Faridpur': '7800',
-      'Narayanganj': '1400',
-      'Gazipur': '1700',
-      'Chandpur': '3600',
-      'Lakshmipur': '3700'
+      'Dhaka': '1000', 'Chattogram': '4000', 'Sylhet': '3100', 'Rajshahi': '6000', 'Khulna': '9000', 'Barishal': '8200', 'Rangpur': '5400', 'Mymensingh': '2200', 'Cumilla': '3500', 'Bogura': '5800', 'Jashore': '7400', 'Dinajpur': '5200', 'Tangail': '1900', 'Kushtia': '7000', 'Pabna': '6600', 'Faridpur': '7800', 'Narayanganj': '1400', 'Gazipur': '1700', 'Chandpur': '3600', 'Lakshmipur': '3700'
     }
-    
     return postalCodeMap[districtName] || '1000'
   }
 
-  // Helper function to get postal code based on upazila/thana name
+  // Helper function to get postal code based on upazila/thana name (Large Map)
   const getPostalCodeByUpazila = (upazilaName: string, districtName: string) => {
-    // বাংলাদেশের সকল প্রধান উপজেলা ও থানার পোস্টাল কোড
     const upazilaPostalMap: { [key: string]: string } = {
       // Dhaka Division
       'Savar': '1340', 'Dhamrai': '1350', 'Keraniganj': '1310', 'Nawabganj': '1320', 'Dohar': '1330',
@@ -178,23 +191,18 @@ export default function InfoForm({ onFormDataChange, initialData, districts = []
       'Sherpur Sadar': '2100', 'Nakla': '2150', 'Sreebardi': '2130', 'Jhenaigati': '2120', 'Nalitabari': '2110',
       'Netrokona Sadar': '2400', 'Kendua': '2420', 'Madan': '2490', 'Mohanganj': '2440', 'Barhatta': '2430', 'Kalmakanda': '2430', 'Purbadhala': '2410', 'Durgapur': '2420', 'Atpara': '2470', 'Khaliajuri': '2450'
     }
-    
-    // যদি উপজেলার কোড ম্যাপে থাকে সেটা দেবে, নাহলে জেলার ডিফল্ট কোড বসবে
     return upazilaPostalMap[upazilaName] || getPostalCodeByDistrict(districtName)
   }
 
-  // Handle district change - update city, postal code, and reset upazila
+  // ✅ Auto-fill postal code when District changes
   const handleDistrictChange = (districtName: string) => {
-    const cityName = districtName
     const postalCode = getPostalCodeByDistrict(districtName)
-    
-    // Reset upazila selection and update city when district changes
     setFormData(prev => {
       const newData = {
         ...prev,
         district: districtName,
         upazila: '',
-        city: cityName,
+        city: districtName, 
         postalCode: postalCode
       }
       onFormDataChange(newData)
@@ -202,10 +210,9 @@ export default function InfoForm({ onFormDataChange, initialData, districts = []
     })
   }
 
-  // Handle upazila change - update postal code based on upazila
+  // ✅ Auto-fill postal code when Upazila changes
   const handleUpazilaChange = (upazilaName: string) => {
     const postalCode = getPostalCodeByUpazila(upazilaName, formData.district)
-    
     setFormData(prev => {
       const newData = {
         ...prev,
@@ -217,14 +224,12 @@ export default function InfoForm({ onFormDataChange, initialData, districts = []
     })
   }
 
-  // Update form data and notify parent
   const updateFormData = (field: keyof FormData, value: string) => {
     const newData = { ...formData, [field]: value }
     setFormData(newData)
     onFormDataChange(newData)
   }
 
-  // Check if form is valid
   const isFormValid = () => {
     return formData.name && formData.phone && formData.email && formData.district && formData.upazila && formData.address && formData.city && formData.postalCode && formData.country
   }
@@ -289,10 +294,8 @@ export default function InfoForm({ onFormDataChange, initialData, districts = []
                 <SelectValue placeholder="Select district" />
               </SelectTrigger>
               <SelectContent>
-                {districts.map((district) => (
-                  <SelectItem key={district.district} value={district.district}>
-                    {district.district}
-                  </SelectItem>
+                {apiDistricts.map((district) => (
+                  <SelectItem key={district} value={district}>{district}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -308,11 +311,15 @@ export default function InfoForm({ onFormDataChange, initialData, districts = []
                 <SelectValue placeholder="Select upazila/thana" />
               </SelectTrigger>
               <SelectContent>
-                {upazilas.map((upazila) => (
-                  <SelectItem key={upazila._id} value={upazila.upazilaThanaEnglish}>
-                    {upazila.upazilaThanaEnglish} ({upazila.upazilaThanaBangla})
-                  </SelectItem>
-                ))}
+                {upazilas && upazilas.length > 0 ? (
+                  upazilas.map((upazila) => (
+                    <SelectItem key={upazila._id} value={upazila.upazilaThanaEnglish}>
+                      {upazila.upazilaThanaEnglish} ({upazila.upazilaThanaBangla})
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="none" disabled>No Upazilas available</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>

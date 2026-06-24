@@ -21,7 +21,7 @@ export default function VendorStoreFrom() {
     const [loading, setLoading] = useState(true);
     const [loadedStore, setLoadedStore] = useState<any>(null);
 
-    // Payment Info State (আলাদা রাখা হয়েছে কারণ react-hook-form এর Inputs type এ নেই)
+    // Payment Info State
     const [paymentInfo, setPaymentInfo] = useState({
         bkash: '',
         nagad: '',
@@ -37,6 +37,7 @@ export default function VendorStoreFrom() {
         handleSubmit,
         control,
         reset,
+        setValue, // ✅ setValue ইম্পোর্ট করা হয়েছে
         formState: { errors, isSubmitting },
     } = useForm<Inputs>();
 
@@ -56,7 +57,6 @@ export default function VendorStoreFrom() {
                 const store = data.data;
                 setLoadedStore(store);
 
-                // ✅ Payment info load করা
                 if (store.paymentInfo) {
                     setPaymentInfo({
                         bkash: store.paymentInfo.bkash || '',
@@ -92,7 +92,7 @@ export default function VendorStoreFrom() {
                         : [],
                     store_meta_description: store.storeMetaDescription || '',
                     selectVendor: {
-                        label: store?.storeName || 'My Vendor',
+                        label: store?.storeName || 'My Vendor Account',
                         value: vendorId,
                     },
                 });
@@ -103,15 +103,22 @@ export default function VendorStoreFrom() {
                 console.error(err);
                 toast.error('No existing store found or failed to load');
                 setIsEditMode(false);
+                
+                // ✅ যদি নতুন স্টোর হয়, তবে ভেন্ডর নিজে থেকেই সিলেক্ট হয়ে থাকবে
+                if (vendorId) {
+                    setValue('selectVendor', {
+                        label: 'My Vendor Account',
+                        value: vendorId,
+                    });
+                }
             } finally {
                 setLoading(false);
             }
         };
 
         loadStoreById();
-    }, [vendorId, token, reset]);
+    }, [vendorId, token, reset, setValue]);
 
-    // ✅ Payment Info আলাদাভাবে Save করা
     const handleSavePaymentInfo = async () => {
         if (!loadedStore?._id || !token) {
             toast.error('Store not found!');
@@ -121,8 +128,6 @@ export default function VendorStoreFrom() {
         setSavingPayment(true);
         try {
             const formData = new FormData();
-
-            // শুধু paymentInfo fields পাঠাবো
             Object.entries(paymentInfo).forEach(([key, value]) => {
                 if (value && value.trim()) {
                     formData.append(`paymentInfo[${key}]`, value.trim());
@@ -144,7 +149,6 @@ export default function VendorStoreFrom() {
         }
     };
 
-    // Main store form submit
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         const formData = new FormData();
         if (!data.selectVendor || !data.selectVendor.value) {
@@ -152,6 +156,11 @@ export default function VendorStoreFrom() {
             return;
         }
         formData.append('vendorId', data.selectVendor.value);
+
+        if (!isEditMode && (!data.logo || !data.banner)) {
+            toast.error("Logo and Banner are required to create a store");
+            return;
+        }
 
         if (data.logo && data.logo instanceof File) formData.append('logo', data.logo);
         if (data.banner && data.banner instanceof File) formData.append('banner', data.banner);
@@ -170,7 +179,7 @@ export default function VendorStoreFrom() {
         };
 
         Object.entries(fields).forEach(([key, value]) => {
-            if (value !== null && value !== undefined) {
+            if (value !== null && value !== undefined && value !== '') {
                 if (Array.isArray(value)) {
                     formData.append(key, JSON.stringify(value));
                 } else {
@@ -222,7 +231,6 @@ export default function VendorStoreFrom() {
     return (
         <div className="bg-[#f8f9fb] m-3 md:m-10 space-y-6">
 
-            {/* ── Main Store Form ── */}
             <form
                 onSubmit={handleSubmit(onSubmit)}
                 className="p-6 md:p-10 border border-[#e4e7eb] rounded-lg space-y-8 bg-white"
@@ -231,7 +239,15 @@ export default function VendorStoreFrom() {
                     {isEditMode ? 'Update Your Store' : 'Create New Store'}
                 </h1>
 
-                <StoreInformation register={register} errors={errors} control={control} />
+                {/* ✅ vendorId পাস করা হলো */}
+                <StoreInformation 
+                    register={register} 
+                    errors={errors} 
+                    control={control} 
+                    isEditMode={isEditMode} 
+                    vendorId={vendorId} 
+                />
+                
                 <StoreSocialLinks register={register} errors={errors} />
                 <StoreMetaInfo register={register} control={control} />
 
@@ -243,7 +259,6 @@ export default function VendorStoreFrom() {
                 </div>
             </form>
 
-            {/* ── Payment Info Section (আলাদা Card) ── */}
             {isEditMode && (
                 <div className="p-6 md:p-10 border border-[#e4e7eb] rounded-lg bg-white">
                     <div className="mb-6">
@@ -251,18 +266,17 @@ export default function VendorStoreFrom() {
                             💳 Payment & Withdrawal Info
                         </h2>
                         <p className="text-sm text-gray-500 mt-1">
-                            এই তথ্যগুলো withdrawal request করার সময় automatically ব্যবহার হবে।
+                            এই তথ্যগুলো withdrawal request করার সময় automatically ব্যবহার হবে। (All fields are optional)
                         </p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
                         {/* bKash */}
                         <div className="space-y-1">
                             <label className="block text-sm font-semibold text-gray-700">
                                 <span className="inline-flex items-center gap-1">
                                     <span className="w-6 h-6 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center text-xs font-bold">B</span>
-                                    bKash Number
+                                    bKash Number <span className="font-normal text-gray-400 text-xs ml-1">(Optional)</span>
                                 </span>
                             </label>
                             <div className="flex">
@@ -284,7 +298,7 @@ export default function VendorStoreFrom() {
                             <label className="block text-sm font-semibold text-gray-700">
                                 <span className="inline-flex items-center gap-1">
                                     <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xs font-bold">N</span>
-                                    Nagad Number
+                                    Nagad Number <span className="font-normal text-gray-400 text-xs ml-1">(Optional)</span>
                                 </span>
                             </label>
                             <div className="flex">
@@ -306,7 +320,7 @@ export default function VendorStoreFrom() {
                             <label className="block text-sm font-semibold text-gray-700">
                                 <span className="inline-flex items-center gap-1">
                                     <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">R</span>
-                                    Rocket Number
+                                    Rocket Number <span className="font-normal text-gray-400 text-xs ml-1">(Optional)</span>
                                 </span>
                             </label>
                             <div className="flex">
@@ -328,7 +342,7 @@ export default function VendorStoreFrom() {
                             <label className="block text-sm font-semibold text-gray-700">
                                 <span className="inline-flex items-center gap-1">
                                     <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">🏦</span>
-                                    Bank Name
+                                    Bank Name <span className="font-normal text-gray-400 text-xs ml-1">(Optional)</span>
                                 </span>
                             </label>
                             <input
@@ -342,7 +356,9 @@ export default function VendorStoreFrom() {
 
                         {/* Bank Account */}
                         <div className="space-y-1">
-                            <label className="block text-sm font-semibold text-gray-700">Bank Account Number</label>
+                            <label className="block text-sm font-semibold text-gray-700">
+                                Bank Account Number <span className="font-normal text-gray-400 text-xs ml-1">(Optional)</span>
+                            </label>
                             <input
                                 type="text"
                                 placeholder="e.g. 1234567890"
@@ -354,7 +370,9 @@ export default function VendorStoreFrom() {
 
                         {/* Bank Branch */}
                         <div className="space-y-1">
-                            <label className="block text-sm font-semibold text-gray-700">Bank Branch</label>
+                            <label className="block text-sm font-semibold text-gray-700">
+                                Bank Branch <span className="font-normal text-gray-400 text-xs ml-1">(Optional)</span>
+                            </label>
                             <input
                                 type="text"
                                 placeholder="e.g. Motijheel Branch, Dhaka"
@@ -365,7 +383,6 @@ export default function VendorStoreFrom() {
                         </div>
                     </div>
 
-                    {/* Info Note */}
                     <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-md">
                         <p className="text-xs text-emerald-700 flex items-start gap-2">
                             <span>✅</span>
@@ -376,7 +393,6 @@ export default function VendorStoreFrom() {
                         </p>
                     </div>
 
-                    {/* Save Button */}
                     <div className="mt-6 flex justify-end">
                         <button
                             type="button"

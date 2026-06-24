@@ -465,6 +465,54 @@ const getUserById = async (
   });
 };
 
+
+// ========================================
+// 👑 CREATE USER BY ADMIN (NO OTP)
+// ========================================
+const createUserByAdmin = async (req: NextRequest) => {
+  await dbConnect();
+  const body = await req.json();
+
+  // Basic Validation
+  if (!body.name || !body.password) {
+    return NextResponse.json(
+      { success: false, message: 'Name and Password are required!' },
+      { status: StatusCodes.BAD_REQUEST }
+    );
+  }
+
+  if (!body.email && !body.phoneNumber) {
+    return NextResponse.json(
+      { success: false, message: 'Either Email or Phone Number is required!' },
+      { status: StatusCodes.BAD_REQUEST }
+    );
+  }
+
+  const payload = {
+    name: body.name,
+    email: body.email || undefined,
+    phoneNumber: body.phoneNumber || undefined,
+    password: body.password,
+    role: body.role || 'user',
+  };
+
+  try {
+    const result = await UserServices.createUserByAdminInDB(payload);
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.CREATED,
+      message: 'User created successfully by admin!',
+      data: result,
+    });
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, message: error.message || 'Failed to create user.' },
+      { status: StatusCodes.CONFLICT }
+    );
+  }
+};
+
 export const UserController = {
   registerUser,
   verifyOtpAndCreateAccount,
@@ -477,4 +525,5 @@ export const UserController = {
   deleteUserByAdmin,
   updateUserByAdmin,
   getUserById,
+  createUserByAdmin,
 };

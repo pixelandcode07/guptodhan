@@ -1,5 +1,5 @@
 // src/lib/modules/vendor-store/vendorStore.service.ts
-// ✅ OPTIMIZED: Proper type casting, lean, and lean optimization
+// ✅ OPTIMIZED: Proper type casting, lean, and total sales calculation fixed
 
 import { IStore } from "./vendorStore.interface";
 import { StoreModel } from "./vendorStore.model";
@@ -28,7 +28,6 @@ const createStoreInDB = async (payload: Partial<IStore>): Promise<IStore> => {
 
 const getAllStoresFromDB = async (): Promise<IStore[]> => {
   try {
-    // ✅ Using lean() for performance + type casting
     const result = (await StoreModel.find()
       .sort({ storeName: 1 })
       .lean()) as unknown as IStore[];
@@ -46,7 +45,6 @@ const getAllStoresFromDB = async (): Promise<IStore[]> => {
 
 const getStoreByIdFromDB = async (id: string): Promise<IStore | null> => {
   try {
-    // ✅ Using lean() for performance + type casting
     const result = (await StoreModel.findById(id)
       .lean()) as unknown as IStore | null;
 
@@ -67,8 +65,6 @@ const getStoreByIdFromDB = async (id: string): Promise<IStore | null> => {
 
 const getStoreByVendorIdFromDB = async (vendorId: string): Promise<IStore | null> => {
   try {
-    // ✅ Using lean() for performance + type casting
-    // ✅ Using compound index: { vendorId, createdAt }
     const result = (await StoreModel.findOne({
       vendorId: new Types.ObjectId(vendorId),
     })
@@ -91,8 +87,6 @@ const getStoreByVendorIdFromDB = async (vendorId: string): Promise<IStore | null
 
 const getStoresByVendorIdFromDB = async (vendorId: string): Promise<IStore[]> => {
   try {
-    // ✅ Using lean() for performance + type casting
-    // ✅ Using compound index: { vendorId, status, createdAt }
     const result = (await StoreModel.find({
       vendorId: new Types.ObjectId(vendorId),
     })
@@ -112,8 +106,6 @@ const getStoresByVendorIdFromDB = async (vendorId: string): Promise<IStore[]> =>
 
 const getActiveStoresFromDB = async (): Promise<IStore[]> => {
   try {
-    // ✅ Using lean() for performance + type casting
-    // ✅ Using compound index: { status, storeName }
     const result = (await StoreModel.find({ status: 'active' })
       .sort({ storeName: 1 })
       .lean()) as unknown as IStore[];
@@ -157,7 +149,6 @@ const updateStoreInDB = async (id: string, payload: Partial<IStore>): Promise<IS
 
 const deleteStoreFromDB = async (id: string): Promise<null> => {
   try {
-    // ✅ Check for existing ads/products
     const existingAd = await ClassifiedAd.findOne({
       store: new Types.ObjectId(id),
     }).lean();
@@ -187,7 +178,6 @@ const deleteStoreFromDB = async (id: string): Promise<null> => {
 
 const vendorDashboard = async (vendorId: string): Promise<any> => {
   try {
-    // ✅ Using lean() + type casting
     const store = (await StoreModel.findOne({ 
       vendorId: new Types.ObjectId(vendorId) 
     })
@@ -197,11 +187,9 @@ const vendorDashboard = async (vendorId: string): Promise<any> => {
       throw new Error("Store not found for this vendor.");
     }
 
-    // ✅ Get today's date range
     const today = new Date(new Date().setHours(0, 0, 0, 0));
     const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 
-    // ✅ Parallel queries for performance
     const [
       todaysOrders,
       totalOrders,
@@ -246,13 +234,19 @@ const vendorDashboard = async (vendorId: string): Promise<any> => {
         .limit(20)
         .lean()) as unknown as any[])(),
 
-      // Total sales amount
+      // ✅ FIX: Calculate exact Product Sales (totalAmount - deliveryCharge)
+      // This gives the real product price before any platform commission is applied or delivery fee is taken
       OrderModel.aggregate([
         { $match: { storeId: store._id, orderStatus: "Delivered" } },
         {
+          $addFields: {
+            productTotal: { $subtract: ['$totalAmount', { $ifNull: ['$deliveryCharge', 0] }] }
+          }
+        },
+        {
           $group: {
             _id: null,
-            total: { $sum: "$totalAmount" },
+            total: { $sum: "$productTotal" }, // only summing up the pure product price
           },
         },
       ])
@@ -263,7 +257,7 @@ const vendorDashboard = async (vendorId: string): Promise<any> => {
         todayOrdersCount: todaysOrders.length,
         totalOrders,
         totalProducts,
-        totalSell: totalSell[0]?.total || 0,
+        totalSell: totalSell[0]?.total || 0, // Now represents pure product price
       },
       orders: {
         todaysOrders,
@@ -289,7 +283,6 @@ interface StoreStats {
 
 const getStoreStatsByStatusFromDB = async (): Promise<StoreStats[]> => {
   try {
-    // ✅ Aggregation for statistics
     const stats: StoreStats[] = await StoreModel.aggregate([
       {
         $group: {

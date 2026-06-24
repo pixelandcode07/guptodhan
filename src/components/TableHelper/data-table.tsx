@@ -28,41 +28,58 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Search,
+  Trash2,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+// ✅ FIX: Make ColumnDef more permissive to avoid strict type mismatch errors
+interface DataTableProps<TData extends Record<string, any>, TValue = any> {
+  columns: ColumnDef<TData, TValue>[] | any[]; 
   data: TData[];
   setData?: React.Dispatch<React.SetStateAction<any>>;
-  // ✅ NEW: pagination persistence এর জন্য
-  initialPageIndex?: number;   // URL থেকে আসা page (0-indexed)
-  onPageChange?: (pageIndex: number) => void;  // page change হলে URL update
+  initialPageIndex?: number;   
+  onPageChange?: (pageIndex: number) => void;  
+  onBulkDelete?: (selectedRows: TData[]) => void | Promise<void>; 
+  onBulkStatusChange?: (selectedRows: TData[], status: 'active' | 'inactive') => void | Promise<void>; 
+  
+  onBulkStatusChangeCustom?: {
+    options: { label: string; value: string }[];
+    handler: (selectedRows: TData[], status: string) => void | Promise<void>;
+  };
+
+  onRowSelectionChange?: (selectedRows: TData[]) => void; 
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends Record<string, any>, TValue = any>({
   columns,
   data,
   initialPageIndex = 0,
   onPageChange,
+  onBulkDelete, 
+  onBulkStatusChange,
+  onBulkStatusChangeCustom,
+  onRowSelectionChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting]           = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState('');
   const [pageSize, setPageSize]         = React.useState(10);
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
 
-  // ✅ initialPageIndex দিয়ে table শুরু হবে
+  const [customBulkStatus, setCustomBulkStatus] = React.useState('');
   const [pageIndex, setPageIndex] = React.useState(initialPageIndex);
 
-  // ✅ parent (URL) থেকে initialPageIndex change হলে sync করা
   React.useEffect(() => {
-    setPageIndex(initialPageIndex);
-    table.setPageIndex(initialPageIndex);
+    if (initialPageIndex !== undefined) {
+      setPageIndex(initialPageIndex);
+      table.setPageIndex(initialPageIndex);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPageIndex]);
 
   const table = useReactTable({
     data,
-    columns,
+    columns: columns as ColumnDef<TData, TValue>[], // Type assertion to bypass strict generic checks
     getCoreRowModel:      getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel:    getSortedRowModel(),
@@ -70,8 +87,10 @@ export function DataTable<TData, TValue>({
     onSortingChange:      setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: setRowSelection,
+    
+    autoResetPageIndex: false, 
+
     onPaginationChange: (updater) => {
-      // ✅ page change হলে URL update করা
       const newState =
         typeof updater === 'function'
           ? updater({ pageIndex, pageSize })
@@ -89,6 +108,20 @@ export function DataTable<TData, TValue>({
     manualPagination: false,
     enableRowSelection: true,
   });
+
+  React.useEffect(() => {
+    if (onRowSelectionChange) {
+      const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
+      onRowSelectionChange(selectedData);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowSelection]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setGlobalFilter(e.target.value);
+    setPageIndex(0);
+    if (onPageChange) onPageChange(0);
+  };
 
   const pageCount  = table.getPageCount();
   const totalRows  = table.getFilteredRowModel().rows.length;
@@ -117,21 +150,103 @@ export function DataTable<TData, TValue>({
           <span>entries</span>
         </div>
 
-        <div className="relative w-full sm:w-64">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <Input
-            placeholder="Search products..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="h-9 pl-8 border-gray-300 focus:ring-blue-500 text-sm"
-          />
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          {Object.keys(rowSelection).length > 0 && (
+            <div className="flex flex-wrap gap-2 items-center bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+              <span className="text-xs font-semibold text-gray-700 mr-1">
+                {Object.keys(rowSelection).length} selected
+              </span>
+
+              {onBulkStatusChange && !onBulkStatusChangeCustom && (
+                <>
+                  <Button
+                    variant="outline" size="sm"
+                    className="h-8 px-3 shrink-0 bg-green-50 hover:bg-green-100 text-green-700 border-green-200 font-medium text-xs"
+                    onClick={() => {
+                      const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
+                      onBulkStatusChange(selectedData, 'active');
+                      table.toggleAllRowsSelected(false); 
+                    }}
+                  >
+                    <CheckCircle size={14} className="mr-1.5" /> Activate
+                  </Button>
+                  <Button
+                    variant="outline" size="sm"
+                    className="h-8 px-3 shrink-0 bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200 font-medium text-xs"
+                    onClick={() => {
+                      const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
+                      onBulkStatusChange(selectedData, 'inactive');
+                      table.toggleAllRowsSelected(false); 
+                    }}
+                  >
+                    <XCircle size={14} className="mr-1.5" /> Deactivate
+                  </Button>
+                </>
+              )}
+
+              {onBulkStatusChangeCustom && (
+                <div className="flex items-center gap-2 border-l border-gray-300 pl-3 ml-1">
+                  <select
+                    value={customBulkStatus}
+                    onChange={(e) => setCustomBulkStatus(e.target.value)}
+                    className="h-8 text-xs border border-gray-300 rounded px-2 outline-none focus:ring-1 focus:ring-blue-500 text-gray-700"
+                  >
+                    <option value="">Update Status...</option>
+                    {onBulkStatusChangeCustom.options.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <Button 
+                    size="sm" 
+                    disabled={!customBulkStatus}
+                    onClick={() => {
+                      const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
+                      onBulkStatusChangeCustom.handler(selectedData, customBulkStatus);
+                      table.toggleAllRowsSelected(false); 
+                      setCustomBulkStatus(''); 
+                    }} 
+                    className="h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3"
+                  >
+                    Apply
+                  </Button>
+                </div>
+              )}
+
+              {onBulkDelete && (
+                <Button
+                  variant="destructive" size="sm"
+                  className="h-8 px-3 shrink-0 bg-red-500 hover:bg-red-600 text-white font-medium text-xs ml-1"
+                  onClick={() => {
+                    const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
+                    onBulkDelete(selectedData);
+                    table.toggleAllRowsSelected(false); 
+                  }}
+                >
+                  <Trash2 size={14} className="mr-1.5" /> Delete
+                </Button>
+              )}
+            </div>
+          )}
+
+          <div className="relative w-full sm:w-64">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Input
+              placeholder="Search..."
+              value={globalFilter}
+              onChange={handleSearchChange}
+              className="h-9 pl-8 border-gray-300 focus:ring-blue-500 text-sm bg-white"
+            />
+          </div>
         </div>
       </div>
 
       {/* ── Table ── */}
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
-          <Table className="min-w-[1400px] w-full border-collapse">
+          <Table className="min-w-[1000px] w-full border-collapse">
             <TableHeader>
               {table.getHeaderGroups().map((hg) => (
                 <TableRow key={hg.id} className="bg-gray-50 border-b border-gray-200 hover:bg-gray-50">
@@ -174,7 +289,7 @@ export function DataTable<TData, TValue>({
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className="h-32 text-center text-gray-400 italic text-sm">
+                  <TableCell colSpan={columns.length as number} className="h-32 text-center text-gray-400 italic text-sm">
                     No entries found.
                   </TableCell>
                 </TableRow>
@@ -195,9 +310,6 @@ export function DataTable<TData, TValue>({
               {' '}of{' '}
               <span className="font-medium text-gray-700">{totalRows}</span>
               {' '}entries
-              {Object.keys(rowSelection).length > 0 && (
-                <span className="ml-2 text-blue-600">({Object.keys(rowSelection).length} selected)</span>
-              )}
             </>
           ) : (
             'No entries'
@@ -242,19 +354,6 @@ export function DataTable<TData, TValue>({
               </Button>
             );
           })}
-
-          {pageCount > 5 && pageIndex < pageCount - 3 && (
-            <span className="text-gray-400 text-xs px-1">...</span>
-          )}
-          {pageCount > 5 && pageIndex < pageCount - 3 && (
-            <Button
-              variant="outline" size="sm"
-              onClick={() => table.setPageIndex(pageCount - 1)}
-              className="h-8 w-8 p-0 text-xs border-gray-300"
-            >
-              {pageCount}
-            </Button>
-          )}
 
           <Button
             variant="outline" size="sm"

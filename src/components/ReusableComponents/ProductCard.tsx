@@ -2,13 +2,12 @@
 
 import {
   Zap,
-  Clock,
   Star,
   Tag,
   ShoppingBag,
-  PackageCheck,
   ShoppingCart,
-  Loader2
+  Loader2,
+  PhoneCall // ✅ NEW: Phone icon import
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -17,7 +16,7 @@ import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Product } from '@/types/ProductType';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -32,8 +31,6 @@ export default function ProductCard({ product, index }: ProductCardProps) {
   const { addToCart } = useCart();
   const [isAdding, setIsAdding] = useState(false);
 
-  // ✅ FIX: সঠিক page route path ব্যবহার করছি
-  // এটা `/products/[slug]` page route এর সাথে match করবে
   const productUrl = product?.slug ? `/product/${product.slug}` : '#';
 
   // Price Logic
@@ -59,6 +56,12 @@ export default function ProductCard({ product, index }: ProductCardProps) {
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // ✅ NEW: If Call for price is active, redirect to product details
+    if (product.callForPrice) {
+      if(product.slug) router.push(productUrl);
+      return;
+    }
 
     if (product.stock === 0) {
       toast.error("Out of stock!");
@@ -101,7 +104,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ delay: index * 0.04, type: 'spring', stiffness: 160 }}
       whileHover={{ y: -4 }}
-      className="group relative"
+      className="group relative h-full flex flex-col"
     >
       <Link
         href={productUrl}
@@ -109,12 +112,13 @@ export default function ProductCard({ product, index }: ProductCardProps) {
       >
         
         {/* Image Section */}
-        <div className="relative aspect-[1/1] bg-gray-50 overflow-hidden">
+        <div className="relative aspect-[4/5] sm:aspect-[3/4] bg-white overflow-hidden border-b border-gray-100">
             <Image
                 src={product?.thumbnailImage || '/placeholder.png'}
                 alt={product?.productTitle || 'Product'}
                 fill
-                className="object-cover transition-transform duration-500 group-hover:scale-110"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="object-contain p-3 sm:p-5 transition-transform duration-500 group-hover:scale-105"
             />
             
              <div className="pointer-events-none absolute inset-0 hidden sm:block bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -134,7 +138,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                     )}
                 </div>
 
-                {discountPct > 0 && (
+                {discountPct > 0 && !product?.callForPrice && (
                     <div className="flex items-center gap-0.5 rounded-full bg-emerald-600 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-white shadow-sm">
                         <Tag className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                         -{discountPct}%
@@ -142,31 +146,26 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                 )}
             </div>
 
-             {/* Low Stock Badge */}
-             {product?.stock !== undefined && product.stock > 0 && product.stock < 10 && (
-                <div className="absolute top-10 left-2 sm:left-3 rounded-full bg-orange-500 px-2 py-0.5 text-[10px] sm:text-xs font-semibold text-white shadow animate-pulse pointer-events-none">
-                    {product.stock} left
-                </div>
-            )}
-
-            {/* Add To Cart Button */}
+            {/* Add To Cart / Call Button */}
             <div className="absolute bottom-3 right-3 z-10 translate-y-0 sm:translate-y-10 sm:opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
                 <Button
                     onClick={handleAddToCart}
-                    disabled={isAdding || product.stock === 0}
+                    disabled={isAdding || (!product?.callForPrice && product.stock === 0)}
                     size="icon"
                     className={cn(
                         "h-9 w-9 sm:h-10 sm:w-10 rounded-full shadow-lg transition-transform active:scale-95",
-                        product.stock === 0 
-                            ? "bg-gray-400 cursor-not-allowed" 
-                            : hasVariants 
+                        !product?.callForPrice && product.stock === 0 
+                            ? "bg-gray-400 cursor-not-allowed border-none text-white" 
+                            : product?.callForPrice || hasVariants 
                                 ? "bg-white text-gray-700 hover:bg-gray-800 hover:text-white border border-gray-200" 
                                 : "bg-white text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-100"
                     )}
-                    title={hasVariants ? "Select Options" : "Add to Cart"}
+                    title={product?.callForPrice ? "Call for Price" : hasVariants ? "Select Options" : "Add to Cart"}
                 >
                     {isAdding ? (
                         <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                    ) : product?.callForPrice ? (
+                        <PhoneCall className="h-4 w-4 sm:h-5 sm:w-5" /> // ✅ Show Phone icon for Call For Price
                     ) : (
                         <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
                     )}
@@ -175,13 +174,13 @@ export default function ProductCard({ product, index }: ProductCardProps) {
         </div>
 
         {/* Content Section */}
-        <div className="flex flex-grow flex-col space-y-1.5 sm:space-y-2 p-2.5 sm:p-3">
-            <h3 className="line-clamp-2 text-[13px] sm:text-sm font-semibold leading-snug transition-colors group-hover:text-blue-600 h-10">
+        <div className="flex flex-grow flex-col p-2.5 sm:p-3">
+            <h3 className="line-clamp-2 text-[13px] sm:text-sm font-semibold leading-snug transition-colors group-hover:text-blue-600 mb-1.5 sm:mb-2 min-h-[36px] sm:min-h-[40px]">
                 {product?.productTitle}
             </h3>
 
             {/* Brand & Flag */}
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1 mb-1.5 sm:mb-2">
                 {product?.brand && (
                     <Badge variant="secondary" className="text-[10px] sm:text-xs py-0">
                         {typeof product.brand === 'object'
@@ -202,7 +201,7 @@ export default function ProductCard({ product, index }: ProductCardProps) {
             </div>
 
             {/* Rating */}
-            <div className="flex items-center gap-1.5 text-[11px] sm:text-sm">
+            <div className="flex items-center gap-1.5 text-[11px] sm:text-sm mb-1.5 sm:mb-2">
                 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
                 <span className="font-medium">
                     {averageRating.toFixed(1)}
@@ -214,70 +213,39 @@ export default function ProductCard({ product, index }: ProductCardProps) {
 
              {/* Sold Count */}
              {product?.sellCount !== undefined && product.sellCount > 0 && (
-                <div className="flex items-center gap-1 text-[11px] sm:text-xs text-gray-600">
+                <div className="flex items-center gap-1 text-[11px] sm:text-xs text-gray-600 mb-1.5 sm:mb-2">
                     <ShoppingBag className="h-3.5 w-3.5" />
                     {(product.sellCount || 0).toLocaleString()} sold
                 </div>
             )}
 
             {/* Price Section */}
-            <div className="mt-auto">
+            <div className="mt-auto pt-1">
                 <div className="flex items-baseline gap-2 flex-wrap">
-                    <p className="text-base sm:text-lg font-bold text-blue-600">
-                        ৳{(sellingPrice).toLocaleString()}
-                    </p>
-                    
-                    {hasValidDiscount && (
-                        <p className="text-[11px] sm:text-xs text-gray-400 line-through">
-                            ৳{(originalPrice).toLocaleString()}
+                    {/* ✅ NEW: Check for Call For Price */}
+                    {product?.callForPrice ? (
+                        <p className="text-sm sm:text-base font-bold text-blue-600">
+                            Call for Price
                         </p>
+                    ) : (
+                        <>
+                            <p className="text-base sm:text-lg font-bold text-blue-600">
+                                ৳{(sellingPrice).toLocaleString()}
+                            </p>
+                            
+                            {hasValidDiscount && (
+                                <p className="text-[11px] sm:text-xs text-gray-400 line-through">
+                                    ৳{(originalPrice).toLocaleString()}
+                                </p>
+                            )}
+                        </>
                     )}
-                </div>
-            </div>
-
-             {/* Bottom: Countdown or Status */}
-             <div className="flex justify-between items-center pt-0.5">
-                {hasOffer ? (
-                    <div className="flex items-center gap-1 text-[11px] sm:text-xs font-medium text-red-600">
-                        <Clock className="h-3.5 w-3.5" />
-                        <Countdown deadline={product.offerDeadline!} />
-                    </div>
-                ) : (
-                    <div className="flex-1"></div>
-                )}
-
-                <div className={cn("flex items-center gap-1 text-xs text-gray-500")}>
-                    <PackageCheck className="h-3.5 w-3.5" />
-                    Ready
                 </div>
             </div>
         </div>
       </Link>
     </motion.div>
   );
-}
-
-function Countdown({ deadline }: { deadline: string }) {
-    const [timeLeft, setTimeLeft] = useState('');
-
-    useEffect(() => {
-        const calc = () => {
-            const diff = new Date(deadline).getTime() - Date.now();
-            if (diff <= 0) return setTimeLeft('Ended');
-
-            const d = Math.floor(diff / 86400000);
-            const h = Math.floor((diff % 86400000) / 3600000);
-            const m = Math.floor((diff % 3600000) / 60000);
-
-            setTimeLeft(d > 0 ? `${d}d ${h}h` : `${h}h ${m}m`);
-        };
-
-        calc();
-        const t = setInterval(calc, 60000);
-        return () => clearInterval(t);
-    }, [deadline]);
-
-    return <span>{timeLeft}</span>;
 }
 
 

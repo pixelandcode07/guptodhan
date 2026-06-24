@@ -12,6 +12,10 @@ export const GET = catchAsync(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get('userId');
   
+  // Ensure VendorProductModel & UserModel are registered before populating
+  await import('@/lib/modules/product/vendorProduct.model');
+  await import('@/lib/modules/user/user.model');
+  
   // If userId is provided, get wishlist items for that user only
   if (userId) {
     if (!Types.ObjectId.isValid(userId)) {
@@ -23,15 +27,20 @@ export const GET = catchAsync(async (req: NextRequest) => {
       });
     }
     
-    // Ensure VendorProductModel is registered
-    await import('@/lib/modules/product/vendorProduct.model')
-    
-    // Populate product details
     const result = await WishlistModel.find({ userID: new Types.ObjectId(userId) })
+      // ✅ FIX 1: Populate Category inside Product
       .populate({
         path: 'productID',
-        select: 'productTitle thumbnailImage photoGallery productPrice discountPrice _id',
-        model: 'VendorProductModel'
+        select: 'productTitle thumbnailImage photoGallery productPrice discountPrice category _id',
+        populate: {
+          path: 'category',
+          select: 'name'
+        }
+      })
+      // ✅ FIX 2: Populate User details to get Contact/Phone Number
+      .populate({
+        path: 'userID',
+        select: 'name email phoneNumber'
       })
       .sort({ createdAt: -1 })
       .lean();
@@ -45,15 +54,20 @@ export const GET = catchAsync(async (req: NextRequest) => {
   }
   
   // Otherwise, get all wishlist items (admin view)
-  // Ensure VendorProductModel is registered
-  await import('@/lib/modules/product/vendorProduct.model')
-  
-  // Populate product details for admin view
   const result = await WishlistModel.find({})
+    // ✅ FIX 1: Populate Category inside Product
     .populate({
       path: 'productID',
-      select: 'productTitle thumbnailImage photoGallery productPrice discountPrice _id',
-      model: 'VendorProductModel'
+      select: 'productTitle thumbnailImage photoGallery productPrice discountPrice category _id',
+      populate: {
+        path: 'category',
+        select: 'name'
+      }
+    })
+    // ✅ FIX 2: Populate User details to get Contact/Phone Number
+    .populate({
+      path: 'userID',
+      select: 'name email phoneNumber'
     })
     .sort({ createdAt: -1 })
     .lean();

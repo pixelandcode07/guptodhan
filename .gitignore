@@ -3,10 +3,10 @@
 # env files (can opt-in for committing if needed)
 
 # env files (can opt-in for committing if needed)
-.env
-.env.local
 .env.development.local
 .env.test.local
+.env
+.env.local
 .env.production.local
 
 # vercel
@@ -57,7 +57,6 @@ guptodhan-df835-firebase-adminsdk-fbsvc-e40c788905.json
 .github
 .vscode
 
-.env.local
 
 
 .vercel

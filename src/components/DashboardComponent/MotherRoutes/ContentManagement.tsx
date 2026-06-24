@@ -68,21 +68,21 @@ export function ContentManagement() {
           icon: MessageSquare,
           items: testimonials,
         },
-        {
-          title: 'Manage Blogs',
-          icon: FileText,
-          items: blog,
-        },
+        // {
+        //   title: 'Manage Blogs',
+        //   icon: FileText,
+        //   items: blog,
+        // },
         {
           title: 'Terms & Policies',
           icon: File,
           items: condition,
         },
-        {
-          title: 'Custom Pages',
-          icon: FilePlus,
-          items: customPage,
-        },
+        // {
+        //   title: 'Custom Pages',
+        //   icon: FilePlus,
+        //   items: customPage,
+        // },
         {
           title: 'About Us',
           icon: Info,
