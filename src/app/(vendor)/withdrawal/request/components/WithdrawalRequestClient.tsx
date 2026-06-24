@@ -16,6 +16,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Loader2,
+  Clock, // ✅ Clock আইকনটি ইমপোর্ট করা হয়েছে
 } from 'lucide-react';
 
 export default function WithdrawalRequestClient() {
@@ -83,7 +84,8 @@ export default function WithdrawalRequestClient() {
         setStoreData((prev: any) => ({
           ...prev,
           availableBalance: prev.availableBalance - Number(amount),
-          totalWithdrawn: (prev.totalWithdrawn || 0) + Number(amount),
+          // ✅ রিকোয়েস্ট সাবমিট হলে সেটা Pending-এ যাবে
+          pendingWithdrawal: (prev.pendingWithdrawal || 0) + Number(amount), 
         }));
       } else {
         toast.error(result.message || 'Failed to submit.');
@@ -95,6 +97,8 @@ export default function WithdrawalRequestClient() {
   const availableBalance = storeData?.availableBalance || 0;
   const totalEarned = storeData?.totalEarned || 0;
   const totalWithdrawn = storeData?.totalWithdrawn || 0;
+  const pendingWithdrawal = storeData?.pendingWithdrawal || 0; // ✅ পেন্ডিং এমাউন্ট
+  
   const hasPaymentInfo = storeData?.paymentInfo && (
     storeData.paymentInfo.bkash || storeData.paymentInfo.nagad ||
     storeData.paymentInfo.rocket || storeData.paymentInfo.bankAccount
@@ -116,8 +120,9 @@ export default function WithdrawalRequestClient() {
           <Skeleton className="h-7 w-40" />
           <Skeleton className="h-4 w-64" />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[...Array(3)].map((_, i) => (
+        {/* ✅ স্কেলেটন গ্রিড আপডেট করে ৪টা কলাম করা হয়েছে */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
             <Card key={i} className="border border-gray-200">
               <CardContent className="p-5 space-y-3">
                 <div className="flex justify-between">
@@ -171,7 +176,8 @@ export default function WithdrawalRequestClient() {
       </div>
 
       {/* ── Stats Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* ✅ গ্রিড লেআউট ৪ কলাম করা হয়েছে */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
         <Card className="border-0 shadow-md bg-gradient-to-br from-blue-600 to-blue-700 text-white">
           <CardContent className="p-5">
@@ -184,6 +190,22 @@ export default function WithdrawalRequestClient() {
             <p className="text-3xl font-bold tracking-tight">৳{availableBalance.toLocaleString('en-BD')}</p>
             <p className="text-blue-200 text-xs mt-2 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3" /> Ready to withdraw
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* ✅ নতুন Withdraw Pending কার্ড অ্যাড করা হয়েছে */}
+        <Card className="border border-gray-200 shadow-sm bg-amber-50/50">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-gray-600 text-xs font-medium uppercase tracking-wider">Withdraw Pending</p>
+              <div className="bg-amber-100 p-1.5 rounded-lg">
+                <Clock className="h-4 w-4 text-amber-600" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 tracking-tight">৳{pendingWithdrawal.toLocaleString('en-BD')}</p>
+            <p className="text-gray-500 text-xs mt-2 flex items-center gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" /> Awaiting approval
             </p>
           </CardContent>
         </Card>

@@ -9,9 +9,14 @@ import { SidebarTrigger } from '../ui/sidebar';
 import UserDropdown from './Components/UserDropdown';
 import { SITE_CONFIG } from '@/lib/config/siteConfig';
 import { toast } from 'sonner';
+import { useSession } from 'next-auth/react';
 
 export default function DashNavbar() {
   const [loading, setLoading] = useState(false);
+  const { data: session } = useSession();
+
+  // চেক করা হচ্ছে ইউজার অ্যাডমিন কিনা
+  const isAdmin = session?.user?.role === 'admin';
 
   const handleFlushCache = async () => {
     if (!confirm('Are you sure you want to clear all Redis cache?')) return;
@@ -41,17 +46,19 @@ export default function DashNavbar() {
 
       {/* Right side */}
       <div className="flex items-center gap-5">
-        {/* Redis Flush Button */}
-        <Button
-          variant="outline"
-          onClick={handleFlushCache}
-          disabled={loading}
-          title="Clear Redis Cache"
-          className="text-red-500 border-red-300 hover:bg-red-50"
-        >
-          <Trash2 className="mr-1 h-4 w-4" />
-          {loading ? 'Clearing...' : 'Clear Cache'}
-        </Button>
+        {/* Redis Flush Button - শুধু অ্যাডমিনদের জন্য শো করবে */}
+        {isAdmin && (
+          <Button
+            variant="outline"
+            onClick={handleFlushCache}
+            disabled={loading}
+            title="Clear Redis Cache"
+            className="text-red-500 border-red-300 hover:bg-red-50"
+          >
+            <Trash2 className="mr-1 h-4 w-4" />
+            {loading ? 'Clearing...' : 'Clear Cache'}
+          </Button>
+        )}
 
         {/* Visit Website Button */}
         <div className="block">

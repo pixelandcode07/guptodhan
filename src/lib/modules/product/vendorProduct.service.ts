@@ -10,12 +10,10 @@ import { StorageType } from "../product-config/models/storageType.model";
 import { DeviceConditionModel } from "../product-config/models/deviceCondition.model";
 import { ProductSimTypeModel } from "../product-config/models/productSimType.model";
 import { ProductWarrantyModel } from "../product-config/models/warranty.model";
-
-
-// ✅ Import Redis cache helpers
 import { getCachedData, deleteCacheKey, deleteCachePattern } from '@/lib/redis/cache-helpers';
 import { CacheKeys, CacheTTL } from '@/lib/redis/cache-keys';
 import { BrandModel } from "@/lib/models-index";
+import { ProductCountryModel } from "../product-config/country/productCountry.model";
 
 // ===================================
 // 🔧 HELPER FUNCTIONS
@@ -26,6 +24,7 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
 
   const colorIds = new Set<string>();
   const sizeIds = new Set<string>();
+  const countryIds = new Set<string>(); // ✅ NEW
   const storageIds = new Set<string>();
   const simTypeIds = new Set<string>();
   const conditionIds = new Set<string>();
@@ -44,23 +43,25 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
             if(id && mongoose.Types.ObjectId.isValid(id)) sizeIds.add(String(id));
         });
       }
-      // Storage ID
+      // ✅ NEW: Country IDs collect kora
+      if (Array.isArray(opt.country)) {
+        opt.country.forEach((id: any) => {
+            if(id && mongoose.Types.ObjectId.isValid(id)) countryIds.add(String(id));
+        });
+      }
       if (opt.storage && mongoose.Types.ObjectId.isValid(opt.storage)) {
         storageIds.add(String(opt.storage));
       }
-      // SimType IDs
       if (Array.isArray(opt.simType)) {
         opt.simType.forEach((id: any) => {
             if(id && mongoose.Types.ObjectId.isValid(id)) simTypeIds.add(String(id));
         });
       }
-      // Condition IDs
       if (Array.isArray(opt.condition)) {
         opt.condition.forEach((id: any) => {
             if(id && mongoose.Types.ObjectId.isValid(id)) conditionIds.add(String(id));
         });
       }
-      // Warranty ID
       if (opt.warranty && mongoose.Types.ObjectId.isValid(opt.warranty)) {
         warrantyIds.add(String(opt.warranty));
       }
@@ -68,9 +69,11 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
   }
 
   // ২. ডাটাবেস থেকে সব ডাটা আনা (Fetch all data from DB)
-  const [colors, sizes, storages, simTypes, conditions, warranties] = await Promise.all([
+  // 🔥 FIX: 'countries' ভেরিয়েবলটি এখানে যুক্ত করা হয়েছে!
+  const [colors, sizes, countries, storages, simTypes, conditions, warranties] = await Promise.all([
     colorIds.size ? ProductColor.find({ _id: { $in: Array.from(colorIds) } }).lean() : [],
     sizeIds.size ? ProductSize.find({ _id: { $in: Array.from(sizeIds) } }).lean() : [],
+    countryIds.size ? ProductCountryModel.find({ _id: { $in: Array.from(countryIds) } }).lean() : [], // ✅ NEW
     storageIds.size ? StorageType.find({ _id: { $in: Array.from(storageIds) } }).lean() : [],
     simTypeIds.size ? ProductSimTypeModel.find({ _id: { $in: Array.from(simTypeIds) } }).lean() : [],
     conditionIds.size ? DeviceConditionModel.find({ _id: { $in: Array.from(conditionIds) } }).lean() : [],
@@ -79,6 +82,7 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
 
   const colorMap = new Map(colors.map((c: any) => [String(c._id), c])); 
   const sizeMap = new Map(sizes.map((s: any) => [String(s._id), s]));
+  const countryMap = new Map(countries.map((c: any) => [String(c._id), c])); // ✅ NEW
   const storageMap = new Map(storages.map((st: any) => [String(st._id), st]));
   const simTypeMap = new Map(simTypes.map((sim: any) => [String(sim._id), sim]));
   const conditionMap = new Map(conditions.map((cond: any) => [String(cond._id), cond]));
@@ -88,10 +92,8 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
   return products.map((p: any) => ({
     ...p,
     productOptions: p.productOptions?.map((opt: any) => ({
-      // ✅ CRITICAL FIX: ...opt ব্যবহার করা হয়েছে যাতে unit, simType, condition হারিয়ে না যায়
       ...opt, 
       
-      // Color Populate - Return string values only (FIXED: was returning objects)
       color: Array.isArray(opt.color) 
         ? opt.color.map((id: any) => {
             const c = colorMap.get(String(id));
@@ -99,22 +101,27 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
           })
         : [],
 
-      // Size Populate - Return string values only (FIXED: was returning objects)
       size: Array.isArray(opt.size) 
         ? opt.size.map((id: any) => {
             const s = sizeMap.get(String(id));
             return s ? s.name : id;
           })
         : [],
-      
-      // ✅ Storage Populate - Return formatted string (FIXED: was returning objects)
+        
+      // ✅ NEW: Country Populate - Return string values
+      country: Array.isArray(opt.country) 
+        ? opt.country.map((id: any) => {
+            const c = countryMap.get(String(id));
+            return c ? c.name : id;
+          })
+        : [],
+
       storage: (() => {
         if (!opt.storage) return undefined;
         const st = storageMap.get(String(opt.storage));
         return st ? `${st.ram}GB / ${st.rom}GB` : opt.storage;
       })(),
 
-      // ✅ SimType Populate - Return string values only (FIXED: was returning objects)
       simType: Array.isArray(opt.simType) 
         ? opt.simType.map((id: any) => {
             const sim = simTypeMap.get(String(id));
@@ -122,7 +129,6 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
           })
         : [],
 
-      // ✅ Condition Populate - Return string values only (FIXED: was returning objects)
       condition: Array.isArray(opt.condition) 
         ? opt.condition.map((id: any) => {
             const cond = conditionMap.get(String(id));
@@ -130,14 +136,12 @@ const populateColorAndSizeNamesForProducts = async (products: any[]) => {
           })
         : [],
 
-      // ✅ Warranty Populate - Return string value (FIXED: was returning object)
       warranty: (() => {
         if (!opt.warranty) return undefined;
         const war = warrantyMap.get(String(opt.warranty));
         return war ? war.warrantyName : opt.warranty;
       })(),
       
-      // ✅ Preserve unit array
       unit: opt.unit || []
     })) || [],
   }));
@@ -183,12 +187,18 @@ const getProductLookupPipeline = () => [
       'subCategory._id': 1, 'subCategory.name': 1, 'subCategory.slug': 1,
       'childCategory._id': 1, 'childCategory.name': 1, 'childCategory.slug': 1,
       'weightUnit._id': 1, 'weightUnit.name': 1,
-      'vendorStoreId._id': 1, 'vendorStoreId.storeName': 1, 'vendorStoreId.storeLogo': 1,
+      
+      // ✅ FIX: storePhone যুক্ত করা হলো এখানে
+      'vendorStoreId._id': 1, 'vendorStoreId.storeName': 1, 'vendorStoreId.storeLogo': 1, 'vendorStoreId.storePhone': 1,
 
       productId: 1, productTitle: 1, slug: 1, vendorName: 1, shortDescription: 1, fullDescription: 1,
       specification: 1, warrantyPolicy: 1, productTag: 1, videoUrl: 1, photoGallery: 1,
       thumbnailImage: 1, productPrice: 1, discountPrice: 1, stock: 1, sku: 1, rewardPoints: 1,
-      shippingCost: 1, offerDeadline: 1, metaTitle: 1, metaKeyword: 1, metaDescription: 1,
+      
+      shippingCost: 1, 
+      callForPrice: 1, 
+      
+      offerDeadline: 1, metaTitle: 1, metaKeyword: 1, metaDescription: 1,
       status: 1, sellCount: 1, 
       productOptions: 1,
       createdAt: 1, updatedAt: 1,
@@ -857,6 +867,46 @@ const updateVendorProductInDB = async (
   id: string,
   payload: Partial<IVendorProduct>
 ) => {
+  // ✅ FIX: callForPrice ON থাকলে এবং price 0 আসলে DB থেকে existing price রাখো
+  // এটা backend safety net — frontend ঠিক থাকলেও এটা double protection দেবে
+  if (payload.callForPrice === true) {
+    const existingProduct = await VendorProductModel.findById(id)
+      .select("productPrice discountPrice stock productOptions")
+      .lean() as any;
+
+    if (existingProduct) {
+      // Main price preserve
+      if (
+        (payload.productPrice === 0 || payload.productPrice === undefined || payload.productPrice === null) &&
+        existingProduct.productPrice > 0
+      ) {
+        payload.productPrice = existingProduct.productPrice;
+      }
+
+      // ✅ Variant prices preserve — callForPrice ON থাকলে variant price 0 আসলে পুরনো রাখো
+      if (
+        Array.isArray(payload.productOptions) &&
+        Array.isArray(existingProduct.productOptions) &&
+        payload.productOptions.length === existingProduct.productOptions.length
+      ) {
+        payload.productOptions = payload.productOptions.map((opt: any, idx: number) => {
+          const existingOpt = existingProduct.productOptions[idx];
+          if (!existingOpt) return opt;
+
+          return {
+            ...opt,
+            price: (opt.price === 0 || opt.price === undefined || opt.price === null) && existingOpt.price > 0
+              ? existingOpt.price
+              : opt.price,
+            discountPrice: (opt.discountPrice === 0 || opt.discountPrice === undefined || opt.discountPrice === null) && existingOpt.discountPrice > 0
+              ? existingOpt.discountPrice
+              : opt.discountPrice,
+          };
+        });
+      }
+    }
+  }
+
   await VendorProductModel.findByIdAndUpdate(id, payload, {
     new: true,
     runValidators: true,
@@ -873,17 +923,17 @@ const updateVendorProductInDB = async (
 
   await deleteCacheKey(CacheKeys.PRODUCT.BY_ID(id));
   await deleteCachePattern(CacheKeys.PATTERNS.PRODUCTS_ALL);
-  
+
   await deleteCacheKey(CacheKeys.PRODUCT.LANDING_PAGE);
   await deleteCacheKey(CacheKeys.PRODUCT.OFFERS);
   await deleteCacheKey(CacheKeys.PRODUCT.BEST_SELLING);
   await deleteCacheKey(CacheKeys.PRODUCT.FOR_YOU);
-  
+
   if (updatedProduct.slug) {
     const cleanSlug = decodeURIComponent(updatedProduct.slug.trim()).toLowerCase();
     await deleteCacheKey(`product:details:${cleanSlug}`);
   }
-  await deleteCacheKey(`product:details:${id}`)
+  await deleteCacheKey(`product:details:${id}`);
 
   return await populateColorAndSizeNames(updatedProduct);
 };
@@ -1014,70 +1064,108 @@ const getLandingPageProductsFromDB = async () => {
   );
 };
 
-// ===================================
-// 🔍 GET LIVE SUGGESTIONS (NO POPULATE - AGGREGATION)
-// ===================================
+
+const buildTitleMatch = (words: string[]): Record<string, any> => {
+  if (words.length === 0) return {};
+  if (words.length === 1) {
+    return {
+      productTitle: { $regex: new RegExp(`\\b${words[0]}`, "i") },
+    };
+  }
+  // Multi-word: ALL words must appear in title
+  return {
+    $and: words.map((w) => ({
+      productTitle: { $regex: new RegExp(`\\b${w}`, "i") },
+    })),
+  };
+};
+
+
+const buildDescriptionMatch = (words: string[]): Record<string, any> => {
+  if (words.length === 0) return {};
+  if (words.length === 1) {
+    return {
+      shortDescription: { $regex: new RegExp(`\\b${words[0]}`, "i") },
+    };
+  }
+  return {
+    $and: words.map((w) => ({
+      shortDescription: { $regex: new RegExp(`\\b${w}`, "i") },
+    })),
+  };
+};
+
+const buildTagOrRegex = (words: string[]): RegExp =>
+  new RegExp(words.map((w) => `\\b${w}`).join("|"), "i");
+// ─── prepareWords ─────────────────────────────────────────────────────────────
+const prepareWords = (searchTerm: string): string[] => {
+  return searchTerm
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)                       
+    .map((w) => w.replace(/[^\w\u0980-\u09FF]/g, "")) 
+    .filter((w) => w.length > 0);
+};
+
+// ─── getLiveSuggestionsFromDB ─────────────────────────────────────────────────
 
 const getLiveSuggestionsFromDB = async (searchTerm: string) => {
-  // ✅ FIX: Removed split and join("|"). Now it searches for the EXACT phrase the user typed.
-  // escapeRegExp is used so if a user types brackets or symbols, it won't crash the DB query.
-  const escapeRegExp = (text: string) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-  const regex = new RegExp(escapeRegExp(searchTerm), "i");
+  const words = prepareWords(searchTerm);
+  if (words.length === 0) return [];
 
-  // ✅ Use aggregation instead of populate
+  const titleMatch = buildTitleMatch(words);
+
   const suggestions = await VendorProductModel.aggregate([
     {
       $match: {
         status: "active",
-        productTitle: { $regex: regex }, // Now it properly matches the full title
+        ...titleMatch,   // ✅ title-এ AND logic
       },
     },
     { $sort: { createdAt: -1 } },
-    { $limit: 10 }, // Increased limit slightly to show better suggestions
-    
-    // Lookup category
+    { $limit: 10 },
+
     {
       $lookup: {
-        from: 'categorymodels',
-        localField: 'category',
-        foreignField: '_id',
-        as: 'category',
+        from: "categorymodels",
+        localField: "category",
+        foreignField: "_id",
+        as: "category",
       },
     },
-    { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
-    
-    // Lookup subcategory
+    { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+
     {
       $lookup: {
-        from: 'subcategorymodels',
-        localField: 'subCategory',
-        foreignField: '_id',
-        as: 'subCategory',
+        from: "subcategorymodels",
+        localField: "subCategory",
+        foreignField: "_id",
+        as: "subCategory",
       },
     },
-    { $unwind: { path: '$subCategory', preserveNullAndEmptyArrays: true } },
-    
-    // Lookup childcategory
+    { $unwind: { path: "$subCategory", preserveNullAndEmptyArrays: true } },
+
     {
       $lookup: {
-        from: 'childcategorymodels',
-        localField: 'childCategory',
-        foreignField: '_id',
-        as: 'childCategory',
+        from: "childcategorymodels",
+        localField: "childCategory",
+        foreignField: "_id",
+        as: "childCategory",
       },
     },
-    { $unwind: { path: '$childCategory', preserveNullAndEmptyArrays: true } },
-    
-    // Project only needed fields
+    { $unwind: { path: "$childCategory", preserveNullAndEmptyArrays: true } },
+
     {
       $project: {
         productTitle: 1,
         thumbnailImage: 1,
-        productPrice: 1, // Make sure your frontend reads this (or change to 'price' in frontend)
-        'category.slug': 1,
-        'subCategory.slug': 1,
-        'childCategory.slug': 1,
-        slug: 1 // Add slug here if your DB has it, otherwise _id is sent by default
+        productPrice: 1,
+        discountPrice: 1,
+        callForPrice: 1, // ✅ FIX: Added here
+        slug: 1,
+        "category.slug": 1,
+        "subCategory.slug": 1,
+        "childCategory.slug": 1,
       },
     },
   ]);
@@ -1085,29 +1173,84 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
   return suggestions;
 };
 
+
+// ─── getSearchResultsFromDB ───────────────────────────────────────────────────
+
 const getSearchResultsFromDB = async (searchTerm: string) => {
   const cacheKey = CacheKeys.PRODUCT.SEARCH(searchTerm);
-  
+
   return getCachedData(
     cacheKey,
     async () => {
-      // ✅ FIX: Same logic here. We want exact phrase matches, not just OR conditions for every word.
-      const escapeRegExp = (text: string) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-      const regex = new RegExp(escapeRegExp(searchTerm), "i");
+      const words = prepareWords(searchTerm);
+      if (words.length === 0) return [];
 
+      const titleMatch       = buildTitleMatch(words);       // AND
+      const descriptionMatch = buildDescriptionMatch(words); // AND
+      const tagOrRegex       = buildTagOrRegex(words);       // OR (tag keyword)
+
+      
       const results = await VendorProductModel.aggregate([
         {
           $match: {
             status: "active",
             $or: [
-              { productTitle: { $regex: regex } },
-              { shortDescription: { $regex: regex } },
-              // If tags are arrays of strings, we check if any tag matches the exact regex
-              { productTag: { $regex: regex } }, 
+              titleMatch,                                             // title: AND
+              descriptionMatch,                                      // description: AND
+              { productTag: { $elemMatch: { $regex: tagOrRegex } } }, // tag: OR
             ],
           },
         },
-        { $sort: { createdAt: -1 } },
+
+        // ── Relevance Scoring ─────────────────────────────────────────────────
+        {
+          $addFields: {
+            _searchScore: {
+              $add: [
+                // Title match (all words) → highest score
+                {
+                  $switch: {
+                    branches: [
+                      // Title-এ সব word আছে → score 4
+                      {
+                        case: {
+                          $and: words.map((w) => ({
+                            $regexMatch: {
+                              input: { $ifNull: ["$productTitle", ""] },
+                              regex: new RegExp(`\\b${w}`, "i"),
+                            },
+                          })),
+                        },
+                        then: 4,
+                      },
+                    ],
+                    default: 0,
+                  },
+                },
+                // Description match → score 1
+                {
+                  $cond: [
+                    {
+                      $regexMatch: {
+                        input: { $ifNull: ["$shortDescription", ""] },
+                        regex: tagOrRegex,
+                      },
+                    },
+                    1,
+                    0,
+                  ],
+                },
+              ],
+            },
+          },
+        },
+
+        // ── Sort: highest score first, then newest ────────────────────────────
+        { $sort: { _searchScore: -1, createdAt: -1 } },
+
+        // ── Remove score field ────────────────────────────────────────────────
+        { $unset: "_searchScore" },
+
         ...getProductLookupPipeline(),
       ]);
 
@@ -1357,6 +1500,9 @@ const getVendorStoreAndProductsFromDB = async (
   const skip = (page - 1) * limit;
 
   // ✅ Updated Pipeline with Projection
+  // (ফাইলের একটু নিচের দিকে getVendorStoreAndProductsFromDB ফাংশনের ভেতরের $project স্টেজটি রিপ্লেস করুন)
+
+  // ✅ Updated Pipeline with Projection
   const products = await VendorProductModel.aggregate([
     { $match: filter },
     { $sort: sortObj },
@@ -1368,10 +1514,11 @@ const getVendorStoreAndProductsFromDB = async (
       $project: {
         _id: 1,
         productTitle: 1,
-        slug: 1, // ✅ Slug added
+        slug: 1,
         thumbnailImage: 1,
         productPrice: 1,
         discountPrice: 1,
+        callForPrice: 1, // ✅ FIX: Added here
         stock: 1,
         sellCount: 1,
         rewardPoints: 1,

@@ -22,11 +22,6 @@ export default function MultipleImageUpload({
     }
   };
 
-  const removeImage = (index: number) => {
-    const newImages = images.filter((_, i) => i !== index);
-    setImages(newImages);
-  };
-
   const canAddMore = images.length < maxImages;
 
   return (
@@ -37,22 +32,14 @@ export default function MultipleImageUpload({
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {images.map((image, index) => (
               <div key={index} className="relative group">
-                <div className="aspect-square border-2 border-gray-200 rounded-lg overflow-hidden">
+                <div className="aspect-square border-2 border-gray-200 rounded-lg overflow-hidden relative">
                   <Image
                     src={URL.createObjectURL(image)}
                     alt={`Gallery image ${index + 1}`}
                     fill
                     className="object-cover"
                   />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(index)}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                  {/* লাল X বাটনটি এখান থেকে বাদ দেওয়া হয়েছে */}
                   <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
                     {index + 1}
                   </div>

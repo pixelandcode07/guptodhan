@@ -14,6 +14,30 @@ export type Wishlist = {
 }
 
 export const wishlist_columns: ColumnDef<Wishlist>[] = [
+  // ✅ NEW: Checkbox Column Added Here
+  {
+    id: "select",
+    header: ({ table }) => (
+      <input
+        type="checkbox"
+        className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        checked={table.getIsAllPageRowsSelected()}
+        onChange={table.getToggleAllPageRowsSelectedHandler()}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <input
+        type="checkbox"
+        className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        checked={row.getIsSelected()}
+        onChange={row.getToggleSelectedHandler()}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
   {
     accessorKey: "id",
     header: "SL",
@@ -24,7 +48,7 @@ export const wishlist_columns: ColumnDef<Wishlist>[] = [
     cell: ({ row }) => {
       const category = row.getValue("category") as string;
       return (
-        <div className="max-w-xs truncate" title={category}>
+        <div className="max-w-xs truncate font-medium text-blue-600" title={category}>
           {category}
         </div>
       );
@@ -38,9 +62,9 @@ export const wishlist_columns: ColumnDef<Wishlist>[] = [
       return (
         <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
           {image ? (
-            <img src={image} alt="Product" className="w-12 h-12 rounded object-cover" />
+            <img src={image} alt="Product" className="w-12 h-12 rounded object-cover shadow-sm border border-gray-100" />
           ) : (
-            <div className="w-12 h-12 bg-gray-300 rounded"></div>
+            <div className="w-12 h-12 bg-gray-100 rounded border border-gray-200 text-[10px] text-gray-400 flex items-center justify-center">N/A</div>
           )}
         </div>
       );
@@ -52,7 +76,7 @@ export const wishlist_columns: ColumnDef<Wishlist>[] = [
     cell: ({ row }) => {
       const product = row.getValue("product") as string;
       return (
-        <div className="max-w-xs truncate" title={product}>
+        <div className="max-w-xs truncate text-sm text-gray-800" title={product}>
           {product}
         </div>
       );
@@ -64,7 +88,7 @@ export const wishlist_columns: ColumnDef<Wishlist>[] = [
     cell: ({ row }) => {
       const customerName = row.getValue("customer_name") as string;
       return (
-        <div className="max-w-xs truncate" title={customerName}>
+        <div className="max-w-xs truncate text-sm" title={customerName}>
           {customerName}
         </div>
       );
@@ -76,7 +100,7 @@ export const wishlist_columns: ColumnDef<Wishlist>[] = [
     cell: ({ row }) => {
       const email = row.getValue("email") as string;
       return (
-        <div className="max-w-xs truncate" title={email}>
+        <div className="max-w-xs truncate text-sm text-gray-500" title={email}>
           {email || "-"}
         </div>
       );
@@ -88,7 +112,7 @@ export const wishlist_columns: ColumnDef<Wishlist>[] = [
     cell: ({ row }) => {
       const contact = row.getValue("contact") as string;
       return (
-        <div className="max-w-xs truncate" title={contact}>
+        <div className="max-w-xs truncate text-sm text-gray-500" title={contact}>
           {contact || "-"}
         </div>
       );
@@ -100,7 +124,7 @@ export const wishlist_columns: ColumnDef<Wishlist>[] = [
     cell: ({ row }) => {
       const createdAt = row.getValue("created_at") as string;
       return (
-        <div className="text-sm">
+        <div className="text-xs text-gray-500">
           {createdAt}
         </div>
       );

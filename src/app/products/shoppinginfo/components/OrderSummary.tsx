@@ -237,7 +237,7 @@ export default function OrderSummary({
         <span>৳ {total.toLocaleString()}</span>
       </div>
 
-      {/* ✅ Terms + Button — always inline, no fixed/sticky tricks */}
+      {/* ✅ Terms + Button */}
       <div className="border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-4">
         {/* Terms */}
         <label className="flex items-start gap-2.5 cursor-pointer select-none">

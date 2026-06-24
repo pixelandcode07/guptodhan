@@ -12,16 +12,20 @@ import ProductMainInfo from './ProductSidebar';
 import { processProduct } from './dataFormatHandler';
 
 export default function ProductDetailsClient({ productData }: ProductDetailsClientProps) {
-  // ✅ Process product data to handle both old and new backend formats
+  // ✅ Process product data
   const processedProduct = useMemo(() => processProduct(productData.product), [productData.product]);
   
   const { product } = { ...productData, product: processedProduct };
   const [reviews, setReviews] = useState<Review[]>(product.reviews || []);
+  
+  // ✅ States for variants
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [selectedSize, setSelectedSize] = useState<string>('');
+  const [selectedCountry, setSelectedCountry] = useState<string>(''); // ✅ NEW: Country State
+  
   const [isLoadingReviews, setIsLoadingReviews] = useState(true);
 
-  // ✅ Fetch reviews on component mount
+  // ✅ Fetch reviews
   useEffect(() => {
     const fetchReviews = async () => {
       try {
@@ -35,7 +39,6 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
         }
       } catch (error) {
         console.error('Error fetching reviews:', error);
-        // Fall back to product reviews if API fails
         setReviews(product.reviews || []);
       } finally {
         setIsLoadingReviews(false);
@@ -47,14 +50,17 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
     }
   }, [product._id]);
 
+  // ✅ Set Initial Variants (Color, Size, Country)
   useEffect(() => {
     if (product.productOptions && product.productOptions.length > 0) {
       const firstOption = product.productOptions[0];
-      // ✅ These are now guaranteed to be strings
       const firstColor = Array.isArray(firstOption.color) ? firstOption.color[0] : firstOption.color;
       const firstSize = Array.isArray(firstOption.size) ? firstOption.size[0] : firstOption.size;
+      const firstCountry = Array.isArray(firstOption.country) ? firstOption.country[0] : firstOption.country; // ✅ NEW
+
       if (firstColor) setSelectedColor(firstColor);
       if (firstSize) setSelectedSize(firstSize);
+      if (firstCountry) setSelectedCountry(firstCountry); // ✅ NEW
     }
   }, [product.productOptions]);
 
@@ -70,9 +76,12 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
       const optionColor = Array.isArray(option.color) ? option.color[0] : option.color;
       return optionColor === color;
     });
-    if (variant && variant.size) {
+    if (variant) {
       const newSize = Array.isArray(variant.size) ? variant.size[0] : variant.size;
+      const newCountry = Array.isArray(variant.country) ? variant.country[0] : variant.country; // ✅ NEW
+      
       setSelectedSize(newSize || '');
+      setSelectedCountry(newCountry || ''); // ✅ NEW
     }
   };
 
@@ -85,7 +94,6 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
       <div className="container mx-auto px-4 mt-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
-          {/* Left: Images */}
           <div className="lg:col-span-5">
             <div className="sticky top-24">
               <ProductImageGallery 
@@ -98,7 +106,6 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
             </div>
           </div>
           
-          {/* Right: Merged Info & Sidebar */}
           <div className="lg:col-span-7">
             <ProductMainInfo 
               product={product} 
@@ -107,8 +114,10 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
               relatedData={productData.relatedData}
               onColorChange={handleColorChange}
               onSizeChange={(size: string) => setSelectedSize(size)}
+              onCountryChange={(country: string) => setSelectedCountry(country)} // ✅ NEW
               selectedColor={selectedColor}
               selectedSize={selectedSize}
+              selectedCountry={selectedCountry} // ✅ NEW
             />
           </div>
 

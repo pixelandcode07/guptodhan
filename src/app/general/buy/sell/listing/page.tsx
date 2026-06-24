@@ -1,27 +1,32 @@
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-import { buySellListing_columns } from '@/components/TableHelper/buySellListing_columns'
-import { DataTable } from '@/components/TableHelper/data-table'
-import { fetchClassifiedAds } from '@/lib/BuyandSellApis/fetchClassifiedAds'
 import { ClassifiedAdListing } from '@/types/ClassifiedAdsType'
 import { getServerSession } from 'next-auth'
+import ListingClient from './components/ListingClient'
+import { fetchClassifiedAds } from '@/lib/BuyandSellApis/fetchClassifiedAds';
 
+export const dynamic = 'force-dynamic'; // Prevent Next.js 15 build errors
 
 export default async function BuySellListing() {
     const session = await getServerSession(authOptions)
     const token = session?.accessToken as string | undefined;
-    const buySellListing: ClassifiedAdListing[] = await fetchClassifiedAds(token)
+    
+    // ডাটা ফেচ করা হচ্ছে
+    const rawListing: ClassifiedAdListing[] = await fetchClassifiedAds(token)
+    
+    const safeListing = Array.isArray(rawListing) 
+        ? rawListing.filter(ad => ad && ad.user !== null && ad.user !== undefined)
+        : [];
+
     return (
         <>
             <div className='py-5'>
                 <h1 className="text-lg font-semibold border-l-2 border-blue-500">
-                    <span className="pl-5">Buy Sell Listing</span>
+                    <span className="pl-5">Buy Sell Listing ({safeListing.length})</span>
                 </h1>
             </div>
 
-
-            <div>
-                <DataTable columns={buySellListing_columns} data={buySellListing} />
-            </div>
+            {/* ✅ Pass data to Client Component for Bulk Actions */}
+            <ListingClient initialListing={safeListing} />
         </>
     )
 }

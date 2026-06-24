@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,23 +18,76 @@ type AddressFormProps = {
   onSave: (data: any) => void;
 };
 
+// Helper function to safely parse incoming initialData
+const getParsedInitialData = (data: any) => {
+  if (!data) return {};
+  try {
+    const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+    if (Array.isArray(parsedData) && parsedData.length > 0) return parsedData[0];
+    if (typeof parsedData === 'object' && parsedData !== null) return parsedData;
+  } catch (error) {
+    console.error("Failed to parse initialData:", error);
+  }
+  return {};
+};
+
 export default function AddAddressForm({
   initialData,
   onCancel,
   onSave,
 }: AddressFormProps) {
   
-  // Local State
+  const parsedData = getParsedInitialData(initialData);
+
   const [formData, setFormData] = useState({
-    fullName: initialData?.fullName || '',
-    phone: initialData?.phone || '',
-    landmark: initialData?.landmark || '',
-    province: initialData?.province || '',
-    city: initialData?.city || '',
-    zone: initialData?.zone || '',
-    address: initialData?.address || '',
-    addressType: initialData?.addressType || 'Home',
+    fullName: parsedData.fullName || '',
+    phone: parsedData.phone || '',
+    landmark: parsedData.landmark || '',
+    province: parsedData.province || '',
+    city: parsedData.city || '',
+    zone: parsedData.zone || '',
+    address: parsedData.address || '',
+    addressType: parsedData.addressType || 'Home',
   });
+
+  // State to hold dynamic API locations (Division -> District mapping)
+  const [apiLocations, setApiLocations] = useState<Record<string, string[]>>({});
+
+  // Fetch Delivery Charges to build dynamic Province and City lists strictly from API
+  useEffect(() => {
+    const fetchApiLocations = async () => {
+      try {
+        const res = await fetch('/api/v1/delivery-charge', {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        });
+        const data = await res.json();
+        
+        if (data?.data && Array.isArray(data.data)) {
+          const locs: Record<string, string[]> = {};
+          
+          data.data.forEach((item: any) => {
+            const division = item.divisionName;
+            const district = item.districtName;
+            
+            if (!locs[division]) {
+              locs[division] = [];
+            }
+            if (!locs[division].includes(district)) {
+              locs[division].push(district);
+            }
+          });
+          
+          Object.keys(locs).forEach(key => locs[key].sort());
+          setApiLocations(locs);
+        }
+      } catch (err) {
+        console.error("Failed to fetch locations from delivery-charge API", err);
+      }
+    };
+    
+    fetchApiLocations();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -42,18 +95,28 @@ export default function AddAddressForm({
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      const newData = { ...prev, [name]: value };
+      if (name === 'province') {
+        newData.city = '';
+      }
+      return newData;
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.fullName || !formData.phone || !formData.address) {
-      alert('Please fill all required fields');
+    if (!formData.fullName || !formData.phone || !formData.address || !formData.province || !formData.city || !formData.zone) {
+      alert('Please fill all required fields.');
       return;
     }
-    // Parent component a data pathano
     onSave(formData);
   };
+
+  const regions = Object.keys(apiLocations).sort();
+  const cities = formData.province && apiLocations[formData.province] 
+    ? apiLocations[formData.province] 
+    : [];
 
   return (
     <form onSubmit={handleSubmit} className="bg-white space-y-6 border p-6 rounded-md shadow-sm">
@@ -84,39 +147,40 @@ export default function AddAddressForm({
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium">Region</label>
+              <label className="text-sm font-medium">Region *</label>
               <Select value={formData.province} onValueChange={(val) => handleSelectChange('province', val)}>
-                <SelectTrigger className="rounded-none mt-1"><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectTrigger className="rounded-none mt-1"><SelectValue placeholder="Select Region" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Dhaka">Dhaka</SelectItem>
-                  <SelectItem value="Chittagong">Chittagong</SelectItem>
-                  <SelectItem value="Rajshahi">Rajshahi</SelectItem>
+                  {regions.map((region) => (
+                    <SelectItem key={region} value={region}>{region}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium">City</label>
-              <Select value={formData.city} onValueChange={(val) => handleSelectChange('city', val)}>
-                <SelectTrigger className="rounded-none mt-1"><SelectValue placeholder="Select" /></SelectTrigger>
+              <label className="text-sm font-medium">City *</label>
+              <Select disabled={!formData.province} value={formData.city} onValueChange={(val) => handleSelectChange('city', val)}>
+                <SelectTrigger className="rounded-none mt-1"><SelectValue placeholder="Select City" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Dhaka North">Dhaka North</SelectItem>
-                  <SelectItem value="Dhaka South">Dhaka South</SelectItem>
-                  <SelectItem value="Gazipur">Gazipur</SelectItem>
+                  {cities.map((city) => (
+                    <SelectItem key={city} value={city}>{city}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div>
-            <label className="text-sm font-medium">Zone / Area</label>
-            <Select value={formData.zone} onValueChange={(val) => handleSelectChange('zone', val)}>
-              <SelectTrigger className="rounded-none mt-1"><SelectValue placeholder="Select" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Uttara">Uttara</SelectItem>
-                <SelectItem value="Mirpur">Mirpur</SelectItem>
-                <SelectItem value="Banasree">Banasree</SelectItem>
-              </SelectContent>
-            </Select>
+            <label className="text-sm font-medium">Zone / Area *</label>
+            {/* Changed from Select to Input since the API does not provide Zone data */}
+            <Input 
+              name="zone" 
+              value={formData.zone} 
+              onChange={handleInputChange} 
+              required 
+              className="rounded-none mt-1" 
+              placeholder="Enter Zone or Area (e.g., Mirpur)" 
+            />
           </div>
 
           <div>

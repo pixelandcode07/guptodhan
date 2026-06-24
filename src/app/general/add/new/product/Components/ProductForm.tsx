@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, FormEvent, useEffect, useRef } from "react";
+// src/app/general/add/new/product/Components/ProductForm.tsx
+
+import React, { useState, FormEvent, useEffect, useRef, useMemo } from "react";
 import axios from "axios";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -27,9 +29,10 @@ import ProductImageGallery from "./ProductImageGallery";
 import PricingInventory from "./PricingInventory";
 import TagInput from "./TagInput";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import imageCompression from 'browser-image-compression';
+import imageCompression from "browser-image-compression";
 
-// --- Helper Functions ---
+// ─── Helper Functions ─────────────────────────────────────────────────────────
+
 const getIdFromRef = (value: unknown): string => {
   if (!value) return "";
   if (typeof value === "string") return value.trim();
@@ -41,127 +44,155 @@ const getIdFromRef = (value: unknown): string => {
   return "";
 };
 
-// ✅ NEW: Check if a string is a valid MongoDB ObjectId
 const isObjectId = (val: string): boolean => /^[a-f\d]{24}$/i.test(val.trim());
 
-// ✅ NEW: Find option ID by name or return the ID if already an ObjectId
-// nameKeys = possible field names that hold the display name (e.g. 'colorName', 'name', 'warrantyName')
 const resolveOptionId = (
   rawVal: unknown,
   options: any[],
   nameKeys: string[]
 ): string => {
   if (!rawVal) return "";
-
-  // If rawVal is an object, extract its _id first
   const strVal = getIdFromRef(rawVal);
   if (!strVal) return "";
-
-  // If it already looks like a MongoDB ObjectId → use it directly
   if (isObjectId(strVal)) return strVal;
-
-  // Otherwise it's a plain display name (e.g. "Yellow", "3 Year Warranty")
-  // Try to find the matching option by any of the provided name keys
-  const found = options?.find((opt: any) => {
-    return nameKeys.some((key) => {
+  const found = options?.find((opt: any) =>
+    nameKeys.some((key) => {
       const name = String(opt[key] || "");
       return name.toLowerCase().trim() === strVal.toLowerCase().trim();
-    });
-  });
-
-  if (found) {
-    return String(found._id || found.id || "");
-  }
-
-  // Last resort: return empty so Select shows placeholder instead of broken value
+    })
+  );
+  if (found) return String(found._id || found.id || "");
   return "";
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function ProductForm({
   initialData,
   productId: propProductId,
 }: any) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const router        = useRouter();
+  const searchParams  = useSearchParams();
   const productIdParam = searchParams?.get("id");
   const productIdParamValue = propProductId || productIdParam;
   const productId =
     productIdParamValue && productIdParamValue !== "undefined"
       ? productIdParamValue
       : null;
-  const isEditMode = !!productId;
+  const isEditMode   = !!productId;
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
 
-  // --- LISTS FROM PROPS (Server Side Data) ---
-  const listStores = initialData?.stores || [];
-  const listCategories = initialData?.categories || [];
-  const listBrands = initialData?.brands || [];
-  const listFlags = initialData?.flags || [];
-  const listUnits = initialData?.units || [];
-  const listWarranties = initialData?.warranties || [];
+  // ── Server-side lists ──────────────────────────────────────────────────────
+  const listStores      = initialData?.stores      || [];
+  const listCategories  = initialData?.categories  || [];
+  const listBrands      = initialData?.brands      || [];
+  const listFlags       = initialData?.flags       || [];
+  const listUnits       = initialData?.units       || [];
+  const listWarranties  = initialData?.warranties  || [];
   const variantOptionsInitial = initialData?.variantOptions || {};
 
-  // --- STATES ---
-  const [title, setTitle] = useState("");
+  // ── Basic States ───────────────────────────────────────────────────────────
+  const [title,            setTitle]            = useState("");
   const [shortDescription, setShortDescription] = useState("");
-  const [fullDescription, setFullDescription] = useState("");
-  const [specification, setSpecification] = useState("");
-  const [warrantyPolicy, setWarrantyPolicy] = useState("");
-  const [productTags, setProductTags] = useState<string[]>([]);
+  const [fullDescription,  setFullDescription]  = useState("");
+  const [specification,    setSpecification]    = useState("");
+  const [warrantyPolicy,   setWarrantyPolicy]   = useState("");
+  const [productTags,      setProductTags]      = useState<string[]>([]);
 
-  const [thumbnail, setThumbnail] = useState<File | null>(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
-  const [galleryImages, setGalleryImages] = useState<File[]>([]);
+  // ── Image States ───────────────────────────────────────────────────────────
+  const [thumbnail,           setThumbnail]           = useState<File | null>(null);
+  const [thumbnailPreview,    setThumbnailPreview]    = useState<string | null>(null);
+  const [galleryImages,       setGalleryImages]       = useState<File[]>([]);
   const [existingGalleryUrls, setExistingGalleryUrls] = useState<string[]>([]);
-  const [removedGalleryUrls, setRemovedGalleryUrls] = useState<string[]>([]);
+  const [removedGalleryUrls,  setRemovedGalleryUrls]  = useState<string[]>([]);
   const [initialThumbnailUrl, setInitialThumbnailUrl] = useState<string | null>(null);
   const [removedThumbnailUrl, setRemovedThumbnailUrl] = useState<string | null>(null);
 
-  const [price, setPrice] = useState<number | undefined>(undefined);
+  // ── Pricing States ─────────────────────────────────────────────────────────
+  const [price,         setPrice]         = useState<number | undefined>(undefined);
   const [discountPrice, setDiscountPrice] = useState<number | undefined>(undefined);
-  const [stock, setStock] = useState<number | undefined>(undefined);
-  const [rewardPoints, setRewardPoints] = useState<number | undefined>(undefined);
-  const [productCode, setProductCode] = useState("");
-  const [videoUrl, setVideoUrl] = useState("");
-  const [shippingCost, setShippingCost] = useState<number | undefined>(undefined);
+  const [stock,         setStock]         = useState<number | undefined>(undefined);
+  const [rewardPoints,  setRewardPoints]  = useState<number | undefined>(undefined);
+  const [productCode,   setProductCode]   = useState("");
+  const [videoUrl,      setVideoUrl]      = useState("");
+  const [shippingCost,  setShippingCost]  = useState<number | undefined>(undefined);
 
-  // --- Dropdown States ---
-  const [store, setStore] = useState("");
-  const [category, setCategory] = useState("");
-  const [subcategory, setSubcategory] = useState("");
-  const [childCategory, setChildCategory] = useState("");
-  const [brand, setBrand] = useState("");
-  const [model, setModel] = useState("");
-  const [flag, setFlag] = useState("");
-  const [unit, setUnit] = useState("");
-  const [warranty, setWarranty] = useState("");
+  const [callForPrice, setCallForPrice] = useState(false);
 
-  // --- Dynamic Lists ---
-  const [subcategories, setSubcategories] = useState<any[]>([]);
-  const [childCategories, setChildCategories] = useState<any[]>([]);
-  const [models, setModels] = useState<any[]>([]);
+  // ── ✅ FIX: callForPrice toggle হলে price preserve করার জন্য ref ──────────
+  const preservedPrice         = useRef<number | undefined>(undefined);
+  const preservedDiscountPrice = useRef<number | undefined>(undefined);
+  const preservedStock         = useRef<number | undefined>(undefined);
 
+  // ── Dropdown States ────────────────────────────────────────────────────────
+  const [store,        setStore]        = useState("");
+  const [category,     setCategory]     = useState("");
+  const [subcategory,  setSubcategory]  = useState("");
+  const [childCategory,setChildCategory]= useState("");
+  const [brand,        setBrand]        = useState("");
+  const [model,        setModel]        = useState("");
+  const [flag,         setFlag]         = useState("");
+  const [unit,         setUnit]         = useState("");
+  const [warranty,     setWarranty]     = useState("");
+
+  // ── Dynamic Lists ──────────────────────────────────────────────────────────
+  const [subcategories,  setSubcategories]  = useState<any[]>([]);
+  const [childCategories,setChildCategories]= useState<any[]>([]);
+  const [models,         setModels]         = useState<any[]>([]);
+
+  // ── Variant States ─────────────────────────────────────────────────────────
   const [specialOffer, setSpecialOffer] = useState(false);
   const [offerEndTime, setOfferEndTime] = useState("");
-  const [hasVariant, setHasVariant] = useState(false);
-  const [variants, setVariants] = useState<IProductOption[]>([]);
+  const [hasVariant,   setHasVariant]   = useState(false);
+  const [variants,     setVariants]     = useState<IProductOption[]>([]);
 
-  const [metaTitle, setMetaTitle] = useState("");
+  // ── SEO States ─────────────────────────────────────────────────────────────
+  const [metaTitle,       setMetaTitle]       = useState("");
   const [metaKeywordTags, setMetaKeywordTags] = useState<string[]>([]);
   const [metaDescription, setMetaDescription] = useState("");
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoadingProduct, setIsLoadingProduct] = useState(isEditMode);
-  const [showDebug, setShowDebug] = useState(false);
+  // ── UI States ──────────────────────────────────────────────────────────────
+  const [isSubmitting,    setIsSubmitting]    = useState(false);
+  const [isLoadingProduct,setIsLoadingProduct]= useState(isEditMode);
+  const [variantOptions,  setVariantOptions]  = useState(variantOptionsInitial);
 
-  const [variantOptions, setVariantOptions] = useState(variantOptionsInitial);
-
-  const isInitialLoad = useRef(true);
-  const initialModelId = useRef<string | null>(null);
+  const isInitialLoad        = useRef(true);
+  const initialModelId       = useRef<string | null>(null);
   const initialSubcategoryId = useRef<string | null>(null);
 
-  // --- 1. LOAD PRODUCT DATA ---
+  // ── ✅ Store permission check ──────────────────────────────────────────────
+  const hasCallForPricePermission = useMemo(() => {
+    if (!store) return false;
+    const selectedStoreObj = listStores.find((s: any) => getIdFromRef(s) === store);
+    return selectedStoreObj?.callForPricePermission === true;
+  }, [store, listStores]);
+
+  // ── ✅ FIX: callForPrice toggle হলে price state preserve করো ───────────────
+  // callForPrice ON হলে current price ref এ save করো
+  // callForPrice OFF হলে ref থেকে price restore করো
+  useEffect(() => {
+    if (callForPrice) {
+      // ON হলে current values ref এ backup রাখো
+      preservedPrice.current         = price;
+      preservedDiscountPrice.current = discountPrice;
+      preservedStock.current         = stock;
+    } else {
+      // OFF হলে backup থেকে restore করো (যদি ref এ value থাকে)
+      if (preservedPrice.current !== undefined) {
+        setPrice(preservedPrice.current);
+      }
+      if (preservedDiscountPrice.current !== undefined) {
+        setDiscountPrice(preservedDiscountPrice.current);
+      }
+      if (preservedStock.current !== undefined) {
+        setStock(preservedStock.current);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [callForPrice]);
+
+  // ── 1. Load existing product (edit mode) ──────────────────────────────────
   useEffect(() => {
     const fetchExistingProduct = async () => {
       if (!isEditMode || !productId || !token) {
@@ -182,7 +213,7 @@ export default function ProductForm({
           return;
         }
 
-        // 1. Basic Information
+        // Basic
         setTitle(p.productTitle || "");
         setShortDescription(p.shortDescription || "");
         setFullDescription(p.fullDescription || "");
@@ -203,40 +234,56 @@ export default function ProductForm({
             : []
         );
 
-        // 2. Images & Pricing
+        // Images
         setThumbnailPreview(p.thumbnailImage || null);
         setInitialThumbnailUrl(p.thumbnailImage || null);
         setExistingGalleryUrls(Array.isArray(p.photoGallery) ? p.photoGallery : []);
-        setPrice(p.productPrice);
-        setDiscountPrice(p.discountPrice);
-        setStock(p.stock);
+
+        // ✅ FIX: Pricing — সবসময় DB থেকে আসা price set করো
+        // callForPrice ON থাকলেও price state এ রাখো, শুধু UI তে hide থাকবে
+        const dbPrice         = p.productPrice   ?? undefined;
+        const dbDiscountPrice = p.discountPrice  ?? undefined;
+        const dbStock         = p.stock          ?? undefined;
+
+        setPrice(dbPrice);
+        setDiscountPrice(dbDiscountPrice);
+        setStock(dbStock);
+        setRewardPoints(p.rewardPoints ?? undefined);
+        setShippingCost(p.shippingCost ?? undefined);
         setProductCode(p.sku || "");
-        setRewardPoints(p.rewardPoints);
-        setShippingCost(p.shippingCost);
         setVideoUrl(p.videoUrl || "");
+
+        // ✅ FIX: callForPrice restore — ref এও backup রাখো যাতে toggle এ reset না হয়
+        const isCallForPrice = !!p.callForPrice;
+        setCallForPrice(isCallForPrice);
+        if (isCallForPrice) {
+          preservedPrice.current         = dbPrice;
+          preservedDiscountPrice.current = dbDiscountPrice;
+          preservedStock.current         = dbStock;
+        }
 
         // Special Offer
         if (p.offerDeadline) {
           setSpecialOffer(true);
           const deadline = new Date(p.offerDeadline);
-          const year = deadline.getFullYear();
-          const month = String(deadline.getMonth() + 1).padStart(2, "0");
-          const day = String(deadline.getDate()).padStart(2, "0");
-          const hours = String(deadline.getHours()).padStart(2, "0");
+          const year    = deadline.getFullYear();
+          const month   = String(deadline.getMonth() + 1).padStart(2, "0");
+          const day     = String(deadline.getDate()).padStart(2, "0");
+          const hours   = String(deadline.getHours()).padStart(2, "0");
           const minutes = String(deadline.getMinutes()).padStart(2, "0");
           setOfferEndTime(`${year}-${month}-${day}T${hours}:${minutes}`);
         }
 
-        // 3. IDs Extraction
-        const catId = getIdFromRef(p.category);
-        const subId = getIdFromRef(p.subCategory);
-        const childId = getIdFromRef(p.childCategory);
+        // IDs
+        const catId      = getIdFromRef(p.category);
+        const subId      = getIdFromRef(p.subCategory);
+        const childId    = getIdFromRef(p.childCategory);
         const brandIdRef = getIdFromRef(p.brand);
         const modelIdRef = getIdFromRef(p.productModel);
-        if (subId) initialSubcategoryId.current = subId;
-        if (modelIdRef) initialModelId.current = modelIdRef;
+        if (subId)      initialSubcategoryId.current = subId;
+        if (modelIdRef) initialModelId.current       = modelIdRef;
 
-        // 4. Async Fetching of dependent lists
+        // Dependent lists
         const promises: Promise<void>[] = [];
         if (catId) {
           promises.push(
@@ -271,116 +318,89 @@ export default function ProductForm({
               .catch(() => {})
           );
         }
-
         await Promise.all(promises);
 
-        // 5. Setting Main IDs
-        const storeId = getIdFromRef(p.vendorStoreId);
-        const flagId = getIdFromRef(p.flag);
-        const unitId = getIdFromRef(p.weightUnit);
+        // Set main IDs
+        const storeId    = getIdFromRef(p.vendorStoreId);
+        const flagId     = getIdFromRef(p.flag);
+        const unitId     = getIdFromRef(p.weightUnit);
         const warrantyId = getIdFromRef(p.warranty);
 
-        if (storeId) setStore(storeId);
-        if (catId) setCategory(catId);
-        if (subId) setSubcategory(subId);
+        if (storeId)    setStore(storeId);
+        if (catId)      setCategory(catId);
+        if (subId)      setSubcategory(subId);
         if (brandIdRef) setBrand(brandIdRef);
         if (modelIdRef) setModel(modelIdRef);
-        if (flagId) setFlag(flagId);
-        if (unitId) setUnit(unitId);
+        if (flagId)     setFlag(flagId);
+        if (unitId)     setUnit(unitId);
         if (warrantyId) setWarranty(warrantyId);
-        if (childId) setChildCategory(childId);
+        if (childId)    setChildCategory(childId);
 
-        // 6. ✅ FIXED: Variants — Handle both ObjectId AND plain string values from backend
+        // Variants
         if (p.productOptions?.length > 0) {
           setHasVariant(true);
-
-          // We need the current variantOptions to resolve names → IDs
-          // Use variantOptionsInitial since state may not be updated yet
           const currentVariantOptions = variantOptionsInitial;
 
           const mappedVariants = p.productOptions.map((opt: any, idx: number) => {
-            // Raw values from backend (could be ObjectId string OR display name like "Yellow")
-            const rawColor = Array.isArray(opt.color) ? opt.color[0] : opt.color;
-            const rawSize = Array.isArray(opt.size) ? opt.size[0] : opt.size;
-            const rawStorage = opt.storage;
-            const rawSimType = Array.isArray(opt.simType) ? opt.simType[0] : opt.simType;
-            const rawCondition = Array.isArray(opt.condition) ? opt.condition[0] : opt.condition;
-            const rawWarranty = opt.warranty;
+            const rawColor     = Array.isArray(opt.color)    ? opt.color[0]    : opt.color;
+            const rawSize      = Array.isArray(opt.size)     ? opt.size[0]     : opt.size;
+            const rawStorage   = opt.storage;
+            const rawSimType   = Array.isArray(opt.simType)  ? opt.simType[0]  : opt.simType;
+            const rawCondition = Array.isArray(opt.condition)? opt.condition[0]: opt.condition;
+            const rawWarranty  = opt.warranty;
+            const rawCountry   = Array.isArray(opt.country)  ? opt.country[0]  : opt.country;
 
-            // ✅ resolveOptionId handles both cases:
-            // Case 1: ObjectId → returns as-is
-            // Case 2: Plain string name like "Yellow" → finds matching ID from options list
-            const colorId = resolveOptionId(rawColor, currentVariantOptions?.colors || [], ["colorName", "name"]);
-            const sizeId = resolveOptionId(rawSize, currentVariantOptions?.sizes || [], ["name"]);
-            const storageId = resolveOptionId(rawStorage, currentVariantOptions?.storageTypes || [], ["name", "ram", "rom"]);
-            const simTypeId = resolveOptionId(rawSimType, currentVariantOptions?.simTypes || [], ["name"]);
-            const conditionId = resolveOptionId(rawCondition, currentVariantOptions?.conditions || [], ["deviceCondition", "name"]);
-            const warrantyId = resolveOptionId(rawWarranty, currentVariantOptions?.warranties || [], ["warrantyName", "name"]);
-
-            // ✅ For storage: if ID not found but raw value exists, store as custom
-            // so we can still display something meaningful
-            const finalStorageId = storageId || (() => {
-              if (!rawStorage) return "";
-              const rawStr = typeof rawStorage === "string" ? rawStorage.trim() : getIdFromRef(rawStorage);
-              if (!rawStr) return "";
-              // Add as custom storage option so Select can display it
-              return "CUSTOM_" + rawStr;
-            })();
+            const colorId     = resolveOptionId(rawColor,     currentVariantOptions?.colors       || [], ["colorName", "name"]);
+            const sizeId      = resolveOptionId(rawSize,      currentVariantOptions?.sizes        || [], ["name"]);
+            const storageId   = resolveOptionId(rawStorage,   currentVariantOptions?.storageTypes || [], ["name", "ram", "rom"]);
+            const simTypeId   = resolveOptionId(rawSimType,   currentVariantOptions?.simTypes     || [], ["name"]);
+            const conditionId = resolveOptionId(rawCondition, currentVariantOptions?.conditions   || [], ["deviceCondition", "name"]);
+            const warrantyId  = resolveOptionId(rawWarranty,  currentVariantOptions?.warranties   || [], ["warrantyName", "name"]);
+            const countryId   = resolveOptionId(rawCountry,   currentVariantOptions?.countries    || [], ["name"]);
 
             return {
-              id: Date.now() + idx,
-              imageUrl: opt.productImage || "",
-              color: colorId,
-              size: sizeId,
-              storage: storageId, // Only use resolved ID (not custom string)
-              simType: simTypeId,
-              condition: conditionId,
-              warranty: warrantyId,
-              stock: opt.stock || 0,
-              price: opt.price || 0,
-              discountPrice: opt.discountPrice || 0,
+              id:            Date.now() + idx,
+              imageUrl:      opt.productImage || "",
+              color:         colorId,
+              size:          sizeId,
+              storage:       storageId,
+              simType:       simTypeId,
+              condition:     conditionId,
+              warranty:      warrantyId,
+              country:       countryId,
+              stock:         opt.stock         || 0,
+              // ✅ FIX: variant price সবসময় DB থেকে আসা value রাখো
+              price:         opt.price         ?? 0,
+              discountPrice: opt.discountPrice ?? 0,
             };
           });
 
           setVariants(mappedVariants);
 
-          // ✅ Add any missing storage options (fallback for unresolved storage)
           const missingStorageOptions: any[] = [];
           p.productOptions.forEach((opt: any) => {
             const rawStorage = opt.storage;
             if (!rawStorage) return;
             const rawStr = typeof rawStorage === "string" ? rawStorage.trim() : getIdFromRef(rawStorage);
             if (!rawStr) return;
-
             const alreadyResolved = resolveOptionId(rawStorage, currentVariantOptions?.storageTypes || [], ["name"]);
             if (!alreadyResolved) {
-              // Not found in master list — add as custom so Select can show it
-              const existing = currentVariantOptions?.storageTypes || [];
+              const existing    = currentVariantOptions?.storageTypes || [];
               const existingIds = new Set(existing.map((s: any) => String(s._id || s.id)));
-              const customId = rawStr; // Use the raw string as pseudo-ID
+              const customId    = rawStr;
               if (!existingIds.has(customId)) {
-                missingStorageOptions.push({
-                  _id: customId,
-                  name: rawStr,
-                  ram: undefined,
-                  rom: undefined,
-                });
+                missingStorageOptions.push({ _id: customId, name: rawStr, ram: undefined, rom: undefined });
               }
             }
           });
 
           if (missingStorageOptions.length > 0) {
             setVariantOptions((prev: any) => {
-              const existing = prev?.storageTypes || [];
+              const existing    = prev?.storageTypes || [];
               const existingIds = new Set(existing.map((s: any) => String(s._id || s.id)));
-              const merged = [
-                ...existing,
-                ...missingStorageOptions.filter((s) => !existingIds.has(String(s._id))),
-              ];
+              const merged      = [...existing, ...missingStorageOptions.filter((s) => !existingIds.has(String(s._id)))];
               return { ...prev, storageTypes: merged };
             });
-
-            // Also update mappedVariants storage to use the raw string as ID
             setVariants((prev) =>
               prev.map((v, idx) => {
                 const opt = p.productOptions[idx];
@@ -389,9 +409,7 @@ export default function ProductForm({
                 if (!rawStorage) return v;
                 const rawStr = typeof rawStorage === "string" ? rawStorage.trim() : getIdFromRef(rawStorage);
                 const alreadyResolved = resolveOptionId(rawStorage, currentVariantOptions?.storageTypes || [], ["name"]);
-                if (!alreadyResolved && rawStr) {
-                  return { ...v, storage: rawStr };
-                }
+                if (!alreadyResolved && rawStr) return { ...v, storage: rawStr };
                 return v;
               })
             );
@@ -402,9 +420,7 @@ export default function ProductForm({
         toast.error("❌ Error loading data.");
       } finally {
         setIsLoadingProduct(false);
-        setTimeout(() => {
-          isInitialLoad.current = false;
-        }, 500);
+        setTimeout(() => { isInitialLoad.current = false; }, 500);
       }
     };
 
@@ -412,10 +428,10 @@ export default function ProductForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditMode, productId, token]);
 
-  // --- 2. FETCH SUBCATEGORIES (Only on User Change) ---
+  // ── 2. Fetch subcategories ─────────────────────────────────────────────────
   useEffect(() => {
     if (isInitialLoad.current) return;
-    const fetchSubcategories = async () => {
+    const fetchSubs = async () => {
       if (category && token) {
         try {
           const res = await axios.get(
@@ -426,21 +442,19 @@ export default function ProductForm({
           setSubcategory("");
           setChildCategory("");
           setChildCategories([]);
-        } catch (error) {
-          console.error(error);
-        }
+        } catch {}
       } else {
         setSubcategories([]);
         setSubcategory("");
       }
     };
-    fetchSubcategories();
+    fetchSubs();
   }, [category, token]);
 
-  // --- 3. FETCH CHILD CATEGORIES (Only on User Change) ---
+  // ── 3. Fetch child categories ──────────────────────────────────────────────
   useEffect(() => {
     if (isInitialLoad.current) return;
-    const fetchChildCategories = async () => {
+    const fetchChildren = async () => {
       if (subcategory && token) {
         try {
           const res = await axios.get(
@@ -449,18 +463,16 @@ export default function ProductForm({
           );
           setChildCategories(res.data?.data || []);
           setChildCategory("");
-        } catch (error) {
-          console.error(error);
-        }
+        } catch {}
       } else {
         setChildCategories([]);
         setChildCategory("");
       }
     };
-    fetchChildCategories();
+    fetchChildren();
   }, [subcategory, token]);
 
-  // --- 4. FETCH MODELS (Only on User Change) ---
+  // ── 4. Fetch models ────────────────────────────────────────────────────────
   useEffect(() => {
     if (isInitialLoad.current) return;
     const fetchModels = async () => {
@@ -472,9 +484,7 @@ export default function ProductForm({
           );
           setModels(res.data?.data?.filter((m: any) => m.status === "active") || []);
           setModel("");
-        } catch (error) {
-          console.error(error);
-        }
+        } catch {}
       } else {
         setModels([]);
         setModel("");
@@ -483,11 +493,11 @@ export default function ProductForm({
     fetchModels();
   }, [brand, token]);
 
-  // --- 5. SET MODEL AFTER MODELS LIST IS LOADED ---
+  // ── 5. Set model after list loads ─────────────────────────────────────────
   useEffect(() => {
     if (!isEditMode || !initialModelId.current) return;
     if (models.length > 0 && !model) {
-      const modelId = initialModelId.current;
+      const modelId     = initialModelId.current;
       const modelExists = models.some((m: any) => getIdFromRef(m) === modelId);
       if (modelExists) {
         setModel(modelId);
@@ -496,11 +506,11 @@ export default function ProductForm({
     }
   }, [models, model, isEditMode]);
 
-  // --- 6. SET SUBCATEGORY AFTER LIST IS LOADED ---
+  // ── 6. Set subcategory after list loads ───────────────────────────────────
   useEffect(() => {
     if (!isEditMode || !initialSubcategoryId.current) return;
     if (subcategories.length > 0 && !subcategory) {
-      const subId = initialSubcategoryId.current;
+      const subId     = initialSubcategoryId.current;
       const subExists = subcategories.some((s: any) => getIdFromRef(s) === subId);
       if (subExists) {
         setSubcategory(subId);
@@ -509,31 +519,34 @@ export default function ProductForm({
     }
   }, [subcategories, subcategory, isEditMode]);
 
-  // --- PRICING HANDLERS ---
+  // ── Pricing handlers ───────────────────────────────────────────────────────
   const pricingFormData = {
-    price: price ?? "",
+    price:         price         ?? "",
     discountPrice: discountPrice ?? "",
-    rewardPoints: rewardPoints ?? "",
-    stock: stock ?? "",
-    shippingCost: shippingCost ?? "",
-  };
-  const handlePricingInputChange = (field: string, value: unknown) => {
-    const numVal = value === "" ? undefined : Number(value);
-    if (field === "price") setPrice(numVal);
-    if (field === "discountPrice") setDiscountPrice(numVal);
-    if (field === "rewardPoints") setRewardPoints(numVal);
-    if (field === "stock") setStock(numVal);
-    if (field === "shippingCost") setShippingCost(numVal);
-  };
-  const handlePricingNumberChange = (field: string, delta: number) => {
-    const updater = (prev: number | undefined) => Math.max(0, (prev || 0) + delta);
-    if (field === "price") setPrice(updater);
-    if (field === "discountPrice") setDiscountPrice(updater);
-    if (field === "rewardPoints") setRewardPoints(updater);
-    if (field === "stock") setStock(updater);
-    if (field === "shippingCost") setShippingCost(updater);
+    rewardPoints:  rewardPoints  ?? "",
+    stock:         stock         ?? "",
+    shippingCost:  shippingCost  ?? "",
   };
 
+  const handlePricingInputChange = (field: string, value: unknown) => {
+    const numVal = value === "" ? undefined : Number(value);
+    if (field === "price")         setPrice(numVal);
+    if (field === "discountPrice") setDiscountPrice(numVal);
+    if (field === "rewardPoints")  setRewardPoints(numVal);
+    if (field === "stock")         setStock(numVal);
+    if (field === "shippingCost")  setShippingCost(numVal);
+  };
+
+  const handlePricingNumberChange = (field: string, delta: number) => {
+    const updater = (prev: number | undefined) => Math.max(0, (prev || 0) + delta);
+    if (field === "price")         setPrice(updater);
+    if (field === "discountPrice") setDiscountPrice(updater);
+    if (field === "rewardPoints")  setRewardPoints(updater);
+    if (field === "stock")         setStock(updater);
+    if (field === "shippingCost")  setShippingCost(updater);
+  };
+
+  // ── Upload helper ──────────────────────────────────────────────────────────
   const uploadFile = async (file: File): Promise<string> => {
     try {
       const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true, fileType: file.type };
@@ -551,16 +564,22 @@ export default function ProductForm({
     }
   };
 
-  // --- SUBMIT ---
+  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!token) return toast.error("⚠️ Authentication required.");
     if (!isEditMode && !thumbnail) return toast.error("⚠️ Thumbnail image is required.");
     if (!title || !store || !category) return toast.error("⚠️ Please fill all required fields (*).");
-    if (!price || price <= 0) return toast.error("⚠️ Price is required and must be greater than 0.");
+
+    const finalCallForPrice = hasCallForPricePermission ? callForPrice : false;
+
+    // ✅ FIX: callForPrice OFF থাকলেই price validate করো
+    if (!finalCallForPrice && (!price || price <= 0)) {
+      return toast.error("⚠️ Price is required unless 'Call for Price' is active.");
+    }
 
     const selectedStore = listStores.find((s: any) => getIdFromRef(s) === store);
-    const vendorName = selectedStore?.storeName || "";
+    const vendorName    = selectedStore?.storeName || "";
 
     setIsSubmitting(true);
     try {
@@ -574,38 +593,47 @@ export default function ProductForm({
       const finalGalleryUrls = [...filteredExistingUrls, ...newGalleryUrls];
       if (finalGalleryUrls.length === 0 && thumbnailUrl) finalGalleryUrls.push(thumbnailUrl as string);
 
+      const safeId = (val?: string) => val && isObjectId(val) ? val : undefined;
+
       const productData = {
-        productId: productCode || `PROD-${Date.now()}`,
-        productTitle: title,
-        vendorStoreId: store,
+        productId:        productCode || `PROD-${Date.now()}`,
+        productTitle:     title,
+        vendorStoreId:    store,
         vendorName,
         shortDescription,
         fullDescription,
         specification,
         warrantyPolicy,
-        productTag: productTags,
-        videoUrl: videoUrl || undefined,
-        photoGallery: finalGalleryUrls,
-        thumbnailImage: thumbnailUrl,
+        productTag:       productTags,
+        videoUrl:         videoUrl || undefined,
+        photoGallery:     finalGalleryUrls,
+        thumbnailImage:   thumbnailUrl,
         removedPhotoGallery: removedGalleryUrls.length > 0 ? removedGalleryUrls : undefined,
-        removeThumbnail: removedThumbnailUrl || undefined,
-        productPrice: price || 0,
-        discountPrice: discountPrice || undefined,
-        stock: stock || 0,
-        sku: productCode || undefined,
-        rewardPoints: rewardPoints || 0,
-        shippingCost: shippingCost || 0,
+        removeThumbnail:     removedThumbnailUrl || undefined,
+
+        // ✅ FIX: price ?? 0 ব্যবহার করো (|| 0 না)
+        // callForPrice ON থাকলেও price state এ যা আছে তাই পাঠাও
+        // Backend এ safety guard আছে
+        productPrice:  price         ?? 0,
+        discountPrice: discountPrice ?? undefined,
+        stock:         stock         ?? 0,
+        sku:           productCode   || undefined,
+        rewardPoints:  rewardPoints  ?? 0,
+        shippingCost:  shippingCost  ?? 0,
+
+        callForPrice: finalCallForPrice,
+
         category,
-        subCategory: subcategory || undefined,
+        subCategory:   subcategory   || undefined,
         childCategory: childCategory || undefined,
-        brand: brand || undefined,
-        productModel: model || undefined,
-        flag: flag || undefined,
-        warranty: warranty || undefined,
-        weightUnit: unit || undefined,
-        offerDeadline: offerEndTime ? new Date(offerEndTime) : undefined,
-        metaTitle: metaTitle || undefined,
-        metaKeyword: metaKeywordTags.length > 0 ? metaKeywordTags.join(", ") : undefined,
+        brand:         brand         || undefined,
+        productModel:  model         || undefined,
+        flag:          flag          || undefined,
+        warranty:      warranty      || undefined,
+        weightUnit:    unit          || undefined,
+        offerDeadline: offerEndTime  ? new Date(offerEndTime) : undefined,
+        metaTitle:     metaTitle     || undefined,
+        metaKeyword:   metaKeywordTags.length > 0 ? metaKeywordTags.join(", ") : undefined,
         metaDescription: metaDescription || undefined,
         status: "active",
         productOptions: hasVariant
@@ -615,22 +643,19 @@ export default function ProductForm({
                   ? await uploadFile(variant.image as File)
                   : variant.imageUrl || "";
 
-                // ✅ CRITICAL FIX: শুধুমাত্র valid MongoDB ObjectId পাঠানো হবে
-                // Plain string (যেমন "Yellow", "4GB/64GB") পাঠালে backend CastError দেয়
-                const safeId = (val?: string) =>
-                  val && isObjectId(val) ? val : undefined;
-
                 return {
-                  productImage: uploadedImage,
-                  color: safeId(variant.color) ? [variant.color] : [],
-                  size: safeId(variant.size) ? [variant.size] : [],
-                  storage: safeId(variant.storage),
-                  simType: safeId(variant.simType) ? [variant.simType] : [],
-                  condition: safeId(variant.condition) ? [variant.condition] : [],
-                  warranty: safeId(variant.warranty),
-                  stock: variant.stock,
-                  price: variant.price,
-                  discountPrice: variant.discountPrice,
+                  productImage:  uploadedImage,
+                  color:         safeId(variant.color)     ? [variant.color]     : [],
+                  size:          safeId(variant.size)      ? [variant.size]      : [],
+                  country:       safeId(variant.country)   ? [variant.country]   : [],
+                  storage:       safeId(variant.storage),
+                  simType:       safeId(variant.simType)   ? [variant.simType]   : [],
+                  condition:     safeId(variant.condition) ? [variant.condition] : [],
+                  warranty:      safeId(variant.warranty),
+                  stock:         variant.stock,
+                  // ✅ FIX: variant price ?? 0 (|| 0 না)
+                  price:         variant.price         ?? 0,
+                  discountPrice: variant.discountPrice ?? 0,
                 };
               })
             )
@@ -654,7 +679,7 @@ export default function ProductForm({
       console.error(error);
       const errMsg = error.response?.data?.message || error.message;
       if (errMsg.includes("duplicate") || errMsg.includes("E11000")) {
-        toast.error(`⚠️ Duplicate Error: Product Title or SKU already exists.`);
+        toast.error("⚠️ Duplicate Error: Product Title or SKU already exists.");
       } else {
         toast.error(`❌ Operation Failed: ${errMsg}`);
       }
@@ -682,66 +707,14 @@ export default function ProductForm({
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="animate-spin h-10 w-10 text-blue-500" />
-        <span className="ml-3 text-gray-600">Loading product data...</span>
       </div>
     );
-
-  // Debug Panel
-  const DebugPanel = () => {
-    if (process.env.NODE_ENV !== "development") return null;
-    if (!showDebug) {
-      return (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setShowDebug(true)}
-          className="fixed bottom-4 right-4 z-50 bg-yellow-100 hover:bg-yellow-200 border-yellow-400"
-        >
-          🐛 Debug
-        </Button>
-      );
-    }
-    return (
-      <div className="fixed bottom-4 right-4 z-50 bg-white border-2 border-yellow-400 rounded-lg shadow-xl p-4 max-w-md max-h-[80vh] overflow-auto">
-        <div className="flex justify-between items-center mb-3 pb-2 border-b">
-          <h3 className="font-bold text-sm">🐛 Debug Panel</h3>
-          <Button type="button" variant="ghost" size="sm" onClick={() => setShowDebug(false)}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="space-y-2 text-xs">
-          <div className="bg-gray-50 p-2 rounded">
-            <p className="font-semibold">Product Details:</p>
-            <p>Store: {store || "❌ Empty"}</p>
-            <p>Category: {category || "❌ Empty"}</p>
-            <p>Subcategory: {subcategory || "❌ Empty"}</p>
-            <p>Brand: {brand || "❌ Empty"}</p>
-            <p>Model: {model || "❌ Empty"}</p>
-          </div>
-          <div className="bg-gray-50 p-2 rounded">
-            <p className="font-semibold">Variants:</p>
-            <p>Has Variants: {hasVariant ? "✅ Yes" : "❌ No"}</p>
-            <p>Count: {variants.length}</p>
-            {variants.map((v, i) => (
-              <div key={v.id} className="border-t pt-1 mt-1 text-[10px]">
-                <p className="font-semibold">Variant {i + 1}:</p>
-                <p>Color: {v.color || "❌"}</p>
-                <p>Size: {v.size || "❌"}</p>
-                <p>Storage: {v.storage || "❌"}</p>
-                <p>Warranty: {v.warranty || "❌"}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <>
-      <DebugPanel />
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+
+        {/* Sticky action bar */}
         <div className="flex justify-end gap-2 sticky top-4 z-10 bg-gray-50/80 backdrop-blur-sm py-2 px-4 rounded-lg shadow-sm -mt-4">
           <Button type="button" variant="destructive" onClick={() => router.back()}>
             <X className="mr-2 h-4 w-4" /> Discard
@@ -753,6 +726,8 @@ export default function ProductForm({
         </div>
 
         <div className="space-y-4 sm:space-y-6">
+
+          {/* Row 1: Basic Info + Thumbnail */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <Card className="shadow-sm border-gray-200 flex flex-col h-full">
               <CardHeader className="pb-4 border-b border-gray-100">
@@ -766,7 +741,6 @@ export default function ProductForm({
                 <div className="space-y-2">
                   <Label>Short Description (Max 255)</Label>
                   <Textarea value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} maxLength={255} className="min-h-[100px] resize-none" />
-                  <div className="text-xs text-gray-500 text-right">{shortDescription.length}/255</div>
                 </div>
                 <div className="space-y-2">
                   <Label>Product Tags</Label>
@@ -783,26 +757,10 @@ export default function ProductForm({
               </CardHeader>
               <CardContent className="pt-6 flex-1">
                 <label htmlFor="thumbnail-upload" className="cursor-pointer group block w-full h-full">
-                  <div className="flex items-center justify-center w-full h-full min-h-[300px] border-2 border-dashed border-gray-300 rounded-lg p-4 transition-colors hover:border-blue-400 hover:bg-blue-50/50">
+                  <div className="flex items-center justify-center w-full h-full min-h-[300px] border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 hover:bg-blue-50/50">
                     {thumbnailPreview ? (
                       <div className="relative w-full h-full min-h-[300px] rounded-md overflow-hidden">
                         <Image src={thumbnailPreview} alt="Thumbnail" fill style={{ objectFit: "contain" }} className="rounded-md" />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-2 right-2 h-8 w-8 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (!thumbnail && thumbnailPreview) setRemovedThumbnailUrl((prev) => prev ?? thumbnailPreview);
-                            setInitialThumbnailUrl(null);
-                            setThumbnail(null);
-                            setThumbnailPreview(null);
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
                       </div>
                     ) : (
                       <div className="text-center text-gray-500">
@@ -817,6 +775,7 @@ export default function ProductForm({
             </Card>
           </div>
 
+          {/* Row 2: Description + Pricing */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <Card className="shadow-sm border-gray-200 flex flex-col h-full">
               <CardHeader className="pb-4 border-b border-gray-100">
@@ -825,19 +784,13 @@ export default function ProductForm({
               <CardContent className="pt-6 flex-1">
                 <Tabs defaultValue="description" className="w-full h-full flex flex-col">
                   <TabsList className="grid w-full grid-cols-3 bg-gray-50 h-auto p-1">
-                    <TabsTrigger value="description" className="text-xs sm:text-sm py-2.5">Description</TabsTrigger>
+                    <TabsTrigger value="description"  className="text-xs sm:text-sm py-2.5">Description</TabsTrigger>
                     <TabsTrigger value="specification" className="text-xs sm:text-sm py-2.5">Specification</TabsTrigger>
-                    <TabsTrigger value="warranty" className="text-xs sm:text-sm py-2.5">Warranty</TabsTrigger>
+                    <TabsTrigger value="warranty"      className="text-xs sm:text-sm py-2.5">Warranty</TabsTrigger>
                   </TabsList>
-                  <TabsContent value="description" className="mt-4 flex-1">
-                    <RichTextEditor value={fullDescription} onChange={setFullDescription} />
-                  </TabsContent>
-                  <TabsContent value="specification" className="mt-4 flex-1">
-                    <RichTextEditor value={specification} onChange={setSpecification} />
-                  </TabsContent>
-                  <TabsContent value="warranty" className="mt-4 flex-1">
-                    <RichTextEditor value={warrantyPolicy} onChange={setWarrantyPolicy} />
-                  </TabsContent>
+                  <TabsContent value="description"  className="mt-4 flex-1"><RichTextEditor value={fullDescription} onChange={setFullDescription} /></TabsContent>
+                  <TabsContent value="specification" className="mt-4 flex-1"><RichTextEditor value={specification}    onChange={setSpecification} /></TabsContent>
+                  <TabsContent value="warranty"      className="mt-4 flex-1"><RichTextEditor value={warrantyPolicy}   onChange={setWarrantyPolicy} /></TabsContent>
                 </Tabs>
               </CardContent>
             </Card>
@@ -847,11 +800,32 @@ export default function ProductForm({
                 <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">Pricing & Inventory</CardTitle>
               </CardHeader>
               <CardContent className="pt-6 space-y-4 flex-1">
-                <PricingInventory
-                  formData={pricingFormData}
-                  handleInputChange={handlePricingInputChange}
-                  handleNumberChange={handlePricingNumberChange}
-                />
+
+                {/* Call for Price Toggle — শুধু permission থাকলে দেখাবে */}
+                {hasCallForPricePermission && (
+                  <div className="flex items-center justify-between bg-blue-50/50 p-4 border border-blue-100 rounded-lg">
+                    <div>
+                      <Label className="text-blue-900 font-bold text-sm">Call for Price</Label>
+                      <p className="text-xs text-blue-700 mt-0.5">Hide price and show call button</p>
+                    </div>
+                    <Switch checked={callForPrice} onCheckedChange={setCallForPrice} />
+                  </div>
+                )}
+
+                {/* ✅ FIX: && দিয়ে unmount না করে div দিয়ে hide করো */}
+                {/* এতে price state intact থাকে, reset হয় না */}
+                <div className={
+                  !hasCallForPricePermission || !callForPrice
+                    ? "block"
+                    : "hidden"
+                }>
+                  <PricingInventory
+                    formData={pricingFormData}
+                    handleInputChange={handlePricingInputChange}
+                    handleNumberChange={handlePricingNumberChange}
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label>Product Code (SKU)</Label>
                   <Input value={productCode} onChange={(e) => setProductCode(e.target.value)} className="h-11" />
@@ -872,6 +846,7 @@ export default function ProductForm({
                 }}
               />
             )}
+
             <Card className="shadow-sm border-gray-200 flex flex-col h-full">
               <CardHeader className="pb-4 border-b border-gray-100">
                 <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">Product Details</CardTitle>
@@ -902,7 +877,7 @@ export default function ProductForm({
                   </div>
                   <div className="space-y-2">
                     <Label>Subcategory</Label>
-                    <Select value={subcategory} onValueChange={(val) => { setSubcategory(val); if (!isInitialLoad.current) { setChildCategory(""); } }} disabled={!category}>
+                    <Select value={subcategory} onValueChange={(val) => { setSubcategory(val); if (!isInitialLoad.current) setChildCategory(""); }} disabled={!category}>
                       <SelectTrigger className="h-11"><SelectValue placeholder="Select subcategory" /></SelectTrigger>
                       <SelectContent>
                         {subcategories.map((sc: any) => (
@@ -924,7 +899,7 @@ export default function ProductForm({
                   </div>
                   <div className="space-y-2">
                     <Label>Brand</Label>
-                    <Select value={brand} onValueChange={(val) => { setBrand(val); if (!isInitialLoad.current) { setModel(""); } }}>
+                    <Select value={brand} onValueChange={(val) => { setBrand(val); if (!isInitialLoad.current) setModel(""); }}>
                       <SelectTrigger className="h-11"><SelectValue placeholder="Select brand" /></SelectTrigger>
                       <SelectContent>
                         {listBrands.map((b: any) => (
@@ -982,6 +957,7 @@ export default function ProductForm({
                     <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} className="h-11" />
                   </div>
                 </div>
+
                 <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100">
                   <div>
                     <Label>Special Offer</Label>
@@ -1010,6 +986,7 @@ export default function ProductForm({
                   variants={variants}
                   setVariants={setVariants}
                   variantData={variantOptions}
+                  isCallForPrice={hasCallForPricePermission ? callForPrice : false}
                 />
               )}
             </CardContent>
@@ -1046,6 +1023,7 @@ export default function ProductForm({
               <Save className="mr-2 h-4 w-4" /> {isEditMode ? "Update Product" : "Save Product"}
             </Button>
           </div>
+
         </div>
       </form>
     </>

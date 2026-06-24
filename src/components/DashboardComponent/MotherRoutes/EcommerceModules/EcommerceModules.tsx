@@ -79,45 +79,39 @@ export function EcommerceModules({
 
                 <CollapsibleContent>
                   <div className="pl-6">
-                    {cfg.items.map((subItem: ChildItem) => {
-                      const active = isActive(subItem.url);
-                      return (
-                        <SidebarMenuItem key={subItem.url}>
-                          <SidebarMenuButton
-                            asChild
-                            isActive={active}
-                            className={`flex items-center gap-2 pl-5 ${active
-                              ? 'bg-[#051b38] hover:bg-[#051b38] text-white hover:text-white border-b border-white rounded-md font-medium'
-                              : 'text-white bg-[#132843]'
-                              }`}>
-                            <Link href={subItem.url}>
-                              <span>{subItem.title}</span>
-                              {subItem.count && (
-                                <span
-                                  className={`ml-auto text-xs px-2 py-1 rounded ${subItem.count === '0'
-                                    ? 'bg-orange-500 text-white'
-                                    : subItem.url === '/general/view/all/product'
-                                      ? 'text-green-500'
-                                      : subItem.url === '/general/view/product/reviews'
-                                        ? 'text-blue-400'
-                                        : subItem.url ===
-                                          '/general/view/product/question/answer'
-                                          ? 'text-purple-400'
-                                          : 'text-blue-400'
-                                    }`}>
-                                  {subItem.count}
-                                </span>
-                              )}
-                              {subItem.isNew && (
-                                <span className="ml-auto text-xs bg-orange-500 text-white px-2 py-1 rounded">
-                                  New
-                                </span>
-                              )}
-                            </Link>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      );
-                    })}
+                    {cfg.items.map((subItem: any) => { // 'any' ব্যবহার করছি যেহেতু types আপনার ফাইলে আছে
+                    const active = isActive(subItem.url);
+                    return (
+                      <SidebarMenuItem key={subItem.url}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={active}
+                          className={`flex items-center gap-2 pl-5 ${active
+                            ? 'bg-[#051b38] hover:bg-[#051b38] text-white border-b border-white rounded-md font-medium'
+                            : 'text-white bg-[#132843]'
+                          }`}
+                        >
+                          <Link href={subItem.url}>
+                            <span>{subItem.title}</span>
+                            
+                            
+                            {subItem.count && (
+                              <span className="ml-auto text-xs px-2 py-1 rounded bg-orange-500 text-white">
+                                {subItem.count}
+                              </span>
+                            )}
+
+                            {/* ✅ New Badge: এখানে subItem.isNew চেক করা হচ্ছে */}
+                            {subItem.isNew && (
+                              <span className="ml-auto text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded font-bold uppercase">
+                                New
+                              </span>
+                            )}
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
                   </div>
                 </CollapsibleContent>
               </Collapsible>

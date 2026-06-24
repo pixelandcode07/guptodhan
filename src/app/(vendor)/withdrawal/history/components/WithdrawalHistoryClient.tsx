@@ -138,25 +138,32 @@ export default function WithdrawalHistoryClient() {
 
       {/* ── Summary Cards ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-blue-600 rounded-xl p-4 text-white">
-          <p className="text-blue-200 text-xs font-medium uppercase tracking-wider mb-1">Total Requested</p>
-          <p className="text-2xl font-bold">৳{summary.total.toLocaleString('en-BD')}</p>
-          <p className="text-blue-200 text-xs mt-1">{totalDocs} requests</p>
-        </div>
-        <div className="bg-white border rounded-xl p-4">
-          <p className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">Approved</p>
-          <p className="text-2xl font-bold text-green-600">{summary.approved}</p>
-          <p className="text-gray-400 text-xs mt-1">On this page</p>
-        </div>
+        {/* 1. Pending */}
         <div className="bg-white border rounded-xl p-4">
           <p className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">Pending</p>
           <p className="text-2xl font-bold text-yellow-600">{summary.pending}</p>
           <p className="text-gray-400 text-xs mt-1">Awaiting review</p>
         </div>
+
+        {/* 2. Approved */}
+        <div className="bg-white border rounded-xl p-4">
+          <p className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">Approved</p>
+          <p className="text-2xl font-bold text-green-600">{summary.approved}</p>
+          <p className="text-gray-400 text-xs mt-1">On this page</p>
+        </div>
+
+        {/* 3. Rejected */}
         <div className="bg-white border rounded-xl p-4">
           <p className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">Rejected</p>
           <p className="text-2xl font-bold text-red-500">{summary.rejected}</p>
           <p className="text-gray-400 text-xs mt-1">Balance restored</p>
+        </div>
+
+        {/* 4. Total Received */}
+        <div className="bg-blue-600 rounded-xl p-4 text-white">
+          <p className="text-blue-200 text-xs font-medium uppercase tracking-wider mb-1">Total Received</p>
+          <p className="text-2xl font-bold">৳{summary.total.toLocaleString('en-BD')}</p>
+          <p className="text-blue-200 text-xs mt-1">{totalDocs} requests</p>
         </div>
       </div>
 

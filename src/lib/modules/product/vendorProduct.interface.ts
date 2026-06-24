@@ -17,11 +17,13 @@ export interface IProductOption {
   
   color?: string[]; // ✅ Made optional
   size?: string[];  // ✅ Made optional
+  country?: string[];
 }
 
 export interface IVendorProduct {
   _id?: string;
   productId: string;
+  callForPrice?: boolean;
   productTitle: string;
   vendorStoreId: Types.ObjectId;
   vendorName: string;

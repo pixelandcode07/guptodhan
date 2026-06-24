@@ -15,7 +15,8 @@ export interface CreateOrderPayload {
   addressDetails: string
   deliveryCharge: number
   totalAmount: number
-  paymentStatus: 'Pending' | 'Paid' | 'Failed' | 'Refunded'
+  // ✅ FIX: 'Initiated' added — used for card/online payment orders
+  paymentStatus: 'Initiated' | 'Pending' | 'Paid' | 'Failed' | 'Refunded' | 'Cancelled'
   orderStatus: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled'
   orderForm: 'Website' | 'App'
   orderDate: Date
@@ -41,9 +42,8 @@ export async function placeOrder(orderData: CreateOrderPayload) {
 }
 
 /**
- * ✅ FIX: Always sends the human-readable string `orderId` (e.g. "GDH-...")
- * to the payment init endpoint. The backend now queries by this field
- * instead of MongoDB _id, so the formats always match.
+ * Sends the human-readable `orderId` (e.g. "GDH-...") to the payment
+ * init endpoint. The backend queries by this string field, not MongoDB _id.
  */
 export async function initiateSSLCommerzPayment(orderId: string): Promise<string> {
   if (!orderId || orderId.trim() === '') {
@@ -66,17 +66,13 @@ export async function initiateSSLCommerzPayment(orderId: string): Promise<string
 /**
  * Extracts the string orderId from the order creation API response.
  * Prefers the human-readable `orderId` string field over MongoDB `_id`.
- *
- * API response shapes handled:
- *   - { data: { order: { orderId, _id } } }   ← nested order object
- *   - { data: { orderId, _id } }               ← flat order object
  */
 export function extractOrderId(responseData: any): string {
   const orderId =
-    responseData?.order?.orderId ||   // nested, string field  ← prefer this
-    responseData?.orderId ||           // flat, string field
-    responseData?.order?._id ||        // nested, MongoDB _id fallback
-    responseData?._id                  // flat, MongoDB _id fallback
+    responseData?.order?.orderId ||  // nested, string field ← prefer
+    responseData?.orderId           ||  // flat, string field
+    responseData?.order?._id        ||  // nested, MongoDB _id fallback
+    responseData?._id                   // flat, MongoDB _id fallback
 
   if (!orderId) {
     throw new Error('No order ID received from server.')

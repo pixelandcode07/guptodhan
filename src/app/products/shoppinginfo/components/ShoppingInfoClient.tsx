@@ -15,14 +15,12 @@ export default function ShoppingInfoClient() {
   const searchParams = useSearchParams();
   const isBuyNow = searchParams?.get('buyNow') === 'true';
   
-  // ✅ ১. একটি মাউন্টেড স্টেট ব্যবহার করছি যাতে সাথে সাথে রিডাইরেক্ট না হয়
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // মাউন্ট হওয়ার পর ডাটা চেক করার জন্য অল্প একটু সময় দিচ্ছি
     const timer = setTimeout(() => {
       setIsReady(true);
-    }, 800); // ৮০০ মিলি-সেকেন্ড অপেক্ষা করবে ডাটা স্ট্যাবল হওয়ার জন্য
+    }, 800); 
     return () => clearTimeout(timer);
   }, []);
 
@@ -51,35 +49,20 @@ export default function ShoppingInfoClient() {
   }, [cartItems, isBuyNow]);
 
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
-    try {
-      await updateQuantity(itemId, newQuantity);
-      toast.success('Quantity updated successfully');
-    } catch (error) {
-      console.error('Update quantity error:', error);
-      toast.error('Could not update quantity', {
-        description: 'Something went wrong while updating the product quantity. Please try again.',
-        duration: 4000,
-      });
-    }
+    await updateQuantity(itemId, newQuantity);
   };
 
   const handleRemoveItem = async (itemId: string) => {
-    try {
-      await removeFromCart(itemId);
-      if (displayItems.length <= 1) {
-        router.push('/products/shopping-cart');
-      }
-      toast.success('Item removed from checkout');
-    } catch (error) {
-      console.error('Remove item error:', error);
-      toast.error('Failed to remove item', {
-        description: 'We encountered an issue removing this item from your cart. Please refresh and try again.',
-        duration: 4000,
-      });
+    await removeFromCart(itemId);
+    if (displayItems.length <= 1) {
+      router.push('/products/shopping-cart');
     }
   };
 
-  if (isLoading || !isReady) {
+  // 🔥 FIX: এখানে কন্ডিশন চেঞ্জ করা হয়েছে!
+  // এখন শুধু প্রথমবার লোড হওয়ার সময়ই স্পিনার দেখাবে। 
+  // কার্টে অলরেডি আইটেম থাকলে Quantity চেঞ্জ করার সময় আর স্পিনার এসে পেজ রিলোডের মতো ফিল দিবে না!
+  if (!isReady || (isLoading && cartItems.length === 0)) {
     return (
       <div className="min-h-[60vh] bg-gray-50 flex items-center justify-center">
         <div className="text-center">

@@ -35,6 +35,7 @@ export const MENU_CONFIG: MenuConfig = {
       { title: 'Product Brands', url: '/general/view/all/brands' },
       { title: 'Models of Brand', url: '/general/view/all/models' },
       { title: 'Product Flags', url: '/general/view/all/flags' },
+      { title: 'Countries', url: '/general/view/all/countries', isNew: true },
       // { title: 'Contact Config', url: '/general/contact/config' },
     ],
   },
@@ -147,24 +148,24 @@ export const MENU_CONFIG: MenuConfig = {
       { title: 'Registered Devices', url: '/general/view/all/devices' },
     ],
   },
-  'SMS Service': {
-    icon: MessageSquare,
-    items: [
-      { title: 'SMS Templates', url: '/general/view/sms/templates' },
-      { title: 'Send SMS', url: '/general/send/sms/page' },
-      { title: 'SMS History', url: '/general/view/sms/history' },
-    ],
-  },
-  'Gateway & API': {
-    icon: Settings,
-    items: [
-      // { title: 'Email Credentials', url: '/general/view/email/credential' },
-      // { title: 'Email Templates', url: '/general/view/email/templates' },
-      // { title: 'SMS Gateways', url: '/general/setup/sms/gateways' },
-      // { title: 'Payment Gateways', url: '/general/setup/payment/gateways' },
-      { title: 'Courier API Keys', url: '/general/setup/courier/api/keys' },
-    ],
-  },
+  // 'SMS Service': {
+  //   icon: MessageSquare,
+  //   items: [
+  //     { title: 'SMS Templates', url: '/general/view/sms/templates' },
+  //     { title: 'Send SMS', url: '/general/send/sms/page' },
+  //     { title: 'SMS History', url: '/general/view/sms/history' },
+  //   ],
+  // },
+  // 'Gateway & API': {
+  //   icon: Settings,
+  //   items: [
+  //     // { title: 'Email Credentials', url: '/general/view/email/credential' },
+  //     // { title: 'Email Templates', url: '/general/view/email/templates' },
+  //     // { title: 'SMS Gateways', url: '/general/setup/sms/gateways' },
+  //     // { title: 'Payment Gateways', url: '/general/setup/payment/gateways' },
+  //     { title: 'Courier API Keys', url: '/general/setup/courier/api/keys' },
+  //   ],
+  // },
   Customers: {
     icon: Headphones,
     items: [],

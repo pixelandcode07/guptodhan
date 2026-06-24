@@ -8,7 +8,7 @@ import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import {
   Star, Heart, BadgeCheck, Minus, Plus, ShoppingCart, Zap, Store,
-  MapPin, Truck, Banknote, RotateCcw, ShieldCheck, ChevronDown, X
+  MapPin, Truck, Banknote, RotateCcw, ShieldCheck, ChevronDown, X, PhoneCall
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -32,7 +32,13 @@ const getSizeName = (size: any): string => {
   return '';
 };
 
-/** Parse "..., district:Narayanganj, ..." style address string */
+const getCountryName = (country: any): string => {
+  if (!country) return '';
+  if (typeof country === 'string') return country;
+  if (typeof country === 'object' && country !== null) return country.name || '';
+  return '';
+};
+
 const parseDistrictFromAddress = (address: string): string => {
   if (!address) return '';
   const match = address.match(/district:([^,]+)/i);
@@ -55,8 +61,10 @@ export default function ProductMainInfo({
   relatedData,
   onColorChange,
   onSizeChange,
+  onCountryChange, // ✅ NEW
   selectedColor = '',
   selectedSize = '',
+  selectedCountry = '', // ✅ NEW
 }: any) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -68,7 +76,7 @@ export default function ProductMainInfo({
   const [isProductInWishlist, setIsProductInWishlist] = useState(false);
   const [isWishlistToggling, setIsWishlistToggling] = useState(false);
 
-  // ── Delivery state ────────────────────────────────────────────────────────────
+  // ── Delivery state 
   const [deliveryCharges, setDeliveryCharges] = useState<DeliveryCharge[]>([]);
   const [selectedDistrict, setSelectedDistrict] = useState<DeliveryCharge | null>(null);
   const [showDistrictPicker, setShowDistrictPicker] = useState(false);
@@ -76,16 +84,18 @@ export default function ProductMainInfo({
   const [deliveryLoading, setDeliveryLoading] = useState(true);
   const pickerRef = useRef<HTMLDivElement>(null);
 
-  // ─── Store Info ───────────────────────────────────────────────────────────────
+  // ─── Store Info (Phone number extract logic) ─────────
   const storeInfo = useMemo(() => {
     const vendor = product.vendorStoreId;
     let id = null;
     let name = 'Unknown Store';
     let logo = null;
+    let phone = '018XXXXXXXX'; // Fallback phone
 
     if (vendor && typeof vendor === 'object') {
       name = vendor.storeName || name;
       logo = vendor.storeLogo || logo;
+      phone = vendor.storePhone || phone;
       id = vendor._id || vendor.id || null;
     }
 
@@ -95,6 +105,7 @@ export default function ProductMainInfo({
         if (foundByName) {
           id = foundByName._id || foundByName.id;
           if (!logo) logo = foundByName.storeLogo;
+          phone = foundByName.storePhone || phone;
         }
       }
       if (!id && vendor && typeof vendor === 'string') {
@@ -103,14 +114,15 @@ export default function ProductMainInfo({
           id = foundById._id || foundById.id;
           name = foundById.storeName;
           logo = foundById.storeLogo;
+          phone = foundById.storePhone || phone;
         }
       }
     }
 
-    return id ? { id, name, logo } : null;
+    return { id, name, logo, phone };
   }, [product.vendorStoreId, relatedData?.stores]);
 
-  // ─── Wishlist Status ──────────────────────────────────────────────────────────
+  // ─── Wishlist Status 
   useEffect(() => {
     const checkWishlistStatus = async () => {
       if (product?._id && session?.user) {
@@ -121,18 +133,10 @@ export default function ProductMainInfo({
     checkWishlistStatus();
   }, [product?._id, isInWishlist, session?.user]);
 
-  // ─── Delivery Charge Logic ────────────────────────────────────────────────────
-  /**
-   * RULE:
-   * 1. product.shippingCost set আছে → fixed charge, district দেখার দরকার নেই
-   * 2. shippingCost নেই → API থেকে district-wise charge আনো
-   *    a. User logged in → profile address থেকে district বের করো
-   *    b. User logged in নয় → default 130
-   */
+  // ─── Delivery Charge Logic 
   const hasFixedShipping = !!(product?.shippingCost && product.shippingCost > 0);
 
   useEffect(() => {
-    // Fixed shipping হলে API call দরকার নেই
     if (hasFixedShipping) {
       setDeliveryLoading(false);
       return;
@@ -141,20 +145,23 @@ export default function ProductMainInfo({
     const initDelivery = async () => {
       setDeliveryLoading(true);
       try {
-        // Fetch all delivery charges
-        const chargesRes = await fetch('/api/v1/delivery-charge');
+        const chargesRes = await fetch('/api/v1/delivery-charge', {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        });
         const chargesData = await chargesRes.json();
         const charges: DeliveryCharge[] = chargesData?.data ?? [];
         setDeliveryCharges(charges);
 
-        // If not logged in → default 130
         if (!session?.user) {
           setDeliveryLoading(false);
           return;
         }
 
-        // Fetch user profile to get district
-        const profileRes = await fetch('/api/v1/profile/me');
+        const profileRes = await fetch('/api/v1/profile/me', {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        });
         const profileData = await profileRes.json();
         const address: string = profileData?.data?.address ?? '';
         const userDistrict = parseDistrictFromAddress(address);
@@ -175,7 +182,6 @@ export default function ProductMainInfo({
     initDelivery();
   }, [session?.user, hasFixedShipping]);
 
-  // Close district picker on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
@@ -186,11 +192,10 @@ export default function ProductMainInfo({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showDistrictPicker]);
 
-  // ── Computed delivery values ──────────────────────────────────────────────────
   const deliveryCharge = useMemo(() => {
     if (hasFixedShipping) return product.shippingCost;
     if (selectedDistrict) return selectedDistrict.deliveryCharge;
-    return 130; // default when not logged in or district not matched
+    return 130; 
   }, [hasFixedShipping, product?.shippingCost, selectedDistrict]);
 
   const deliveryLocationText = useMemo(() => {
@@ -211,7 +216,6 @@ export default function ProductMainInfo({
     );
   }, [deliveryCharges, districtSearch]);
 
-  // Group districts by division for better UX
   const groupedDistricts = useMemo(() => {
     const groups: Record<string, DeliveryCharge[]> = {};
     filteredDistricts.forEach((d) => {
@@ -221,13 +225,12 @@ export default function ProductMainInfo({
     return groups;
   }, [filteredDistricts]);
 
-  // ─── Handlers ─────────────────────────────────────────────────────────────────
+  // ─── Handlers 
   const handleWishlist = async () => {
     if (!session?.user) {
       toast.error('Please login to add to wishlist');
       const loginButton = document.getElementById('login-modal-btn');
       if (loginButton) loginButton.click();
-      else toast.info('Please click the Login button at the top.');
       return;
     }
     if (!product?._id) return;
@@ -248,7 +251,6 @@ export default function ProductMainInfo({
         }
       }
     } catch (error) {
-      console.error('Wishlist error:', error);
       toast.error('Failed to update wishlist');
     } finally {
       setIsWishlistToggling(false);
@@ -265,14 +267,14 @@ export default function ProductMainInfo({
   const handleBuyNow = async () => {
     if (availableColors.length > 0 && !selectedColor) return toast.error('Please select a color');
     if (availableSizes.length > 0 && !selectedSize) return toast.error('Please select a size');
+    if (availableCountries.length > 0 && !selectedCountry) return toast.error('Please select a country');
 
     if (!session?.user) {
       toast.error('Please login to complete your purchase');
       localStorage.setItem('redirectAfterLogin', '/products/shoppinginfo?buyNow=true');
       sessionStorage.setItem('buyNowProductId', product._id);
       const loginButton =
-        document.getElementById('login-modal-btn') ||
-        document.getElementById('login-modal-btn-mobile');
+        document.getElementById('login-modal-btn') || document.getElementById('login-modal-btn-mobile');
       if (loginButton) loginButton.click();
       return;
     }
@@ -295,45 +297,61 @@ export default function ProductMainInfo({
   const handleAddToCart = async () => {
     if (availableColors.length > 0 && !selectedColor) return toast.error('Please select a color');
     if (availableSizes.length > 0 && !selectedSize) return toast.error('Please select a size');
-    await addToCart(product._id, quantity, {
-      color: selectedColor || undefined,
-      size: selectedSize || undefined,
-    });
+    if (availableCountries.length > 0 && !selectedCountry) return toast.error('Please select a country');
+
+    if (!session?.user) {
+      toast.error('Please login to add items to your cart');
+      const loginButton =
+        document.getElementById('login-modal-btn') || document.getElementById('login-modal-btn-mobile');
+      if (loginButton) loginButton.click();
+      return; 
+    }
+
+    try {
+      await addToCart(product._id, quantity, {
+        skipModal: true, 
+        silent: true,    
+        color: selectedColor || undefined,
+        size: selectedSize || undefined,
+      });
+      
+      toast.success('Successfully added to cart! 🛒', {
+        description: `${quantity}x ${product.productTitle.slice(0, 30)}...`,
+      });
+    } catch (error) {
+      toast.error('Failed to add product to cart');
+    }
   };
 
-  // ─── Variant Logic ────────────────────────────────────────────────────────────
+  // ─── Variant Logic 
   const availableColors = useMemo(() => {
     if (!product.productOptions) return [];
-    const colors = product.productOptions.map((opt: any) => {
-      const rawColor = Array.isArray(opt.color) ? opt.color[0] : opt.color;
-      return getColorName(rawColor);
-    });
+    const colors = product.productOptions.map((opt: any) => getColorName(Array.isArray(opt.color) ? opt.color[0] : opt.color));
     return Array.from(new Set(colors)).filter(Boolean) as string[];
   }, [product.productOptions]);
 
   const availableSizes = useMemo(() => {
     if (!selectedColor || !product.productOptions) return [];
-    const matchingOptions = product.productOptions.filter((opt: any) => {
-      const rawColor = Array.isArray(opt.color) ? opt.color[0] : opt.color;
-      return getColorName(rawColor) === selectedColor;
-    });
-    const sizes = matchingOptions.flatMap((opt: any) => {
-      const rawSizes = Array.isArray(opt.size) ? opt.size : [opt.size];
-      return rawSizes.map((s: any) => getSizeName(s));
-    });
+    const matchingOptions = product.productOptions.filter((opt: any) => getColorName(Array.isArray(opt.color) ? opt.color[0] : opt.color) === selectedColor);
+    const sizes = matchingOptions.flatMap((opt: any) => Array.isArray(opt.size) ? opt.size.map(getSizeName) : [getSizeName(opt.size)]);
     return Array.from(new Set(sizes)).filter(Boolean) as string[];
   }, [selectedColor, product.productOptions]);
+
+  const availableCountries = useMemo(() => {
+    if (!product.productOptions) return [];
+    const countries = product.productOptions.map((opt: any) => getCountryName(Array.isArray(opt.country) ? opt.country[0] : opt.country));
+    return Array.from(new Set(countries)).filter(Boolean) as string[];
+  }, [product.productOptions]);
 
   const selectedVariant = useMemo(() => {
     if (!selectedColor || !product.productOptions) return null;
     return product.productOptions.find((opt: any) => {
-      const rawColor = Array.isArray(opt.color) ? opt.color[0] : opt.color;
-      const rawSize = Array.isArray(opt.size) ? opt.size[0] : opt.size;
-      const colorMatch = getColorName(rawColor) === selectedColor;
-      const sizeMatch = selectedSize ? getSizeName(rawSize) === selectedSize : true;
-      return colorMatch && sizeMatch;
+      const colorMatch = getColorName(Array.isArray(opt.color) ? opt.color[0] : opt.color) === selectedColor;
+      const sizeMatch = selectedSize ? getSizeName(Array.isArray(opt.size) ? opt.size[0] : opt.size) === selectedSize : true;
+      const countryMatch = selectedCountry ? getCountryName(Array.isArray(opt.country) ? opt.country[0] : opt.country) === selectedCountry : true;
+      return colorMatch && sizeMatch && countryMatch;
     });
-  }, [selectedColor, selectedSize, product.productOptions]);
+  }, [selectedColor, selectedSize, selectedCountry, product.productOptions]);
 
   const variantStock = selectedVariant?.stock ?? product.stock ?? 0;
   const variantPrice = selectedVariant?.price ?? product.productPrice ?? 0;
@@ -341,7 +359,6 @@ export default function ProductMainInfo({
   const finalPrice = variantDiscountPrice || variantPrice || 0;
   const discountPercent = calculateDiscountPercent(variantPrice, variantDiscountPrice);
 
-  // ─── Render ───────────────────────────────────────────────────────────────────
   return (
     <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="bg-white rounded-xl border border-gray-100 p-4 sm:p-5 md:p-6 shadow-sm">
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
@@ -376,27 +393,43 @@ export default function ProductMainInfo({
                 <span className="font-bold text-slate-700">{averageRating || '0'}</span>
                 <span className="text-slate-500">({reviews.length} Reviews)</span>
               </div>
-              <div className={`flex items-center gap-1.5 font-medium px-2 py-0.5 rounded-full border ${variantStock > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
-                <BadgeCheck size={14} />
-                {variantStock > 0 ? `${variantStock} In Stock` : 'Out of Stock'}
-              </div>
+              
+              {/* Show stock only if it's NOT a Call for Price product */}
+              {!product.callForPrice && (
+                <div className={`flex items-center gap-1.5 font-medium px-2 py-0.5 rounded-full border ${variantStock > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                  <BadgeCheck size={14} />
+                  {variantStock > 0 ? `${variantStock} In Stock` : 'Out of Stock'}
+                </div>
+              )}
             </div>
           </div>
 
           <div className="h-px bg-gray-100 w-full" />
 
-          {/* Pricing */}
-          <div>
-            <div className="flex items-baseline gap-3 flex-wrap">
-              <span className="text-2xl sm:text-3xl font-extrabold text-[#EF4A23]">{formatPrice(finalPrice)}</span>
-              {variantDiscountPrice && (
-                <>
-                  <span className="text-sm sm:text-lg text-gray-400 line-through font-medium">{formatPrice(variantPrice)}</span>
-                  <span className="bg-[#EF4A23]/10 text-[#EF4A23] text-xs font-bold px-2 py-1 rounded-md">-{discountPercent}% OFF</span>
-                </>
-              )}
+          {/* ✅ 1. CALL FOR PRICE VS NORMAL PRICING */}
+          {product.callForPrice ? (
+            <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-6 text-center space-y-3">
+              <PhoneCall className="w-10 h-10 text-[#EF4A23] mx-auto animate-pulse" />
+              <h3 className="text-lg font-bold text-slate-900">Price on Call</h3>
+              <p className="text-sm text-slate-500 pb-2">To get the best price for this product, please contact the vendor.</p>
+              
+              <a href={`tel:${storeInfo.phone}`} className="inline-flex items-center justify-center gap-2 bg-[#EF4A23] text-white px-6 py-3 rounded-full font-bold shadow-md hover:bg-[#d43d1a] transition-colors">
+                <PhoneCall size={18} /> {storeInfo.phone}
+              </a>
             </div>
-          </div>
+          ) : (
+            <div>
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <span className="text-2xl sm:text-3xl font-extrabold text-[#EF4A23]">{formatPrice(finalPrice)}</span>
+                {variantDiscountPrice && (
+                  <>
+                    <span className="text-sm sm:text-lg text-gray-400 line-through font-medium">{formatPrice(variantPrice)}</span>
+                    <span className="bg-[#EF4A23]/10 text-[#EF4A23] text-xs font-bold px-2 py-1 rounded-md">-{discountPercent}% OFF</span>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Variants */}
           <div className="space-y-4">
@@ -443,49 +476,72 @@ export default function ProductMainInfo({
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Quantity & Actions */}
-          <div className="flex flex-col gap-4 pt-2">
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-semibold text-gray-700">Quantity:</span>
-              <div className="flex items-center border border-gray-200 rounded-md">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-9 h-9 flex items-center justify-center hover:bg-gray-50 text-gray-600">
-                  <Minus size={16} />
-                </button>
-                <span className="w-10 text-center text-sm font-bold border-x border-gray-100 py-1.5">{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)} disabled={quantity >= variantStock} className="w-9 h-9 flex items-center justify-center hover:bg-gray-50 text-gray-600 disabled:opacity-50">
-                  <Plus size={16} />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex gap-3 w-full">
-              <Button onClick={handleBuyNow} disabled={isBuyingNow || variantStock === 0} className="flex-1 h-12 bg-[#00005E] hover:bg-[#000040] text-white font-bold rounded-md shadow-lg shadow-blue-900/10 uppercase tracking-wide text-xs sm:text-sm">
-                <Zap size={18} className="mr-2" /> Buy Now
-              </Button>
-              <Button onClick={handleAddToCart} disabled={cartLoading || variantStock === 0} variant="outline" className="flex-1 h-12 border-2 border-gray-200 text-gray-800 font-bold rounded-md hover:border-gray-800 hover:bg-transparent uppercase tracking-wide text-xs sm:text-sm">
-                <ShoppingCart size={18} className="mr-2" /> Add to Cart
-              </Button>
-            </div>
-
-            {product.shortDescription && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-sm text-gray-600 leading-relaxed">{product.shortDescription}</p>
+            {/* ✅ 2. COUNTRY VARIANT */}
+            {availableCountries.length > 0 && (
+              <div>
+                <label className="text-sm font-semibold text-slate-900 mb-2 block">
+                  Country: <span className="font-normal text-slate-500">{selectedCountry}</span>
+                </label>
+                <div className="flex gap-2 flex-wrap">
+                  {availableCountries.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => onCountryChange?.(c)}
+                      className={`px-3 py-1.5 rounded text-xs font-semibold border transition-all ${selectedCountry === c
+                        ? 'border-slate-900 bg-slate-900 text-white'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                        }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
+
+          {/* ✅ 3. HIDE CART BUTTONS IF CALL FOR PRICE IS TRUE */}
+          {!product.callForPrice && (
+            <div className="flex flex-col gap-4 pt-2">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-semibold text-gray-700">Quantity:</span>
+                <div className="flex items-center border border-gray-200 rounded-md">
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-9 h-9 flex items-center justify-center hover:bg-gray-50 text-gray-600">
+                    <Minus size={16} />
+                  </button>
+                  <span className="w-10 text-center text-sm font-bold border-x border-gray-100 py-1.5">{quantity}</span>
+                  <button onClick={() => setQuantity(quantity + 1)} disabled={quantity >= variantStock} className="w-9 h-9 flex items-center justify-center hover:bg-gray-50 text-gray-600 disabled:opacity-50">
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-3 w-full">
+                <Button onClick={handleBuyNow} disabled={isBuyingNow || variantStock === 0} className="flex-1 h-12 bg-[#00005E] hover:bg-[#000040] text-white font-bold rounded-md shadow-lg shadow-blue-900/10 uppercase tracking-wide text-xs sm:text-sm">
+                  <Zap size={18} className="mr-2" /> Buy Now
+                </Button>
+                <Button onClick={handleAddToCart} disabled={cartLoading || variantStock === 0} variant="outline" className="flex-1 h-12 border-2 border-gray-200 text-gray-800 font-bold rounded-md hover:border-gray-800 hover:bg-transparent uppercase tracking-wide text-xs sm:text-sm">
+                  <ShoppingCart size={18} className="mr-2" /> Add to Cart
+                </Button>
+              </div>
+
+              {product.shortDescription && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-sm text-gray-600 leading-relaxed">{product.shortDescription}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── RIGHT: Sidebar ──────────────────────────────────────────────────── */}
         <div className="w-full lg:w-[320px] xl:w-[350px] shrink-0 flex flex-col gap-4 border-t lg:border-t-0 lg:border-l lg:pl-8 border-gray-100 pt-6 lg:pt-0">
 
-          {/* ── Delivery Card ─────────────────────────────────────────────────── */}
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 relative">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Delivery</h3>
 
-              {/* CHANGE button — only show when district-based (no fixed shipping) */}
               {!hasFixedShipping && !deliveryLoading && deliveryCharges.length > 0 && (
                 <button
                   onClick={() => setShowDistrictPicker((v) => !v)}
@@ -496,7 +552,6 @@ export default function ProductMainInfo({
               )}
             </div>
 
-            {/* Location text */}
             <div className="flex gap-3 mb-3 items-start">
               <MapPin className="text-gray-400 shrink-0 mt-0.5" size={18} />
               <span className="text-sm text-gray-700 leading-snug">
@@ -507,7 +562,6 @@ export default function ProductMainInfo({
               </span>
             </div>
 
-            {/* Charge info */}
             <div className="space-y-2.5 pt-3 border-t border-gray-200">
               <div className="flex justify-between text-sm">
                 <div className="flex gap-2 text-gray-600 font-medium">
@@ -520,14 +574,12 @@ export default function ProductMainInfo({
                 )}
               </div>
 
-              {/* Fixed shipping badge */}
               {hasFixedShipping && (
                 <p className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-100 font-medium">
                   Vendor fixed shipping rate
                 </p>
               )}
 
-              {/* Not logged in notice */}
               {!hasFixedShipping && !session?.user && !deliveryLoading && (
                 <p className="text-xs text-gray-400 pl-6">Login to see your district rate</p>
               )}
@@ -537,14 +589,12 @@ export default function ProductMainInfo({
               </div>
             </div>
 
-            {/* ── District Picker Dropdown ─────────────────────────────────────── */}
             {showDistrictPicker && !hasFixedShipping && (
               <div
                 ref={pickerRef}
                 className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden"
                 style={{ maxHeight: '360px' }}
               >
-                {/* Search */}
                 <div className="p-3 border-b border-gray-100 sticky top-0 bg-white">
                   <div className="flex items-center gap-2">
                     <input
@@ -564,7 +614,6 @@ export default function ProductMainInfo({
                   </div>
                 </div>
 
-                {/* District list grouped by division */}
                 <div className="overflow-y-auto" style={{ maxHeight: '280px' }}>
                   {Object.keys(groupedDistricts).length === 0 ? (
                     <p className="text-center text-sm text-gray-400 py-6">No district found</p>
@@ -596,7 +645,6 @@ export default function ProductMainInfo({
             )}
           </div>
 
-          {/* ── Services Card ─────────────────────────────────────────────────── */}
           <div className="bg-white rounded-lg p-4 border border-gray-200 space-y-3">
             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Services</h3>
             <div className="flex gap-3">
@@ -615,7 +663,6 @@ export default function ProductMainInfo({
             </div>
           </div>
 
-          {/* ── Sold By Card ──────────────────────────────────────────────────── */}
           <div className="bg-white rounded-lg p-4 border border-gray-200">
             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Sold By</h3>
             <div className="flex items-center gap-3 mb-4">

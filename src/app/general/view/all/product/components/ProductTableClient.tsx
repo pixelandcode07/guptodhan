@@ -30,6 +30,7 @@ type ApiProduct = {
   stock?: number;
   status: 'active' | 'inactive';
   createdAt: string;
+  updatedAt?: string; 
   thumbnailImage?: string;
 };
 
@@ -47,7 +48,6 @@ interface ProductTableClientProps {
 }
 
 export default function ProductTableClient({ initialData }: ProductTableClientProps) {
-  // ✅ Initialize state directly with Server Data (Fastest)
   const [products, setProducts] = useState<ApiProduct[]>(initialData.products || []);
   const [rows, setRows] = useState<Product[]>([]);
   
@@ -64,6 +64,10 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   const [productToToggle, setProductToToggle] = useState<Product | null>(null);
   const [isToggling, setIsToggling] = useState(false);
   const [search, setSearch] = useState<string>("");
+
+  // ✅ FIX: Page Memory State
+  const [savedPage, setSavedPage] = useState(0);
+  const [isPageLoaded, setIsPageLoaded] = useState(false);
   
   const router = useRouter();
   const { data: session } = useSession();
@@ -72,7 +76,20 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   const token = s?.accessToken;
   const userRole = s?.user?.role;
 
-  // 1. Setup Maps
+  // ✅ Retrieve last visited page from session storage
+  useEffect(() => {
+    const pg = sessionStorage.getItem('adminProductListPageIdx');
+    if (pg) {
+      setSavedPage(Number(pg));
+    }
+    setIsPageLoaded(true);
+  }, []);
+
+  // ✅ Save page index on change
+  const handlePageChange = (pageIndex: number) => {
+    sessionStorage.setItem('adminProductListPageIdx', String(pageIndex));
+  };
+
   useEffect(() => {
     const activeCategories = initialData.categories.filter(c => c.status === 'active');
     const cMap: Record<string, string> = {};
@@ -90,9 +107,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     setFlagMap(fMap);
   }, [initialData]);
 
-  // 2. Map Products to Table Rows
   useEffect(() => {
-    // Safety check to prevent .map crash
     if (!Array.isArray(products)) {
         console.error("Products is not an array:", products);
         setRows([]);
@@ -100,7 +115,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     }
 
     const mapped: Product[] = products.map((p, idx) => {
-      // Logic to resolve Category Name
       let categoryName = '';
       if (typeof p.category === 'string') {
         categoryName = categoryMap[p.category] || p.category;
@@ -109,7 +123,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       }
       categoryName = categoryName || 'N/A';
       
-      // Logic to resolve Store Name
       let storeName = '';
       if (p.vendorName) {
         storeName = p.vendorName;
@@ -120,7 +133,6 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       }
       storeName = storeName || 'N/A';
       
-      // Logic to resolve Flag Name
       let flagName = "";
       if (typeof p.flag === "string") {
         flagName = flagMap[p.flag] || p.flag;
@@ -137,28 +149,31 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         image: p.thumbnailImage || "",
         category: categoryName,
         name: p.productTitle || "",
+        created_at: p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-GB') : "-",
+        updated_at: p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('en-GB') : "-",
         store: storeName,
         price: p.productPrice != null ? String(p.productPrice) : "",
         offer_price: p.discountPrice != null ? String(p.discountPrice) : "",
         stock: p.stock != null ? String(p.stock) : "",
         flag: flagName,
         status: p.status === 'active' ? 'Active' : 'Inactive',
-        created_at: p.createdAt ? new Date(p.createdAt).toLocaleString() : "",
       };
     });
     setRows(mapped);
   }, [products, categoryMap, storeMap, flagMap]);
 
-  // REMOVED: The initial useEffect that calls fetchProductsInitial().
-  // Reason: We already have data from SSR. Fetching again causes flickering and lag.
-
   const filteredRows = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return rows
-    return rows.filter(r => r.name.toLowerCase().includes(q))
-  }, [rows, search])
-
-  // --- Handlers ---
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    
+    return rows.filter((r) => {
+      const searchableFields = [
+        String(r.id), r.name, r.category, r.store, r.price, 
+        r.offer_price, r.stock, r.flag, r.status, r.created_at, r.updated_at
+      ];
+      return searchableFields.some((field) => field && field.toLowerCase().includes(q));
+    });
+  }, [rows, search]);
 
   const onView = useCallback((product: Product) => {
     if (product._id) {
@@ -186,6 +201,56 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     setStatusToggleOpen(true);
   }, []);
 
+  const handleBulkStatusChange = async (selectedRows: Product[], status: 'active' | 'inactive') => {
+    if (selectedRows.length === 0) return;
+    const toastId = toast.loading(`Updating ${selectedRows.length} products to ${status}...`);
+
+    try {
+      const headers = {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(userRole ? { 'x-user-role': userRole } : {}),
+      };
+
+      const promises = selectedRows.map(p => axios.patch(`/api/v1/product/${p._id}`, { status }, { headers }));
+      await Promise.all(promises);
+
+      toast.success(`Successfully updated ${selectedRows.length} products to ${status}!`, { id: toastId });
+      
+      const updatedIds = selectedRows.map(p => p._id);
+      setProducts(prev => prev.map(p => updatedIds.includes(p._id) ? { ...p, status } : p));
+      
+      router.refresh(); 
+    } catch (error) {
+      toast.error("Failed to update some products.", { id: toastId });
+    }
+  };
+
+  const handleBulkDelete = async (selectedRows: Product[]) => {
+    if (selectedRows.length === 0) return;
+    
+    if (!window.confirm(`Are you sure you want to delete ${selectedRows.length} products permanently?`)) return;
+
+    const toastId = toast.loading(`Deleting ${selectedRows.length} products...`);
+    try {
+      const headers = {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(userRole ? { 'x-user-role': userRole } : {}),
+      };
+
+      const promises = selectedRows.map(p => axios.delete(`/api/v1/product/${p._id}`, { headers }));
+      await Promise.all(promises);
+
+      toast.success(`Successfully deleted ${selectedRows.length} products!`, { id: toastId });
+      
+      const deletedIds = selectedRows.map(p => p._id);
+      setProducts(prev => prev.filter(p => !deletedIds.includes(p._id)));
+      
+      router.refresh(); 
+    } catch (error) {
+      toast.error("Failed to delete some products.", { id: toastId });
+    }
+  };
+
   const confirmStatusToggle = useCallback(async () => {
     if (!productToToggle) return;
     const productId = productToToggle._id; 
@@ -211,14 +276,12 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       setStatusToggleOpen(false);
       setProductToToggle(null);
       
-      // Optimistic Update (No need to refetch everything)
       setProducts(prev => prev.map(p => p._id === productId ? { ...p, status: newStatus as 'active' | 'inactive' } : p));
       
-      router.refresh(); // Tells Server Components to refresh data in background
+      router.refresh(); 
     } catch (error: any) {
       console.error("Error toggling product status:", error);
-      const msg = error.response?.data?.message || "Failed to update product status";
-      toast.error(msg);
+      toast.error(error.response?.data?.message || "Failed to update product status");
     } finally {
       setIsToggling(false);
     }
@@ -242,14 +305,12 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       setDeleteOpen(false);
       setProductToDelete(null);
 
-      // Optimistic Update
       setProducts(prev => prev.filter(p => p._id !== productId));
       
-      router.refresh(); // Refresh server data
+      router.refresh();
     } catch (error: any) {
       console.error("Error deleting product:", error);
-      const msg = error.response?.data?.message || "Failed to delete product";
-      toast.error(msg);
+      toast.error(error.response?.data?.message || "Failed to delete product");
     } finally {
       setIsDeleting(false);
     }
@@ -277,7 +338,17 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
       <div className="mb-4 sm:mb-6">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
           <div className="min-w-[840px]">
-            <DataTable columns={columns} data={filteredRows} />
+            {/* ✅ Render DataTable only after session storage is loaded */}
+            {isPageLoaded && (
+              <DataTable 
+                columns={columns} 
+                data={filteredRows} 
+                onBulkDelete={handleBulkDelete}
+                onBulkStatusChange={handleBulkStatusChange}
+                initialPageIndex={savedPage}
+                onPageChange={handlePageChange}
+              />
+            )}
           </div>
         </div>
       </div>

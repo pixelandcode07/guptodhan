@@ -21,7 +21,6 @@ const getUserDetailsFromToken = (req: NextRequest) => {
     throw new Error('Authorization token missing or invalid.');
   }
   const token = authHeader.split(' ')[1];
-  // Token verify করে userId এবং role বের করা হচ্ছে
   const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as { userId: string; role: string };
   return { userId: decoded.userId, role: decoded.role };
 };
@@ -87,7 +86,7 @@ const createAd = async (req: NextRequest) => {
     brand: validatedData.brand,
     productModel: validatedData.productModel,
     edition: validatedData.edition,
-    // Default status is 'pending' from model
+    status: 'pending' // ✅ ডিফল্ট ভাবে pending থাকবে
   };
 
   const result = await ClassifiedAdServices.createAdInDB(payloadForService);
@@ -95,65 +94,136 @@ const createAd = async (req: NextRequest) => {
   return sendResponse({
     success: true,
     statusCode: StatusCodes.CREATED,
-    message: 'Ad posted successfully!',
+    message: 'Ad posted successfully! Waiting for admin approval.',
     data: result,
   });
 };
 
 // 2. Get All Ads
-const getAllAds = async (_req: NextRequest) => {
+const getAllAds = async (req: NextRequest) => {
   await dbConnect();
-  const result = await ClassifiedAdServices.searchAdsInDB({});
+  const { searchParams } = new URL(req.url);
+  const isMyAdsRequest = searchParams.get('user') === 'true';
+
+  let result;
+  if (isMyAdsRequest) {
+    try {
+      const { userId } = getUserDetailsFromToken(req);
+      result = await ClassifiedAdServices.searchAdsInDB({ user: userId }, { onlyActive: false });
+    } catch (e) {
+      throw new Error('Unauthorized to view my ads');
+    }
+  } else {
+    let isAdminRequest = false;
+    try {
+      const { role } = getUserDetailsFromToken(req);
+      isAdminRequest = role === 'admin';
+    } catch {
+      // no-op
+    }
+
+    result = await ClassifiedAdServices.searchAdsInDB({}, { onlyActive: !isAdminRequest });
+  }
+
   return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ads retrieved', data: result });
 };
 
 // 3. Get Single Ad
-const getSingleAd = async (_req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+const getSingleAd = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
   const { id } = await params;
   const result = await ClassifiedAdServices.getSingleAdFromDB(id);
+
+  if (result && result.status !== 'active') {
+    try {
+      const { userId, role } = getUserDetailsFromToken(req);
+      const isOwner = result.user._id.toString() === userId;
+      const isAdmin = role === 'admin';
+      
+      if (!isOwner && !isAdmin) {
+         throw new Error('Ad is pending approval or inactive.');
+      }
+    } catch (error) {
+      throw new Error('Ad is not currently active.');
+    }
+  }
+
   return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad retrieved', data: result });
 };
 
-// 4. Update Ad (Content Update -> Owner Only)
+// 4. Update Ad
 const updateAd = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
   
   const { userId, role } = getUserDetailsFromToken(req);
-
   const { id } = await params;
-  const body = await req.json();
-  const validatedData = updateAdValidationSchema.parse(body);
 
-  const payloadForService: Partial<IClassifiedAd> = {
-    ...validatedData,
-    category: validatedData.category ? new Types.ObjectId(validatedData.category) : undefined,
-    subCategory: validatedData.subCategory ? new Types.ObjectId(validatedData.subCategory) : undefined,
-    brand: validatedData.brand,
-    productModel: validatedData.productModel,
-    edition: validatedData.edition,
-    contactDetails: validatedData.contactDetails
-      ? {
-          name: validatedData.contactDetails.name ?? '',
-          phone: validatedData.contactDetails.phone ?? '',
-          email: validatedData.contactDetails.email,
-          isPhoneHidden: validatedData.contactDetails.isPhoneHidden ?? false,
-        }
-      : undefined,
-  };
+  const formData = await req.formData();
+  const payload: any = {};
 
-  // Service-এ ৪টি আর্গুমেন্ট পাঠানো হচ্ছে
-  const result = await ClassifiedAdServices.updateAdInDB(id, userId, role, payloadForService);
+  const simpleFields = [
+    'title', 'division', 'district', 'upazila', 
+    'condition', 'authenticity', 'brand', 'productModel', 
+    'edition', 'description'
+  ];
 
-  return sendResponse({ success: true, statusCode: StatusCodes.OK, message: 'Ad updated successfully', data: result });
+  simpleFields.forEach(field => {
+    if (formData.has(field)) payload[field] = formData.get(field);
+  });
+
+  if (formData.has('price')) payload.price = Number(formData.get('price'));
+  if (formData.has('isNegotiable')) payload.isNegotiable = formData.get('isNegotiable') === 'true';
+
+  if (formData.has('category')) payload.category = new Types.ObjectId(formData.get('category') as string);
+  if (formData.has('subCategory')) payload.subCategory = new Types.ObjectId(formData.get('subCategory') as string);
+
+  const features = formData.getAll('features');
+  if (features.length > 0) payload.features = features;
+
+  if (formData.has('contactName') || formData.has('contactPhone')) {
+    payload.contactDetails = {
+      name: formData.get('contactName') as string || '',
+      phone: formData.get('contactPhone') as string || '',
+      email: formData.get('contactEmail') as string || undefined,
+      isPhoneHidden: formData.get('isPhoneHidden') === 'true',
+    };
+  }
+
+  const existingImages = formData.getAll('existingImages') as string[];
+  const newImageFiles = formData.getAll('newImages') as File[];
+
+  let finalImages = [...existingImages];
+
+  if (newImageFiles.length > 0) {
+    const uploadResults = await Promise.all(
+      newImageFiles.map(async file => uploadToCloudinary(Buffer.from(await file.arrayBuffer()), 'classified-ads'))
+    );
+    const newImageUrls = uploadResults.map(r => r.secure_url);
+    finalImages = [...finalImages, ...newImageUrls];
+  }
+
+  if (finalImages.length > 0) {
+    payload.images = finalImages;
+  }
+
+  // ✅ FIX: Edit korar shathe sathe shobari (even Admin er) status 'pending' hobe
+  payload.status = 'pending';
+
+  const result = await ClassifiedAdServices.updateAdInDB(id, userId, role, payload);
+
+  return sendResponse({ 
+    success: true, 
+    statusCode: StatusCodes.OK, 
+    message: 'Ad updated successfully. Waiting for admin approval.', 
+    data: result 
+  });
 };
 
-// 5. Delete Ad (Owner OR Admin)
+// 5. Delete Ad
 const deleteAd = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
 
   const { userId, role } = getUserDetailsFromToken(req);
-  
   const { id } = await params;
 
   await ClassifiedAdServices.deleteAdFromDB(id, userId, role);
@@ -178,6 +248,11 @@ const getPublicAdById = async (_req: NextRequest, { params }: { params: Promise<
   await dbConnect();
   const { id } = await params;
   const result = await ClassifiedAdServices.getPublicAdByIdFromDB(id);
+  
+  if(result.status !== 'active'){
+     throw new Error("This ad is no longer active");
+  }
+
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
@@ -223,7 +298,6 @@ const getFiltersForCategory = async (req: NextRequest) => {
 const updateAdStatus = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
 
-  // ✅ ADMIN SECURITY CHECK
   const { role } = getUserDetailsFromToken(req);
   if (role !== 'admin') {
     throw new Error('Forbidden: Only admins can update ad status.');
@@ -241,7 +315,7 @@ const updateAdStatus = async (req: NextRequest, { params }: { params: Promise<{ 
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Ad status updated successfully!',
+    message: `Ad marked as ${status} successfully!`,
     data: result,
   });
 };
@@ -249,7 +323,6 @@ const updateAdStatus = async (req: NextRequest, { params }: { params: Promise<{ 
 // 11. Get All Ads For Admin
 const getAllAdsForAdmin = async (_req: NextRequest) => {
   await dbConnect();
-  // Optional: Admin check here too if needed
   const result = await ClassifiedAdServices.getAllAdsForAdminFromDB();
   return sendResponse({
     success: true,
@@ -277,7 +350,7 @@ const searchAds = async (req: NextRequest) => {
   if (searchParams.get('maxPrice')) filters.maxPrice = searchParams.get('maxPrice');
   if (searchParams.get('title')) filters.title = searchParams.get('title');
 
-  const result = await ClassifiedAdServices.searchAdsInDB(filters);
+  const result = await ClassifiedAdServices.searchAdsInDB(filters, { onlyActive: true });
 
   return sendResponse({
     success: true,
@@ -285,6 +358,28 @@ const searchAds = async (req: NextRequest) => {
     message: 'Ads retrieved based on search criteria',
     data: result,
   });
+};
+
+// 13. Get User's Own Ads
+const getMyAds = async (req: NextRequest) => {
+  await dbConnect();
+  try {
+    const { userId } = getUserDetailsFromToken(req);
+    const result = await ClassifiedAdServices.getMyAdsFromDB(userId);
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: 'Your ads retrieved successfully',
+      data: result,
+    });
+  } catch (error: any) {
+     return sendResponse({
+      success: false,
+      statusCode: StatusCodes.UNAUTHORIZED,
+      message: 'Unauthorized access',
+      data: null,
+    });
+  }
 };
 
 export const ClassifiedAdController = {
@@ -300,4 +395,5 @@ export const ClassifiedAdController = {
   updateAdStatus,
   getAllAdsForAdmin,
   searchAds,
+  getMyAds,
 };

@@ -6,6 +6,7 @@ export interface StoreInterface {
     tiktok: string | null;
     twitter: string | null;
     instagram: string | null;
+    
   };
   commission: number;
   _id: string;
@@ -23,4 +24,5 @@ export interface StoreInterface {
   status: "active" | "inactive" | "pending"; 
   createdAt: string; 
   updatedAt: string; 
+  callForPricePermission?: boolean;
 }

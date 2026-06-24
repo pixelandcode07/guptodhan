@@ -496,7 +496,7 @@ const vendorSendRegistrationOtp = async (email: string) => {
   return null;
 };
 
-const registerVendor = async (payload: any, otp: string = '', isByAdmin = false) => {
+export const registerVendor = async (payload: any, otp: string = '', isByAdmin = false) => {
   try {
     // ✅ Step 1: Connect to Redis (for OTP verification if not admin)
     if (!isByAdmin) {
@@ -537,13 +537,20 @@ const registerVendor = async (payload: any, otp: string = '', isByAdmin = false)
       console.log('✅ OTP verified');
     }
 
-    // ✅ Step 4: Check email doesn't exist
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      throw new Error('Email already registered');
+    // ✅ Step 4: Check explicitly for Duplicate Email OR Phone Number
+    // প্রথমে ইমেইল চেক
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      throw new Error('This Email address is already registered');
     }
 
-    console.log('✅ Email not duplicate');
+    // এরপর স্পেসিফিক ভাবে ফোন নাম্বার চেক
+    const existingPhone = await User.findOne({ phoneNumber });
+    if (existingPhone) {
+      throw new Error('This Phone number is already registered');
+    }
+
+    console.log('✅ Email and Phone are unique');
 
     // ✅ Step 5: Create User (WITHOUT SESSION/TRANSACTION)
     const newUser = await User.create({
@@ -605,6 +612,17 @@ const registerVendor = async (payload: any, otp: string = '', isByAdmin = false)
     }
   } catch (error: any) {
     console.error('❌ Registration error:', error.message);
+    
+    // মঙ্গোডিবির কাঁচা এরর আসলে সেটাকেও সুন্দর করে হ্যান্ডেল করা
+    if (error.code === 11000) {
+      if (error.keyPattern?.phoneNumber) {
+        throw new Error('This Phone number is already registered');
+      }
+      if (error.keyPattern?.email) {
+        throw new Error('This Email address is already registered');
+      }
+    }
+    
     throw error;
   }
 };

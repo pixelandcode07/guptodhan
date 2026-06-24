@@ -9,19 +9,25 @@ import { createDonationCampaignSchema } from './donation-campaign.validation';
 import { DonationCampaignServices } from './donation-campaign.service';
 import { ZodError } from 'zod';
 
+// ✅ HELPER: টোকেন থেকে ইউজার ডাটা বের করার ফাংশন
+const getUserDetailsFromToken = (req: NextRequest) => {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    throw new Error('Authorization token missing or invalid.');
+  }
+  const token = authHeader.split(' ')[1];
+  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as { userId: string; role: string };
+  return { userId: decoded.userId, role: decoded.role };
+};
+
 const createCampaign = async (req: NextRequest) => {
   await dbConnect();
   try {
-    const token = req.headers.get('authorization')?.split(' ')[1];
-    if (!token) throw new Error('Unauthorized');
-
-    const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
-    const creatorId = decoded.userId;
+    const { userId } = getUserDetailsFromToken(req);
 
     const formData = await req.formData();
     const images = formData.getAll('images') as File[];
 
-    // ১. ইমেজ আপলোড
     const uploadResults = images.length > 0
       ? await Promise.all(
           images.map(async (file) => {
@@ -31,14 +37,11 @@ const createCampaign = async (req: NextRequest) => {
         )
       : [];
 
-    // ২. পেলোড তৈরি এবং ডাটা কনভারশন (ফিক্স করা অংশ)
     const payload: Record<string, any> = {};
     
     for (const [key, value] of formData.entries()) {
-      // ইমেজ বাদে বাকি ডাটা প্রসেস করা হবে
       if (key !== 'images') {
         if (key === 'goalAmount') {
-            // FormData থেকে আসা স্ট্রিং ভ্যালুকে নাম্বারে কনভার্ট করা হচ্ছে
             payload[key] = Number(value);
         } else {
             payload[key] = value;
@@ -46,7 +49,6 @@ const createCampaign = async (req: NextRequest) => {
       }
     }
 
-    // ৩. জড ভ্যালিডেশন
     const validatedData = createDonationCampaignSchema.parse(payload);
 
     let categoryId: Types.ObjectId;
@@ -63,7 +65,7 @@ const createCampaign = async (req: NextRequest) => {
 
     const finalPayload = {
       ...validatedData,
-      creator: new Types.ObjectId(creatorId),
+      creator: new Types.ObjectId(userId),
       category: categoryId,
       images: uploadResults.map((img) => img.secure_url),
     };
@@ -258,15 +260,43 @@ const updateCampaign = async (
 ) => {
   await dbConnect();
   try {
+    const { userId } = getUserDetailsFromToken(req); 
     const { id } = await context.params;
-    const body = await req.json();
+    
+    const formData = await req.formData();
+    const payload: any = {};
 
-    const result = await DonationCampaignServices.updateCampaignInDB(id, body);
+    // 1. Handle Text Fields
+    payload.title = formData.get('title');
+    payload.item = formData.get('item');
+    payload.description = formData.get('description');
+    payload.goalAmount = Number(formData.get('goalAmount'));
+    payload.category = new Types.ObjectId(formData.get('category') as string);
+
+    // 2. Handle Images (Existing + New)
+    const existingImages = formData.getAll('existingImages') as string[];
+    const newImageFiles = formData.getAll('newImages') as File[];
+
+    let finalImages = [...existingImages];
+
+    if (newImageFiles.length > 0) {
+      const uploadResults = await Promise.all(
+        newImageFiles.map(async (file) => {
+          const buffer = Buffer.from(await file.arrayBuffer());
+          return uploadToCloudinary(buffer, 'donation-campaigns');
+        })
+      );
+      finalImages = [...finalImages, ...uploadResults.map(r => r.secure_url)];
+    }
+    payload.images = finalImages;
+
+    // 3. Service Call
+    const result = await DonationCampaignServices.updateCampaignInDB(id, userId, payload);
 
     return sendResponse({
       success: true,
       statusCode: StatusCodes.OK,
-      message: 'Campaign updated successfully!',
+      message: 'Campaign updated successfully! It is now pending for admin review.',
       data: result,
     });
   } catch (error: any) {
@@ -279,14 +309,16 @@ const updateCampaign = async (
   }
 };
 
+// ✅ DELETE CAMPAIGN
 const deleteCampaign = async (
-  _req: NextRequest,
+  req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) => {
   await dbConnect();
   try {
+    const { userId, role } = getUserDetailsFromToken(req); // 🔐 টোকেন থেকে ইউজার ডাটা বের করা
     const { id } = await context.params;
-    const result = await DonationCampaignServices.deleteCampaignFromDB(id);
+    const result = await DonationCampaignServices.deleteCampaignFromDB(id, userId, role);
 
     return sendResponse({
       success: true,

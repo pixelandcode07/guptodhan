@@ -78,7 +78,7 @@ export default function BuySellCard({ ad, index = 0 }: AdCardProps) {
             </div>
 
             {/* Phone Hidden Indicator */}
-            {ad.contactDetails.isPhoneHidden && (
+            {ad.contactDetails?.isPhoneHidden && (
               <div className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 bg-black/70 text-white text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
                 <Phone className="w-3.5 h-3.5" />
                 Hidden
@@ -104,7 +104,7 @@ export default function BuySellCard({ ad, index = 0 }: AdCardProps) {
             {/* Price */}
             <div className="flex items-center justify-between">
               <p className="text-xl sm:text-2xl font-bold text-emerald-600">
-                ৳{ad.price.toLocaleString()}
+                ৳{ad.price?.toLocaleString()}
               </p>
               {isNegotiable && (
                 <span className="text-xs sm:text-sm text-gray-600 font-medium hidden sm:inline">
@@ -116,7 +116,7 @@ export default function BuySellCard({ ad, index = 0 }: AdCardProps) {
             {/* Category & Location */}
             <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-600">
               <Badge variant="outline" className="text-xs">
-                {ad.category.name}
+                {ad.category?.name || 'Uncategorized'}
               </Badge>
               <div className="flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -130,10 +130,11 @@ export default function BuySellCard({ ad, index = 0 }: AdCardProps) {
             <div className="flex flex-col md:flex-row gap-1.5 items-center justify-between text-xs text-gray-500 mt-auto pt-3 border-t border-gray-100">
               <div className="flex items-center gap-2 max-w-[60%] sm:max-w-none">
                 <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                  {ad.user.profilePicture ? (
+                  {/* ✅ Optional Chaining added here */}
+                  {ad.user?.profilePicture ? (
                     <Image
                       src={ad.user.profilePicture}
-                      alt={ad.user.name}
+                      alt={ad.user?.name || 'Unknown User'}
                       width={28}
                       height={28}
                       className="object-cover w-full h-full"
@@ -144,7 +145,8 @@ export default function BuySellCard({ ad, index = 0 }: AdCardProps) {
                     </div>
                   )}
                 </div>
-                <span className="font-medium truncate">{ad.user.name}</span>
+                {/* ✅ Optional Chaining added here */}
+                <span className="font-medium truncate">{ad.user?.name || 'Unknown User'}</span>
               </div>
 
               <div className="flex items-center gap-1.5 text-gray-500 whitespace-nowrap">

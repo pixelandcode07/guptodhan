@@ -13,6 +13,7 @@ const productOptionSchema = new Schema(
       type: Schema.Types.ObjectId, 
       ref: 'ProductSize'
     }],
+    country: [{ type: Schema.Types.ObjectId, ref: 'ProductCountry' }],
     storage: { 
       type: Schema.Types.ObjectId,
       ref: 'StorageType'
@@ -34,6 +35,7 @@ const productOptionSchema = new Schema(
     price: { type: Number },
     discountPrice: { type: Number },
   },
+  
   { _id: false }
 );
 
@@ -62,6 +64,7 @@ const vendorProductSchema = new Schema<IVendorProduct>(
       index: true   // ফাস্ট সার্চের জন্য ইনডেক্স করা হলো
     },
     rewardPoints: { type: Number },
+    callForPrice: { type: Boolean, default: false },
     
     // ✅ NEW: Shipping Cost Field Added
     shippingCost: { type: Number, default: 0 },

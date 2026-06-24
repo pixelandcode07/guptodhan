@@ -26,7 +26,8 @@ export default function OrderSuccessModal({ open, onOpenChange, orderId }: {
           if (prev <= 1) {
             clearInterval(timer)
             if (isOpenRef.current) {
-              window.location.href = '/home/UserProfile/orders'
+              // ✅ Fixed: Redirect to Order Details page directly using MongoDB id path structure
+              window.location.href = `/home/UserProfile/orders/${orderId}`
             }
             return 0
           }
@@ -37,7 +38,7 @@ export default function OrderSuccessModal({ open, onOpenChange, orderId }: {
     } else {
       setCountdown(3)
     }
-  }, [open])
+  }, [open, orderId])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -89,9 +90,9 @@ export default function OrderSuccessModal({ open, onOpenChange, orderId }: {
             </p>
           </div>
 
-          {/* Primary button */}
+          {/* ✅ Fixed: Link now strictly points to the original MongoDB id format just like OrderItemCard */}
           <Link
-            href={orderId ? `/home/UserProfile/orders/${orderId}` : '/home/UserProfile/orders'}
+            href={`/home/UserProfile/orders/${orderId}`}
             className="block w-full mb-2.5"
           >
             <button className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold transition-colors">

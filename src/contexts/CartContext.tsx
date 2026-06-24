@@ -8,7 +8,7 @@ import axios from 'axios';
 
 export type CartItem = {
   id: string;
-  cartId?: string; // Add cartId from API
+  cartId?: string; 
   seller: {
     name: string;
     verified: boolean;
@@ -52,7 +52,6 @@ type CartContextType = {
   clearCart: () => Promise<void>;
   isLoading: boolean;
   isAddingToCart: boolean;
-  // Modal state
   showAddToCartModal: boolean;
   lastAddedProduct: CartItem | null;
   closeAddToCartModal: () => void;
@@ -73,16 +72,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [lastAddedProduct, setLastAddedProduct] = useState<CartItem | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Calculate total item count
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.product.quantity, 0);
 
-  // Get user ID from session
   const getUserId = (): string | null => {
     const userLike = (session?.user ?? {}) as { id?: string; _id?: string };
     return userLike.id || userLike._id || null;
   };
 
-  // Get user info from session
   const getUserInfo = () => {
     const user = session?.user;
     return {
@@ -91,26 +87,21 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     };
   };
 
-  // Fetch cart items from API
   const fetchCartItems = useCallback(async (options: FetchCartOptions = {}) => {
     const { silent = false } = options;
     const userId = getUserId();
     if (!userId) {
-      console.log('No user ID found, skipping cart fetch');
       setIsInitialLoad(false);
       return;
     }
 
     try {
-      if (!silent) {
-        setIsLoading(true);
-      }
+      if (!silent) setIsLoading(true);
       const response = await api.get(`/add-to-cart/get-cart/${userId}`);
       
       if (response.data?.success && response.data?.data) {
         const apiCartItems = response.data.data;
         
-       
         interface ApiCartItem {
           _id?: string;
           cartID?: string;
@@ -130,7 +121,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           const resolvedCartId = item.cartID || item._id?.toString() || `${productIdStr || 'item'}-${index}`;
           
           return {
-            // Keep row identity unique by cart record id (not product id)
             id: resolvedCartId,
             cartId: resolvedCartId,
             seller: {
@@ -156,32 +146,23 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         setCartItems(transformedItems);
       }
     } catch (error) {
-      console.error('Error fetching cart items:', error);
-      // Fallback to localStorage if API fails
       const savedCart = localStorage.getItem('cart');
       if (savedCart) {
         try {
           const cartData = JSON.parse(savedCart);
           setCartItems(cartData);
-        } catch (parseError) {
-          console.error('Error parsing localStorage cart:', parseError);
-        }
+        } catch (parseError) {}
       }
     } finally {
-      if (!silent) {
-        setIsLoading(false);
-      }
+      if (!silent) setIsLoading(false);
       setIsInitialLoad(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
-  // Load cart on mount and when session changes
   useEffect(() => {
     fetchCartItems();
   }, [fetchCartItems]);
 
-  // Save to localStorage as backup
   useEffect(() => {
     if (!isInitialLoad && cartItems.length > 0) {
       localStorage.setItem('cart', JSON.stringify(cartItems));
@@ -220,7 +201,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       setIsLoading(true);
     }
     try {
-      // If same product + variant already exists, update quantity instead of creating duplicate row
       const normalizedColor = (color || '').trim().toLowerCase();
       const normalizedSize = (size || '').trim().toLowerCase();
       const existingItem = cartItems.find((item) => {
@@ -248,28 +228,21 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         return;
       }
 
-      // Fetch product details
       const response = await axios.get(`/api/v1/product/${productId}`);
       const productData = response.data.data;
-      
       const { name, email } = getUserInfo();
       
-      // Extract store name from product data
-      // vendorStoreId can be an object (populated) or a string (ID)
       let storeName = '';
       if (productData.vendorStoreId) {
         if (typeof productData.vendorStoreId === 'object' && productData.vendorStoreId !== null) {
           storeName = productData.vendorStoreId.storeName || productData.vendorName || 'Unknown Store';
         } else {
-          // If it's just an ID, use vendorName as fallback
           storeName = productData.vendorName || 'Unknown Store';
         }
       } else {
-        // Fallback to vendorName if vendorStoreId is not available
         storeName = productData.vendorName || 'Unknown Store';
       }
       
-      // Find variant price if color/size is selected
       let unitPrice = productData.discountPrice || productData.productPrice;
       if (productData.productOptions && (color || size)) {
         const matchedVariant = productData.productOptions.find((option: any) => {
@@ -285,7 +258,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         }
       }
       
-      // Backend generates cartID, so we don't need to send it
       const cartPayload = {
         userID: userId,
         userName: name,
@@ -301,25 +273,18 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         totalPrice: quantity * unitPrice,
       };
 
-      // Add to cart via API
       const apiResponse = await api.post('/add-to-cart', cartPayload);
       
       if (apiResponse.data?.success) {
-        // Refetch cart items from API to get the actual cartID from backend
         await fetchCartItems({ silent });
         
-        // Get the cartID from the response or use the newly created item
         const createdCartItem = apiResponse.data?.data;
         const cartId = createdCartItem?.cartID || '';
         
-        // Create cart item for modal display
         const newCartItem: CartItem = {
           id: cartId || productData._id,
           cartId: cartId,
-          seller: {
-            name: storeName,
-            verified: true,
-          },
+          seller: { name: storeName, verified: true },
           product: {
             id: productData._id,
             name: productData.productTitle,
@@ -335,7 +300,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           },
         };
         
-        // Set last added product and show modal only if not skipping
         if (!skipModal) {
           setLastAddedProduct(newCartItem);
           setShowAddToCartModal(true);
@@ -345,16 +309,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         }
       }
     } catch (error: unknown) {
-      console.error('Error adding product to cart:', error);
       let errorMessage = 'Please try again later.';
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { data?: { message?: string } } };
         errorMessage = axiosError.response?.data?.message || errorMessage;
       }
-      toast.error('Failed to add product to cart', {
-        description: errorMessage,
-        duration: 3000,
-      });
+      toast.error('Failed to add product to cart', { description: errorMessage, duration: 3000 });
     } finally {
       if (!silent) {
         setIsAddingToCart(false);
@@ -374,54 +334,35 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     try {
       setIsLoading(true);
-      
-      // Find the cart item to get its cartId
       const cartItem = cartItems.find(item => item.id === itemId);
       if (!cartItem || !cartItem.cartId) {
         toast.error('Cart item not found');
         return;
       }
 
-      // Calculate new total price
       const newTotalPrice = newQuantity * cartItem.product.price;
 
-      console.log('🛒 Updating cart item:', {
-        cartId: cartItem.cartId,
-        userId,
-        quantity: newQuantity,
-        unitPrice: cartItem.product.price,
-        totalPrice: newTotalPrice
-      });
-
-      // Update via API
       const response = await api.patch(`/add-to-cart/get-cart/${userId}/${cartItem.cartId}`, {
         quantity: newQuantity,
-        unitPrice: cartItem.product.price, // Backend needs this to calculate totalPrice
+        unitPrice: cartItem.product.price, 
         totalPrice: newTotalPrice,
       });
 
-      console.log('✅ Update response:', response.data);
-
       if (response.data?.success) {
-        // Refetch cart items
         await fetchCartItems();
-        
+        // ✅ শুধু এই একটাই টোস্ট শো করবে
         toast.success('Quantity updated!', {
           description: `Quantity changed to ${newQuantity}.`,
           duration: 2000,
         });
       }
     } catch (error: unknown) {
-      console.error('Error updating cart quantity:', error);
       let errorMessage = 'Please try again later.';
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { data?: { message?: string } } };
         errorMessage = axiosError.response?.data?.message || errorMessage;
       }
-      toast.error('Failed to update quantity', {
-        description: errorMessage,
-        duration: 3000,
-      });
+      toast.error('Failed to update quantity', { description: errorMessage, duration: 3000 });
     } finally {
       setIsLoading(false);
     }
@@ -436,35 +377,28 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     try {
       setIsLoading(true);
-
       if (!item.cartId) {
         toast.error('Cart item not found');
         return;
       }
 
-      // Delete via API
       const response = await api.delete(`/add-to-cart/get-cart/${userId}/${item.cartId}`);
 
       if (response.data?.success) {
-        // Refetch cart items
         await fetchCartItems();
-        
+        // ✅ শুধু এই একটাই টোস্ট শো করবে
         toast.success('Item removed!', {
-          description: `${item.product.name} has been removed from your cart.`,
+          description: `${item.product.name} has been removed.`,
           duration: 2000,
         });
       }
     } catch (error: unknown) {
-      console.error('Error removing from cart:', error);
       let errorMessage = 'Please try again later.';
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { data?: { message?: string } } };
         errorMessage = axiosError.response?.data?.message || errorMessage;
       }
-      toast.error('Failed to remove item', {
-        description: errorMessage,
-        duration: 3000,
-      });
+      toast.error('Failed to remove item', { description: errorMessage, duration: 3000 });
     } finally {
       setIsLoading(false);
     }
@@ -476,30 +410,23 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     try {
       setIsLoading(true);
-
-      // Clear via API
       const response = await api.delete(`/add-to-cart/get-cart/${userId}`);
 
       if (response.data?.success) {
         setCartItems([]);
         localStorage.removeItem('cart');
-        
         toast.success('Cart cleared!', {
           description: 'All items have been removed from your cart.',
           duration: 2000,
         });
       }
     } catch (error: unknown) {
-      console.error('Error clearing cart:', error);
       let errorMessage = 'Please try again later.';
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { data?: { message?: string } } };
         errorMessage = axiosError.response?.data?.message || errorMessage;
       }
-      toast.error('Failed to clear cart', {
-        description: errorMessage,
-        duration: 3000,
-      });
+      toast.error('Failed to clear cart', { description: errorMessage, duration: 3000 });
     } finally {
       setIsLoading(false);
     }

@@ -21,15 +21,12 @@ export default function WishlistClient({ initialRows }: { initialRows: Wishlist[
   const token = s?.accessToken;
   const userRole = s?.user?.role;
   
-
   useEffect(() => {
     setRows(initialRows || []);
   }, [initialRows]);
 
   const fetchWishlists = useCallback(async () => {
     try {
-     
-      
       const response = await axios.get("/api/v1/wishlist", {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -37,16 +34,13 @@ export default function WishlistClient({ initialRows }: { initialRows: Wishlist[
         },
       });
 
-
-     // console.log('WishlistClient token:', token, 'role:', userRole);
-     
-
       type ApiWishlist = {
         _id?: string;
         wishlistID?: string;
         userName?: string;
         userEmail?: string;
-        userID?: string;
+        userPhone?: string; // In case phone comes separately
+        userID?: string | { phoneNumber?: string }; // In case user is populated
         productID?: string | {
           _id?: string;
           productTitle?: string;
@@ -54,6 +48,7 @@ export default function WishlistClient({ initialRows }: { initialRows: Wishlist[
           photoGallery?: string[];
           productPrice?: number;
           discountPrice?: number;
+          category?: { _id?: string; name?: string } | string; // ✅ FIX: Added category type
         };
         createdAt?: string;
       };
@@ -61,8 +56,6 @@ export default function WishlistClient({ initialRows }: { initialRows: Wishlist[
       const items: ApiWishlist[] = Array.isArray(response.data?.data)
         ? response.data.data
         : [];
-
-      console.log("Items found:", items.length, items);
 
       const mapped: Wishlist[] = items.map((w, index) => {
         // Extract product information
@@ -75,21 +68,37 @@ export default function WishlistClient({ initialRows }: { initialRows: Wishlist[
           (product?.photoGallery && product.photoGallery.length > 0 ? product.photoGallery[0] : '') ||
           '';
         
+        // ✅ FIX: Extracting Category
+        const categoryData = product?.category;
+        let categoryName = "-";
+        if (typeof categoryData === 'object' && categoryData !== null && 'name' in categoryData) {
+            categoryName = categoryData.name || "-";
+        } else if (typeof categoryData === 'string') {
+            categoryName = categoryData;
+        }
+
+        // ✅ Extracting Contact Number
+        let contactNumber = "-";
+        if (w.userPhone) {
+            contactNumber = w.userPhone;
+        } else if (typeof w.userID === 'object' && w.userID !== null && 'phoneNumber' in w.userID) {
+            contactNumber = w.userID.phoneNumber || "-";
+        }
+
         return {
           id: index + 1,
-          category: "",
+          category: categoryName, // ✅ Now mapped properly
           image: productImage,
           product: productTitle || String(w.productID ?? ""),
           customer_name: String(w.userName ?? ""),
           email: String(w.userEmail ?? ""),
-          contact: "",
+          contact: contactNumber, // ✅ Mapped phone number
           created_at: w.createdAt
             ? new Date(w.createdAt).toLocaleString()
             : "",
         };
       });
 
-      console.log("Mapped wishlists:", mapped);
       setRows(mapped);
     } catch (error) {
       console.error("Failed to fetch wishlists", error);

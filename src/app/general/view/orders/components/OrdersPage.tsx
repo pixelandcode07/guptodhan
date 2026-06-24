@@ -18,7 +18,12 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
     const [ordersData, setOrdersData] = useState<OrderRow[]>([]);
     const [selectedOrders, setSelectedOrders] = useState<OrderRow[]>([]);
 
-    // ✅ Filter State Lifted Up here
+    const [searchTerm, setSearchTerm] = useState('');
+    
+    // ✅ NEW: Explicit Date States for quick filtering
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+
     const [filters, setFilters] = useState<FilterState>({
         orderNo: '',
         source: '',
@@ -29,13 +34,11 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
         orderedProduct: '',
         deliveryMethod: '',
         couponCode: '',
-        dateRange: ''
+        dateRange: '' 
     });
 
     const handleFilterChange = (field: keyof FilterState, value: string) => {
         setFilters(prev => ({ ...prev, [field]: value }));
-        // Optional: Trigger refresh automatically on filter change if desired
-        // setRefreshKey(prev => prev + 1); 
     };
 
     const clearFilters = () => {
@@ -43,6 +46,9 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
             orderNo: '', source: '', paymentStatus: '', customerName: '', customerPhone: '',
             orderStatus: '', orderedProduct: '', deliveryMethod: '', couponCode: '', dateRange: ''
         });
+        setSearchTerm('');
+        setStartDate(''); // ✅ Clear dates as well
+        setEndDate('');
         setRefreshKey(prev => prev + 1);
     };
 
@@ -51,14 +57,12 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
         toast.success('Orders refreshed successfully');
     };
 
-    // ... Export Logic (Same as before) ...
     const handleExport = () => {
         const ordersToExport = selectedOrders.length > 0 ? selectedOrders : ordersData;
         if (ordersToExport.length === 0) {
             toast.error('No orders to export');
             return;
         }
-        // ... (CSV Export logic from your original file)
         const headers = ['SL', 'Order No', 'Order Date', 'Customer Name', 'Phone', 'Email', 'Total Amount', 'Payment Status', 'Order Status', 'Delivery Method', 'Tracking ID', 'Parcel ID'];
         const csvRows = [headers.join(',')];
         ordersToExport.forEach(order => {
@@ -101,7 +105,6 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
 
     return (
         <div className="space-y-4 md:space-y-6 w-full max-w-full overflow-x-hidden">
-            {/* Stats Section */}
             {!normalizedStatus && (
                 <section className="rounded-lg border border-[#e4e7eb] bg-white/60 backdrop-blur-sm shadow-sm">
                     <header className="flex items-center justify-between px-3 py-2 md:px-4 md:py-3 border-b border-[#e4e7eb]">
@@ -114,7 +117,6 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                 </section>
             )}
 
-            {/* Filters Section */}
             <section className="rounded-lg border border-[#e4e7eb] bg-white/60 backdrop-blur-sm shadow-sm">
                 <header className="flex items-center justify-between px-3 py-2 md:px-4 md:py-3 border-b border-[#e4e7eb]">
                     <p className="text-sm font-medium text-gray-800">Advanced Filters</p>
@@ -133,7 +135,6 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                 )}
             </section>
 
-            {/* Toolbar */}
             <div className="sticky top-0 z-10 bg-white/90 backdrop-blur rounded-lg border border-[#e4e7eb] mb-4 shadow-sm">
                 <div className="px-3 py-2">
                     <OrdersToolbar 
@@ -143,17 +144,24 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                         onExport={handleExport}
                         onFilter={handleFilter}
                         onPrint={handlePrintSelected}
-                        // showBulkCourierEntry={normalizedStatus === 'ready-to-ship'}
+                        searchTerm={searchTerm}           
+                        setSearchTerm={setSearchTerm} 
+                        startDate={startDate}             // ✅ Passed to Toolbar
+                        endDate={endDate}                 // ✅ Passed to Toolbar
+                        setStartDate={setStartDate}       // ✅ Passed to Toolbar
+                        setEndDate={setEndDate}           // ✅ Passed to Toolbar
                     />
                 </div>
             </div>
 
-            {/* Table */}
             <div className="rounded-lg border border-[#e4e7eb] bg-white shadow-sm">
                 <OrdersTable 
                     key={refreshKey}
                     initialStatus={normalizedStatus}
-                    filters={filters} // ✅ Pass Filters
+                    filters={filters}
+                    searchTerm={searchTerm} 
+                    startDate={startDate}             // ✅ Passed to Table for API call
+                    endDate={endDate}                 // ✅ Passed to Table for API call
                     onDataChange={setOrdersData}
                     onSelectionChange={setSelectedOrders}
                 />

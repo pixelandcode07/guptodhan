@@ -4,6 +4,7 @@ const productOptionValidationSchema = z.object({
   productImage: z.string().optional(),
   unit: z.array(z.string()).optional(),
   simType: z.array(z.string()).optional(),
+  country: z.array(z.string()).optional(),
   condition: z.array(z.string()).optional(),
   color: z.array(z.string()).optional(),
   size: z.array(z.string()).optional(),
@@ -31,6 +32,7 @@ export const createVendorProductValidationSchema = z.object({
   stock: z.number().optional(),
   sku: z.string().optional(),
   rewardPoints: z.number().optional(),
+  callForPrice: z.boolean().optional(),
   
   // ✅ NEW: Shipping Cost Validation
   shippingCost: z.number().optional(), 
@@ -71,6 +73,7 @@ export const updateVendorProductValidationSchema = z.object({
   stock: z.number().optional(),
   sku: z.string().optional(),
   rewardPoints: z.number().optional(),
+  callForPrice: z.boolean().optional(),
   
   // ✅ NEW: Shipping Cost Validation
   shippingCost: z.number().optional(),

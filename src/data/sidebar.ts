@@ -200,26 +200,26 @@ export const sidebarData = {
         { title: 'Registered Devices', url: '/general/view/all/devices' },
       ],
     },
-    {
-      title: 'SMS Service',
-      icon: IconMessage,
-      items: [
-        { title: 'SMS Templates', url: '/general/view/sms/templates' },
-        { title: 'Send SMS', url: '/general/send/sms/page' },
-        { title: 'SMS History', url: '/general/view/sms/history' },
-      ],
-    },
-    {
-      title: 'Gateway & API',
-      icon: IconSettings,
-      items: [
-        { title: 'Email Credentials', url: '/general/view/email/credential' },
-        { title: 'Email Templates', url: '/general/view/email/templates' },
-        { title: 'SMS Gateways', url: '/general/setup/sms/gateways' },
-        { title: 'Payment Gateways', url: '/general/setup/payment/gateways' },
-        { title: 'Courier API Keys', url: '/general/setup/courier/api/keys' },
-      ],
-    },
+    // {
+    //   title: 'SMS Service',
+    //   icon: IconMessage,
+    //   items: [
+    //     { title: 'SMS Templates', url: '/general/view/sms/templates' },
+    //     { title: 'Send SMS', url: '/general/send/sms/page' },
+    //     { title: 'SMS History', url: '/general/view/sms/history' },
+    //   ],
+    // },
+    // {
+    //   title: 'Gateway & API',
+    //   icon: IconSettings,
+    //   items: [
+    //     { title: 'Email Credentials', url: '/general/view/email/credential' },
+    //     { title: 'Email Templates', url: '/general/view/email/templates' },
+    //     { title: 'SMS Gateways', url: '/general/setup/sms/gateways' },
+    //     { title: 'Payment Gateways', url: '/general/setup/payment/gateways' },
+    //     { title: 'Courier API Keys', url: '/general/setup/courier/api/keys' },
+    //   ],
+    // },
     {
       title: 'Support Tickets',
       icon: IconHeadset,

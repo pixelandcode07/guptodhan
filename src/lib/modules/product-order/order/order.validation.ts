@@ -33,10 +33,11 @@ const updateOrderZodSchema = z.object({
     'Delivered', 
     'Cancelled', 
     'Returned', 
-    'Return Request' // ✅ Added here
+    'Return Request' 
   ]).optional(),
   paymentStatus: z.enum(['Pending', 'Paid', 'Failed', 'Refunded', 'Cancelled']).optional(),
-  returnReason: z.string().optional(), // ✅ Added here
+  returnReason: z.string().optional(), 
+  cancelReason: z.string().optional(), // ✅ NEW: Added cancel reason here
 });
 
 // ✅ Validation for Return Request API
@@ -45,8 +46,15 @@ const returnRequestZodSchema = z.object({
   reason: z.string({ required_error: 'Return reason is required' }).min(5, 'Reason must be at least 5 characters long'),
 });
 
+// ✅ NEW: Validation for Cancel Order API by User
+const cancelOrderZodSchema = z.object({
+  userId: z.string({ required_error: 'User ID is required' }),
+  reason: z.string({ required_error: 'Cancel reason is required' }).min(3, 'Reason must be at least 3 characters long'),
+});
+
 export const OrderValidation = {
   createOrderZodSchema,
   updateOrderZodSchema,
   returnRequestZodSchema,
+  cancelOrderZodSchema, // ✅ Exported here
 };

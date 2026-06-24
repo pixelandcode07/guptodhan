@@ -41,9 +41,10 @@ const getAllTerms = async () => {
 };
 
 // Get terms by category
-const getTermsByCategory = async ({ params }: { params: { categoryId: string } }) => {
+const getTermsByCategory = async (req: NextRequest, { params }: { params: Promise<{ categoryId: string }> }) => {
     await dbConnect();
-    const result = await TermsServices.getTermsByCategoryFromDB(params.categoryId);
+    const { categoryId } = await params; // ✅ FIX: Awaited params for Next.js 15
+    const result = await TermsServices.getTermsByCategoryFromDB(categoryId);
 
     return sendResponse({
         success: true,
@@ -54,9 +55,9 @@ const getTermsByCategory = async ({ params }: { params: { categoryId: string } }
 };
 
 // Update a term
-const updateTerms = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const updateTerms = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params; // ✅ FIX: Awaited params for Next.js 15
     const body = await req.json();
     const validatedData = updateTermsValidationSchema.parse(body);
 
@@ -76,9 +77,9 @@ const updateTerms = async (req: NextRequest, { params }: { params: { id: string 
 };
 
 // Delete a term
-const deleteTerms = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const deleteTerms = async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params; // ✅ FIX: Awaited params for Next.js 15
     await TermsServices.deleteTermsFromDB(id);
 
     return sendResponse({

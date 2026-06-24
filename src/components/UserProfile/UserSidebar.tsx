@@ -19,7 +19,8 @@ import {
   Gift,
   Hand,
   LucideWorkflow,
-  UserX, // ✅ Added UserX icon for Delete Account
+  UserX,
+  Megaphone, // ✅ Added UserX icon for Delete Account
 } from 'lucide-react'
 import api from '@/lib/axios'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
@@ -35,13 +36,14 @@ const items = [
   { title: 'My Services', url: '/home/UserProfile/services', icon: LucideWorkflow },
   { title: 'Donation Stats', url: '/home/UserProfile/donation-dashboard', icon: HeartHandshake },
   { title: 'My Campaigns', url: '/home/UserProfile/my-campaigns', icon: Gift },
+  { title: 'My Ads (Buy & Sell)', url: '/home/UserProfile/my-ads', icon: Megaphone },
   { title: 'My Requests', url: '/home/UserProfile/my-claims', icon: Hand },
-  { title: 'Support Tickets', url: '/home/UserProfile/support-tickets', icon: Headset },
-  { title: 'Saved Address', url: '/home/UserProfile/addresses', icon: MapPin },
+  // { title: 'Support Tickets', url: '/home/UserProfile/support-tickets', icon: Headset },
+  // { title: 'Saved Address', url: '/home/UserProfile/addresses', icon: MapPin },
   { title: 'Change Password', url: '/home/UserProfile/change-password', icon: KeyRound },
   { title: 'Delete Account', url: '/page/account-deletion', icon: UserX }, // ✅ Added Delete Account link
 ]
-
+ 
 export default function UserSidebar() {
   const { data: session } = useSession()
   const pathname = usePathname()

@@ -2,29 +2,27 @@
 
 import { useState } from 'react';
 import { DataTable } from '@/components/TableHelper/data-table';
-import { support_tickets_columns } from '@/components/TableHelper/support_tickets_columns';
+import { support_tickets_columns, SupportTicketRow } from '@/components/TableHelper/support_tickets_columns';
 import { Button } from '@/components/ui/button';
-import { Check, Eye, Loader2, Plus, Trash2, XIcon, Search as SearchIcon, PauseCircle } from 'lucide-react'; // ✅ PauseCircle আইকন যোগ করা হয়েছে
+import { Check, Eye, Loader2, Plus, Trash2, XIcon, Search as SearchIcon, PauseCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import Link from 'next/link';
+import { confirmDelete } from '@/components/ReusableComponents/ConfirmToast';
 
-// টাইপ (আপনার schema অনুযায়ী)
 type SupportTicket = {
   _id: string;
   ticketNo: string;
   createdAt: string;
-  reporter: { name: string };
+  reporter?: { name?: string; profilePicture?: string }; 
   subject: string;
+  attachment?: string | string[]; // Can be string or array
   status: 'Pending' | 'In Progress' | 'Solved' | 'Rejected' | 'On Hold';
 };
 
-// স্ট্যাটাস কার্ডের টাইপ
 type TicketStats = {
   all: number;
   Pending: number;
@@ -50,9 +48,7 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
   const token = (session as any)?.accessToken;
   const router = useRouter();
 
-  // --- API কল ---
-
-  // ট্যাবে ক্লিক করলে টেবিল রিফ্রেশ করার ফাংশন
+  // Tab click filter
   const handleTabClick = async (status: string) => {
     setActiveTab(status);
     setLoadingTable(true);
@@ -70,7 +66,7 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
     }
   };
 
-  // স্ট্যাটাস বা ডিলিট করার পর সব ডেটা রিফ্রেশ করার ফাংশন
+  // Refresh data function
   const refreshData = async () => {
     try {
       const [ticketsRes, statsRes] = await Promise.all([
@@ -93,7 +89,8 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success(`Ticket marked as ${status}!`);
-      await refreshData();
+      setTickets(prev => prev.map(t => t._id === id ? { ...t, status } : t));
+      refreshData();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update status.');
     } finally {
@@ -101,33 +98,97 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!token) return toast.error("Authentication required.");
-    toast("Are you sure you want to delete this ticket?", {
-        action: {
-            label: "Delete",
-            onClick: async () => {
-                setLoadingAction(id);
-                try {
-                    await axios.delete(`/api/v1/crm-modules/support-ticket/${id}`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    toast.success("Ticket deleted!");
-                    await refreshData();
-                } catch (error: any) {
-                    toast.error(error.response?.data?.message || 'Failed to delete.');
-                } finally {
-                    setLoadingAction(null);
-                }
-            }
-        },
-        cancel: { label: "Cancel", onClick: () => {} }
-    });
+    const isConfirmed = await confirmDelete("Are you sure you want to delete this ticket?");
+    if (!isConfirmed) return;
+
+    setLoadingAction(id);
+    try {
+        await axios.delete(`/api/v1/crm-modules/support-ticket/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success("Ticket deleted!");
+        setTickets(prev => prev.filter(t => t._id !== id));
+        refreshData();
+    } catch (error: any) {
+        toast.error(error.response?.data?.message || 'Failed to delete.');
+    } finally {
+        setLoadingAction(null);
+    }
   };
 
-  // --- টেবিলের কলাম ডেফিনিশন (অ্যাকশন বাটন সহ) ---
-  const columnsWithActions: ColumnDef<SupportTicket>[] = [
-    ...(support_tickets_columns as ColumnDef<SupportTicket>[]),
+  // Bulk Actions
+  const handleBulkDelete = async (selectedRows: SupportTicketRow[]) => {
+    if (selectedRows.length === 0) return;
+    const isConfirmed = await confirmDelete(`Are you sure you want to delete ${selectedRows.length} tickets permanently?`);
+    if (!isConfirmed) return;
+
+    const toastId = toast.loading(`Deleting ${selectedRows.length} tickets...`);
+    try {
+        const promises = selectedRows.map(row => 
+            axios.delete(`/api/v1/crm-modules/support-ticket/${row._id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+        );
+        await Promise.all(promises);
+        const deletedIds = selectedRows.map(r => r._id);
+        setTickets(prev => prev.filter(t => !deletedIds.includes(t._id)));
+        refreshData();
+        toast.success("Tickets deleted successfully!", { id: toastId });
+    } catch (error) {
+        toast.error("Failed to delete some tickets.", { id: toastId });
+    }
+  };
+
+  const handleBulkStatusChange = async (selectedRows: SupportTicketRow[], newStatus: string) => {
+    if (selectedRows.length === 0) return;
+    const toastId = toast.loading(`Marking ${selectedRows.length} tickets as ${newStatus}...`);
+    try {
+        const promises = selectedRows.map(row => 
+            axios.patch(
+                `/api/v1/crm-modules/support-ticket/${row._id}`, 
+                { status: newStatus },
+                { headers: { Authorization: `Bearer ${token}` } }
+            )
+        );
+        await Promise.all(promises);
+        const updatedIds = selectedRows.map(r => r._id);
+        setTickets(prev => prev.map(t => 
+            updatedIds.includes(t._id) ? { ...t, status: newStatus as SupportTicket['status'] } : t
+        ));
+        refreshData();
+        toast.success(`Tickets marked as ${newStatus} successfully!`, { id: toastId });
+    } catch (error) {
+        toast.error("Failed to update status for some tickets.", { id: toastId });
+    }
+  };
+
+  // ✅ FIX: Safe parsing for attachment (String or Array) to prevent 'h' single char slicing
+  const mappedTickets: SupportTicketRow[] = tickets.map((t, index) => {
+    let ticketAttachment: string | null = null;
+    if (typeof t.attachment === 'string') {
+      ticketAttachment = t.attachment;
+    } else if (Array.isArray(t.attachment) && t.attachment.length > 0) {
+      ticketAttachment = t.attachment[0];
+    }
+
+    return {
+      _id: t._id,
+      sl: index + 1,
+      ticketNo: t.ticketNo,
+      customer: t.reporter?.name || "Unknown",
+      customerImage: t.reporter?.profilePicture || "", 
+      subject: t.subject,
+      attachment: ticketAttachment, // ✅ Full URL passed securely
+      status: t.status,
+      createdAt: t.createdAt
+    };
+  });
+
+  // ✅ FIX: Changed ColumnDef typing to SupportTicketRow to fix strict generic mismatch
+  const columnsWithActions: ColumnDef<SupportTicketRow, any>[] = [
+    ...(support_tickets_columns as ColumnDef<SupportTicketRow, any>[]),
     {
       id: 'actions',
       header: 'Actions',
@@ -136,28 +197,27 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
         const isLoading = loadingAction === ticket._id;
         
         if (isLoading) {
-            return <div className="flex justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+            return <div className="flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-blue-600" /></div>;
         }
 
-        // ✅ FIX: স্ট্যাটাস অনুযায়ী বাটন দেখানোর লজিক
         switch (ticket.status) {
           case 'Pending':
           case 'In Progress':
             return (
-              <div className="flex gap-1">
-                <Button variant="outline" size="icon" className="h-8 w-8 text-blue-600" onClick={() => router.push(`/general/support/tickets/view/${ticket._id}`)}>
+              <div className="flex gap-1.5 items-center">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={() => router.push(`/general/support/tickets/view/${ticket._id}`)} title="View">
                   <Eye className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8 text-green-600" onClick={() => handleUpdateStatus(ticket._id, 'Solved')}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:bg-green-50" onClick={() => handleUpdateStatus(ticket._id, 'Solved')} title="Mark Solved">
                   <Check className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8 text-gray-500" onClick={() => handleUpdateStatus(ticket._id, 'On Hold')}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-orange-500 hover:bg-orange-50" onClick={() => handleUpdateStatus(ticket._id, 'On Hold')} title="Put On Hold">
                   <PauseCircle className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8 text-red-600" onClick={() => handleUpdateStatus(ticket._id, 'Rejected')}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:bg-red-50" onClick={() => handleUpdateStatus(ticket._id, 'Rejected')} title="Reject">
                   <XIcon className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8 text-red-700" onClick={() => handleDelete(ticket._id)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-700 hover:bg-red-100" onClick={() => handleDelete(ticket._id)} title="Delete">
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
@@ -165,7 +225,7 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
           case 'Solved':
             return (
               <div className="flex gap-1">
-                <Button variant="outline" size="icon" className="h-8 w-8 text-blue-600" onClick={() => router.push(`/general/support/tickets/view/${ticket._id}`)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={() => router.push(`/general/support/tickets/view/${ticket._id}`)} title="View">
                   <Eye className="w-4 h-4" />
                 </Button>
               </div>
@@ -174,10 +234,10 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
           case 'On Hold':
             return (
               <div className="flex gap-1">
-                <Button variant="outline" size="icon" className="h-8 w-8 text-blue-600" onClick={() => router.push(`/general/support/tickets/view/${ticket._id}`)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={() => router.push(`/general/support/tickets/view/${ticket._id}`)} title="View">
                   <Eye className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8 text-red-700" onClick={() => handleDelete(ticket._id)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-700 hover:bg-red-100" onClick={() => handleDelete(ticket._id)} title="Delete">
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
@@ -189,7 +249,6 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
     },
   ];
 
-  // স্ট্যাটাস কার্ডের ডেটা
   const statCards = [
     { title: "All Tickets", count: stats.all },
     { title: "Pending", count: stats.Pending },
@@ -201,7 +260,7 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
 
   return (
     <div className="space-y-6">
-      {/* --- স্ট্যাটাস কার্ড (ট্যাব) সেকশন --- */}
+      {/* Tab Section */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {statCards.map(card => (
           <button 
@@ -212,33 +271,42 @@ export default function TicketsClient({ initialTickets, initialStats }: TicketsC
           >
             <Card className={`hover:shadow-lg transition-shadow ${activeTab === card.title ? 'ring-2 ring-blue-600' : 'border-gray-200'}`}>
               <CardContent className="p-4">
-                <p className="text-xs text-gray-500">{card.title}</p>
-                <p className="text-2xl font-bold">{card.count}</p>
+                <p className="text-xs text-gray-500 font-semibold uppercase">{card.title}</p>
+                <p className="text-2xl font-bold text-gray-800 mt-1">{card.count}</p>
               </CardContent>
             </Card>
           </button>
         ))}
       </div>
 
-      {/* --- টেবিল সেকশন --- */}
-      <div className="bg-white p-4 shadow-sm border rounded-md">
+      {/* Table Section */}
+      <div className="bg-white p-4 shadow-sm border rounded-xl">
         <div className="flex justify-between items-center mb-4">
-            <div className="relative w-full max-w-sm">
-                <Input placeholder="Search tickets, customers..." className="pl-10" />
-                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            </div>
-            <Button onClick={() => router.push('/general/support/tickets/new')}>
+            <div className="relative w-full max-w-sm"></div>
+            <Button onClick={() => router.push('/general/support/tickets/new')} className="bg-blue-600 hover:bg-blue-700 text-white">
                 <Plus className="w-4 h-4 mr-2" /> New Ticket
             </Button>
         </div>
         
-        {/* টেবিল লোডার */}
         {loadingTable ? (
           <div className="flex justify-center items-center h-64">
-            <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+            <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
           </div>
         ) : (
-          <DataTable columns={columnsWithActions} data={tickets} />
+          <DataTable 
+             columns={columnsWithActions} 
+             data={mappedTickets}
+             onBulkDelete={handleBulkDelete}
+             onBulkStatusChangeCustom={{
+                options: [
+                  { label: "Mark In Progress", value: "In Progress" },
+                  { label: "Mark Solved", value: "Solved" },
+                  { label: "Put On Hold", value: "On Hold" },
+                  { label: "Reject Tickets", value: "Rejected" },
+                ],
+                handler: handleBulkStatusChange
+             }}
+          />
         )}
       </div>
     </div>

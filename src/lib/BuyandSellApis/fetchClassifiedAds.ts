@@ -1,5 +1,4 @@
 import { ApiResponse } from '@/types/VendorType';
-import axios, { AxiosError } from 'axios';
 import { ClassifiedAdListing } from '@/types/ClassifiedAdsType';
 
 const getBaseUrl = () => {
@@ -8,11 +7,11 @@ const getBaseUrl = () => {
     return `${window.location.protocol}//${window.location.host}`;
   }
   
-  // Server side: NEXT_PUBLIC_API_URL কে অগ্রাধিকার দেওয়া হলো
+  // Server side: NEXT_PUBLIC_API_URL কে অগ্রাধিকার দেওয়া হলো
   const url = process.env.NEXT_PUBLIC_API_URL || process.env.NEXTAUTH_URL;
   if (!url) {
     console.warn('API base URL is missing in environment variables. Defaulting to localhost.');
-    return 'http://localhost:3000';
+    return 'https://guptodhan.com';
   }
   return url;
 };
@@ -25,38 +24,39 @@ export async function fetchClassifiedAds(token?: string): Promise<ClassifiedAdLi
 
   try {
     const headers: Record<string, string> = {
-      'Cache-Control': 'no-store, no-cache, must-revalidate', // ✅ ক্যাশ বন্ধ করা হলো
-      Pragma: 'no-cache',
+      'Content-Type': 'application/json',
     };
 
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await axios.get<ApiResponse<ClassifiedAdListing[]>>(
-      `${baseUrl}/api/v1/classifieds/ads`,
-      { 
-        headers,
-        params: { 
-          _t: Date.now(), // ✅ Next.js এর অ্যাগ্রেসিভ ক্যাশ বাইপাস করার জন্য
-          limit: 100 // ✅ একসাথে ১০০টি অ্যাড আনার জন্য (আপনার API সাপোর্ট করলে)
-        }
-      }
-    );
+    // URL Setup
+    const url = new URL(`${baseUrl}/api/v1/classifieds/ads`);
+    url.searchParams.append('limit', '100'); // একসাথে ১০০টি অ্যাড আনার জন্য
 
-    if (response.data.success && Array.isArray(response.data.data)) {
-      return response.data.data;
+    // ✅ Axios এর বদলে Native fetch ব্যবহার করা হলো
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers,
+      cache: 'no-store', // ✅ Next.js এর ক্যাশিং ১০০% বন্ধ করার একমাত্র উপায়
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    console.warn('Classified ads API: invalid response', response.data);
+    const responseData: ApiResponse<ClassifiedAdListing[]> = await response.json();
+
+    if (responseData.success && Array.isArray(responseData.data)) {
+      return responseData.data;
+    }
+
+    console.warn('Classified ads API: invalid response', responseData);
     return [];
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const status = error.response?.status;
-      const message = error.response?.data?.message || error.message;
-      console.error('Failed to fetch classified ads:', { status, message });
-    } else if (error instanceof Error) {
-      console.error('Unexpected error:', error.message);
+    if (error instanceof Error) {
+      console.error('Failed to fetch classified ads:', error.message);
     }
     return [];
   }
@@ -69,33 +69,34 @@ export async function fetchPublicClassifiedAds(): Promise<ClassifiedAdListing[]>
   const baseUrl = getBaseUrl();
 
   try {
-    const response = await axios.get<ApiResponse<ClassifiedAdListing[]>>(
-      `${baseUrl}/api/v1/public/classifieds/ads`,
-      {
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate', // ✅ এখানে আগে ক্যাশ কন্ট্রোল ছিল না
-          Pragma: 'no-cache',
-        },
-        params: { 
-          _t: Date.now(), // ✅ ইউনিক রিকোয়েস্ট তৈরি করবে যাতে ক্যাশ না ধরে
-          limit: 100 // ✅ ডিফল্ট পেজিনেশন এড়ানোর জন্য লিমিট বাড়িয়ে দেওয়া হলো
-        }
-      }
-    );
+    // URL Setup
+    const url = new URL(`${baseUrl}/api/v1/public/classifieds/ads`);
+    url.searchParams.append('limit', '100');
 
-    if (response.data.success && Array.isArray(response.data.data)) {
-      return response.data.data;
+    // ✅ Axios এর বদলে Native fetch ব্যবহার করা হলো
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store', // ✅ এখানেও ক্যাশিং সম্পূর্ণ বন্ধ করা হলো
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    console.warn('Public classified ads API: invalid response', response.data);
+    const responseData: ApiResponse<ClassifiedAdListing[]> = await response.json();
+
+    if (responseData.success && Array.isArray(responseData.data)) {
+      return responseData.data;
+    }
+
+    console.warn('Public classified ads API: invalid response', responseData);
     return [];
   } catch (error) {
-    if (error instanceof AxiosError) {
-      const status = error.response?.status;
-      const message = error.response?.data?.message || error.message;
-      console.error('Failed to fetch public classified ads:', { status, message });
-    } else if (error instanceof Error) {
-      console.error('Unexpected error:', error.message);
+    if (error instanceof Error) {
+      console.error('Failed to fetch public classified ads:', error.message);
     }
     return [];
   }
