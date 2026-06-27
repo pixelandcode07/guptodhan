@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import {
   Sidebar,
@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '../ui/sidebar';
-import { House, Search } from 'lucide-react';
+import { House, Search, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Input } from '../ui/input';
@@ -53,29 +53,35 @@ const data = {
 
 export default function AppSidebar() {
   const pathname = usePathname() ?? '';
-  const isDashboardActive = pathname === '/general/home' || pathname.startsWith('/general/home/');
+  const isDashboardActive =
+    pathname === '/general/home' || pathname.startsWith('/general/home/');
 
-  // State for Search functionality
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Scroll to active menu on load
+  // Ref to track the injected <style> tag so we can remove it later
+  const forceExpandStyleRef = useRef<HTMLStyleElement | null>(null);
+
+  // ── Scroll to active menu on route change ──
   useEffect(() => {
     const timer = setTimeout(() => {
-      const sidebarContent = document.querySelector('[data-sidebar="content"]') as HTMLElement;
-      const activeElement = document.querySelector('[data-active="true"]') as HTMLElement;
+      const sidebarContent = document.querySelector(
+        '[data-sidebar="content"]'
+      ) as HTMLElement;
+      const activeElement = document.querySelector(
+        '[data-active="true"]'
+      ) as HTMLElement;
 
       if (activeElement && sidebarContent) {
-        const container = sidebarContent;
         const elementTop = activeElement.offsetTop;
         const elementBottom = elementTop + activeElement.offsetHeight;
-        const containerTop = container.scrollTop;
-        const containerBottom = containerTop + container.clientHeight;
+        const containerTop = sidebarContent.scrollTop;
+        const containerBottom = containerTop + sidebarContent.clientHeight;
 
         if (elementTop < containerTop || elementBottom > containerBottom) {
           activeElement.scrollIntoView({
             behavior: 'smooth',
             block: 'center',
-            inline: 'nearest'
+            inline: 'nearest',
           });
         }
       }
@@ -84,84 +90,127 @@ export default function AppSidebar() {
     return () => clearTimeout(timer);
   }, [pathname]);
 
-  // 💡 MAGIC FIX: Deep DOM Filtering logic for specific submenus
+  // ── Main Search Effect ──
   useEffect(() => {
     const sidebarContent = document.querySelector('[data-sidebar="content"]');
     if (!sidebarContent) return;
 
     const allListItems = sidebarContent.querySelectorAll('li');
-    
-    // যদি সার্চ বক্স ফাঁকা থাকে, তবে সব মেনু আবার শো করবে
+
+    // ─── CASE 1: Search cleared → reset everything ───
     if (!searchQuery.trim()) {
-      allListItems.forEach(li => (li.style.display = ''));
+      allListItems.forEach((li) => ((li as HTMLElement).style.display = ''));
+
+      // Remove the force-expand style tag
+      forceExpandStyleRef.current?.remove();
+      forceExpandStyleRef.current = null;
       return;
     }
 
-    const query = searchQuery.toLowerCase().trim();
+    // ─── CASE 2: Search is active ───
 
-    // প্রথমে সব মেনু হাইড করে দিচ্ছি
-    allListItems.forEach(li => {
-      // Only hide items that have links/buttons to avoid breaking layout structures
-      if (li.querySelector('a, button')) {
-         li.style.display = 'none';
-      }
-    });
+    // STEP A ── Inject CSS to force-expand ALL collapsed Radix accordions.
+    //
+    // ROOT CAUSE: Radix UI's Collapsible uses [data-state="closed"] with
+    // `height: 0; overflow: hidden; animation: ...` to visually hide content.
+    // Even though the DOM nodes exist, they are NOT visible/queryable via normal
+    // layout. Setting `li.style.display = ''` on children does nothing because
+    // the parent collapsible wrapper is still height:0.
+    //
+    // FIX: While searching, inject a <style> that overrides ALL [data-state="closed"]
+    // elements inside the sidebar to be fully visible. After 100ms (giving the
+    // browser time to apply the CSS), run the DOM filtering logic.
+    if (!forceExpandStyleRef.current) {
+      const style = document.createElement('style');
+      style.textContent = `
+        /* Force-expand all Radix/Shadcn collapsible sections while searching */
+        [data-sidebar="content"] [data-state="closed"] {
+          height: auto !important;
+          max-height: none !important;
+          overflow: visible !important;
+          animation: none !important;
+          transition: none !important;
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          pointer-events: auto !important;
+        }
+        /* Handle Radix hidden attribute variant */
+        [data-sidebar="content"] [data-state="closed"][hidden],
+        [data-sidebar="content"] [data-state="closed"] [hidden] {
+          display: block !important;
+        }
+      `;
+      document.head.appendChild(style);
+      forceExpandStyleRef.current = style;
+    }
 
-    // এবার যেসব লিংকের টেক্সট সার্চের সাথে ম্যাচ করবে, শুধু সেগুলো শো করাবো
-    const allLinksAndButtons = sidebarContent.querySelectorAll('a, button, span');
-    allLinksAndButtons.forEach(element => {
-      const text = element.textContent?.toLowerCase() || '';
+    // STEP B ── Wait 100ms for CSS to visually expand everything, THEN filter ──
+    const filterTimer = setTimeout(() => {
+      const query = searchQuery.toLowerCase().trim();
 
-      if (text.includes(query)) {
-        let current = element.closest('li');
-        
-        // ১. ম্যাচ হওয়া আইটেমের ওপরের সব প্যারেন্ট (Parent) মেনু ওপেন/শো করবে
-        let parent = current;
-        while (parent && sidebarContent.contains(parent)) {
-          parent.style.display = '';
-          parent = parent.parentElement?.closest('li') || null;
+      // 1. Hide all list items that contain interactive elements
+      allListItems.forEach((li) => {
+        if ((li as HTMLElement).querySelector('a, button')) {
+          (li as HTMLElement).style.display = 'none';
+        }
+      });
+
+      // 2. Find every a / button / span whose text matches the query
+      const searchableElements = sidebarContent.querySelectorAll('a, button, span');
+      searchableElements.forEach((element) => {
+        const text = element.textContent?.toLowerCase() ?? '';
+        if (!text.includes(query)) return;
+
+        // Show this item's parent li AND every ancestor li up to the sidebar root
+        let parentLi: HTMLElement | null = (element as HTMLElement).closest('li');
+        while (parentLi && sidebarContent.contains(parentLi)) {
+          parentLi.style.display = '';
+          parentLi = parentLi.parentElement?.closest('li') ?? null;
         }
 
-        // ২. যদি কোনো মেইন ক্যাটাগরিতে (যেমন Manage Orders) সার্চ ম্যাচ করে, তবে তার ভেতরের সব চাইল্ড শো করবে
-        if (current) {
-          const descendants = current.querySelectorAll('li');
-          descendants.forEach(childLi => childLi.style.display = '');
+        // Show all descendant li elements inside the matched item
+        // (e.g. searching "manage orders" → also show All Orders, Pending Orders…)
+        const matchedLi = (element as HTMLElement).closest('li') as HTMLElement | null;
+        if (matchedLi) {
+          matchedLi
+            .querySelectorAll('li')
+            .forEach((childLi) => ((childLi as HTMLElement).style.display = ''));
         }
-      }
-    });
+      });
+    }, 100); // 100 ms: browser needs this to repaint after CSS injection
+
+    return () => clearTimeout(filterTimer);
   }, [searchQuery]);
 
-  // Handle Smart Module Filtering
+  // ── Cleanup injected style on component unmount ──
+  useEffect(() => {
+    return () => {
+      forceExpandStyleRef.current?.remove();
+    };
+  }, []);
+
+  // ── Module-level filter: controls which top-level module sections render ──
   const isMatch = (keywords: string) => {
-    if (!searchQuery) return true; 
+    if (!searchQuery) return true;
     const queryWords = searchQuery.toLowerCase().trim().split(/\s+/);
     const targetText = keywords.toLowerCase();
-    // Return true if EVERY word typed by the user is found in the target keywords
-    return queryWords.every(word => targetText.includes(word));
+    // Every word the user typed must appear somewhere in the keyword list
+    return queryWords.every((word) => targetText.includes(word));
   };
 
   return (
     <Sidebar>
       <SidebarHeader>
         <SidebarMenu>
-          
-          {/* Logo Section */}
+          {/* Logo */}
           <SidebarMenuItem>
-            <Link
-              href="/general/home"
-              className="flex justify-center items-center py-6"
-            >
-              <Image
-                src="/img/logo.png" 
-                alt="Guptodhan"
-                width={150}
-                height={50}
-                priority
-              />
+            <Link href="/general/home" className="flex justify-center items-center py-6">
+              <Image src="/img/logo.png" alt="Guptodhan" width={150} height={50} priority />
             </Link>
           </SidebarMenuItem>
 
-          {/* 🔍 Search Bar Section */}
+          {/* Search Bar */}
           <SidebarMenuItem className="px-4 pb-4">
             <div className="relative flex items-center">
               <Search className="absolute left-3 w-4 h-4 text-gray-500 z-10" />
@@ -170,8 +219,19 @@ export default function AppSidebar() {
                 placeholder="Search menu..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-10 bg-white text-gray-900 placeholder:text-gray-400 border border-gray-200 rounded-md focus-visible:ring-2 focus-visible:ring-blue-500 w-full font-medium shadow-sm"
+                className="pl-9 pr-9 h-10 bg-white text-gray-900 placeholder:text-gray-400 border border-gray-200 rounded-md focus-visible:ring-2 focus-visible:ring-blue-500 w-full font-medium shadow-sm"
               />
+              {/* Clear button — only visible when there is a query */}
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 text-gray-400 hover:text-gray-600 z-10 flex items-center justify-center"
+                  aria-label="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </SidebarMenuItem>
 
@@ -183,71 +243,63 @@ export default function AppSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-
         </SidebarMenu>
       </SidebarHeader>
 
       <SidebarContent className="px-2 pb-20">
-        
-        {/* Render Modules dynamically based on exact sub-menu names */}
-        
         {/* 1. Ecommerce Modules */}
-        {isMatch('ecommerce modules config product sizes storage sim type device condition product warranty product colors measurement units product brands models of brand product flags countries category add new category view all categories subcategory add new subcategory view all subcategories child category add child category view child manage products add new product view all products products review product ques ans manage orders all orders pending orders approved orders ready to ship intransit orders delivered orders cancelled orders return request promo codes add new promo code view all promo codes push notification send notification previous notifications registered devices customers story management customer wishlist delivery charges upazila thana payment history account deletion generate reports sales report download backup') && (
-          <EcommerceModules items={data.ecommerceModules} />
-        )}
-        
+        {isMatch(
+          'ecommerce modules config product sizes storage sim type device condition product warranty product colors measurement units product brands models of brand product flags countries category add new category view all categories subcategory add new subcategory view all subcategories child category add child category view child manage products add new product view all products products review product ques ans manage orders all orders pending orders approved orders ready to ship intransit orders delivered orders cancelled orders return request promo codes add new promo code view all promo codes push notification send notification previous notifications registered devices customers story management customer wishlist delivery charges upazila thana payment history account deletion generate reports sales report download backup'
+        ) && <EcommerceModules items={data.ecommerceModules} />}
+
         {/* 2. Content Management */}
-        {isMatch('content management slider banners view all sliders view all banners promotional banners testimonials add new testimonial view all testimonials policies terms condition privacy shipping return about us facts cta team config view teams faq categories faqs') && (
-          <ContentManagement />
-        )}
-        
+        {isMatch(
+          'content management slider banners view all sliders view all banners promotional banners testimonials add new testimonial view all testimonials policies terms condition privacy shipping return about us facts cta team config view teams faq categories faqs'
+        ) && <ContentManagement />}
+
         {/* 3. Multivendor */}
-        {isMatch('multivendor modules vendors add category business categories create new vendor vendor requests approved vendors inactive vendors stores create new store view all stores withdrawal all withdrawal withdrawal requests completed withdraws cancelled withdraws payment history') && (
-          <Multivendor />
-        )}
-        
+        {isMatch(
+          'multivendor modules vendors add category business categories create new vendor vendor requests approved vendors inactive vendors stores create new store view all stores withdrawal all withdrawal withdrawal requests completed withdraws cancelled withdraws payment history'
+        ) && <Multivendor />}
+
         {/* 4. BuySell Modules */}
         {isMatch('buysell modules listing management approved products report listing') && (
           <BuySell />
         )}
-        
+
         {/* 5. Service Modules */}
-        {isMatch('service modules category part add category view categories banner part create banner all banners service acknowledgements service requests provider requests all provider requests service bookings all service bookings') && (
-          <ServiceModule />
-        )}
-        
+        {isMatch(
+          'service modules category part add category view categories banner part create banner all banners service acknowledgements service requests provider requests all provider requests service bookings all service bookings'
+        ) && <ServiceModule />}
+
         {/* 6. Job Modules */}
-        {isMatch('job modules job management manage jobs') && (
-          <JobModule />
-        )}
-        
+        {isMatch('job modules job management manage jobs') && <JobModule />}
+
         {/* 7. Donation Modules */}
-        {isMatch('donation modules dashboard user management donations claims categories setting') && (
-          <Donation />
-        )}
-        
+        {isMatch(
+          'donation modules dashboard user management donations claims categories setting'
+        ) && <Donation />}
+
         {/* 8. Website Config */}
-        {isMatch('website config general info social media links home page seo social chat scripts') && (
-          <WebsiteConfig />
-        )}
-        
+        {isMatch(
+          'website config general info social media links home page seo social chat scripts'
+        ) && <WebsiteConfig />}
+
         {/* 9. CRM Modules */}
-        {isMatch('crm modules support ticket subscribed users blog comments contact request') && (
-          <CRMModules />
-        )}
-        
+        {isMatch(
+          'crm modules support ticket subscribed users blog comments contact request'
+        ) && <CRMModules />}
+
         {/* 10. User Role Permission */}
-        {isMatch('user role permission system users admin staff') && (
-          <UserRolePermision />
-        )}
+        {isMatch('user role permission system users admin staff') && <UserRolePermision />}
 
-        {/* Logout is always visible */}
+        {/* Logout – always visible */}
         <div className="mt-4 pt-4 border-t border-gray-700/30">
-           <Logout />
+          <Logout />
         </div>
-
       </SidebarContent>
-      <SidebarFooter></SidebarFooter>
+
+      <SidebarFooter />
     </Sidebar>
   );
 }
