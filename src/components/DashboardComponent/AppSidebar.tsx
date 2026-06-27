@@ -29,6 +29,28 @@ import UserRolePermision from './MotherRoutes/UserRolePermision';
 import ServiceModule from './MotherRoutes/ServiceModule';
 import JobModule from './MotherRoutes/JobModule';
 
+const data = {
+  ecommerceModules: [
+    { title: 'Config' },
+    { title: 'Category' },
+    { title: 'Subcategory' },
+    { title: 'Child Category' },
+    { title: 'Manage Products' },
+    { title: 'Manage Orders' },
+    { title: 'Promo Codes' },
+    { title: 'Push Notification' },
+    { title: 'Customers' },
+    { title: 'Story Management' },
+    { title: "Customer's Wishlist" },
+    { title: 'Delivery Charges' },
+    { title: 'Upazila & Thana' },
+    { title: 'Payment History' },
+    { title: 'Account Deletion' },
+    { title: 'Generate Reports' },
+    { title: 'Download Backup' },
+  ],
+};
+
 export default function AppSidebar() {
   const pathname = usePathname() ?? '';
   const isDashboardActive = pathname === '/general/home' || pathname.startsWith('/general/home/');
@@ -62,33 +84,52 @@ export default function AppSidebar() {
     return () => clearTimeout(timer);
   }, [pathname]);
 
-  // Handle Search Filtering
-  const isMatch = (keywords: string) => {
-    if (!searchQuery) return true; 
-    const query = searchQuery.toLowerCase().trim();
-    return keywords.toLowerCase().includes(query);
-  };
+  // 💡 MAGIC FIX: Deep Search DOM Filtering (কোনো চাইল্ড ফাইল এডিট করা ছাড়াই সব মেনু ফিল্টার হবে)
+  useEffect(() => {
+    const sidebarContent = document.querySelector('[data-sidebar="content"]');
+    if (!sidebarContent) return;
 
-  // 💡 E-Commerce Mock Data (আগের মতোই রাখা হয়েছে)
-  const ecommerceData = [
-    { title: 'Config' },
-    { title: 'Category' },
-    { title: 'Subcategory' },
-    { title: 'Child Category' },
-    { title: 'Manage Products' },
-    { title: 'Manage Orders' },
-    { title: 'Promo Codes' },
-    { title: 'Push Notification' },
-    { title: 'Customers' },
-    { title: 'Story Management' },
-    { title: "Customer's Wishlist" },
-    { title: 'Delivery Charges' },
-    { title: 'Upazila & Thana' },
-    { title: 'Payment History' },
-    { title: 'Account Deletion' },
-    { title: 'Generate Reports' },
-    { title: 'Download Backup' },
-  ];
+    const allListItems = sidebarContent.querySelectorAll('li');
+    
+    // যদি সার্চ বক্স ফাঁকা থাকে, তবে সব মেনু আবার শো করবে
+    if (!searchQuery.trim()) {
+      allListItems.forEach(li => (li.style.display = ''));
+      return;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+
+    // প্রথমে সব মেনু হাইড করে দিচ্ছি
+    allListItems.forEach(li => (li.style.display = 'none'));
+
+    // এবার যেসব লিংকের টেক্সট সার্চের সাথে ম্যাচ করবে, শুধু সেগুলো শো করাবো
+    const allLinksAndButtons = sidebarContent.querySelectorAll('a, button, span');
+    allLinksAndButtons.forEach(element => {
+      // শুধু মাত্র টেক্সট নোডগুলো নিচ্ছি
+      const text = Array.from(element.childNodes)
+        .filter(node => node.nodeType === Node.TEXT_NODE)
+        .map(node => node.textContent)
+        .join('')
+        .toLowerCase() || element.textContent?.toLowerCase() || '';
+
+      if (text.includes(query)) {
+        let current = element.closest('li');
+        
+        // ১. ম্যাচ হওয়া আইটেমের ওপরের সব প্যারেন্ট (Parent) মেনু ওপেন/শো করবে
+        let parent = current;
+        while (parent && sidebarContent.contains(parent)) {
+          parent.style.display = '';
+          parent = parent.parentElement?.closest('li') || null;
+        }
+
+        // ২. যদি কোনো মেইন ক্যাটাগরিতে (যেমন E-commerce) সার্চ ম্যাচ করে, তবে তার ভেতরের সব চাইল্ড শো করবে
+        if (current) {
+          const descendants = current.querySelectorAll('li');
+          descendants.forEach(childLi => childLi.style.display = '');
+        }
+      }
+    });
+  }, [searchQuery]);
 
   return (
     <Sidebar>
@@ -111,16 +152,17 @@ export default function AppSidebar() {
             </Link>
           </SidebarMenuItem>
 
-          {/* 🔍 Search Bar Section */}
-          <SidebarMenuItem className="px-3 pb-4">
+          {/* 🔍 Search Bar Section (Fixed Text Visibility) */}
+          <SidebarMenuItem className="px-4 pb-4">
             <div className="relative flex items-center">
-              <Search className="absolute left-3 w-4 h-4 text-gray-500" />
+              <Search className="absolute left-3 w-4 h-4 text-gray-500 z-10" />
               <Input
                 type="text"
                 placeholder="Search menu..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 bg-gray-100 border-none text-sm rounded-md focus-visible:ring-1 focus-visible:ring-blue-500 w-full"
+                // ✅ FIX: Added bg-white and text-gray-900 so text is always clear and visible
+                className="pl-9 h-10 bg-white text-gray-900 placeholder:text-gray-400 border border-gray-200 rounded-md focus-visible:ring-2 focus-visible:ring-blue-500 w-full font-medium shadow-sm"
               />
             </div>
           </SidebarMenuItem>
@@ -137,62 +179,22 @@ export default function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="px-2">
+      <SidebarContent className="px-2 pb-20">
         
-        {/* Render Modules ONLY if their sub-menu names match the search query */}
-        
-        {/* 1. Ecommerce Modules */}
-        {isMatch('ecommerce modules config product sizes storage sim type device condition product warranty product colors measurement units product brands models of brand product flags countries category add new category view all categories subcategory add new subcategory view all subcategories child category add child category view child manage products add new product view all products products review product ques ans manage orders all orders pending approved ready to ship in transit delivered cancelled return request promo codes push notification send previous registered devices customers story management customer wishlist delivery charges upazila thana payment history account deletion generate sales report') && (
-          <EcommerceModules items={ecommerceData} />
-        )}
-        
-        {/* 2. Content Management */}
-        {isMatch('content management slider banners view all sliders view all banners promotional testimonials add new testimonial policies terms privacy shipping return about us facts cta team faq') && (
-          <ContentManagement />
-        )}
-        
-        {/* 3. Multivendor */}
-        {isMatch('multivendor vendors business categories create new vendor vendor requests approved inactive stores all withdrawal requests completed cancelled payment history') && (
-          <Multivendor />
-        )}
-        
-        {/* 4. BuySell Modules */}
-        {isMatch('buysell modules listing management approved products report listing') && (
-          <BuySell />
-        )}
-        
-        {/* 5. Service Modules */}
-        {isMatch('service modules category banner acknowledgements service provider requests service bookings') && (
-          <ServiceModule />
-        )}
-        
-        {/* 6. Job Modules */}
-        {isMatch('job modules job management manage jobs') && (
-          <JobModule />
-        )}
-        
-        {/* 7. Donation Modules */}
-        {isMatch('donation modules dashboard user management donations claims categories setting') && (
-          <Donation />
-        )}
-        
-        {/* 8. Website Config */}
-        {isMatch('website config general info social media links home page seo social chat scripts') && (
-          <WebsiteConfig />
-        )}
-        
-        {/* 9. CRM Modules */}
-        {isMatch('crm modules support ticket subscribed users') && (
-          <CRMModules />
-        )}
-        
-        {/* 10. User Role Permission */}
-        {isMatch('user role permission system users') && (
-          <UserRolePermision />
-        )}
+        {/* Render ALL Modules normally. The useEffect hook will automatically filter them! */}
+        <EcommerceModules items={data.ecommerceModules} />
+        <ContentManagement />
+        <Multivendor />
+        <BuySell />
+        <ServiceModule />
+        <JobModule />
+        <Donation />
+        <WebsiteConfig />
+        <CRMModules />
+        <UserRolePermision />
 
         {/* Logout is always visible */}
-        <div className="mt-4 pt-4 border-t border-gray-100">
+        <div className="mt-4 pt-4 border-t border-gray-700/30">
            <Logout />
         </div>
 
