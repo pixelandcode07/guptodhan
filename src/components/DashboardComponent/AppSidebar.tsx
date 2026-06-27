@@ -29,21 +29,6 @@ import UserRolePermision from './MotherRoutes/UserRolePermision';
 import ServiceModule from './MotherRoutes/ServiceModule';
 import JobModule from './MotherRoutes/JobModule';
 
-// Module list mapping for search filtering
-// This array defines the module names so we can hide/show them based on the search query.
-const MODULE_NAMES = [
-  { id: 'ecommerce', name: 'Ecommerce Modules' },
-  { id: 'content', name: 'Content Management' },
-  { id: 'multivendor', name: 'Multivendor' },
-  { id: 'buysell', name: 'BuySell Modules' },
-  { id: 'service', name: 'Service Modules' },
-  { id: 'job', name: 'Job Modules' },
-  { id: 'donation', name: 'Donation Modules' },
-  { id: 'config', name: 'Website Config' },
-  { id: 'crm', name: 'CRM Modules' },
-  { id: 'userRole', name: 'User Role & Permission' }
-];
-
 export default function AppSidebar() {
   const pathname = usePathname() ?? '';
   const isDashboardActive = pathname === '/general/home' || pathname.startsWith('/general/home/');
@@ -78,12 +63,13 @@ export default function AppSidebar() {
   }, [pathname]);
 
   // Handle Search Filtering
-  const isMatch = (moduleName: string) => {
-    if (!searchQuery) return true; // Show all if search is empty
-    return moduleName.toLowerCase().includes(searchQuery.toLowerCase());
+  const isMatch = (keywords: string) => {
+    if (!searchQuery) return true; 
+    const query = searchQuery.toLowerCase().trim();
+    return keywords.toLowerCase().includes(query);
   };
 
-  // Ecommerce Mock Data
+  // 💡 E-Commerce Mock Data (আগের মতোই রাখা হয়েছে)
   const ecommerceData = [
     { title: 'Config' },
     { title: 'Category' },
@@ -153,45 +139,55 @@ export default function AppSidebar() {
 
       <SidebarContent className="px-2">
         
-        {/* Render Modules only if they match the search query */}
+        {/* Render Modules ONLY if their sub-menu names match the search query */}
         
-        {isMatch('ecommerce product order promo category') && (
+        {/* 1. Ecommerce Modules */}
+        {isMatch('ecommerce modules config product sizes storage sim type device condition product warranty product colors measurement units product brands models of brand product flags countries category add new category view all categories subcategory add new subcategory view all subcategories child category add child category view child manage products add new product view all products products review product ques ans manage orders all orders pending approved ready to ship in transit delivered cancelled return request promo codes push notification send previous registered devices customers story management customer wishlist delivery charges upazila thana payment history account deletion generate sales report') && (
           <EcommerceModules items={ecommerceData} />
         )}
         
-        {isMatch('content management slider testimonial faq') && (
+        {/* 2. Content Management */}
+        {isMatch('content management slider banners view all sliders view all banners promotional testimonials add new testimonial policies terms privacy shipping return about us facts cta team faq') && (
           <ContentManagement />
         )}
         
-        {isMatch('multivendor store request') && (
+        {/* 3. Multivendor */}
+        {isMatch('multivendor vendors business categories create new vendor vendor requests approved inactive stores all withdrawal requests completed cancelled payment history') && (
           <Multivendor />
         )}
         
-        {isMatch('buy sell ads listing') && (
+        {/* 4. BuySell Modules */}
+        {isMatch('buysell modules listing management approved products report listing') && (
           <BuySell />
         )}
         
-        {isMatch('service provide provider request') && (
+        {/* 5. Service Modules */}
+        {isMatch('service modules category banner acknowledgements service provider requests service bookings') && (
           <ServiceModule />
         )}
         
-        {isMatch('job management apply resume') && (
+        {/* 6. Job Modules */}
+        {isMatch('job modules job management manage jobs') && (
           <JobModule />
         )}
         
-        {isMatch('donation claim report') && (
+        {/* 7. Donation Modules */}
+        {isMatch('donation modules dashboard user management donations claims categories setting') && (
           <Donation />
         )}
         
-        {isMatch('config website general setting') && (
+        {/* 8. Website Config */}
+        {isMatch('website config general info social media links home page seo social chat scripts') && (
           <WebsiteConfig />
         )}
         
-        {isMatch('crm support ticket contact subscribe') && (
+        {/* 9. CRM Modules */}
+        {isMatch('crm modules support ticket subscribed users') && (
           <CRMModules />
         )}
         
-        {isMatch('user role permission admin staff') && (
+        {/* 10. User Role Permission */}
+        {isMatch('user role permission system users') && (
           <UserRolePermision />
         )}
 
