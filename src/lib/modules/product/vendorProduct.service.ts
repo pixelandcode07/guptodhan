@@ -1264,6 +1264,9 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
 // 🎁 GET OFFER PRODUCTS
 // ===================================
 
+// ================================================================
+// 🎁 GET OFFER PRODUCTS (JUST FOR YOU)
+// ================================================================
 const getOfferProductsFromDB = async () => {
   const cacheKey = CacheKeys.PRODUCT.OFFERS;
   
@@ -1274,11 +1277,11 @@ const getOfferProductsFromDB = async () => {
         {
           $match: {
             status: "active",
-            offerDeadline: { $gt: new Date() },
+            // offerDeadline: { $gt: new Date() }, // যদি শুধু অফার থাকা প্রোডাক্ট না চেয়ে সব প্রোডাক্ট চান, তবে এই লাইনটি সরাতে পারেন
           },
         },
         { $sort: { createdAt: -1 } },
-        { $limit: 6 },
+        { $limit: 60 }, // ✅ FIX: 6 এর জায়গায় 60 করা হয়েছে (Client requirement)
         ...getProductLookupPipeline(),
       ]);
 
