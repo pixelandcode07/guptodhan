@@ -15,12 +15,10 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
     const [showFilters, setShowFilters] = useState<boolean>(false);
     const [showStats, setShowStats] = useState<boolean>(true);
     const [refreshKey, setRefreshKey] = useState(0);
-    const [ordersData, setOrdersData] = useState<OrderRow[]>([]);
+    const [ordersData, setOrdersData] = useState<OrderRow[]>([]); // ✅ Here is the filtered data
     const [selectedOrders, setSelectedOrders] = useState<OrderRow[]>([]);
 
     const [searchTerm, setSearchTerm] = useState('');
-    
-    // ✅ NEW: Explicit Date States for quick filtering
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
@@ -47,7 +45,7 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
             orderStatus: '', orderedProduct: '', deliveryMethod: '', couponCode: '', dateRange: ''
         });
         setSearchTerm('');
-        setStartDate(''); // ✅ Clear dates as well
+        setStartDate(''); 
         setEndDate('');
         setRefreshKey(prev => prev + 1);
     };
@@ -113,7 +111,8 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                             {showStats ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                     </header>
-                    {showStats && <div className="px-3 py-3"><OrdersStats /></div>}
+                    {/* ✅ MAGIC FIX: Passing the filtered ordersData directly to OrdersStats */}
+                    {showStats && <div className="px-3 py-3"><OrdersStats currentOrders={ordersData} /></div>}
                 </section>
             )}
 
@@ -146,10 +145,10 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                         onPrint={handlePrintSelected}
                         searchTerm={searchTerm}           
                         setSearchTerm={setSearchTerm} 
-                        startDate={startDate}             // ✅ Passed to Toolbar
-                        endDate={endDate}                 // ✅ Passed to Toolbar
-                        setStartDate={setStartDate}       // ✅ Passed to Toolbar
-                        setEndDate={setEndDate}           // ✅ Passed to Toolbar
+                        startDate={startDate}             
+                        endDate={endDate}                 
+                        setStartDate={setStartDate}       
+                        setEndDate={setEndDate}           
                     />
                 </div>
             </div>
@@ -160,9 +159,9 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                     initialStatus={normalizedStatus}
                     filters={filters}
                     searchTerm={searchTerm} 
-                    startDate={startDate}             // ✅ Passed to Table for API call
-                    endDate={endDate}                 // ✅ Passed to Table for API call
-                    onDataChange={setOrdersData}
+                    startDate={startDate}             
+                    endDate={endDate}                 
+                    onDataChange={setOrdersData} // ✅ Sets filtered data to state
                     onSelectionChange={setSelectedOrders}
                 />
             </div>
