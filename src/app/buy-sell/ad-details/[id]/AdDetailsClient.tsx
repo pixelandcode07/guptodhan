@@ -58,8 +58,8 @@ interface Ad {
   brand?: string;
   productModel?: string;
   edition?: string;
-  category: { name: string };
-  subCategory: { name: string };
+  category?: { name?: string }; // ✅ FIX: Made optional
+  subCategory?: { name?: string }; // ✅ FIX: Made optional
   division: string;
   district: string;
   upazila: string;
@@ -136,7 +136,6 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
     }
   };
 
-  // ✅ FIXED: Variants এ proper type দেওয়া হয়েছে
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
@@ -152,7 +151,7 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
       opacity: 1,
       transition: {
         duration: 0.6,
-        ease: 'easeOut' as const, // ✅ as const দিয়ে string literal type করা হয়েছে
+        ease: 'easeOut' as const,
       },
     },
   };
@@ -165,6 +164,10 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
       transition: { duration: 0.5 },
     },
   };
+
+  // ✅ SAFELY GET CATEGORY NAMES OR FALLBACK
+  const categoryName = ad.category?.name || "Classifieds";
+  const subCategoryName = ad.subCategory?.name || "General";
 
   return (
     <motion.div
@@ -192,7 +195,8 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
                   <Link href="#" className="hover:text-green-600">
-                    {ad.category.name}
+                    {/* ✅ FIXED CATEGORY NAME RENDERING */}
+                    {categoryName}
                   </Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
@@ -202,7 +206,8 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
                   <Link href="#" className="hover:text-green-600">
-                    {ad.subCategory.name}
+                    {/* ✅ FIXED SUBCATEGORY NAME RENDERING */}
+                    {subCategoryName}
                   </Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
@@ -235,8 +240,8 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                     className="aspect-square md:aspect-[4/3] lg:aspect-video relative w-full"
                   >
                     <Image
-                      src={ad.images[selectedImage] || '/placeholder.png'}
-                      alt={ad.title}
+                      src={ad.images?.[selectedImage] || '/placeholder.png'}
+                      alt={ad.title || "Ad Image"}
                       fill
                       className="object-contain p-6 md:p-10 lg:p-12"
                       priority={selectedImage === 0}
@@ -245,7 +250,7 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                   </motion.div>
                 </AnimatePresence>
 
-                {ad.images.length > 1 && (
+                {ad.images && ad.images.length > 1 && (
                   <>
                     <motion.button
                       whileHover={{ scale: 1.1 }}
@@ -272,7 +277,7 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                 )}
               </div>
 
-              {ad.images.length > 1 && (
+              {ad.images && ad.images.length > 1 && (
                 <div className="bg-gray-50/80 p-4 border-t">
                   <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
                     {ad.images.map((img, i) => (
@@ -302,7 +307,7 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                 <div className={`text-gray-700 leading-relaxed text-base ${!expandedDesc && 'line-clamp-6'}`}>
                   <pre className="whitespace-pre-wrap font-sans">{ad.description}</pre>
                 </div>
-                {ad.description.length > 300 && (
+                {ad.description && ad.description.length > 300 && (
                   <button
                     onClick={() => setExpandedDesc(!expandedDesc)}
                     className="mt-5 text-green-600 font-medium flex items-center gap-2 hover:gap-3 transition-all"
@@ -329,7 +334,7 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                 </div>
 
                 <div className="flex items-end gap-3">
-                  <p className="text-3xl md:text-4xl font-bold text-green-600">৳{ad.price.toLocaleString()}</p>
+                  <p className="text-3xl md:text-4xl font-bold text-green-600">৳{ad.price?.toLocaleString() || 0}</p>
                   {ad.isNegotiable && (
                     <Badge className="px-3 py-1 bg-green-100 text-green-800 font-medium">Negotiable</Badge>
                   )}
@@ -375,8 +380,8 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                     onClick={() => setShowPhone(true)}
                   >
                     <Phone className="w-5 h-5 mr-2" />
-                    {showPhone || !ad.contactDetails.isPhoneHidden
-                      ? ad.contactDetails.phone
+                    {showPhone || !ad.contactDetails?.isPhoneHidden
+                      ? ad.contactDetails?.phone || "Phone not available"
                       : 'Show Phone Number'}
                   </Button>
                 </div>
@@ -425,7 +430,7 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                   <ReportDialog
                     adId={ad._id}
                     adTitle={ad.title}
-                    sellerName={ad.user.name}
+                    sellerName={ad.user?.name || "Unknown"}
                     trigger={
                       <Button variant="outline" size="icon">
                         <Flag className="w-5 h-5 text-red-600" />
@@ -438,11 +443,11 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
 
                 <div className="flex items-center gap-4">
                   <Avatar className="w-14 h-14 ring-4 ring-green-100">
-                    <AvatarImage src={ad.user.profilePicture} />
-                    <AvatarFallback className="font-semibold">{ad.user.name[0]}</AvatarFallback>
+                    <AvatarImage src={ad.user?.profilePicture} />
+                    <AvatarFallback className="font-semibold">{ad.user?.name?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-bold text-lg">{ad.user.name}</p>
+                    <p className="font-bold text-lg">{ad.user?.name || "User"}</p>
                     <p className="text-sm text-gray-600">Active on Guptodhan</p>
                   </div>
                 </div>
