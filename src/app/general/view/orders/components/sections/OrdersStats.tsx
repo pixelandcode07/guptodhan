@@ -1,17 +1,6 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { ShoppingCart, TrendingUp, Smile, Trash2, Package, Truck } from 'lucide-react'
-import api from '@/lib/axios'
-import FancyLoadingPage from '@/app/general/loading'
-
-type ApiOrder = {
-    _id: string
-    totalAmount?: number
-    orderStatus?: string
-    paymentStatus?: string
-    deliveryMethodId?: string
-    trackingId?: string
-    parcelId?: string
-}
+import { OrderRow } from '@/components/TableHelper/orders_columns'
 
 type OrderStats = {
     pending: { count: number; total: number }
@@ -27,94 +16,67 @@ function formatAmount(amount: number): string {
     return `৳ ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-export default function OrdersStats() {
-    const [stats, setStats] = React.useState<OrderStats>({
-        pending: { count: 0, total: 0 },
-        processing: { count: 0, total: 0 },
-        shipped: { count: 0, total: 0 },
-        delivered: { count: 0, total: 0 },
-        cancelled: { count: 0, total: 0 },
-        cod: { count: 0, total: 0 },
-        steadfast: { count: 0, total: 0 }
-    })
-    const [loading, setLoading] = React.useState(true)
-
-    React.useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                setLoading(true)
-                // Fetch all orders for comprehensive statistics
-                const response = await api.get('/product-order')
-                const orders = (response.data?.data ?? []) as ApiOrder[]
-                
-                const newStats: OrderStats = {
-                    pending: { count: 0, total: 0 },
-                    processing: { count: 0, total: 0 },
-                    shipped: { count: 0, total: 0 },
-                    delivered: { count: 0, total: 0 },
-                    cancelled: { count: 0, total: 0 },
-                    cod: { count: 0, total: 0 },
-                    steadfast: { count: 0, total: 0 }
-                }
-
-                orders.forEach(order => {
-                    const amount = typeof order.totalAmount === 'number' ? order.totalAmount : 0
-                    const status = (order.orderStatus || '').toLowerCase()
-                    const isCOD = (order.deliveryMethodId || '').toLowerCase() === 'cod'
-                    const hasSteadfast = !!(order.trackingId || order.parcelId)
-
-                    // Count by status
-                    switch (status) {
-                        case 'pending':
-                            newStats.pending.count++
-                            newStats.pending.total += amount
-                            break
-                        case 'processing':
-                            newStats.processing.count++
-                            newStats.processing.total += amount
-                            break
-                        case 'shipped':
-                            newStats.shipped.count++
-                            newStats.shipped.total += amount
-                            break
-                        case 'delivered':
-                            newStats.delivered.count++
-                            newStats.delivered.total += amount
-                            break
-                        case 'cancelled':
-                        case 'canceled':
-                            newStats.cancelled.count++
-                            newStats.cancelled.total += amount
-                            break
-                    }
-
-                    // Count COD orders
-                    if (isCOD) {
-                        newStats.cod.count++
-                        newStats.cod.total += amount
-                    }
-
-                    // Count Steadfast orders
-                    if (hasSteadfast) {
-                        newStats.steadfast.count++
-                        newStats.steadfast.total += amount
-                    }
-                })
-
-                setStats(newStats)
-            } catch (error) {
-                console.error('Error fetching order statistics:', error)
-            } finally {
-                setLoading(false)
-            }
+// ✅ MAGIC FIX: Receive currentOrders from parent
+export default function OrdersStats({ currentOrders }: { currentOrders: OrderRow[] }) {
+    
+    // Calculate stats dynamically whenever currentOrders changes (due to filtering)
+    const stats = useMemo(() => {
+        const newStats: OrderStats = {
+            pending: { count: 0, total: 0 },
+            processing: { count: 0, total: 0 },
+            shipped: { count: 0, total: 0 },
+            delivered: { count: 0, total: 0 },
+            cancelled: { count: 0, total: 0 },
+            cod: { count: 0, total: 0 },
+            steadfast: { count: 0, total: 0 }
         }
 
-        fetchStats()
-    }, [])
+        currentOrders.forEach(order => {
+            const amount = typeof order.total === 'number' ? order.total : 0
+            const status = (order.status || '').toLowerCase()
+            const isCOD = (order.deliveryMethod || '').toLowerCase() === 'cod'
+            const hasSteadfast = !!(order.trackingId || order.parcelId)
 
-    if (loading) {
-        return <FancyLoadingPage />;
-    }
+            // Count by status
+            switch (status) {
+                case 'pending':
+                    newStats.pending.count++
+                    newStats.pending.total += amount
+                    break
+                case 'processing':
+                    newStats.processing.count++
+                    newStats.processing.total += amount
+                    break
+                case 'shipped':
+                    newStats.shipped.count++
+                    newStats.shipped.total += amount
+                    break
+                case 'delivered':
+                    newStats.delivered.count++
+                    newStats.delivered.total += amount
+                    break
+                case 'cancelled':
+                case 'canceled':
+                    newStats.cancelled.count++
+                    newStats.cancelled.total += amount
+                    break
+            }
+
+            // Count COD orders
+            if (isCOD) {
+                newStats.cod.count++
+                newStats.cod.total += amount
+            }
+
+            // Count Steadfast orders
+            if (hasSteadfast) {
+                newStats.steadfast.count++
+                newStats.steadfast.total += amount
+            }
+        })
+
+        return newStats;
+    }, [currentOrders]);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -204,5 +166,3 @@ export default function OrdersStats() {
         </div>
     );
 }
-
-
