@@ -12,7 +12,6 @@ import { Edit } from 'lucide-react'
 import OrderUpdateModal from './OrderUpdateModal'
 import { OrderRow, ordersColumns } from '@/components/TableHelper/orders_columns'
 
-// ✅ NEW: Added new fields from backend to interface
 type ApiOrder = {
     _id: string
     orderId: string
@@ -106,7 +105,6 @@ export default function OrdersTable({
             const response = await api.get(`/product-order?${params.toString()}`)
             const list = (response.data?.data ?? []) as ApiOrder[]
             
-            // ✅ NEW: Mapped new calculation values to rows
             const mapped: OrderRow[] = list.map((o, idx) => ({
                 id: o._id,
                 sl: idx + 1,
@@ -139,7 +137,6 @@ export default function OrdersTable({
             }))
             
             setRows(mapped)
-            if (onDataChange) onDataChange(mapped)
         } catch (error: any) {
             console.error('Error fetching orders:', error)
             setError('Failed to fetch orders')
@@ -148,7 +145,7 @@ export default function OrdersTable({
         } finally {
             setLoading(false)
         }
-    }, [initialStatus, filters, startDate, endDate, onDataChange])
+    }, [initialStatus, filters, startDate, endDate])
 
     useEffect(() => {
         const timeoutId = setTimeout(() => {
@@ -157,6 +154,7 @@ export default function OrdersTable({
         return () => clearTimeout(timeoutId);
     }, [fetchOrders, filters, startDate, endDate]); 
 
+    // ✅ MAGIC FIX: Handle local search filtering
     const filteredRows = useMemo(() => {
         if (!searchTerm || searchTerm.trim() === '') return rows;
         const q = searchTerm.trim().toLowerCase();
@@ -175,6 +173,13 @@ export default function OrdersTable({
             return searchableFields.some(field => field && String(field).toLowerCase().includes(q));
         });
     }, [rows, searchTerm]);
+
+    // ✅ MAGIC FIX: Call onDataChange ONLY when filteredRows updates
+    useEffect(() => {
+        if (onDataChange) {
+            onDataChange(filteredRows);
+        }
+    }, [filteredRows, onDataChange]);
 
     const actionColumn: ColumnDef<OrderRow> = {
         id: "actions",
@@ -286,7 +291,46 @@ export default function OrdersTable({
 
     return (
         <div className="w-full">
-            {/* Same bulk update logic rendering */}
+            {selectedRows.length > 0 && (
+              <div className="flex flex-wrap items-center gap-3 p-3 bg-blue-50 border-b border-blue-100 rounded-t-lg">
+                <span className="text-sm font-semibold text-blue-800 bg-white px-2 py-1 rounded shadow-sm">
+                  {selectedRows.length} selected
+                </span>
+                
+                <select
+                  value={bulkPaymentStatus}
+                  onChange={(e) => setBulkPaymentStatus(e.target.value)}
+                  className="h-8 text-xs border border-blue-200 rounded px-2 outline-none focus:ring-1 focus:ring-blue-500 text-gray-700"
+                >
+                  <option value="">Payment Status...</option>
+                  <option value="Paid">Paid</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Failed">Failed</option>
+                </select>
+                
+                <select
+                  value={bulkOrderStatus}
+                  onChange={(e) => setBulkOrderStatus(e.target.value)}
+                  className="h-8 text-xs border border-blue-200 rounded px-2 outline-none focus:ring-1 focus:ring-blue-500 text-gray-700"
+                >
+                  <option value="">Order Status...</option>
+                  <option value="Processing">Processing</option>
+                  <option value="Shipped">Shipped</option>
+                  <option value="Delivered">Delivered</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+                
+                <Button 
+                  size="sm" 
+                  onClick={handleBulkStatusUpdate} 
+                  disabled={isBulkUpdating || (!bulkPaymentStatus && !bulkOrderStatus)} 
+                  className="h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs px-4"
+                >
+                  {isBulkUpdating ? 'Applying...' : 'Apply Status'}
+                </Button>
+              </div>
+            )}
+
             <div className="overflow-x-auto">
                 <DataTable 
                   columns={tableColumns} 
@@ -294,6 +338,12 @@ export default function OrdersTable({
                   onBulkDelete={handleBulkDelete} 
                   onRowSelectionChange={handleRowSelection} 
                 />
+                
+                {filteredRows.length === 0 && !loading && (
+                    <div className="px-3 py-8 text-center text-gray-500">
+                        <p>No orders found matching your search.</p>
+                    </div>
+                )}
             </div>
 
             {selectedOrderForEdit && (
