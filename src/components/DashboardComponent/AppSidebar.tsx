@@ -82,39 +82,57 @@ export default function AppSidebar() {
     return () => clearTimeout(timer);
   }, [pathname]);
 
-  // 💡 MAGIC FIX: Deep DOM Filtering and CSS Force Expand
+  // 💡 BULLETPROOF FIX: Deep DOM Filtering and Auto-Expand
   useEffect(() => {
     const sidebarContent = document.querySelector('[data-sidebar="content"]');
     if (!sidebarContent) return;
 
     const query = searchQuery.toLowerCase().trim();
-    const allListItems = sidebarContent.querySelectorAll('li');
     const allGroups = sidebarContent.querySelectorAll('[data-sidebar="group"]');
 
-    // ── ১. যদি সার্চ বক্স ফাঁকা থাকে, তবে সব মেনু আগের অবস্থায় ফেরত আনো ──
+    // ── ১. যদি সার্চ বক্স ফাঁকা থাকে, তবে সব মেনু শো করো ──
     if (!query) {
+      const allListItems = sidebarContent.querySelectorAll('li');
       allListItems.forEach(li => ((li as HTMLElement).style.display = ''));
       allGroups.forEach(g => ((g as HTMLElement).style.display = ''));
-      sidebarContent.classList.remove('is-searching');
       return;
     }
 
-    // .is-searching ক্লাস অ্যাড করছি যাতে আমাদের কাস্টম CSS কাজ করে
-    sidebarContent.classList.add('is-searching');
+    // ── ২. FORCE EXPAND HIDDEN SECTIONS ──
+    // আনমাউন্ট হয়ে থাকা চাইল্ড মেনুগুলোকে মাউন্ট করার জন্য সব ক্লোজড ফোল্ডারগুলোতে ক্লিক করছি
+    const closedTriggers = sidebarContent.querySelectorAll('[data-state="closed"]');
+    closedTriggers.forEach(trigger => {
+      if (typeof (trigger as HTMLElement).click === 'function') {
+        (trigger as HTMLElement).click();
+      }
+    });
 
-    // ── ২. ফিল্টারিং লজিক ──
+    // ── ৩. ফিল্টারিং লজিক (১৫০ms সময় দিচ্ছি যেন React মেনুগুলো রেন্ডার করতে পারে) ──
     const filterTimer = setTimeout(() => {
-      // প্রথমে সব মেনু (li) হাইড করে দিচ্ছি
-      allListItems.forEach(li => {
-        (li as HTMLElement).style.display = 'none';
+      // রেন্ডার হওয়ার পর আবার সব <li> সিলেক্ট করছি
+      const currentListItems = sidebarContent.querySelectorAll('li');
+
+      // প্রথমে সব মেনু হাইড করে দিচ্ছি
+      currentListItems.forEach(li => {
+        if (li.querySelector('a, button')) {
+           (li as HTMLElement).style.display = 'none';
+        }
       });
 
-      // এবার সার্চ ম্যাচ চেক করছি
-      const searchableElements = sidebarContent.querySelectorAll('a, button, span');
-      searchableElements.forEach(element => {
-        const text = element.textContent?.toLowerCase() || '';
+      // এবার টেক্সট স্ক্যান করে ম্যাচ করছি
+      const allElements = sidebarContent.querySelectorAll('*');
+      allElements.forEach(element => {
+        
+        // শুধু স্পেসিফিক এলিমেন্টের ডিরেক্ট টেক্সট নিচ্ছি, যাতে প্যারেন্ট এলিমেন্ট ভুল করে সিলেক্ট না হয়
+        let directText = '';
+        element.childNodes.forEach(node => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            directText += node.nodeValue;
+          }
+        });
+        directText = directText.toLowerCase().trim();
 
-        if (text.includes(query)) {
+        if (directText && directText.includes(query)) {
           let currentLi = element.closest('li');
           
           if (currentLi) {
@@ -131,13 +149,15 @@ export default function AppSidebar() {
             }
 
             // যদি কোনো মেইন ক্যাটাগরি (যেমন Manage Orders) ম্যাচ করে, তবে তার ভেতরের সব চাইল্ড শো করো
-            const childLis = currentLi.querySelectorAll('li');
-            childLis.forEach(child => ((child as HTMLElement).style.display = ''));
+            if (currentLi.querySelector('[data-state]')) {
+              const childLis = currentLi.querySelectorAll('li');
+              childLis.forEach(child => ((child as HTMLElement).style.display = ''));
+            }
           }
         }
       });
 
-      // ৩. যেই মেইন গ্রুপগুলোর (যেমন E-commerce Modules) ভেতরে কোনো আইটেম নেই, সেগুলো হাইড করো
+      // ৪. যেই মেইন গ্রুপগুলোর (যেমন E-commerce Modules) ভেতরে কোনো আইটেম নেই, সেগুলো হাইড করো
       allGroups.forEach(group => {
         const hasVisibleLi = Array.from(group.querySelectorAll('li')).some(
           li => li.style.display !== 'none'
@@ -145,7 +165,7 @@ export default function AppSidebar() {
         (group as HTMLElement).style.display = hasVisibleLi ? '' : 'none';
       });
 
-    }, 50);
+    }, 150);
 
     return () => clearTimeout(filterTimer);
   }, [searchQuery]);
@@ -157,8 +177,17 @@ export default function AppSidebar() {
           
           {/* Logo Section */}
           <SidebarMenuItem>
-            <Link href="/general/home" className="flex justify-center items-center py-6">
-              <Image src="/img/logo.png" alt="Guptodhan" width={150} height={50} priority />
+            <Link
+              href="/general/home"
+              className="flex justify-center items-center py-6"
+            >
+              <Image
+                src="/img/logo.png" 
+                alt="Guptodhan"
+                width={150}
+                height={50}
+                priority
+              />
             </Link>
           </SidebarMenuItem>
 
@@ -201,26 +230,8 @@ export default function AppSidebar() {
 
       <SidebarContent className="px-2 pb-20">
         
-        {/* 🔥 CRITICAL CSS INJECTION 🔥
-          এই CSS টি সার্চ করার সময় Shadcn/Radix এর লুকানো (closed/hidden) মেনুগুলোকে জোর করে ওপেন করবে। 
-          ফলে লুকানো মেনুগুলো স্ক্যান হয়ে আপনার সামনে চলে আসবে। 
-        */}
-        {searchQuery && (
-          <style>{`
-            [data-sidebar="content"].is-searching [data-state="closed"] {
-              height: auto !important;
-              display: block !important;
-              overflow: visible !important;
-              animation: none !important;
-            }
-            [data-sidebar="content"].is-searching [hidden] {
-              display: block !important;
-            }
-          `}</style>
-        )}
-
-        {/* Render ALL Modules. 
-          এখন আর কোনো হার্ডকোডেড কি-ওয়ার্ড দরকার নেই, কোড নিজেই সবকিছু স্ক্যান করে হাইড/শো করবে। 
+        {/* Render ALL Modules normally WITHOUT any conditions. 
+            The useEffect hook will automatically open and filter them! 
         */}
         <EcommerceModules items={data.ecommerceModules} />
         <ContentManagement />
