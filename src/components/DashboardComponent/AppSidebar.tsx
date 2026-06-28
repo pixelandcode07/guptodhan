@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '../ui/sidebar';
-import { House, Search } from 'lucide-react';
+import { House, Search, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Input } from '../ui/input';
@@ -55,7 +55,6 @@ export default function AppSidebar() {
   const pathname = usePathname() ?? '';
   const isDashboardActive = pathname === '/general/home' || pathname.startsWith('/general/home/');
 
-  // State for Search functionality
   const [searchQuery, setSearchQuery] = useState('');
 
   // Scroll to active menu on load
@@ -65,11 +64,10 @@ export default function AppSidebar() {
       const activeElement = document.querySelector('[data-active="true"]') as HTMLElement;
 
       if (activeElement && sidebarContent) {
-        const container = sidebarContent;
         const elementTop = activeElement.offsetTop;
         const elementBottom = elementTop + activeElement.offsetHeight;
-        const containerTop = container.scrollTop;
-        const containerBottom = containerTop + container.clientHeight;
+        const containerTop = sidebarContent.scrollTop;
+        const containerBottom = containerTop + sidebarContent.clientHeight;
 
         if (elementTop < containerTop || elementBottom > containerBottom) {
           activeElement.scrollIntoView({
@@ -84,51 +82,72 @@ export default function AppSidebar() {
     return () => clearTimeout(timer);
   }, [pathname]);
 
-  // 💡 MAGIC FIX: Deep Search DOM Filtering (কোনো চাইল্ড ফাইল এডিট করা ছাড়াই সব মেনু ফিল্টার হবে)
+  // 💡 MAGIC FIX: Deep DOM Filtering and CSS Force Expand
   useEffect(() => {
     const sidebarContent = document.querySelector('[data-sidebar="content"]');
     if (!sidebarContent) return;
 
+    const query = searchQuery.toLowerCase().trim();
     const allListItems = sidebarContent.querySelectorAll('li');
-    
-    // যদি সার্চ বক্স ফাঁকা থাকে, তবে সব মেনু আবার শো করবে
-    if (!searchQuery.trim()) {
-      allListItems.forEach(li => (li.style.display = ''));
+    const allGroups = sidebarContent.querySelectorAll('[data-sidebar="group"]');
+
+    // ── ১. যদি সার্চ বক্স ফাঁকা থাকে, তবে সব মেনু আগের অবস্থায় ফেরত আনো ──
+    if (!query) {
+      allListItems.forEach(li => ((li as HTMLElement).style.display = ''));
+      allGroups.forEach(g => ((g as HTMLElement).style.display = ''));
+      sidebarContent.classList.remove('is-searching');
       return;
     }
 
-    const query = searchQuery.toLowerCase().trim();
+    // .is-searching ক্লাস অ্যাড করছি যাতে আমাদের কাস্টম CSS কাজ করে
+    sidebarContent.classList.add('is-searching');
 
-    // প্রথমে সব মেনু হাইড করে দিচ্ছি
-    allListItems.forEach(li => (li.style.display = 'none'));
+    // ── ২. ফিল্টারিং লজিক ──
+    const filterTimer = setTimeout(() => {
+      // প্রথমে সব মেনু (li) হাইড করে দিচ্ছি
+      allListItems.forEach(li => {
+        (li as HTMLElement).style.display = 'none';
+      });
 
-    // এবার যেসব লিংকের টেক্সট সার্চের সাথে ম্যাচ করবে, শুধু সেগুলো শো করাবো
-    const allLinksAndButtons = sidebarContent.querySelectorAll('a, button, span');
-    allLinksAndButtons.forEach(element => {
-      // শুধু মাত্র টেক্সট নোডগুলো নিচ্ছি
-      const text = Array.from(element.childNodes)
-        .filter(node => node.nodeType === Node.TEXT_NODE)
-        .map(node => node.textContent)
-        .join('')
-        .toLowerCase() || element.textContent?.toLowerCase() || '';
+      // এবার সার্চ ম্যাচ চেক করছি
+      const searchableElements = sidebarContent.querySelectorAll('a, button, span');
+      searchableElements.forEach(element => {
+        const text = element.textContent?.toLowerCase() || '';
 
-      if (text.includes(query)) {
-        let current = element.closest('li');
-        
-        // ১. ম্যাচ হওয়া আইটেমের ওপরের সব প্যারেন্ট (Parent) মেনু ওপেন/শো করবে
-        let parent = current;
-        while (parent && sidebarContent.contains(parent)) {
-          parent.style.display = '';
-          parent = parent.parentElement?.closest('li') || null;
+        if (text.includes(query)) {
+          let currentLi = element.closest('li');
+          
+          if (currentLi) {
+            // ম্যাচ হওয়া মেনুটি শো করো
+            currentLi.style.display = '';
+
+            // ওপরের সমস্ত প্যারেন্ট মেনু (ফোল্ডার) শো করো
+            let parent = currentLi.parentElement;
+            while (parent && sidebarContent.contains(parent)) {
+              if (parent.tagName === 'LI') {
+                (parent as HTMLElement).style.display = '';
+              }
+              parent = parent.parentElement;
+            }
+
+            // যদি কোনো মেইন ক্যাটাগরি (যেমন Manage Orders) ম্যাচ করে, তবে তার ভেতরের সব চাইল্ড শো করো
+            const childLis = currentLi.querySelectorAll('li');
+            childLis.forEach(child => ((child as HTMLElement).style.display = ''));
+          }
         }
+      });
 
-        // ২. যদি কোনো মেইন ক্যাটাগরিতে (যেমন E-commerce) সার্চ ম্যাচ করে, তবে তার ভেতরের সব চাইল্ড শো করবে
-        if (current) {
-          const descendants = current.querySelectorAll('li');
-          descendants.forEach(childLi => childLi.style.display = '');
-        }
-      }
-    });
+      // ৩. যেই মেইন গ্রুপগুলোর (যেমন E-commerce Modules) ভেতরে কোনো আইটেম নেই, সেগুলো হাইড করো
+      allGroups.forEach(group => {
+        const hasVisibleLi = Array.from(group.querySelectorAll('li')).some(
+          li => li.style.display !== 'none'
+        );
+        (group as HTMLElement).style.display = hasVisibleLi ? '' : 'none';
+      });
+
+    }, 50);
+
+    return () => clearTimeout(filterTimer);
   }, [searchQuery]);
 
   return (
@@ -138,21 +157,12 @@ export default function AppSidebar() {
           
           {/* Logo Section */}
           <SidebarMenuItem>
-            <Link
-              href="/general/home"
-              className="flex justify-center items-center py-6"
-            >
-              <Image
-                src="/img/logo.png" 
-                alt="Guptodhan"
-                width={150}
-                height={50}
-                priority
-              />
+            <Link href="/general/home" className="flex justify-center items-center py-6">
+              <Image src="/img/logo.png" alt="Guptodhan" width={150} height={50} priority />
             </Link>
           </SidebarMenuItem>
 
-          {/* 🔍 Search Bar Section (Fixed Text Visibility) */}
+          {/* 🔍 Search Bar Section */}
           <SidebarMenuItem className="px-4 pb-4">
             <div className="relative flex items-center">
               <Search className="absolute left-3 w-4 h-4 text-gray-500 z-10" />
@@ -161,9 +171,19 @@ export default function AppSidebar() {
                 placeholder="Search menu..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                // ✅ FIX: Added bg-white and text-gray-900 so text is always clear and visible
-                className="pl-9 h-10 bg-white text-gray-900 placeholder:text-gray-400 border border-gray-200 rounded-md focus-visible:ring-2 focus-visible:ring-blue-500 w-full font-medium shadow-sm"
+                style={{ color: '#0f172a', backgroundColor: '#ffffff' }}
+                className="pl-9 pr-9 h-10 border border-gray-300 rounded-md focus-visible:ring-2 focus-visible:ring-blue-500 w-full font-medium shadow-sm !text-black placeholder:!text-gray-400"
               />
+              {/* Clear Search Button */}
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery('')} 
+                  className="absolute right-3 text-gray-400 hover:text-gray-700 z-10"
+                  title="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </SidebarMenuItem>
 
@@ -181,7 +201,27 @@ export default function AppSidebar() {
 
       <SidebarContent className="px-2 pb-20">
         
-        {/* Render ALL Modules normally. The useEffect hook will automatically filter them! */}
+        {/* 🔥 CRITICAL CSS INJECTION 🔥
+          এই CSS টি সার্চ করার সময় Shadcn/Radix এর লুকানো (closed/hidden) মেনুগুলোকে জোর করে ওপেন করবে। 
+          ফলে লুকানো মেনুগুলো স্ক্যান হয়ে আপনার সামনে চলে আসবে। 
+        */}
+        {searchQuery && (
+          <style>{`
+            [data-sidebar="content"].is-searching [data-state="closed"] {
+              height: auto !important;
+              display: block !important;
+              overflow: visible !important;
+              animation: none !important;
+            }
+            [data-sidebar="content"].is-searching [hidden] {
+              display: block !important;
+            }
+          `}</style>
+        )}
+
+        {/* Render ALL Modules. 
+          এখন আর কোনো হার্ডকোডেড কি-ওয়ার্ড দরকার নেই, কোড নিজেই সবকিছু স্ক্যান করে হাইড/শো করবে। 
+        */}
         <EcommerceModules items={data.ecommerceModules} />
         <ContentManagement />
         <Multivendor />
