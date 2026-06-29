@@ -3,10 +3,12 @@
 import { DataTable } from '@/components/TableHelper/data-table'
 import { getProviderColumns } from '@/components/TableHelper/provider_management_columns';
 import { IProvider } from '@/types/ProviderType';
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { toast } from 'sonner';
 import { confirmDelete } from '@/components/ReusableComponents/ConfirmToast';
 import axios from 'axios';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 type ClientDataTableProps = {
     serviceUsers: IProvider[];
@@ -14,12 +16,45 @@ type ClientDataTableProps = {
 
 export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) {
     const [data, setData] = useState<IProvider[]>(serviceUsers || []);
+    
+    // ✅ NEW: States for Filtering and Searching
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
     useEffect(() => {
         if (serviceUsers) {
             setData(serviceUsers);
         }
     }, [serviceUsers]);
+
+    // ==========================================
+    //  ✅ NEW: Filtering Logic (Search + Status)
+    // ==========================================
+    const filteredData = useMemo(() => {
+        let result = data;
+
+        // 1. Status Filter
+        if (statusFilter !== 'all') {
+            const isActiveRequired = statusFilter === 'active';
+            result = result.filter(provider => provider.isActive === isActiveRequired);
+        }
+
+        // 2. Search Filter (Name, Email, Phone, Role)
+        const q = searchQuery.trim().toLowerCase();
+        if (q) {
+            result = result.filter(provider => {
+                const searchableFields = [
+                    provider.name,
+                    provider.email,
+                    provider.phoneNumber,
+                    provider.role
+                ];
+                return searchableFields.some(field => field && String(field).toLowerCase().includes(q));
+            });
+        }
+
+        return result;
+    }, [data, searchQuery, statusFilter]);
 
     // ==========================================
     //  Bulk Status Change Handler (Approve/Reject)
@@ -57,7 +92,7 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
     };
 
     // ==========================================
-    //  Bulk Delete Handler (Optional: If backend supports deleting users/providers)
+    //  Bulk Delete Handler
     // ==========================================
     const handleBulkDelete = async (selectedRows: IProvider[]) => {
         if (selectedRows.length === 0) return;
@@ -68,7 +103,6 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
         const toastId = toast.loading(`Deleting ${selectedRows.length} providers...`);
 
         try {
-            // Note: Replace the URL below with your actual backend user delete endpoint if available
             const promises = selectedRows.map(row => 
                 axios.delete(`/api/v1/users/${row._id}`) 
             );
@@ -86,14 +120,55 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
     };
 
     return (
-        <div>
-            <DataTable 
-                columns={getProviderColumns(setData)} 
-                data={data} 
-                setData={setData} 
-                onBulkStatusChange={handleBulkStatusChange} // ✅ Enabled Bulk Status Change
-                onBulkDelete={handleBulkDelete}             // ✅ Enabled Bulk Delete
-            />
+        <div className="space-y-4">
+            
+            {/* ✅ Search & Filter Controls */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                
+                {/* Search Bar */}
+                <div className="relative w-full sm:max-w-xs">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                        placeholder="Search by name, email, phone..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 bg-gray-50 focus-visible:ring-blue-500 w-full"
+                    />
+                </div>
+
+                {/* Status Dropdown */}
+                <div className="w-full sm:w-auto">
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+                        className="w-full sm:w-48 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer"
+                    >
+                        <option value="all">All Providers</option>
+                        <option value="active">Active Providers</option>
+                        <option value="inactive">Inactive Providers</option>
+                    </select>
+                </div>
+
+            </div>
+
+            {/* Data Table */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <DataTable 
+                    columns={getProviderColumns(setData)} 
+                    // ✅ Passed the filteredData to the table instead of raw data
+                    data={filteredData} 
+                    setData={setData} 
+                    onBulkStatusChange={handleBulkStatusChange} 
+                    onBulkDelete={handleBulkDelete}             
+                />
+                
+                {/* Fallback Message when no records match */}
+                {filteredData.length === 0 && (
+                    <div className="p-8 text-center text-gray-500 text-sm">
+                        No provider requests found matching your criteria.
+                    </div>
+                )}
+            </div>
         </div>
     )
-}
+}   
