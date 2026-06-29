@@ -1714,11 +1714,96 @@ const getVendorProductBySlugFromDB = async (slugOrId: string) => {
   );
 };
 
+
+
+
+
+// ================================================================
+// 🧠 JUST FOR YOU ALGORITHM (WEIGHTED SCORING SYSTEM)
+// ================================================================
+const getJustForYouProductsFromDB = async (limit: number = 60, userId?: string) => {
+  // ৭ দিন আগের ডেট বের করা (New Arrival চেক করার জন্য)
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const products = await VendorProductModel.aggregate([
+    {
+      $match: { status: "active" },
+    },
+    // 🧠 অ্যালগরিদম: পয়েন্ট ক্যালকুলেশন
+    {
+      $addFields: {
+        // ১. Discount Score (10 points)
+        discountScore: {
+          $cond: [
+            { $and: [{ $gt: ["$discountPrice", 0] }, { $lt: ["$discountPrice", "$productPrice"] }] },
+            10,
+            0
+          ]
+        },
+        // ২. New Arrival Score (5 points)
+        newArrivalScore: {
+          $cond: [
+            { $gte: ["$createdAt", sevenDaysAgo] },
+            5,
+            0
+          ]
+        },
+        // ৩. Popularity/Sell Score (Max 15 points: sellCount * 0.5)
+        popularityScore: {
+          $min: [{ $multiply: [{ $ifNull: ["$sellCount", 0] }, 0.5] }, 15]
+        }
+      }
+    },
+    // টোটাল স্কোর বের করা
+    {
+      $addFields: {
+        totalScore: { $add: ["$discountScore", "$newArrivalScore", "$popularityScore"] }
+      }
+    },
+    // 🏆 যার স্কোর বেশি তাকে আগে রাখা
+    { $sort: { totalScore: -1, createdAt: -1 } },
+    { $limit: limit },
+    ...getProductLookupPipeline(), // আপনার এক্সিস্টিং পপুলেট পাইপলাইন
+  ]);
+
+  // রিভিউ ক্যালকুলেশন (আপনার আগের লজিক)
+  const productIds = products.map((p) => p._id);
+  const reviewStats = await ReviewModel.aggregate([
+    { $match: { productId: { $in: productIds } } },
+    {
+      $group: {
+        _id: "$productId",
+        totalReviews: { $sum: 1 },
+        averageRating: { $avg: "$rating" },
+      },
+    },
+  ]);
+
+  const reviewMap = new Map(reviewStats.map((r) => [String(r._id), r]));
+
+  const productsWithReviews = products.map((product) => {
+    const stats = reviewMap.get(String(product._id));
+    return {
+      ...product,
+      totalReviews: stats?.totalReviews || 0,
+      averageRating: stats?.averageRating || 0,
+      // চাইলে ফ্রন্টএন্ডে স্কোর দেখার জন্য totalScore টাও পাঠাতে পারেন
+      // algorithmScore: product.totalScore 
+    };
+  });
+
+  return await populateColorAndSizeNamesForProducts(productsWithReviews);
+};
+
+
+
 // ===================================
 // 📤 EXPORTS
 // ===================================
 
 export const VendorProductServices = {
+  getJustForYouProductsFromDB,
   createVendorProductInDB,
   getAllVendorProductsFromDB,
   getActiveVendorProductsFromDB,
