@@ -15,6 +15,8 @@ export function JustForYou({ initialProducts }: Props) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  
+  // ✅ FIX: ইনিশিয়ালি ৬০টার কম প্রোডাক্ট আসলে বুঝে নিতে হবে আর কোনো প্রোডাক্ট নেই
   const [hasMore, setHasMore] = useState(initialProducts.length >= 60);
 
   const observer = useRef<IntersectionObserver | null>(null);
@@ -27,19 +29,27 @@ export function JustForYou({ initialProducts }: Props) {
       setLoading(true);
       try {
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
-        // ✅ FIX: নতুন Recommendation API কল করা হচ্ছে
+        const nextPage = page + 1;
+        
+        // ✅ FIX: নতুন অ্যালগরিদম API কল করা হচ্ছে
         const res = await axios.get<{ success: boolean; data: Product[] }>(
-          `${baseUrl}/api/v1/product/just-for-you?page=${page + 1}&limit=60`
+          `${baseUrl}/api/v1/product/just-for-you?page=${nextPage}&limit=60`
         );
 
         if (res.data.success && res.data.data.length > 0) {
           setProducts((prev) => {
+            // ডুপ্লিকেট প্রোডাক্ট চেক করার লজিক
             const existingIds = new Set(prev.map(p => p._id));
             const newProducts = res.data.data.filter(p => !existingIds.has(p._id));
             return [...prev, ...newProducts];
           });
-          setPage((prev) => prev + 1);
-          setHasMore(res.data.data.length >= 60);
+          
+          setPage(nextPage);
+          
+          // যদি ৬০টার কম ডাটা আসে, তার মানে ডাটাবেস শেষ
+          if (res.data.data.length < 60) {
+            setHasMore(false);
+          }
         } else {
           setHasMore(false);
         }
@@ -52,8 +62,8 @@ export function JustForYou({ initialProducts }: Props) {
     };
 
     const currentElement = lastProductRef.current;
-    const currentObserver = observer.current;
 
+    // Intersection Observer দিয়ে স্ক্রল ট্র্যাক করা
     if (currentElement) {
       observer.current = new IntersectionObserver(
         (entries) => {
@@ -63,33 +73,38 @@ export function JustForYou({ initialProducts }: Props) {
         },
         { threshold: 0.1 }
       );
+      
       observer.current.observe(currentElement);
     }
 
     return () => {
-      if (currentElement && currentObserver) {
-        currentObserver.unobserve(currentElement);
+      if (currentElement && observer.current) {
+        observer.current.unobserve(currentElement);
       }
     };
-  }, [page, loading, hasMore]);
+  }, [page, loading, hasMore]); 
 
   return (
     <section className="max-w-[95vw] xl:container mx-auto px-2 md:px-8 py-4">
-      <PageHeader title="Just For You yeaamain madbor" />
+      <PageHeader title="Just For You" />
 
+      {/* Product Grid */}
       <ProductGrid products={products} />
 
+      {/* Loading Spinner */}
       {loading && (
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-purple-600"></div>
         </div>
       )}
 
-      {hasMore && <div ref={lastProductRef} className="h-1" />}
+      {/* Invisible trigger for IntersectionObserver */}
+      {hasMore && <div ref={lastProductRef} className="h-10 w-full" />}
 
+      {/* View More Button */}
       <div className="flex justify-center mt-8 pt-4 border-t border-gray-100">
         <Link 
-          href="/products"
+          href="/products/all"
           className="px-6 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-all shadow-md"
         >
           View More Products
