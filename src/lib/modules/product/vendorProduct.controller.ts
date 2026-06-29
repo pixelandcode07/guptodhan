@@ -770,9 +770,14 @@ const searchVendorProducts = async (req: NextRequest) => {
   });
 };
 
-const getOfferProducts = async () => {
+const getOfferProducts = async (req: NextRequest) => {
   await dbConnect();
-  const result = await VendorProductServices.getOfferProductsFromDB();
+
+  // ✅ FIX: URL থেকে limit রিসিভ করা হচ্ছে, ডিফল্ট 6 রাখা হয়েছে
+  const { searchParams } = new URL(req.url);
+  const limit = parseInt(searchParams.get('limit') || '6', 10);
+
+  const result = await VendorProductServices.getOfferProductsFromDB(limit);
 
   return sendResponse({
     success: true,
