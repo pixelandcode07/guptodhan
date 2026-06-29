@@ -926,7 +926,32 @@ const getVendorProductBySlug = async (
   });
 };
 
+// ================================================================
+// 🧠 GET JUST FOR YOU PRODUCTS
+// ================================================================
+const getJustForYouProducts = async (req: NextRequest) => {
+  await dbConnect();
+  
+  const { searchParams } = new URL(req.url);
+  const limit = parseInt(searchParams.get('limit') || '60', 10);
+  
+  // চাইলে ফিউচারে ইউজারের আইডি ধরে আরও অ্যাডভান্সড রিকমেন্ডেশন করতে পারবেন
+  const userId = req.headers.get('x-user-id') || undefined; 
+
+  const result = await VendorProductServices.getJustForYouProductsFromDB(limit, userId);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: "Just For You recommendations retrieved successfully!",
+    data: result,
+  });
+};
+
+
+
 export const VendorProductController = {
+  getJustForYouProducts,
   createVendorProduct,
   getAllVendorProducts,
   getActiveVendorProducts,
