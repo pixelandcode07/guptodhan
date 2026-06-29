@@ -2,7 +2,6 @@ import React from "react";
 import { notFound } from "next/navigation";
 import axios from "axios";
 import PageHeader from "@/components/ReusableComponents/PageHeader";
-// আপনার ServiceCard কম্পোনেন্টটি ইম্পোর্ট করা হচ্ছে
 import ServiceCard from "@/app/home/(service)/components/Re-useable/ServiceCard";
 import { ServiceData } from "@/types/ServiceDataType";
 
@@ -22,7 +21,6 @@ interface CategoryResponse {
 
 // সার্ভার সাইড ডাটা ফেচিং ফাংশন
 async function getServicesBySlug(slug: string) {
-  // প্রোডাকশন বা লোকাল এনভায়রনমেন্ট অনুযায়ী URL সেট করা
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
   try {
@@ -30,7 +28,6 @@ async function getServicesBySlug(slug: string) {
       `${baseUrl}/api/v1/public/service-section/service-category/slug/${slug}`,
       {
         headers: {
-          // ক্যাশ কন্ট্রোল: যাতে ইউজার সবসময় লেটেস্ট ডাটা পায়
           "Cache-Control": "no-store",
           Pragma: "no-cache",
         },
@@ -48,13 +45,9 @@ export default async function ServiceCategoryPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  // 1. Slug রিসিভ করা
   const { slug } = await params;
-
-  // 2. API থেকে ডাটা আনা
   const response = await getServicesBySlug(slug);
 
-  // 3. যদি ডাটা না আসে বা ক্যাটাগরি না থাকে, 404 পেজ দেখানো
   if (!response?.success || !response.data?.category) {
     return notFound();
   }
@@ -74,10 +67,8 @@ export default async function ServiceCategoryPage({
       {/* --- Service List Section --- */}
       <div className="md:max-w-[95vw] xl:container mx-auto px-4 mt-8">
         
-        {/* যদি কোনো সার্ভিস না থাকে */}
         {services.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
-             {/* [Image of empty box illustration] - Optional visual cue */}
             <p className="text-xl text-gray-500 font-medium">
               No services found in {category.name} category currently.
             </p>
@@ -87,15 +78,15 @@ export default async function ServiceCategoryPage({
           </div>
         ) : (
           <>
-            {/* রেজাল্ট কাউন্ট দেখানো (অপশনাল) */}
             <div className="mb-6 flex items-center justify-between">
                 <p className="text-sm text-gray-500">
                     Showing {services.length} services for <span className="font-semibold text-primary">"{category.name}"</span>
                 </p>
             </div>
 
-            {/* --- Grid Layout for Service Cards --- */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {/* ✅ MAGIC FIX: Changed grid from 3/4 columns to 1/2 columns. 
+                এখন আপনার অরিজিনাল Horizontal কার্ডটি পর্যাপ্ত জায়গা পাবে এবং একদম হোমপেজের মতো দেখাবে! */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 xl:gap-8">
               {services.map((service) => (
                 <ServiceCard 
                     key={service._id || service.service_id} 
