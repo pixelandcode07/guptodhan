@@ -1721,7 +1721,7 @@ const getVendorProductBySlugFromDB = async (slugOrId: string) => {
 // ================================================================
 // 🧠 JUST FOR YOU ALGORITHM (WEIGHTED SCORING SYSTEM)
 // ================================================================
-const getJustForYouProductsFromDB = async (limit: number = 60, userId?: string) => {
+const getJustForYouProductsFromDB = async (limit: number = 60) => {
   // ৭ দিন আগের ডেট বের করা (New Arrival চেক করার জন্য)
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -1749,7 +1749,7 @@ const getJustForYouProductsFromDB = async (limit: number = 60, userId?: string) 
             0
           ]
         },
-        // ৩. Popularity/Sell Score (Max 15 points: sellCount * 0.5)
+        // ৩. Popularity/Sell Score (Max 15 points)
         popularityScore: {
           $min: [{ $multiply: [{ $ifNull: ["$sellCount", 0] }, 0.5] }, 15]
         }
@@ -1763,11 +1763,11 @@ const getJustForYouProductsFromDB = async (limit: number = 60, userId?: string) 
     },
     // 🏆 যার স্কোর বেশি তাকে আগে রাখা
     { $sort: { totalScore: -1, createdAt: -1 } },
-    { $limit: limit },
-    ...getProductLookupPipeline(), // আপনার এক্সিস্টিং পপুলেট পাইপলাইন
+    { $limit: limit }, // ✅ ৬০টা প্রোডাক্ট লিমিট
+    ...getProductLookupPipeline(), 
   ]);
 
-  // রিভিউ ক্যালকুলেশন (আপনার আগের লজিক)
+  // রিভিউ ক্যালকুলেশন
   const productIds = products.map((p) => p._id);
   const reviewStats = await ReviewModel.aggregate([
     { $match: { productId: { $in: productIds } } },
@@ -1788,13 +1788,12 @@ const getJustForYouProductsFromDB = async (limit: number = 60, userId?: string) 
       ...product,
       totalReviews: stats?.totalReviews || 0,
       averageRating: stats?.averageRating || 0,
-      // চাইলে ফ্রন্টএন্ডে স্কোর দেখার জন্য totalScore টাও পাঠাতে পারেন
-      // algorithmScore: product.totalScore 
     };
   });
 
   return await populateColorAndSizeNamesForProducts(productsWithReviews);
 };
+
 
 
 
