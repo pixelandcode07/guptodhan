@@ -927,18 +927,16 @@ const getVendorProductBySlug = async (
 };
 
 // ================================================================
-// 🧠 GET JUST FOR YOU PRODUCTS
+// 🧠 GET JUST FOR YOU PRODUCTS (ALGORITHM BASED)
 // ================================================================
 const getJustForYouProducts = async (req: NextRequest) => {
   await dbConnect();
   
+  // URL থেকে limit রিসিভ করছি, ডিফল্ট 60
   const { searchParams } = new URL(req.url);
   const limit = parseInt(searchParams.get('limit') || '60', 10);
-  
-  // চাইলে ফিউচারে ইউজারের আইডি ধরে আরও অ্যাডভান্সড রিকমেন্ডেশন করতে পারবেন
-  const userId = req.headers.get('x-user-id') || undefined; 
 
-  const result = await VendorProductServices.getJustForYouProductsFromDB(limit, userId);
+  const result = await VendorProductServices.getJustForYouProductsFromDB(limit);
 
   return sendResponse({
     success: true,
@@ -947,6 +945,8 @@ const getJustForYouProducts = async (req: NextRequest) => {
     data: result,
   });
 };
+
+
 
 
 
