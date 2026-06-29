@@ -1264,8 +1264,12 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
 // 🎁 GET OFFER PRODUCTS
 // ===================================
 
-const getOfferProductsFromDB = async () => {
-  const cacheKey = CacheKeys.PRODUCT.OFFERS;
+// ================================================================
+// 🎁 GET OFFER PRODUCTS FROM DB
+// ================================================================
+const getOfferProductsFromDB = async (limit: number = 6) => {
+  // ✅ FIX: Cache key এর সাথে limit যুক্ত করা হয়েছে যাতে ক্যাশ কনফ্লিক্ট না হয়
+  const cacheKey = `${CacheKeys.PRODUCT.OFFERS}_${limit}`;
   
   return getCachedData(
     cacheKey,
@@ -1274,11 +1278,11 @@ const getOfferProductsFromDB = async () => {
         {
           $match: {
             status: "active",
-            offerDeadline: { $gt: new Date() },
+            offerDeadline: { $gt: new Date() }, // আগের অফার কন্ডিশন
           },
         },
         { $sort: { createdAt: -1 } },
-        { $limit: 6 },
+        { $limit: limit }, // ✅ FIX: হার্ডকোডেড ৬০ এর জায়গায় ডায়নামিক limit বসানো হয়েছে
         ...getProductLookupPipeline(),
       ]);
 
