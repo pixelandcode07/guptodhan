@@ -84,8 +84,7 @@ export default async function ServiceCategoryPage({
                 </p>
             </div>
 
-            {/* ✅ MAGIC FIX: Changed grid from 3/4 columns to 1/2 columns. 
-                এখন আপনার অরিজিনাল Horizontal কার্ডটি পর্যাপ্ত জায়গা পাবে এবং একদম হোমপেজের মতো দেখাবে! */}
+            
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 xl:gap-8">
               {services.map((service) => (
                 <ServiceCard 
