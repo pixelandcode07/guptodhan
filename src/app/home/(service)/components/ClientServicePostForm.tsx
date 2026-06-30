@@ -1,7 +1,7 @@
 'use client';
 
 import axios from 'axios';
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
@@ -74,9 +74,10 @@ export default function ClientServicePostForm({ categories }: { categories: any[
     const [loading, setLoading] = useState(false);
     const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
-    const [selectedDivision, setSelectedDivision] = useState<Division | ''>('');
-    const [selectedCity, setSelectedCity] = useState<City | ''>('');
-    const [selectedArea, setSelectedArea] = useState<Area | ''>('');
+    // ✅ FIX 1: Using undefined as default state to prevent Radix Select crashes
+    const [selectedDivision, setSelectedDivision] = useState<Division | undefined>(undefined);
+    const [selectedCity, setSelectedCity] = useState<City | undefined>(undefined);
+    const [selectedArea, setSelectedArea] = useState<Area | undefined>(undefined);
 
     const toastStyle = {
         style: {
@@ -93,7 +94,7 @@ export default function ClientServicePostForm({ categories }: { categories: any[
     const selectedTimeSlots = watch('available_time_slots') || [];
     const selectedWorkingDays = watch('working_days') || [];
 
-    // ✅ FIX 1: Safe Location Logic (Preventing Application Error)
+    // Location Data logic
     const divisions = Object.keys(division_wise_locations) as Division[];
     
     const cities = useMemo(() => {
@@ -107,15 +108,17 @@ export default function ClientServicePostForm({ categories }: { categories: any[
         return cityData ? cityData : [];
     }, [selectedDivision, selectedCity]);
 
-    // Reset dependents when parent changes
-    useEffect(() => { 
-        setSelectedCity(''); 
-        setSelectedArea(''); 
-    }, [selectedDivision]);
-    
-    useEffect(() => { 
-        setSelectedArea(''); 
-    }, [selectedCity]);
+    // ✅ FIX 2: Synchronous State Updates to prevent React rendering conflicts
+    const handleDivisionChange = (val: string) => {
+        setSelectedDivision(val as Division);
+        setSelectedCity(undefined); // Instantly clear city
+        setSelectedArea(undefined); // Instantly clear area
+    };
+
+    const handleCityChange = (val: string) => {
+        setSelectedCity(val);
+        setSelectedArea(undefined); // Instantly clear area
+    };
 
     // Image Validation Helper
     const validateFile = (file: File) => {
@@ -162,7 +165,7 @@ export default function ClientServicePostForm({ categories }: { categories: any[
             }
         });
 
-        // Location Data appended correctly
+        // Location Data
         formData.append('service_area.city', selectedCity);
         formData.append('service_area.district', selectedDivision);
         formData.append('service_area.thana', selectedArea);
@@ -171,10 +174,9 @@ export default function ClientServicePostForm({ categories }: { categories: any[
         images.forEach(file => formData.append('service_images', file));
 
         try {
-            // ✅ FIX 2: Ensuring relative URL to avoid CORS issues from mixed domains
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL 
-                ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1/service-section/provide-service` 
-                : '/api/v1/service-section/provide-service';
+            // ✅ FIX 3: Fully bypassed CORS error using Relative URL 
+            // Because frontend and backend are on the exact same project!
+            const apiUrl = '/api/v1/service-section/provide-service';
 
             const res = await axios.post(apiUrl, formData, {
                 headers: {
@@ -263,14 +265,14 @@ export default function ClientServicePostForm({ categories }: { categories: any[
                         <CardContent className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-2">
                                 <Label className="text-xs uppercase tracking-wider text-gray-500">District / Division</Label>
-                                <Select value={selectedDivision} onValueChange={(v) => setSelectedDivision(v as Division)}>
+                                <Select value={selectedDivision} onValueChange={handleDivisionChange}>
                                     <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                                     <SelectContent>{divisions.map(div => <SelectItem key={div} value={div}>{div}</SelectItem>)}</SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-xs uppercase tracking-wider text-gray-500">City</Label>
-                                <Select value={selectedCity} onValueChange={(v) => setSelectedCity(v)} disabled={!selectedDivision || cities.length === 0}>
+                                <Select value={selectedCity} onValueChange={handleCityChange} disabled={!selectedDivision || cities.length === 0}>
                                     <SelectTrigger><SelectValue placeholder="Select City" /></SelectTrigger>
                                     <SelectContent>{cities.map(city => <SelectItem key={city} value={city}>{city}</SelectItem>)}</SelectContent>
                                 </Select>
