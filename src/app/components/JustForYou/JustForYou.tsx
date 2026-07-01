@@ -104,7 +104,7 @@ export function JustForYou({ initialProducts }: Props) {
       {/* View More Button */}
       <div className="flex justify-center mt-8 pt-4 border-t border-gray-100">
         <Link 
-          href="/products/all"
+          href="/products"
           className="px-6 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-all shadow-md"
         >
           View More Products
