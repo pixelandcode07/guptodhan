@@ -16,6 +16,7 @@ export default function VendorStoreFrom() {
     const { data: session } = useSession();
     const token = session?.accessToken as string | undefined;
     const vendorId = session?.user?.vendorId as string | undefined;
+    const vendorName = session?.user?.name as string | undefined; // ✅ FIX: ইউজারের নাম নেওয়া হলো
 
     const [isEditMode, setIsEditMode] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -37,7 +38,7 @@ export default function VendorStoreFrom() {
         handleSubmit,
         control,
         reset,
-        setValue, // ✅ setValue ইম্পোর্ট করা হয়েছে
+        setValue,
         formState: { errors, isSubmitting },
     } = useForm<Inputs>();
 
@@ -92,7 +93,7 @@ export default function VendorStoreFrom() {
                         : [],
                     store_meta_description: store.storeMetaDescription || '',
                     selectVendor: {
-                        label: store?.storeName || 'My Vendor Account',
+                        label: store?.storeName || vendorName || 'Vendor Account',
                         value: vendorId,
                     },
                 });
@@ -101,13 +102,13 @@ export default function VendorStoreFrom() {
                 toast.success('Store loaded for editing');
             } catch (err: any) {
                 console.error(err);
-                toast.error('No existing store found or failed to load');
+                toast.error('No existing store found. Create a new one!');
                 setIsEditMode(false);
                 
-                // ✅ যদি নতুন স্টোর হয়, তবে ভেন্ডর নিজে থেকেই সিলেক্ট হয়ে থাকবে
+                // ✅ FIX: নতুন ভেন্ডর হলে 'My Vendor Account' এর বদলে তার আসল নাম (vendorName) শো করবে
                 if (vendorId) {
                     setValue('selectVendor', {
-                        label: 'My Vendor Account',
+                        label: vendorName || 'Vendor Account', 
                         value: vendorId,
                     });
                 }
@@ -117,7 +118,7 @@ export default function VendorStoreFrom() {
         };
 
         loadStoreById();
-    }, [vendorId, token, reset, setValue]);
+    }, [vendorId, token, reset, setValue, vendorName]);
 
     const handleSavePaymentInfo = async () => {
         if (!loadedStore?._id || !token) {
@@ -239,7 +240,6 @@ export default function VendorStoreFrom() {
                     {isEditMode ? 'Update Your Store' : 'Create New Store'}
                 </h1>
 
-                {/* ✅ vendorId পাস করা হলো */}
                 <StoreInformation 
                     register={register} 
                     errors={errors} 
