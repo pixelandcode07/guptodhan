@@ -27,7 +27,7 @@ export type CartItem = {
         id: string; name: string; image: string;
         size: string; color: string;
         price: number; originalPrice: number; quantity: number;
-        shippingCost?: number;
+        shippingCost?: number; // Custom delivery charge from product
     };
 };
 
@@ -99,6 +99,7 @@ export default function ShoppingInfoContent({
 
     const [apiDeliveryCharges, setApiDeliveryCharges] = useState<any[]>([])
 
+    // Fetch Upazila/District wise delivery charges from API
     useEffect(() => {
         fetch('/api/v1/delivery-charge', {
             cache: 'no-store',
@@ -119,6 +120,7 @@ export default function ShoppingInfoContent({
     const [enrichedCartItems, setEnrichedCartItems] = useState<CartItem[]>(cartItems)
     const isFetchedRef = useRef(false)
 
+    // Enriches cart items with custom shippingCost from database if any
     useEffect(() => {
         if (cartItems.length === 0) {
             setEnrichedCartItems([]);
@@ -130,7 +132,14 @@ export default function ShoppingInfoContent({
                 try {
                     const res = await axios.get(`/api/v1/product/${item.product.id}`)
                     if (res.data?.success && res.data?.data) {
-                        return { ...item, product: { ...item.product, shippingCost: res.data.data.shippingCost || 0 } }
+                        return { 
+                            ...item, 
+                            product: { 
+                                ...item.product, 
+                                // Ensure shippingCost is fetched directly from backend product details
+                                shippingCost: res.data.data.shippingCost || 0 
+                            } 
+                        }
                     }
                 } catch { /* keep original */ }
                 return item
@@ -247,18 +256,23 @@ export default function ShoppingInfoContent({
     const totalItems = enrichedCartItems.reduce((s, i) => s + i.product.quantity, 0)
 
     // =========================================================================
-    // ✅ MAGIC FIX: Synchronized Delivery Charge Logic with Backend Standard
+    // ✅ MAGIC FIX: Synchronized EXACT Delivery Charge Logic with Backend
     // =========================================================================
-    const isDhaka = useMemo(() => {
-        const dist = (formData.district || '').toLowerCase();
-        const city = (formData.city || '').toLowerCase();
-        return dist.includes('dhaka') || city.includes('dhaka');
-    }, [formData.district, formData.city]);
-
     const finalDeliveryCharge = useMemo(() => {
         if (!formData.district && !formData.city && !formData.address) return 0;
 
-        // 1. Try to match with backend API charges accurately
+        // 1. Check if any product has a CUSTOM shipping cost defined by vendor
+        const totalCustomCharge = enrichedCartItems.reduce((sum, item) => {
+            const cost = item.product.shippingCost || 0;
+            return sum + (cost > 0 ? cost : 0); // We only add if it's explicitly > 0 (to ignore free shipping calculation here)
+        }, 0);
+
+        // If at least one product has a custom charge, the whole order's delivery charge becomes the sum of those custom charges
+        if (totalCustomCharge > 0) {
+            return totalCustomCharge;
+        }
+
+        // 2. If NO custom charge exists, fallback to API location-based charges
         const matchedCharge = apiDeliveryCharges.find(c => {
             const dName = (c.districtName || '').toLowerCase().trim();
             const fDist = (formData.district || '').toLowerCase().trim();
@@ -271,9 +285,10 @@ export default function ShoppingInfoContent({
             return matchedCharge.deliveryCharge;
         }
 
-        // 2. If API is empty or no match, fallback to standard BD E-commerce logic used by your backend
+        // 3. Absolute Fallback if API data is missing
+        const isDhaka = (formData.district || '').toLowerCase().includes('dhaka') || (formData.city || '').toLowerCase().includes('dhaka');
         return isDhaka ? 60 : 120;
-    }, [apiDeliveryCharges, formData.district, formData.city, formData.address, isDhaka]);
+    }, [enrichedCartItems, apiDeliveryCharges, formData.district, formData.city, formData.address]);
 
 
     const couponDiscount = (() => {
@@ -337,6 +352,8 @@ export default function ShoppingInfoContent({
                 shippingPostalCode:    formData.postalCode,
                 shippingCountry:       formData.country,
                 addressDetails:        addressDetail,
+                // The frontend charge is sent, but backend will recalculate it.
+                // However, since both logic now match perfectly, it won't change on the UI after order.
                 deliveryCharge:        finalDeliveryCharge,
                 totalAmount:           subtotal - couponDiscount + finalDeliveryCharge,
                 paymentStatus:         'Pending' as const,
