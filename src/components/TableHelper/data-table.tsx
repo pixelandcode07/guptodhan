@@ -33,6 +33,7 @@ import {
   XCircle,
 } from 'lucide-react';
 
+// ✅ FIX: Make ColumnDef more permissive to avoid strict type mismatch errors
 interface DataTableProps<TData extends Record<string, any>, TValue = any> {
   columns: ColumnDef<TData, TValue>[] | any[]; 
   data: TData[];
@@ -48,10 +49,6 @@ interface DataTableProps<TData extends Record<string, any>, TValue = any> {
   };
 
   onRowSelectionChange?: (selectedRows: TData[]) => void; 
-  
-  // ✅ NEW: Custom Filter Props
-  hideSearch?: boolean;
-  customToolbarElements?: React.ReactNode;
 }
 
 export function DataTable<TData extends Record<string, any>, TValue = any>({
@@ -63,8 +60,6 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
   onBulkStatusChange,
   onBulkStatusChangeCustom,
   onRowSelectionChange,
-  hideSearch = false, // ✅ Defaults to false for backward compatibility
-  customToolbarElements, // ✅ Allows passing external search/dropdowns
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting]           = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState('');
@@ -79,11 +74,12 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
       setPageIndex(initialPageIndex);
       table.setPageIndex(initialPageIndex);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPageIndex]);
 
   const table = useReactTable({
     data,
-    columns: columns as ColumnDef<TData, TValue>[], 
+    columns: columns as ColumnDef<TData, TValue>[], // Type assertion to bypass strict generic checks
     getCoreRowModel:      getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel:    getSortedRowModel(),
@@ -118,6 +114,7 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
       const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
       onRowSelectionChange(selectedData);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rowSelection]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,7 +125,7 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
 
   const pageCount  = table.getPageCount();
   const totalRows  = table.getFilteredRowModel().rows.length;
-  const startRow   = totalRows > 0 ? pageIndex * pageSize + 1 : 0;
+  const startRow   = pageIndex * pageSize + 1;
   const endRow     = Math.min((pageIndex + 1) * pageSize, totalRows);
 
   return (
@@ -144,7 +141,7 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
               setPageSize(val);
               table.setPageSize(val);
             }}
-            className="h-8 w-16 rounded-md border border-gray-300 text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer"
+            className="h-8 w-16 rounded-md border border-gray-300 text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             {[10, 25, 50, 100].map((s) => (
               <option key={s} value={s}>{s}</option>
@@ -153,7 +150,7 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
           <span>entries</span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto ml-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           {Object.keys(rowSelection).length > 0 && (
             <div className="flex flex-wrap gap-2 items-center bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
               <span className="text-xs font-semibold text-gray-700 mr-1">
@@ -234,21 +231,15 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
             </div>
           )}
 
-          {/* ✅ Render Custom Toolbar Elements (e.g. External Search & Dropdown) */}
-          {customToolbarElements}
-
-          {/* ✅ Render Default Internal Search ONLY if hideSearch is false */}
-          {!hideSearch && (
-            <div className="relative w-full sm:w-64">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <Input
-                placeholder="Search..."
-                value={globalFilter}
-                onChange={handleSearchChange}
-                className="h-9 pl-8 border-gray-300 focus:ring-blue-500 text-sm bg-white"
-              />
-            </div>
-          )}
+          <div className="relative w-full sm:w-64">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Input
+              placeholder="Search..."
+              value={globalFilter}
+              onChange={handleSearchChange}
+              className="h-9 pl-8 border-gray-300 focus:ring-blue-500 text-sm bg-white"
+            />
+          </div>
         </div>
       </div>
 
