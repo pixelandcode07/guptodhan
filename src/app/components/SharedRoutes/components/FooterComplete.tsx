@@ -287,26 +287,26 @@ export default function FooterComplete() {
 
             {/* --- Bottom Footer Bar --- */}
             <div className="bg-[#00005E] text-white py-5">
-                <div className="md:max-w-[95vw] xl:container sm:px-8 mx-auto px-4 flex flex-col lg:flex-row items-center justify-between gap-8">
-                    <div className="text-sm text-center lg:text-left space-y-1">
-                        <p className="opacity-90">{settings?.footerCopyrightText || "Copyright © 2026 GuptoDhan. All Rights Reserved."}</p>
-                        <p className="text-blue-300 text-xs mt-1 tracking-wide">
-                            Powered by <Link href="http://pixelandcode.agency/" target="_blank" className="text-blue-600 hover:underline">Pixel & Code</Link>
-                        </p>
-                    </div>
+    <div className="md:max-w-[95vw] xl:container sm:px-8 mx-auto px-4 flex flex-col lg:flex-row items-center justify-between gap-8">
+        <div className="text-sm text-center lg:text-left space-y-1">
+            <p className="opacity-90">{settings?.footerCopyrightText || "Copyright © 2026 GuptoDhan. All Rights Reserved."}</p>
+            <p className="text-gray-300 text-xs mt-1 tracking-wide">
+                Design and Development by <Link href="http://pixelandcode.agency/" target="_blank" className="text-blue-400 font-medium hover:text-blue-300 transition-colors hover:underline">Pixel & Code</Link>
+            </p>
+        </div>
 
-                    <div className="flex flex-wrap justify-center items-center gap-2">
-                        {/* Dynamic Payment Banner */}
-                        <Image
-                            src={settings?.paymentBanner || "/img/footer-payment-options.png"}
-                            alt="Payment Methods"
-                            width={1200}
-                            height={40}
-                            className="h-8 w-auto object-contain"
-                        />
-                    </div>
-                </div>
-            </div>
+        <div className="flex flex-wrap justify-center items-center gap-2">
+            {/* Dynamic Payment Banner */}
+            <Image
+                src={settings?.paymentBanner || "/img/footer-payment-options.png"}
+                alt="Payment Methods"
+                width={1200}
+                height={40}
+                className="h-8 w-auto object-contain"
+            />
+        </div>
+    </div>
+</div>
         </footer>
     )
 }
