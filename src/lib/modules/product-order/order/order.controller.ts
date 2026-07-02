@@ -52,7 +52,8 @@ const createOrderWithDetails = async (req: NextRequest) => {
 
   try {
     const body = await req.json();
-    const { userId, products, shippingCity, paymentMethod, shippingName, shippingPhone } = body;
+    // ✅ FIX: ফ্রন্টএন্ড থেকে পাঠানো deliveryCharge এবং totalAmount রিসিভ করা হচ্ছে
+    const { userId, products, shippingCity, paymentMethod, shippingName, shippingPhone, deliveryCharge: frontendDeliveryCharge, totalAmount: frontendTotalAmount } = body;
 
     if (!userId || !products || products.length === 0) {
       throw new Error('Invalid order data.');
@@ -80,12 +81,33 @@ const createOrderWithDetails = async (req: NextRequest) => {
     const createdOrders = [];
     const transactionGroupId = `TRX-${Date.now()}`;
 
+    // ✅ MAGIC FIX: একাধিক স্টোরের অর্ডার হলে যেন ডেলিভারি চার্জ ডাবল না হয় তার জন্য ট্র্যাকিং
+    let isFrontendChargeApplied = false;
+    const isSingleStore = Object.keys(orderGroups).length === 1;
+
     for (const storeId of Object.keys(orderGroups)) {
       const storeItems = orderGroups[storeId];
       
       const itemsTotal = storeItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
-      const deliveryCharge = calculateDeliveryCharge(shippingCity || 'Dhaka', storeItems.map(i => i.originalProduct));
-      const totalAmount = itemsTotal + deliveryCharge;
+      
+      // ✅ MAGIC FIX 1: ফ্রন্টএন্ড থেকে আসা ডেলিভারি চার্জ রিসিভ করা হচ্ছে
+      let deliveryCharge = 0;
+      if (typeof frontendDeliveryCharge === 'number') {
+          if (!isFrontendChargeApplied) {
+              deliveryCharge = frontendDeliveryCharge; // প্রথম অর্ডারে পুরো ডেলিভারি চার্জ বসবে
+              isFrontendChargeApplied = true;
+          } else {
+              deliveryCharge = 0; // মাল্টি-ভেন্ডর অর্ডারে পরেরগুলোতে আর এক্সট্রা চার্জ বসবে না
+          }
+      } else {
+          // যদি কোনো কারণে ফ্রন্টএন্ড থেকে না আসে তবে ব্যাকএন্ড ক্যালকুলেট করবে
+          deliveryCharge = calculateDeliveryCharge(shippingCity || 'Dhaka', storeItems.map(i => i.originalProduct));
+      }
+
+      // ✅ MAGIC FIX 2: ফ্রন্টএন্ড থেকে আসা টোটাল অ্যামাউন্ট রিসিভ করা হচ্ছে (যাতে কুপন ডিসকাউন্ট ঠিক থাকে)
+      const totalAmount = (isSingleStore && typeof frontendTotalAmount === 'number') 
+          ? frontendTotalAmount 
+          : (itemsTotal + deliveryCharge);
       
       const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
@@ -105,8 +127,8 @@ const createOrderWithDetails = async (req: NextRequest) => {
         shippingPostalCode: body.shippingPostalCode,
         shippingCountry: body.shippingCountry || 'Bangladesh',
         addressDetails: body.addressDetails,
-        deliveryCharge,
-        totalAmount,
+        deliveryCharge, // ✅ 100% synced with frontend
+        totalAmount,    // ✅ 100% synced with frontend (including coupons)
         paymentStatus: 'Pending',
         orderStatus: 'Pending',
         orderDate: new Date(),
@@ -116,7 +138,7 @@ const createOrderWithDetails = async (req: NextRequest) => {
 
       const newOrder = await OrderModel.create(orderPayload);
 
-      // ✅ অর্ডার ডিটেইলস তৈরি (সাইজ ও কালার লজিক)
+      // অর্ডার ডিটেইলস তৈরি (সাইজ ও কালার লজিক)
       const detailDocs = storeItems.map(item => ({
         orderDetailsId: uuidv4().split('-')[0],
         orderId: newOrder._id,
@@ -125,14 +147,12 @@ const createOrderWithDetails = async (req: NextRequest) => {
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         totalPrice: item.unitPrice * item.quantity,
-        // ⚠️ ভেরিয়েন্ট রুল: যদি ভ্যালু থাকে তবেই সেভ হবে, না থাকলে undefined (DB তে ফিল্ড তৈরি হবে না)
         size: item.size || undefined, 
         color: item.color || undefined,
       }));
 
       const createdDetails = await OrderDetailsModel.insertMany(detailDocs);
       
-      // অর্ডারের সাথে ডিটেইলস লিঙ্ক করা
       newOrder.orderDetails = createdDetails.map(d => d._id);
       await newOrder.save();
 
@@ -143,8 +163,8 @@ const createOrderWithDetails = async (req: NextRequest) => {
       sendSMS(shippingPhone, smsMessage).catch(err => console.error("SMS Error:", err));
     }
 
-    // ক্যাশ ক্লিয়ার করা
-    await deleteCachePattern(`orders:user:${userId}*`);
+    // ক্যাশ ক্লিয়ার করা
+    // await deleteCachePattern(`orders:user:${userId}*`);
 
     return sendResponse({
       success: true,
