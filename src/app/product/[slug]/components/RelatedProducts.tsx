@@ -21,6 +21,9 @@ export default function RelatedProducts({ products, categoryName, categorySlug }
   // ✅ Ensure slug is properly formatted (no spaces)
   const formattedSlug = categorySlug?.toLowerCase().replace(/\s+/g, '-');
 
+  // ✅ FIX: Limit to maximum 24 products
+  const displayProducts = products.slice(0, 24);
+
   return (
     <div className="mt-12 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 px-1">
@@ -39,7 +42,8 @@ export default function RelatedProducts({ products, categoryName, categorySlug }
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        {products.map((product: any) => {
+        {/* ✅ Updated to map over displayProducts instead of products */}
+        {displayProducts.map((product: any) => {
           const finalPrice = product.discountPrice || product.productPrice;
           const discountPercent = product.discountPrice 
             ? Math.round(((product.productPrice - product.discountPrice) / product.productPrice) * 100) 
