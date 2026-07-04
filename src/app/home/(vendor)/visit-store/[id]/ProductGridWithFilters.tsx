@@ -50,6 +50,7 @@ interface Product {
     productOptions: ProductOption[];
     totalReviews: number;
     averageRating: number;
+    callForPrice?: boolean; // ✅ NEW: Call For Price added to interface
 }
 
 interface StoreData {
@@ -113,7 +114,7 @@ export default function ProductGridWithFilters({
     );
     const [sortBy, setSortBy] = useState<string>(searchParams.get('sortBy') || 'newest');
 
-    // ✅ Track if sortBy actually changed (not initial mount)
+    // Track if sortBy actually changed (not initial mount)
     const isSortMounted = useRef(false);
 
     // Unique filter options from initial data
@@ -135,7 +136,7 @@ export default function ProductGridWithFilters({
     ).filter(Boolean) as string[];
 
     // ===================================================================
-    // ✅ Core fetch function — all filters + pagination
+    // Core fetch function — all filters + pagination
     // ===================================================================
     const fetchFilteredProducts = useCallback(async (
         overrides: Record<string, string | number> = {}
@@ -179,7 +180,7 @@ export default function ProductGridWithFilters({
         selectedSizes, selectedFlags, sortBy, storeId, router, pagination.page
     ]);
 
-    // ✅ Sort change — skip initial mount to prevent page reset
+    // Sort change — skip initial mount to prevent page reset
     useEffect(() => {
         if (!isSortMounted.current) {
             isSortMounted.current = true;
@@ -224,7 +225,7 @@ export default function ProductGridWithFilters({
             ================================================================ */}
             <div className="flex flex-col md:flex-row gap-3 items-center justify-between mb-8 bg-white p-3 rounded-2xl shadow-sm border">
 
-                {/* ✅ Search Input */}
+                {/* Search Input */}
                 <div className="relative w-full md:flex-1 group">
                     <Search
                         className={`
