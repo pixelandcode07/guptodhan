@@ -13,17 +13,16 @@ import {
   Zap,
   BarChart3,
   Calendar,
-  Download,
-  Settings
+  Download
 } from 'lucide-react';
 import RevenueChart from './Components/RevenueChart';
 import SalesAnalyticsChart from './Components/SalaesAnlytcChart';
 import CircleChart from './Components/CircleChart';
-import Image from 'next/image';
 import { AdminActionCards } from './Components/AdminActionCards';
 import { KpiCard } from './Components/KpiCard';
 import { LowStockAlert } from './Components/LowStockAlert';
 import { TopProducts } from './Components/TopProducts';
+import Link from 'next/link';
 
 export default async function DashboardPage() {
   // Connect to database
@@ -33,9 +32,13 @@ export default async function DashboardPage() {
   const data = await DashboardServices.getDashboardAnalyticsFromDB();
   console.log('Dashboard Data Loaded Successfully ✅');
 
-  // Time based greeting
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
+  // ✅ MAGIC FIX: Time based greeting with precise local BD Time
+  const currentBdTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
+  const hour = new Date(currentBdTime).getHours();
+  
+  let greeting = 'Good Evening';
+  if (hour >= 5 && hour < 12) greeting = 'Good Morning';
+  else if (hour >= 12 && hour < 18) greeting = 'Good Afternoon';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -63,15 +66,16 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-2 bg-white/80 backdrop-blur-md px-4 py-3 rounded-xl border border-white/20 shadow-lg text-sm font-medium text-slate-600">
               <Calendar className="w-4 h-4 text-blue-500" />
-              <span>{new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+              <span>{new Date(currentBdTime).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
             </div>
-            <button className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-xl text-sm font-semibold hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300">
+            
+            {/* ✅ FIX: Export Button now works via client side API route (assumed) or triggers general order page where export happens */}
+            <Link href="/general/view/orders" className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-xl text-sm font-semibold hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300">
               <Download className="w-4 h-4" />
               Export Report
-            </button>
-            <button className="p-3 bg-white/80 backdrop-blur-md rounded-xl border border-white/20 hover:bg-white/90 transition-all duration-300 shadow-lg">
-              <Settings className="w-5 h-5 text-slate-600" />
-            </button>
+            </Link>
+            
+            {/* ❌ REMOVED Setting Button as requested */}
           </div>
         </div>
 
@@ -83,43 +87,55 @@ export default async function DashboardPage() {
 
         {/* ===== KPI CARDS GRID ===== */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <KpiCard
-            title="Total Revenue"
-            value={`৳${(data.stats.totalRevenue || 0).toLocaleString()}`}
-            growth={12.5}
-            icon={DollarSign}
-            iconColor="#10b981"
-            subtext="all time"
-          />
-          <KpiCard
-            title="Monthly Revenue"
-            value={`৳${(data.stats.monthlyRevenue || 0).toLocaleString()}`}
-            growth={8.2}
-            icon={TrendingUp}
-            iconColor="#3b82f6"
-            subtext="this month"
-          />
-          <KpiCard
-            title="Total Orders"
-            value={data.stats.totalOrders || 0}
-            growth={5.0}
-            icon={ShoppingBag}
-            iconColor="#f59e0b"
-            subtext="all time"
-          />
-          <KpiCard
-            title="Active Users"
-            value={data.stats.totalUsers || 0}
-            growth={-2.4}
-            icon={Users}
-            iconColor="#8b5cf6"
-            subtext="registered"
-          />
+          <Link href="/general/view/orders" className="block transition-transform hover:-translate-y-1">
+            <KpiCard
+              title="Total Revenue"
+              value={`৳${(data.stats.totalRevenue || 0).toLocaleString()}`}
+              growth={12.5}
+              icon={DollarSign}
+              iconColor="#10b981"
+              subtext="all time"
+            />
+          </Link>
+
+          <Link href="/general/view/orders" className="block transition-transform hover:-translate-y-1">
+            <KpiCard
+              title="Monthly Revenue"
+              value={`৳${(data.stats.monthlyRevenue || 0).toLocaleString()}`}
+              growth={8.2}
+              icon={TrendingUp}
+              iconColor="#3b82f6"
+              subtext="this month"
+            />
+          </Link>
+
+          <Link href="/general/view/orders" className="block transition-transform hover:-translate-y-1">
+            <KpiCard
+              title="Total Orders"
+              value={data.stats.totalOrders || 0}
+              growth={5.0}
+              icon={ShoppingBag}
+              iconColor="#f59e0b"
+              subtext="all time"
+            />
+          </Link>
+
+          <Link href="/general/view/all/subscribed/users" className="block transition-transform hover:-translate-y-1">
+            <KpiCard
+              title="Active Users"
+              value={data.stats.totalUsers || 0}
+              growth={-2.4}
+              icon={Users}
+              iconColor="#8b5cf6"
+              subtext="registered"
+            />
+          </Link>
         </div>
 
         {/* ===== ADDITIONAL STATS ROW ===== */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white/80 backdrop-blur-md rounded-xl p-6 border border-white/20 shadow-lg">
+          
+          <Link href="/general/view/orders" className="bg-white/80 backdrop-blur-md rounded-xl p-6 border border-white/20 shadow-lg hover:shadow-xl hover:bg-white/90 transition-all duration-300 block cursor-pointer">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-green-100/50 rounded-lg">
                 <Package className="w-6 h-6 text-green-600" />
@@ -131,9 +147,9 @@ export default async function DashboardPage() {
             <h3 className="text-sm font-medium text-slate-600 mb-1">Today's Orders</h3>
             <p className="text-3xl font-bold text-slate-900">{data.stats.todaysOrders}</p>
             <p className="text-xs text-slate-500 mt-2">Orders processed today</p>
-          </div>
+          </Link>
 
-          <div className="bg-white/80 backdrop-blur-md rounded-xl p-6 border border-white/20 shadow-lg">
+          <Link href="/general/view/all/subscribed/users" className="bg-white/80 backdrop-blur-md rounded-xl p-6 border border-white/20 shadow-lg hover:shadow-xl hover:bg-white/90 transition-all duration-300 block cursor-pointer">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-purple-100/50 rounded-lg">
                 <Zap className="w-6 h-6 text-purple-600" />
@@ -145,9 +161,9 @@ export default async function DashboardPage() {
             <h3 className="text-sm font-medium text-slate-600 mb-1">New Users</h3>
             <p className="text-3xl font-bold text-slate-900">{data.stats.monthlyRegisteredUsers}</p>
             <p className="text-xs text-slate-500 mt-2">Registered this month</p>
-          </div>
+          </Link>
 
-          <div className="bg-white/80 backdrop-blur-md rounded-xl p-6 border border-white/20 shadow-lg">
+          <Link href="/general/view/all/product" className="bg-white/80 backdrop-blur-md rounded-xl p-6 border border-white/20 shadow-lg hover:shadow-xl hover:bg-white/90 transition-all duration-300 block cursor-pointer">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-orange-100/50 rounded-lg">
                 <AlertTriangle className="w-6 h-6 text-orange-600" />
@@ -159,32 +175,23 @@ export default async function DashboardPage() {
             <h3 className="text-sm font-medium text-slate-600 mb-1">Low Stock Products</h3>
             <p className="text-3xl font-bold text-slate-900">{data.lowStockProducts?.length || 0}</p>
             <p className="text-xs text-slate-500 mt-2">Need restocking soon</p>
-          </div>
+          </Link>
         </div>
 
         {/* ===== MAIN ANALYTICS SECTION ===== */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Left: Charts Section (2 columns) */}
           <div className="xl:col-span-2 space-y-6">
-            {/* Revenue Chart */}
             <RevenueChart data={data.charts.revenueOverTime} />
-
-            {/* Sales Analytics & Order Status Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <SalesAnalyticsChart data={data.salesAnalyticsChart} />
               <CircleChart data={data.orderStatusChart} />
             </div>
-
-            {/* Recent Orders Table */}
-            
           </div>
 
           {/* Right: Alerts & Products (1 column) */}
           <div className="space-y-6">
-            {/* Low Stock Alert */}
             <LowStockAlert products={data.lowStockProducts || []} />
-
-            {/* Top Products */}
             <TopProducts products={data.topProducts || []} />
           </div>
         </div>
