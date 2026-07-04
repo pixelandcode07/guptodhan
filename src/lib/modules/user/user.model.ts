@@ -70,26 +70,25 @@ userSchema.statics.isUserExistsByEmail = async function (email: string) {
 };
 
 userSchema.statics.isUserExistsByPhone = async function (phone: string) {
-  const trimmed = phone.trim();
+  let coreNumber = phone.trim();
 
-  // ✅ যেকোনো format থেকে সব possible format বানাও
-  const formats: string[] = [trimmed];
-
-  if (trimmed.startsWith('+88')) {
-    // +8801XXXXXXXX → 01XXXXXXXX এবং 8801XXXXXXXX
-    formats.push('0' + trimmed.slice(3));
-    formats.push(trimmed.slice(1));
-  } else if (trimmed.startsWith('88') && trimmed.length >= 13) {
-    // 8801XXXXXXXX → 01XXXXXXXX এবং +8801XXXXXXXX
-    formats.push('0' + trimmed.slice(2));
-    formats.push('+' + trimmed);
-  } else if (trimmed.startsWith('0')) {
-    // 01XXXXXXXX → +8801XXXXXXXX এবং 8801XXXXXXXX
-    formats.push('+88' + trimmed.slice(1));
-    formats.push('88' + trimmed.slice(1));
+  // ✅ যেকোনো format-কে আগে 11-digit format (01XXXXXXXXX) এ কনভার্ট করা হচ্ছে
+  if (coreNumber.startsWith('+880')) {
+    coreNumber = coreNumber.slice(3); // +880 বাদ দিয়ে 01...
+  } else if (coreNumber.startsWith('880')) {
+    coreNumber = coreNumber.slice(2); // 880 বাদ দিয়ে 01...
+  } else if (coreNumber.startsWith('+88')) {
+    coreNumber = '0' + coreNumber.slice(3); // যদি কেউ +881... লেখে তবে 01... বানাবে
   }
 
-  // ✅ $in দিয়ে যেকোনো format এ match হলেই user পাবে
+  // ✅ এবার ৩টি ভ্যালিড ফরম্যাট তৈরি করা হচ্ছে (জিরো না কেটেই)
+  const format1 = coreNumber;            // 01XXXXXXXXX
+  const format2 = '+88' + coreNumber;    // +8801XXXXXXXXX
+  const format3 = '88' + coreNumber;     // 8801XXXXXXXXX
+
+  // $in দিয়ে খোঁজার জন্য array বানাচ্ছি (যাতে ডুপ্লিকেট না থাকে)
+  const formats = Array.from(new Set([phone.trim(), format1, format2, format3]));
+
   return this.findOne(
     { phoneNumber: { $in: formats }, isDeleted: false }
   ).select('+password');
