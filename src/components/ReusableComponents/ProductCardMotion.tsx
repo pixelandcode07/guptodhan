@@ -7,8 +7,7 @@ import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Package, Shield, Zap, Star, ShoppingCart, Loader2 } from 'lucide-react';
+import { Package, Shield, ShoppingCart, Loader2 } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -16,18 +15,19 @@ import { useRouter } from 'next/navigation';
 interface ProductCardMotionProps {
     product: {
         _id: string;
-        slug: string; // ✅ Added Slug
+        slug: string; 
         productTitle: string;
         thumbnailImage: string;
         productPrice: number;
         discountPrice?: number | null;
-        shortDescription?: string; // ✅ Changed to optional to fix TS error
+        shortDescription?: string; 
         stock: number;
         flag?: { name: string } | null;
         warranty?: { warrantyName: string } | null;
         rewardPoints?: number;
         sellCount?: number;
-        productOptions?: any[]; // ✅ Added to check for variants
+        productOptions?: any[]; 
+        callForPrice?: boolean; // ✅ NEW: Added Call For Price Type
     };
     index?: number;
 }
@@ -37,7 +37,6 @@ export default function ProductCardMotion({ product, index = 0 }: ProductCardMot
     const router = useRouter();
     const [isAdding, setIsAdding] = useState(false);
 
-    // ✅ FIXED: Using Slug for URL
     const productUrl = `/product/${product.slug || product._id}`;
 
     const discountPercent =
@@ -47,10 +46,15 @@ export default function ProductCardMotion({ product, index = 0 }: ProductCardMot
 
     const hasVariants = product.productOptions && product.productOptions.length > 0;
 
-    // ✅ Add to Cart Logic
+    // Add to Cart Logic
     const handleAddToCart = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
+
+        if (product.callForPrice) {
+            router.push(productUrl);
+            return;
+        }
 
         if (product.stock === 0) {
             toast.error("Out of stock!");
@@ -92,7 +96,7 @@ export default function ProductCardMotion({ product, index = 0 }: ProductCardMot
                                 {product.flag.name}
                             </Badge>
                         )}
-                        {discountPercent > 0 && (
+                        {discountPercent > 0 && !product.callForPrice && (
                             <Badge className="text-[10px] px-2 py-0.5 bg-red-500 border-none shadow-sm">
                                 -{discountPercent}%
                             </Badge>
@@ -108,11 +112,11 @@ export default function ProductCardMotion({ product, index = 0 }: ProductCardMot
                             className="object-cover transition-transform duration-500 group-hover:scale-110"
                         />
                         
-                        {/* ✅ Add to Cart Overlay Button */}
+                        {/* Add to Cart Overlay Button */}
                         <div className="absolute bottom-3 right-3 z-20 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                             <Button
                                 onClick={handleAddToCart}
-                                disabled={isAdding || product.stock === 0}
+                                disabled={isAdding || (!product.callForPrice && product.stock === 0)}
                                 size="icon"
                                 className="h-10 w-10 rounded-full shadow-lg bg-white text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-50"
                             >
@@ -131,14 +135,23 @@ export default function ProductCardMotion({ product, index = 0 }: ProductCardMot
                             {product.productTitle}
                         </h3>
 
+                        {/* ✅ FIXED: Call For Price Logic Applied Here */}
                         <div className="flex items-center gap-2">
-                            <span className="text-lg font-bold text-blue-600">
-                                ৳{(product.discountPrice || product.productPrice).toLocaleString()}
-                            </span>
-                            {product.discountPrice && (
-                                <span className="text-xs text-muted-foreground line-through">
-                                    ৳{product.productPrice.toLocaleString()}
+                            {product.callForPrice ? (
+                                <span className="text-base font-bold text-blue-600">
+                                    Call for Price
                                 </span>
+                            ) : (
+                                <>
+                                    <span className="text-lg font-bold text-blue-600">
+                                        ৳{(product.discountPrice || product.productPrice).toLocaleString()}
+                                    </span>
+                                    {product.discountPrice && (
+                                        <span className="text-xs text-muted-foreground line-through">
+                                            ৳{product.productPrice.toLocaleString()}
+                                        </span>
+                                    )}
+                                </>
                             )}
                         </div>
 
@@ -151,13 +164,15 @@ export default function ProductCardMotion({ product, index = 0 }: ProductCardMot
                                         <span>Warranty</span>
                                     </div>
                                 )}
-                                {product.stock > 0 ? (
-                                    <div className="flex items-center gap-0.5 text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded">
-                                        <Package className="w-3 h-3" />
-                                        <span>In Stock</span>
-                                    </div>
-                                ) : (
-                                    <span className="text-red-500 bg-red-50 px-1.5 py-0.5 rounded">Out of Stock</span>
+                                {!product.callForPrice && (
+                                    product.stock > 0 ? (
+                                        <div className="flex items-center gap-0.5 text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded">
+                                            <Package className="w-3 h-3" />
+                                            <span>In Stock</span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-red-500 bg-red-50 px-1.5 py-0.5 rounded">Out of Stock</span>
+                                    )
                                 )}
                             </div>
                         </div>
