@@ -410,7 +410,7 @@ export default function ProductMainInfo({
           {product.callForPrice ? (
             <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-6 text-center space-y-3">
               <PhoneCall className="w-10 h-10 text-[#EF4A23] mx-auto animate-pulse" />
-              <h3 className="text-lg font-bold text-slate-900">Price on Call</h3>
+              <h3 className="text-lg font-bold text-slate-900">Call for Price</h3>
               <p className="text-sm text-slate-500 pb-2">To get the best price for this product, please contact the vendor.</p>
               
               <a href={`tel:${storeInfo.phone}`} className="inline-flex items-center justify-center gap-2 bg-[#EF4A23] text-white px-6 py-3 rounded-full font-bold shadow-md hover:bg-[#d43d1a] transition-colors">
