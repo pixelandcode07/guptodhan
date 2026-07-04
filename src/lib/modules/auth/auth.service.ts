@@ -80,7 +80,7 @@ const loginUser = async (payload: TLoginUser) => {
 };
 
 
-// vendorLogin service এর ভিতরে এই পরিবর্তনটুকু করুন
+// vendorLogin service 
 const vendorLogin = async (payload: TLoginUser) => {
   const { identifier, password: plainPassword } = payload;
 
