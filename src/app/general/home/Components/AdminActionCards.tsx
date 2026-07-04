@@ -47,9 +47,13 @@ export function AdminActionCards({ pendingVendors, pendingOrders }: { pendingVen
               <p className="text-xs text-blue-600/70 mt-1">To ship & deliver</p>
             </div>
           </div>
-          <button className="px-4 py-2 bg-white/50 backdrop-blur-sm border border-blue-200/50 text-blue-600 rounded-lg font-semibold text-sm hover:bg-white hover:border-blue-300 transition-all duration-300 hover:shadow-md">
+          {/* ✅ MAGIC FIX: Added proper link to Manage button */}
+          <Link 
+            href={'/general/view/orders/pending'} 
+            className="px-4 py-2 bg-white/50 backdrop-blur-sm border border-blue-200/50 text-blue-600 rounded-lg font-semibold text-sm hover:bg-white hover:border-blue-300 transition-all duration-300 hover:shadow-md"
+          >
             Manage
-          </button>
+          </Link>
         </div>
       </div>
     </div>
