@@ -21,7 +21,6 @@ import CircleChart from './Components/CircleChart';
 import { AdminActionCards } from './Components/AdminActionCards';
 import { KpiCard } from './Components/KpiCard';
 import { LowStockAlert } from './Components/LowStockAlert';
-import { TopProducts } from './Components/TopProducts';
 import Link from 'next/link';
 
 export default async function DashboardPage() {
@@ -192,7 +191,7 @@ export default async function DashboardPage() {
           {/* Right: Alerts & Products (1 column) */}
           <div className="space-y-6">
             <LowStockAlert products={data.lowStockProducts || []} />
-            <TopProducts products={data.topProducts || []} />
+            {/* <TopProducts products={data.topProducts || []} /> */}
           </div>
         </div>
 
