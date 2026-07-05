@@ -29,6 +29,7 @@ import UserRolePermision from './MotherRoutes/UserRolePermision';
 import ServiceModule from './MotherRoutes/ServiceModule';
 import JobModule from './MotherRoutes/JobModule';
 
+// ✅ Added 'Download Backup' at the end of ecommerceModules
 const data = {
   ecommerceModules: [
     { title: 'Config' },
@@ -47,7 +48,7 @@ const data = {
     { title: 'Payment History' },
     { title: 'Account Deletion' },
     { title: 'Generate Reports' },
-    { title: 'Download Backup' },
+    { title: 'Download Backup' }, 
   ],
 };
 
@@ -99,7 +100,6 @@ export default function AppSidebar() {
     }
 
     // ── ২. FORCE EXPAND HIDDEN SECTIONS ──
-    // আনমাউন্ট হয়ে থাকা চাইল্ড মেনুগুলোকে মাউন্ট করার জন্য সব ক্লোজড ফোল্ডারগুলোতে ক্লিক করছি
     const closedTriggers = sidebarContent.querySelectorAll('[data-state="closed"]');
     closedTriggers.forEach(trigger => {
       if (typeof (trigger as HTMLElement).click === 'function') {
@@ -107,23 +107,18 @@ export default function AppSidebar() {
       }
     });
 
-    // ── ৩. ফিল্টারিং লজিক (১৫০ms সময় দিচ্ছি যেন React মেনুগুলো রেন্ডার করতে পারে) ──
+    // ── ৩. ফিল্টারিং লজিক ──
     const filterTimer = setTimeout(() => {
-      // রেন্ডার হওয়ার পর আবার সব <li> সিলেক্ট করছি
       const currentListItems = sidebarContent.querySelectorAll('li');
 
-      // প্রথমে সব মেনু হাইড করে দিচ্ছি
       currentListItems.forEach(li => {
         if (li.querySelector('a, button')) {
            (li as HTMLElement).style.display = 'none';
         }
       });
 
-      // এবার টেক্সট স্ক্যান করে ম্যাচ করছি
       const allElements = sidebarContent.querySelectorAll('*');
       allElements.forEach(element => {
-        
-        // শুধু স্পেসিফিক এলিমেন্টের ডিরেক্ট টেক্সট নিচ্ছি, যাতে প্যারেন্ট এলিমেন্ট ভুল করে সিলেক্ট না হয়
         let directText = '';
         element.childNodes.forEach(node => {
           if (node.nodeType === Node.TEXT_NODE) {
@@ -136,10 +131,8 @@ export default function AppSidebar() {
           let currentLi = element.closest('li');
           
           if (currentLi) {
-            // ম্যাচ হওয়া মেনুটি শো করো
             currentLi.style.display = '';
 
-            // ওপরের সমস্ত প্যারেন্ট মেনু (ফোল্ডার) শো করো
             let parent = currentLi.parentElement;
             while (parent && sidebarContent.contains(parent)) {
               if (parent.tagName === 'LI') {
@@ -148,7 +141,6 @@ export default function AppSidebar() {
               parent = parent.parentElement;
             }
 
-            // যদি কোনো মেইন ক্যাটাগরি (যেমন Manage Orders) ম্যাচ করে, তবে তার ভেতরের সব চাইল্ড শো করো
             if (currentLi.querySelector('[data-state]')) {
               const childLis = currentLi.querySelectorAll('li');
               childLis.forEach(child => ((child as HTMLElement).style.display = ''));
@@ -157,7 +149,7 @@ export default function AppSidebar() {
         }
       });
 
-      // ৪. যেই মেইন গ্রুপগুলোর (যেমন E-commerce Modules) ভেতরে কোনো আইটেম নেই, সেগুলো হাইড করো
+      // ৪. যেই মেইন গ্রুপগুলোর ভেতরে কোনো আইটেম নেই, সেগুলো হাইড করো
       allGroups.forEach(group => {
         const hasVisibleLi = Array.from(group.querySelectorAll('li')).some(
           li => li.style.display !== 'none'
@@ -230,9 +222,7 @@ export default function AppSidebar() {
 
       <SidebarContent className="px-2 pb-20">
         
-        {/* Render ALL Modules normally WITHOUT any conditions. 
-            The useEffect hook will automatically open and filter them! 
-        */}
+        {/* Render ALL Modules normally */}
         <EcommerceModules items={data.ecommerceModules} />
         <ContentManagement />
         <Multivendor />
