@@ -163,7 +163,8 @@ export default function ProductReviewsTab({
     const userId = user.id || user._id || '';
     const userName = user.name || 'Anonymous';
     const userEmail = user.email || '';
-    const userImage = user.image || '';
+    // ✅ MAGIC FIX: Use a default placeholder if image is missing to prevent backend validation crashes
+    const userImage = user.image || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
 
     formData.append('reviewId', `REV-${Date.now()}`);
     formData.append('productId', product._id);
@@ -172,7 +173,7 @@ export default function ProductReviewsTab({
     formData.append('userEmail', userEmail);
     formData.append('rating', newReviewRating.toString());
     formData.append('comment', newReviewComment);
-    formData.append('userImage', userImage);
+    formData.append('userImage', userImage); // ✅ Solved: Now it will always send a valid string
 
     reviewFiles.forEach((file) => {
       formData.append('reviewImages', file);
@@ -431,7 +432,6 @@ export default function ProductReviewsTab({
         {reviews.length === 0 ? (
           <div className="text-center py-12 border-t border-gray-100">
             <div className="flex justify-center mb-4">
-              {/* Daraz style generic Smiley SVG */}
               <svg className="w-16 h-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -459,7 +459,6 @@ export default function ProductReviewsTab({
                       <span className="text-xs text-gray-400">
                         {review.userName}
                       </span>
-                      {/* Daraz Verified Buyer badge style can be added here if needed */}
                       <span className="text-[10px] text-green-600 font-semibold bg-green-50 px-1.5 rounded">Verified Purchase</span>
                     </div>
                   </div>
