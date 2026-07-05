@@ -18,9 +18,11 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
     const [ordersData, setOrdersData] = useState<OrderRow[]>([]); // ✅ Here is the filtered data
     const [selectedOrders, setSelectedOrders] = useState<OrderRow[]>([]);
 
-    const [searchTerm, setSearchTerm] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+
+    // ✅ State for dummy Toolbar input (to prevent component crash if it expects it)
+    const [searchTerm, setSearchTerm] = useState('');
 
     const [filters, setFilters] = useState<FilterState>({
         orderNo: '',
@@ -111,7 +113,7 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                             {showStats ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                     </header>
-                    {/* ✅ MAGIC FIX: Passing the filtered ordersData directly to OrdersStats */}
+                    {/* ✅ MAGIC FIX: OrdersStats now receives fully synced data! */}
                     {showStats && <div className="px-3 py-3"><OrdersStats currentOrders={ordersData} /></div>}
                 </section>
             )}
@@ -158,7 +160,6 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                     key={refreshKey}
                     initialStatus={normalizedStatus}
                     filters={filters}
-                    searchTerm={searchTerm} 
                     startDate={startDate}             
                     endDate={endDate}                 
                     onDataChange={setOrdersData} // ✅ Sets filtered data to state
