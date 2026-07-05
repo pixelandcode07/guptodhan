@@ -166,25 +166,6 @@ export default function OrdersTable({
         return () => clearTimeout(timeoutId);
     }, [fetchOrders, filters, startDate, endDate]); 
 
-    const filteredRows = useMemo(() => {
-        if (!searchTerm || searchTerm.trim() === '') return rows;
-        const q = searchTerm.trim().toLowerCase();
-        
-        return rows.filter((r) => {
-            const searchableFields = [
-                r.orderNo,
-                r.name,
-                r.phone,
-                r.status,
-                r.payment,
-                r.customer?.email,
-                r.trackingId,
-                r.parcelId
-            ];
-            return searchableFields.some(field => field && String(field).toLowerCase().includes(q));
-        });
-    }, [rows, searchTerm]);
-
     const handleSingleStatusUpdate = async (id: string, newStatus: string) => {
         const toastId = toast.loading(`Updating order status to ${newStatus}...`);
         try {
@@ -217,7 +198,6 @@ export default function OrdersTable({
       }
     };
 
-    // ✅ Action Column with Stop Propagation
     const actionColumn: ColumnDef<OrderRow> = {
         id: "actions",
         header: "ACTION",
@@ -337,7 +317,6 @@ export default function OrdersTable({
         },
     };
 
-    // ✅ MAGIC FIX: Added Cancel Reason Column dynamically
     const cancelReasonColumn: ColumnDef<OrderRow> = {
         id: "cancelReason",
         header: "CANCEL REASON",
@@ -355,14 +334,14 @@ export default function OrdersTable({
         }
     };
 
-    // Filter duplicate columns and inject the Cancel Reason column before Status
+    // ✅ MAGIC FIX: Double Column Removed
     const filteredColumns = ordersColumns.filter((col: any) => {
         const headerName = col.header?.toString().toLowerCase() || '';
         const idName = col.id?.toString().toLowerCase() || '';
-        return !headerName.includes('action') && !idName.includes('action');
+        return !headerName.includes('action') && !idName.includes('action') && 
+               !headerName.includes('cancel reason') && !idName.includes('cancelreason');
     });
 
-    // Insert Cancel Reason right before 'Status'
     let finalColumns = [...filteredColumns];
     const statusIndex = finalColumns.findIndex((col: any) => col.id === 'status' || col.header?.toString().toLowerCase().includes('status'));
     
@@ -371,8 +350,6 @@ export default function OrdersTable({
     } else {
         finalColumns.push(cancelReasonColumn);
     }
-    
-    // Add the Action column at the very end
     finalColumns.push(actionColumn);
 
     const handleBulkStatusUpdate = async () => {
@@ -475,12 +452,17 @@ export default function OrdersTable({
             <div className="overflow-x-auto">
                 <DataTable 
                   columns={finalColumns} 
-                  data={filteredRows} 
+                  data={rows} 
                   onBulkDelete={handleBulkDelete} 
                   onRowSelectionChange={handleRowSelection} 
+                  onFilteredDataChange={(filteredData) => {
+                      if (onDataChange) {
+                          onDataChange(filteredData);
+                      }
+                  }}
                 />
                 
-                {filteredRows.length === 0 && !loading && (
+                {rows.length === 0 && !loading && (
                     <div className="px-3 py-8 text-center text-gray-500">
                         <p>No orders found.</p>
                     </div>
@@ -496,7 +478,6 @@ export default function OrdersTable({
                 />
             )}
 
-            {/* ✅ Reason View Modal */}
             {selectedReason && (
                 <Dialog open={reasonModalOpen} onOpenChange={setReasonModalOpen}>
                     <DialogContent className="sm:max-w-md">
