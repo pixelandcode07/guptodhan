@@ -4,20 +4,25 @@ import mongoose from 'mongoose';
 
 const getDashboardAnalyticsFromDB = async () => {
   const today = new Date();
+  
+  // চার্টের (Chart) জন্য রোলিং ৩০ দিন (যেমন: গত ৩০ দিনের গ্রাফ দেখানোর জন্য)
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(today.getDate() - 30);
 
+  // ✅ MAGIC FIX: মাসের ১ তারিখ বের করার লজিক (Monthly Stats এর জন্য)
+  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
   try {
-    // --- 1. Monthly Orders Count ---
+    // --- 1. Monthly Orders Count (এই মাসের ১ তারিখ থেকে) ---
     const monthlyOrders = await OrderModel.countDocuments({
-      createdAt: { $gte: thirtyDaysAgo },
+      createdAt: { $gte: startOfMonth },
     });
 
-    // --- 2. Monthly Revenue ---
+    // --- 2. Monthly Revenue (এই মাসের ১ তারিখ থেকে) ---
     const monthlyRevenueData = await OrderModel.aggregate([
       {
         $match: {
-          createdAt: { $gte: thirtyDaysAgo },
+          createdAt: { $gte: startOfMonth }, // ✅ ফিক্সড: গত মাসের অর্ডার আর কাউন্ট হবে না
           paymentStatus: 'Paid',
         },
       },
@@ -42,13 +47,13 @@ const getDashboardAnalyticsFromDB = async () => {
       createdAt: { $gte: todayStart, $lte: todayEnd },
     });
 
-    // --- 4. Monthly Registered Users ---
+    // --- 4. Monthly Registered Users (এই মাসের ১ তারিখ থেকে) ---
     const monthlyRegisteredUsers = await UserModel.countDocuments({
-      createdAt: { $gte: thirtyDaysAgo },
+      createdAt: { $gte: startOfMonth },
       role: 'user',
     });
 
-    // --- 5. Total Stats (All Time) ---
+    // --- 5. Total Stats (All Time / আজীবনের) ---
     const totalOrders = await OrderModel.countDocuments({});
     const totalUsers = await UserModel.countDocuments({ role: 'user' });
     
@@ -70,7 +75,7 @@ const getDashboardAnalyticsFromDB = async () => {
     const pendingVendors = await VendorStoreModel.countDocuments({ status: 'pending' });
     const pendingOrders = await OrderModel.countDocuments({ orderStatus: 'Pending' });
 
-    // --- 7. Sales Analytics Chart (Last 14 Days - Successful vs Failed) ---
+    // --- 7. Sales Analytics Chart (Last 30 Days) ---
     const salesAnalyticsData = await OrderModel.aggregate([
       {
         $match: {
@@ -169,7 +174,7 @@ const getDashboardAnalyticsFromDB = async () => {
       .limit(5)
       .lean();
 
-    // --- 13. Top Selling Products (FIXED) ---
+    // --- 13. Top Selling Products ---
     const topProducts = await OrderModel.aggregate([
       {
         $match: { paymentStatus: 'Paid' },
@@ -177,10 +182,9 @@ const getDashboardAnalyticsFromDB = async () => {
       {
         $unwind: '$orderDetails',
       },
-      // 1. OrderDetails Lookup
       {
         $lookup: {
-          from: 'orderdetails', // আপনার ডাম্প লগ অনুযায়ী কালেকশন নাম
+          from: 'orderdetails', 
           localField: 'orderDetails',
           foreignField: '_id',
           as: 'productDetails',
@@ -189,7 +193,6 @@ const getDashboardAnalyticsFromDB = async () => {
       {
         $unwind: { path: '$productDetails', preserveNullAndEmptyArrays: true },
       },
-      // 2. Group by Product ID
       {
         $group: {
           _id: '$productDetails.productId',
@@ -203,17 +206,14 @@ const getDashboardAnalyticsFromDB = async () => {
       {
         $limit: 5,
       },
-      // 3. FIX: ID Conversion (String to ObjectId)
-      // VendorProductModel এর _id হলো ObjectId, কিন্তু এখানে _id স্ট্রিং হতে পারে
       {
         $addFields: {
           convertedProductId: { $toObjectId: "$_id" }
         }
       },
-      // 4. Product Info Lookup (Vendor Product)
       {
         $lookup: {
-          from: 'vendorproductmodels', // ⚠️ আপনার ডাম্প লগ অনুযায়ী কালেকশন নাম 'vendorproductmodels'
+          from: 'vendorproductmodels',
           localField: 'convertedProductId',
           foreignField: '_id',
           as: 'productInfo',
@@ -232,7 +232,7 @@ const getDashboardAnalyticsFromDB = async () => {
       },
     ]);
 
-    // --- 14. Revenue Over Time (Last 14 Days) ---
+    // --- 14. Revenue Over Time (Last 30 Days for Charts) ---
     const revenueOverTime = await OrderModel.aggregate([
       {
         $match: {
