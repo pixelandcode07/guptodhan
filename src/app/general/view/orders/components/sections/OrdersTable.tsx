@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { DataTable } from '@/components/TableHelper/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import api from '@/lib/axios'
@@ -8,9 +8,10 @@ import FancyLoadingPage from '@/app/general/loading'
 import { toast } from 'sonner'
 import { FilterState } from './OrdersFilters'
 import { Button } from '@/components/ui/button'
-import { Edit } from 'lucide-react'
+import { Edit, Info } from 'lucide-react'
 import OrderUpdateModal from './OrderUpdateModal'
 import { OrderRow, ordersColumns } from '@/components/TableHelper/orders_columns'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 type ApiOrder = {
     _id: string
@@ -32,6 +33,8 @@ type ApiOrder = {
     trackingId?: string
     parcelId?: string
     cancelReason?: string 
+    returnReason?: string 
+    returnDetails?: string 
     userId?: {
         _id: string
         name: string
@@ -69,6 +72,10 @@ export default function OrdersTable({
     const [bulkPaymentStatus, setBulkPaymentStatus] = useState('');
     const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
+    // ✅ State for Cancel/Return Reason Modal
+    const [reasonModalOpen, setReasonModalOpen] = useState(false);
+    const [selectedReason, setSelectedReason] = useState<{type: string, reason: string, details?: string} | null>(null);
+
     const fetchOrders = useCallback(async () => {
         try {
             setLoading(true)
@@ -105,7 +112,7 @@ export default function OrdersTable({
             const response = await api.get(`/product-order?${params.toString()}`)
             const list = (response.data?.data ?? []) as ApiOrder[]
             
-            const mapped: OrderRow[] = list.map((o, idx) => ({
+            const mapped: any[] = list.map((o, idx) => ({
                 id: o._id,
                 sl: idx + 1,
                 orderNo: o.orderId,
@@ -125,6 +132,8 @@ export default function OrdersTable({
                 trackingId: o.trackingId || '-',
                 parcelId: o.parcelId || '-',
                 cancelReason: o.cancelReason, 
+                returnReason: o.returnReason, 
+                returnDetails: o.returnDetails, 
                 customer: o.userId ? {
                     name: o.userId.name || '-',
                     email: o.userId.email || '-',
@@ -136,7 +145,7 @@ export default function OrdersTable({
                 } : undefined,
             }))
             
-            setRows(mapped)
+            setRows(mapped as OrderRow[])
         } catch (error: any) {
             console.error('Error fetching orders:', error)
             setError('Failed to fetch orders')
@@ -158,25 +167,49 @@ export default function OrdersTable({
         id: "actions",
         header: "Action",
         cell: ({ row }) => {
-            const order = row.original;
+            const order = row.original as any;
+            const hasReason = order.cancelReason || order.returnReason;
+
             return (
-                <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-8 w-8 p-0"
-                    onClick={() => {
-                        setSelectedOrderForEdit({
-                            id: order.id,
-                            orderNo: order.orderNo,
-                            orderStatus: order.status,
-                            paymentStatus: order.payment
-                        });
-                        setIsEditOpen(true);
-                    }}
-                >
-                    <Edit className="h-4 w-4 text-blue-600" />
-                    <span className="sr-only">Edit</span>
-                </Button>
+                <div className="flex items-center gap-1 justify-end">
+                    {/* ✅ MAGIC FIX: Info button for Cancel/Return Reason */}
+                    {hasReason && (
+                        <Button 
+                            variant="ghost" 
+                            size="sm"
+                            title="View Reason"
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => {
+                                setSelectedReason({
+                                    type: order.returnReason ? 'Return Request' : 'Cancellation',
+                                    reason: order.returnReason || order.cancelReason || 'Not specified',
+                                    details: order.returnDetails || ''
+                                });
+                                setReasonModalOpen(true);
+                            }}
+                        >
+                            <Info className="h-4 w-4" />
+                        </Button>
+                    )}
+                    
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0"
+                        onClick={() => {
+                            setSelectedOrderForEdit({
+                                id: order.id,
+                                orderNo: order.orderNo,
+                                orderStatus: order.status,
+                                paymentStatus: order.payment
+                            });
+                            setIsEditOpen(true);
+                        }}
+                    >
+                        <Edit className="h-4 w-4 text-blue-600" />
+                        <span className="sr-only">Edit</span>
+                    </Button>
+                </div>
             );
         },
     };
@@ -305,7 +338,6 @@ export default function OrdersTable({
             )}
 
             <div className="overflow-x-auto">
-                {/* ✅ MAGIC FIX: পাসিং RAW ডেটা এবং onFilteredDataChange কলব্যাক */}
                 <DataTable 
                   columns={tableColumns} 
                   data={rows} 
@@ -332,6 +364,33 @@ export default function OrdersTable({
                     order={selectedOrderForEdit}
                     onSuccess={fetchOrders}
                 />
+            )}
+
+            {/* ✅ Reason View Modal */}
+            {selectedReason && (
+                <Dialog open={reasonModalOpen} onOpenChange={setReasonModalOpen}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="text-red-600 flex items-center gap-2">
+                                <Info className="h-5 w-5" />
+                                {selectedReason.type} Details
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="p-4 bg-red-50/50 rounded-lg border border-red-100 mt-2 space-y-4">
+                            <div>
+                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Selected Reason</p>
+                                <p className="text-sm font-semibold text-gray-800">{selectedReason.reason}</p>
+                            </div>
+                            
+                            {selectedReason.details && (
+                                <div>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Additional Details</p>
+                                    <p className="text-sm text-gray-700 bg-white p-3 rounded-lg border border-gray-200">{selectedReason.details}</p>
+                                </div>
+                            )}
+                        </div>
+                    </DialogContent>
+                </Dialog>
             )}
         </div>
     )
