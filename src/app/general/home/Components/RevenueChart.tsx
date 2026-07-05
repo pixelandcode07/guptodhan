@@ -19,45 +19,47 @@ import { toast } from 'sonner';
 interface RevenueData {
   date: string;
   Sales: number;
-  Orders?: number; // ✅ Backend থেকে Orders আসলে এটা ধরবে
 }
 
-// ✅ Money Formatter Helper
+// Money Formatter Helper
 const formatMoney = (val: number) => {
   if (val >= 1000000) return `৳${(val / 1000000).toFixed(2)}M`;
   if (val >= 1000) return `৳${(val / 1000).toFixed(1)}k`;
   return `৳${val.toFixed(0)}`;
 };
 
-export default function RevenueChart({ data }: { data: RevenueData[] }) {
+// ✅ MAGIC FIX: Receive globalTotalOrders as a prop
+export default function RevenueChart({ 
+  data, 
+  globalTotalOrders = 0 
+}: { 
+  data: RevenueData[], 
+  globalTotalOrders?: number 
+}) {
   const [timeframe, setTimeframe] = useState('14 Days');
   const [showFilter, setShowFilter] = useState(false);
 
-  // ✅ MAGIC FIX: Timeframe অনুযায়ী ডাটা ফিল্টার করা হলো!
   const filteredData = useMemo(() => {
     if (!data || data.length === 0) return [];
     
-    let days = data.length; // Default
+    let days = data.length; 
     if (timeframe === '7 Days') days = 7;
     if (timeframe === '14 Days') days = 14;
     if (timeframe === '30 Days') days = 30;
     if (timeframe === 'Yearly') days = 365;
     
-    // শুধু নির্দিষ্ট দিনের ডাটা স্লাইস করে নেবে
     return data.slice(-days);
   }, [data, timeframe]);
 
-  // ✅ MAGIC FIX: ফিল্টার হওয়া ডাটা থেকে ডাইনামিক স্ট্যাটিস্টিক্স ক্যালকুলেট করা হলো
   const stats = useMemo(() => {
     if (!filteredData || filteredData.length === 0) {
-      return { totalRevenue: 0, avgRevenue: 0, maxRevenue: 0, growth: 0, totalOrders: 0 };
+      return { totalRevenue: 0, avgRevenue: 0, maxRevenue: 0, growth: 0, totalOrders: globalTotalOrders };
     }
 
     const total = filteredData.reduce((sum, item) => sum + (item.Sales || 0), 0);
     const avg = total / filteredData.length;
     const max = Math.max(...filteredData.map(d => d.Sales || 0));
 
-    // Growth Calculation
     const halfIndex = Math.floor(filteredData.length / 2);
     const firstHalf = filteredData.slice(0, halfIndex).reduce((sum, item) => sum + (item.Sales || 0), 0);
     const secondHalf = filteredData.slice(halfIndex).reduce((sum, item) => sum + (item.Sales || 0), 0);
@@ -69,34 +71,21 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
       growthRate = 100;
     }
 
-    // Dynamic Orders Calculation
-    let orders = 0;
-    filteredData.forEach(item => {
-      if (item.Orders !== undefined) {
-         orders += item.Orders;
-      } else {
-         // API থেকে Orders না আসলে সেলস অনুযায়ী এস্টিমেট করবে (যেন রান্ডম না দেখায়)
-         orders += item.Sales > 0 ? Math.max(1, Math.floor(item.Sales / 2000)) : 0;
-      }
-    });
-
     return {
       totalRevenue: total,
       avgRevenue: avg,
       maxRevenue: max,
       growth: growthRate,
-      totalOrders: orders
+      totalOrders: globalTotalOrders // ✅ Set to accurate DB value
     };
-  }, [filteredData]);
+  }, [filteredData, globalTotalOrders]);
 
-  // Get bar colors based on value
   const getBarColor = (value: number) => {
-    if (value >= stats.maxRevenue * 0.8) return '#f97316'; // Orange - High
-    if (value >= stats.maxRevenue * 0.5) return '#fb923c'; // Light Orange - Medium
-    return '#fed7aa'; // Pale Orange - Low
+    if (value >= stats.maxRevenue * 0.8) return '#f97316'; 
+    if (value >= stats.maxRevenue * 0.5) return '#fb923c'; 
+    return '#fed7aa'; 
   };
 
-  // ✅ Export Report Function based on Filtered Data
   const handleExport = () => {
     if (filteredData.length === 0) {
         toast.error("No data to export");
@@ -126,7 +115,6 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
     toast.success(`Revenue report for ${timeframe} exported successfully!`);
   };
 
-  // Custom tooltip
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const value = payload[0].value;
@@ -161,7 +149,6 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
     return null;
   };
 
-  // Stat card component wrapped in Link
   const StatCard = ({ label, value, growth, icon: Icon, gradient }: any) => (
     <div className={`rounded-xl p-4 backdrop-blur-sm border border-white/20 bg-gradient-to-br ${gradient} h-full transition-transform hover:-translate-y-1 hover:shadow-lg`}>
       <div className="flex items-start justify-between">
@@ -188,7 +175,7 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
 
   return (
     <div className="space-y-6">
-      {/* ── TOP 4 CARDS (Fully Dynamic) ── */}
+      {/* ── TOP 4 CARDS ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Link href="/general/view/orders" className="block h-full">
           <StatCard
@@ -215,8 +202,8 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
         <Link href="/general/view/orders" className="block h-full">
           <StatCard
             label="Total Orders"
-            value={stats.totalOrders}
-            growth={stats.growth > 0 ? 2.4 : -1.2} // Slight mock interaction for orders growth
+            value={stats.totalOrders} 
+            growth={2.4} 
             gradient="from-emerald-500 via-emerald-600 to-teal-600"
           />
         </Link>
@@ -232,7 +219,6 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
             </div>
             
             <div className="flex items-center gap-2">
-              {/* Timeframe Dropdown (Now functionally filters data) */}
               <div className="relative">
                 <button 
                   onClick={() => setShowFilter(!showFilter)}
@@ -267,7 +253,6 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
                 )}
               </div>
 
-              {/* Export button */}
               <button 
                 onClick={handleExport}
                 className="hidden sm:flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md"
@@ -279,11 +264,9 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
           </div>
         </CardHeader>
 
-        {/* Chart Area */}
         <CardContent className="pt-6">
           <div className="h-[400px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              {/* ✅ Chart now uses filteredData! */}
               <BarChart 
                 data={filteredData}
                 margin={{ top: 20, right: 20, left: -10, bottom: 60 }}
@@ -358,7 +341,7 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
             </ResponsiveContainer>
           </div>
 
-          {/* ── BOTTOM 4 CARDS (Fully Dynamic) ── */}
+          {/* ── BOTTOM 4 CARDS ── */}
           <div className="mt-8 pt-6 border-t border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: 'Total Days', value: filteredData.length, color: 'from-blue-500 to-blue-600' },
