@@ -33,7 +33,6 @@ import {
   XCircle,
 } from 'lucide-react';
 
-// ✅ FIX: Make ColumnDef more permissive to avoid strict type mismatch errors
 interface DataTableProps<TData extends Record<string, any>, TValue = any> {
   columns: ColumnDef<TData, TValue>[] | any[]; 
   data: TData[];
@@ -49,6 +48,8 @@ interface DataTableProps<TData extends Record<string, any>, TValue = any> {
   };
 
   onRowSelectionChange?: (selectedRows: TData[]) => void; 
+  // ✅ MAGIC FIX: নতুন প্রপ অ্যাড করা হলো যাতে ফিল্টার হওয়া ডাটা প্যারেন্টে পাঠানো যায়
+  onFilteredDataChange?: (filteredData: TData[]) => void;
 }
 
 export function DataTable<TData extends Record<string, any>, TValue = any>({
@@ -60,6 +61,7 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
   onBulkStatusChange,
   onBulkStatusChangeCustom,
   onRowSelectionChange,
+  onFilteredDataChange, // ✅ Received prop
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting]           = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState('');
@@ -74,12 +76,11 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
       setPageIndex(initialPageIndex);
       table.setPageIndex(initialPageIndex);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPageIndex]);
 
   const table = useReactTable({
     data,
-    columns: columns as ColumnDef<TData, TValue>[], // Type assertion to bypass strict generic checks
+    columns: columns as ColumnDef<TData, TValue>[], 
     getCoreRowModel:      getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel:    getSortedRowModel(),
@@ -109,12 +110,19 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
     enableRowSelection: true,
   });
 
+  // ✅ MAGIC FIX: যখনই টেবিলের ডাটা সার্চ/ফিল্টার হবে, সাথে সাথে প্যারেন্টকে (Stats) আপডেট করে দেবে!
+  const filteredRowsData = table.getFilteredRowModel().rows;
+  React.useEffect(() => {
+    if (onFilteredDataChange) {
+      onFilteredDataChange(filteredRowsData.map(r => r.original));
+    }
+  }, [filteredRowsData, onFilteredDataChange]);
+
   React.useEffect(() => {
     if (onRowSelectionChange) {
       const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
       onRowSelectionChange(selectedData);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rowSelection]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,7 +133,7 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
 
   const pageCount  = table.getPageCount();
   const totalRows  = table.getFilteredRowModel().rows.length;
-  const startRow   = pageIndex * pageSize + 1;
+  const startRow   = totalRows === 0 ? 0 : pageIndex * pageSize + 1;
   const endRow     = Math.min((pageIndex + 1) * pageSize, totalRows);
 
   return (
