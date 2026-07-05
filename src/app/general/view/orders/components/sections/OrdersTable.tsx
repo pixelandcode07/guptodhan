@@ -12,7 +12,7 @@ import { Edit, Info, Eye, Truck, CheckCircle, XCircle, Trash2 } from 'lucide-rea
 import OrderUpdateModal from './OrderUpdateModal'
 import { OrderRow, ordersColumns } from '@/components/TableHelper/orders_columns'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // ✅ Added for accurate navigation
 
 type ApiOrder = {
     _id: string
@@ -61,6 +61,8 @@ interface OrdersTableProps {
 export default function OrdersTable({ 
     initialStatus, filters, startDate, endDate, onDataChange, onSelectionChange 
 }: OrdersTableProps) {
+    const router = useRouter(); // ✅ Router hook added
+    
     const [rows, setRows] = useState<OrderRow[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -73,7 +75,6 @@ export default function OrdersTable({
     const [bulkPaymentStatus, setBulkPaymentStatus] = useState('');
     const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
-    // ✅ State for Cancel/Return Reason Modal
     const [reasonModalOpen, setReasonModalOpen] = useState(false);
     const [selectedReason, setSelectedReason] = useState<{type: string, reason: string, details?: string} | null>(null);
 
@@ -164,7 +165,6 @@ export default function OrdersTable({
         return () => clearTimeout(timeoutId);
     }, [fetchOrders, filters, startDate, endDate]); 
 
-    // ✅ MAGIC FIX: Handle Single Button Actions
     const handleSingleStatusUpdate = async (id: string, newStatus: string) => {
         const toastId = toast.loading(`Updating order status to ${newStatus}...`);
         try {
@@ -197,7 +197,7 @@ export default function OrdersTable({
       }
     };
 
-    // ✅ MAGIC FIX: New unified Action Column with fully working buttons
+    // ✅ MAGIC FIX: All buttons now use stopPropagation to prevent table row selection conflicts
     const actionColumn: ColumnDef<OrderRow> = {
         id: "actions",
         header: "ACTION",
@@ -208,17 +208,29 @@ export default function OrdersTable({
             return (
                 <div className="flex items-center gap-1.5 justify-end">
                     {/* View Button */}
-                    <Link href={`/general/view/orders/${order.id}`}>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-600 rounded" title="View Order">
-                            <Eye className="h-3.5 w-3.5" />
-                        </Button>
-                    </Link>
+                    <Button 
+                        variant="ghost" size="icon" 
+                        className="h-7 w-7 bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-600 rounded z-10" 
+                        title="View Order"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            router.push(`/general/view/orders/${order.id}`);
+                        }}
+                    >
+                        <Eye className="h-3.5 w-3.5" />
+                    </Button>
 
                     {/* Ship Button */}
                     <Button 
                         variant="ghost" size="icon" 
-                        className="h-7 w-7 bg-teal-50 text-teal-500 hover:bg-teal-100 hover:text-teal-600 rounded" title="Mark as Shipped"
-                        onClick={() => handleSingleStatusUpdate(order.id, 'Shipped')}
+                        className="h-7 w-7 bg-teal-50 text-teal-500 hover:bg-teal-100 hover:text-teal-600 rounded z-10" 
+                        title="Mark as Shipped"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleSingleStatusUpdate(order.id, 'Shipped');
+                        }}
                     >
                         <Truck className="h-3.5 w-3.5" />
                     </Button>
@@ -226,8 +238,13 @@ export default function OrdersTable({
                     {/* Approve Button */}
                     <Button 
                         variant="ghost" size="icon" 
-                        className="h-7 w-7 bg-green-50 text-green-500 hover:bg-green-100 hover:text-green-600 rounded" title="Approve Order"
-                        onClick={() => handleSingleStatusUpdate(order.id, 'Processing')}
+                        className="h-7 w-7 bg-green-50 text-green-500 hover:bg-green-100 hover:text-green-600 rounded z-10" 
+                        title="Approve Order"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleSingleStatusUpdate(order.id, 'Processing');
+                        }}
                     >
                         <CheckCircle className="h-3.5 w-3.5" />
                     </Button>
@@ -235,8 +252,11 @@ export default function OrdersTable({
                     {/* Cancel Button */}
                     <Button 
                         variant="ghost" size="icon" 
-                        className="h-7 w-7 bg-orange-50 text-orange-500 hover:bg-orange-100 hover:text-orange-600 rounded" title="Cancel Order"
-                        onClick={() => {
+                        className="h-7 w-7 bg-orange-50 text-orange-500 hover:bg-orange-100 hover:text-orange-600 rounded z-10" 
+                        title="Cancel Order"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             if(window.confirm('Are you sure you want to cancel this order?')) {
                                 handleSingleStatusUpdate(order.id, 'Cancelled');
                             }
@@ -248,8 +268,13 @@ export default function OrdersTable({
                     {/* Delete Button */}
                     <Button 
                         variant="ghost" size="icon" 
-                        className="h-7 w-7 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-600 rounded" title="Delete Order"
-                        onClick={() => handleBulkDelete([order])}
+                        className="h-7 w-7 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-600 rounded z-10" 
+                        title="Delete Order"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleBulkDelete([order]);
+                        }}
                     >
                         <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -258,8 +283,11 @@ export default function OrdersTable({
                     {hasReason && (
                         <Button 
                             variant="ghost" size="icon" 
-                            className="h-7 w-7 bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 rounded" title="View Reason"
-                            onClick={() => {
+                            className="h-7 w-7 bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 rounded z-10" 
+                            title="View Reason"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
                                 setSelectedReason({
                                     type: order.returnReason ? 'Return Request' : 'Cancellation',
                                     reason: order.returnReason || order.cancelReason || 'Not specified',
@@ -275,8 +303,11 @@ export default function OrdersTable({
                     {/* Edit Button */}
                     <Button 
                         variant="ghost" size="icon" 
-                        className="h-7 w-7 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 rounded" title="Edit Order"
-                        onClick={() => {
+                        className="h-7 w-7 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 rounded z-10" 
+                        title="Edit Order"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             setSelectedOrderForEdit({
                                 id: order.id,
                                 orderNo: order.orderNo,
@@ -293,7 +324,7 @@ export default function OrdersTable({
         },
     };
 
-    // ✅ MAGIC FIX: Filter out the duplicate action column from existing ordersColumns
+    // Filter out the duplicate action column from existing ordersColumns
     const filteredColumns = ordersColumns.filter((col: any) => {
         const headerName = col.header?.toString().toLowerCase() || '';
         const idName = col.id?.toString().toLowerCase() || '';
