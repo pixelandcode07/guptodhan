@@ -33,6 +33,26 @@ import {
   XCircle,
 } from 'lucide-react';
 
+// ✅ MAGIC FIX: Custom Smart Search for Currency and Normal Texts
+const customGlobalFilterFn = (row: any, columnId: string, filterValue: string) => {
+    const value = row.getValue(columnId);
+    if (value == null) return false;
+    
+    const strVal = String(value).toLowerCase();
+    const searchVal = String(filterValue).toLowerCase();
+
+    // Normal Text Match
+    if (strVal.includes(searchVal)) return true;
+
+    // Currency Formatted Match (removes ৳, commas, and .00)
+    const cleanSearch = searchVal.replace(/[৳,]/g, '').replace(/\.00/g, '').trim();
+    const cleanVal = strVal.replace(/[৳,]/g, '').replace(/\.00/g, '').trim();
+    
+    if (cleanSearch !== '' && cleanVal.includes(cleanSearch)) return true;
+
+    return false;
+};
+
 interface DataTableProps<TData extends Record<string, any>, TValue = any> {
   columns: ColumnDef<TData, TValue>[] | any[]; 
   data: TData[];
@@ -48,7 +68,6 @@ interface DataTableProps<TData extends Record<string, any>, TValue = any> {
   };
 
   onRowSelectionChange?: (selectedRows: TData[]) => void; 
-  // ✅ MAGIC FIX: নতুন প্রপ অ্যাড করা হলো যাতে ফিল্টার হওয়া ডাটা প্যারেন্টে পাঠানো যায়
   onFilteredDataChange?: (filteredData: TData[]) => void;
 }
 
@@ -61,13 +80,12 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
   onBulkStatusChange,
   onBulkStatusChangeCustom,
   onRowSelectionChange,
-  onFilteredDataChange, // ✅ Received prop
+  onFilteredDataChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting]           = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState('');
   const [pageSize, setPageSize]         = React.useState(10);
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
-
   const [customBulkStatus, setCustomBulkStatus] = React.useState('');
   const [pageIndex, setPageIndex] = React.useState(initialPageIndex);
 
@@ -85,12 +103,11 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel:    getSortedRowModel(),
     getFilteredRowModel:  getFilteredRowModel(),
+    globalFilterFn:       customGlobalFilterFn, // ✅ Smart Search Applied Here
     onSortingChange:      setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: setRowSelection,
-    
     autoResetPageIndex: false, 
-
     onPaginationChange: (updater) => {
       const newState =
         typeof updater === 'function'
@@ -110,13 +127,14 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
     enableRowSelection: true,
   });
 
-  // ✅ MAGIC FIX: যখনই টেবিলের ডাটা সার্চ/ফিল্টার হবে, সাথে সাথে প্যারেন্টকে (Stats) আপডেট করে দেবে!
-  const filteredRowsData = table.getFilteredRowModel().rows;
+  // ✅ MAGIC FIX: Live Syncing Stats Cards with Search
   React.useEffect(() => {
     if (onFilteredDataChange) {
-      onFilteredDataChange(filteredRowsData.map(r => r.original));
+      const currentFiltered = table.getFilteredRowModel().rows.map(r => r.original);
+      onFilteredDataChange(currentFiltered);
     }
-  }, [filteredRowsData, onFilteredDataChange]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [globalFilter, data]); 
 
   React.useEffect(() => {
     if (onRowSelectionChange) {
