@@ -230,27 +230,6 @@ export default function RevenueChart({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                   </svg>
                 </button>
-                
-                {showFilter && (
-                  <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden">
-                    {['7 Days', '14 Days', '30 Days', 'Yearly'].map(period => (
-                      <button
-                        key={period}
-                        onClick={() => {
-                          setTimeframe(period);
-                          setShowFilter(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                          timeframe === period 
-                            ? 'bg-orange-50 text-orange-600 font-semibold' 
-                            : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        {period}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <button 
