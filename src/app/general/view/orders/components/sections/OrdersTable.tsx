@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { DataTable } from '@/components/TableHelper/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import api from '@/lib/axios'
@@ -55,7 +55,7 @@ interface OrdersTableProps {
 }
 
 export default function OrdersTable({ 
-    initialStatus, filters, searchTerm, startDate, endDate, onDataChange, onSelectionChange 
+    initialStatus, filters, startDate, endDate, onDataChange, onSelectionChange 
 }: OrdersTableProps) {
     const [rows, setRows] = useState<OrderRow[]>([])
     const [loading, setLoading] = useState(false)
@@ -153,33 +153,6 @@ export default function OrdersTable({
         }, 500); 
         return () => clearTimeout(timeoutId);
     }, [fetchOrders, filters, startDate, endDate]); 
-
-    // ✅ MAGIC FIX: Handle local search filtering
-    const filteredRows = useMemo(() => {
-        if (!searchTerm || searchTerm.trim() === '') return rows;
-        const q = searchTerm.trim().toLowerCase();
-        
-        return rows.filter((r) => {
-            const searchableFields = [
-                r.orderNo,
-                r.name,
-                r.phone,
-                r.status,
-                r.payment,
-                r.customer?.email,
-                r.trackingId,
-                r.parcelId
-            ];
-            return searchableFields.some(field => field && String(field).toLowerCase().includes(q));
-        });
-    }, [rows, searchTerm]);
-
-    // ✅ MAGIC FIX: Call onDataChange ONLY when filteredRows updates
-    useEffect(() => {
-        if (onDataChange) {
-            onDataChange(filteredRows);
-        }
-    }, [filteredRows, onDataChange]);
 
     const actionColumn: ColumnDef<OrderRow> = {
         id: "actions",
@@ -332,16 +305,22 @@ export default function OrdersTable({
             )}
 
             <div className="overflow-x-auto">
+                {/* ✅ MAGIC FIX: পাসিং RAW ডেটা এবং onFilteredDataChange কলব্যাক */}
                 <DataTable 
                   columns={tableColumns} 
-                  data={filteredRows} 
+                  data={rows} 
                   onBulkDelete={handleBulkDelete} 
                   onRowSelectionChange={handleRowSelection} 
+                  onFilteredDataChange={(filteredData) => {
+                      if (onDataChange) {
+                          onDataChange(filteredData);
+                      }
+                  }}
                 />
                 
-                {filteredRows.length === 0 && !loading && (
+                {rows.length === 0 && !loading && (
                     <div className="px-3 py-8 text-center text-gray-500">
-                        <p>No orders found matching your search.</p>
+                        <p>No orders found.</p>
                     </div>
                 )}
             </div>
