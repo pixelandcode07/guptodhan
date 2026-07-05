@@ -35,13 +35,16 @@ export const useProfile = () => {
   }
 
   // Update profile data
-const updateProfile = async (data: { name?: string; phoneNumber?: string; address?: string }) => {
+  // ✅ MAGIC FIX: Added 'email' to the accepted parameters
+  const updateProfile = async (data: { name?: string; phoneNumber?: string; email?: string; address?: string }) => {
     try {
       setSaving(true)
       
       const formData = new FormData()
       if (data.name) formData.append('name', data.name)
       if (data.phoneNumber) formData.append('phoneNumber', data.phoneNumber)
+      // ✅ MAGIC FIX: Append email to formData so backend can receive it
+      if (data.email) formData.append('email', data.email)
       if (data.address) formData.append('address', data.address)
 
       const response = await api.patch('/profile/me', formData, {
@@ -67,12 +70,15 @@ const updateProfile = async (data: { name?: string; phoneNumber?: string; addres
       if (
         message.includes('E11000') ||
         message.includes('duplicate key') ||
+        message.includes('email') ||
         message.includes('phoneNumber')
       ) {
-        toast.error('Phone number already registered', {
-          description: 'This number is linked to another account. Please use a different one.',
+        toast.error('Information already registered', {
+          description: 'This phone number or email is linked to another account.',
           duration: 4000,
         })
+      } else {
+         toast.error('Failed to update profile')
       }
       return false
     } finally {
@@ -125,4 +131,3 @@ const updateProfile = async (data: { name?: string; phoneNumber?: string; addres
     updateProfilePicture,
   }
 }
-
