@@ -32,13 +32,19 @@ export default async function DashboardPage() {
   const data = await DashboardServices.getDashboardAnalyticsFromDB();
   console.log('Dashboard Data Loaded Successfully ✅');
 
-  // ✅ MAGIC FIX: Time based greeting with precise local BD Time
+  // Time based greeting with precise local BD Time
   const currentBdTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
   const hour = new Date(currentBdTime).getHours();
   
   let greeting = 'Good Evening';
   if (hour >= 5 && hour < 12) greeting = 'Good Morning';
   else if (hour >= 12 && hour < 18) greeting = 'Good Afternoon';
+
+  // ✅ MAGIC FIX: Fallback calculation ensuring proper formatting & handling
+  const totalRev = data.stats?.totalRevenue || 0;
+  const monthlyRev = data.stats?.monthlyRevenue || 0;
+  const totalOrd = data.stats?.totalOrders || 0;
+  const totalUsr = data.stats?.totalUsers || 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -69,19 +75,17 @@ export default async function DashboardPage() {
               <span>{new Date(currentBdTime).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
             </div>
             
-            {/* ✅ FIX: Export Button */}
             <Link href="/general/view/orders" className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-xl text-sm font-semibold hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300">
               <Download className="w-4 h-4" />
               Export Report
             </Link>
-            
           </div>
         </div>
 
         {/* ===== ADMIN ACTION CENTER ===== */}
         <AdminActionCards
-          pendingVendors={data.stats.pendingVendors}
-          pendingOrders={data.stats.pendingOrders}
+          pendingVendors={data.stats?.pendingVendors || 0}
+          pendingOrders={data.stats?.pendingOrders || 0}
         />
 
         {/* ===== KPI CARDS GRID ===== */}
@@ -89,7 +93,7 @@ export default async function DashboardPage() {
           <Link href="/general/view/orders" className="block transition-transform hover:-translate-y-1">
             <KpiCard
               title="Total Revenue"
-              value={`৳${(data.stats.totalRevenue || 0).toLocaleString()}`}
+              value={`৳${totalRev.toLocaleString()}`}
               growth={12.5}
               icon={DollarSign}
               iconColor="#10b981"
@@ -100,7 +104,7 @@ export default async function DashboardPage() {
           <Link href="/general/view/orders" className="block transition-transform hover:-translate-y-1">
             <KpiCard
               title="Monthly Revenue"
-              value={`৳${(data.stats.monthlyRevenue || 0).toLocaleString()}`}
+              value={`৳${monthlyRev.toLocaleString()}`}
               growth={8.2}
               icon={TrendingUp}
               iconColor="#3b82f6"
@@ -111,7 +115,7 @@ export default async function DashboardPage() {
           <Link href="/general/view/orders" className="block transition-transform hover:-translate-y-1">
             <KpiCard
               title="Total Orders"
-              value={data.stats.totalOrders || 0}
+              value={totalOrd}
               growth={5.0}
               icon={ShoppingBag}
               iconColor="#f59e0b"
@@ -122,7 +126,7 @@ export default async function DashboardPage() {
           <Link href="/general/view/all/subscribed/users" className="block transition-transform hover:-translate-y-1">
             <KpiCard
               title="Active Users"
-              value={data.stats.totalUsers || 0}
+              value={totalUsr}
               growth={-2.4}
               icon={Users}
               iconColor="#8b5cf6"
@@ -140,11 +144,11 @@ export default async function DashboardPage() {
                 <Package className="w-6 h-6 text-green-600" />
               </div>
               <span className="text-xs font-bold px-3 py-1 bg-green-100 text-green-700 rounded-full">
-                +{data.stats.todaysOrders} Today
+                +{data.stats?.todaysOrders || 0} Today
               </span>
             </div>
             <h3 className="text-sm font-medium text-slate-600 mb-1">Today's Orders</h3>
-            <p className="text-3xl font-bold text-slate-900">{data.stats.todaysOrders}</p>
+            <p className="text-3xl font-bold text-slate-900">{data.stats?.todaysOrders || 0}</p>
             <p className="text-xs text-slate-500 mt-2">Orders processed today</p>
           </Link>
 
@@ -154,11 +158,11 @@ export default async function DashboardPage() {
                 <Zap className="w-6 h-6 text-purple-600" />
               </div>
               <span className="text-xs font-bold px-3 py-1 bg-purple-100 text-purple-700 rounded-full">
-                {data.stats.monthlyRegisteredUsers} New
+                {data.stats?.monthlyRegisteredUsers || 0} New
               </span>
             </div>
             <h3 className="text-sm font-medium text-slate-600 mb-1">New Users</h3>
-            <p className="text-3xl font-bold text-slate-900">{data.stats.monthlyRegisteredUsers}</p>
+            <p className="text-3xl font-bold text-slate-900">{data.stats?.monthlyRegisteredUsers || 0}</p>
             <p className="text-xs text-slate-500 mt-2">Registered this month</p>
           </Link>
 
@@ -179,23 +183,19 @@ export default async function DashboardPage() {
 
         {/* ===== MAIN ANALYTICS SECTION ===== */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          {/* Left: Charts Section (2 columns) */}
           <div className="xl:col-span-2 space-y-6">
-            {/* ✅ MAGIC FIX: Sending true globalTotalOrders to RevenueChart */}
             <RevenueChart 
-              data={data.charts.revenueOverTime} 
-              globalTotalOrders={data.stats.totalOrders} 
+              data={data.charts?.revenueOverTime || []} 
+              globalTotalOrders={totalOrd} 
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <SalesAnalyticsChart data={data.salesAnalyticsChart} />
-              <CircleChart data={data.orderStatusChart} />
+              <SalesAnalyticsChart data={data.salesAnalyticsChart || []} />
+              <CircleChart data={data.orderStatusChart || []} />
             </div>
           </div>
 
-          {/* Right: Alerts & Products (1 column) */}
           <div className="space-y-6">
             <LowStockAlert products={data.lowStockProducts || []} />
-            {/* <TopProducts products={data.topProducts || []} /> */}
           </div>
         </div>
 
@@ -204,21 +204,21 @@ export default async function DashboardPage() {
           <Link href="/general/view/orders" className="block bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
             <BarChart3 className="w-8 h-8 mb-4 opacity-80" />
             <h4 className="text-sm font-medium opacity-90 mb-2">Platform Stats</h4>
-            <p className="text-3xl font-bold">{data.stats.totalOrders}</p>
+            <p className="text-3xl font-bold">{totalOrd}</p>
             <p className="text-xs opacity-80 mt-2">Total Orders Processed</p>
           </Link>
 
           <Link href="/general/view/all/subscribed/users" className="block bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
             <Users className="w-8 h-8 mb-4 opacity-80" />
             <h4 className="text-sm font-medium opacity-90 mb-2">Community</h4>
-            <p className="text-3xl font-bold">{data.stats.totalUsers}</p>
+            <p className="text-3xl font-bold">{totalUsr}</p>
             <p className="text-xs opacity-80 mt-2">Active Customers</p>
           </Link>
 
           <Link href="/general/view/orders" className="block bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
             <DollarSign className="w-8 h-8 mb-4 opacity-80" />
             <h4 className="text-sm font-medium opacity-90 mb-2">Revenue</h4>
-            <p className="text-3xl font-bold">৳{(data.stats.totalRevenue / 1000000).toFixed(2)}M</p>
+            <p className="text-3xl font-bold">৳{(totalRev / 1000000).toFixed(2)}M</p>
             <p className="text-xs opacity-80 mt-2">Lifetime Revenue</p>
           </Link>
         </div>
