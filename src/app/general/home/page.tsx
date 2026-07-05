@@ -21,6 +21,7 @@ import CircleChart from './Components/CircleChart';
 import { AdminActionCards } from './Components/AdminActionCards';
 import { KpiCard } from './Components/KpiCard';
 import { LowStockAlert } from './Components/LowStockAlert';
+import { TopProducts } from './Components/TopProducts';
 import Link from 'next/link';
 
 export default async function DashboardPage() {
@@ -68,13 +69,12 @@ export default async function DashboardPage() {
               <span>{new Date(currentBdTime).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
             </div>
             
-            {/* ✅ FIX: Export Button now works via client side API route (assumed) or triggers general order page where export happens */}
+            {/* ✅ FIX: Export Button */}
             <Link href="/general/view/orders" className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-xl text-sm font-semibold hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300">
               <Download className="w-4 h-4" />
               Export Report
             </Link>
             
-            {/* ❌ REMOVED Setting Button as requested */}
           </div>
         </div>
 
@@ -181,7 +181,11 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Left: Charts Section (2 columns) */}
           <div className="xl:col-span-2 space-y-6">
-            <RevenueChart data={data.charts.revenueOverTime} />
+            {/* ✅ MAGIC FIX: Sending true globalTotalOrders to RevenueChart */}
+            <RevenueChart 
+              data={data.charts.revenueOverTime} 
+              globalTotalOrders={data.stats.totalOrders} 
+            />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <SalesAnalyticsChart data={data.salesAnalyticsChart} />
               <CircleChart data={data.orderStatusChart} />
@@ -191,13 +195,12 @@ export default async function DashboardPage() {
           {/* Right: Alerts & Products (1 column) */}
           <div className="space-y-6">
             <LowStockAlert products={data.lowStockProducts || []} />
-            {/* <TopProducts products={data.topProducts || []} /> */}
+            <TopProducts products={data.topProducts || []} />
           </div>
         </div>
 
         {/* ===== FOOTER STATS ===== */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-          {/* ✅ Platform Stats Card Linked */}
           <Link href="/general/view/orders" className="block bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
             <BarChart3 className="w-8 h-8 mb-4 opacity-80" />
             <h4 className="text-sm font-medium opacity-90 mb-2">Platform Stats</h4>
@@ -205,7 +208,6 @@ export default async function DashboardPage() {
             <p className="text-xs opacity-80 mt-2">Total Orders Processed</p>
           </Link>
 
-          {/* ✅ Community Card Linked */}
           <Link href="/general/view/all/subscribed/users" className="block bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
             <Users className="w-8 h-8 mb-4 opacity-80" />
             <h4 className="text-sm font-medium opacity-90 mb-2">Community</h4>
@@ -213,7 +215,6 @@ export default async function DashboardPage() {
             <p className="text-xs opacity-80 mt-2">Active Customers</p>
           </Link>
 
-          {/* ✅ Revenue Card Linked */}
           <Link href="/general/view/orders" className="block bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
             <DollarSign className="w-8 h-8 mb-4 opacity-80" />
             <h4 className="text-sm font-medium opacity-90 mb-2">Revenue</h4>
