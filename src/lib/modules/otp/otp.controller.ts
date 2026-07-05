@@ -9,10 +9,13 @@ const sendOtp = async (req: NextRequest) => {
   try {
     await dbConnect();
     const body = await req.json();
-    const { email, phone } = body;
+    
+    // ✅ MAGIC FIX: ফ্রন্টএন্ড থেকে 'phone', 'phoneNumber', 'email' বা 'identifier' যাই আসুক, অটোমেটিক ক্যাচ করবে
+    const targetEmail = body.email || (body.identifier?.includes('@') ? body.identifier : undefined);
+    const targetPhone = body.phone || body.phoneNumber || (body.identifier && !body.identifier.includes('@') ? body.identifier : undefined);
 
     // Validation: At least one must be provided
-    if (!email && !phone) {
+    if (!targetEmail && !targetPhone) {
       return NextResponse.json(
         { success: false, message: "Either email or phone number is required" },
         { status: 400 }
@@ -23,11 +26,11 @@ const sendOtp = async (req: NextRequest) => {
     let type;
 
     // ✅ Smart Detection: Send to Email or Phone
-    if (email) {
-      result = await OtpServices.sendEmailOtpService(email);
+    if (targetEmail) {
+      result = await OtpServices.sendEmailOtpService(targetEmail);
       type = 'email';
-    } else if (phone) {
-      result = await OtpServices.sendPhoneOtpService(phone);
+    } else if (targetPhone) {
+      result = await OtpServices.sendPhoneOtpService(targetPhone);
       type = 'phone';
     }
 
@@ -37,7 +40,7 @@ const sendOtp = async (req: NextRequest) => {
         message: `OTP sent to ${type} successfully`,
         data: {
           type,
-          identifier: email || phone,
+          identifier: targetEmail || targetPhone,
           ...result
         }
       },
@@ -61,9 +64,12 @@ const verifyOtp = async (req: NextRequest) => {
   try {
     await dbConnect();
     const body = await req.json();
-    const { identifier, otp } = body; // identifier can be email or phone
+    
+    // ✅ MAGIC FIX: identifier, phone, phoneNumber, বা email যে নামেই আসুক না কেন, এটা কাজ করবে
+    const targetIdentifier = body.identifier || body.phoneNumber || body.phone || body.email;
+    const otp = body.otp; 
 
-    if (!identifier || !otp) {
+    if (!targetIdentifier || !otp) {
       return NextResponse.json(
         { success: false, message: "Identifier (email/phone) and OTP are required" },
         { status: 400 }
@@ -82,7 +88,7 @@ const verifyOtp = async (req: NextRequest) => {
 
     // 🔥 CRITICAL FIX: Pass FALSE here to NOT delete OTP yet
     // Because the user still needs to use this OTP to create the account in the next step
-    const result = await OtpServices.verifyOtpService(identifier, otpNumber, false);
+    const result = await OtpServices.verifyOtpService(targetIdentifier, otpNumber, false);
 
     if (result.status) {
       return NextResponse.json(
