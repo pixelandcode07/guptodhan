@@ -198,26 +198,29 @@ export default async function DashboardPage() {
 
         {/* ===== FOOTER STATS ===== */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6 shadow-lg">
+          {/* ✅ Platform Stats Card Linked */}
+          <Link href="/general/view/orders" className="block bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
             <BarChart3 className="w-8 h-8 mb-4 opacity-80" />
             <h4 className="text-sm font-medium opacity-90 mb-2">Platform Stats</h4>
             <p className="text-3xl font-bold">{data.stats.totalOrders}</p>
             <p className="text-xs opacity-80 mt-2">Total Orders Processed</p>
-          </div>
+          </Link>
 
-          <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-xl p-6 shadow-lg">
+          {/* ✅ Community Card Linked */}
+          <Link href="/general/view/all/subscribed/users" className="block bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
             <Users className="w-8 h-8 mb-4 opacity-80" />
             <h4 className="text-sm font-medium opacity-90 mb-2">Community</h4>
             <p className="text-3xl font-bold">{data.stats.totalUsers}</p>
             <p className="text-xs opacity-80 mt-2">Active Customers</p>
-          </div>
+          </Link>
 
-          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl p-6 shadow-lg">
+          {/* ✅ Revenue Card Linked */}
+          <Link href="/general/view/orders" className="block bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl p-6 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
             <DollarSign className="w-8 h-8 mb-4 opacity-80" />
             <h4 className="text-sm font-medium opacity-90 mb-2">Revenue</h4>
             <p className="text-3xl font-bold">৳{(data.stats.totalRevenue / 1000000).toFixed(2)}M</p>
             <p className="text-xs opacity-80 mt-2">Lifetime Revenue</p>
-          </div>
+          </Link>
         </div>
       </div>
     </div>
