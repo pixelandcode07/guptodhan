@@ -55,16 +55,16 @@ export default function TabsSection() {
   return (
     <Tabs defaultValue="toReview" className="w-full">
       <TabsList className="mb-4">
-        <TabsTrigger value="toReview">To be Review</TabsTrigger>
         <TabsTrigger value="history">History</TabsTrigger>
+        <TabsTrigger value="toReview">To be Review</TabsTrigger>
       </TabsList>
 
       <TabsContent value="toReview">
-        <ToBeReview />
+        <ReviewHistory />
       </TabsContent>
 
       <TabsContent value="history">
-        <ReviewHistory />
+        <ToBeReview />
       </TabsContent>
     </Tabs>
   );
