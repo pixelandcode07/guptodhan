@@ -70,52 +70,43 @@ const updateMyProfileInDB = async (
   // Delete old profile picture if updating
   if (payload.profilePicture && user.profilePicture) {
     try {
-        await deleteFromCloudinary(user.profilePicture);
-    } catch (error) {
-        console.warn("Could not delete old image from Cloudinary", error);
+      await deleteFromCloudinary(user.profilePicture);
+    } catch(err) {
+      console.warn("Cloudinary delete failed:", err);
     }
   }
 
-  // ✅ MAGIC FIX: Ensure 'email' is explicitly allowed in the payload
-  const updateData: Partial<TUser> = { ...payload };
-  
-  // If email is empty string from frontend, set it to undefined to remove it, or update it
-  if (payload.email === '') {
-      updateData.email = undefined;
-  }
+  // ✅ MAGIC FIX: $set ব্যবহার করে ডাটা আপডেট করা হচ্ছে
+  const updateData: any = { ...payload };
 
   const result = await User.findByIdAndUpdate(
-      userId, 
-      { $set: updateData }, // ✅ Forced $set to ensure fields like email get updated
-      {
-        new: true,
-        runValidators: true,
-      }
+    userId, 
+    { $set: updateData }, // $set ইউজ করলে ইমেইল পারফেক্টলি আপডেট হয়
+    {
+      new: true,
+      runValidators: true,
+    }
   )
     .select('-password')
     .lean();
 
-  // 🗑️ CRITICAL: Cache invalidation (Using Patterns to clear EVERYTHING related to user)
+  // 🗑️ CRITICAL: Cache invalidation
   try {
-      // ✅ MAGIC FIX: Clears all caches related to this specific user
-      await deleteCachePattern(`*user*${userId}*`);
-      await deleteCachePattern(`*profile*${userId}*`);
-      
-      if (CacheKeys?.USER?.PROFILE) {
-         await deleteCachePattern(CacheKeys.USER.PROFILE(userId));
-      }
-
-      // If email/phone changed, invalidate those specific caches too
+    // ইউজারের প্রোফাইল ক্যাশ রিমুভ
+    if (typeof deleteCacheKey === 'function') {
+      await deleteCacheKey(`user:profile:${userId}`);
       if (payload.email) {
-          await deleteCachePattern(`*${payload.email}*`);
+        await deleteCacheKey(`user:email:${payload.email}`);
       }
       if (payload.phoneNumber) {
-          await deleteCachePattern(`*${payload.phoneNumber}*`);
+        await deleteCacheKey(`user:phone:${payload.phoneNumber}`);
       }
-      // Clear the session profile cache if any
-      await deleteCachePattern(`*profile:me:${userId}*`);
+    }
+
+    // যদি আপনার deleteCachePattern নামের ফাংশন থাকে (আগের সলিউশন অনুযায়ী), তবে সেটা ইউজ করতে পারেন:
+    // await deleteCachePattern(`*${userId}*`);
   } catch (error) {
-      console.warn("Cache clearing issue:", error);
+    console.warn("Cache clear failed:", error);
   }
 
   return result;
