@@ -10,18 +10,22 @@ interface ProfileClientProps {
   userName: string
   userImage: string | null
   userPhone?: string
+  userEmail?: string // ✅ Added Email Type
 }
 
 export default function ProfileClient({ 
   userName, 
   userImage, 
-  userPhone
+  userPhone,
+  userEmail 
 }: ProfileClientProps) {
   const { profile, saving, updateProfile, updateProfilePicture } = useProfile()
   const [currentImage, setCurrentImage] = useState(userImage)
+  
   const [currentData, setCurrentData] = useState({
     name: userName,
     phone: userPhone || '',
+    email: userEmail || '', // ✅ State for Email
     address: ''
   })
 
@@ -30,6 +34,7 @@ export default function ProfileClient({
       setCurrentData({
         name: profile.name || userName,
         phone: profile.phoneNumber ?? userPhone ?? '',
+        email: profile.email ?? userEmail ?? '', // ✅ Set Email from profile
         address: profile.address || ''
       })
       if (profile.profilePicture) {
@@ -39,12 +44,8 @@ export default function ProfileClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile])
 
-  const handleSave = async (data: { name: string; phoneNumber: string; address?: string }) => {
+  const handleSave = async (data: { name: string; phoneNumber: string; email?: string; address?: string }) => {
     await updateProfile(data)
-  }
-
-  const handleRemoveImage = () => {
-    toast.error('Remove image functionality not implemented yet')
   }
 
   const handleChangeImage = () => {
@@ -66,13 +67,13 @@ export default function ProfileClient({
         userName={currentData.name}
         userImage={currentImage}
         userPhone={currentData.phone}
-        // onRemoveClick={handleRemoveImage}
         onChangeImageClick={handleChangeImage}
       />
 
       <PersonalInfoForm 
         initialName={currentData.name}
         initialPhone={currentData.phone}
+        initialEmail={currentData.email} // ✅ Pass Initial Email
         initialAddress={currentData.address}
         onSave={handleSave}
         isLoading={saving}
