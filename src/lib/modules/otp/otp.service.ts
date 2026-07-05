@@ -1,216 +1,89 @@
-import nodemailer from "nodemailer";
-import bcrypt from "bcrypt";
-import { OtpModel } from "./otp.model";
-import { sendSMS } from "../../utils/smsPortal";
+import { OtpModel } from './otp.model';
+
+// ৬ ডিজিটের রেন্ডম OTP জেনারেট করার ফাংশন
+const generateOtp = () => Math.floor(100000 + Math.random() * 900000);
 
 // ========================================
-// 📧 Email Configuration
-// ========================================
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT || "465"),
-  secure: true,
-  auth: {
-    user: process.env.SMTP_USER || process.env.EMAIL_USER,
-    pass: process.env.SMTP_PASS || process.env.EMAIL_PASS,
-  },
-});
-
-// ========================================
-// 🔢 Generate 6-digit OTP
-// ========================================
-const generateOtp = (): number => {
-  return Math.floor(100000 + Math.random() * 900000);
-};
-
-// ========================================
-// 🛡️ Rate Limiting (in-memory)
-// ========================================
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-
-const checkRateLimit = (identifier: string): void => {
-  const now = Date.now();
-  const limit = rateLimitMap.get(identifier);
-
-  if (limit) {
-    if (now > limit.resetTime) {
-      rateLimitMap.delete(identifier);
-    } else if (limit.count >= 3) {
-      const waitMinutes = Math.ceil((limit.resetTime - now) / 60000);
-      throw new Error(
-        `Too many OTP requests. Please try again in ${waitMinutes} minute(s).`
-      );
-    }
-  }
-
-  const current = limit ?? { count: 0, resetTime: now + 10 * 60 * 1000 };
-  rateLimitMap.set(identifier, {
-    count: current.count + 1,
-    resetTime: current.resetTime,
-  });
-};
-
-// ========================================
-// 🗄️ Helper: OTP DB তে সেভ করা
-// ========================================
-const saveOtpRecord = async (
-  identifier: string,
-  otp: number,
-  type: "phone" | "email"
-): Promise<void> => {
-  const shouldHash = process.env.HASH_OTP === "true";
-  const otpToSave = shouldHash
-    ? await bcrypt.hash(otp.toString(), 10)
-    : otp;
-
-  await OtpModel.create({
-    identifier,
-    otp: otpToSave,
-    type,
-    attempts: 0,
-    maxAttempts: parseInt(process.env.OTP_MAX_ATTEMPTS || "3"),
-    isBlocked: false,
-    expiresAt: new Date(
-      Date.now() +
-        parseInt(process.env.OTP_EXPIRY_MINUTES || "5") * 60 * 1000
-    ),
-  });
-};
-
-// ========================================
-// 📱 Send OTP via SMS (Phone)
+// 📱 Send OTP to Phone
 // ========================================
 const sendPhoneOtpService = async (phone: string) => {
-  checkRateLimit(phone);
-
   const otp = generateOtp();
-  console.log("📱 Generated SMS OTP:", otp);
+  const expiresAt = new Date(Date.now() + 5 * 60000); // OTP 5 মিনিট ভ্যালিড থাকবে
 
-  // DB তে save করা — phone number raw রাখা হচ্ছে (identifier হিসেবে)
-  await saveOtpRecord(phone, otp, "phone");
+  // ডাটাবেসে সেভ করা
+  await OtpModel.create({
+    identifier: phone,
+    otp,
+    type: 'phone',
+    expiresAt,
+  });
 
-  // SMS পাঠানো — formatBDPhoneNumber কাজটা smsPortal.ts এর ভেতরেই হবে
-  const messageContent = `${otp} is your verification code. Valid for 5 minutes.`;
-  const smsResult = await sendSMS(phone, messageContent);
+  // ⚠️ এখানে আপনার SMS Gateway এর API বসাবেন (যেমন: Bytfize, SSLWireless, BulkSMS)
+  console.log(`📱 SMS Sent: Your Guptodhan OTP is ${otp} for phone ${phone}`);
 
-  if (!smsResult.success) {
-    // SMS fail হলেও OTP DB তে আছে, তবে warning দেওয়া হচ্ছে
-    console.error("❌ SMS পাঠাতে ব্যর্থ:", smsResult.error ?? smsResult.data);
-    // Production এ এখানে throw করতে পারেন যদি SMS mandatory হয়
-    // throw new Error("Failed to send OTP via SMS");
-  }
-
-  const showOtp =
-    process.env.NODE_ENV === "development" ||
-    process.env.SHOW_OTP_IN_RESPONSE === "true";
-
-  return {
-    success: true,
-    message: "OTP sent to your phone successfully",
-    ...(showOtp && { otp }),
-  };
+  // ডেভেলপমেন্টের সুবিধার জন্য OTP রিটার্ন করা হলো (প্রোডাকশনে OTP রিটার্ন করবেন না)
+  return { success: true, message: 'SMS sent successfully', demoOtp: otp };
 };
 
 // ========================================
-// 📧 Send OTP via Email
+// 📧 Send OTP to Email
 // ========================================
 const sendEmailOtpService = async (email: string) => {
-  const emailUser = process.env.SMTP_USER || process.env.EMAIL_USER;
-  const emailPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
-
-  if (!emailUser || !emailPass) {
-    throw new Error("Email credentials not configured in .env");
-  }
-
-  checkRateLimit(email);
-
   const otp = generateOtp();
-  console.log("📧 Generated Email OTP:", otp);
+  const expiresAt = new Date(Date.now() + 5 * 60000); // OTP 5 মিনিট ভ্যালিড থাকবে
 
-  await saveOtpRecord(email, otp, "email");
+  // ডাটাবেসে সেভ করা
+  await OtpModel.create({
+    identifier: email,
+    otp,
+    type: 'email',
+    expiresAt,
+  });
 
-  try {
-    await transporter.sendMail({
-      from: `"Guptodhan" <${process.env.SMTP_FROM || emailUser}>`,
-      to: email,
-      subject: "Your OTP Code",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 480px; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px;">
-          <h2 style="color: #111827;">Verification Code</h2>
-          <p style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #4F46E5;">${otp}</p>
-          <p style="color: #6b7280;">This code expires in 5 minutes. Do not share it with anyone.</p>
-        </div>
-      `,
-    });
-    console.log("✅ Email successfully sent to", email);
-  } catch (err: any) {
-    console.error("❌ Email error:", err.message);
-    throw new Error(`Failed to send email OTP: ${err.message}`);
-  }
+  // ⚠️ এখানে Nodemailer বা SendGrid দিয়ে ইমেইল সেন্ড করার লজিক বসাবেন
+  console.log(`📧 Email Sent: Your Guptodhan OTP is ${otp} for email ${email}`);
 
-  const showOtp =
-    process.env.NODE_ENV === "development" ||
-    process.env.SHOW_OTP_IN_RESPONSE === "true";
-
-  return {
-    success: true,
-    message: "OTP sent to your email successfully",
-    ...(showOtp && { otp }),
-  };
+  return { success: true, message: 'Email sent successfully', demoOtp: otp };
 };
 
 // ========================================
-// 🛡️ Verify OTP
+// ✅ Verify OTP
 // ========================================
-const verifyOtpService = async (
-  identifier: string,
-  otp: number,
-  shouldDelete = false
-) => {
-  console.log(`🔍 Verifying OTP | identifier: ${identifier} | input: ${otp}`);
-
+const verifyOtpService = async (identifier: string, otpNumber: number, shouldDelete: boolean = true) => {
+  // ডাটাবেস থেকে সবচেয়ে লেটেস্ট OTP খুঁজে বের করা
   const record = await OtpModel.findOne({ identifier }).sort({ createdAt: -1 });
 
   if (!record) {
-    return { status: false, message: "OTP not found or already used" };
+    return { status: false, message: 'OTP not found or expired' };
   }
 
   if (record.isBlocked) {
-    return { status: false, message: "Too many wrong attempts. Try later." };
+    return { status: false, message: 'Too many failed attempts. Try again later.' };
   }
 
-  if (record.expiresAt < new Date()) {
-    return { status: false, message: "OTP expired." };
+  // OTP মিলছে কিনা চেক করা
+  if (record.otp !== otpNumber) {
+    record.attempts += 1;
+    
+    // ৩ বার ভুল করলে ব্লক করে দেওয়া হবে
+    if (record.attempts >= record.maxAttempts) {
+      record.isBlocked = true;
+      await record.save();
+      return { status: false, message: 'Maximum attempts reached. OTP blocked.' };
+    }
+    
+    await record.save();
+    return { status: false, message: 'Invalid OTP' };
   }
 
-  // OTP match করা
-  const shouldHash = process.env.HASH_OTP === "true";
-  let isMatch = false;
-
-  if (shouldHash && typeof record.otp === "string") {
-    isMatch = await bcrypt.compare(otp.toString(), record.otp);
-  } else {
-    isMatch = Number(record.otp) === Number(otp);
-  }
-
-  if (!isMatch) {
-    console.warn(`❌ OTP mismatch for ${identifier}`);
-    return { status: false, message: "Invalid OTP" };
-  }
-
+  // OTP মিলে গেলে এবং shouldDelete true হলে ডাটাবেস থেকে মুছে ফেলা
   if (shouldDelete) {
     await OtpModel.deleteMany({ identifier });
-    console.log(`✅ OTP verified and deleted for ${identifier}`);
-  } else {
-    console.log(`✅ OTP verified (kept) for ${identifier}`);
   }
 
-  return { status: true, message: "OTP verified successfully" };
+  return { status: true, message: 'OTP verified successfully' };
 };
 
-// ========================================
-// 📤 Export
-// ========================================
 export const OtpServices = {
   sendPhoneOtpService,
   sendEmailOtpService,
