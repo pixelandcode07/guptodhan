@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { DataTable } from '@/components/TableHelper/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import api from '@/lib/axios'
@@ -8,10 +8,11 @@ import FancyLoadingPage from '@/app/general/loading'
 import { toast } from 'sonner'
 import { FilterState } from './OrdersFilters'
 import { Button } from '@/components/ui/button'
-import { Edit, Info } from 'lucide-react'
+import { Edit, Info, Eye, Truck, CheckCircle, XCircle, Trash2 } from 'lucide-react'
 import OrderUpdateModal from './OrderUpdateModal'
 import { OrderRow, ordersColumns } from '@/components/TableHelper/orders_columns'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import Link from 'next/link';
 
 type ApiOrder = {
     _id: string
@@ -163,22 +164,101 @@ export default function OrdersTable({
         return () => clearTimeout(timeoutId);
     }, [fetchOrders, filters, startDate, endDate]); 
 
+    // ✅ MAGIC FIX: Handle Single Button Actions
+    const handleSingleStatusUpdate = async (id: string, newStatus: string) => {
+        const toastId = toast.loading(`Updating order status to ${newStatus}...`);
+        try {
+            await api.patch(`/product-order/${id}`, { orderStatus: newStatus });
+            toast.success(`Order status updated to ${newStatus}!`, { id: toastId });
+            fetchOrders();
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to update order status.", { id: toastId });
+        }
+    };
+
+    const handleBulkDelete = async (rowsToDelete: OrderRow[]) => {
+      if (rowsToDelete.length === 0) return;
+      
+      const isConfirmed = window.confirm(`Are you sure you want to delete ${rowsToDelete.length} orders?`);
+      if (!isConfirmed) return;
+  
+      const toastId = toast.loading(`Deleting ${rowsToDelete.length} orders...`);
+  
+      try {
+        const promises = rowsToDelete.map(row => api.delete(`/product-order/${row.id}`));
+        await Promise.all(promises);
+  
+        toast.success("Orders deleted successfully!", { id: toastId });
+        fetchOrders();
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to delete some orders.", { id: toastId });
+      }
+    };
+
+    // ✅ MAGIC FIX: New unified Action Column with fully working buttons
     const actionColumn: ColumnDef<OrderRow> = {
         id: "actions",
-        header: "Action",
+        header: "ACTION",
         cell: ({ row }) => {
             const order = row.original as any;
             const hasReason = order.cancelReason || order.returnReason;
 
             return (
-                <div className="flex items-center gap-1 justify-end">
-                    {/* ✅ MAGIC FIX: Info button for Cancel/Return Reason */}
+                <div className="flex items-center gap-1.5 justify-end">
+                    {/* View Button */}
+                    <Link href={`/general/view/orders/${order.id}`}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-600 rounded" title="View Order">
+                            <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                    </Link>
+
+                    {/* Ship Button */}
+                    <Button 
+                        variant="ghost" size="icon" 
+                        className="h-7 w-7 bg-teal-50 text-teal-500 hover:bg-teal-100 hover:text-teal-600 rounded" title="Mark as Shipped"
+                        onClick={() => handleSingleStatusUpdate(order.id, 'Shipped')}
+                    >
+                        <Truck className="h-3.5 w-3.5" />
+                    </Button>
+
+                    {/* Approve Button */}
+                    <Button 
+                        variant="ghost" size="icon" 
+                        className="h-7 w-7 bg-green-50 text-green-500 hover:bg-green-100 hover:text-green-600 rounded" title="Approve Order"
+                        onClick={() => handleSingleStatusUpdate(order.id, 'Processing')}
+                    >
+                        <CheckCircle className="h-3.5 w-3.5" />
+                    </Button>
+
+                    {/* Cancel Button */}
+                    <Button 
+                        variant="ghost" size="icon" 
+                        className="h-7 w-7 bg-orange-50 text-orange-500 hover:bg-orange-100 hover:text-orange-600 rounded" title="Cancel Order"
+                        onClick={() => {
+                            if(window.confirm('Are you sure you want to cancel this order?')) {
+                                handleSingleStatusUpdate(order.id, 'Cancelled');
+                            }
+                        }}
+                    >
+                        <XCircle className="h-3.5 w-3.5" />
+                    </Button>
+
+                    {/* Delete Button */}
+                    <Button 
+                        variant="ghost" size="icon" 
+                        className="h-7 w-7 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-600 rounded" title="Delete Order"
+                        onClick={() => handleBulkDelete([order])}
+                    >
+                        <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+
+                    {/* Info Button (Cancel/Return Reason) */}
                     {hasReason && (
                         <Button 
-                            variant="ghost" 
-                            size="sm"
-                            title="View Reason"
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            variant="ghost" size="icon" 
+                            className="h-7 w-7 bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 rounded" title="View Reason"
                             onClick={() => {
                                 setSelectedReason({
                                     type: order.returnReason ? 'Return Request' : 'Cancellation',
@@ -188,14 +268,14 @@ export default function OrdersTable({
                                 setReasonModalOpen(true);
                             }}
                         >
-                            <Info className="h-4 w-4" />
+                            <Info className="h-3.5 w-3.5" />
                         </Button>
                     )}
                     
+                    {/* Edit Button */}
                     <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-8 w-8 p-0"
+                        variant="ghost" size="icon" 
+                        className="h-7 w-7 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 rounded" title="Edit Order"
                         onClick={() => {
                             setSelectedOrderForEdit({
                                 id: order.id,
@@ -206,15 +286,21 @@ export default function OrdersTable({
                             setIsEditOpen(true);
                         }}
                     >
-                        <Edit className="h-4 w-4 text-blue-600" />
-                        <span className="sr-only">Edit</span>
+                        <Edit className="h-3.5 w-3.5" />
                     </Button>
                 </div>
             );
         },
     };
 
-    const tableColumns = [...ordersColumns, actionColumn];
+    // ✅ MAGIC FIX: Filter out the duplicate action column from existing ordersColumns
+    const filteredColumns = ordersColumns.filter((col: any) => {
+        const headerName = col.header?.toString().toLowerCase() || '';
+        const idName = col.id?.toString().toLowerCase() || '';
+        return !headerName.includes('action') && !idName.includes('action');
+    });
+
+    const tableColumns = [...filteredColumns, actionColumn];
 
     const handleBulkStatusUpdate = async () => {
       if (selectedRows.length === 0) return;
@@ -247,30 +333,6 @@ export default function OrdersTable({
         toast.error("Failed to update some orders.", { id: toastId });
       } finally {
         setIsBulkUpdating(false);
-      }
-    };
-
-    const handleBulkDelete = async (rowsToDelete: OrderRow[]) => {
-      if (rowsToDelete.length === 0) return;
-      
-      const isConfirmed = window.confirm(`Are you sure you want to delete ${rowsToDelete.length} orders?`);
-      if (!isConfirmed) return;
-  
-      const toastId = toast.loading(`Deleting ${rowsToDelete.length} orders...`);
-  
-      try {
-        const promises = rowsToDelete.map(row => 
-          api.delete(`/product-order/${row.id}`)
-        );
-        
-        await Promise.all(promises);
-  
-        toast.success("Orders deleted successfully!", { id: toastId });
-        fetchOrders();
-  
-      } catch (error) {
-        console.error(error);
-        toast.error("Failed to delete some orders.", { id: toastId });
       }
     };
 
