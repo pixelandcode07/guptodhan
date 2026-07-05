@@ -328,11 +328,13 @@ const updateMyProfile = async (req: NextRequest) => {
   const name = formData.get('name') as string;
   const address = formData.get('address') as string;
   const phoneNumber = formData.get('phoneNumber') as string;
+  const email = formData.get('email') as string; // ✅ MAGIC FIX: Email রিসিভ করা হলো!
 
   const payload: any = {};
   if (name) payload.name = name;
   if (phoneNumber) payload.phoneNumber = phoneNumber;
   if (typeof address === 'string') payload.address = address;
+  if (email) payload.email = email; // ✅ MAGIC FIX: Email কে পেলোডে যুক্ত করা হলো!
 
   if (file) {
     const buffer = Buffer.from(await file.arrayBuffer());
