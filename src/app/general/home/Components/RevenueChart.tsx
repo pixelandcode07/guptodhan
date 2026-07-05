@@ -9,11 +9,12 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  Cell,
-  Legend
+  Cell
 } from 'recharts';
 import { ArrowUpRight, ArrowDownRight, Download, Filter, MoreHorizontal } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
+import { toast } from 'sonner';
 
 interface RevenueData {
   date: string;
@@ -61,12 +62,46 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
     return '#fed7aa'; // Pale Orange - Low
   };
 
+  // ✅ Export Report Function
+  const handleExport = () => {
+    if (data.length === 0) {
+        toast.error("No data to export");
+        return;
+    }
+    
+    // Create CSV content
+    const headers = ['Date', 'Sales (Revenue)'];
+    const csvRows = [headers.join(',')];
+    
+    data.forEach(item => {
+        const values = [
+            `"${item.date}"`,
+            item.Sales
+        ];
+        csvRows.push(values.join(','));
+    });
+    
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    const filename = `revenue-report-${timeframe.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.csv`;
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success(`Revenue report for ${timeframe} exported successfully!`);
+  };
+
   // Custom tooltip
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const value = payload[0].value;
       const date = payload[0].payload.date;
-      const percentOfMax = ((value / stats.maxRevenue) * 100).toFixed(0);
+      const percentOfMax = stats.maxRevenue > 0 ? ((value / stats.maxRevenue) * 100).toFixed(0) : 0;
       
       return (
         <div className="bg-white/95 backdrop-blur-md border border-gray-200 p-4 rounded-xl shadow-2xl min-w-[200px] z-50">
@@ -96,9 +131,9 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
     return null;
   };
 
-  // Stat card component
+  // Stat card component (Modified to be wrapped in Link inside the grid)
   const StatCard = ({ label, value, growth, icon: Icon, gradient }: any) => (
-    <div className={`rounded-xl p-4 backdrop-blur-sm border border-white/20 bg-gradient-to-br ${gradient}`}>
+    <div className={`rounded-xl p-4 backdrop-blur-sm border border-white/20 bg-gradient-to-br ${gradient} h-full transition-transform hover:-translate-y-1 hover:shadow-lg`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-xs font-medium text-white/70 uppercase tracking-wider mb-1">{label}</p>
@@ -123,30 +158,38 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
 
   return (
     <div className="space-y-6">
-      {/* Premium Stats Grid */}
+      {/* Premium Stats Grid - ✅ Wrapped in Link */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="Total Revenue"
-          value={`৳${(stats.totalRevenue / 1000000).toFixed(2)}M`}
-          growth={stats.growth}
-          gradient="from-orange-500 via-orange-600 to-red-600"
-        />
-        <StatCard
-          label="Daily Average"
-          value={`৳${(stats.avgRevenue / 1000).toFixed(1)}k`}
-          gradient="from-blue-500 via-blue-600 to-cyan-600"
-        />
-        <StatCard
-          label="Peak Revenue"
-          value={`৳${(stats.maxRevenue / 1000).toFixed(1)}k`}
-          gradient="from-purple-500 via-purple-600 to-pink-600"
-        />
-        <StatCard
-          label="Total Orders"
-          value={stats.totalOrders}
-          growth={2.4}
-          gradient="from-emerald-500 via-emerald-600 to-teal-600"
-        />
+        <Link href="/general/view/orders" className="block h-full">
+          <StatCard
+            label="Total Revenue"
+            value={`৳${(stats.totalRevenue / 1000000).toFixed(2)}M`}
+            growth={stats.growth}
+            gradient="from-orange-500 via-orange-600 to-red-600"
+          />
+        </Link>
+        <Link href="/general/view/orders" className="block h-full">
+          <StatCard
+            label="Daily Average"
+            value={`৳${(stats.avgRevenue / 1000).toFixed(1)}k`}
+            gradient="from-blue-500 via-blue-600 to-cyan-600"
+          />
+        </Link>
+        <Link href="/general/view/orders" className="block h-full">
+          <StatCard
+            label="Peak Revenue"
+            value={`৳${(stats.maxRevenue / 1000).toFixed(1)}k`}
+            gradient="from-purple-500 via-purple-600 to-pink-600"
+          />
+        </Link>
+        <Link href="/general/view/orders" className="block h-full">
+          <StatCard
+            label="Total Orders"
+            value={stats.totalOrders}
+            growth={2.4}
+            gradient="from-emerald-500 via-emerald-600 to-teal-600"
+          />
+        </Link>
       </div>
 
       {/* Main Chart Card */}
@@ -174,7 +217,7 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
                 </button>
                 
                 {showFilter && (
-                  <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                  <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden">
                     {['7 Days', '14 Days', '30 Days', 'Yearly'].map(period => (
                       <button
                         key={period}
@@ -182,7 +225,7 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
                           setTimeframe(period);
                           setShowFilter(false);
                         }}
-                        className={`w-full text-left px-4 py-2 text-sm ${
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${
                           timeframe === period 
                             ? 'bg-orange-50 text-orange-600 font-semibold' 
                             : 'text-gray-700 hover:bg-gray-50'
@@ -195,13 +238,11 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
                 )}
               </div>
 
-              {/* More options button */}
-              <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 transition-all duration-200 hover:text-gray-600">
-                <MoreHorizontal className="w-5 h-5" />
-              </button>
-
-              {/* Export button */}
-              <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md">
+              {/* Export button - ✅ FIXED */}
+              <button 
+                onClick={handleExport}
+                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md"
+              >
                 <Download className="w-4 h-4" />
                 <span className="hidden lg:inline">Export</span>
               </button>
@@ -287,7 +328,7 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
             </ResponsiveContainer>
           </div>
 
-          {/* Footer Stats */}
+          {/* Footer Stats - ✅ Wrapped in Link */}
           <div className="mt-8 pt-6 border-t border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: 'Total Days', value: data.length, color: 'from-blue-500 to-blue-600' },
@@ -295,10 +336,12 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
               { label: 'Peak Value', value: `৳${(stats.maxRevenue / 1000).toFixed(1)}k`, color: 'from-purple-500 to-purple-600' },
               { label: 'Growth', value: `${stats.growth.toFixed(1)}%`, color: stats.growth >= 0 ? 'from-green-500 to-green-600' : 'from-red-500 to-red-600' },
             ].map((item, idx) => (
-              <div key={idx} className={`p-3 rounded-lg bg-gradient-to-br ${item.color} text-white`}>
-                <p className="text-xs font-medium opacity-80 uppercase tracking-wider">{item.label}</p>
-                <p className="text-lg md:text-xl font-bold mt-1">{item.value}</p>
-              </div>
+              <Link href="/general/view/orders" key={idx} className="block transition-transform hover:-translate-y-1">
+                <div className={`p-3 rounded-lg bg-gradient-to-br ${item.color} text-white h-full shadow-md hover:shadow-lg`}>
+                  <p className="text-xs font-medium opacity-80 uppercase tracking-wider">{item.label}</p>
+                  <p className="text-lg md:text-xl font-bold mt-1">{item.value}</p>
+                </div>
+              </Link>
             ))}
           </div>
         </CardContent>
@@ -337,7 +380,7 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
               <div className="flex-1">
                 <h4 className="font-semibold text-gray-900">Key Insight</h4>
                 <p className="text-sm text-gray-600 mt-1">
-                  Peak revenue of ৳{(stats.maxRevenue / 1000).toFixed(1)}k represents {((stats.maxRevenue / stats.avgRevenue - 1) * 100).toFixed(0)}% above average. Analyze factors driving peak performance.
+                  Peak revenue of ৳{(stats.maxRevenue / 1000).toFixed(1)}k represents {stats.avgRevenue > 0 ? ((stats.maxRevenue / stats.avgRevenue - 1) * 100).toFixed(0) : 0}% above average. Analyze factors driving peak performance.
                 </p>
               </div>
             </div>
