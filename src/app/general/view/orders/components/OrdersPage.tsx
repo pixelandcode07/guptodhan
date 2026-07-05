@@ -113,8 +113,15 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                             {showStats ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                     </header>
-                    {/* ✅ MAGIC FIX: OrdersStats now receives fully synced data! */}
-                    {showStats && <div className="px-3 py-3"><OrdersStats currentOrders={ordersData} /></div>}
+                    {showStats && (
+                        <div className="px-3 py-3">
+                            {/* ✅ MAGIC FIX: Pass selectedOrders to OrdersStats */}
+                            <OrdersStats 
+                                currentOrders={ordersData} 
+                                selectedOrders={selectedOrders} 
+                            />
+                        </div>
+                    )}
                 </section>
             )}
 
@@ -162,7 +169,7 @@ export default function OrdersPage({ initialStatus }: { initialStatus?: string }
                     filters={filters}
                     startDate={startDate}             
                     endDate={endDate}                 
-                    onDataChange={setOrdersData} // ✅ Sets filtered data to state
+                    onDataChange={setOrdersData} 
                     onSelectionChange={setSelectedOrders}
                 />
             </div>
