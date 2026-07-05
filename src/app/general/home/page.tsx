@@ -162,7 +162,7 @@ export default async function DashboardPage() {
             <p className="text-xs text-slate-500 mt-2">Registered this month</p>
           </Link>
 
-          <Link href="/general/view/all/product" className="bg-white/80 backdrop-blur-md rounded-xl p-6 border border-white/20 shadow-lg hover:shadow-xl hover:bg-white/90 transition-all duration-300 block cursor-pointer">
+          <Link href="/general/view/low-stock" className="bg-white/80 backdrop-blur-md rounded-xl p-6 border border-white/20 shadow-lg hover:shadow-xl hover:bg-white/90 transition-all duration-300 block cursor-pointer">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-orange-100/50 rounded-lg">
                 <AlertTriangle className="w-6 h-6 text-orange-600" />
@@ -195,7 +195,7 @@ export default async function DashboardPage() {
           {/* Right: Alerts & Products (1 column) */}
           <div className="space-y-6">
             <LowStockAlert products={data.lowStockProducts || []} />
-            <TopProducts products={data.topProducts || []} />
+            {/* <TopProducts products={data.topProducts || []} /> */}
           </div>
         </div>
 
