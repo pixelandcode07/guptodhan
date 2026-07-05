@@ -83,6 +83,11 @@ export const MENU_CONFIG: MenuConfig = {
         count: '0',
       },
       {
+      title: "Low Stock Products",
+      url: "/general/view/low-stock",
+      count: '0',
+      },
+      {
         title: 'Product Ques/Ans (0)',
         url: '/general/view/product/question/answer',
         count: '0',
