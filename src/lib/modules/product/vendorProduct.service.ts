@@ -1258,6 +1258,7 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
   return suggestions;
 };
 
+
 const getSearchResultsFromDB = async (searchTerm: string) => {
   const cacheKey = CacheKeys.PRODUCT.SEARCH(searchTerm);
 
@@ -1283,35 +1284,56 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
             ],
           },
         },
+        // ✅ FIX: আগে $switch দিয়ে "সব word title-এ থাকলে 10, নাহলে 0"
+        // (all-or-nothing AND) ব্যবহার করা হতো। এতে ৮-৯ word এর লম্বা
+        // query-তে একটা word (যেমন hyphenated "DH-P5AE-PV" বা "Wi-Fi")
+        // মিস হলেই পুরো ১০ পয়েন্ট চলে যেত, আর সেই exact-match product
+        // score ০-তে নেমে recency (createdAt) বা weak description/tag
+        // match-এর নিচে চাপা পড়ে যাচ্ছিল — এই জন্যই সবচেয়ে relevant
+        // product list-এর প্রথমে না এসে অনেক পিছনে চলে যাচ্ছিল।
+        //
+        // এখন প্রতিটা matched word আলাদাভাবে গোনা হয় ($map + $sum দিয়ে)
+        // এবং score টা matched-word-count অনুপাতে বাড়ে। ফলে ৯টার মধ্যে
+        // ৮টা word title-এ মিললে সেই product অনেক বেশি score পাবে তুলনায়
+        // যেই product-এ মাত্র ১-২টা word মেলে বা description/tag-এ
+        // কোনোমতে হিট করে।
+        {
+          $addFields: {
+            _titleWordHits: {
+              $sum: words.map((w) => ({
+                $cond: [
+                  {
+                    $regexMatch: {
+                      input: { $ifNull: ["$productTitle", ""] },
+                      regex: `\\b${escapeRegex(w)}`,
+                      options: "i",
+                    },
+                  },
+                  1,
+                  0,
+                ],
+              })),
+            },
+          },
+        },
         {
           $addFields: {
             _searchScore: {
               $add: [
+                // প্রতিটা মিলে যাওয়া word-এর জন্য 10 পয়েন্ট করে যোগ হয়।
+                // সব word মিললে (আগের behavior এর সমতুল্য) সর্বোচ্চ score,
+                // কিন্তু একটা-দুটো miss হলেও partial credit থেকে যায়।
+                { $multiply: ["$_titleWordHits", 10] },
+                // সবগুলো word title-এ ধারাবাহিকভাবে/সম্পূর্ণভাবে মিললে
+                // বাড়তি bonus — exact-ish match কে আরও উপরে ঠেলে দেয়।
                 {
-                  $switch: {
-                    branches: [
-                      {
-                        case: {
-                          $and: words.map((w) => ({
-                            $regexMatch: {
-                              input: { $ifNull: ["$productTitle", ""] },
-                              // ✅ FIX: escapeRegex() যোগ করা হলো — এর আগে
-                              // "3+3"-এর মতো word regex quantifier হিসেবে
-                              // ভেঙে যাচ্ছিল আর title-এ থাকা "3+3"-এর সাথে
-                              // মিলছিল না, ফলে title-branch (10pt) সবসময়
-                              // false থাকত (description/tag branch দিয়ে
-                              // ফলাফল আসছিল বলে page-এ result দেখা যেত,
-                              // কিন্তু relevance score সঠিক হচ্ছিল না)।
-                              regex: new RegExp(`\\b${escapeRegex(w)}`, "i"),
-                            },
-                          })),
-                        },
-                        then: 10,
-                      },
-                    ],
-                    default: 0,
-                  },
+                  $cond: [
+                    { $eq: ["$_titleWordHits", words.length] },
+                    15,
+                    0,
+                  ],
                 },
+                // আংশিক/যেকোনো একটা word title-এ থাকলে (broad regex) → 5
                 {
                   $cond: [
                     {
@@ -1324,6 +1346,7 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
                     0,
                   ],
                 },
+                // description-এ মিললে → 2
                 {
                   $cond: [
                     {
@@ -1341,7 +1364,7 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
           },
         },
         { $sort: { _searchScore: -1, createdAt: -1 } },
-        { $unset: "_searchScore" },
+        { $unset: ["_searchScore", "_titleWordHits"] },
         ...getProductLookupPipeline(),
       ]);
 
