@@ -9,20 +9,20 @@ const getDashboardAnalyticsFromDB = async () => {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(today.getDate() - 30);
 
-  // ✅ MAGIC FIX: মাসের ১ তারিখ বের করার লজিক (Monthly Stats এর জন্য)
+  // মাসের ১ তারিখ বের করার লজিক (Monthly Stats এর জন্য)
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
   try {
-    // --- 1. Monthly Orders Count (এই মাসের ১ তারিখ থেকে) ---
+    // --- 1. Monthly Orders Count ---
     const monthlyOrders = await OrderModel.countDocuments({
       createdAt: { $gte: startOfMonth },
     });
 
-    // --- 2. Monthly Revenue (এই মাসের ১ তারিখ থেকে) ---
+    // --- 2. Monthly Revenue ---
     const monthlyRevenueData = await OrderModel.aggregate([
       {
         $match: {
-          createdAt: { $gte: startOfMonth }, // ✅ ফিক্সড: গত মাসের অর্ডার আর কাউন্ট হবে না
+          createdAt: { $gte: startOfMonth }, 
           paymentStatus: 'Paid',
         },
       },
@@ -47,15 +47,16 @@ const getDashboardAnalyticsFromDB = async () => {
       createdAt: { $gte: todayStart, $lte: todayEnd },
     });
 
-    // --- 4. Monthly Registered Users (এই মাসের ১ তারিখ থেকে) ---
+    // --- 4. Monthly Registered Users ---
+    // ✅ MAGIC FIX: Removed { role: 'user' } to count ALL new users
     const monthlyRegisteredUsers = await UserModel.countDocuments({
       createdAt: { $gte: startOfMonth },
-      role: 'user',
     });
 
     // --- 5. Total Stats (All Time / আজীবনের) ---
     const totalOrders = await OrderModel.countDocuments({});
-    const totalUsers = await UserModel.countDocuments({ role: 'user' });
+    // ✅ MAGIC FIX: Removed { role: 'user' } to show exact 154 (ALL users)
+    const totalUsers = await UserModel.countDocuments({}); 
     
     const totalRevenueData = await OrderModel.aggregate([
       {
@@ -149,7 +150,8 @@ const getDashboardAnalyticsFromDB = async () => {
     }));
 
     // --- 10. Recent Customers ---
-    const recentCustomers = await UserModel.find({ role: 'user' })
+    // ✅ MAGIC FIX: Removed { role: 'user' } to show all recent registrations
+    const recentCustomers = await UserModel.find({})
       .select('name email profilePicture phoneNumber address createdAt')
       .sort({ createdAt: -1 })
       .limit(10)
