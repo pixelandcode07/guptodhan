@@ -98,6 +98,18 @@ const ActionCell = ({ ad }: { ad: ClassifiedAdListing }) => {
   // Format Date safely
   const createdDate = ad.createdAt ? new Date(ad.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Unknown';
 
+  // ✅ MAGIC FIX: Extracting Location and other attributes exactly as per your JSON structure
+  const adAny = ad as any;
+  const division = adAny.division;
+  const district = adAny.district;
+  const upazila = adAny.upazila;
+  const locationText = [upazila, district, division].filter(Boolean).join(', ') || 'N/A';
+
+  const brand = adAny.brand;
+  const productModel = adAny.productModel;
+  const authenticity = adAny.authenticity;
+  const isPhoneHidden = ad.contactDetails?.isPhoneHidden || (ad.contactDetails as any)?.hidePhone;
+
   return (
     <>
       <div className="flex items-center gap-1 justify-end">
@@ -215,16 +227,34 @@ const ActionCell = ({ ad }: { ad: ClassifiedAdListing }) => {
                   <p className="text-2xl font-black text-blue-600">৳{ad.price?.toLocaleString()} <span className="text-sm font-medium text-gray-500">{ad.isNegotiable ? '(Negotiable)' : '(Fixed)'}</span></p>
                 </div>
                 
-                <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Condition</p>
-                  <p className="text-sm font-medium text-gray-800 capitalize">{ad.condition || 'N/A'}</p>
+                {/* Condition & Authenticity */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Condition</p>
+                    <p className="text-sm font-medium text-gray-800 capitalize">{ad.condition || 'N/A'}</p>
+                  </div>
+                  {authenticity && (
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Authenticity</p>
+                      <p className="text-sm font-medium text-gray-800 capitalize">{authenticity}</p>
+                    </div>
+                  )}
                 </div>
 
+                {/* Brand & Model */}
+                {brand && (
+                  <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Brand & Model</p>
+                    <p className="text-sm font-medium text-gray-800 capitalize">{brand} {productModel ? `- ${productModel}` : ''}</p>
+                  </div>
+                )}
+
+                {/* Location */}
                 <div>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Location</p>
                   <div className="flex items-start gap-1.5 text-sm font-medium text-gray-800 mt-1">
                     <MapPin className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                    <span>{ad.location?.area || 'N/A'}, {ad.location?.city || 'N/A'}</span>
+                    <span className="leading-snug">{locationText}</span>
                   </div>
                 </div>
               </div>
@@ -234,7 +264,7 @@ const ActionCell = ({ ad }: { ad: ClassifiedAdListing }) => {
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Seller Information</p>
                   <div className="flex items-center gap-3 mt-2 bg-white p-2 rounded-lg border border-gray-200">
                     {ad.user?.profilePicture ? (
-                      <Image src={ad.user.profilePicture} alt={ad.user.name || 'Seller'} width={40} height={40} className="rounded-full" />
+                      <Image src={ad.user.profilePicture} alt={ad.user.name || 'Seller'} width={40} height={40} className="rounded-full object-cover" />
                     ) : (
                       <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">
                         {ad.user?.name?.charAt(0) || 'U'}
@@ -245,7 +275,7 @@ const ActionCell = ({ ad }: { ad: ClassifiedAdListing }) => {
                       <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3 text-green-500" /> {ad.contactDetails?.phone || 'N/A'}</p>
                     </div>
                   </div>
-                  {ad.contactDetails?.hidePhone && (
+                  {isPhoneHidden && (
                     <p className="text-xs text-red-500 italic mt-1">* Seller requested to hide phone number</p>
                   )}
                 </div>
@@ -427,7 +457,7 @@ export const buySellListing_columns: ColumnDef<ClassifiedAdListing>[] = [
     },
   },
 
-  // ✅ MAGIC FIX: New Action Cell containing the View Modal and Dropdown
+  // Action Cell
   {
     id: "actions",
     header: () => <div className="text-right pr-2">Actions</div>,
