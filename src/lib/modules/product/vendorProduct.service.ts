@@ -1114,51 +1114,17 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
   if (words.length === 0) return [];
 
   const titleMatch = buildTitleMatch(words);
-  const descriptionMatch = buildDescriptionMatch(words);
-  const tagOrRegex = buildTagOrRegex(words);
 
   const suggestions = await VendorProductModel.aggregate([
     {
       $match: {
         status: "active",
-        // ✅ FIX: ড্রপডাউনেও Title, Description এবং Tag সব জায়গায় সার্চ করবে (OR Logic)
-        $or: [
-          titleMatch,
-          descriptionMatch,
-          { productTag: { $elemMatch: { $regex: tagOrRegex } } },
-          { productTitle: { $regex: tagOrRegex } }, // কোনো একটা ওয়ার্ড মিললেও যেন মিস না হয়
-        ],
+        ...titleMatch,   // ✅ title-এ AND logic
       },
     },
-    // ✅ FIX: রিলেভেন্স স্কোরিং (যাতে সবচেয়ে বেশি মিলে যাওয়া প্রোডাক্ট ড্রপডাউনের একদম উপরে থাকে)
-    {
-      $addFields: {
-        _searchScore: {
-          $add: [
-            { $cond: [titleMatch, 1000, 0] }, // সব শব্দ টাইটেলে থাকলে ১০ পয়েন্ট
-            {
-              $cond: [
-                { $regexMatch: { input: "$productTitle", regex: tagOrRegex } },
-                5,
-                0,
-              ],
-            }, // আংশিক টাইটেল মিললে ৫ পয়েন্ট
-            {
-              $cond: [
-                { productTag: { $elemMatch: { $regex: tagOrRegex } } },
-                3,
-                0,
-              ],
-            }, // ট্যাগের সাথে মিললে ৩ পয়েন্ট
-          ],
-        },
-      },
-    },
-    { $sort: { _searchScore: -1, createdAt: -1 } },
+    { $sort: { createdAt: -1 } },
     { $limit: 10 },
-    { $unset: "_searchScore" },
 
-    // ── Lookups ──────────────────────────────────────────────────────────
     {
       $lookup: {
         from: "categorymodels",
@@ -1195,7 +1161,7 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
         thumbnailImage: 1,
         productPrice: 1,
         discountPrice: 1,
-        callForPrice: 1,
+        callForPrice: 1, // ✅ FIX: Added here
         slug: 1,
         "category.slug": 1,
         "subCategory.slug": 1,
@@ -1207,6 +1173,9 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
   return suggestions;
 };
 
+
+// ─── getSearchResultsFromDB ───────────────────────────────────────────────────
+
 const getSearchResultsFromDB = async (searchTerm: string) => {
   const cacheKey = CacheKeys.PRODUCT.SEARCH(searchTerm);
 
@@ -1216,29 +1185,33 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
       const words = prepareWords(searchTerm);
       if (words.length === 0) return [];
 
-      const titleMatch = buildTitleMatch(words);
-      const descriptionMatch = buildDescriptionMatch(words);
-      const tagOrRegex = buildTagOrRegex(words);
+      const titleMatch       = buildTitleMatch(words);       // AND
+      const descriptionMatch = buildDescriptionMatch(words); // AND
+      const tagOrRegex       = buildTagOrRegex(words);       // OR (tag keyword)
 
+      
       const results = await VendorProductModel.aggregate([
         {
           $match: {
             status: "active",
             $or: [
-              titleMatch,
-              descriptionMatch,
-              { productTag: { $elemMatch: { $regex: tagOrRegex } } },
-              { productTitle: { $regex: tagOrRegex } },
+              titleMatch,                                             // title: AND
+              descriptionMatch,                                      // description: AND
+              { productTag: { $elemMatch: { $regex: tagOrRegex } } }, // tag: OR
             ],
           },
         },
+
+        // ── Relevance Scoring ─────────────────────────────────────────────────
         {
           $addFields: {
             _searchScore: {
               $add: [
+                // Title match (all words) → highest score
                 {
                   $switch: {
                     branches: [
+                      // Title-এ সব word আছে → score 4
                       {
                         case: {
                           $and: words.map((w) => ({
@@ -1248,24 +1221,13 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
                             },
                           })),
                         },
-                        then: 10,
+                        then: 4,
                       },
                     ],
                     default: 0,
                   },
                 },
-                {
-                  $cond: [
-                    {
-                      $regexMatch: {
-                        input: { $ifNull: ["$productTitle", ""] },
-                        regex: tagOrRegex,
-                      },
-                    },
-                    5,
-                    0,
-                  ],
-                },
+                // Description match → score 1
                 {
                   $cond: [
                     {
@@ -1274,7 +1236,7 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
                         regex: tagOrRegex,
                       },
                     },
-                    2,
+                    1,
                     0,
                   ],
                 },
@@ -1282,8 +1244,13 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
             },
           },
         },
+
+        // ── Sort: highest score first, then newest ────────────────────────────
         { $sort: { _searchScore: -1, createdAt: -1 } },
+
+        // ── Remove score field ────────────────────────────────────────────────
         { $unset: "_searchScore" },
+
         ...getProductLookupPipeline(),
       ]);
 
