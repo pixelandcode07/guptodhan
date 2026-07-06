@@ -99,7 +99,6 @@ export default function NavMain() {
         {/* ── Desktop Search ─────────────────────────────────────── */}
         <div className="hidden md:flex items-center justify-center w-full max-w-[30vw] lg:max-w-md mx-auto relative">
           <SearchBar />
-          {/* No onSearch needed on desktop — overlay doesn't exist */}
         </div>
 
         {/* ── Desktop Nav Links ──────────────────────────────────── */}
@@ -453,10 +452,7 @@ export default function NavMain() {
                   <X size={20} />
                 </button>
                 <div className="flex-1">
-                 {/* Desktop */}
-                  <SearchBar />
-
-                  {/* Mobile overlay */}
+                  {/* ✅ MAGIC FIX: Removed the duplicate desktop SearchBar that was here */}
                   <SearchBar onSearch={() => setMobileSearchOpen(false)} />
                 </div>
               </div>
