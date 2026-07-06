@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Search, Loader2, X, ShoppingBag, ArrowRight } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation"; // ✅ Added useSearchParams
 import debounce from "lodash/debounce";
 import { cn } from "@/lib/utils";
 
@@ -21,14 +21,25 @@ interface SearchBarProps {
 }
 
 export default function SearchBar({ onSearch }: SearchBarProps) {
-  const [query, setQuery] = React.useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams(); // ✅ Catch URL Query
+  const initialQuery = searchParams.get("q") || ""; // ✅ Get query if exists
+
+  const [query, setQuery] = React.useState(initialQuery);
   const [suggestions, setSuggestions] = React.useState<Suggestion[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [showDropdown, setShowDropdown] = React.useState(false);
-  const router = useRouter();
+  
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
+
+  // ── Sync URL with SearchBar (If URL changes, input updates) ─────────────────
+  React.useEffect(() => {
+    const currentQ = searchParams.get("q") || "";
+    setQuery(currentQ);
+    setShowDropdown(false); // Don't show dropdown just because URL changed
+  }, [searchParams]);
 
   // ── Close dropdown on outside click ──────────────────────────────────────────
   React.useEffect(() => {
@@ -85,38 +96,37 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
     };
   }, [query, fetchSuggestions]);
 
-  // ── Navigate to /search — query bar-এ থাকবে ─────────────────────────────────
+  // ── Navigate to /search ───────────────────────────────────────────────────────
   const goToSearch = React.useCallback(
     (q: string) => {
       if (!q.trim()) return;
       setShowDropdown(false);
-      // ✅ setQuery("") নেই — search করার পর query bar-এ থাকবে, edit করা যাবে
       router.push(`/search?q=${encodeURIComponent(q.trim())}`);
       onSearch?.();
     },
     [router, onSearch]
   );
 
-  // ── Navigate to product page — query bar-এ থাকবে ────────────────────────────
+  // ── Navigate to product page ──────────────────────────────────────────────────
   const goToProduct = React.useCallback(
     (item: Suggestion) => {
       setShowDropdown(false);
-      // ✅ setQuery("") নেই — product page-এ গেলেও query থাকবে
       router.push(`/product/${item.slug ?? item._id}`);
       onSearch?.();
     },
     [router, onSearch]
   );
 
-  // ── X button — manually clear করার option ────────────────────────────────────
+  // ── Clear Search ─────────────────────────────────────────────────────────────
   const clearSearch = () => {
     setQuery("");
     setSuggestions([]);
     setShowDropdown(false);
     inputRef.current?.focus();
+    // Optional: If you want X to also reset the URL, uncomment the line below
+    // router.push("/search"); 
   };
 
-  // ── Highlight matched text ────────────────────────────────────────────────────
   const highlight = (text: string, term: string) => {
     if (!term || !text) return text;
     const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -156,7 +166,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
-            setShowDropdown(true);
+            setShowDropdown(true); // ✅ Only show dropdown when actively typing
           }}
           onFocus={() => query && setShowDropdown(true)}
           onKeyDown={(e) => {
