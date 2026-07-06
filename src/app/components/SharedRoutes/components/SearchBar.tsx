@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Search, Loader2, X, ShoppingBag, ArrowRight } from "lucide-react";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation"; // ✅ Added useSearchParams
+import { useRouter, useSearchParams } from "next/navigation";
 import debounce from "lodash/debounce";
 import { cn } from "@/lib/utils";
 
@@ -22,23 +22,23 @@ interface SearchBarProps {
 
 export default function SearchBar({ onSearch }: SearchBarProps) {
   const router = useRouter();
-  const searchParams = useSearchParams(); // ✅ Catch URL Query
-  const initialQuery = searchParams.get("q") || ""; // ✅ Get query if exists
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q") || "";
 
   const [query, setQuery] = React.useState(initialQuery);
   const [suggestions, setSuggestions] = React.useState<Suggestion[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [showDropdown, setShowDropdown] = React.useState(false);
-  
+
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
-  // ── Sync URL with SearchBar (If URL changes, input updates) ─────────────────
+  // ── Sync URL with SearchBar ──────────────────────────────────────────────────
   React.useEffect(() => {
     const currentQ = searchParams.get("q") || "";
     setQuery(currentQ);
-    setShowDropdown(false); // Don't show dropdown just because URL changed
+    setShowDropdown(false); // URL চেঞ্জ হলে ড্রপডাউন বন্ধ থাকবে
   }, [searchParams]);
 
   // ── Close dropdown on outside click ──────────────────────────────────────────
@@ -89,14 +89,16 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
   );
 
   React.useEffect(() => {
-    fetchSuggestions(query);
+    if (showDropdown && query.trim()) {
+      fetchSuggestions(query);
+    }
     return () => {
       fetchSuggestions.cancel();
       if (abortControllerRef.current) abortControllerRef.current.abort();
     };
-  }, [query, fetchSuggestions]);
+  }, [query, showDropdown, fetchSuggestions]);
 
-  // ── Navigate to /search ───────────────────────────────────────────────────────
+  // ── Navigation Handlers ───────────────────────────────────────────────────────
   const goToSearch = React.useCallback(
     (q: string) => {
       if (!q.trim()) return;
@@ -107,7 +109,6 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
     [router, onSearch]
   );
 
-  // ── Navigate to product page ──────────────────────────────────────────────────
   const goToProduct = React.useCallback(
     (item: Suggestion) => {
       setShowDropdown(false);
@@ -117,14 +118,11 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
     [router, onSearch]
   );
 
-  // ── Clear Search ─────────────────────────────────────────────────────────────
   const clearSearch = () => {
     setQuery("");
     setSuggestions([]);
     setShowDropdown(false);
     inputRef.current?.focus();
-    // Optional: If you want X to also reset the URL, uncomment the line below
-    // router.push("/search"); 
   };
 
   const highlight = (text: string, term: string) => {
@@ -144,7 +142,6 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
 
   return (
     <div className="relative w-full max-w-3xl mx-auto z-50" ref={wrapperRef}>
-
       {/* ── Input Row ──────────────────────────────────────────────────────────── */}
       <div
         className={cn(
@@ -166,19 +163,22 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
-            setShowDropdown(true); // ✅ Only show dropdown when actively typing
+            setShowDropdown(true);
           }}
           onFocus={() => query && setShowDropdown(true)}
           onKeyDown={(e) => {
             if (e.key === "Enter") goToSearch(query);
-            if (e.key === "Escape") { setShowDropdown(false); inputRef.current?.blur(); }
+            if (e.key === "Escape") {
+              setShowDropdown(false);
+              inputRef.current?.blur();
+            }
           }}
         />
 
         {query && (
           <button
             onClick={clearSearch}
-            className="p-2 mr-1 text-gray-400 hover:text-red-500 transition-colors"
+            className="p-2 mr-1 text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
             aria-label="Clear search"
           >
             <X className="w-4 h-4" />
@@ -187,7 +187,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
 
         <button
           onClick={() => goToSearch(query)}
-          className="h-[calc(100%-8px)] mr-1 px-6 bg-[#00005E] hover:bg-[#000045] text-white rounded-full font-medium text-sm transition-colors flex items-center gap-2"
+          className="h-[calc(100%-8px)] mr-1 px-6 bg-[#00005E] hover:bg-[#000045] text-white rounded-full font-medium text-sm transition-colors flex items-center gap-2 cursor-pointer"
           aria-label="Search"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
@@ -197,13 +197,11 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
       {/* ── Suggestions Dropdown ───────────────────────────────────────────────── */}
       {showDropdown && query && (
         <div className="absolute top-full left-0 right-0 bg-white border-x-2 border-b-2 border-[#00005E] rounded-b-[20px] shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-
           {loading && suggestions.length === 0 ? (
             <div className="py-12 flex flex-col items-center justify-center text-gray-500">
               <Loader2 className="w-8 h-8 animate-spin text-[#00005E] mb-2" />
               <p className="text-sm">Searching for best matches...</p>
             </div>
-
           ) : suggestions.length === 0 ? (
             <div className="py-10 flex flex-col items-center justify-center text-gray-500">
               <ShoppingBag className="w-10 h-10 mb-3 text-gray-300" />
@@ -212,7 +210,6 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
                 Try checking your spelling or use different keywords.
               </p>
             </div>
-
           ) : (
             <>
               <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
