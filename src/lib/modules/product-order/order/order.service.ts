@@ -18,6 +18,7 @@ import '@/lib/modules/product-order/orderDetails/orderDetails.model';
 import { getCachedData, deleteCacheKey, deleteCachePattern } from '@/lib/redis/cache-helpers';
 import { CacheKeys, CacheTTL } from '@/lib/redis/cache-keys';
 import { User } from '../../user/user.model';
+import { UserServices } from '../../user/user.service';
 
 // ================================================================
 // 📝 CREATE ORDER (WITHOUT TRANSACTIONS)
@@ -105,7 +106,6 @@ const getAllOrdersFromDB = async (status?: string) => {
           },
           { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
 
-          // ✅ NEW CALCULATION FIELDS
           {
             $addFields: {
               productTotal: { $subtract: ['$totalAmount', { $ifNull: ['$deliveryCharge', 0] }] },
@@ -165,7 +165,7 @@ const getAllOrdersFromDB = async (status?: string) => {
 };
 
 // ================================================================
-// 🔍 GET ORDERS BY USER (WITH CACHE + AGGREGATION)
+// 🔍 GET ORDERS BY USER
 // ================================================================
 const getOrdersByUserFromDB = async (userId: string) => {
   const cacheKey = CacheKeys.ORDER.BY_USER(userId);
@@ -258,7 +258,7 @@ const getOrdersByUserFromDB = async (userId: string) => {
 };
 
 // ================================================================
-// ✏️ UPDATE ORDER & REDUCE STOCK
+// ✏️ UPDATE ORDER & AUTOMATIC STOCK DEDUCTION
 // ================================================================
 const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
   try {
@@ -270,7 +270,7 @@ const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
 
     const result = await OrderModel.findByIdAndUpdate(id, payload, { new: true });
 
-    // ✅ MAGIC FIX: Check if order just became 'Delivered' (and optionally Paid)
+    // ✅ MAGIC FIX: Check if order status is changed to 'Delivered'
     const isNowDelivered = result?.orderStatus === 'Delivered';
     const wasNotDelivered = previousOrder.orderStatus !== 'Delivered';
 
@@ -295,19 +295,37 @@ const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
         }
       }
 
-      // 2. 📉 REDUCE PRODUCT STOCK AUTOMATICALLY
-      const orderDetails = await OrderDetailsModel.find({ orderId: result?._id });
-      for (const item of orderDetails) {
-        if (item.productId && item.quantity) {
-          await VendorProductModel.findByIdAndUpdate(item.productId, {
-            $inc: { stock: -item.quantity } // Stock theke quantity minus kora hocche
-          });
+      // 2. 📉 REDUCE PRODUCT STOCK & INCREMENT SELL COUNT
+      const detailsIds = result?.orderDetails || previousOrder.orderDetails || [];
+      
+      if (detailsIds.length > 0) {
+        // Bulletproof order details lookup
+        const orderDetails = await OrderDetailsModel.find({
+          $or: [
+            { _id: { $in: detailsIds } },
+            { orderId: result?._id }
+          ]
+        });
+
+        for (const item of orderDetails) {
+          if (item.productId && item.quantity) {
+            await VendorProductModel.findByIdAndUpdate(item.productId, {
+              $inc: { 
+                stock: -item.quantity,       // 📉 স্টক কমানো হচ্ছে
+                sellCount: item.quantity     // 📈 সেল কাউন্ট বাড়ানো হচ্ছে
+              }
+            });
+          }
         }
+        console.log(`✅ Stock reduced successfully for Order ID: ${result?._id}`);
+
+        // 🧹 CLEAR CACHES SO FRONTEND UI SHOWS NEW STOCK INSTANTLY
+        await deleteCachePattern('*product*');
+        await deleteCachePattern('products:*');
       }
-      console.log(`✅ Stock reduced for Order ID: ${result?._id}`);
     }
 
-    // Cache clearing
+    // Cache clearing for orders
     await deleteCacheKey(CacheKeys.ORDER.BY_ID(id));
     if (result?.userId) {
       await deleteCachePattern(`orders:user:${result?.userId}*`);
@@ -689,7 +707,6 @@ const getFilteredOrdersFromDB = async (filters: any) => {
       },
       { $unwind: { path: '$couponId', preserveNullAndEmptyArrays: true } },
       
-      // ✅ NEW CALCULATION FIELDS
       {
         $addFields: {
           productTotal: { $subtract: ['$totalAmount', { $ifNull: ['$deliveryCharge', 0] }] },
@@ -786,23 +803,19 @@ const cancelOrderByUserInDB = async (orderId: string, userId: string, reason: st
     
     if (!order) throw new Error('Order not found');
 
-    // Security Check
     if (order.userId.toString() !== userId) {
       throw new Error('You are not authorized to cancel this order.');
     }
 
-    // Condition Check
     if (['Shipped', 'Delivered', 'Returned', 'Cancelled'].includes(order.orderStatus)) {
       throw new Error(`Order cannot be cancelled because it is already ${order.orderStatus}.`);
     }
 
-    // Update Status
     order.orderStatus = 'Cancelled';
     order.cancelReason = reason;
     
     await order.save();
 
-    // Clear caches
     await deleteCacheKey(CacheKeys.ORDER.BY_ID(orderId));
     await deleteCachePattern(`orders:user:${userId}*`);
     await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
