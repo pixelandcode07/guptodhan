@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Truck, CheckCircle2, Package, Download, ArrowLeft, ShoppingBag } from 'lucide-react';
+import { Truck, CheckCircle2, Package, Download, ArrowLeft, ShoppingBag, CalendarDays } from 'lucide-react';
 import api from '@/lib/axios';
 import { generateInvoice, OrderInvoiceData } from './utils/invoiceGenerator';
 import Link from 'next/link';
@@ -15,6 +15,7 @@ import Image from 'next/image';
 export interface OrderDetailsData {
   id: string;
   orderNo: string;
+  orderDate?: string; // ✅ Date Add kora holo
   name: string;
   phone: string;
   email?: string;
@@ -147,7 +148,14 @@ export default function OrderDetailsView({
         <div className="bg-slate-50 border-b border-gray-200 px-5 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>
             <h2 className="text-xl font-bold text-slate-800 tracking-tight">Order Details</h2>
-            <p className="text-xs font-mono text-slate-500 mt-0.5">#{order.orderNo}</p>
+            <div className="flex items-center gap-3 mt-0.5">
+               <p className="text-xs font-mono text-slate-500">#{order.orderNo}</p>
+               <span className="text-slate-300">|</span>
+               <p className="text-xs text-slate-500 flex items-center gap-1">
+                 <CalendarDays className="w-3.5 h-3.5" /> 
+                 {order.orderDate || 'Unknown Date'} {/* ✅ UI-তে ডেট শো করবে */}
+               </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${order.payment.toLowerCase().includes('paid') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
@@ -161,7 +169,7 @@ export default function OrderDetailsView({
             <Label className="text-[10px] uppercase text-slate-400 font-black tracking-widest">Shipping To</Label>
             <p className="text-base font-bold text-slate-900">{order.name}</p>
             <p className="text-sm font-medium text-slate-600">{order.phone}</p>
-            <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded-md border border-slate-100 italic leading-relaxed">
+            <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded-md border border-slate-100 italic leading-relaxed mt-2">
               {order.address || 'No address provided'}
             </div>
           </div>
@@ -173,7 +181,7 @@ export default function OrderDetailsView({
         </div>
       </div>
 
-      {/* প্রোডাক্ট টেবিল (Smart Rendering) */}
+      {/* প্রোডাক্ট টেবিল */}
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="bg-slate-50 border-b border-gray-200 px-5 py-3 flex items-center gap-2">
           <ShoppingBag className="h-4 w-4 text-slate-600" />
