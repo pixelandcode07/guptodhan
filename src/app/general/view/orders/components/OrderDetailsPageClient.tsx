@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import OrderDetailsSkeleton from './OrderDetailsSkeleton';
 
-// ✅ JSON অনুযায়ী টাইপ ডিফিনিশন
+// ✅ JSON অনুযায়ী টাইপ ডিফিনিশন
 type ApiOrder = {
   _id: string;
   orderId?: string;
@@ -28,6 +28,7 @@ type ApiOrder = {
   shippingCity?: string;
   shippingDistrict?: string;
   shippingCountry?: string;
+  createdAt?: string; // ✅ MAGIC FIX: Date add kora holo
   orderDetails?: Array<{
     _id: string;
     quantity: number;
@@ -49,7 +50,7 @@ function mapApiOrderToDetails(order: ApiOrder): OrderDetailsData {
   const user = typeof order.userId === 'object' && order.userId !== null ? order.userId : {};
   const store = typeof order.storeId === 'object' && order.storeId !== null ? order.storeId : {};
 
-  // ✅ এড্রেস স্ট্রিং তৈরি (Street, City, District মিলিয়ে)
+  // ✅ এড্রেস স্ট্রিং তৈরি (Street, City, District মিলিয়ে)
   const fullAddress = [
     order.shippingStreetAddress,
     order.shippingCity,
@@ -69,13 +70,19 @@ function mapApiOrderToDetails(order: ApiOrder): OrderDetailsData {
     color: item.color,
   }));
 
+  // ✅ Date Formatting
+  const orderDateStr = order.createdAt 
+    ? new Date(order.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) 
+    : 'Unknown Date';
+
   return {
     id: order._id,
     orderNo: order.orderId || order._id,
+    orderDate: orderDateStr, // ✅ Date pass kora holo
     name: order.shippingName || user?.name || 'Customer',
     phone: order.shippingPhone || user?.phoneNumber || 'N/A',
     email: order.shippingEmail || user?.email,
-    address: fullAddress, // ✅ এই এড্রেসটি এখন ভিউতে শো করবে
+    address: fullAddress, 
     total: typeof order.totalAmount === 'number' ? order.totalAmount : 0,
     deliveryCharge: order.deliveryCharge || 0,
     payment: order.paymentStatus || 'Pending',
@@ -92,7 +99,7 @@ function mapApiOrderToDetails(order: ApiOrder): OrderDetailsData {
       name: store?.storeName,
       id: typeof store === 'object' ? store?._id : undefined,
     },
-    items: items, // ✅ প্রোডাক্ট লিস্ট ভিউতে পাস করা হচ্ছে
+    items: items,
   };
 }
 
