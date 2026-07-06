@@ -38,7 +38,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
   React.useEffect(() => {
     const currentQ = searchParams.get("q") || "";
     setQuery(currentQ);
-    setShowDropdown(false); // URL চেঞ্জ হলে ড্রপডাউন বন্ধ থাকবে
+    setShowDropdown(false);
   }, [searchParams]);
 
   // ── Close dropdown on outside click ──────────────────────────────────────────
