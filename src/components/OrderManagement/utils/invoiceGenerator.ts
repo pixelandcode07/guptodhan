@@ -12,7 +12,7 @@ export interface OrderInvoiceData {
   deliveryMethod?: string;
   trackingId?: string;
   parcelId?: string;
-  orderDate?: string;
+  orderDate?: string; // ✅ Original order date passed from the details page
   customer?: {
     name?: string;
     email?: string;
@@ -33,7 +33,7 @@ export interface OrderInvoiceData {
   }>;
 }
 
-// ✅ FIXED: Promise<string> explicit return type added
+// ✅ Promise<string> explicit return type added
 const toBase64 = (url: string): Promise<string> => 
   fetch(url)
     .then(res => res.blob())
@@ -45,8 +45,11 @@ const toBase64 = (url: string): Promise<string> =>
     })).catch(() => url);
 
 export const generateInvoice = async (order: OrderInvoiceData) => {
+  // ✅ MAGIC FIX: Print actual Order Date if it exists, otherwise fallback to today's date
   const invoiceDate = order.orderDate || new Date().toLocaleDateString('en-GB');
-  const invoiceTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  
+  // We use current time as generation time, or you can extract time from orderDate if preferred
+  const generationTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   
   const deliveryCharge = order.deliveryCharge || 0;
   const subtotal = order.total - deliveryCharge;
@@ -56,7 +59,7 @@ export const generateInvoice = async (order: OrderInvoiceData) => {
   const productRowsPromises = (order.items || []).map(async (item, index) => {
     const imgBase64 = await toBase64(item.thumbnailImage || '/img/placeholder.png');
     
-    // ভেরিয়েন্ট দেখানোর স্মার্ট লজিক
+    // ভেরিয়েন্ট দেখানোর স্মার্ট লজিক
     let variantText = '';
     if (item.size && item.size !== '—') variantText += `Size: ${item.size} `;
     if (item.color && item.color !== '—') variantText += `${variantText ? '| ' : ''}Color: ${item.color}`;
@@ -102,7 +105,8 @@ export const generateInvoice = async (order: OrderInvoiceData) => {
             <div style="text-align: right;">
                 <h1 style="margin: 0; color: #2563eb; font-size: 28px;">INVOICE</h1>
                 <p style="margin: 5px 0 0 0; font-size: 14px; font-weight: bold;">Order #${order.orderNo}</p>
-                <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">${invoiceDate} | ${invoiceTime}</p>
+                <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Order Date: ${invoiceDate}</p>
+                <p style="margin: 2px 0 0 0; font-size: 10px; color: #94a3b8;">Printed: ${generationTime}</p>
             </div>
         </div>
 
