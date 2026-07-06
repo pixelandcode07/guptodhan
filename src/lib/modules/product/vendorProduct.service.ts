@@ -1135,7 +1135,7 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
       $addFields: {
         _searchScore: {
           $add: [
-            { $cond: [titleMatch, 10, 0] }, // সব শব্দ টাইটেলে থাকলে ১০ পয়েন্ট
+            { $cond: [titleMatch, 1000, 0] }, // সব শব্দ টাইটেলে থাকলে ১০ পয়েন্ট
             {
               $cond: [
                 { $regexMatch: { input: "$productTitle", regex: tagOrRegex } },
