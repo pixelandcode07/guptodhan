@@ -293,6 +293,7 @@ export default function NavMain() {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="fixed inset-0 z-50 flex"
           >
+            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -397,7 +398,7 @@ export default function NavMain() {
                       </Link>
                       <button
                         onClick={() => signOut()}
-                        className="w-full flex items-center justify-center gap-2 py-2 bg-red-600 hover:bg-red-700 rounded font-medium cursor-pointer"
+                        className="w-full flex items-center justify-center gap-2 py-2 bg-red-600 hover:bg-red-700 rounded font-medium"
                       >
                         <LogOut size={16} />Logout
                       </button>
@@ -418,6 +419,12 @@ export default function NavMain() {
 
       {/* ═══════════════════════════════════════════════════════════════
           MOBILE SEARCH OVERLAY
+          — Only ONE <SearchBar /> instance here (previously there were
+            two mounted at the same time, which caused the duplicate
+            fetch / race-condition bug where the dropdown showed
+            "No products found" even though products existed).
+          — onSearch={() => setMobileSearchOpen(false)} closes the
+            overlay automatically after any navigation from SearchBar.
       ═══════════════════════════════════════════════════════════════ */}
       <AnimatePresence>
         {mobileSearchOpen && (
@@ -427,6 +434,7 @@ export default function NavMain() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] bg-black/50 md:hidden"
           >
+            {/* Click backdrop to close */}
             <div
               className="absolute inset-0"
               onClick={() => setMobileSearchOpen(false)}
@@ -442,13 +450,11 @@ export default function NavMain() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setMobileSearchOpen(false)}
-                  className="p-2 rounded-lg hover:bg-gray-100 flex-shrink-0 cursor-pointer"
+                  className="p-2 rounded-lg hover:bg-gray-100 flex-shrink-0"
                   aria-label="Close search"
                 >
                   <X size={20} />
                 </button>
-                
-                {/* ✅ FIX: এখান থেকে ডুপ্লিকেট SearchBar সরিয়ে একটাই রাখা হয়েছে */}
                 <div className="flex-1">
                   <SearchBar onSearch={() => setMobileSearchOpen(false)} />
                 </div>
