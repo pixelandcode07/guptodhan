@@ -32,8 +32,17 @@ import {
   CheckCircle,
   XCircle,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-// ✅ MAGIC FIX: Custom Smart Search for Currency and Normal Texts
 const customGlobalFilterFn = (row: any, columnId: string, filterValue: string) => {
     const value = row.getValue(columnId);
     if (value == null) return false;
@@ -41,10 +50,8 @@ const customGlobalFilterFn = (row: any, columnId: string, filterValue: string) =
     const strVal = String(value).toLowerCase();
     const searchVal = String(filterValue).toLowerCase();
 
-    // Normal Text Match
     if (strVal.includes(searchVal)) return true;
 
-    // Currency Formatted Match (removes ৳, commas, and .00)
     const cleanSearch = searchVal.replace(/[৳,]/g, '').replace(/\.00/g, '').trim();
     const cleanVal = strVal.replace(/[৳,]/g, '').replace(/\.00/g, '').trim();
     
@@ -89,6 +96,10 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
   const [customBulkStatus, setCustomBulkStatus] = React.useState('');
   const [pageIndex, setPageIndex] = React.useState(initialPageIndex);
 
+  // Modal States
+  const [confirmModalOpen, setConfirmModalOpen] = React.useState(false);
+  const [modalActionType, setModalActionType] = React.useState<'delete' | 'active' | 'inactive' | 'custom' | null>(null);
+
   React.useEffect(() => {
     if (initialPageIndex !== undefined) {
       setPageIndex(initialPageIndex);
@@ -103,7 +114,7 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel:    getSortedRowModel(),
     getFilteredRowModel:  getFilteredRowModel(),
-    globalFilterFn:       customGlobalFilterFn, // ✅ Smart Search Applied Here
+    globalFilterFn:       customGlobalFilterFn,
     onSortingChange:      setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: setRowSelection,
@@ -127,13 +138,11 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
     enableRowSelection: true,
   });
 
-  // ✅ MAGIC FIX: Live Syncing Stats Cards with Search
   React.useEffect(() => {
     if (onFilteredDataChange) {
       const currentFiltered = table.getFilteredRowModel().rows.map(r => r.original);
       onFilteredDataChange(currentFiltered);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [globalFilter, data]); 
 
   React.useEffect(() => {
@@ -149,10 +158,30 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
     if (onPageChange) onPageChange(0);
   };
 
+  // ✅ MAGIC FIX: Handle Bulk Actions after Confirmation
+  const executeBulkAction = () => {
+    const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
+    
+    if (modalActionType === 'delete' && onBulkDelete) {
+        onBulkDelete(selectedData);
+    } else if (modalActionType === 'active' && onBulkStatusChange) {
+        onBulkStatusChange(selectedData, 'active');
+    } else if (modalActionType === 'inactive' && onBulkStatusChange) {
+        onBulkStatusChange(selectedData, 'inactive');
+    } else if (modalActionType === 'custom' && onBulkStatusChangeCustom) {
+        onBulkStatusChangeCustom.handler(selectedData, customBulkStatus);
+        setCustomBulkStatus('');
+    }
+    
+    table.toggleAllRowsSelected(false);
+    setConfirmModalOpen(false);
+  };
+
   const pageCount  = table.getPageCount();
   const totalRows  = table.getFilteredRowModel().rows.length;
   const startRow   = totalRows === 0 ? 0 : pageIndex * pageSize + 1;
   const endRow     = Math.min((pageIndex + 1) * pageSize, totalRows);
+  const selectedCount = Object.keys(rowSelection).length;
 
   return (
     <div className="w-full space-y-3">
@@ -177,10 +206,10 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-          {Object.keys(rowSelection).length > 0 && (
+          {selectedCount > 0 && (
             <div className="flex flex-wrap gap-2 items-center bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
               <span className="text-xs font-semibold text-gray-700 mr-1">
-                {Object.keys(rowSelection).length} selected
+                {selectedCount} selected
               </span>
 
               {onBulkStatusChange && !onBulkStatusChangeCustom && (
@@ -189,9 +218,8 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
                     variant="outline" size="sm"
                     className="h-8 px-3 shrink-0 bg-green-50 hover:bg-green-100 text-green-700 border-green-200 font-medium text-xs"
                     onClick={() => {
-                      const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
-                      onBulkStatusChange(selectedData, 'active');
-                      table.toggleAllRowsSelected(false); 
+                        setModalActionType('active');
+                        setConfirmModalOpen(true);
                     }}
                   >
                     <CheckCircle size={14} className="mr-1.5" /> Activate
@@ -200,9 +228,8 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
                     variant="outline" size="sm"
                     className="h-8 px-3 shrink-0 bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200 font-medium text-xs"
                     onClick={() => {
-                      const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
-                      onBulkStatusChange(selectedData, 'inactive');
-                      table.toggleAllRowsSelected(false); 
+                        setModalActionType('inactive');
+                        setConfirmModalOpen(true);
                     }}
                   >
                     <XCircle size={14} className="mr-1.5" /> Deactivate
@@ -229,10 +256,8 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
                     size="sm" 
                     disabled={!customBulkStatus}
                     onClick={() => {
-                      const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
-                      onBulkStatusChangeCustom.handler(selectedData, customBulkStatus);
-                      table.toggleAllRowsSelected(false); 
-                      setCustomBulkStatus(''); 
+                        setModalActionType('custom');
+                        setConfirmModalOpen(true);
                     }} 
                     className="h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3"
                   >
@@ -246,9 +271,8 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
                   variant="destructive" size="sm"
                   className="h-8 px-3 shrink-0 bg-red-500 hover:bg-red-600 text-white font-medium text-xs ml-1"
                   onClick={() => {
-                    const selectedData = table.getFilteredSelectedRowModel().rows.map(r => r.original);
-                    onBulkDelete(selectedData);
-                    table.toggleAllRowsSelected(false); 
+                      setModalActionType('delete');
+                      setConfirmModalOpen(true);
                   }}
                 >
                   <Trash2 size={14} className="mr-1.5" /> Delete
@@ -399,6 +423,30 @@ export function DataTable<TData extends Record<string, any>, TValue = any>({
           </Button>
         </div>
       </div>
+
+      {/* ✅ Bulk Action Confirmation Modal */}
+      <AlertDialog open={confirmModalOpen} onOpenChange={setConfirmModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {modalActionType === 'delete' && `This action cannot be undone. This will permanently delete ${selectedCount} selected items from our servers.`}
+              {modalActionType === 'active' && `This will activate ${selectedCount} selected items. Do you want to proceed?`}
+              {modalActionType === 'inactive' && `This will deactivate ${selectedCount} selected items. Do you want to proceed?`}
+              {modalActionType === 'custom' && `This will update the status of ${selectedCount} selected items to "${customBulkStatus}". Do you want to proceed?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={executeBulkAction}
+              className={modalActionType === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'}
+            >
+              {modalActionType === 'delete' ? 'Yes, Delete' : 'Yes, Proceed'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
