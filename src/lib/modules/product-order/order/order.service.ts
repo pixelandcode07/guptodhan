@@ -1,12 +1,18 @@
+// src/lib/modules/product-order/order/order.service.ts
 import { IOrder } from './order.interface';
 import { OrderModel } from './order.model';
 import { Types } from 'mongoose';
 import { StoreModel } from '../../vendor-store/vendorStore.model';
 
+// ✅ MAGIC FIX: Import Product and Details Models for Stock Reduction
+import { VendorProductModel } from '../../product/vendorProduct.model';
+import { OrderDetailsModel } from '../orderDetails/orderDetails.model';
+
 // ✅ Import Models explicitly
 import '@/lib/modules/product/vendorProduct.model';
 import '@/lib/modules/vendor-store/vendorStore.model'; 
 import '@/lib/modules/promo-code/promoCode.model';
+import '@/lib/modules/product-order/orderDetails/orderDetails.model';
 
 // ✅ Redis Cache Imports
 import { getCachedData, deleteCacheKey, deleteCachePattern } from '@/lib/redis/cache-helpers';
@@ -252,7 +258,7 @@ const getOrdersByUserFromDB = async (userId: string) => {
 };
 
 // ================================================================
-// ✏️ UPDATE ORDER
+// ✏️ UPDATE ORDER & REDUCE STOCK
 // ================================================================
 const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
   try {
@@ -264,32 +270,47 @@ const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
 
     const result = await OrderModel.findByIdAndUpdate(id, payload, { new: true });
 
-    if (
-      payload.orderStatus === 'Delivered' && 
-      previousOrder.orderStatus !== 'Delivered' &&
-      previousOrder.storeId
-    ) {
-      const store = await StoreModel.findById(previousOrder.storeId).lean() as any;
-      
-      if (store) {
-        const commissionRate = store.commission || 0;
-        const deliveryCharge = previousOrder.deliveryCharge || 0; 
-        
-        const productTotal = previousOrder.totalAmount - deliveryCharge;
-        const vendorEarning = productTotal * (1 - commissionRate / 100);
+    // ✅ MAGIC FIX: Check if order just became 'Delivered' (and optionally Paid)
+    const isNowDelivered = result?.orderStatus === 'Delivered';
+    const wasNotDelivered = previousOrder.orderStatus !== 'Delivered';
 
-        await StoreModel.findByIdAndUpdate(previousOrder.storeId, {
-          $inc: {
-            availableBalance: vendorEarning,
-            totalEarned: vendorEarning,
-          }
-        });
+    if (isNowDelivered && wasNotDelivered) {
+      
+      // 1. Calculate & Update Vendor Earnings
+      if (previousOrder.storeId) {
+        const store = await StoreModel.findById(previousOrder.storeId).lean() as any;
+        if (store) {
+          const commissionRate = store.commission || 0;
+          const deliveryCharge = previousOrder.deliveryCharge || 0; 
+          
+          const productTotal = previousOrder.totalAmount - deliveryCharge;
+          const vendorEarning = productTotal * (1 - commissionRate / 100);
+
+          await StoreModel.findByIdAndUpdate(previousOrder.storeId, {
+            $inc: {
+              availableBalance: vendorEarning,
+              totalEarned: vendorEarning,
+            }
+          });
+        }
       }
+
+      // 2. 📉 REDUCE PRODUCT STOCK AUTOMATICALLY
+      const orderDetails = await OrderDetailsModel.find({ orderId: result?._id });
+      for (const item of orderDetails) {
+        if (item.productId && item.quantity) {
+          await VendorProductModel.findByIdAndUpdate(item.productId, {
+            $inc: { stock: -item.quantity } // Stock theke quantity minus kora hocche
+          });
+        }
+      }
+      console.log(`✅ Stock reduced for Order ID: ${result?._id}`);
     }
 
+    // Cache clearing
     await deleteCacheKey(CacheKeys.ORDER.BY_ID(id));
     if (result?.userId) {
-      await deleteCachePattern(`orders:user:${result.userId}*`);
+      await deleteCachePattern(`orders:user:${result?.userId}*`);
     }
     await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
 
@@ -765,23 +786,23 @@ const cancelOrderByUserInDB = async (orderId: string, userId: string, reason: st
     
     if (!order) throw new Error('Order not found');
 
-    // Security Check: ইউজার শুধু নিজের অর্ডারই ক্যানসেল করতে পারবে
+    // Security Check
     if (order.userId.toString() !== userId) {
       throw new Error('You are not authorized to cancel this order.');
     }
 
-    // Condition Check: অর্ডার শিফট বা ডেলিভার হয়ে গেলে ক্যানসেল করা যাবে না
+    // Condition Check
     if (['Shipped', 'Delivered', 'Returned', 'Cancelled'].includes(order.orderStatus)) {
       throw new Error(`Order cannot be cancelled because it is already ${order.orderStatus}.`);
     }
 
-    // Update Status & Reason
+    // Update Status
     order.orderStatus = 'Cancelled';
     order.cancelReason = reason;
     
     await order.save();
 
-    // 🗑️ Clear caches
+    // Clear caches
     await deleteCacheKey(CacheKeys.ORDER.BY_ID(orderId));
     await deleteCachePattern(`orders:user:${userId}*`);
     await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
@@ -837,7 +858,6 @@ const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
           as: 'details',
         },
       },
-      // ✅ NEW: Lookup Products to get Image and Name
       {
         $lookup: {
           from: 'vendorproductmodels',
@@ -846,7 +866,6 @@ const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
           as: 'products',
         },
       },
-      // ✅ NEW: Calculate Vendor Earnings
       {
         $addFields: {
           productTotal: { $subtract: ['$totalAmount', { $ifNull: ['$deliveryCharge', 0] }] },
@@ -878,7 +897,7 @@ const getVendorStoreAndOrdersFromDBVendor = async (vendorId: string) => {
           orderDetails: '$details',
           'products.productTitle': 1,
           'products.thumbnailImage': 1,
-          vendorEarned: { $round: ['$vendorEarned', 2] }, // Rounded to 2 decimals
+          vendorEarned: { $round: ['$vendorEarned', 2] },
         },
       },
     ]);
@@ -918,10 +937,8 @@ const getAdminDashboardReportFromDB = async (filters: {
   }
  
   const [vendorBreakdown, customerBreakdown, summaryRaw] = await Promise.all([
- 
     OrderModel.aggregate([
       { $match: match },
- 
       {
         $lookup: {
           from: 'storemodels',
@@ -931,7 +948,6 @@ const getAdminDashboardReportFromDB = async (filters: {
         },
       },
       { $unwind: { path: '$store', preserveNullAndEmptyArrays: true } },
- 
       {
         $addFields: {
           productTotal: { $subtract: ['$totalAmount', { $ifNull: ['$deliveryCharge', 0] }] },
@@ -956,7 +972,6 @@ const getAdminDashboardReportFromDB = async (filters: {
           },
         },
       },
- 
       {
         $group: {
           _id: '$storeId',
@@ -974,9 +989,7 @@ const getAdminDashboardReportFromDB = async (filters: {
           vendorNet:          { $sum: '$vendorNet' },
         },
       },
- 
       { $sort: { totalRevenue: -1 } },
- 
       {
         $project: {
           _id: 0,
@@ -999,7 +1012,6 @@ const getAdminDashboardReportFromDB = async (filters: {
  
     OrderModel.aggregate([
       { $match: match },
- 
       {
         $lookup: {
           from: 'orderdetails',
@@ -1008,14 +1020,12 @@ const getAdminDashboardReportFromDB = async (filters: {
           as: 'detailDocs',
         },
       },
- 
       {
         $addFields: {
           totalProductsInOrder: { $sum: '$detailDocs.quantity' },
           uniqueProductsInOrder: { $size: { $ifNull: ['$detailDocs', []] } },
         },
       },
- 
       {
         $group: {
           _id: '$userId',
@@ -1032,9 +1042,7 @@ const getAdminDashboardReportFromDB = async (filters: {
           cities:           { $addToSet: '$shippingCity' },
         },
       },
- 
       { $sort: { totalSpent: -1 } },
- 
       {
         $project: {
           _id: 0,
@@ -1056,7 +1064,6 @@ const getAdminDashboardReportFromDB = async (filters: {
  
     OrderModel.aggregate([
       { $match: match },
- 
       {
         $lookup: {
           from: 'storemodels',
@@ -1066,7 +1073,6 @@ const getAdminDashboardReportFromDB = async (filters: {
         },
       },
       { $unwind: { path: '$store', preserveNullAndEmptyArrays: true } },
- 
       {
         $addFields: {
           productTotal:  { $subtract: ['$totalAmount', { $ifNull: ['$deliveryCharge', 0] }] },
@@ -1080,7 +1086,6 @@ const getAdminDashboardReportFromDB = async (filters: {
           },
         },
       },
- 
       {
         $group: {
           _id: null,
@@ -1101,7 +1106,6 @@ const getAdminDashboardReportFromDB = async (filters: {
           uniqueVendors:      { $addToSet: '$storeId' },
         },
       },
- 
       {
         $project: {
           _id: 0,
