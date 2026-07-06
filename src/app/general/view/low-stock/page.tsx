@@ -1,9 +1,14 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { AlertTriangle, Edit, ArrowLeft, PackageSearch } from 'lucide-react';
+import { AlertTriangle, Edit, ArrowLeft, PackageSearch, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
+
+// ✅ Next.js 15: searchParams is a Promise
+interface PageProps {
+    searchParams: Promise<{ page?: string }>;
+}
 
 async function getLowStockProducts() {
     try {
@@ -28,8 +33,29 @@ async function getLowStockProducts() {
     }
 }
 
-export default async function LowStockAdminPage() {
+export default async function LowStockAdminPage({ searchParams }: PageProps) {
+    const resolvedSearchParams = await searchParams;
     const products = await getLowStockProducts();
+
+    // ── Pagination Logic ──────────────────────────────────────────────────
+    const ITEMS_PER_PAGE = 10;
+    const currentPage = Math.max(1, parseInt(resolvedSearchParams.page || '1', 10));
+    const totalItems = products.length;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const paginatedProducts = products.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+    // Build page buttons with ellipsis
+    const range: (number | "...")[] = [];
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || Math.abs(i - currentPage) <= 1) {
+            if (range.length > 0 && typeof range[range.length - 1] === "number") {
+                if ((range[range.length - 1] as number) + 1 < i) range.push("...");
+            }
+            range.push(i);
+        }
+    }
 
     return (
         <div className="p-4 md:p-6 w-full max-w-full overflow-x-hidden">
@@ -42,7 +68,10 @@ export default async function LowStockAdminPage() {
                     </div>
                     <div>
                         <h1 className="text-xl font-bold text-gray-800">Low Stock Inventory</h1>
-                        <p className="text-sm text-gray-500">Products with 10 or fewer items in stock</p>
+                        <p className="text-sm text-gray-500">
+                            {/* ✅ MAGIC FIX: Showing Total Count Here */}
+                            Total <span className="font-bold text-red-600">{totalItems}</span> products with 10 or fewer items in stock
+                        </p>
                     </div>
                 </div>
                 <Link 
@@ -54,7 +83,7 @@ export default async function LowStockAdminPage() {
             </div>
 
             {/* Table Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden w-full">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden w-full flex flex-col">
                 <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
                     <table className="w-full text-left text-sm text-gray-600 min-w-[800px]">
                         <thead className="bg-gray-50 border-b border-gray-200 text-gray-700">
@@ -67,8 +96,8 @@ export default async function LowStockAdminPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {products.length > 0 ? (
-                                products.map((product: any) => (
+                            {paginatedProducts.length > 0 ? (
+                                paginatedProducts.map((product: any) => (
                                     <tr key={product._id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-3">
@@ -126,6 +155,66 @@ export default async function LowStockAdminPage() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* ✅ Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-200 gap-4">
+                        <div className="text-sm text-gray-500">
+                            Showing <span className="font-medium text-gray-800">{startIndex + 1}</span> to <span className="font-medium text-gray-800">{Math.min(startIndex + ITEMS_PER_PAGE, totalItems)}</span> of <span className="font-medium text-gray-800">{totalItems}</span> entries
+                        </div>
+
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            {/* Prev Button */}
+                            {currentPage > 1 ? (
+                                <Link
+                                    href={`?page=${currentPage - 1}`}
+                                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:border-[#00005E] hover:text-[#00005E] transition-colors bg-white shadow-sm"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </Link>
+                            ) : (
+                                <button disabled className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed">
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                            )}
+
+                            {/* Page Numbers */}
+                            {range.map((item, i) =>
+                                item === "..." ? (
+                                    <span key={`dot-${i}`} className="w-8 h-8 flex items-center justify-center text-gray-400 text-sm select-none">
+                                        …
+                                    </span>
+                                ) : (
+                                    <Link
+                                        key={item}
+                                        href={`?page=${item}`}
+                                        className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors shadow-sm ${
+                                            currentPage === item
+                                                ? "bg-[#00005E] text-white border border-[#00005E]"
+                                                : "bg-white border border-gray-200 text-gray-600 hover:border-[#00005E] hover:text-[#00005E]"
+                                        }`}
+                                    >
+                                        {item}
+                                    </Link>
+                                )
+                            )}
+
+                            {/* Next Button */}
+                            {currentPage < totalPages ? (
+                                <Link
+                                    href={`?page=${currentPage + 1}`}
+                                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:border-[#00005E] hover:text-[#00005E] transition-colors bg-white shadow-sm"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </Link>
+                            ) : (
+                                <button disabled className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed">
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
