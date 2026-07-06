@@ -1,11 +1,12 @@
 // src/lib/modules/dashboard/dashboard.service.ts
 import { OrderModel, VendorProductModel, VendorStoreModel, UserModel } from '@/lib/models-index';
+import { UserServices } from '@/lib/modules/user/user.service'; // ✅ MAGIC FIX: UserServices ইমপোর্ট করা হলো
 import mongoose from 'mongoose';
 
 const getDashboardAnalyticsFromDB = async () => {
   const today = new Date();
   
-  // চার্টের (Chart) জন্য রোলিং ৩০ দিন (যেমন: গত ৩০ দিনের গ্রাফ দেখানোর জন্য)
+  // চার্টের (Chart) জন্য রোলিং ৩০ দিন
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(today.getDate() - 30);
 
@@ -47,16 +48,22 @@ const getDashboardAnalyticsFromDB = async () => {
       createdAt: { $gte: todayStart, $lte: todayEnd },
     });
 
-    // --- 4. Monthly Registered Users ---
-    // ✅ MAGIC FIX: Removed { role: 'user' } to count ALL new users
-    const monthlyRegisteredUsers = await UserModel.countDocuments({
-      createdAt: { $gte: startOfMonth },
-    });
+    // =========================================================================
+    // ✅ MAGIC FIX: টেবিল যেখান থেকে ডাটা নেয়, ড্যাশবোর্ডেও ঠিক সেখান থেকেই ডাটা নেওয়া হলো!
+    // এর ফলে ডাটাবেসে হিডেন বা ডিলিট হওয়া ওই ১৩ জন ইউজার আর কাউন্ট হবে না।
+    // =========================================================================
+    const allSystemUsers = await UserServices.getAllUsersFromDB();
 
-    // --- 5. Total Stats (All Time / আজীবনের) ---
+    // --- 4. Monthly Registered Users (Filtered correctly) ---
+    const monthlyRegisteredUsers = allSystemUsers.filter(
+      (u: any) => new Date(u.createdAt) >= startOfMonth
+    ).length;
+
+    // --- 5. Total Stats (All Time) ---
     const totalOrders = await OrderModel.countDocuments({});
-    // ✅ MAGIC FIX: Removed { role: 'user' } to show exact 154 (ALL users)
-    const totalUsers = await UserModel.countDocuments({}); 
+    
+    // ✅ Now this will strictly be exactly 154 (or whatever the table shows)
+    const totalUsers = allSystemUsers.length; 
     
     const totalRevenueData = await OrderModel.aggregate([
       {
@@ -150,7 +157,6 @@ const getDashboardAnalyticsFromDB = async () => {
     }));
 
     // --- 10. Recent Customers ---
-    // ✅ MAGIC FIX: Removed { role: 'user' } to show all recent registrations
     const recentCustomers = await UserModel.find({})
       .select('name email profilePicture phoneNumber address createdAt')
       .sort({ createdAt: -1 })
