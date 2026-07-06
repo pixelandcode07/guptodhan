@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Search, Loader2, X, ShoppingBag, ArrowRight } from "lucide-react";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import debounce from "lodash/debounce";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +22,7 @@ interface SearchBarProps {
 
 export default function SearchBar({ onSearch }: SearchBarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
 
@@ -34,14 +35,23 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
-  // ── Sync URL with SearchBar ──────────────────────────────────────────────────
+  // Tracks the query string the most recent fetch was issued for.
+  // Prevents a slow/late response from an older keystroke overwriting
+  // suggestions that belong to a newer keystroke (race condition fix).
+  const latestQueryRef = React.useRef<string>("");
+
+  // ── Sync input with the URL's ?q= param ──────────────────────────────────
+  // Only runs when the URL itself changes (e.g. back/forward nav, or
+  // navigating here from somewhere else). It should NOT fight with the
+  // user's live typing, so it only resets `query` when it actually differs.
   React.useEffect(() => {
     const currentQ = searchParams.get("q") || "";
-    setQuery(currentQ);
+    setQuery((prev) => (prev === currentQ ? prev : currentQ));
     setShowDropdown(false);
+    setSuggestions([]);
   }, [searchParams]);
 
-  // ── Close dropdown on outside click ──────────────────────────────────────────
+  // ── Close dropdown on outside click ──────────────────────────────────────
   React.useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
@@ -52,15 +62,23 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // ── Fetch suggestions (debounced) ─────────────────────────────────────────────
-  const fetchSuggestions = React.useCallback(
+  // ── Debounced suggestion fetcher ─────────────────────────────────────────
+  // Created once via useRef so the debounce timer itself is stable across
+  // renders (previously it lived inside useCallback, which is fine for
+  // memoizing the function identity, but here we also guard against
+  // out-of-order responses using latestQueryRef).
+  const fetchSuggestions = React.useRef(
     debounce(async (q: string) => {
       const queryText = q.trim();
+      latestQueryRef.current = queryText;
+
       if (!queryText) {
         setSuggestions([]);
+        setLoading(false);
         return;
       }
 
+      // Cancel any in-flight request before starting a new one
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -74,9 +92,16 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
           { signal: controller.signal }
         );
         const json = await res.json();
-        setSuggestions(json.success ? json.data || [] : []);
+
+        // Only apply this response if it's still the most recent query.
+        // This is what actually fixes the "dropdown shows no products"
+        // bug: a fast second keystroke could otherwise be overwritten by
+        // a slower first request landing after it.
+        if (latestQueryRef.current === queryText) {
+          setSuggestions(json.success ? json.data || [] : []);
+        }
       } catch (err: any) {
-        if (err.name !== "AbortError") {
+        if (err.name !== "AbortError" && latestQueryRef.current === queryText) {
           setSuggestions([]);
         }
       } finally {
@@ -84,21 +109,27 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
           setLoading(false);
         }
       }
-    }, 300),
-    []
-  );
+    }, 300)
+  ).current;
 
   React.useEffect(() => {
-    if (showDropdown && query.trim()) {
-      fetchSuggestions(query);
-    }
+    fetchSuggestions(query);
     return () => {
       fetchSuggestions.cancel();
-      if (abortControllerRef.current) abortControllerRef.current.abort();
     };
-  }, [query, showDropdown, fetchSuggestions]);
+  }, [query, fetchSuggestions]);
 
-  // ── Navigation Handlers ───────────────────────────────────────────────────────
+  // Cancel any pending request on unmount (important now that this
+  // component may mount/unmount as mobile overlay opens/closes)
+  React.useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  // ── Navigate to /search ───────────────────────────────────────────────────
   const goToSearch = React.useCallback(
     (q: string) => {
       if (!q.trim()) return;
@@ -109,6 +140,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
     [router, onSearch]
   );
 
+  // ── Navigate to product page ──────────────────────────────────────────────
   const goToProduct = React.useCallback(
     (item: Suggestion) => {
       setShowDropdown(false);
@@ -118,6 +150,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
     [router, onSearch]
   );
 
+  // ── Clear search ──────────────────────────────────────────────────────────
   const clearSearch = () => {
     setQuery("");
     setSuggestions([]);
@@ -142,7 +175,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
 
   return (
     <div className="relative w-full max-w-3xl mx-auto z-50" ref={wrapperRef}>
-      {/* ── Input Row ──────────────────────────────────────────────────────────── */}
+      {/* ── Input Row ──────────────────────────────────────────────────────── */}
       <div
         className={cn(
           "relative flex items-center w-full h-12 rounded-full border-2 transition-all duration-200 bg-white overflow-hidden",
@@ -178,7 +211,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
         {query && (
           <button
             onClick={clearSearch}
-            className="p-2 mr-1 text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+            className="p-2 mr-1 text-gray-400 hover:text-red-500 transition-colors"
             aria-label="Clear search"
           >
             <X className="w-4 h-4" />
@@ -187,16 +220,16 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
 
         <button
           onClick={() => goToSearch(query)}
-          className="h-[calc(100%-8px)] mr-1 px-6 bg-[#00005E] hover:bg-[#000045] text-white rounded-full font-medium text-sm transition-colors flex items-center gap-2 cursor-pointer"
+          className="h-[calc(100%-8px)] mr-1 px-6 bg-[#00005E] hover:bg-[#000045] text-white rounded-full font-medium text-sm transition-colors flex items-center gap-2"
           aria-label="Search"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
         </button>
       </div>
 
-      {/* ── Suggestions Dropdown ───────────────────────────────────────────────── */}
+      {/* ── Suggestions Dropdown ───────────────────────────────────────────── */}
       {showDropdown && query && (
-        <div className="absolute top-full left-0 right-0 bg-white border-x-2 border-b-2 border-[#00005E] rounded-b-[20px] shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-full left-0 right-0 bg-white border-x-2 border-b-2 border-[#00005E] rounded-b-[20px] shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-50">
           {loading && suggestions.length === 0 ? (
             <div className="py-12 flex flex-col items-center justify-center text-gray-500">
               <Loader2 className="w-8 h-8 animate-spin text-[#00005E] mb-2" />
