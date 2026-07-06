@@ -1107,6 +1107,16 @@ const prepareWords = (searchTerm: string): string[] => {
     .filter((w) => w.length > 0);
 };
 
+// ─── Regex escape helper ───────────────────────────────────────────────────
+// Escapes characters that are special in JS RegExp (., +, *, ?, ^, $, (, ),
+// [, ], {, }, |, \). Without this, a query word like "3+3" is interpreted
+// as the regex quantifier "one-or-more of the preceding char" instead of a
+// literal "+", so it silently fails to match text that actually contains
+// "3+3". Make sure this same helper is used inside prepareWords /
+// buildTitleMatch / buildDescriptionMatch / buildTagOrRegex wherever a
+// search word is interpolated into `new RegExp(...)`.
+const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 // ─── getLiveSuggestionsFromDB ─────────────────────────────────────────────────
 
 const getLiveSuggestionsFromDB = async (searchTerm: string) => {
@@ -1114,17 +1124,92 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
   if (words.length === 0) return [];
 
   const titleMatch = buildTitleMatch(words);
+  const descriptionMatch = buildDescriptionMatch(words);
+  const tagOrRegex = buildTagOrRegex(words);
 
   const suggestions = await VendorProductModel.aggregate([
     {
       $match: {
         status: "active",
-        ...titleMatch,   // ✅ title-এ AND logic
+        // Title, Description, Tag — সব জায়গায় সার্চ করবে (OR Logic)
+        $or: [
+          titleMatch,
+          descriptionMatch,
+          { productTag: { $elemMatch: { $regex: tagOrRegex } } },
+          { productTitle: { $regex: tagOrRegex } },
+        ],
       },
     },
-    { $sort: { createdAt: -1 } },
+    // ✅ FIX: $cond-এর ভেতরে $match-স্টাইল query object (titleMatch,
+    // { productTag: {...} }) সরাসরি পাঠানো যায় না — সেটা aggregation
+    // boolean expression না, invalid হয়ে পুরো pipeline fail করে দিচ্ছিল,
+    // যেটার কারণেই suggestion সবসময় খালি আসত। এখানে $regexMatch/$and/$in
+    // দিয়ে প্রকৃত aggregation expression বানানো হলো।
+    {
+      $addFields: {
+        _searchScore: {
+          $add: [
+            // সব word যদি title-এ থাকে (AND) → 10 পয়েন্ট
+            {
+              $cond: [
+                {
+                  $and: words.map((w) => ({
+                    $regexMatch: {
+                      input: { $ifNull: ["$productTitle", ""] },
+                      regex: `\\b${escapeRegex(w)}`,
+                      options: "i",
+                    },
+                  })),
+                },
+                10,
+                0,
+              ],
+            },
+            // আংশিক title মিললে → 5 পয়েন্ট
+            {
+              $cond: [
+                {
+                  $regexMatch: {
+                    input: { $ifNull: ["$productTitle", ""] },
+                    regex: tagOrRegex,
+                  },
+                },
+                5,
+                0,
+              ],
+            },
+            // ট্যাগের কোনো element মিললে → 3 পয়েন্ট
+            {
+              $cond: [
+                {
+                  $gt: [
+                    {
+                      $size: {
+                        $filter: {
+                          input: { $ifNull: ["$productTag", []] },
+                          as: "tag",
+                          cond: {
+                            $regexMatch: { input: "$$tag", regex: tagOrRegex },
+                          },
+                        },
+                      },
+                    },
+                    0,
+                  ],
+                },
+                3,
+                0,
+              ],
+            },
+          ],
+        },
+      },
+    },
+    { $sort: { _searchScore: -1, createdAt: -1 } },
     { $limit: 10 },
+    { $unset: "_searchScore" },
 
+    // ── Lookups ──────────────────────────────────────────────────────────
     {
       $lookup: {
         from: "categorymodels",
@@ -1161,7 +1246,7 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
         thumbnailImage: 1,
         productPrice: 1,
         discountPrice: 1,
-        callForPrice: 1, // ✅ FIX: Added here
+        callForPrice: 1,
         slug: 1,
         "category.slug": 1,
         "subCategory.slug": 1,
@@ -1173,9 +1258,6 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
   return suggestions;
 };
 
-
-// ─── getSearchResultsFromDB ───────────────────────────────────────────────────
-
 const getSearchResultsFromDB = async (searchTerm: string) => {
   const cacheKey = CacheKeys.PRODUCT.SEARCH(searchTerm);
 
@@ -1185,49 +1267,63 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
       const words = prepareWords(searchTerm);
       if (words.length === 0) return [];
 
-      const titleMatch       = buildTitleMatch(words);       // AND
-      const descriptionMatch = buildDescriptionMatch(words); // AND
-      const tagOrRegex       = buildTagOrRegex(words);       // OR (tag keyword)
+      const titleMatch = buildTitleMatch(words);
+      const descriptionMatch = buildDescriptionMatch(words);
+      const tagOrRegex = buildTagOrRegex(words);
 
-      
       const results = await VendorProductModel.aggregate([
         {
           $match: {
             status: "active",
             $or: [
-              titleMatch,                                             // title: AND
-              descriptionMatch,                                      // description: AND
-              { productTag: { $elemMatch: { $regex: tagOrRegex } } }, // tag: OR
+              titleMatch,
+              descriptionMatch,
+              { productTag: { $elemMatch: { $regex: tagOrRegex } } },
+              { productTitle: { $regex: tagOrRegex } },
             ],
           },
         },
-
-        // ── Relevance Scoring ─────────────────────────────────────────────────
         {
           $addFields: {
             _searchScore: {
               $add: [
-                // Title match (all words) → highest score
                 {
                   $switch: {
                     branches: [
-                      // Title-এ সব word আছে → score 4
                       {
                         case: {
                           $and: words.map((w) => ({
                             $regexMatch: {
                               input: { $ifNull: ["$productTitle", ""] },
-                              regex: new RegExp(`\\b${w}`, "i"),
+                              // ✅ FIX: escapeRegex() যোগ করা হলো — এর আগে
+                              // "3+3"-এর মতো word regex quantifier হিসেবে
+                              // ভেঙে যাচ্ছিল আর title-এ থাকা "3+3"-এর সাথে
+                              // মিলছিল না, ফলে title-branch (10pt) সবসময়
+                              // false থাকত (description/tag branch দিয়ে
+                              // ফলাফল আসছিল বলে page-এ result দেখা যেত,
+                              // কিন্তু relevance score সঠিক হচ্ছিল না)।
+                              regex: new RegExp(`\\b${escapeRegex(w)}`, "i"),
                             },
                           })),
                         },
-                        then: 4,
+                        then: 10,
                       },
                     ],
                     default: 0,
                   },
                 },
-                // Description match → score 1
+                {
+                  $cond: [
+                    {
+                      $regexMatch: {
+                        input: { $ifNull: ["$productTitle", ""] },
+                        regex: tagOrRegex,
+                      },
+                    },
+                    5,
+                    0,
+                  ],
+                },
                 {
                   $cond: [
                     {
@@ -1236,7 +1332,7 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
                         regex: tagOrRegex,
                       },
                     },
-                    1,
+                    2,
                     0,
                   ],
                 },
@@ -1244,13 +1340,8 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
             },
           },
         },
-
-        // ── Sort: highest score first, then newest ────────────────────────────
         { $sort: { _searchScore: -1, createdAt: -1 } },
-
-        // ── Remove score field ────────────────────────────────────────────────
         { $unset: "_searchScore" },
-
         ...getProductLookupPipeline(),
       ]);
 
