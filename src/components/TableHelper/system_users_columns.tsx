@@ -30,22 +30,26 @@ export const getSystemUsersColumns = (
   {
     id: "select",
     header: ({ table }) => (
-      <input
-        type="checkbox"
-        className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-        checked={table.getIsAllPageRowsSelected()}
-        onChange={table.getToggleAllPageRowsSelectedHandler()}
-        aria-label="Select all"
-      />
+      <div className="px-1">
+        <input
+          type="checkbox"
+          className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          checked={table.getIsAllPageRowsSelected()}
+          onChange={table.getToggleAllPageRowsSelectedHandler()}
+          aria-label="Select all"
+        />
+      </div>
     ),
     cell: ({ row }) => (
-      <input
-        type="checkbox"
-        className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-        checked={row.getIsSelected()}
-        onChange={row.getToggleSelectedHandler()}
-        aria-label="Select row"
-      />
+      <div className="px-1">
+        <input
+          type="checkbox"
+          className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          checked={row.getIsSelected()}
+          onChange={row.getToggleSelectedHandler()}
+          aria-label="Select row"
+        />
+      </div>
     ),
     enableSorting: false,
     enableHiding: false,
@@ -61,19 +65,19 @@ export const getSystemUsersColumns = (
   // 3. User Info (Avatar + Name)
   {
     accessorKey: "name",
-    header: "User Info",
+    header: "USER INFO",
     cell: ({ row }) => {
       const user = row.original;
       return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-[150px]">
           {user.profilePicture ? (
             <Image src={user.profilePicture} alt={user.name} width={32} height={32} className="rounded-full object-cover border border-gray-200" />
           ) : (
-            <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold uppercase border border-blue-200">
+            <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold uppercase border border-blue-200 flex-shrink-0">
               {user.name?.charAt(0) || "U"}
             </div>
           )}
-          <span className="font-semibold text-gray-900">{user.name}</span>
+          <span className="font-semibold text-gray-900 truncate">{user.name}</span>
         </div>
       );
     },
@@ -82,18 +86,18 @@ export const getSystemUsersColumns = (
   // 4. Contact Details
   {
     accessorKey: "contact",
-    header: "Contact Details",
+    header: "CONTACT DETAILS",
     cell: ({ row }) => {
       const user = row.original;
       return (
-        <div className="flex flex-col gap-1 text-[11px]">
+        <div className="flex flex-col gap-1 text-[11px] min-w-[160px]">
           <div className="flex items-center gap-1.5 text-gray-600">
-            <Mail className="h-3 w-3 text-blue-500" />
-            <span>{user.email || "N/A"}</span>
+            <Mail className="h-3 w-3 text-blue-500 flex-shrink-0" />
+            <span className="truncate">{user.email || "N/A"}</span>
           </div>
           <div className="flex items-center gap-1.5 text-gray-600">
-            <Phone className="h-3 w-3 text-green-500" />
-            <span>{user.phoneNumber || "N/A"}</span>
+            <Phone className="h-3 w-3 text-green-500 flex-shrink-0" />
+            <span className="truncate">{user.phoneNumber || "N/A"}</span>
           </div>
         </div>
       );
@@ -103,14 +107,14 @@ export const getSystemUsersColumns = (
   // 5. Role (Editable Dropdown)
   {
     accessorKey: "role",
-    header: "Role",
+    header: "ROLE",
     cell: ({ row }) => {
       const user = row.original;
       return (
         <select
           value={user.role}
           onChange={(e) => onRoleChange(user._id, e.target.value)}
-          className="h-7 text-xs border border-gray-300 rounded px-2 outline-none focus:ring-1 focus:ring-blue-500 text-gray-700 bg-white"
+          className="h-7 text-xs border border-gray-300 rounded px-2 outline-none focus:ring-1 focus:ring-blue-500 text-gray-700 bg-white min-w-[110px]"
         >
           <option value="user">User</option>
           <option value="vendor">Vendor</option>
@@ -124,14 +128,14 @@ export const getSystemUsersColumns = (
   // 6. Dates (Created & Updated)
   {
     accessorKey: "dates",
-    header: "Joined & Updated",
+    header: "JOINED & UPDATED",
     cell: ({ row }) => {
       const created = new Date(row.original.createdAt).toLocaleDateString('en-GB');
       const updated = new Date(row.original.updatedAt).toLocaleDateString('en-GB');
       return (
-        <div className="flex flex-col text-[10px] text-gray-500">
+        <div className="flex flex-col text-[10px] text-gray-500 min-w-[130px]">
           <div className="flex items-center gap-1">
-             <CalendarDays className="h-3 w-3 text-gray-400" />
+             <CalendarDays className="h-3 w-3 text-gray-400 flex-shrink-0" />
              Joined: <span className="font-medium text-gray-700">{created}</span>
           </div>
           <div className="pl-4">
@@ -145,20 +149,22 @@ export const getSystemUsersColumns = (
   // 7. Status (Active/Inactive)
   {
     accessorKey: "isActive",
-    header: "Status",
+    header: () => <div className="text-center">STATUS</div>,
     cell: ({ row }) => {
       const isActive = row.original.isActive;
       return (
-        <button
-          onClick={() => onStatusChange(row.original._id, !isActive)}
-          className={cn(
-            "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors",
-            isActive ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-red-100 text-red-700 hover:bg-red-200"
-          )}
-          title="Click to toggle status"
-        >
-          {isActive ? "Active" : "Inactive"}
-        </button>
+        <div className="flex justify-center">
+          <button
+            onClick={() => onStatusChange(row.original._id, !isActive)}
+            className={cn(
+              "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap",
+              isActive ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-red-100 text-red-700 hover:bg-red-200"
+            )}
+            title="Click to toggle status"
+          >
+            {isActive ? "Active" : "Inactive"}
+          </button>
+        </div>
       );
     },
   },
@@ -166,9 +172,9 @@ export const getSystemUsersColumns = (
   // 8. Actions
   {
     id: "actions",
-    header: "Actions",
+    header: () => <div className="text-right pr-4">ACTIONS</div>,
     cell: ({ row }) => (
-      <div className="flex justify-start items-center gap-1">
+      <div className="flex justify-end items-center gap-1 pr-4">
         <Button
           variant="ghost" size="sm"
           onClick={() => onDelete(row.original._id)}
