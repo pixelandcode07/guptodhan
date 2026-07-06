@@ -1114,16 +1114,42 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
   if (words.length === 0) return [];
 
   const titleMatch = buildTitleMatch(words);
+  const descriptionMatch = buildDescriptionMatch(words);
+  const tagOrRegex = buildTagOrRegex(words);
 
   const suggestions = await VendorProductModel.aggregate([
     {
       $match: {
         status: "active",
-        ...titleMatch,   // ✅ title-এ AND logic
+        // ✅ FIX: সার্চ রেজাল্ট পেজের মতো ড্রপডাউনেও Title, Description ও Tag চেক করা হচ্ছে
+        $or: [
+          titleMatch,
+          descriptionMatch,
+          { productTag: { $elemMatch: { $regex: tagOrRegex } } },
+        ],
       },
     },
-    { $sort: { createdAt: -1 } },
+    // ✅ FIX: সবচেয়ে বেশি মিলে যাওয়া প্রোডাক্ট (Title Match) ড্রপডাউনের উপরে দেখানোর জন্য স্কোরিং
+    {
+      $addFields: {
+        _searchScore: {
+          $cond: [
+            titleMatch,
+            3,
+            {
+              $cond: [
+                { productTag: { $elemMatch: { $regex: tagOrRegex } } },
+                2,
+                1,
+              ],
+            },
+          ],
+        },
+      },
+    },
+    { $sort: { _searchScore: -1, createdAt: -1 } },
     { $limit: 10 },
+    { $unset: "_searchScore" },
 
     {
       $lookup: {
@@ -1161,7 +1187,7 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
         thumbnailImage: 1,
         productPrice: 1,
         discountPrice: 1,
-        callForPrice: 1, // ✅ FIX: Added here
+        callForPrice: 1,
         slug: 1,
         "category.slug": 1,
         "subCategory.slug": 1,
@@ -1185,33 +1211,28 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
       const words = prepareWords(searchTerm);
       if (words.length === 0) return [];
 
-      const titleMatch       = buildTitleMatch(words);       // AND
-      const descriptionMatch = buildDescriptionMatch(words); // AND
-      const tagOrRegex       = buildTagOrRegex(words);       // OR (tag keyword)
+      const titleMatch = buildTitleMatch(words);
+      const descriptionMatch = buildDescriptionMatch(words);
+      const tagOrRegex = buildTagOrRegex(words);
 
-      
       const results = await VendorProductModel.aggregate([
         {
           $match: {
             status: "active",
             $or: [
-              titleMatch,                                             // title: AND
-              descriptionMatch,                                      // description: AND
-              { productTag: { $elemMatch: { $regex: tagOrRegex } } }, // tag: OR
+              titleMatch,
+              descriptionMatch,
+              { productTag: { $elemMatch: { $regex: tagOrRegex } } },
             ],
           },
         },
-
-        // ── Relevance Scoring ─────────────────────────────────────────────────
         {
           $addFields: {
             _searchScore: {
               $add: [
-                // Title match (all words) → highest score
                 {
                   $switch: {
                     branches: [
-                      // Title-এ সব word আছে → score 4
                       {
                         case: {
                           $and: words.map((w) => ({
@@ -1227,7 +1248,6 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
                     default: 0,
                   },
                 },
-                // Description match → score 1
                 {
                   $cond: [
                     {
@@ -1244,13 +1264,8 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
             },
           },
         },
-
-        // ── Sort: highest score first, then newest ────────────────────────────
         { $sort: { _searchScore: -1, createdAt: -1 } },
-
-        // ── Remove score field ────────────────────────────────────────────────
         { $unset: "_searchScore" },
-
         ...getProductLookupPipeline(),
       ]);
 
