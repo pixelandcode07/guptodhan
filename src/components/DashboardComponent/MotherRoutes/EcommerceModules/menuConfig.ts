@@ -68,7 +68,7 @@ export const MENU_CONFIG: MenuConfig = {
     items: [
       { title: 'Add New Product', url: '/general/add/new/product' },
       {
-        title: 'View All Products',
+        title: 'All Products',
         url: '/general/view/all/product',
         count: '0',
       },
