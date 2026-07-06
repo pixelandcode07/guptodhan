@@ -1121,28 +1121,35 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
     {
       $match: {
         status: "active",
-        // ✅ FIX: সার্চ রেজাল্ট পেজের মতো ড্রপডাউনেও Title, Description ও Tag চেক করা হচ্ছে
+        // ✅ FIX: ড্রপডাউনেও Title, Description এবং Tag সব জায়গায় সার্চ করবে (OR Logic)
         $or: [
           titleMatch,
           descriptionMatch,
           { productTag: { $elemMatch: { $regex: tagOrRegex } } },
+          { productTitle: { $regex: tagOrRegex } }, // কোনো একটা ওয়ার্ড মিললেও যেন মিস না হয়
         ],
       },
     },
-    // ✅ FIX: সবচেয়ে বেশি মিলে যাওয়া প্রোডাক্ট (Title Match) ড্রপডাউনের উপরে দেখানোর জন্য স্কোরিং
+    // ✅ FIX: রিলেভেন্স স্কোরিং (যাতে সবচেয়ে বেশি মিলে যাওয়া প্রোডাক্ট ড্রপডাউনের একদম উপরে থাকে)
     {
       $addFields: {
         _searchScore: {
-          $cond: [
-            titleMatch,
-            3,
+          $add: [
+            { $cond: [titleMatch, 10, 0] }, // সব শব্দ টাইটেলে থাকলে ১০ পয়েন্ট
+            {
+              $cond: [
+                { $regexMatch: { input: "$productTitle", regex: tagOrRegex } },
+                5,
+                0,
+              ],
+            }, // আংশিক টাইটেল মিললে ৫ পয়েন্ট
             {
               $cond: [
                 { productTag: { $elemMatch: { $regex: tagOrRegex } } },
-                2,
-                1,
+                3,
+                0,
               ],
-            },
+            }, // ট্যাগের সাথে মিললে ৩ পয়েন্ট
           ],
         },
       },
@@ -1151,6 +1158,7 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
     { $limit: 10 },
     { $unset: "_searchScore" },
 
+    // ── Lookups ──────────────────────────────────────────────────────────
     {
       $lookup: {
         from: "categorymodels",
@@ -1199,9 +1207,6 @@ const getLiveSuggestionsFromDB = async (searchTerm: string) => {
   return suggestions;
 };
 
-
-// ─── getSearchResultsFromDB ───────────────────────────────────────────────────
-
 const getSearchResultsFromDB = async (searchTerm: string) => {
   const cacheKey = CacheKeys.PRODUCT.SEARCH(searchTerm);
 
@@ -1223,6 +1228,7 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
               titleMatch,
               descriptionMatch,
               { productTag: { $elemMatch: { $regex: tagOrRegex } } },
+              { productTitle: { $regex: tagOrRegex } },
             ],
           },
         },
@@ -1242,7 +1248,7 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
                             },
                           })),
                         },
-                        then: 4,
+                        then: 10,
                       },
                     ],
                     default: 0,
@@ -1252,11 +1258,23 @@ const getSearchResultsFromDB = async (searchTerm: string) => {
                   $cond: [
                     {
                       $regexMatch: {
+                        input: { $ifNull: ["$productTitle", ""] },
+                        regex: tagOrRegex,
+                      },
+                    },
+                    5,
+                    0,
+                  ],
+                },
+                {
+                  $cond: [
+                    {
+                      $regexMatch: {
                         input: { $ifNull: ["$shortDescription", ""] },
                         regex: tagOrRegex,
                       },
                     },
-                    1,
+                    2,
                     0,
                   ],
                 },
