@@ -3,8 +3,8 @@ import React, { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import api from '@/lib/axios'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Heart, Gift, CheckCircle, Clock, ShoppingBag } from 'lucide-react' // ✅ ShoppingBag আইকন ইম্পোর্ট করা হলো
-import Link from 'next/link' // ✅ Link ইম্পোর্ট করা হলো
+import { Heart, Gift, CheckCircle, Clock, ShoppingBag, Bell } from 'lucide-react'
+import Link from 'next/link'
 
 export default function DonationDashboardPage() {
     const { data: session } = useSession()
@@ -12,7 +12,8 @@ export default function DonationDashboardPage() {
         totalCampaigns: 0,
         completedCampaigns: 0,
         totalClaims: 0,
-        approvedClaims: 0
+        approvedClaims: 0,
+        receivedRequests: 0 // ✅ NEW
     })
     const [loading, setLoading] = useState(true)
 
@@ -44,7 +45,6 @@ export default function DonationDashboardPage() {
 
     return (
         <div className="p-6">
-            {/* ✅ Donation Overview Heading এবং Shop Now বাটন */}
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-xl font-semibold text-gray-800">Donation Overview</h1>
                 
@@ -52,12 +52,27 @@ export default function DonationDashboardPage() {
                     href="/products" 
                     className="flex items-center gap-2 bg-[#0097E9] hover:bg-[#0097E9]/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap"
                 >
-                    <ShoppingBag className="w-4 h-4" />
-                    Shop Now
+                    <ShoppingBag className="w-4 h-4" /> Shop Now
                 </Link>
             </div>
             
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                {/* ✅ NEW: Requests Received Card */}
+                <Card className="bg-blue-50 border-blue-200 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-blue-100 rounded-bl-full -z-10 opacity-50"></div>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-bold text-blue-900">Received Requests</CardTitle>
+                        <Bell className="h-4 w-4 text-blue-600" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-black text-blue-700">{stats.receivedRequests || 0}</div>
+                        <p className="text-[10px] text-blue-600 mb-3 font-medium uppercase tracking-wider">People requested your items</p>
+                        <Link href="/home/UserProfile/received-requests" className="inline-block text-xs font-bold bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors shadow-sm">
+                            Manage Requests →
+                        </Link>
+                    </CardContent>
+                </Card>
+
                 {/* Total Campaigns */}
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -70,15 +85,15 @@ export default function DonationDashboardPage() {
                     </CardContent>
                 </Card>
 
-                {/* Completed Campaigns */}
+                {/* Successful Donations */}
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Successful Donations</CardTitle>
+                        <CardTitle className="text-sm font-medium">Successful</CardTitle>
                         <CheckCircle className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{stats.completedCampaigns}</div>
-                        <p className="text-xs text-muted-foreground">Items donated successfully</p>
+                        <p className="text-xs text-muted-foreground">Items donated</p>
                     </CardContent>
                 </Card>
 
@@ -86,7 +101,7 @@ export default function DonationDashboardPage() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">My Requests</CardTitle>
-                        <Gift className="h-4 w-4 text-blue-500" />
+                        <Gift className="h-4 w-4 text-purple-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{stats.totalClaims}</div>
@@ -102,7 +117,7 @@ export default function DonationDashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{stats.approvedClaims}</div>
-                        <p className="text-xs text-muted-foreground">Requests accepted by donors</p>
+                        <p className="text-xs text-muted-foreground">Accepted by donors</p>
                     </CardContent>
                 </Card>
             </div>
