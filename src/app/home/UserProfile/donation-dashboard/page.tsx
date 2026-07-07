@@ -89,18 +89,6 @@ export default function DonationDashboardPage() {
                     </CardContent>
                 </Card>
 
-                {/* 3. Successful Donations */}
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Successful Donations</CardTitle>
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.completedCampaigns || 0}</div>
-                        <p className="text-xs text-muted-foreground mt-1">Items donated successfully</p>
-                    </CardContent>
-                </Card>
-
                 {/* 4. Total Claims */}
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
