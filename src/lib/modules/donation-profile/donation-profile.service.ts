@@ -69,8 +69,25 @@ const getUserClaimsFromDB = async (userId: string, userEmail: string) => {
     return claims;
 };
 
+
+const getReceivedClaimsFromDB = async (userId: string) => {
+    // প্রথমে আপনার তৈরি করা সব ক্যাম্পেইনের আইডি বের করা
+    const userCampaigns = await DonationCampaign.find({ creator: new Types.ObjectId(userId) }).select('_id');
+    const campaignIds = userCampaigns.map(c => c._id);
+
+    // এরপর ওই আইডিগুলোতে আসা সব ক্লেইম খুঁজে বের করা
+    const claims = await DonationClaim.find({ item: { $in: campaignIds } })
+        .sort({ createdAt: -1 })
+        .populate({ path: 'item', select: 'title images status' })
+        .lean();
+
+    return claims;
+};
+
+
 export const DonationProfileServices = {
     getUserStatsFromDB,
     getUserCampaignsFromDB,
-    getUserClaimsFromDB
+    getUserClaimsFromDB,
+    getReceivedClaimsFromDB,
 };
