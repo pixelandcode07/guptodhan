@@ -4,29 +4,25 @@ import { DonationClaim } from "../donation-claim/donation-claim.model";
 
 // ১. ইউজারের ড্যাশবোর্ড স্ট্যাটাস বের করা
 const getUserStatsFromDB = async (userId: string, userEmail: string) => {
-    // ইউজারের মোট ক্যাম্পেইন
-    const totalCampaigns = await DonationCampaign.countDocuments({ user: new Types.ObjectId(userId) });
+    // ইউজারের মোট ক্যাম্পেইন (✅ FIX: 'user' এর বদলে 'creator' হবে মডেল অনুযায়ী)
+    const totalCampaigns = await DonationCampaign.countDocuments({ 
+        creator: new Types.ObjectId(userId) 
+    });
 
-    // ইউজারের সফল (ডেলিভারড) ক্যাম্পেইন
+    // ইউজারের সফল ক্যাম্পেইন (✅ FIX: 'delivered' নয়, মডেলে 'completed' দেওয়া আছে)
     const completedCampaigns = await DonationCampaign.countDocuments({ 
-        user: new Types.ObjectId(userId), 
-        status: 'delivered' 
+        creator: new Types.ObjectId(userId), 
+        status: 'completed' 
     });
 
-    // ইউজারের মোট ক্লেইম (আবেদন) - ✅ FIX: user ID বা email যেকোনো একটা মিললেই হবে
+    // ইউজারের মোট ক্লেইম/আবেদন (✅ FIX: DonationClaim মডেলে শুধু email আছে, user id নেই)
     const totalClaims = await DonationClaim.countDocuments({
-        $or: [
-            { user: new Types.ObjectId(userId) },
-            { email: userEmail }
-        ]
+        email: userEmail
     });
 
-    // ইউজারের অ্যাপ্রুভ হওয়া ক্লেইম - ✅ FIX
+    // ইউজারের অ্যাপ্রুভ হওয়া ক্লেইম (✅ FIX)
     const approvedClaims = await DonationClaim.countDocuments({
-        $or: [
-            { user: new Types.ObjectId(userId) },
-            { email: userEmail }
-        ],
+        email: userEmail,
         status: 'approved'
     });
 
@@ -40,7 +36,8 @@ const getUserStatsFromDB = async (userId: string, userEmail: string) => {
 
 // ২. ইউজারের তৈরি করা ক্যাম্পেইন বের করা
 const getUserCampaignsFromDB = async (userId: string) => {
-    const campaigns = await DonationCampaign.find({ user: new Types.ObjectId(userId) })
+    // ✅ FIX: 'user' এর বদলে 'creator'
+    const campaigns = await DonationCampaign.find({ creator: new Types.ObjectId(userId) })
         .sort({ createdAt: -1 })
         .populate('category', 'categoryName')
         .lean();
@@ -49,13 +46,9 @@ const getUserCampaignsFromDB = async (userId: string) => {
 
 // ৩. ইউজারের আবেদন করা ক্লেইম বের করা
 const getUserClaimsFromDB = async (userId: string, userEmail: string) => {
-    // ✅ MAGIC FIX: এখন ডাটাবেসে user ID অথবা Email যেকোনো একটি দিয়ে খুঁজবে!
-    // এর ফলে পুরোনো ডাটা (যাতে শুধু ইমেইল ছিল) এবং নতুন ডাটা (যাতে আইডি আছে) দুটোই শো করবে।
+    // ✅ MAGIC FIX: DonationClaim মডেলে যেহেতু শুধু email সেভ হয়, তাই email দিয়েই খুঁজতে হবে!
     const claims = await DonationClaim.find({
-        $or: [
-            { user: new Types.ObjectId(userId) },
-            { email: userEmail }
-        ]
+        email: userEmail
     })
     .sort({ createdAt: -1 })
     .populate({
