@@ -3,7 +3,7 @@ import { DonationCampaign } from "../donation-campaign/donation-campaign.model";
 import { DonationClaim } from "../donation-claim/donation-claim.model";
 
 // ১. ইউজারের ড্যাশবোর্ড স্ট্যাটাস বের করা
-const getUserStatsFromDB = async (userId: string, userEmail: string) => {
+const getUserStatsFromDB = async (userId: string) => {
     // ইউজারের মোট ক্যাম্পেইন
     const totalCampaigns = await DonationCampaign.countDocuments({ 
         creator: new Types.ObjectId(userId) 
@@ -15,28 +15,31 @@ const getUserStatsFromDB = async (userId: string, userEmail: string) => {
         status: 'completed' 
     });
 
-    // ✅ MAGIC FIX: User ID অথবা Email যেকোনো একটা মিললেই কাউন্ট করবে!
+    // ইউজারের মোট ক্লেইম 
     const totalClaims = await DonationClaim.countDocuments({
-        $or: [
-            { user: new Types.ObjectId(userId) },
-            { email: userEmail }
-        ]
+        user: new Types.ObjectId(userId)
     });
 
-    // ইউজারের অ্যাপ্রুভ হওয়া ক্লেইম
+    // ইউজারের অ্যাপ্রুভ হওয়া ক্লেইম 
     const approvedClaims = await DonationClaim.countDocuments({
-        $or: [
-            { user: new Types.ObjectId(userId) },
-            { email: userEmail }
-        ],
+        user: new Types.ObjectId(userId),
         status: 'approved'
     });
 
+    // =========================================================
+    // ✅ MAGIC FIX: Received Requests কাউন্ট করার আসল লজিক
+    // =========================================================
+    const userCampaigns = await DonationCampaign.find({ creator: new Types.ObjectId(userId) }).select('_id');
+    const campaignIds = userCampaigns.map(c => c._id);
+    const receivedRequests = await DonationClaim.countDocuments({ item: { $in: campaignIds } });
+
+    // ✅ এখানে receivedRequests অবশ্যই রিটার্ন করতে হবে!
     return {
         totalCampaigns,
         completedCampaigns,
         totalClaims,
-        approvedClaims
+        approvedClaims,
+        receivedRequests 
     };
 };
 
