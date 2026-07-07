@@ -1,20 +1,20 @@
-import { DonationCampaignModel } from "../donation/donation.model";
-import { DonationClaimModel } from "../donation-claim/donation-claim.model";
 import { Types } from "mongoose";
+import { DonationCampaign } from "../donation-campaign/donation-campaign.model";
+import { DonationClaim } from "../donation-claim/donation-claim.model";
 
 // ১. ইউজারের ড্যাশবোর্ড স্ট্যাটাস বের করা
 const getUserStatsFromDB = async (userId: string, userEmail: string) => {
     // ইউজারের মোট ক্যাম্পেইন
-    const totalCampaigns = await DonationCampaignModel.countDocuments({ user: new Types.ObjectId(userId) });
+    const totalCampaigns = await DonationCampaign.countDocuments({ user: new Types.ObjectId(userId) });
 
     // ইউজারের সফল (ডেলিভারড) ক্যাম্পেইন
-    const completedCampaigns = await DonationCampaignModel.countDocuments({ 
+    const completedCampaigns = await DonationCampaign.countDocuments({ 
         user: new Types.ObjectId(userId), 
         status: 'delivered' 
     });
 
     // ইউজারের মোট ক্লেইম (আবেদন) - ✅ FIX: user ID বা email যেকোনো একটা মিললেই হবে
-    const totalClaims = await DonationClaimModel.countDocuments({
+    const totalClaims = await DonationClaim.countDocuments({
         $or: [
             { user: new Types.ObjectId(userId) },
             { email: userEmail }
@@ -22,7 +22,7 @@ const getUserStatsFromDB = async (userId: string, userEmail: string) => {
     });
 
     // ইউজারের অ্যাপ্রুভ হওয়া ক্লেইম - ✅ FIX
-    const approvedClaims = await DonationClaimModel.countDocuments({
+    const approvedClaims = await DonationClaim.countDocuments({
         $or: [
             { user: new Types.ObjectId(userId) },
             { email: userEmail }
@@ -40,7 +40,7 @@ const getUserStatsFromDB = async (userId: string, userEmail: string) => {
 
 // ২. ইউজারের তৈরি করা ক্যাম্পেইন বের করা
 const getUserCampaignsFromDB = async (userId: string) => {
-    const campaigns = await DonationCampaignModel.find({ user: new Types.ObjectId(userId) })
+    const campaigns = await DonationCampaign.find({ user: new Types.ObjectId(userId) })
         .sort({ createdAt: -1 })
         .populate('category', 'categoryName')
         .lean();
@@ -51,7 +51,7 @@ const getUserCampaignsFromDB = async (userId: string) => {
 const getUserClaimsFromDB = async (userId: string, userEmail: string) => {
     // ✅ MAGIC FIX: এখন ডাটাবেসে user ID অথবা Email যেকোনো একটি দিয়ে খুঁজবে!
     // এর ফলে পুরোনো ডাটা (যাতে শুধু ইমেইল ছিল) এবং নতুন ডাটা (যাতে আইডি আছে) দুটোই শো করবে।
-    const claims = await DonationClaimModel.find({
+    const claims = await DonationClaim.find({
         $or: [
             { user: new Types.ObjectId(userId) },
             { email: userEmail }
