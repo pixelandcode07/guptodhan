@@ -3,7 +3,7 @@ import { DonationCampaign } from "../donation-campaign/donation-campaign.model";
 import { DonationClaim } from "../donation-claim/donation-claim.model";
 
 // ১. ইউজারের ড্যাশবোর্ড স্ট্যাটাস বের করা
-const getUserStatsFromDB = async (userId: string, userEmail: string) => {
+const getUserStatsFromDB = async (userId: string) => {
     // ইউজারের মোট ক্যাম্পেইন
     const totalCampaigns = await DonationCampaign.countDocuments({ 
         creator: new Types.ObjectId(userId) 
@@ -15,20 +15,14 @@ const getUserStatsFromDB = async (userId: string, userEmail: string) => {
         status: 'completed' 
     });
 
-    // ✅ MAGIC FIX: User ID অথবা Email যেকোনো একটা মিললেই কাউন্ট করবে!
+    // ✅ MAGIC FIX: শুধুমাত্র userId দিয়ে ক্লেইম কাউন্ট করা হচ্ছে
     const totalClaims = await DonationClaim.countDocuments({
-        $or: [
-            { user: new Types.ObjectId(userId) },
-            { email: userEmail }
-        ]
+        user: new Types.ObjectId(userId)
     });
 
-    // ইউজারের অ্যাপ্রুভ হওয়া ক্লেইম
+    // ✅ MAGIC FIX: শুধুমাত্র userId দিয়ে অ্যাপ্রুভ হওয়া ক্লেইম কাউন্ট করা হচ্ছে
     const approvedClaims = await DonationClaim.countDocuments({
-        $or: [
-            { user: new Types.ObjectId(userId) },
-            { email: userEmail }
-        ],
+        user: new Types.ObjectId(userId),
         status: 'approved'
     });
 
@@ -50,14 +44,11 @@ const getUserCampaignsFromDB = async (userId: string) => {
 };
 
 // ৩. ইউজারের আবেদন করা ক্লেইম বের করা
-const getUserClaimsFromDB = async (userId: string, userEmail: string) => {
+const getUserClaimsFromDB = async (userId: string) => {
     
-    // ✅ MAGIC FIX: এখন ডাটাবেসে user ID অথবা Email যেকোনো একটি দিয়ে খুঁজবে!
+    // ✅ MAGIC FIX: শুধুমাত্র userId দিয়ে ক্লেইমগুলো ডাটাবেস থেকে খুঁজে বের করা হচ্ছে
     const claims = await DonationClaim.find({
-        $or: [
-            { user: new Types.ObjectId(userId) },
-            { email: userEmail }
-        ]
+        user: new Types.ObjectId(userId)
     })
     .sort({ createdAt: -1 })
     .populate({
