@@ -15,7 +15,7 @@ const getDonationDashboardStats = async (req: NextRequest) => {
   const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as any;
   
   let userEmail = decoded.email;
-  const userId = decoded.userId;
+  const userId = decoded.userId || decoded.id;
 
   // 🛠 যদি টোকেনে ইমেইল না থাকে, ডাটাবেস থেকে বের করো
   if (!userEmail) {
@@ -27,6 +27,7 @@ const getDonationDashboardStats = async (req: NextRequest) => {
     throw new Error('User email not found. Please log in again.');
   }
 
+  // ✅ MAGIC FIX: ক্যাম্পেইনের জন্য userId এবং ক্লেইমের জন্য userEmail দুটোই পাঠানো হচ্ছে
   const result = await DonationProfileServices.getUserStatsFromDB(userId, userEmail);
 
   return sendResponse({
@@ -44,8 +45,9 @@ const getMyCampaigns = async (req: NextRequest) => {
   const token = req.headers.get('authorization')?.split(' ')[1];
   if (!token) throw new Error('Unauthorized');
   const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as any;
+  const userId = decoded.userId || decoded.id;
 
-  const result = await DonationProfileServices.getUserCampaignsFromDB(decoded.userId);
+  const result = await DonationProfileServices.getUserCampaignsFromDB(userId);
 
   return sendResponse({
     success: true,
@@ -62,7 +64,7 @@ const getMyClaims = async (req: NextRequest) => {
   if (!token) throw new Error('Unauthorized');
   
   const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as any;
-  const userId = decoded.userId || decoded.id; // টোকেন থেকে আইডি নেওয়া হলো
+  const userId = decoded.userId || decoded.id; 
 
   // যদি ইমেইল না থাকে, তবে ডাটাবেস থেকে ইমেইল বের করে নিবে
   let userEmail = decoded.email;
@@ -71,8 +73,12 @@ const getMyClaims = async (req: NextRequest) => {
       userEmail = user?.email;
   }
 
-  // ✅ MAGIC FIX: এখন সার্ভিস লেয়ারে userId এবং email দুটোই পাঠানো হচ্ছে!
-  const result = await DonationProfileServices.getUserClaimsFromDB(userId, userEmail);
+  if (!userEmail) {
+    throw new Error('User email not found.');
+  }
+
+  // ✅ MAGIC FIX: এখন সার্ভিস লেয়ারে শুধুমাত্র email পাঠানো হচ্ছে! ObjectId এর দরকার নেই।
+  const result = await DonationProfileServices.getUserClaimsFromDB(userEmail);
 
   return sendResponse({
     success: true,
