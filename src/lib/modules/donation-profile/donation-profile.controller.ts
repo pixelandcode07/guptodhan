@@ -43,7 +43,7 @@ const getMyCampaigns = async (req: NextRequest) => {
   
   const token = req.headers.get('authorization')?.split(' ')[1];
   if (!token) throw new Error('Unauthorized');
-  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!);
+  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as any;
 
   const result = await DonationProfileServices.getUserCampaignsFromDB(decoded.userId);
 
@@ -62,18 +62,17 @@ const getMyClaims = async (req: NextRequest) => {
   if (!token) throw new Error('Unauthorized');
   
   const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as any;
+  const userId = decoded.userId || decoded.id; // টোকেন থেকে আইডি নেওয়া হলো
 
-  // লগ দিয়ে চেক করুন ইমেইল আসছে কি না
-  console.log("Decoded Token:", decoded);
-
-  // যদি ইমেইল না থাকে, তবে ইউজার আইডি দিয়ে ইউজার ডাটাবেস থেকে ইমেইল বের করে নিতে পারেন
+  // যদি ইমেইল না থাকে, তবে ডাটাবেস থেকে ইমেইল বের করে নিবে
   let userEmail = decoded.email;
   if (!userEmail) {
-      const user = await User.findById(decoded.userId);
+      const user = await User.findById(userId).select('email');
       userEmail = user?.email;
   }
 
-  const result = await DonationProfileServices.getUserClaimsFromDB(userEmail);
+  // ✅ MAGIC FIX: এখন সার্ভিস লেয়ারে userId এবং email দুটোই পাঠানো হচ্ছে!
+  const result = await DonationProfileServices.getUserClaimsFromDB(userId, userEmail);
 
   return sendResponse({
     success: true,
