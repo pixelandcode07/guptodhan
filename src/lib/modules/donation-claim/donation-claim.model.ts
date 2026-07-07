@@ -3,6 +3,9 @@ import { IDonationClaim } from './donation-claim.interface';
 
 const donationClaimSchema = new Schema<IDonationClaim>({
   item: { type: Schema.Types.ObjectId, ref: 'DonationCampaign', required: true },
+  
+  user: { type: Schema.Types.ObjectId, ref: 'User' },
+  
   name: { type: String, required: true },
   phone: { type: String, required: true },
   email: { type: String, required: true },
