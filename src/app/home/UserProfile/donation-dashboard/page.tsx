@@ -13,7 +13,7 @@ export default function DonationDashboardPage() {
         completedCampaigns: 0,
         totalClaims: 0,
         approvedClaims: 0,
-        receivedRequests: 0 // ✅ NEW
+        receivedRequests: 0 // ✅ ডাটা রিসিভ করার জন্য স্টেট
     })
     const [loading, setLoading] = useState(true)
 
@@ -41,7 +41,7 @@ export default function DonationDashboardPage() {
         if (session) fetchStats()
     }, [session])
 
-    if (loading) return <div className="p-8 text-center">Loading stats...</div>
+    if (loading) return <div className="p-8 text-center text-gray-500 animate-pulse font-medium">Loading stats...</div>
 
     return (
         <div className="p-6">
@@ -56,68 +56,72 @@ export default function DonationDashboardPage() {
                 </Link>
             </div>
             
+            {/* ✅ MAGIC FIX: সব কার্ডের সাইজ ও ডিজাইন এক করা হলো */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                {/* ✅ NEW: Requests Received Card */}
-                <Card className="bg-blue-50 border-blue-200 shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-blue-100 rounded-bl-full -z-10 opacity-50"></div>
+                
+                {/* 1. Received Requests Card (New & Clickable) */}
+                <Card className="relative overflow-hidden group hover:border-blue-400 transition-colors border-blue-200 bg-blue-50/50">
+                    <Link href="/home/UserProfile/received-requests" className="absolute inset-0 z-10">
+                        <span className="sr-only">View Received Requests</span>
+                    </Link>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-bold text-blue-900">Received Requests</CardTitle>
+                        <CardTitle className="text-sm font-medium text-blue-900">Received Requests</CardTitle>
                         <Bell className="h-4 w-4 text-blue-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-black text-blue-700">{stats.receivedRequests || 0}</div>
-                        <p className="text-[10px] text-blue-600 mb-3 font-medium uppercase tracking-wider">People requested your items</p>
-                        <Link href="/home/UserProfile/received-requests" className="inline-block text-xs font-bold bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors shadow-sm">
-                            Manage Requests →
-                        </Link>
+                        <div className="text-2xl font-bold text-blue-700">{stats.receivedRequests || 0}</div>
+                        <p className="text-xs text-blue-600 mt-1 flex items-center justify-between">
+                            People requested your items
+                            <span className="font-bold group-hover:underline">View &rarr;</span>
+                        </p>
                     </CardContent>
                 </Card>
 
-                {/* Total Campaigns */}
+                {/* 2. Total Campaigns */}
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Campaigns</CardTitle>
                         <Heart className="h-4 w-4 text-red-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalCampaigns}</div>
-                        <p className="text-xs text-muted-foreground">Donations you posted</p>
+                        <div className="text-2xl font-bold">{stats.totalCampaigns || 0}</div>
+                        <p className="text-xs text-muted-foreground mt-1">Donations you posted</p>
                     </CardContent>
                 </Card>
 
-                {/* Successful Donations */}
+                {/* 3. Successful Donations */}
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Successful</CardTitle>
+                        <CardTitle className="text-sm font-medium">Successful Donations</CardTitle>
                         <CheckCircle className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.completedCampaigns}</div>
-                        <p className="text-xs text-muted-foreground">Items donated</p>
+                        <div className="text-2xl font-bold">{stats.completedCampaigns || 0}</div>
+                        <p className="text-xs text-muted-foreground mt-1">Items donated successfully</p>
                     </CardContent>
                 </Card>
 
-                {/* Total Claims */}
+                {/* 4. Total Claims */}
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">My Requests</CardTitle>
                         <Gift className="h-4 w-4 text-purple-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalClaims}</div>
-                        <p className="text-xs text-muted-foreground">Items you applied for</p>
+                        <div className="text-2xl font-bold">{stats.totalClaims || 0}</div>
+                        <p className="text-xs text-muted-foreground mt-1">Items you applied for</p>
                     </CardContent>
                 </Card>
 
-                {/* Approved Claims */}
+                {/* 5. Approved Claims */}
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Approved Requests</CardTitle>
                         <Clock className="h-4 w-4 text-orange-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.approvedClaims}</div>
-                        <p className="text-xs text-muted-foreground">Accepted by donors</p>
+                        <div className="text-2xl font-bold">{stats.approvedClaims || 0}</div>
+                        <p className="text-xs text-muted-foreground mt-1">Requests accepted by donors</p>
                     </CardContent>
                 </Card>
             </div>
