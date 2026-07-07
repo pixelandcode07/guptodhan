@@ -5,7 +5,9 @@ import api from '@/lib/axios'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import Link from 'next/link'
-import { ShoppingBag, Package, Mail, Phone, Calendar, User, Clock, CheckCircle, XCircle } from 'lucide-react'
+import { ShoppingBag, Package, Mail, Phone, Calendar, User, Clock, CheckCircle, XCircle, PhoneCall } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 export default function MyClaimsPage() {
     const { data: session } = useSession()
@@ -13,7 +15,11 @@ export default function MyClaimsPage() {
     const [claims, setClaims] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
-    // ✅ MAGIC FIX: useCallback ব্যবহার করে ফাংশনটি মেমোরাইজ করা হলো
+    // ✅ Modal States
+    const [isContactModalOpen, setIsContactModalOpen] = useState(false)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [selectedClaim, setSelectedClaim] = useState<any>(null)
+
     const fetchClaims = useCallback(async () => {
         try {
             setLoading(true);
@@ -35,7 +41,6 @@ export default function MyClaimsPage() {
         }
     }, [session]);
 
-    // ✅ MAGIC FIX: সেশন লোড হলেই বা পেজ রেন্ডার হলেই ডাটা ফেচ করবে
     useEffect(() => {
         if (session) {
             fetchClaims();
@@ -54,7 +59,6 @@ export default function MyClaimsPage() {
 
     return (
         <div className="p-6 max-w-[1200px] mx-auto">
-            {/* ✅ My Claim Requests Heading এবং Shop Now বাটন */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4 border-b pb-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800">My Claim Requests</h1>
@@ -132,14 +136,31 @@ export default function MyClaimsPage() {
                                     </TableCell>
 
                                     <TableCell className="text-right">
-                                        <Badge className={`px-3 py-1 font-bold tracking-wide uppercase text-[10px] ${getStatusColor(claim.status)} text-white shadow-sm`}>
-                                            <span className="flex items-center gap-1.5">
-                                                {claim.status === 'approved' && <CheckCircle className="w-3 h-3" />}
-                                                {claim.status === 'rejected' && <XCircle className="w-3 h-3" />}
-                                                {claim.status === 'pending' && <Clock className="w-3 h-3" />}
-                                                {claim.status}
-                                            </span>
-                                        </Badge>
+                                        <div className="flex flex-col items-end gap-2">
+                                            <Badge className={`px-3 py-1 font-bold tracking-wide uppercase text-[10px] ${getStatusColor(claim.status)} text-white shadow-sm`}>
+                                                <span className="flex items-center gap-1.5">
+                                                    {claim.status === 'approved' && <CheckCircle className="w-3 h-3" />}
+                                                    {claim.status === 'rejected' && <XCircle className="w-3 h-3" />}
+                                                    {claim.status === 'pending' && <Clock className="w-3 h-3" />}
+                                                    {claim.status}
+                                                </span>
+                                            </Badge>
+                                            
+                                            {/* ✅ MAGIC FIX: Approved হলে Contact Donor বাটন দেখাবে */}
+                                            {claim.status === 'approved' && (
+                                                <Button 
+                                                    size="sm" 
+                                                    variant="outline" 
+                                                    className="h-7 text-[11px] border-green-300 text-green-700 hover:bg-green-50 px-2"
+                                                    onClick={() => {
+                                                        setSelectedClaim(claim);
+                                                        setIsContactModalOpen(true);
+                                                    }}
+                                                >
+                                                    <PhoneCall className="w-3 h-3 mr-1.5" /> Contact Donor
+                                                </Button>
+                                            )}
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -147,6 +168,63 @@ export default function MyClaimsPage() {
                     </Table>
                 </div>
             )}
+
+            {/* ✅ Contact Donor Modal */}
+            <Dialog open={isContactModalOpen} onOpenChange={setIsContactModalOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl text-green-600 flex items-center gap-2">
+                            <CheckCircle className="w-6 h-6" />
+                            Congratulations!
+                        </DialogTitle>
+                        <DialogDescription className="mt-2">
+                            Your claim for <strong>{selectedClaim?.item?.title}</strong> has been approved. Please contact the donor to receive your item.
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="bg-green-50/50 border border-green-100 p-5 rounded-xl space-y-4 mt-2">
+                        {selectedClaim?.item?.creator ? (
+                            <>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                                        <User className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 font-medium">Donor Name</p>
+                                        <p className="font-semibold text-gray-800">{selectedClaim.item.creator.name || 'Not Available'}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                                        <Phone className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 font-medium">Phone Number</p>
+                                        <p className="font-semibold text-gray-800">{selectedClaim.item.creator.phoneNumber || 'Not Provided'}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                                        <Mail className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 font-medium">Email Address</p>
+                                        <p className="font-semibold text-gray-800">{selectedClaim.item.creator.email || 'Not Provided'}</p>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <p className="text-sm text-gray-600 text-center py-4 italic">
+                                Donor contact details are currently unavailable.
+                            </p>
+                        )}
+                    </div>
+                    
+                    <div className="flex justify-end mt-2">
+                        <Button variant="default" onClick={() => setIsContactModalOpen(false)}>Done</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
