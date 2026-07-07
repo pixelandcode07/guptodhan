@@ -82,8 +82,27 @@ const getMyClaims = async (req: NextRequest) => {
   });
 };
 
+const getReceivedClaims = async (req: NextRequest) => {
+  await dbConnect();
+  const token = req.headers.get('authorization')?.split(' ')[1];
+  if (!token) throw new Error('Unauthorized');
+  
+  const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as any;
+  const userId = decoded.userId || decoded.id;
+
+  const result = await DonationProfileServices.getReceivedClaimsFromDB(userId);
+
+  return sendResponse({
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Received requests retrieved successfully!',
+    data: result,
+  });
+};
+
 export const DonationProfileController = {
   getDonationDashboardStats,
   getMyCampaigns,
   getMyClaims,
+  getReceivedClaims,
 };
