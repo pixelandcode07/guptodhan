@@ -34,7 +34,7 @@ const items = [
   { title: 'My Return', url: '/home/UserProfile/returns', icon: RotateCcw },
   { title: 'My Review', url: '/home/UserProfile/reviews', icon: Star },
   { title: 'My Services', url: '/home/UserProfile/services', icon: LucideWorkflow },
-  { title: 'Donation Stats', url: '/home/UserProfile/donation-dashboard', icon: HeartHandshake },
+  { title: 'Donation Satuts', url: '/home/UserProfile/donation-dashboard', icon: HeartHandshake },
   { title: 'My Campaigns', url: '/home/UserProfile/my-campaigns', icon: Gift },
   { title: 'My Ads (Buy & Sell)', url: '/home/UserProfile/my-ads', icon: Megaphone },
   { title: 'My Requests', url: '/home/UserProfile/my-claims', icon: Hand },
