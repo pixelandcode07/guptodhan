@@ -42,7 +42,7 @@ export function AdminActionCards({ pendingVendors, pendingOrders }: { pendingVen
               <ShoppingCart className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-xs text-blue-600 font-bold uppercase tracking-widest">Order Processing</p>
+              <p className="text-xs text-blue-600 font-bold uppercase tracking-widest">Order Pending</p>
               <h4 className="text-3xl font-bold text-slate-900 mt-1">{pendingOrders}</h4>
               <p className="text-xs text-blue-600/70 mt-1">To ship & deliver</p>
             </div>
