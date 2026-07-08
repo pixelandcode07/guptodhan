@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import DonationClaimModal from './DonationClaimModal'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
-import { Package, RefreshCw, LayoutGrid, MapPin, Heart, HandHeart, X } from 'lucide-react'
+import { Package, RefreshCw, LayoutGrid, MapPin, Heart, HandHeart, X, Clock } from 'lucide-react'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
@@ -26,6 +26,8 @@ interface DonationCampaign {
     moderationStatus?: string;
     goalAmount?: number;
     raisedAmount?: number;
+    quantity?: number; // ✅ Added Quantity
+    endDate?: string;  // ✅ Added End Date
 }
 
 interface DonationCategory {
@@ -46,7 +48,7 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
     const [category, setCategory] = useState<string>('all')
     const [displayCount, setDisplayCount] = useState<number>(8)
     const [claimOpen, setClaimOpen] = useState<boolean>(false)
-    const [loginOpen, setLoginOpen] = useState<boolean>(false) // ✅ Login modal state added
+    const [loginOpen, setLoginOpen] = useState<boolean>(false) 
     const [selectedItem, setSelectedItem] = useState<{ id: string, title: string, image: string, type: string } | undefined>(undefined)
     const [loading, setLoading] = useState(false)
 
@@ -142,7 +144,6 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                 open={claimOpen} 
                 onOpenChange={setClaimOpen} 
                 item={selectedItem} 
-                // Passed down just in case your DonationClaimModal uses it internally
                 onLoginRequired={() => setLoginOpen(true)} 
             />
 
@@ -332,9 +333,9 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                                 </p>
                                             )}
 
-                                            {/* Progress bar for money campaigns */}
-                                            {camp.item === 'money' && camp.goalAmount && camp.goalAmount > 0 && (
-                                                <div className="space-y-1.5">
+                                            {/* ✅ MAGIC FIX: Progress bar for money OR Quantity/Date for physical items */}
+                                            {camp.item === 'money' && camp.goalAmount && camp.goalAmount > 0 ? (
+                                                <div className="space-y-1.5 mt-auto pt-2">
                                                     <div className="flex justify-between text-xs font-semibold">
                                                         <span className="text-emerald-600">৳{(camp.raisedAmount || 0).toLocaleString()} raised</span>
                                                         <span className="text-gray-400">Goal: ৳{camp.goalAmount.toLocaleString()}</span>
@@ -348,6 +349,25 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                                         />
                                                     </div>
                                                     <p className="text-[10px] text-gray-400 text-right">{progress}% funded</p>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-1.5 mt-auto pt-2">
+                                                    <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-lg p-2.5">
+                                                        <div className="flex items-center gap-1.5 text-blue-700 text-xs font-bold">
+                                                            <Package size={14} />
+                                                            <span>{camp.quantity || 1} Pcs</span>
+                                                        </div>
+                                                        {camp.endDate ? (
+                                                            <div className="flex items-center gap-1 text-orange-600 text-[10px] font-bold">
+                                                                <Clock size={12} />
+                                                                <span>Ends: {new Date(camp.endDate).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center gap-1 text-emerald-600 text-[10px] font-bold">
+                                                                <span>No Expiry</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
 
@@ -368,7 +388,7 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                                     whileHover={{ scale: 1.02 }}
                                                     whileTap={{ scale: 0.98 }}
                                                     className='w-full py-2.5 bg-[#00005E] hover:bg-[#000045] text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm shadow-blue-900/20'
-                                                    onClick={() => handleRequestClick(camp)} // ✅ Added login checking logic here
+                                                    onClick={() => handleRequestClick(camp)}
                                                 >
                                                     <HandHeart className="w-4 h-4" />
                                                     {camp.item === 'money' ? 'Request Fund' : 'Request Item'}
