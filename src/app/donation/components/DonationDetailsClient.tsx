@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
-import { AlertCircle, CheckCircle2, Loader2, Package, DollarSign, Heart, Users, TrendingUp, Phone, Mail, User, ChevronLeft, ChevronRight, Calendar, HandHeart, X } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Loader2, Package, DollarSign, Heart, Users, TrendingUp, Phone, Mail, User, ChevronLeft, ChevronRight, Calendar, HandHeart, X, Clock } from 'lucide-react'
 import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -41,6 +41,8 @@ interface IDonationCampaign {
   moderationStatus?: string
   goalAmount?: number
   raisedAmount?: number
+  quantity?: number // ✅ Added
+  endDate?: string  // ✅ Added
   donorsCount?: number
   createdAt?: string
 }
@@ -249,7 +251,6 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
   const progress = campaign.goalAmount && campaign.goalAmount > 0
     ? Math.round((campaign.raisedAmount || 0) / campaign.goalAmount * 100) : 0
 
-  // ✅ Here is the logic: if not logged in, show Login Modal
   const handleRequestClick = () => {
     if (!session) {
       setLoginOpen(true)
@@ -267,8 +268,6 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* ✅ Login Modal — fixed overlay, Dialog এর উপর নির্ভর করে না */}
-      {/* Note: Wrapped LogInRegister inside Dialog so shadcn UI doesn't crash */}
       <AnimatePresence>
         {loginOpen && (
           <div className="fixed inset-0 z-[999] flex items-center justify-center px-4">
@@ -441,7 +440,7 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
           <div className="space-y-4">
             <div className="bg-white rounded-2xl p-5 border border-gray-100 space-y-5 sticky top-4">
 
-              {campaign.item === 'money' && campaign.goalAmount && campaign.goalAmount > 0 && (
+              {campaign.item === 'money' && campaign.goalAmount && campaign.goalAmount > 0 ? (
                 <div className="space-y-4">
                   <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
                     <DollarSign size={16} className="text-emerald-600" /> Fundraising Progress
@@ -477,17 +476,28 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                   </div>
                   <div className="h-px bg-gray-100" />
                 </div>
-              )}
+              ) : (
+                /* ✅ NEW: Quantity and Expiry Details for Non-Money items */
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-blue-50 rounded-xl p-3 text-center border border-blue-100">
+                      <Package className="text-blue-600 mx-auto mb-1.5" size={18} />
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Quantity</p>
+                      <p className="font-black text-blue-900 text-lg">{campaign.quantity || 1} Pcs</p>
+                    </div>
+                    <div className="bg-red-50 rounded-xl p-3 text-center border border-red-100">
+                      <Heart className="text-red-500 mx-auto mb-1.5" size={18} />
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Requests</p>
+                      <p className="font-black text-red-900 text-lg">{campaign.donorsCount || 0}</p>
+                    </div>
+                  </div>
 
-              {campaign.item !== 'money' && (
-                <div className="text-center py-2 space-y-2">
-                  <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto">
-                    <Heart className="text-red-500" size={22} />
-                  </div>
-                  <div>
-                    <p className="text-3xl font-bold text-gray-900">{campaign.donorsCount || 0}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">people requested this item</p>
-                  </div>
+                  {campaign.endDate && (
+                    <div className="bg-orange-50 rounded-xl p-3 flex items-center justify-center gap-2 border border-orange-100 text-orange-700">
+                      <Clock size={16} className="animate-pulse" />
+                      <span className="text-xs font-bold">Valid Until: {formatDate(campaign.endDate)}</span>
+                    </div>
+                  )}
                   <div className="h-px bg-gray-100" />
                 </div>
               )}
@@ -500,7 +510,7 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={handleRequestClick} // This securely redirects to Login if not signed in
+                  onClick={handleRequestClick} 
                   className="w-full py-3 bg-[#00005E] hover:bg-[#000045] text-white font-bold rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
                 >
                   <HandHeart size={16} />
