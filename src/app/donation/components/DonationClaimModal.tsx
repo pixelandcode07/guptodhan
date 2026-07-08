@@ -18,16 +18,17 @@ type DonationItem = {
   type: string
 }
 
+// ✅ MAGIC FIX: এখানে onLoginRequired যুক্ত করা হলো টাইপস্ক্রিপ্ট এরর দূর করার জন্য
 interface DonationClaimModalProps {
   open: boolean
   onOpenChange: (v: boolean) => void
   item?: DonationItem
+  onLoginRequired?: () => void 
 }
 
-export default function DonationClaimModal({ open, onOpenChange, item }: DonationClaimModalProps) {
+export default function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: DonationClaimModalProps) {
   const { data: session } = useSession()
   const token = (session as any)?.accessToken
-  // ✅ MAGIC FIX: সেশন থেকে ইউজারের ইমেইল নেওয়া হলো
   const userEmail = session?.user?.email || ''
 
   const [loading, setLoading] = useState(false)
@@ -35,20 +36,19 @@ export default function DonationClaimModal({ open, onOpenChange, item }: Donatio
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
-    email: userEmail, // ডিফল্টভাবে ইউজারের ইমেইল বসানো হলো
+    email: userEmail, 
     reason: '',
     amount: '',
     paymentMethod: 'bkash',
     accountNumber: ''
   })
 
-  // ✅ MAGIC FIX: মডাল ওপেন বা সেশন লোড হলে ইমেইল অটোমেটিক আপডেট হবে
   useEffect(() => {
     if (!open) {
       setFormData({
         name: '',
         phone: '',
-        email: session?.user?.email || '', // মডাল ক্লোজ হলে রিসেট
+        email: session?.user?.email || '', 
         reason: '',
         amount: '',
         paymentMethod: 'bkash',
@@ -56,7 +56,6 @@ export default function DonationClaimModal({ open, onOpenChange, item }: Donatio
       })
       setErrors({})
     } else {
-      // মডাল ওপেন হলে নিশ্চিত করা হচ্ছে যে ইমেইল ফিল্ডে সেশন ইমেইল আছে
       setFormData(prev => ({ ...prev, email: session?.user?.email || '' }))
     }
   }, [open, session])
@@ -64,7 +63,6 @@ export default function DonationClaimModal({ open, onOpenChange, item }: Donatio
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
@@ -86,7 +84,6 @@ export default function DonationClaimModal({ open, onOpenChange, item }: Donatio
     }
     if (!formData.reason.trim()) newErrors.reason = 'Reason is required'
 
-    // Money-specific validation
     if (item?.type === 'money') {
       if (!formData.amount.trim()) {
         newErrors.amount = 'Amount is required'
@@ -103,9 +100,14 @@ export default function DonationClaimModal({ open, onOpenChange, item }: Donatio
   }
 
   const handleSubmit = async () => {
+    // ✅ MAGIC FIX: যদি ইউজার লগ-ইন না থাকে, তবে onLoginRequired কল করে লগ-ইন মডাল ওপেন হবে
     if (!session) {
-      toast.error("Please login first to submit a request")
       onOpenChange(false)
+      if (onLoginRequired) {
+          setTimeout(() => onLoginRequired(), 200)
+      } else {
+          toast.error("Please login first to submit a request")
+      }
       return
     }
 
@@ -283,7 +285,7 @@ export default function DonationClaimModal({ open, onOpenChange, item }: Donatio
               </div>
             </div>
 
-            {/* Email (✅ Disabled and pre-filled) */}
+            {/* Email (Disabled and pre-filled) */}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-xs sm:text-sm font-semibold text-slate-700 flex items-center gap-2">
                 <Mail size={16} />
@@ -295,8 +297,8 @@ export default function DonationClaimModal({ open, onOpenChange, item }: Donatio
                 type="email"
                 placeholder="your.email@example.com"
                 value={formData.email}
-                disabled // ✅ MAGIC FIX: ইনপুটটি ডিসেবল করা হলো
-                className="h-10 text-sm bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200" // ✅ গ্রে কালার দেওয়া হলো বোঝার জন্য
+                disabled 
+                className="h-10 text-sm bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200" 
               />
               <p className="text-[11px] text-slate-500 italic mt-1">
                 * Your logged-in email is automatically used for this request.
