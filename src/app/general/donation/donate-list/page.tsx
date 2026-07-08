@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
   Trash2, Eye, Check, X, Search, RefreshCw, ChevronDown,
-  Package, Clock, TrendingUp, Users, ShieldCheck, ShieldAlert
+  Package, Clock, TrendingUp, Users, ShieldCheck, ShieldAlert, Calendar
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -35,6 +35,7 @@ interface Campaign {
   status: 'active' | 'inactive' | 'completed' | 'archived';
   moderationStatus: 'pending' | 'approved' | 'rejected';
   createdAt: string;
+  updatedAt?: string; // ✅ Added updatedAt
   creator?: { _id: string; name: string; email?: string };
   rejectionReason?: string;
   goalAmount?: number;
@@ -196,7 +197,7 @@ export default function AdminDonateListPage() {
     }
   };
 
-  // ✅ Change Status via Dropdown (যেকোনো status এ change করা যাবে)
+  // ✅ Change Status via Dropdown
   const handleStatusChange = async (id: string, newStatus: string) => {
     setActionLoading(id);
     
@@ -271,6 +272,14 @@ export default function AdminDonateListPage() {
     if (s === 'inactive') return <Badge variant="outline" className="text-gray-500">Inactive</Badge>;
     if (s === 'completed') return <Badge className="bg-blue-600 text-white">Completed</Badge>;
     return <Badge variant="secondary">Archived</Badge>;
+  };
+
+  // Date formatter
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return 'N/A';
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      day: 'numeric', month: 'short', year: 'numeric'
+    });
   };
 
   return (
@@ -373,6 +382,7 @@ export default function AdminDonateListPage() {
             <TableRow>
               <TableHead className="w-[300px]">Campaign Info</TableHead>
               <TableHead>Creator</TableHead>
+              <TableHead>Dates</TableHead> {/* ✅ NEW COLUMN */}
               <TableHead>Moderation</TableHead>
               <TableHead>Public Status</TableHead>
               <TableHead>Progress</TableHead>
@@ -382,14 +392,16 @@ export default function AdminDonateListPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-10">
+                {/* ✅ colSpan updated to 7 */}
+                <TableCell colSpan={7} className="text-center py-10">
                   <RefreshCw className="animate-spin mx-auto mb-2" size={24} />
                   <p>Loading campaigns...</p>
                 </TableCell>
               </TableRow>
             ) : filteredCampaigns.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-10 text-slate-400">
+                {/* ✅ colSpan updated to 7 */}
+                <TableCell colSpan={7} className="text-center py-10 text-slate-400">
                   No campaigns found matching your filters.
                 </TableCell>
               </TableRow>
@@ -418,9 +430,24 @@ export default function AdminDonateListPage() {
                     <p className="text-sm font-medium">{camp.creator?.name || 'Anonymous'}</p>
                     <p className="text-[10px] text-slate-400">{camp.creator?.email}</p>
                   </TableCell>
+
+                  {/* ✅ NEW DATES COLUMN */}
+                  <TableCell>
+                    <div className="flex flex-col gap-1.5 text-xs text-slate-600">
+                      <div className="flex items-center gap-1.5" title="Created At">
+                        <Calendar size={13} className="text-blue-500" />
+                        <span>C: {formatDate(camp.createdAt)}</span>
+                      </div>
+                      {camp.updatedAt && (
+                        <div className="flex items-center gap-1.5" title="Updated At">
+                          <Clock size={13} className="text-orange-500" />
+                          <span>U: {formatDate(camp.updatedAt)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
                   
                   <TableCell>
-                    {/* ✅ MODERATION DROPDOWN - সব campaigns এর জন্য */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button 
@@ -454,7 +481,6 @@ export default function AdminDonateListPage() {
                   </TableCell>
                   
                   <TableCell>
-                    {/* ✅ STATUS DROPDOWN - সব campaigns এর জন্য */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button 
@@ -511,7 +537,6 @@ export default function AdminDonateListPage() {
                   
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      {/* 👁️ VIEW DETAILS */}
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -524,7 +549,6 @@ export default function AdminDonateListPage() {
                         <Eye size={16} className="text-blue-500" />
                       </Button>
                       
-                      {/* 🗑️ DELETE */}
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -619,6 +643,9 @@ export default function AdminDonateListPage() {
                 <p><strong>Raised Amount:</strong> ৳{selectedCampaign.raisedAmount || 0}</p>
                 <p><strong>Donors Count:</strong> {selectedCampaign.donorsCount || 0}</p>
                 <p><strong>Creator:</strong> {selectedCampaign.creator?.name || 'Unknown'}</p>
+                {/* ✅ Added Dates in details modal as well */}
+                <p><strong>Created At:</strong> {formatDate(selectedCampaign.createdAt)}</p>
+                <p><strong>Updated At:</strong> {formatDate(selectedCampaign.updatedAt)}</p>
               </div>
               
               {/* Status Badges */}
