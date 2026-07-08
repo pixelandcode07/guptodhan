@@ -41,7 +41,7 @@ const createCampaign = async (req: NextRequest) => {
     
     for (const [key, value] of formData.entries()) {
       if (key !== 'images') {
-        if (key === 'goalAmount') {
+        if (key === 'goalAmount' || key === 'quantity') {
             payload[key] = Number(value);
         } else {
             payload[key] = value;
@@ -63,11 +63,13 @@ const createCampaign = async (req: NextRequest) => {
       });
     }
 
+    // ✅ MAGIC FIX: endDate স্ট্রিং হিসেবে আসলে সেটাকে Date Object-এ কনভার্ট করা হলো
     const finalPayload = {
       ...validatedData,
       creator: new Types.ObjectId(userId),
       category: categoryId,
       images: uploadResults.map((img) => img.secure_url),
+      endDate: validatedData.endDate ? new Date(validatedData.endDate) : undefined, // কনভার্সন
     };
 
     const result = await DonationCampaignServices.createCampaignInDB(finalPayload);
@@ -270,7 +272,12 @@ const updateCampaign = async (
     payload.title = formData.get('title');
     payload.item = formData.get('item');
     payload.description = formData.get('description');
-    payload.goalAmount = Number(formData.get('goalAmount'));
+    
+    // ✅ Handle new fields during update
+    if (formData.get('goalAmount')) payload.goalAmount = Number(formData.get('goalAmount'));
+    if (formData.get('quantity')) payload.quantity = Number(formData.get('quantity'));
+    if (formData.get('endDate')) payload.endDate = new Date(formData.get('endDate') as string);
+    
     payload.category = new Types.ObjectId(formData.get('category') as string);
 
     // 2. Handle Images (Existing + New)
@@ -316,7 +323,7 @@ const deleteCampaign = async (
 ) => {
   await dbConnect();
   try {
-    const { userId, role } = getUserDetailsFromToken(req); // 🔐 টোকেন থেকে ইউজার ডাটা বের করা
+    const { userId, role } = getUserDetailsFromToken(req);
     const { id } = await context.params;
     const result = await DonationCampaignServices.deleteCampaignFromDB(id, userId, role);
 
