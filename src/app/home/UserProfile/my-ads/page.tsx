@@ -102,8 +102,8 @@ export default function MyAdsPage() {
                 /* ✅ Ads Grid */
                 <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                     {ads.map((ad) => {
-                        // ✅ MAGIC FIX: অ্যাডের স্লাগ (অথবা আইডি) দিয়ে লিঙ্ক তৈরি করা হলো
-                        const adLink = `/buy-sell/details/${ad.slug || ad._id}`;
+                        // ✅ MAGIC FIX: আপনার দেওয়া লিংকের স্ট্রাকচার অনুযায়ী রাউট সেট করা হলো
+                        const adLink = `/buy-sell/ad-details/${ad.slug || ad._id}`;
 
                         return (
                             <div key={ad._id} className="border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white flex flex-col group">
