@@ -13,11 +13,14 @@ import DeleteAdModal from './components/DeleteAdModal'
 
 export default function MyAdsPage() {
     const { data: session, status } = useSession()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [ads, setAds] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     
     // States for Modals
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [editingAd, setEditingAd] = useState<any | null>(null)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [deletingAd, setDeletingAd] = useState<any | null>(null)
 
     // ✅ Fetch User's Ads
@@ -29,6 +32,7 @@ export default function MyAdsPage() {
         }
 
         try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const token = (session as any)?.accessToken
             if (!token) return
 
@@ -97,68 +101,77 @@ export default function MyAdsPage() {
             ) : (
                 /* ✅ Ads Grid */
                 <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                    {ads.map((ad) => (
-                        <div key={ad._id} className="border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white flex flex-col group">
-                            
-                            {/* Image Section */}
-                            <div className="relative h-48 w-full bg-gray-100 overflow-hidden">
-                                <Image 
-                                    src={ad.images?.[0] || '/placeholder.png'} 
-                                    alt={ad.title}
-                                    fill
-                                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                    onError={(e) => {
-                                        e.currentTarget.src = '/img/product/p-1.png';
-                                    }}
-                                />
-                                <div className="absolute top-3 right-3">
-                                    <Badge 
-                                        className={`px-2.5 py-0.5 font-semibold tracking-wide shadow-sm border-0 ${
-                                            ad.status === 'active' ? 'bg-emerald-500 text-white hover:bg-emerald-600' :
-                                            ad.status === 'pending' ? 'bg-amber-500 text-white hover:bg-amber-600' :
-                                            'bg-gray-500 text-white hover:bg-gray-600'
-                                        }`}
-                                    >
-                                        {ad.status.toUpperCase()}
-                                    </Badge>
-                                </div>
-                            </div>
+                    {ads.map((ad) => {
+                        // ✅ MAGIC FIX: অ্যাডের স্লাগ (অথবা আইডি) দিয়ে লিঙ্ক তৈরি করা হলো
+                        const adLink = `/buy-sell/details/${ad.slug || ad._id}`;
 
-                            {/* Content Section */}
-                            <div className="p-5 flex flex-col flex-1 justify-between">
-                                <div>
-                                    <h3 className="font-semibold text-lg text-gray-900 truncate" title={ad.title}>
-                                        {ad.title}
-                                    </h3>
-                                    <p className="text-xl font-bold text-[#EF4A23] mt-1.5">
-                                        ৳ {ad.price?.toLocaleString('en-US') || 0}
-                                    </p>
-                                    
-                                    <div className="flex justify-between items-center text-xs text-gray-500 mt-3 mb-4 bg-gray-50 p-2 rounded-md border border-gray-100">
-                                        <span className="font-medium">{ad.condition || 'Used'}</span>
-                                        <span>{new Date(ad.createdAt).toLocaleDateString()}</span>
+                        return (
+                            <div key={ad._id} className="border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white flex flex-col group">
+                                
+                                {/* Image Section (✅ Clickable Link Added) */}
+                                <Link href={adLink} className="relative h-48 w-full bg-gray-100 overflow-hidden block">
+                                    <Image 
+                                        src={ad.images?.[0] || '/placeholder.png'} 
+                                        alt={ad.title}
+                                        fill
+                                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                        onError={(e) => {
+                                            e.currentTarget.src = '/img/product/p-1.png';
+                                        }}
+                                    />
+                                    <div className="absolute top-3 right-3">
+                                        <Badge 
+                                            className={`px-2.5 py-0.5 font-semibold tracking-wide shadow-sm border-0 ${
+                                                ad.status === 'active' ? 'bg-emerald-500 text-white hover:bg-emerald-600' :
+                                                ad.status === 'pending' ? 'bg-amber-500 text-white hover:bg-amber-600' :
+                                                'bg-gray-500 text-white hover:bg-gray-600'
+                                            }`}
+                                        >
+                                            {ad.status.toUpperCase()}
+                                        </Badge>
+                                    </div>
+                                </Link>
+
+                                {/* Content Section */}
+                                <div className="p-5 flex flex-col flex-1 justify-between">
+                                    <div>
+                                        {/* Title Section (✅ Clickable Link Added) */}
+                                        <Link href={adLink} className="block">
+                                            <h3 className="font-semibold text-lg text-gray-900 truncate group-hover:text-[#EF4A23] group-hover:underline transition-colors" title={ad.title}>
+                                                {ad.title}
+                                            </h3>
+                                        </Link>
+                                        
+                                        <p className="text-xl font-bold text-[#EF4A23] mt-1.5">
+                                            ৳ {ad.price?.toLocaleString('en-US') || 0}
+                                        </p>
+                                        
+                                        <div className="flex justify-between items-center text-xs text-gray-500 mt-3 mb-4 bg-gray-50 p-2 rounded-md border border-gray-100">
+                                            <span className="font-medium">{ad.condition || 'Used'}</span>
+                                            <span>{new Date(ad.createdAt).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="pt-4 border-t border-gray-100 flex justify-end gap-2">
+                                        <button 
+                                            onClick={() => setEditingAd(ad)}
+                                            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors text-sm font-semibold"
+                                        >
+                                            <Edit2 size={14} /> Edit
+                                        </button>
+                                        <button 
+                                            onClick={() => setDeletingAd(ad)}
+                                            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors text-sm font-semibold"
+                                        >
+                                            <Trash2 size={14} /> Delete
+                                        </button>
                                     </div>
                                 </div>
 
-                                {/* Action Buttons */}
-                                <div className="pt-4 border-t border-gray-100 flex justify-end gap-2">
-                                    <button 
-                                        onClick={() => setEditingAd(ad)}
-                                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors text-sm font-semibold"
-                                    >
-                                        <Edit2 size={14} /> Edit
-                                    </button>
-                                    <button 
-                                        onClick={() => setDeletingAd(ad)}
-                                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors text-sm font-semibold"
-                                    >
-                                        <Trash2 size={14} /> Delete
-                                    </button>
-                                </div>
                             </div>
-
-                        </div>
-                    ))}
+                        )
+                    })}
                 </div>
             )}
 
