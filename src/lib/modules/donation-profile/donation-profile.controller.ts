@@ -33,7 +33,7 @@ const getDonationDashboardStats = async (req: NextRequest) => {
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'User donation stats retrieved successfully!',
+    message: 'User donation satuts retrieved successfully!',
     data: result,
   });
 };
