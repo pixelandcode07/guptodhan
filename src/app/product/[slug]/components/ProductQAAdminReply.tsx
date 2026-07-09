@@ -6,12 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-interface ProductQAAdminReplyProps {
-  qaId: string;
-  initialAnswer?: string;
-  onSuccess?: (answerText: string) => void;
-}
-
+// ✅ MAGIC FIX: Duplicate interface রিমুভ করা হয়েছে
 interface ProductQAAdminReplyProps {
   qaId: string;
   initialAnswer?: string;
@@ -69,17 +64,19 @@ export const ProductQAAdminReply = ({
   };
 
   return (
-    <div className="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
+    <div className="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-3 w-full">
       <Textarea
         value={answer}
         onChange={(e) => setAnswer(e.target.value)}
         placeholder="Write your answer..."
         rows={3}
+        className="w-full bg-white"
       />
       <div className="flex flex-wrap gap-2">
         <Button
           onClick={handleSubmit}
           disabled={isLoading || !answer.trim()}
+          className="bg-[#00005E] hover:bg-[#d43d1a] text-white"
         >
           {isLoading
             ? "Saving..."
@@ -101,4 +98,3 @@ export const ProductQAAdminReply = ({
     </div>
   );
 };
-
