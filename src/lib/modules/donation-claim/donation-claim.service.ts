@@ -6,7 +6,7 @@ import dbConnect from '@/lib/db';
 // Models imports
 import '../donation-campaign/donation-campaign.model';
 import '../user/user.model';
-import { DonationCampaign } from '../donation-campaign/donation-campaign.model'; // ✅ MAGIC FIX: Quantity আপডেট করার জন্য মডেল ইমপোর্ট করা হলো
+import { DonationCampaign } from '../donation-campaign/donation-campaign.model'; 
 
 const createClaimInDB = async (payload: Partial<IDonationClaim>) => {
   await dbConnect();
@@ -14,21 +14,26 @@ const createClaimInDB = async (payload: Partial<IDonationClaim>) => {
   const result = await DonationClaim.create(payload);
   
   if (payload.item) {
-    // Increment donor/request count
+    // 1. Increment donor/request count (এই ফাংশনটি শুধু কাউন্ট ১ বাড়াবে)
     await DonationCampaignServices.incrementDonorCount(payload.item as any, 0);
 
-    // ✅ MAGIC FIX: যদি এটা Money না হয়, তাহলে Quantity ১ পিস মাইনাস করো
+    // 2. ✅ MAGIC FIX: Quantity আপডেট করার জন্য .save() বাদ দিয়ে updateOne() ব্যবহার করা হলো 
+    // যাতে race condition তৈরি না হয় এবং কাউন্ট কোনোভাবেই ২ বার না বাড়ে।
     const campaign = await DonationCampaign.findById(payload.item);
     if (campaign && campaign.item !== 'money' && campaign.quantity && campaign.quantity > 0) {
-      campaign.quantity -= 1;
+      
+      const newQuantity = campaign.quantity - 1;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const updates: any = { quantity: newQuantity };
       
       // যদি কোয়ান্টিটি 0 হয়ে যায়, তবে স্ট্যাটাস completed করে দাও
-      if (campaign.quantity === 0) {
-        campaign.status = 'completed';
-        campaign.completedAt = new Date();
+      if (newQuantity === 0) {
+        updates.status = 'completed';
+        updates.completedAt = new Date();
       }
       
-      await campaign.save();
+      // শুধুমাত্র Quantity এবং Status আপডেট হবে, Request count-এ হাত দেওয়া হবে না
+      await DonationCampaign.updateOne({ _id: payload.item }, { $set: updates });
     }
   }
   
