@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
@@ -62,8 +62,6 @@ export const ProductQASection = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [editingQaId, setEditingQaId] = useState<string | null>(null);
-
-  const questionCount = useMemo(() => items.length, [items.length]);
 
   const fetchQA = useCallback(async () => {
     setIsLoading(true);
@@ -140,9 +138,8 @@ export const ProductQASection = ({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Ask Question Input */}
-      <div className="flex flex-col sm:flex-row gap-3">
+    <div className="space-y-6 w-full">
+      <div className="flex flex-col sm:flex-row gap-3 w-full">
         <Input
           placeholder="Have question about this product? Get specific details about this product from expert."
           value={question}
@@ -159,13 +156,12 @@ export const ProductQASection = ({
         </Button>
       </div>
 
-      {/* Loading or Questions List */}
       {isLoading ? (
-        <Card className="p-6 text-center text-gray-500">
+        <Card className="p-6 text-center text-gray-500 w-full">
           Loading questions...
         </Card>
       ) : items.length === 0 ? (
-        <div className="text-center py-16 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+        <div className="text-center py-16 bg-gray-50 rounded-lg border border-dashed border-gray-300 w-full">
           <div className="flex justify-center mb-4">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
               <MessageCircleQuestion size={32} className="text-blue-600" />
@@ -176,17 +172,17 @@ export const ProductQASection = ({
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 w-full">
           {items.map((qa) => (
             <div
               key={qa._id || qa.qaId}
-              className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
+              className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm w-full"
             >
               <div className="flex gap-3">
                 <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 flex-shrink-0">
                   <MessageCircleQuestion className="h-5 w-5" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 w-full">
                   <p className="text-base text-gray-900 font-medium">{qa.question}</p>
                   <p className="text-sm text-gray-500 mt-1">
                     {qa.userName || 'Customer'} •{' '}
@@ -196,11 +192,11 @@ export const ProductQASection = ({
                   </p>
 
                   {qa.answer?.answerText && (
-                    <div className="mt-4 flex gap-3 rounded-lg bg-gray-50 p-4 border border-gray-200">
+                    <div className="mt-4 flex gap-3 rounded-lg bg-gray-50 p-4 border border-gray-200 w-full">
                       <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-green-600 flex-shrink-0">
                         <MessageCircle className="h-5 w-5" />
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <p className="text-sm font-medium text-gray-900">
                           {qa.answer.answerText}
                         </p>
@@ -212,7 +208,7 @@ export const ProductQASection = ({
                   )}
                   
                   {isAdmin && qa._id && (
-                    <div className="mt-4 space-y-2">
+                    <div className="mt-4 space-y-2 w-full">
                       {editingQaId === qa._id || !qa.answer?.answerText ? (
                         <ProductQAAdminReply
                           qaId={qa._id}
@@ -240,7 +236,7 @@ export const ProductQASection = ({
                           onCancel={() => setEditingQaId(null)}
                         />
                       ) : (
-                        <div className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                        <div className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3 w-full">
                           <p className="text-sm text-gray-600">
                             You have replied to this question. Need to update your answer?
                           </p>
