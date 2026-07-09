@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
-import Link from 'next/link'; // ✅ MAGIC FIX: Link ইমপোর্ট করা হলো
+import Link from 'next/link'; 
 import { Star, Loader2, PackageSearch } from 'lucide-react';
 import axios from 'axios';
 
@@ -73,9 +73,9 @@ export default function ReviewHistory() {
       <h3 className="font-semibold text-gray-800 border-b pb-3 mb-4">Your Past Reviews</h3>
       <div className="space-y-6 md:max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
         {reviews.map((item) => {
-          // ✅ প্রোডাক্টের স্লাগ বের করা হলো (যদি স্লাগ না থাকে তবে আইডি দিয়ে ফলব্যাক করবে)
+          // ✅ MAGIC FIX: লিংকের শেষে #reviews অ্যাড করা হলো যাতে সরাসরি রিভিউ ট্যাবে যায়!
           const productSlug = item.productId?.slug || item.productId?._id;
-          const productLink = `/product/${productSlug}`;
+          const productLink = `/product/${productSlug}#reviews`;
 
           return (
             <div key={item._id} className="border-b border-gray-100 pb-5 last:border-0 last:pb-0">
