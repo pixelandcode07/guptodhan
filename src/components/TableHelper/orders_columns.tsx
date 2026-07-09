@@ -336,7 +336,7 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
   // ✅ 4. Vendor Earn Column
   { 
     accessorKey: "vendorEarned", 
-    header: () => <span className="whitespace-nowrap text-purple-600">Vendor Earn</span>,
+    header: () => <span className="whitespace-nowrap text-purple-600">Vendor Sell</span>,
     cell: ({ row }) => (
       <div className="font-mono text-sm font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded text-center border border-purple-100">
         ৳{Number(row.getValue("vendorEarned") || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
