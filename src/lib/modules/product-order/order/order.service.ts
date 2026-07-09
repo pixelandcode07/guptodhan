@@ -19,6 +19,7 @@ import { getCachedData, deleteCacheKey, deleteCachePattern } from '@/lib/redis/c
 import { CacheKeys, CacheTTL } from '@/lib/redis/cache-keys';
 import { User } from '../../user/user.model';
 import { UserServices } from '../../user/user.service';
+import { createAdminNotification } from '@/lib/utils/createAdminNotification';
 
 // ================================================================
 // 📝 CREATE ORDER (WITHOUT TRANSACTIONS)
@@ -34,6 +35,14 @@ const createOrderInDB = async (payload: Partial<IOrder>) => {
     await deleteCachePattern(CacheKeys.PATTERNS.ORDER_ALL);
 
     console.log('✅ Order created successfully:', result._id);
+
+    // ✅ MAGIC FIX: Admin Notification Added Here
+    await createAdminNotification(
+      'order',
+      `New Order #${result.orderId} received from ${result.shippingName}`,
+      `/dashboard/admin/orders/${result._id}`
+    );
+
     return result;
   } catch (error) {
     console.error('❌ Error creating order:', error);
