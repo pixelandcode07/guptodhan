@@ -54,25 +54,22 @@ function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: Donat
   const { data: session } = useSession()
   const token = (session as any)?.accessToken
   
-  // ✅ MAGIC FIX: ইউজারের ইমেইল বের করা হলো
-  const userEmail = session?.user?.email || ''
-
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  
+  // ✅ MAGIC FIX: Email ফিল্ডটি বাই-ডিফল্ট ফাঁকা রাখা হলো
   const [formData, setFormData] = useState({
-    name: '', phone: '', email: userEmail, reason: '',
+    name: '', phone: '', email: '', reason: '',
     amount: '', paymentMethod: 'bkash', accountNumber: '',
   })
 
-  // ✅ MAGIC FIX: মডাল ওপেন হলে বা সেশন আপডেট হলে ইমেইল ফিল্ডে ডাটা সেট করা
+  // ✅ MAGIC FIX: মডাল ওপেন বা ক্লোজ হলে ফিল্ডগুলো রিসেট হবে (ইমেইল ফাঁকাই থাকবে)
   useEffect(() => {
     if (!open) {
-      setFormData({ name: '', phone: '', email: session?.user?.email || '', reason: '', amount: '', paymentMethod: 'bkash', accountNumber: '' })
+      setFormData({ name: '', phone: '', email: '', reason: '', amount: '', paymentMethod: 'bkash', accountNumber: '' })
       setErrors({})
-    } else {
-      setFormData(prev => ({ ...prev, email: session?.user?.email || '' }))
     }
-  }, [open, session])
+  }, [open])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -98,18 +95,23 @@ function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: Donat
   }
 
   const handleSubmit = async () => {
+    // ✅ MAGIC FIX: Double click প্রোটেকশন (যাতে ২ বার API কল না হয়)
+    if (loading) return;
+
     if (!session) {
       onOpenChange(false)
       setTimeout(() => onLoginRequired(), 200)
       return
     }
     if (!validateForm()) { toast.error('Please fill all required fields correctly'); return }
+    
     try {
       setLoading(true)
       let finalReason = formData.reason.trim()
       if (item?.type === 'money') {
         finalReason += `\n\nAmount: ${formData.amount} BDT\nMethod: ${formData.paymentMethod.toUpperCase()}\nAccount: ${formData.accountNumber}`
       }
+      
       const response = await fetch('/api/v1/donation-claims', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -117,15 +119,17 @@ function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: Donat
           itemId: item?.id, 
           name: formData.name.trim(), 
           phone: formData.phone.trim(), 
-          email: formData.email.trim(), // ✅ Disabled ফিল্ড থেকে আসা ইমেইলটি সেন্ড করা হচ্ছে
+          email: formData.email.trim(), 
           reason: finalReason 
         }),
       })
+      
       const result = await response.json()
+      
       if (result.success) {
         toast.success('Request submitted successfully!')
         onOpenChange(false)
-        // ✅ Page reload to update quantity instantly
+        // Page reload to update quantity instantly
         setTimeout(() => window.location.reload(), 1500)
       } else {
         toast.error(result.message || 'Failed to submit request')
@@ -179,19 +183,26 @@ function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: Donat
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5"><User size={12} /> Full Name <span className="text-red-500">*</span></Label>
-                <Input name="name" placeholder="Your full name" value={formData.name} onChange={handleChange} className={`h-9 text-sm ${errors.name ? 'border-red-400' : ''}`} />
+                <Input name="name" placeholder="Your full name" value={formData.name} onChange={handleChange} className={`h-9 text-sm bg-white ${errors.name ? 'border-red-400' : ''}`} />
                 {errors.name && <p className="text-[11px] text-red-500">{errors.name}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5"><Phone size={12} /> Phone <span className="text-red-500">*</span></Label>
-                <Input name="phone" placeholder="01XXXXXXXXX" value={formData.phone} onChange={handleChange} className={`h-9 text-sm ${errors.phone ? 'border-red-400' : ''}`} />
+                <Input name="phone" placeholder="01XXXXXXXXX" value={formData.phone} onChange={handleChange} className={`h-9 text-sm bg-white ${errors.phone ? 'border-red-400' : ''}`} />
                 {errors.phone && <p className="text-[11px] text-red-500">{errors.phone}</p>}
               </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5"><Mail size={12} /> Email <span className="text-red-500">*</span></Label>
-              <Input name="email" type="email" placeholder="your@email.com" value={formData.email} disabled className={`h-9 text-sm bg-slate-100 cursor-not-allowed text-gray-500 ${errors.email ? 'border-red-400' : ''}`} />
-              <p className="text-[10px] text-gray-400 italic">* Your logged-in email is automatically used.</p>
+              {/* ✅ MAGIC FIX: Email input is now fully editable and empty by default */}
+              <Input 
+                name="email" 
+                type="email" 
+                placeholder="your@email.com" 
+                value={formData.email} 
+                onChange={handleChange} 
+                className={`h-9 text-sm bg-white ${errors.email ? 'border-red-400' : ''}`} 
+              />
               {errors.email && <p className="text-[11px] text-red-500">{errors.email}</p>}
             </div>
           </div>
@@ -231,7 +242,7 @@ function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: Donat
             <Textarea
               name="reason"
               placeholder="Explain why you need this donation. Be honest and specific..."
-              className={`min-h-28 resize-none text-sm ${errors.reason ? 'border-red-400' : ''}`}
+              className={`min-h-28 resize-none text-sm bg-white ${errors.reason ? 'border-red-400' : ''}`}
               value={formData.reason}
               onChange={handleChange}
             />
@@ -246,7 +257,7 @@ function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: Donat
 
         <div className="px-6 pb-5 pt-3 border-t bg-white flex-shrink-0">
           <Button onClick={handleSubmit} disabled={loading}
-            className="w-full h-11 bg-[#00005E] hover:bg-[#000045] text-white font-bold rounded-xl text-sm">
+            className="w-full h-11 bg-[#00005E] hover:bg-[#000045] text-white font-bold rounded-xl text-sm transition-all shadow-sm">
             {loading ? <><Loader2 className="animate-spin mr-2" size={16} />Submitting...</> : <><CheckCircle2 className="mr-2" size={16} />Submit Request</>}
           </Button>
         </div>
@@ -266,9 +277,7 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
   const progress = campaign.goalAmount && campaign.goalAmount > 0
     ? Math.round((campaign.raisedAmount || 0) / campaign.goalAmount * 100) : 0
 
-  // ✅ MAGIC FIX: Check Expiry Date
   const isExpired = campaign.endDate ? new Date(campaign.endDate).getTime() < new Date().getTime() : false;
-  // ✅ MAGIC FIX: Check Out of Stock
   const isOutOfStock = campaign.item !== 'money' && (campaign.quantity === undefined || campaign.quantity <= 0);
 
   const handleRequestClick = () => {
@@ -335,7 +344,7 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
           {/* ======================== */}
           <div className="lg:col-span-2 space-y-5">
 
-            <div className="bg-white rounded-2xl overflow-hidden border border-gray-100">
+            <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
               <div className="relative w-full bg-gray-100" style={{ aspectRatio: '16/10' }}>
                 {campaign.images?.length > 0 ? (
                   <>
@@ -376,7 +385,7 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 space-y-5">
+            <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-sm space-y-5">
               <div className="flex flex-wrap gap-2">
                 {campaign.category && (
                   <span className="text-xs font-semibold px-3 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-100">
@@ -388,7 +397,6 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                   {campaign.item === 'money' ? '💸 Fund' : '📦 Item'}
                 </span>
                 
-                {/* ✅ EXPIRY BADGE IF EXPIRED */}
                 {(isExpired || isOutOfStock) && (
                   <span className="text-xs font-bold px-3 py-1 bg-red-100 text-red-700 rounded-full border border-red-200 uppercase tracking-wide">
                     {isOutOfStock ? 'Out of Stock' : 'Expired'}
@@ -413,7 +421,7 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
           {/* RIGHT: Sidebar           */}
           {/* ======================== */}
           <div className="space-y-4">
-            <div className="bg-white rounded-2xl p-5 border border-gray-100 space-y-5 sticky top-4">
+            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm space-y-5 sticky top-4">
 
               {campaign.item === 'money' && campaign.goalAmount && campaign.goalAmount > 0 ? (
                 <div className="space-y-4">
@@ -456,7 +464,6 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                     <div className="bg-blue-50 rounded-xl p-3 text-center border border-blue-100">
                       <Package className="text-blue-600 mx-auto mb-1.5" size={18} />
                       <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Quantity</p>
-                      {/* ✅ MAGIC FIX: Dynamic Quantity Show */}
                       <p className={`font-black text-lg ${campaign.quantity === 0 ? 'text-red-500' : 'text-blue-900'}`}>
                         {campaign.quantity === 0 ? '0' : campaign.quantity || 1} Pcs
                       </p>
@@ -498,7 +505,7 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleRequestClick} 
-                  className="w-full py-3 bg-[#00005E] hover:bg-[#000045] text-white font-bold rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-[#00005E] hover:bg-[#000045] text-white font-bold rounded-xl transition-colors text-sm flex items-center justify-center gap-2 shadow-sm shadow-blue-900/20"
                 >
                   <HandHeart size={16} />
                   {campaign.item === 'money' ? 'Support Campaign' : 'Request Item'}
