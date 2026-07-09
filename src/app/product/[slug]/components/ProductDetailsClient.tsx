@@ -21,7 +21,7 @@ export default function ProductDetailsClient({ productData }: ProductDetailsClie
   // ✅ States for variants
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [selectedSize, setSelectedSize] = useState<string>('');
-  const [selectedCountry, setSelectedCountry] = useState<string>(''); // ✅ NEW: Country State
+  const [selectedCountry, setSelectedCountry] = useState<string>(''); 
   
   const [isLoadingReviews, setIsLoadingReviews] = useState(true);
 
