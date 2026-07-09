@@ -28,7 +28,7 @@ import { toast } from "sonner";
 type StoreReview = {
   _id: string;
   userName: string;
-  userImage: string;
+  userImage?: string;
   rating: number;
   comment: string;
   createdAt: string;
@@ -47,13 +47,17 @@ export default function ReviewsTab({ storeId }: { storeId: string }) {
     }
   };
 
+  // ✅ MAGIC FIX: If user doesn't have an image, use a default fallback image
+  const defaultImage = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png";
+  const userImageToUse = session?.user?.image || defaultImage;
+
   const form = useForm<CreateStoreReviewFormValues>({
     resolver: zodResolver(createStoreReviewFormSchema),
     mode: "onChange",
     defaultValues: {
       storeId,
-      userName: session?.user?.name ?? "",
-      userImage: session?.user?.image ?? "",
+      userName: session?.user?.name ?? "Anonymous",
+      userImage: userImageToUse, // ✅ Safe image passed
       rating: 5,
       comment: "",
     },
@@ -77,7 +81,13 @@ export default function ReviewsTab({ storeId }: { storeId: string }) {
 
   const onSubmit = async (data: CreateStoreReviewFormValues) => {
     try {
-      const res = await axios.post("/api/v1/store-review", data, {
+      // ✅ Ensure userImage is sent even if it's empty in state
+      const finalData = {
+        ...data,
+        userImage: data.userImage || userImageToUse
+      };
+
+      await axios.post("/api/v1/store-review", finalData, {
         headers: {
           Authorization: `Bearer ${(session as any)?.accessToken}`,
         },
@@ -128,6 +138,7 @@ export default function ReviewsTab({ storeId }: { storeId: string }) {
                     placeholder="Write your review..."
                     rows={4}
                     {...field}
+                    className="resize-none"
                   />
                 </FormControl>
                 <FormMessage />
@@ -150,31 +161,33 @@ export default function ReviewsTab({ storeId }: { storeId: string }) {
         )}
 
         {reviews.map((review) => (
-          <div key={review._id} className="rounded-xl border p-4 space-y-2">
+          <div key={review._id} className="rounded-xl border p-4 space-y-3 bg-white shadow-sm overflow-hidden">
             <div className="flex items-center gap-3">
               <img
-                src={review.userImage}
+                src={review.userImage || defaultImage}
                 alt={review.userName}
-                className="h-8 w-8 rounded-full object-cover"
+                className="h-10 w-10 rounded-full object-cover border border-gray-100 flex-shrink-0"
               />
-              <div>
-                <p className="text-sm font-semibold">{review.userName}</p>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">{review.userName}</p>
                 <Rating
                   value={review.rating}
                   readOnly
                   items={5}
-                  style={{ maxWidth: 120 }}
+                  style={{ maxWidth: 100 }}
                 />
-                <p className="text-xs text-muted-foreground">
-                  {new Date(review.createdAt).toLocaleDateString()}
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {new Date(review.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </p>
               </div>
             </div>
-            <p className="text-sm">{review.comment}</p>
+            {/* ✅ MAGIC FIX: break-words & whitespace-pre-wrap ensures long text doesn't overflow */}
+            <div className="text-sm text-gray-700 w-full break-words whitespace-pre-wrap leading-relaxed">
+              {review.comment}
+            </div>
           </div>
         ))}
       </div>
     </div>
   );
 }
-
