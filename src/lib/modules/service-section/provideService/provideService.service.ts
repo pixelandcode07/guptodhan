@@ -1,9 +1,18 @@
+import { createAdminNotification } from "@/lib/utils/createAdminNotification";
 import { IService } from "./provideService.interface";
 import { ServiceModel } from "./provideService.model";
 
 // --- Create a new service ---
 const createServiceInDB = async (payload: Partial<IService>) => {
   const result = await ServiceModel.create(payload);
+
+  // ✅ MAGIC FIX: Admin Notification Added Here
+  await createAdminNotification(
+    'service_request',
+    `New Service pending approval: ${result.service_title}`,
+    `/dashboard/admin/services` // আপনার অ্যাডমিন প্যানেলের সার্ভিস পেজের লিংক
+  );
+
   return result;
 };
 
