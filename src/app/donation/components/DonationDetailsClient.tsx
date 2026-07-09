@@ -53,23 +53,25 @@ interface DonationDetailsClientProps {
 function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: DonationClaimModalProps) {
   const { data: session } = useSession()
   const token = (session as any)?.accessToken
-  
+  const userEmail = session?.user?.email || '' // ✅ ইউজারের ইমেইল বের করা হলো
+
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   
-  // ✅ MAGIC FIX: Email ফিল্ডটি বাই-ডিফল্ট ফাঁকা রাখা হলো
   const [formData, setFormData] = useState({
-    name: '', phone: '', email: '', reason: '',
+    name: '', phone: '', email: userEmail, reason: '',
     amount: '', paymentMethod: 'bkash', accountNumber: '',
   })
 
-  // ✅ MAGIC FIX: মডাল ওপেন বা ক্লোজ হলে ফিল্ডগুলো রিসেট হবে (কোনো সেশন ইমেইল বসবে না)
+  // ✅ মডাল ওপেন হলে ইমেইল ডিফল্টভাবে সেট হবে
   useEffect(() => {
     if (!open) {
-      setFormData({ name: '', phone: '', email: '', reason: '', amount: '', paymentMethod: 'bkash', accountNumber: '' })
+      setFormData({ name: '', phone: '', email: session?.user?.email || '', reason: '', amount: '', paymentMethod: 'bkash', accountNumber: '' })
       setErrors({})
+    } else {
+      setFormData(prev => ({ ...prev, email: session?.user?.email || '' }))
     }
-  }, [open])
+  }, [open, session])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -95,7 +97,6 @@ function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: Donat
   }
 
   const handleSubmit = async () => {
-    // Double click protection
     if (loading) return;
 
     if (!session) {
@@ -129,7 +130,6 @@ function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: Donat
       if (result.success) {
         toast.success('Request submitted successfully!')
         onOpenChange(false)
-        // Page reload to update quantity instantly
         setTimeout(() => window.location.reload(), 1500)
       } else {
         toast.error(result.message || 'Failed to submit request')
@@ -194,15 +194,16 @@ function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: Donat
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5"><Mail size={12} /> Email <span className="text-red-500">*</span></Label>
-              {/* ✅ MAGIC FIX: Email input is now fully editable and empty by default */}
+              {/* ✅ MAGIC FIX: Email input is disabled and pre-filled with logged-in user's email */}
               <Input 
                 name="email" 
                 type="email" 
                 placeholder="your@email.com" 
                 value={formData.email} 
-                onChange={handleChange} 
-                className={`h-9 text-sm bg-white ${errors.email ? 'border-red-400' : ''}`} 
+                disabled 
+                className={`h-9 text-sm bg-slate-100 cursor-not-allowed text-gray-500 ${errors.email ? 'border-red-400' : ''}`} 
               />
+              <p className="text-[10px] text-gray-400 italic">* Your logged-in email is automatically used.</p>
               {errors.email && <p className="text-[11px] text-red-500">{errors.email}</p>}
             </div>
           </div>
