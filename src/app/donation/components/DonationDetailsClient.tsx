@@ -63,7 +63,7 @@ function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: Donat
     amount: '', paymentMethod: 'bkash', accountNumber: '',
   })
 
-  // ✅ MAGIC FIX: মডাল ওপেন বা ক্লোজ হলে ফিল্ডগুলো রিসেট হবে (ইমেইল ফাঁকাই থাকবে)
+  // ✅ MAGIC FIX: মডাল ওপেন বা ক্লোজ হলে ফিল্ডগুলো রিসেট হবে (কোনো সেশন ইমেইল বসবে না)
   useEffect(() => {
     if (!open) {
       setFormData({ name: '', phone: '', email: '', reason: '', amount: '', paymentMethod: 'bkash', accountNumber: '' })
@@ -95,7 +95,7 @@ function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: Donat
   }
 
   const handleSubmit = async () => {
-    // ✅ MAGIC FIX: Double click প্রোটেকশন (যাতে ২ বার API কল না হয়)
+    // Double click protection
     if (loading) return;
 
     if (!session) {
