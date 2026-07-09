@@ -10,7 +10,7 @@ const createServiceInDB = async (payload: Partial<IService>) => {
   await createAdminNotification(
     'service_request',
     `New Service pending approval: ${result.service_title}`,
-    `/dashboard/admin/services` // আপনার অ্যাডমিন প্যানেলের সার্ভিস পেজের লিংক
+    `/general/all-service-request`
   );
 
   return result;
