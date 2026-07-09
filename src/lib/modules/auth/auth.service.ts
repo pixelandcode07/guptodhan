@@ -12,6 +12,7 @@ import { User } from '../user/user.model';
 import { verifyGoogleToken } from '@/lib/utils/verifyGoogleToken';
 import { Vendor } from '../vendors/vendor.model';
 import { OtpServices } from '../otp/otp.service';
+import { createAdminNotification } from '@/lib/utils/createAdminNotification';
 
 
 
@@ -588,6 +589,15 @@ export const registerVendor = async (payload: any, otp: string = '', isByAdmin =
         console.log('✅ OTP deleted from Redis');
       }
 
+      // ✅ MAGIC FIX: Admin Notification Added Here (শুধু ইউজার নিজে করলে নোটিফিকেশন যাবে)
+      if (!isByAdmin) {
+        await createAdminNotification(
+          'vendor_request',
+          `New Vendor Registration Request from ${newUser.name}`,
+          `/dashboard/admin/users`
+        );
+      }
+
       return {
         _id: newUser._id,
         name: newUser.name,
@@ -663,7 +673,7 @@ const registerServiceProvider = async (payload: any, otp: string) => {
   }
 
   // ❌ Transaction Block Removed to fix VPS Error
-  try {
+try {
     const userData = {
       name,
       email,
@@ -685,6 +695,13 @@ const registerServiceProvider = async (payload: any, otp: string) => {
 
     // Delete OTP after successful registration
     await redisClient.del(redisKey);
+    
+    // ✅ MAGIC FIX: Admin Notification Added Here
+    await createAdminNotification(
+      'service_request',
+      `New Service Provider Registration Request from ${newUser.name}`,
+      `/dashboard/admin/users`
+    );
     
     return newUser;
 
