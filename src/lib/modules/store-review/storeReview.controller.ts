@@ -53,16 +53,24 @@ const getAllStoreReviews = async () => {
 /* =========================
    GET REVIEW BY ID
 ========================= */
-const getStoreReviewById = async (req: NextRequest, { params }: { params: { id: string } }) => {
-  const result = await StoreReviewServices.getStoreReviewByIdFromDB(params.id);
+const getStoreReviewById = async (
+  req: NextRequest, 
+  { params }: { params: Promise<{ id: string }> } // ✅ MAGIC FIX: Promise add kora hoyeche
+) => {
+  const { id } = await params; // ✅ MAGIC FIX: params ke await kora hoyeche
+  const result = await StoreReviewServices.getStoreReviewByIdFromDB(id);
   return NextResponse.json({ success: true, data: result });
 };
 
 /* =========================
    GET REVIEWS BY STORE ID
 ========================= */
-const getStoreReviewsByStoreId = async (req: NextRequest, { params }: { params: { storeId: string } }) => {
-  const result = await StoreReviewServices.getStoreReviewsByStoreIdFromDB(params.storeId);
+const getStoreReviewsByStoreId = async (
+  req: NextRequest, 
+  { params }: { params: Promise<{ storeId: string }> }
+) => {
+  const { storeId } = await params;
+  const result = await StoreReviewServices.getStoreReviewsByStoreIdFromDB(storeId);
   return NextResponse.json({ success: true, data: result });
 };
 
@@ -78,11 +86,16 @@ const getMyStoreReviews = async (req: NextRequest) => {
 /* =========================
    UPDATE REVIEW (PATCH)
 ========================= */
-const updateStoreReview = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const updateStoreReview = async (
+  req: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) => {
   const { userId } = getUserDetailsFromToken(req);
+  const { id } = await params;
   const body = await req.json();
+  
   const validatedData = updateStoreReviewValidationSchema.parse(body);
-  const review = await StoreReviewServices.getStoreReviewByIdFromDB(params.id);
+  const review = await StoreReviewServices.getStoreReviewByIdFromDB(id);
 
   if (!review || review.userId !== userId) {
     return NextResponse.json(
@@ -91,18 +104,22 @@ const updateStoreReview = async (req: NextRequest, { params }: { params: { id: s
     );
   }
 
-  const result = await StoreReviewServices.updateStoreReviewInDB(params.id, validatedData);
+  const result = await StoreReviewServices.updateStoreReviewInDB(id, validatedData);
   return NextResponse.json({ success: true, message: 'Review updated successfully', data: result });
 };
 
 /* =========================
    DELETE REVIEW
 ========================= */
-const deleteStoreReview = async (req: NextRequest, { params }: { params: { id: string } }) => {
+const deleteStoreReview = async (
+  req: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) => {
   try {
     const { userId, role } = getUserDetailsFromToken(req);
+    const { id } = await params; // ✅ MAGIC FIX: params ke await kora hoyeche
 
-    const review = await StoreReviewServices.getStoreReviewByIdFromDB(params.id);
+    const review = await StoreReviewServices.getStoreReviewByIdFromDB(id);
 
     if (!review) {
       return NextResponse.json(
@@ -111,7 +128,7 @@ const deleteStoreReview = async (req: NextRequest, { params }: { params: { id: s
       );
     }
 
-    // ✅ MAGIC FIX: Check Authorization: Reviewer, Admin, or Store Owner (Vendor)
+    // Check Authorization: Reviewer, Admin, or Store Owner (Vendor)
     let isAuthorized = false;
 
     if (review.userId === userId) {
@@ -139,7 +156,7 @@ const deleteStoreReview = async (req: NextRequest, { params }: { params: { id: s
       );
     }
 
-    await StoreReviewServices.deleteStoreReviewFromDB(params.id);
+    await StoreReviewServices.deleteStoreReviewFromDB(id);
 
     return NextResponse.json({
       success: true,
