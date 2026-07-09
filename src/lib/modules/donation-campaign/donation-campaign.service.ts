@@ -4,6 +4,7 @@ import { DonationCampaign } from './donation-campaign.model';
 import dbConnect from '@/lib/db';
 import '@/lib/modules/donation-category/donation-category.model';
 import '@/lib/modules/user/user.model';
+import { createAdminNotification } from '@/lib/utils/createAdminNotification';
 
 const createCampaignInDB = async (payload: Partial<IDonationCampaign>) => {
   await dbConnect();
@@ -20,6 +21,13 @@ const createCampaignInDB = async (payload: Partial<IDonationCampaign>) => {
     moderationStatus: 'pending',
     status: 'inactive', 
   });
+
+  // ✅ MAGIC FIX: Admin Notification Added Here
+  await createAdminNotification(
+    'donation',
+    `New Donation Campaign pending approval: ${result.title}`,
+    `/dashboard/admin/donation-campaigns` // আপনার অ্যাডমিন প্যানেলের ডোনেশন পেজের লিংক
+  );
 
   return result;
 };
