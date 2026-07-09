@@ -40,7 +40,7 @@ const createOrderInDB = async (payload: Partial<IOrder>) => {
     await createAdminNotification(
       'order',
       `New Order #${result.orderId} received from ${result.shippingName}`,
-      `/dashboard/admin/orders/${result._id}`
+      `/general/view/orders/${result._id}`
     );
 
     return result;
