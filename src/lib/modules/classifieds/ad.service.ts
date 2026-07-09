@@ -12,7 +12,7 @@ const createAdInDB = async (payload: Partial<IClassifiedAd>) => {
   await createAdminNotification(
     'buy_sell_ad',
     `New Buy & Sell Ad pending approval: ${result.title}`,
-    `/dashboard/admin/classifieds` // আপনার অ্যাডমিন প্যানেলের অ্যাডস পেজের লিংক
+    `/general/buy/sell/listing` // আপনার অ্যাডমিন প্যানেলের অ্যাডস পেজের লিংক
   );
 
   return result;
