@@ -119,8 +119,6 @@ export default function ProductForm({
   const [shippingCost,  setShippingCost]  = useState<number | undefined>(undefined);
 
   const [callForPrice, setCallForPrice] = useState(false);
-
-  // ── ✅ FIX: callForPrice toggle হলে price preserve করার জন্য ref ──────────
   const preservedPrice         = useRef<number | undefined>(undefined);
   const preservedDiscountPrice = useRef<number | undefined>(undefined);
   const preservedStock         = useRef<number | undefined>(undefined);
@@ -161,24 +159,18 @@ export default function ProductForm({
   const initialModelId       = useRef<string | null>(null);
   const initialSubcategoryId = useRef<string | null>(null);
 
-  // ── ✅ Store permission check ──────────────────────────────────────────────
   const hasCallForPricePermission = useMemo(() => {
     if (!store) return false;
     const selectedStoreObj = listStores.find((s: any) => getIdFromRef(s) === store);
     return selectedStoreObj?.callForPricePermission === true;
   }, [store, listStores]);
 
-  // ── ✅ FIX: callForPrice toggle হলে price state preserve করো ───────────────
-  // callForPrice ON হলে current price ref এ save করো
-  // callForPrice OFF হলে ref থেকে price restore করো
   useEffect(() => {
     if (callForPrice) {
-      // ON হলে current values ref এ backup রাখো
       preservedPrice.current         = price;
       preservedDiscountPrice.current = discountPrice;
       preservedStock.current         = stock;
     } else {
-      // OFF হলে backup থেকে restore করো (যদি ref এ value থাকে)
       if (preservedPrice.current !== undefined) {
         setPrice(preservedPrice.current);
       }
@@ -189,10 +181,8 @@ export default function ProductForm({
         setStock(preservedStock.current);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callForPrice]);
 
-  // ── 1. Load existing product (edit mode) ──────────────────────────────────
   useEffect(() => {
     const fetchExistingProduct = async () => {
       if (!isEditMode || !productId || !token) {
@@ -239,8 +229,6 @@ export default function ProductForm({
         setInitialThumbnailUrl(p.thumbnailImage || null);
         setExistingGalleryUrls(Array.isArray(p.photoGallery) ? p.photoGallery : []);
 
-        // ✅ FIX: Pricing — সবসময় DB থেকে আসা price set করো
-        // callForPrice ON থাকলেও price state এ রাখো, শুধু UI তে hide থাকবে
         const dbPrice         = p.productPrice   ?? undefined;
         const dbDiscountPrice = p.discountPrice  ?? undefined;
         const dbStock         = p.stock          ?? undefined;
@@ -253,7 +241,6 @@ export default function ProductForm({
         setProductCode(p.sku || "");
         setVideoUrl(p.videoUrl || "");
 
-        // ✅ FIX: callForPrice restore — ref এও backup রাখো যাতে toggle এ reset না হয়
         const isCallForPrice = !!p.callForPrice;
         setCallForPrice(isCallForPrice);
         if (isCallForPrice) {
@@ -262,7 +249,7 @@ export default function ProductForm({
           preservedStock.current         = dbStock;
         }
 
-        // Special Offer
+        // ✅ FIX: Special Offer load logic
         if (p.offerDeadline) {
           setSpecialOffer(true);
           const deadline = new Date(p.offerDeadline);
@@ -272,6 +259,9 @@ export default function ProductForm({
           const hours   = String(deadline.getHours()).padStart(2, "0");
           const minutes = String(deadline.getMinutes()).padStart(2, "0");
           setOfferEndTime(`${year}-${month}-${day}T${hours}:${minutes}`);
+        } else {
+          setSpecialOffer(false);
+          setOfferEndTime("");
         }
 
         // IDs
@@ -283,7 +273,6 @@ export default function ProductForm({
         if (subId)      initialSubcategoryId.current = subId;
         if (modelIdRef) initialModelId.current       = modelIdRef;
 
-        // Dependent lists
         const promises: Promise<void>[] = [];
         if (catId) {
           promises.push(
@@ -320,7 +309,6 @@ export default function ProductForm({
         }
         await Promise.all(promises);
 
-        // Set main IDs
         const storeId    = getIdFromRef(p.vendorStoreId);
         const flagId     = getIdFromRef(p.flag);
         const unitId     = getIdFromRef(p.weightUnit);
@@ -336,7 +324,6 @@ export default function ProductForm({
         if (warrantyId) setWarranty(warrantyId);
         if (childId)    setChildCategory(childId);
 
-        // Variants
         if (p.productOptions?.length > 0) {
           setHasVariant(true);
           const currentVariantOptions = variantOptionsInitial;
@@ -369,51 +356,12 @@ export default function ProductForm({
               warranty:      warrantyId,
               country:       countryId,
               stock:         opt.stock         || 0,
-              // ✅ FIX: variant price সবসময় DB থেকে আসা value রাখো
               price:         opt.price         ?? 0,
               discountPrice: opt.discountPrice ?? 0,
             };
           });
 
           setVariants(mappedVariants);
-
-          const missingStorageOptions: any[] = [];
-          p.productOptions.forEach((opt: any) => {
-            const rawStorage = opt.storage;
-            if (!rawStorage) return;
-            const rawStr = typeof rawStorage === "string" ? rawStorage.trim() : getIdFromRef(rawStorage);
-            if (!rawStr) return;
-            const alreadyResolved = resolveOptionId(rawStorage, currentVariantOptions?.storageTypes || [], ["name"]);
-            if (!alreadyResolved) {
-              const existing    = currentVariantOptions?.storageTypes || [];
-              const existingIds = new Set(existing.map((s: any) => String(s._id || s.id)));
-              const customId    = rawStr;
-              if (!existingIds.has(customId)) {
-                missingStorageOptions.push({ _id: customId, name: rawStr, ram: undefined, rom: undefined });
-              }
-            }
-          });
-
-          if (missingStorageOptions.length > 0) {
-            setVariantOptions((prev: any) => {
-              const existing    = prev?.storageTypes || [];
-              const existingIds = new Set(existing.map((s: any) => String(s._id || s.id)));
-              const merged      = [...existing, ...missingStorageOptions.filter((s) => !existingIds.has(String(s._id)))];
-              return { ...prev, storageTypes: merged };
-            });
-            setVariants((prev) =>
-              prev.map((v, idx) => {
-                const opt = p.productOptions[idx];
-                if (!opt) return v;
-                const rawStorage = opt.storage;
-                if (!rawStorage) return v;
-                const rawStr = typeof rawStorage === "string" ? rawStorage.trim() : getIdFromRef(rawStorage);
-                const alreadyResolved = resolveOptionId(rawStorage, currentVariantOptions?.storageTypes || [], ["name"]);
-                if (!alreadyResolved && rawStr) return { ...v, storage: rawStr };
-                return v;
-              })
-            );
-          }
         }
       } catch (err: any) {
         console.error(err);
@@ -425,10 +373,8 @@ export default function ProductForm({
     };
 
     fetchExistingProduct();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditMode, productId, token]);
 
-  // ── 2. Fetch subcategories ─────────────────────────────────────────────────
   useEffect(() => {
     if (isInitialLoad.current) return;
     const fetchSubs = async () => {
@@ -451,7 +397,6 @@ export default function ProductForm({
     fetchSubs();
   }, [category, token]);
 
-  // ── 3. Fetch child categories ──────────────────────────────────────────────
   useEffect(() => {
     if (isInitialLoad.current) return;
     const fetchChildren = async () => {
@@ -472,7 +417,6 @@ export default function ProductForm({
     fetchChildren();
   }, [subcategory, token]);
 
-  // ── 4. Fetch models ────────────────────────────────────────────────────────
   useEffect(() => {
     if (isInitialLoad.current) return;
     const fetchModels = async () => {
@@ -493,7 +437,6 @@ export default function ProductForm({
     fetchModels();
   }, [brand, token]);
 
-  // ── 5. Set model after list loads ─────────────────────────────────────────
   useEffect(() => {
     if (!isEditMode || !initialModelId.current) return;
     if (models.length > 0 && !model) {
@@ -506,7 +449,6 @@ export default function ProductForm({
     }
   }, [models, model, isEditMode]);
 
-  // ── 6. Set subcategory after list loads ───────────────────────────────────
   useEffect(() => {
     if (!isEditMode || !initialSubcategoryId.current) return;
     if (subcategories.length > 0 && !subcategory) {
@@ -519,7 +461,6 @@ export default function ProductForm({
     }
   }, [subcategories, subcategory, isEditMode]);
 
-  // ── Pricing handlers ───────────────────────────────────────────────────────
   const pricingFormData = {
     price:         price         ?? "",
     discountPrice: discountPrice ?? "",
@@ -546,7 +487,6 @@ export default function ProductForm({
     if (field === "shippingCost")  setShippingCost(updater);
   };
 
-  // ── Upload helper ──────────────────────────────────────────────────────────
   const uploadFile = async (file: File): Promise<string> => {
     try {
       const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true, fileType: file.type };
@@ -564,7 +504,6 @@ export default function ProductForm({
     }
   };
 
-  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!token) return toast.error("⚠️ Authentication required.");
@@ -573,7 +512,6 @@ export default function ProductForm({
 
     const finalCallForPrice = hasCallForPricePermission ? callForPrice : false;
 
-    // ✅ FIX: callForPrice OFF থাকলেই price validate করো
     if (!finalCallForPrice && (!price || price <= 0)) {
       return toast.error("⚠️ Price is required unless 'Call for Price' is active.");
     }
@@ -611,9 +549,6 @@ export default function ProductForm({
         removedPhotoGallery: removedGalleryUrls.length > 0 ? removedGalleryUrls : undefined,
         removeThumbnail:     removedThumbnailUrl || undefined,
 
-        // ✅ FIX: price ?? 0 ব্যবহার করো (|| 0 না)
-        // callForPrice ON থাকলেও price state এ যা আছে তাই পাঠাও
-        // Backend এ safety guard আছে
         productPrice:  price         ?? 0,
         discountPrice: discountPrice ?? undefined,
         stock:         stock         ?? 0,
@@ -631,7 +566,10 @@ export default function ProductForm({
         flag:          flag          || undefined,
         warranty:      warranty      || undefined,
         weightUnit:    unit          || undefined,
-        offerDeadline: offerEndTime  ? new Date(offerEndTime) : undefined,
+
+        // ✅ MAGIC FIX: If specialOffer is false, send null to remove the deadline
+        offerDeadline: specialOffer && offerEndTime ? new Date(offerEndTime) : null,
+
         metaTitle:     metaTitle     || undefined,
         metaKeyword:   metaKeywordTags.length > 0 ? metaKeywordTags.join(", ") : undefined,
         metaDescription: metaDescription || undefined,
@@ -653,7 +591,6 @@ export default function ProductForm({
                   condition:     safeId(variant.condition) ? [variant.condition] : [],
                   warranty:      safeId(variant.warranty),
                   stock:         variant.stock,
-                  // ✅ FIX: variant price ?? 0 (|| 0 না)
                   price:         variant.price         ?? 0,
                   discountPrice: variant.discountPrice ?? 0,
                 };
@@ -714,7 +651,6 @@ export default function ProductForm({
     <>
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
 
-        {/* Sticky action bar */}
         <div className="flex justify-end gap-2 sticky top-4 z-10 bg-gray-50/80 backdrop-blur-sm py-2 px-4 rounded-lg shadow-sm -mt-4">
           <Button type="button" variant="destructive" onClick={() => router.back()}>
             <X className="mr-2 h-4 w-4" /> Discard
@@ -727,7 +663,6 @@ export default function ProductForm({
 
         <div className="space-y-4 sm:space-y-6">
 
-          {/* Row 1: Basic Info + Thumbnail */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <Card className="shadow-sm border-gray-200 flex flex-col h-full">
               <CardHeader className="pb-4 border-b border-gray-100">
@@ -775,7 +710,6 @@ export default function ProductForm({
             </Card>
           </div>
 
-          {/* Row 2: Description + Pricing */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <Card className="shadow-sm border-gray-200 flex flex-col h-full">
               <CardHeader className="pb-4 border-b border-gray-100">
@@ -801,7 +735,6 @@ export default function ProductForm({
               </CardHeader>
               <CardContent className="pt-6 space-y-4 flex-1">
 
-                {/* Call for Price Toggle — শুধু permission থাকলে দেখাবে */}
                 {hasCallForPricePermission && (
                   <div className="flex items-center justify-between bg-blue-50/50 p-4 border border-blue-100 rounded-lg">
                     <div>
@@ -812,13 +745,7 @@ export default function ProductForm({
                   </div>
                 )}
 
-                {/* ✅ FIX: && দিয়ে unmount না করে div দিয়ে hide করো */}
-                {/* এতে price state intact থাকে, reset হয় না */}
-                <div className={
-                  !hasCallForPricePermission || !callForPrice
-                    ? "block"
-                    : "hidden"
-                }>
+                <div className={!hasCallForPricePermission || !callForPrice ? "block" : "hidden"}>
                   <PricingInventory
                     formData={pricingFormData}
                     handleInputChange={handlePricingInputChange}
