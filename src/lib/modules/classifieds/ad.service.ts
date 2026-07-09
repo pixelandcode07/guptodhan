@@ -1,11 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { createAdminNotification } from '@/lib/utils/createAdminNotification';
 import { IClassifiedAd } from './ad.interface';
 import { ClassifiedAd } from './ad.model';
 import { deleteFromCloudinary } from '@/lib/utils/cloudinary';
 import mongoose, { Types } from 'mongoose';
 
 const createAdInDB = async (payload: Partial<IClassifiedAd>) => {
-  return await ClassifiedAd.create({ ...payload, status: 'pending' });
+  const result = await ClassifiedAd.create({ ...payload, status: 'pending' });
+
+  // ✅ MAGIC FIX: Admin Notification Added Here
+  await createAdminNotification(
+    'buy_sell_ad',
+    `New Buy & Sell Ad pending approval: ${result.title}`,
+    `/dashboard/admin/classifieds` // আপনার অ্যাডমিন প্যানেলের অ্যাডস পেজের লিংক
+  );
+
+  return result;
 };
 
 const searchAdsInDB = async (filters: Record<string, any>, options: { onlyActive?: boolean } = { onlyActive: true }) => {
