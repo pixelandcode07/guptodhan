@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ProductQASection } from './ProductQASection';
@@ -8,7 +8,23 @@ import ProductReviewsTab from './ProductReviewsTab';
 import { FileText, List, MessageCircleQuestion, Star } from 'lucide-react';
 
 export default function ProductTabs({ product, reviews, onReviewsUpdate }: any) {
+  // ✅ MAGIC FIX: URL-এ যদি #reviews থাকে, তাহলে ডিফল্টভাবে 'reviews' ট্যাব ওপেন হবে, নাহলে 'description'
   const [activeTab, setActiveTab] = useState('description');
+
+  useEffect(() => {
+    // Check if the URL has a hash for a specific tab when component mounts
+    const hash = window.location.hash;
+    if (hash === '#reviews') {
+      setActiveTab('reviews');
+      
+      // Optionally scroll to the tabs section
+      setTimeout(() => {
+        document.getElementById('product-details-tabs')?.scrollIntoView({ behavior: 'smooth' });
+      }, 500);
+    } else if (hash === '#qna') {
+      setActiveTab('qna');
+    }
+  }, []);
 
   const tabs = [
     { id: 'description', label: 'Description', icon: <FileText size={16} /> },
@@ -17,10 +33,16 @@ export default function ProductTabs({ product, reviews, onReviewsUpdate }: any) 
     { id: 'reviews', label: `Reviews (${reviews.length})`, icon: <Star size={16} /> },
   ];
 
+  // ✅ When changing tabs manually, update the URL hash without scrolling
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    window.history.replaceState(null, '', `#${value}`);
+  };
+
   return (
     <div className="container mx-auto px-4 mt-8 mb-20" id="product-details-tabs">
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           
           <div className="border-b border-gray-200 bg-[#F5F5F5] overflow-x-auto">
             <TabsList className="w-full h-auto bg-transparent p-0 flex justify-start sm:justify-center min-w-max">
@@ -49,7 +71,7 @@ export default function ProductTabs({ product, reviews, onReviewsUpdate }: any) 
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
-                className="w-full" // ✅ MAGIC FIX: max-w-5xl রিমুভ করে w-full দেওয়া হয়েছে
+                className="w-full"
               >
                 
                 {/* 1. Description Tab */}
@@ -82,7 +104,6 @@ export default function ProductTabs({ product, reviews, onReviewsUpdate }: any) 
                 <TabsContent value="specification" className="m-0 focus-visible:outline-none w-full">
                   <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6">Specification</h2>
                   {product.specification ? (
-                    // ✅ MAGIC FIX: overflow-x-auto রিমুভ করা হয়েছে যাতে স্ক্রলবার না আসে
                     <div className="w-full border border-gray-200 rounded-md">
                       <div 
                         className="
