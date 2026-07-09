@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import DonationClaimModal from './DonationClaimModal'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
-import { Package, RefreshCw, LayoutGrid, MapPin, Heart, HandHeart, X, Clock } from 'lucide-react'
+import { Package, RefreshCw, LayoutGrid, Heart, HandHeart, X, Clock } from 'lucide-react'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
@@ -26,8 +26,8 @@ interface DonationCampaign {
     moderationStatus?: string;
     goalAmount?: number;
     raisedAmount?: number;
-    quantity?: number; // ✅ Added Quantity
-    endDate?: string;  // ✅ Added End Date
+    quantity?: number; 
+    endDate?: string;  
 }
 
 interface DonationCategory {
@@ -86,7 +86,6 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
 
     const hasMoreItems = displayCount < filteredItems.length;
 
-    // ✅ Handle Request Click with Login Check
     const handleRequestClick = (camp: DonationCampaign) => {
         if (!session) {
             setLoginOpen(true);
@@ -104,7 +103,6 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
     return (
         <div className='md:max-w-[95vw] xl:container mx-auto px-4 md:px-8'>
             
-            {/* ✅ Login Modal — fixed overlay for unauthenticated users */}
             <AnimatePresence>
                 {loginOpen && (
                     <div className="fixed inset-0 z-[999] flex items-center justify-center px-4">
@@ -149,9 +147,6 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
 
             <section id='browse-items' className='mt-6'>
 
-                {/* ================================ */}
-                {/* Category Filter                  */}
-                {/* ================================ */}
                 <div className="mb-8">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className='text-xl font-bold text-gray-800'>Browse by Category</h2>
@@ -170,7 +165,6 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
 
                     <div className="w-full overflow-x-auto scrollbar-hide pb-2">
                         <div className="flex gap-4 min-w-max px-1">
-                            {/* All Button */}
                             <motion.button
                                 whileHover={{ scale: 1.03 }}
                                 whileTap={{ scale: 0.97 }}
@@ -220,9 +214,6 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                     </div>
                 </div>
 
-                {/* ================================ */}
-                {/* Campaigns Grid                   */}
-                {/* ================================ */}
                 {loading ? (
                     <div className='flex flex-col justify-center items-center py-20 bg-white rounded-xl border border-dashed border-gray-300'>
                         <RefreshCw className="animate-spin text-blue-600 mb-3" size={48} />
@@ -250,6 +241,10 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                     : 0;
                                 const cleanDescription = camp.description?.replace(/<[^>]*>/g, '').replace(/\*\*/g, '').trim() || '';
 
+                                // ✅ MAGIC FIX: Expiry and Stock Validation
+                                const isExpired = camp.endDate ? new Date(camp.endDate).getTime() < new Date().getTime() : false;
+                                const isOutOfStock = camp.item !== 'money' && (camp.quantity === undefined || camp.quantity <= 0);
+
                                 return (
                                     <motion.div
                                         key={camp._id}
@@ -258,9 +253,6 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                         transition={{ duration: 0.3, delay: index * 0.05 }}
                                         className='bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-blue-100 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col'
                                     >
-                                        {/* ======================== */}
-                                        {/* Image Section            */}
-                                        {/* ======================== */}
                                        <Link href={`/donation/${camp._id}`} className="relative w-full overflow-hidden block aspect-[4/3] bg-gray-100">
                                             <Image
                                                 src={camp.images?.[0] || '/img/placeholder.png'}
@@ -269,10 +261,8 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                                 className="object-contain group-hover:scale-105 transition-transform duration-700"
                                             />
 
-                                            {/* Dark gradient overlay */}
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
-                                            {/* Category Badge - top left */}
                                             {camp.category?.name && (
                                                 <div className="absolute top-3 left-3 z-10">
                                                     <span className="inline-flex items-center gap-1 bg-white/95 backdrop-blur-sm text-[#00005E] text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
@@ -281,7 +271,6 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                                 </div>
                                             )}
 
-                                            {/* My Post badge */}
                                             {isOwner && (
                                                 <div className="absolute top-3 right-3 z-10">
                                                     <span className="inline-flex items-center gap-1 bg-blue-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
@@ -290,24 +279,22 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                                 </div>
                                             )}
 
-                                            {/* Item type badge - bottom left */}
-                                            <div className="absolute bottom-3 left-3 z-10">
+                                            <div className="absolute bottom-3 left-3 z-10 flex gap-2">
                                                 <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm
-                                                    ${camp.item === 'money'
-                                                        ? 'bg-emerald-500 text-white'
-                                                        : 'bg-orange-500 text-white'
-                                                    }`}>
+                                                    ${camp.item === 'money' ? 'bg-emerald-500 text-white' : 'bg-orange-500 text-white'}`}>
                                                     {camp.item === 'money' ? '💸 Fund' : '📦 Item'}
                                                 </span>
+                                                
+                                                {/* ✅ EXPIRY BADGE ON IMAGE */}
+                                                {(isExpired || isOutOfStock) && (
+                                                    <span className="inline-flex items-center gap-1 bg-red-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm uppercase">
+                                                        {isOutOfStock ? 'Out of Stock' : 'Expired'}
+                                                    </span>
+                                                )}
                                             </div>
                                         </Link>
 
-                                        {/* ======================== */}
-                                        {/* Content Section          */}
-                                        {/* ======================== */}
                                         <div className='p-4 flex flex-col flex-grow gap-3'>
-
-                                            {/* Creator */}
                                             {camp.creator?.name && (
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-6 h-6 rounded-full bg-[#00005E]/10 flex items-center justify-center flex-shrink-0">
@@ -319,21 +306,18 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                                 </div>
                                             )}
 
-                                            {/* Title */}
                                             <Link href={`/donation/${camp._id}`}>
                                                 <h3 className='font-bold text-gray-900 text-base line-clamp-2 hover:text-blue-600 transition-colors leading-snug'>
                                                     {camp.title}
                                                 </h3>
                                             </Link>
 
-                                            {/* Description */}
                                             {cleanDescription && (
                                                 <p className='text-xs text-gray-500 line-clamp-2 leading-relaxed flex-grow'>
                                                     {cleanDescription}
                                                 </p>
                                             )}
 
-                                            {/* ✅ MAGIC FIX: Progress bar for money OR Quantity/Date for physical items */}
                                             {camp.item === 'money' && camp.goalAmount && camp.goalAmount > 0 ? (
                                                 <div className="space-y-1.5 mt-auto pt-2">
                                                     <div className="flex justify-between text-xs font-semibold">
@@ -352,15 +336,16 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                                 </div>
                                             ) : (
                                                 <div className="space-y-1.5 mt-auto pt-2">
-                                                    <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-lg p-2.5">
-                                                        <div className="flex items-center gap-1.5 text-blue-700 text-xs font-bold">
+                                                    <div className={`flex items-center justify-between rounded-lg p-2.5 border 
+                                                        ${isExpired || isOutOfStock ? 'bg-red-50 border-red-100' : 'bg-blue-50 border-blue-100'}`}>
+                                                        <div className={`flex items-center gap-1.5 text-xs font-bold ${isExpired || isOutOfStock ? 'text-red-700' : 'text-blue-700'}`}>
                                                             <Package size={14} />
-                                                            <span>{camp.quantity || 1} Pcs</span>
+                                                            <span>{camp.quantity === 0 ? '0' : camp.quantity || 1} Pcs</span>
                                                         </div>
                                                         {camp.endDate ? (
-                                                            <div className="flex items-center gap-1 text-orange-600 text-[10px] font-bold">
+                                                            <div className={`flex items-center gap-1 text-[10px] font-bold ${isExpired ? 'text-red-600' : 'text-orange-600'}`}>
                                                                 <Clock size={12} />
-                                                                <span>Ends: {new Date(camp.endDate).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                                                <span>{isExpired ? 'Expired' : 'Ends:'} {new Date(camp.endDate).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                                                             </div>
                                                         ) : (
                                                             <div className="flex items-center gap-1 text-emerald-600 text-[10px] font-bold">
@@ -371,17 +356,18 @@ export default function DonationHome({ initialCampaigns, initialCategories }: Do
                                                 </div>
                                             )}
 
-                                            {/* Divider */}
                                             <div className="h-px bg-gray-100" />
 
-                                            {/* Action Button */}
+                                            {/* ✅ MAGIC FIX: ACTION BUTTON DISABLE LOGIC */}
                                             {isOwner ? (
-                                                <button
-                                                    disabled
-                                                    className='w-full py-2.5 bg-gray-50 text-gray-400 text-sm font-semibold rounded-xl cursor-not-allowed flex items-center justify-center gap-2'
-                                                >
+                                                <button disabled className="w-full py-2.5 bg-gray-50 text-gray-400 text-sm font-semibold rounded-xl cursor-not-allowed flex items-center justify-center gap-2">
                                                     <Heart className="w-4 h-4" />
                                                     You are the donor
+                                                </button>
+                                            ) : isExpired || isOutOfStock ? (
+                                                <button disabled className="w-full py-2.5 bg-red-50 text-red-500 text-sm font-semibold rounded-xl cursor-not-allowed border border-red-100 flex items-center justify-center gap-2">
+                                                    <X className="w-4 h-4" />
+                                                    {isOutOfStock ? 'Out of Stock' : 'Campaign Expired'}
                                                 </button>
                                             ) : (
                                                 <motion.button
