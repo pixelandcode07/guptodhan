@@ -15,9 +15,9 @@ const storeReviewSchema = new Schema(
       type: String,
       required: true,
     },
+    // ✅ MAGIC FIX: required removed
     userImage: {
       type: String,
-      required: true,
     },
     rating: {
       type: Number,
