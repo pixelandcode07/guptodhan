@@ -700,7 +700,7 @@ try {
     await createAdminNotification(
       'service_request',
       `New Service Provider Registration Request from ${newUser.name}`,
-      `/dashboard/admin/users`
+      `/general/all-provider-request`
     );
     
     return newUser;
