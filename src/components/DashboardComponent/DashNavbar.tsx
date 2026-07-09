@@ -7,6 +7,8 @@ import BreadcrumbNav from '../ReusableComponents/BreadcrumbNav';
 import { Button } from '../ui/button';
 import { SidebarTrigger } from '../ui/sidebar';
 import UserDropdown from './Components/UserDropdown';
+// ✅ নতুন ইম্পোর্ট
+import AdminNotificationBell from './Components/AdminNotificationBell'; 
 import { SITE_CONFIG } from '@/lib/config/siteConfig';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
@@ -15,7 +17,6 @@ export default function DashNavbar() {
   const [loading, setLoading] = useState(false);
   const { data: session } = useSession();
 
-  // চেক করা হচ্ছে ইউজার অ্যাডমিন কিনা
   const isAdmin = session?.user?.role === 'admin';
 
   const handleFlushCache = async () => {
@@ -37,7 +38,7 @@ export default function DashNavbar() {
   };
 
   return (
-    <nav className="flex justify-between p-4 items-center border-[#e3e8f3] border-b-[1px]">
+    <nav className="flex justify-between p-4 items-center border-[#e3e8f3] border-b-[1px] bg-white">
       {/* Left side */}
       <div className="flex justify-center items-center gap-2">
         <SidebarTrigger />
@@ -45,23 +46,28 @@ export default function DashNavbar() {
       </div>
 
       {/* Right side */}
-      <div className="flex items-center gap-5">
-        {/* Redis Flush Button - শুধু অ্যাডমিনদের জন্য শো করবে */}
+      <div className="flex items-center gap-4 sm:gap-5">
+        
         {isAdmin && (
-          <Button
-            variant="outline"
-            onClick={handleFlushCache}
-            disabled={loading}
-            title="Clear Redis Cache"
-            className="text-red-500 border-red-300 hover:bg-red-50"
-          >
-            <Trash2 className="mr-1 h-4 w-4" />
-            {loading ? 'Clearing...' : 'Clear Cache'}
-          </Button>
+          <>
+            {/* ✅ MAGIC FIX: Notification Bell Added Here */}
+            <AdminNotificationBell />
+
+            <Button
+              variant="outline"
+              onClick={handleFlushCache}
+              disabled={loading}
+              title="Clear Redis Cache"
+              className="text-red-500 border-red-300 hover:bg-red-50 hidden sm:flex"
+            >
+              <Trash2 className="mr-1 h-4 w-4" />
+              {loading ? 'Clearing...' : 'Clear Cache'}
+            </Button>
+          </>
         )}
 
         {/* Visit Website Button */}
-        <div className="block">
+        <div className="hidden sm:block">
           <Button variant={'VisitWeb'}>
             <Send className="mr-1" />
             <Link href={SITE_CONFIG.mainUrl}>Visit Website</Link>
