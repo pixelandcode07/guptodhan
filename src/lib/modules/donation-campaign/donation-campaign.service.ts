@@ -26,7 +26,7 @@ const createCampaignInDB = async (payload: Partial<IDonationCampaign>) => {
   await createAdminNotification(
     'donation',
     `New Donation Campaign pending approval: ${result.title}`,
-    `/dashboard/admin/donation-campaigns` // আপনার অ্যাডমিন প্যানেলের ডোনেশন পেজের লিংক
+    `/general/donation/donate-list`
   );
 
   return result;
