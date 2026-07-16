@@ -249,7 +249,6 @@ export default function ProductForm({
           preservedStock.current         = dbStock;
         }
 
-        // ✅ FIX: Special Offer load logic
         if (p.offerDeadline) {
           setSpecialOffer(true);
           const deadline = new Date(p.offerDeadline);
@@ -567,8 +566,8 @@ export default function ProductForm({
         warranty:      warranty      || undefined,
         weightUnit:    unit          || undefined,
 
-        // ✅ MAGIC FIX: If specialOffer is false, send null to remove the deadline
-        offerDeadline: specialOffer && offerEndTime ? new Date(offerEndTime) : null,
+        // ✅ MAGIC FIX: New product e undefined jabe (optional), Edit er somoy off korle null jabe
+        offerDeadline: specialOffer && offerEndTime ? new Date(offerEndTime) : (isEditMode ? null : undefined),
 
         metaTitle:     metaTitle     || undefined,
         metaKeyword:   metaKeywordTags.length > 0 ? metaKeywordTags.join(", ") : undefined,
