@@ -65,8 +65,6 @@ const resolveOptionId = (
   return "";
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 export default function ProductForm({
   initialData,
   productId: propProductId,
@@ -203,7 +201,6 @@ export default function ProductForm({
           return;
         }
 
-        // Basic
         setTitle(p.productTitle || "");
         setShortDescription(p.shortDescription || "");
         setFullDescription(p.fullDescription || "");
@@ -211,7 +208,6 @@ export default function ProductForm({
         setWarrantyPolicy(p.warrantyPolicy || "");
         setProductTags(Array.isArray(p.productTag) ? p.productTag : []);
 
-        // SEO
         setMetaTitle(p.metaTitle || "");
         setMetaDescription(p.metaDescription || "");
         setMetaKeywordTags(
@@ -224,7 +220,6 @@ export default function ProductForm({
             : []
         );
 
-        // Images
         setThumbnailPreview(p.thumbnailImage || null);
         setInitialThumbnailUrl(p.thumbnailImage || null);
         setExistingGalleryUrls(Array.isArray(p.photoGallery) ? p.photoGallery : []);
@@ -263,7 +258,6 @@ export default function ProductForm({
           setOfferEndTime("");
         }
 
-        // IDs
         const catId      = getIdFromRef(p.category);
         const subId      = getIdFromRef(p.subCategory);
         const childId    = getIdFromRef(p.childCategory);
@@ -566,8 +560,8 @@ export default function ProductForm({
         warranty:      warranty      || undefined,
         weightUnit:    unit          || undefined,
 
-        // ✅ MAGIC FIX: New product e undefined jabe (optional), Edit er somoy off korle null jabe
-        offerDeadline: specialOffer && offerEndTime ? new Date(offerEndTime) : (isEditMode ? null : undefined),
+        // ✅ MAGIC FIX: Correct handling of null for offerDeadline
+        offerDeadline: specialOffer && offerEndTime ? new Date(offerEndTime) : null,
 
         metaTitle:     metaTitle     || undefined,
         metaKeyword:   metaKeywordTags.length > 0 ? metaKeywordTags.join(", ") : undefined,
