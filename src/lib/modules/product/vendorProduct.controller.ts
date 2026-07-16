@@ -3,7 +3,7 @@ import mongoose, { Types } from "mongoose";
 import { ZodError } from "zod";
 import { StatusCodes } from "http-status-codes";
 import { sendResponse } from "@/lib/utils/sendResponse";
-import { createVendorProductValidationSchema } from "./vendorProduct.validation";
+import { createVendorProductValidationSchema, updateVendorProductValidationSchema } from "./vendorProduct.validation";
 import { IVendorProduct } from "./vendorProduct.interface";
 import dbConnect from "@/lib/db";
 import { VendorProductServices } from "./vendorProduct.service";
@@ -21,49 +21,52 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
     const body = await req.json();
     const validatedData = createVendorProductValidationSchema.parse(body);
 
-    // ✅ SLUG GENERATION LOGIC STARTS HERE
     const baseSlug = slugify(validatedData.productTitle, {
-      lower: true,      // ছোট হাতের অক্ষর
-      strict: true,     // স্পেশাল ক্যারেক্টার রিমুভ
-      trim: true        // স্পেস রিমুভ
+      lower: true,
+      strict: true,
+      trim: true
     });
 
-    // ইউনিক করার জন্য বর্তমান সময়ের শেষ ৪ ডিজিট এবং একটি র‍্যান্ডম নম্বর যোগ করা হলো
     const uniqueSuffix = `${Date.now().toString().slice(-4)}${Math.floor(Math.random() * 1000)}`;
     const finalSlug = `${baseSlug}-${uniqueSuffix}`;
-    // ✅ SLUG GENERATION LOGIC ENDS HERE
+
+    // ✅ MAGIC FIX: TypeScript Error Solution using Destructuring
+    // আলাদা করে নিচ্ছি যাতে string ও null ভ্যালুগুলো সরাসরি interface-এর সাথে conflict না করে
+    const {
+      vendorStoreId,
+      category,
+      subCategory,
+      childCategory,
+      brand,
+      productModel,
+      flag,
+      warranty,
+      weightUnit,
+      offerDeadline,
+      productOptions,
+      ...restData
+    } = validatedData;
 
     const payload: Partial<IVendorProduct> = {
-      ...validatedData,
-      slug: finalSlug, // ✅ স্লাগটি পে-লোডে যুক্ত করা হলো
-      callForPrice: validatedData.callForPrice || false,
+      ...restData,
+      slug: finalSlug,
+      callForPrice: restData.callForPrice || false,
       
-      vendorStoreId: new Types.ObjectId(validatedData.vendorStoreId),
-      category: new Types.ObjectId(validatedData.category),
-      subCategory: validatedData.subCategory
-        ? new Types.ObjectId(validatedData.subCategory)
-        : undefined,
-      childCategory: validatedData.childCategory
-        ? new Types.ObjectId(validatedData.childCategory)
-        : undefined,
-      brand: validatedData.brand
-        ? new Types.ObjectId(validatedData.brand)
-        : undefined,
-      productModel: validatedData.productModel
-        ? new Types.ObjectId(validatedData.productModel)
-        : undefined,
-      flag: validatedData.flag
-        ? new Types.ObjectId(validatedData.flag)
-        : undefined,
-      warranty: validatedData.warranty
-        ? new Types.ObjectId(validatedData.warranty)
-        : undefined,
-      weightUnit: validatedData.weightUnit
-        ? new Types.ObjectId(validatedData.weightUnit)
-        : undefined,
+      // null আসলে undefined সেট করছি যাতে Interface (TS) খুশি থাকে
+      offerDeadline: offerDeadline === null ? undefined : offerDeadline,
+
+      // String থেকে ObjectId তে কনভার্ট করছি
+      vendorStoreId: new Types.ObjectId(vendorStoreId),
+      category: new Types.ObjectId(category),
+      subCategory: subCategory ? new Types.ObjectId(subCategory) : undefined,
+      childCategory: childCategory ? new Types.ObjectId(childCategory) : undefined,
+      brand: brand ? new Types.ObjectId(brand) : undefined,
+      productModel: productModel ? new Types.ObjectId(productModel) : undefined,
+      flag: flag ? new Types.ObjectId(flag) : undefined,
+      warranty: warranty ? new Types.ObjectId(warranty) : undefined,
+      weightUnit: weightUnit ? new Types.ObjectId(weightUnit) : undefined,
       
-      // Product Options Mapping
-      productOptions: (validatedData.productOptions ?? []).map((option: any) => ({
+      productOptions: (productOptions ?? []).map((option: any) => ({
         productImage: option.productImage || undefined,
         unit: Array.isArray(option.unit) ? option.unit : option.unit ? [option.unit] : [],
         simType: option.simType 
@@ -78,11 +81,10 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
         size: option.size
           ? (Array.isArray(option.size) ? option.size.map((id: string) => new Types.ObjectId(id)) : [new Types.ObjectId(option.size)])
           : [],
-          country: option.country
-      ? (Array.isArray(option.country) ? option.country.map((id: string) => new Types.ObjectId(id)) : [new Types.ObjectId(option.country)])
-      : [],
+        country: option.country
+          ? (Array.isArray(option.country) ? option.country.map((id: string) => new Types.ObjectId(id)) : [new Types.ObjectId(option.country)])
+          : [],
         storage: option.storage || undefined,
-        
         warranty: option.warranty || undefined,
         stock: option.stock || undefined,
         price: option.price || undefined,
@@ -118,10 +120,7 @@ const createVendorProduct = async (req: NextRequest): Promise<NextResponse> => {
     return sendResponse({
       success: false,
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-      message:
-        err instanceof Error
-          ? err.message
-          : "Something went wrong while saving the product.",
+      message: err instanceof Error ? err.message : "Something went wrong while saving the product.",
       data: null,
     });
   }
@@ -357,52 +356,63 @@ const updateVendorProduct = async (
     const { id } = await params;
     const body = await req.json();
 
-    // ✅ Prepare payload with proper ObjectId conversions
-    const payload: Partial<IVendorProduct> = { ...body };
+    const validatedData = updateVendorProductValidationSchema.parse(body);
 
-    if (body.category) payload.category = new Types.ObjectId(body.category);
-    if (body.subCategory)
-      payload.subCategory = new Types.ObjectId(body.subCategory);
-    if (body.childCategory)
-      payload.childCategory = new Types.ObjectId(body.childCategory);
-    if (body.brand) payload.brand = new Types.ObjectId(body.brand);
-    if (body.productModel)
-      payload.productModel = new Types.ObjectId(body.productModel);
-    if (body.flag) payload.flag = new Types.ObjectId(body.flag);
-    if (body.warranty) payload.warranty = new Types.ObjectId(body.warranty);
-    if (body.weightUnit)
-      payload.weightUnit = new Types.ObjectId(body.weightUnit);
-    if (body.vendorStoreId)
-      payload.vendorStoreId = new Types.ObjectId(body.vendorStoreId);
+    // ✅ MAGIC FIX: TypeScript Error Solution using Destructuring
+    const {
+      vendorStoreId,
+      category,
+      subCategory,
+      childCategory,
+      brand,
+      productModel,
+      flag,
+      warranty,
+      weightUnit,
+      offerDeadline,
+      productOptions,
+      ...restData
+    } = validatedData;
+
+    // Use `any` for Mongoose query to support $unset and operators
+    const updateQuery: any = { $set: { ...restData } };
     
-    // ✅ Handle productOptions with proper ObjectId conversions
-    if (body.productOptions && Array.isArray(body.productOptions)) {
-      payload.productOptions = body.productOptions.map((option: any) => ({
+    // offerDeadline null আসলে ডাটাবেস থেকে রিমুভ করে দাও
+    if (offerDeadline === null) {
+      updateQuery.$unset = { offerDeadline: 1 };
+    } else if (offerDeadline !== undefined) {
+      updateQuery.$set.offerDeadline = offerDeadline;
+    }
+
+    // Convert strings to ObjectIds manually
+    if (vendorStoreId) updateQuery.$set.vendorStoreId = new Types.ObjectId(vendorStoreId);
+    if (category) updateQuery.$set.category = new Types.ObjectId(category);
+    if (subCategory) updateQuery.$set.subCategory = new Types.ObjectId(subCategory);
+    if (childCategory) updateQuery.$set.childCategory = new Types.ObjectId(childCategory);
+    if (brand) updateQuery.$set.brand = new Types.ObjectId(brand);
+    if (productModel) updateQuery.$set.productModel = new Types.ObjectId(productModel);
+    if (flag) updateQuery.$set.flag = new Types.ObjectId(flag);
+    if (warranty) updateQuery.$set.warranty = new Types.ObjectId(warranty);
+    if (weightUnit) updateQuery.$set.weightUnit = new Types.ObjectId(weightUnit);
+    
+    if (productOptions && Array.isArray(productOptions)) {
+      updateQuery.$set.productOptions = productOptions.map((option: any) => ({
         productImage: option.productImage || undefined,
-        unit: Array.isArray(option.unit)
-          ? option.unit
-          : option.unit
-            ? [option.unit]
-            : [],
+        unit: Array.isArray(option.unit) ? option.unit : option.unit ? [option.unit] : [],
         simType: option.simType 
-          ? (Array.isArray(option.simType)
-              ? option.simType.map((id: string) => new Types.ObjectId(id))
-              : [new Types.ObjectId(option.simType)])
+          ? (Array.isArray(option.simType) ? option.simType.map((id: string) => new Types.ObjectId(id)) : [new Types.ObjectId(option.simType)])
           : [],
         condition: option.condition
-          ? (Array.isArray(option.condition)
-              ? option.condition.map((id: string) => new Types.ObjectId(id))
-              : [new Types.ObjectId(option.condition)])
+          ? (Array.isArray(option.condition) ? option.condition.map((id: string) => new Types.ObjectId(id)) : [new Types.ObjectId(option.condition)])
           : [],
         color: option.color
-          ? (Array.isArray(option.color)
-              ? option.color.map((id: string) => new Types.ObjectId(id))
-              : [new Types.ObjectId(option.color)])
+          ? (Array.isArray(option.color) ? option.color.map((id: string) => new Types.ObjectId(id)) : [new Types.ObjectId(option.color)])
           : [],
         size: option.size
-          ? (Array.isArray(option.size)
-              ? option.size.map((id: string) => new Types.ObjectId(id))
-              : [new Types.ObjectId(option.size)])
+          ? (Array.isArray(option.size) ? option.size.map((id: string) => new Types.ObjectId(id)) : [new Types.ObjectId(option.size)])
+          : [],
+        country: option.country
+          ? (Array.isArray(option.country) ? option.country.map((id: string) => new Types.ObjectId(id)) : [new Types.ObjectId(option.country)])
           : [],
         storage: option.storage || undefined,
         warranty: option.warranty || undefined,
@@ -412,8 +422,7 @@ const updateVendorProduct = async (
       }));
     }
 
-    // ✅ Update the product in database
-    const updateResult = await VendorProductModel.findByIdAndUpdate(id, payload, {
+    const updateResult = await VendorProductModel.findByIdAndUpdate(id, updateQuery, {
       new: true,
       runValidators: true,
     });
@@ -427,129 +436,38 @@ const updateVendorProduct = async (
       });
     }
 
-    // ✅ Fetch the updated product with full aggregation pipeline
-    // (Same format as GET endpoint for consistency)
     const result = await VendorProductModel.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(id) } },
       
-      // ✅ Lookup category
-      {
-        $lookup: {
-          from: 'categorymodels',
-          localField: 'category',
-          foreignField: '_id',
-          as: 'category',
-        },
-      },
+      { $lookup: { from: 'categorymodels', localField: 'category', foreignField: '_id', as: 'category' } },
       { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
 
-      // ✅ Lookup subcategory
-      {
-        $lookup: {
-          from: 'subcategorymodels',
-          localField: 'subCategory',
-          foreignField: '_id',
-          as: 'subCategory',
-        },
-      },
+      { $lookup: { from: 'subcategorymodels', localField: 'subCategory', foreignField: '_id', as: 'subCategory' } },
       { $unwind: { path: '$subCategory', preserveNullAndEmptyArrays: true } },
 
-      // ✅ Lookup child category
-      {
-        $lookup: {
-          from: 'childcategorymodels',
-          localField: 'childCategory',
-          foreignField: '_id',
-          as: 'childCategory',
-        },
-      },
+      { $lookup: { from: 'childcategorymodels', localField: 'childCategory', foreignField: '_id', as: 'childCategory' } },
       { $unwind: { path: '$childCategory', preserveNullAndEmptyArrays: true } },
 
-      // ✅ Lookup brand
-      {
-        $lookup: {
-          from: 'brandmodels',
-          localField: 'brand',
-          foreignField: '_id',
-          as: 'brand',
-        },
-      },
+      { $lookup: { from: 'brandmodels', localField: 'brand', foreignField: '_id', as: 'brand' } },
       { $unwind: { path: '$brand', preserveNullAndEmptyArrays: true } },
 
-      // ✅ Lookup product model
-      {
-        $lookup: {
-          from: 'productmodels',
-          localField: 'productModel',
-          foreignField: '_id',
-          as: 'productModel',
-        },
-      },
+      { $lookup: { from: 'productmodels', localField: 'productModel', foreignField: '_id', as: 'productModel' } },
       { $unwind: { path: '$productModel', preserveNullAndEmptyArrays: true } },
 
-      // ✅ Lookup flag
-      {
-        $lookup: {
-          from: 'productflags',
-          localField: 'flag',
-          foreignField: '_id',
-          as: 'flag',
-        },
-      },
+      { $lookup: { from: 'productflags', localField: 'flag', foreignField: '_id', as: 'flag' } },
       { $unwind: { path: '$flag', preserveNullAndEmptyArrays: true } },
 
-      // ✅ Lookup warranty
-      {
-        $lookup: {
-          from: 'productwarrantymodels',
-          localField: 'warranty',
-          foreignField: '_id',
-          as: 'warranty',
-        },
-      },
+      { $lookup: { from: 'productwarrantymodels', localField: 'warranty', foreignField: '_id', as: 'warranty' } },
       { $unwind: { path: '$warranty', preserveNullAndEmptyArrays: true } },
 
-      // ✅ Lookup weight unit
-      {
-        $lookup: {
-          from: 'productunits',
-          localField: 'weightUnit',
-          foreignField: '_id',
-          as: 'weightUnit',
-        },
-      },
+      { $lookup: { from: 'productunits', localField: 'weightUnit', foreignField: '_id', as: 'weightUnit' } },
       { $unwind: { path: '$weightUnit', preserveNullAndEmptyArrays: true } },
 
-      // ✅ Lookup vendor store
-      {
-        $lookup: {
-          from: 'storemodels',
-          localField: 'vendorStoreId',
-          foreignField: '_id',
-          as: 'vendorStoreId',
-        },
-      },
+      { $lookup: { from: 'storemodels', localField: 'vendorStoreId', foreignField: '_id', as: 'vendorStoreId' } },
       { $unwind: { path: '$vendorStoreId', preserveNullAndEmptyArrays: true } },
 
-      // ✅ Lookup colors for productOptions
-      {
-        $lookup: {
-          from: 'productcolors',
-          localField: 'productOptions.color',
-          foreignField: '_id',
-          as: 'colorDetails',
-        },
-      },
-
-      // ✅ Lookup sizes for productOptions
-      {
-        $lookup: {
-          from: 'productsizes',
-          localField: 'productOptions.size',
-          foreignField: '_id',
-          as: 'sizeDetails',
-        },
-      },
+      { $lookup: { from: 'productcolors', localField: 'productOptions.color', foreignField: '_id', as: 'colorDetails' } },
+      { $lookup: { from: 'productsizes', localField: 'productOptions.size', foreignField: '_id', as: 'sizeDetails' } },
     ]);
 
     if (!result || !result[0]) {
@@ -563,32 +481,21 @@ const updateVendorProduct = async (
 
     const productDoc = result[0];
 
-    // ✅ Transform color and size arrays (ObjectIds → names)
-    const colorMap = new Map(
-      (productDoc.colorDetails || []).map((c: any) => [String(c._id), c.colorName])
-    );
-    const sizeMap = new Map(
-      (productDoc.sizeDetails || []).map((s: any) => [String(s._id), s.name])
-    );
+    const colorMap = new Map((productDoc.colorDetails || []).map((c: any) => [String(c._id), c.colorName]));
+    const sizeMap = new Map((productDoc.sizeDetails || []).map((s: any) => [String(s._id), s.name]));
 
     const transformedProduct = {
       ...productDoc,
       productOptions: (productDoc.productOptions || []).map((option: any) => ({
         ...option,
-        color: Array.isArray(option.color)
-          ? option.color.map((id: any) => colorMap.get(String(id)) || String(id))
-          : option.color,
-        size: Array.isArray(option.size)
-          ? option.size.map((id: any) => sizeMap.get(String(id)) || String(id))
-          : option.size,
+        color: Array.isArray(option.color) ? option.color.map((id: any) => colorMap.get(String(id)) || String(id)) : option.color,
+        size: Array.isArray(option.size) ? option.size.map((id: any) => sizeMap.get(String(id)) || String(id)) : option.size,
       })),
     };
 
-    // ✅ Remove temporary lookup fields
     delete transformedProduct.colorDetails;
     delete transformedProduct.sizeDetails;
 
-    // ✅ Clear cache after update
     await deleteCacheKey(CacheKeys.PRODUCT.BY_ID(id));
     await deleteCachePattern(CacheKeys.PATTERNS.PRODUCTS_ALL);
 
@@ -601,13 +508,20 @@ const updateVendorProduct = async (
   } catch (err) {
     console.error("Error updating vendor product:", err);
 
+    if (err instanceof ZodError) {
+      const errorMessages = err.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`);
+      return sendResponse({
+        success: false,
+        statusCode: StatusCodes.BAD_REQUEST,
+        message: errorMessages.join("; "),
+        data: err.issues,
+      });
+    }
+
     return sendResponse({
       success: false,
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-      message:
-        err instanceof Error
-          ? err.message
-          : "Something went wrong while updating the product.",
+      message: err instanceof Error ? err.message : "Something went wrong while updating the product.",
       data: null,
     });
   }
