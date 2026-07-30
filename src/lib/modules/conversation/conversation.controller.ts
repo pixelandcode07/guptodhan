@@ -21,7 +21,7 @@ const getUserIdFromToken = (req: NextRequest): string => {
   return decoded.userId;
 };
 
-// ✅ সমস্ত চ্যাট পাওয়া (FIXED)
+
 const getMyConversations = async (req: NextRequest) => {
   try {
     await dbConnect();
@@ -134,7 +134,6 @@ const getMessages = async (
   }
 };
 
-// ✅ নতুন চ্যাট শুরু করা
 const startConversation = async (req: NextRequest) => {
   try {
     await dbConnect();
@@ -186,7 +185,6 @@ const startConversation = async (req: NextRequest) => {
   }
 };
 
-// ✅ মেসেজ পাঠানো (REST API)
 const sendMessage = async (
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -230,7 +228,6 @@ const sendMessage = async (
   }
 };
 
-// ✅ মেসেজ পড়া হিসেবে মার্ক করা
 const markMessageAsRead = async (req: NextRequest) => {
   try {
     await dbConnect();
