@@ -136,7 +136,6 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
     }
   };
 
-  // ✅ FIXED: Variants এ proper type দেওয়া হয়েছে
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
@@ -152,7 +151,7 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
       opacity: 1,
       transition: {
         duration: 0.6,
-        ease: 'easeOut' as const, // ✅ as const দিয়ে string literal type করা হয়েছে
+        ease: 'easeOut' as const, 
       },
     },
   };

@@ -9,7 +9,6 @@ interface BuySellGridProps {
 }
 
 export default function BuySellGrid({ ads }: BuySellGridProps) {
-  // যদি কোনো ডাটা না থাকে
   if (!ads || ads.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[250px] text-gray-500">
