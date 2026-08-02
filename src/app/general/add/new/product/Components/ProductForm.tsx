@@ -947,5 +947,5 @@ export default function ProductForm({
         </div>
       </form>
     </>
-  );
+  ); 
 }
