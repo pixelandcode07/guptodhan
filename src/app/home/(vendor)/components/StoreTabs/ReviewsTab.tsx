@@ -102,11 +102,19 @@ export default function ReviewsTab({ storeId }: { storeId: string }) {
       form.reset({ ...data, comment: "" });
       fetchReviews();
     } catch (error) {
-      toast.error('Review Failed!', {
-        ...toastStyle,
-        description: 'Something went wrong. Please try again.',
-      });
-    }
+  if (axios.isAxiosError(error)) {
+    console.log("Status:", error.response?.status);
+    console.log("Response:", error.response?.data);
+    console.log("Message:", error.message);
+  } else {
+    console.log(error);
+  }
+
+  toast.error("Review Failed!", {
+    ...toastStyle,
+    description: "Something went wrong. Please try again.",
+  });
+}
   };
 
   return (
