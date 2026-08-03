@@ -26,6 +26,17 @@ const getUserDetailsFromToken = (req: NextRequest) => {
    CREATE STORE REVIEW
 ========================= */
 const createStoreReview = async (req: NextRequest) => {
+//    const authHeader = req.headers.get("authorization");
+
+// console.log("================================");
+// console.log("Authorization Header:", authHeader);
+
+// if (authHeader) {
+//   const token = authHeader.split(" ")[1];
+//   console.log("Extracted Token:", token);
+// }
+
+// console.log("================================");
   const { userId } = getUserDetailsFromToken(req);
   const body = await req.json();
   const bodyWithUserId = { ...body, userId: userId };

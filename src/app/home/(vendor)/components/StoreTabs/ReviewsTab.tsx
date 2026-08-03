@@ -66,7 +66,7 @@ export default function ReviewsTab({ storeId }: { storeId: string }) {
   const fetchReviews = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`/api/v1/store-review?storeId=${storeId}`);
+      const res = await axios.get(`/api/v1/store-review-storeId/${storeId}`);
       setReviews(res.data.data ?? []);
     } catch (error) {
       console.error("❌ FETCH REVIEWS FAILED:", error);
@@ -80,12 +80,15 @@ export default function ReviewsTab({ storeId }: { storeId: string }) {
   }, [storeId]);
 
   const onSubmit = async (data: CreateStoreReviewFormValues) => {
+    const token = (session as any)?.accessToken;
+    console.log('Session token', token)
     try {
       // ✅ Ensure userImage is sent even if it's empty in state
       const finalData = {
         ...data,
         userImage: data.userImage || userImageToUse
       };
+
 
       await axios.post("/api/v1/store-review", finalData, {
         headers: {
