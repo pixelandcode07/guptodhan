@@ -80,8 +80,8 @@ export default function ReviewsTab({ storeId }: { storeId: string }) {
   }, [storeId]);
 
   const onSubmit = async (data: CreateStoreReviewFormValues) => {
-    const token = (session as any)?.accessToken;
-    console.log('Session token', token)
+    // const token = (session as any)?.accessToken;
+    // console.log('Session token', token)
     try {
       // ✅ Ensure userImage is sent even if it's empty in state
       const finalData = {
