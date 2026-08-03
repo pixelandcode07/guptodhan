@@ -80,8 +80,6 @@ export default function ReviewsTab({ storeId }: { storeId: string }) {
   }, [storeId]);
 
   const onSubmit = async (data: CreateStoreReviewFormValues) => {
-    // const token = (session as any)?.accessToken;
-    // console.log('Session token', token)
     try {
       // ✅ Ensure userImage is sent even if it's empty in state
       const finalData = {
@@ -102,19 +100,11 @@ export default function ReviewsTab({ storeId }: { storeId: string }) {
       form.reset({ ...data, comment: "" });
       fetchReviews();
     } catch (error) {
-  if (axios.isAxiosError(error)) {
-    console.log("Status:", error.response?.status);
-    console.log("Response:", error.response?.data);
-    console.log("Message:", error.message);
-  } else {
-    console.log(error);
-  }
-
-  toast.error("Review Failed!", {
-    ...toastStyle,
-    description: "Something went wrong. Please try again.",
-  });
-}
+      toast.error('Review Failed!', {
+        ...toastStyle,
+        description: 'Something went wrong. Please try again.',
+      });
+    }
   };
 
   return (
