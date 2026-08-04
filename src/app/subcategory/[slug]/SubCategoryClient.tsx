@@ -308,7 +308,7 @@ export default function SubCategoryClient({ initialData }: { initialData: SubCat
                 <div className="bg-gradient-to-r from-blue-900 to-purple-900 text-white py-16">
                     <div className="max-w-7xl mx-auto px-4 text-center">
                         <h1 className="text-4xl md:text-5xl font-bold mb-2">{initialData.subCategory.name}</h1>
-                        <p className="text-lg opacity-90">{initialData.totalProducts} Products</p>
+                        {/* <p className="text-lg opacity-90">{initialData.totalProducts} Products</p> */}
                     </div>
                 </div>
 
