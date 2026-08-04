@@ -6,6 +6,7 @@ import { SITE_CONFIG } from '@/lib/config/siteConfig'
 export default function NavHead() {
     const { data } = useSession()
     const role = (data?.user as any)?.role as string;
+    console.log('MY PROFILE:', data)
     return (
         <div className='bg-[#0084CB] text-[#FFFFFF]'>
             <div className='hidden md:flex justify-between items-center md:max-w-[95vw] xl:container mx-auto px-8 py-2'>
