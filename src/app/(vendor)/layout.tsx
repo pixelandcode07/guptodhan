@@ -32,7 +32,7 @@ let storeData = {
 if (session?.user?.vendorId) {
   try {
     const res = await fetch(
-      `${baseUrl}/api/v1/vendor-store/dashboard/${vendorId}`,
+      `${baseUrl}/api/v1/vendor-store/vendorId/${vendorId}`,
       {
         cache: "no-store",
         headers: {
