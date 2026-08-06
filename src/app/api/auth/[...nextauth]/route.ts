@@ -121,21 +121,49 @@ export const authOptions: AuthOptions = {
       const expiresInMs = parseExpiresIn(expiresInString);
 
       // ✅ Handle session update trigger
-      if (trigger === 'update' && session) {
-        console.log('🔄 Session update triggered');
+      // if (trigger === 'update' && session) {
+      //   console.log('🔄 Session update triggered');
         
-        if (session.name) token.name = session.name;
-        if (session.email) token.email = session.email;
-        if (session.phoneNumber) token.phoneNumber = session.phoneNumber;
-        if (session.profilePicture) token.profilePicture = session.profilePicture;
-        if (session.address) token.address = session.address;
+      //   if (session.name) token.name = session.name;
+      //   if (session.email) token.email = session.email;
+      //   if (session.phoneNumber) token.phoneNumber = session.phoneNumber;
+      //   if (session.profilePicture) token.profilePicture = session.profilePicture;
+      //   if (session.address) token.address = session.address;
 
-        if (token.id) {
-          await deleteCacheKey(CacheKeys.USER.PROFILE(token.id));
-        }
+      //   if (token.id) {
+      //     await deleteCacheKey(CacheKeys.USER.PROFILE(token.id));
+      //   }
 
-        return token;
-      }
+      //   return token;
+      // }
+
+      if (trigger === 'update') {
+  console.log("🔄 Refreshing session from database...");
+
+  await dbConnect();
+
+  const latestUser = await User.findById(token.id)
+    .select("+password hasPassword")
+    .lean();
+
+  if (latestUser) {
+    token.name = latestUser.name;
+    token.email = latestUser.email;
+    token.phoneNumber = latestUser.phoneNumber;
+    token.profilePicture = latestUser.profilePicture;
+    token.address = latestUser.address;
+    token.role = latestUser.role;
+    token.hasPassword = latestUser.hasPassword;
+    token.isActive = latestUser.isActive;
+    token.isDeleted = latestUser.isDeleted;
+  }
+
+  if (token.id) {
+    await deleteCacheKey(CacheKeys.USER.PROFILE(token.id));
+  }
+
+  return token;
+}
 
       // ✅ Initial sign-in
       if (user) {

@@ -35,7 +35,7 @@ type SetPasswordFormData = z.infer<typeof setPasswordSchema>;
 type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 
 export default function ChangePasswordPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status,update } = useSession();
   console.log("Session", session)
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
@@ -76,6 +76,9 @@ export default function ChangePasswordPage() {
         await axios.post('/api/v1/auth/set-password', {
           newPassword: data.newPassword,
         });
+
+        // Refresh the NextAuth session
+await update();
         toast.success('Password set successfully! You can now log in with password.');
       }
 
