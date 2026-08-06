@@ -26,6 +26,7 @@ export default function NavMain() {
   const { data: session } = useSession();
   const user = session?.user;
   const role = (session?.user as any)?.role as string;
+  console.log('USER---', user)
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
