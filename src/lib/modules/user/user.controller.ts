@@ -303,6 +303,7 @@ const getMyProfile = async (req: NextRequest) => {
   }
 
   const result = await UserServices.getMyProfileFromDB(userId);
+  console.log('User Profile', result);
 
   return sendResponse({
     success: true,
