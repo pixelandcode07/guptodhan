@@ -297,8 +297,8 @@ const registerServiceProvider = async (req: NextRequest) => {
 // 👤 GET MY PROFILE
 // ========================================
 const getMyProfile = async (req: NextRequest) => {
-  const session = await getServerSession(authOptions);
-  console.log("TOKEN---->", session?.accessToken)
+  // const session = await getServerSession(authOptions);
+  // console.log("TOKEN---->", session?.accessToken)
   await dbConnect();
   const userId = req.headers.get('x-user-id');
   
@@ -307,7 +307,7 @@ const getMyProfile = async (req: NextRequest) => {
   }
 
   const result = await UserServices.getMyProfileFromDB(userId);
-  console.log('User Profile', result);
+  // console.log('User Profile', result);
 
   return sendResponse({
     success: true,
