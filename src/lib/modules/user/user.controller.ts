@@ -9,6 +9,8 @@ import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 import { OtpServices } from '@/lib/modules/otp/otp.service';
 import { Types } from 'mongoose';
 import { OtpModel } from '../otp/otp.model';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { getServerSession } from 'next-auth';
 
 const registerUser = async (req: NextRequest) => {
   await dbConnect();
@@ -295,6 +297,8 @@ const registerServiceProvider = async (req: NextRequest) => {
 // 👤 GET MY PROFILE
 // ========================================
 const getMyProfile = async (req: NextRequest) => {
+  const session = await getServerSession(authOptions);
+  console.log("TOKEN---->", session?.accessToken)
   await dbConnect();
   const userId = req.headers.get('x-user-id');
   
