@@ -149,7 +149,7 @@ export const authOptions: AuthOptions = {
         token.profilePicture = dbUser.profilePicture || user.profilePicture || user.image;
         token.address = dbUser.address || user.address;
         token.vendorId = user.vendorId || dbUser.vendorInfo?._id?.toString();
-        token.hasPassword = !!dbUser.password || user.hasPassword || false;
+        token.hasPassword = dbUser.hasPassword ?? false;
         token.isActive = dbUser.isActive ?? true;
         token.isDeleted = dbUser.isDeleted ?? false;
 

@@ -320,6 +320,8 @@ const setPasswordForSocialLogin = async (userId: string, newPassword: string) =>
 
   // নতুন পাসওয়ার্ড সেট করা
   user.password = newPassword;
+// If password is set successfully, we can also mark hasPassword as true
+  user.hasPassword = true;
 
   // সেভ করার সময় এখন pre-save হুকটি ট্রিগার হবে
   await user.save();
@@ -753,7 +755,8 @@ const loginWithGoogle = async (idToken: string) => {
     refreshToken,
     // user: userWithoutPassword
     user: {
-      ...userWithoutPassword,
+      // ...userWithoutPassword,
+       ...user.toObject(),
       hasPassword: !!password,
     },
 
