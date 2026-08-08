@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { downloadProductsCSV } from "@/app/(vendor)/products/all/components/csv";
+import { downloadVendorsCSV } from "./csv";
 
 interface DownloadCSVButtonProps {
   rows: any[];
@@ -14,14 +14,14 @@ export default function DownloadCSVButton({
   rows,
 }: DownloadCSVButtonProps) {
   const onDownloadCSV = useCallback(() => {
-    if (!downloadProductsCSV(rows)) {
-      toast.error("No vendors data available to export");
-    } else {
-      toast.success(
-        `Exported ${rows.length} vendor(s) successfully`
-      );
-    }
-  }, [rows]);
+  if (!downloadVendorsCSV(rows)) {
+    toast.error("No vendors data available to export");
+  } else {
+    toast.success(
+      `Exported ${rows.length} vendor(s) successfully`
+    );
+  }
+}, [rows]);
 
   return (
     <div className="flex items-end">

@@ -4,6 +4,7 @@ import { DataTable } from '@/components/TableHelper/data-table';
 import { fetchVendors } from '@/lib/MultiVendorApis/fetchVendors';
 import { getServerSession } from 'next-auth';
 import DownloadCSVButton from './components/DownloadCSVButton';
+import { Vendor } from '@/types/VendorType';
 
 export const dynamic = 'force-dynamic';
 
