@@ -144,6 +144,11 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                         -{discountPct}%
                     </div>
                 )}
+                {product?.stock !== undefined && product.stock > 0 && product.stock < 10 && (
+                       <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 rounded-full bg-orange-500 px-2 py-0.5 text-[10px] sm:text-xs font-semibold text-white shadow animate-pulse">
+                           {product.stock} left
+                       </div>
+                    )}
             </div>
 
             {/* Add To Cart / Call Button */}
