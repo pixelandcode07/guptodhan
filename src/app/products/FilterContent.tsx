@@ -548,7 +548,7 @@ export default function FilterContent({
         {/* Top bar */}
         <div className="bg-white border border-gray-100 rounded-2xl px-4 py-3 mb-5 flex flex-wrap items-center gap-3 shadow-sm">
           {/* Count */}
-          <p className="text-sm text-gray-600 flex-shrink-0">
+          {/* <p className="text-sm text-gray-600 flex-shrink-0">
             {meta ? (
               <>
                 Showing{' '}
@@ -561,7 +561,7 @@ export default function FilterContent({
             ) : (
               <span className="font-bold">{initialProducts.length} products</span>
             )}
-          </p>
+          </p> */}
 
           {/* Desktop active filter pills */}
           {hasActiveFilters && (
