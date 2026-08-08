@@ -3,6 +3,7 @@ import { approved_vendor_columns } from '@/components/TableHelper/approved_vendo
 import { DataTable } from '@/components/TableHelper/data-table';
 import { fetchVendors } from '@/lib/MultiVendorApis/fetchVendors';
 import { getServerSession } from 'next-auth';
+import DownloadCSVButton from './components/DownloadCSVButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,13 +27,14 @@ export default async function ApprovedVendors() {
 
   return (
     <div className="container mx-auto p-6 bg-white rounded-lg shadow-sm">
-      <div className="mb-6">
+      <div className="flex items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-black border-l-4 border-blue-500 pl-3">
           Approved Vendors
         </h1>
         <p className="text-sm text-gray-600 mt-1">
           Total Active Vendors: <strong>{activeVendors.length}</strong>
         </p>
+        <DownloadCSVButton rows={activeVendors} />
       </div>
 
       {activeVendors.length === 0 ? (
