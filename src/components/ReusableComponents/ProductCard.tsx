@@ -223,25 +223,24 @@ export default function ProductCard({ product, index }: ProductCardProps) {
               {(product.sellCount || 0).toLocaleString()} sold
             </div>
           )}
-          {product?.stock !== undefined && (
-  product.stock === 0 ? (
-    <Badge
-      className={cn(
-        "text-[10px] sm:text-xs text-white py-0 bg-red-500"
-      )}
-    >
-      Out of Stock
-    </Badge>
-  ) : (
-    <Badge
-      className={cn(
-        "text-[10px] sm:text-xs text-white py-0 bg-orange-500 animate-pulse"
-      )}
-    >
-      {product.stock} left
-    </Badge>
-  )
-)}
+          {product?.stock !== undefined &&
+            (product.stock === 0 ? (
+              <Badge
+                className={cn(
+                  "text-[10px] sm:text-xs text-white py-0 bg-red-500",
+                )}
+              >
+                Out of Stock
+              </Badge>
+            ) : (
+              <Badge
+                className={cn(
+                  "text-[10px] sm:text-xs text-white py-0 bg-orange-500 animate-pulse",
+                )}
+              >
+                {product.stock} left
+              </Badge>
+            ))}
 
           {/* Price Section */}
           <div className="mt-auto pt-1">
