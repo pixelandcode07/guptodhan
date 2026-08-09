@@ -43,19 +43,19 @@ import {
 import axios from "axios";
 import SearchBar from "./SearchBar";
 import api from "@/lib/axios";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 
 export default function NavMain() {
   const { data: session } = useSession();
   const user = session?.user;
   const role = (session?.user as any)?.role as string;
-  const router = useRouter();
+  // const router = useRouter();
 
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      router.back();
-    }
-  };
+  // const handleOpenChange = (open: boolean) => {
+  //   if (!open) {
+  //     router.back();
+  //   }
+  // };
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -182,8 +182,8 @@ export default function NavMain() {
         {/* ── Desktop Nav Links ──────────────────────────────────── */}
         <div className="hidden md:flex justify-end">
           <Dialog
-          open={true}
-      onOpenChange={handleOpenChange}
+      //     open={true}
+      // onOpenChange={handleOpenChange}
           >
             <ul className="flex flex-wrap lg:flex-nowrap gap-2 lg:gap-4 items-center justify-end">
               {/* Dashboard (Admin / Vendor) */}
