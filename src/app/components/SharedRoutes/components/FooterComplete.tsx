@@ -240,7 +240,7 @@ export default function FooterComplete() {
                     <div className="md:pl-4">
                         <h4 className="font-bold text-[#00005E] mb-6 uppercase text-sm tracking-widest border-b-2 border-blue-50 pb-2 inline-block">Company</h4>
                         <ul className="space-y-3 text-sm text-gray-600">
-                            <li><a href="#navbar" className="hover:text-blue-600 transition-colors">Home</a></li>
+                            <li><a href="/" className="hover:text-blue-600 transition-colors">Home</a></li>
                             <li><Link href="/about-us" className="hover:text-blue-600 transition-colors">About Us</Link></li>
                             <li><Link href="/contact-us" target="_blank" className="block group hover:text-blue-600 transition-colors">Contact Us</Link></li>
                             <li><Link href="/home/vendor-shops" className="hover:text-blue-600 transition-colors">Vendor Shops</Link></li>
