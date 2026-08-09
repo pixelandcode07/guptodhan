@@ -104,12 +104,12 @@ export default function ProductCardMotion({ product, index = 0 }: ProductCardMot
                     </div>
 
                     {/* Product Image */}
-                    <div className="relative aspect-square overflow-hidden bg-gray-50">
+                    <div className="relative aspect-4/5 sm:aspect-3/4 overflow-hidden bg-gray-50">
                         <Image
                             src={product.thumbnailImage || '/placeholder.jpg'}
                             alt={product.productTitle}
                             fill
-                            className="object-cover transition-transform duration-500 group-hover:scale-110"
+                            className="object-contain p-3 sm:p-5 transition-transform duration-500 group-hover:scale-105"
                         />
                         
                         {/* Add to Cart Overlay Button */}
