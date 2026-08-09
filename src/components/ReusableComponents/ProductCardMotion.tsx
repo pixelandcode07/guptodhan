@@ -104,7 +104,7 @@ export default function ProductCardMotion({ product, index = 0 }: ProductCardMot
                     </div>
 
                     {/* Product Image */}
-                    <div className="relative aspect-3/4 overflow-hidden bg-gray-50">
+                    <div className="relative aspect-3/3 overflow-hidden bg-white">
                         <Image
                             src={product.thumbnailImage || '/placeholder.jpg'}
                             alt={product.productTitle}
