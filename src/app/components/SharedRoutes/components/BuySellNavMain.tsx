@@ -24,15 +24,27 @@ import MessageIcon from "../../MessageIcon";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function BuySellNavMain() {
     const { data: session } = useSession();
+     const user = session?.user;
+    const isLoggedIn = !!session?.accessToken;
     const router = useRouter();
     const [openLoginDialog, setOpenLoginDialog] = useState(false);
+    useEffect(() => {
+    const handleOpenLoginDialog = () => {
+        setOpenLoginDialog(true);
+    };
 
-    const user = session?.user;
-    const isLoggedIn = !!session?.accessToken;
+    window.addEventListener("open-login-dialog", handleOpenLoginDialog);
+
+    return () => {
+        window.removeEventListener("open-login-dialog", handleOpenLoginDialog);
+    };
+}, []);
+
+   
 
     const handlePostAdClick = () => {
         if (isLoggedIn) {
@@ -80,17 +92,9 @@ export default function BuySellNavMain() {
                     <Dialog open={openLoginDialog} onOpenChange={setOpenLoginDialog}>
                         {/* Profile / Login Area */}
                         <div className="flex items-center gap-4 sm:gap-6">
-                            
-                            {/* Message Icon will only show if user is logged in */}
                             {isLoggedIn && (
                                 <div className="hidden md:block">
-                                   {/* Wrapping it to fit navbar layout nicely */}
                                    <div className="relative w-12 h-12 flex items-center justify-center -mr-2">
-                                     {/* Note: In your MessageIcon component you have "fixed bottom-25 right-7", 
-                                         if you want it here in the navbar, you might need to adjust the classes 
-                                         in MessageIcon to accept custom className props. For now, it will render here
-                                         but might behave according to its internal 'fixed' classes. 
-                                         Ideally, we use it directly here! */}
                                      <MessageIcon />
                                    </div>
                                 </div>

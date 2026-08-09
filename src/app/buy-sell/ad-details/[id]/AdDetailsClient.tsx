@@ -101,19 +101,21 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
   const handleStartChat = async () => {
     setChatError("");
 
-    if (status !== 'authenticated' || !session?.user) {
-      router.push('/login');
-      return;
-    }
-    // if (status !== "authenticated" || !session?.user) {
-    //   localStorage.setItem(
-    //     "redirectAfterLogin",
-    //     window.location.pathname + window.location.search,
-    //   );
-
-    //   router.push("/login");
+    // if (status !== 'authenticated' || !session?.user) {
+    //   router.push('/login');
     //   return;
     // }
+
+    if (status !== "authenticated" || !session?.user) {
+    localStorage.setItem(
+        "redirectAfterLogin",
+        window.location.pathname
+    );
+
+    window.dispatchEvent(new Event("open-login-dialog"));
+
+    return;
+}
 
     const userId = (session.user as any).id;
     const token = (session.user as any).accessToken;
