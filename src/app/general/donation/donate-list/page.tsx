@@ -188,21 +188,20 @@ export default function AdminDonateListPage() {
     }
   };
 
-  // ✅ MAGIC FIX: Status Update API changed to the dedicated admin endpoint
+  // ✅ MAGIC FIX: Hit the /moderate endpoint with 'change_status' action
   const handleStatusChange = async (id: string, newStatus: string) => {
     setActionLoading(id);
     
     try {
       const token = (session as any)?.accessToken;
       
-      // ✅ Now hitting the new `/status` route
-      const res = await fetch(`/api/v1/donation-campaigns/${id}/status`, {
+      const res = await fetch(`/api/v1/donation-campaigns/${id}/moderate`, {
         method: 'PATCH',
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ action: 'change_status', status: newStatus }) // ✅ Changed here
       });
 
       const data = await res.json();
