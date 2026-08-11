@@ -5,6 +5,7 @@ import { JobService } from "./job.service";
 import { jobZodSchema, updateStatusZodSchema } from "./job.validation";
 import { catchAsync } from "@/lib/middlewares/catchAsync";
 import { isValidObjectId } from "mongoose";
+import { verifyToken } from "@/lib/utils/jwt"; // ✅ Token verifier added
 
 // Admin: Get All Jobs
 const getAllJobsForAdmin = catchAsync(async () => {
@@ -92,7 +93,20 @@ const getMyJobs = catchAsync(async (req: NextRequest) => {
 // Update My Job
 const updateMyJob = catchAsync(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
-  const userId = req.headers.get('x-user-id');
+  let userId = req.headers.get('x-user-id');
+  let userRole = req.headers.get('x-user-role');
+
+  // ✅ MAGIC FIX: Token থেকে রোল ও আইডি নিশ্চিত করা হচ্ছে (যদি হেডার কাজ না করে)
+  const authHeader = req.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as any;
+      userId = userId || decoded.userId;
+      userRole = userRole || decoded.role;
+    } catch (err) {}
+  }
+
   if (!userId) {
     return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
   }
@@ -100,8 +114,10 @@ const updateMyJob = catchAsync(async (req: NextRequest, { params }: { params: Pr
   if (!isValidObjectId(id)) {
     return NextResponse.json({ success: false, message: "Invalid Job ID" }, { status: 400 });
   }
+  
   const body = await req.json();
-  const result = await JobService.updateMyJobInDB(id, userId, body);
+  const result = await JobService.updateMyJobInDB(id, userId, userRole as string, body);
+  
   if (!result) {
     return NextResponse.json({ success: false, message: "Job not found or unauthorized" }, { status: 404 });
   }
@@ -111,18 +127,37 @@ const updateMyJob = catchAsync(async (req: NextRequest, { params }: { params: Pr
 // Delete My Job
 const deleteMyJob = catchAsync(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   await dbConnect();
-  const userId = req.headers.get('x-user-id');
+  
+  let userId = req.headers.get('x-user-id');
+  let userRole = req.headers.get('x-user-role');
+
+  // ✅ MAGIC FIX: Token থেকে রোল ও আইডি নিশ্চিত করা হচ্ছে (যদি হেডার কাজ না করে)
+  const authHeader = req.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET!) as any;
+      userId = userId || decoded.userId;
+      userRole = userRole || decoded.role;
+    } catch (err) {}
+  }
+
   if (!userId) {
     return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
   }
+  
   const { id } = await params;
   if (!isValidObjectId(id)) {
     return NextResponse.json({ success: false, message: "Invalid Job ID" }, { status: 400 });
   }
-  const result = await JobService.deleteMyJobFromDB(id, userId);
+  
+  // ✅ সার্ভিসে role পাস করা হচ্ছে, যাতে অ্যাডমিন সরাসরি ডিলিট করতে পারে
+  const result = await JobService.deleteMyJobFromDB(id, userId, userRole as string);
+  
   if (!result) {
     return NextResponse.json({ success: false, message: "Job not found or unauthorized" }, { status: 404 });
   }
+  
   return NextResponse.json({ success: true, message: "Job deleted successfully" });
 });
 
@@ -132,7 +167,7 @@ export const JobController = {
   createJob,
   updateStatus,
   getSingleJob,
-  getMyJobs,    // ✅ new
-  updateMyJob,  // ✅ new
+  getMyJobs,    
+  updateMyJob,  
   deleteMyJob,
 };
