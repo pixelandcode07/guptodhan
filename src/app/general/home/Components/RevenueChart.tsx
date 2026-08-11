@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   Cell
 } from 'recharts';
-import { ArrowUpRight, ArrowDownRight, Download, Filter, MoreHorizontal } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Download } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -37,7 +37,6 @@ export default function RevenueChart({
   globalTotalOrders?: number 
 }) {
   const [timeframe, setTimeframe] = useState('14 Days');
-  const [showFilter, setShowFilter] = useState(false);
 
   const filteredData = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -76,7 +75,7 @@ export default function RevenueChart({
       avgRevenue: avg,
       maxRevenue: max,
       growth: growthRate,
-      totalOrders: globalTotalOrders // ✅ Set to accurate DB value
+      totalOrders: globalTotalOrders 
     };
   }, [filteredData, globalTotalOrders]);
 
@@ -218,7 +217,19 @@ export default function RevenueChart({
               <p className="text-sm text-gray-500 mt-1">Daily revenue performance and trends</p>
             </div>
             
-            <div className="flex items-center">
+            <div className="flex items-center gap-3">
+              {/* ✅ MAGIC FIX: Added Filter Dropdown */}
+              <select
+                value={timeframe}
+                onChange={(e) => setTimeframe(e.target.value)}
+                className="bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:border-orange-400 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all px-3 py-2 cursor-pointer shadow-sm"
+              >
+                <option value="7 Days">Last 7 Days</option>
+                <option value="14 Days">Last 14 Days</option>
+                <option value="30 Days">Last 1 Month</option>
+                <option value="Yearly">Last 1 Year</option>
+              </select>
+
               <button 
                 onClick={handleExport}
                 className="hidden sm:flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md"
