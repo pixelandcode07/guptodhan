@@ -19,6 +19,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+// ✅ MAGIC FIX: useRouter ইম্পোর্ট করা হলো প্রোডাক্ট পেজে যাওয়ার জন্য
+import { useRouter } from "next/navigation"; 
 
 interface StoryClientProps {
   initialStories?: IStory[];
@@ -42,19 +44,18 @@ export default function StoryClient({ initialStories = [], productList: initialP
 
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
+  const router = useRouter(); // ✅ রাউটার ইনিশিয়ালাইজ করা হলো
 
   // --- API Data Fetching ---
   const fetchData = useCallback(async () => {
     try {
       setIsLoadingData(true);
       
-      // Story fetching
       const storyRes = await axios.get('/api/v1/story').catch(() => null);
       if (storyRes?.data?.success) {
         setStories(storyRes.data.data || []);
       }
 
-      // Product fetching
       try {
         const productRes = await axios.get('/api/v1/product?limit=1000'); 
         if (productRes?.data?.success) {
@@ -194,19 +195,33 @@ export default function StoryClient({ initialStories = [], productList: initialP
                       <Image src={story.imageUrl} alt="thumb" fill className="object-cover" />
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="max-w-[200px]">
-                      <p className="font-semibold text-gray-800 truncate">{story.title || "Untitled"}</p>
+
+                  {/* ✅ MAGIC FIX: টাইটেল ও ডেসক্রিপশনে ক্লিক করলে স্টোরি প্রিভিউ ওপেন হবে */}
+                  <td 
+                    className="px-6 py-4 cursor-pointer"
+                    onClick={() => { setSelectedStory(story); setIsViewModalOpen(true); }}
+                  >
+                    <div className="max-w-[200px] group-hover:text-blue-600 transition-colors">
+                      <p className="font-semibold text-gray-800 truncate group-hover:text-blue-600">{story.title || "Untitled"}</p>
                       <p className="text-xs text-gray-500 line-clamp-1">{story.description || "No description provided."}</p>
                     </div>
                   </td>
+
+                  {/* ✅ MAGIC FIX: প্রোডাক্ট লিংকে ক্লিক করলে প্রোডাক্ট পেজে নিয়ে যাবে */}
                   <td className="px-6 py-4">
                     {story.productId ? (
-                      <div className="flex items-center gap-2 px-2 py-1 bg-blue-50 border border-blue-100 rounded-md w-fit">
+                      <div 
+                        onClick={() => {
+                          const product = story.productId as any;
+                          const slug = product.slug || product._id;
+                          if(slug) router.push(`/product/${slug}`);
+                        }}
+                        className="flex items-center gap-2 px-2 py-1 bg-blue-50 border border-blue-200 rounded-md w-fit cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-all group/link"
+                      >
                         <div className="w-6 h-6 relative rounded overflow-hidden flex-shrink-0">
                           <Image src={(story.productId as any).thumbnailImage || '/placeholder.png'} alt="p" fill className="object-cover" />
                         </div>
-                        <span className="text-[11px] font-medium text-blue-700 truncate max-w-[100px]">
+                        <span className="text-[11px] font-medium text-blue-700 truncate max-w-[150px] group-hover/link:underline">
                           {(story.productId as any).productTitle}
                         </span>
                       </div>
@@ -214,6 +229,7 @@ export default function StoryClient({ initialStories = [], productList: initialP
                       <span className="text-xs text-gray-400">Not linked</span>
                     )}
                   </td>
+
                   <td className="px-6 py-4">
                     <div className="flex flex-col text-xs text-gray-600">
                       <span className="flex items-center gap-1"><Clock size={12}/> {story.duration}s</span>
@@ -271,6 +287,37 @@ export default function StoryClient({ initialStories = [], productList: initialP
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ✅ MAGIC FIX: VIEW STORY MODAL ADDED */}
+      <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+        <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden bg-black border-gray-800">
+          <DialogHeader className="absolute top-0 left-0 right-0 z-50 p-4 bg-gradient-to-b from-black/80 to-transparent border-none">
+            <DialogTitle className="text-white drop-shadow-md">{selectedStory?.title}</DialogTitle>
+          </DialogHeader>
+          {selectedStory && (
+            <div className="relative w-full h-[80vh] max-h-[800px] flex flex-col">
+              <Image src={selectedStory.imageUrl} alt="story" fill className="object-contain" />
+              <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent z-20">
+                <p className="text-white/90 text-sm text-center mb-5">{selectedStory.description}</p>
+                {selectedStory.productId && (
+                  <Button 
+                    onClick={() => {
+                      const slug = (selectedStory.productId as any).slug || (selectedStory.productId as any)._id;
+                      if(slug) {
+                        setIsViewModalOpen(false);
+                        router.push(`/product/${slug}`);
+                      }
+                    }} 
+                    className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold rounded-full transition-transform active:scale-95"
+                  >
+                    View Linked Product
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -363,7 +410,6 @@ const StoryFormFields = ({ isEdit, formData, onImageChange, imagePreview, produc
   );
 };
 
-// 🔥 FIXED: ProductCombobox with Safe Array Handling and Search
 const ProductCombobox = ({ productList, value, onChange }: any) => {
   const [open, setOpen] = useState(false);
   
@@ -391,7 +437,6 @@ const ProductCombobox = ({ productList, value, onChange }: any) => {
           <CommandList>
             <CommandEmpty>No product found.</CommandEmpty>
             <CommandGroup>
-              {/* ✅ Added a valid search value for "None" */}
               <CommandItem value="none remove link" onSelect={() => { onChange(""); setOpen(false); }} className="text-xs">
                 <Check className={cn("mr-2 h-3 w-3", !value ? "opacity-100" : "opacity-0")} />
                 None (Remove Link)
@@ -400,7 +445,6 @@ const ProductCombobox = ({ productList, value, onChange }: any) => {
               {safeList.map((product: any) => (
                 <CommandItem 
                   key={product._id} 
-                  // ✅ FIX: Combined Product Title and ID to ensure flawless searching and uniqueness
                   value={`${product.productTitle} ${product._id}`} 
                   onSelect={() => { onChange(product._id); setOpen(false); }} 
                   className="text-xs"
