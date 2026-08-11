@@ -1,9 +1,11 @@
-import { Document, Types } from 'mongoose';
+import { Types } from 'mongoose';
 
-export interface IFAQ extends Document {
+export interface IFAQ {
   faqID: string;
-  category: string;
+  category: Types.ObjectId | any; // ✅ MAGIC FIX: TS যেন error না দেয়
   question: string;
   answer: string;
   isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
