@@ -103,13 +103,13 @@ export default function ProductVariantForm({
     () => new Map(variantData.simTypes?.map((s) => [getOptionId(s), s.name]) || []),
     [variantData.simTypes]
   );
-  // ✅ NEW: country map
+  // ✅ MAGIC FIX: URL স্ট্রিং মুছে শুধু দেশের নাম রাখা হলো যাতে নিচের সামারিতে সুন্দর দেখায়
   const countryMap = useMemo(
     () =>
       new Map(
         variantData.countries?.map((c) => [
           getOptionId(c),
-          `${c.flag ? c.flag + ' ' : ''}${c.name}`,
+          c.name || 'Unknown',
         ]) || []
       ),
     [variantData.countries]
@@ -149,15 +149,15 @@ export default function ProductVariantForm({
       ...prev,
       {
         id: Date.now(),
-        color:         '',
-        size:          '',
-        storage:       '',
-        simType:       '',
-        condition:     '',
-        warranty:      '',
+        color:        '',
+        size:         '',
+        storage:      '',
+        simType:      '',
+        condition:    '',
+        warranty:     '',
         country:       '', // ✅ NEW
-        stock:         0,
-        price:         0,
+        stock:        0,
+        price:        0,
         discountPrice: 0,
       },
     ]);
@@ -379,7 +379,7 @@ const VariantCard = React.memo(
               </Select>
             </div>
 
-            {/* ✅ NEW: Country — same pattern as Storage */}
+            {/* ✅ MAGIC FIX: Country SelectItem rendering with Image tag */}
             <div>
               <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Country</Label>
               <Select value={toSelectValue(variant.country)} onValueChange={handleCountryChange}>
@@ -389,7 +389,13 @@ const VariantCard = React.memo(
                     const id = getOptionId(c);
                     return (
                       <SelectItem key={id} value={id} className="text-xs">
-                        {c.flag ? `${c.flag} ` : ''}{c.name}
+                        <div className="flex items-center gap-2">
+                          {/* ফ্লাগ থাকলে ছবিটি দেখাবে */}
+                          {c.flag && (
+                            <img src={c.flag} alt={c.name || 'flag'} className="w-4 h-3 object-cover rounded-[2px] border border-gray-200" />
+                          )}
+                          <span>{c.name}</span>
+                        </div>
                       </SelectItem>
                     );
                   })}
@@ -468,7 +474,7 @@ const VariantCard = React.memo(
           <span className="text-slate-300">|</span>
           <span className="flex items-center gap-1">Storage: <span className="text-slate-800">{getStorageName(variant.storage || '')}</span></span>
           <span className="text-slate-300">|</span>
-          {/* ✅ NEW: country in summary */}
+          {/* ✅ Country in summary without URL */}
           <span className="flex items-center gap-1">Country: <span className="text-slate-800">{getCountryName(variant.country || '')}</span></span>
           <span className="text-slate-300">|</span>
           <span className="flex items-center gap-1">Warranty: <span className="text-slate-800">{getWarrantyName(variant.warranty || '')}</span></span>
