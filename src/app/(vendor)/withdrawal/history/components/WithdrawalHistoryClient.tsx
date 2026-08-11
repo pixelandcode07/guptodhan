@@ -54,9 +54,12 @@ export default function WithdrawalHistoryClient() {
           setTotalPages(meta.totalPages || meta.pages || 1);
           setTotalDocs(meta.total || meta.totalDocs || list.length);
 
+          // ✅ MAGIC FIX: শুধুমাত্র 'approved' স্ট্যাটাস থাকলেই Total Received-এ যোগ হবে
+          const approvedRequests = list.filter((w: any) => w.status === 'approved');
+
           setSummary({
-            total: list.reduce((s: number, w: any) => s + (w.amount || 0), 0),
-            approved: list.filter((w: any) => w.status === 'approved').length,
+            total: approvedRequests.reduce((s: number, w: any) => s + (w.amount || 0), 0),
+            approved: approvedRequests.length,
             pending: list.filter((w: any) => w.status === 'pending').length,
             rejected: list.filter((w: any) => w.status === 'rejected').length,
           });
@@ -163,7 +166,8 @@ export default function WithdrawalHistoryClient() {
         <div className="bg-blue-600 rounded-xl p-4 text-white">
           <p className="text-blue-200 text-xs font-medium uppercase tracking-wider mb-1">Total Received</p>
           <p className="text-2xl font-bold">৳{summary.total.toLocaleString('en-BD')}</p>
-          <p className="text-blue-200 text-xs mt-1">{totalDocs} requests</p>
+          {/* ✅ MAGIC FIX: এখানেও শুধুমাত্র Approved রিকোয়েস্টের সংখ্যা দেখাবে */}
+          <p className="text-blue-200 text-xs mt-1">{summary.approved} approved requests</p>
         </div>
       </div>
 
