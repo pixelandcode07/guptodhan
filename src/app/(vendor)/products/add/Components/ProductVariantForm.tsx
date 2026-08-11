@@ -17,6 +17,9 @@ interface VariantOption {
   deviceCondition?: string;
   ram?: string;
   rom?: string;
+  // ✅ NEW: country fields
+  code?: string;
+  flag?: string;
 }
 
 export interface IProductOption {
@@ -64,7 +67,19 @@ export default function ProductVariantForm({ variants, setVariants, variantData,
 
   const colorMap = useMemo(() => new Map(variantData.colors?.map(c => [getOptionId(c), c.colorName]) || []), [variantData.colors]);
   const sizeMap = useMemo(() => new Map(variantData.sizes?.map(s => [getOptionId(s), s.name]) || []), [variantData.sizes]);
-  const countryMap = useMemo(() => new Map(variantData.countries?.map(c => [getOptionId(c), c.name]) || []), [variantData.countries]); // ✅ NEW Map
+  
+  // ✅ MAGIC FIX: URL স্ট্রিং মুছে শুধু দেশের নাম রাখা হলো যাতে নিচের সামারিতে সুন্দর দেখায়
+  const countryMap = useMemo(
+    () =>
+      new Map(
+        variantData.countries?.map((c) => [
+          getOptionId(c),
+          c.name || 'Unknown',
+        ]) || []
+      ),
+    [variantData.countries]
+  );
+  
   const warrantyMap = useMemo(() => new Map(variantData.warranties?.map(w => [getOptionId(w), w.warrantyName]) || []), [variantData.warranties]);
   const storageMap = useMemo(() => new Map(variantData.storageTypes?.map(s => [getOptionId(s), s.ram && s.rom ? `${s.ram}/${s.rom}` : s.name || 'Unknown Storage']) || []), [variantData.storageTypes]);
   const conditionMap = useMemo(() => new Map(variantData.conditions?.map(c => [getOptionId(c), c.deviceCondition]) || []), [variantData.conditions]);
@@ -298,7 +313,7 @@ const VariantCard = React.memo(({
             </Select>
           </div>
 
-          {/* ✅ NEW: Country Field */}
+          {/* ✅ MAGIC FIX: Country Field with Flag Image rendering */}
           <div>
             <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Country</Label>
             <Select value={toSelectValue(variant.country)} onValueChange={handleCountryChange}>
@@ -306,7 +321,20 @@ const VariantCard = React.memo(({
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
               <SelectContent>
-                {variantData.countries?.map(c => <SelectItem key={getOptionId(c)} value={getOptionId(c)} className="text-xs">{c.name}</SelectItem>)}
+                {variantData.countries?.map((c) => {
+                  const id = getOptionId(c);
+                  return (
+                    <SelectItem key={id} value={id} className="text-xs">
+                      <div className="flex items-center gap-2">
+                        {/* ফ্লাগ থাকলে ছবিটি দেখাবে */}
+                        {c.flag && (
+                          <img src={c.flag} alt={c.name || 'flag'} className="w-4 h-3 object-cover rounded-[2px] border border-gray-200" />
+                        )}
+                        <span>{c.name}</span>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -391,6 +419,7 @@ const VariantCard = React.memo(({
         <span className="text-slate-300">|</span>
         <span className="flex items-center gap-1">Size: <span className="text-slate-800">{getSizeName(variant.size)}</span></span>
         <span className="text-slate-300">|</span>
+        {/* ✅ Country in summary without URL */}
         <span className="flex items-center gap-1">Country: <span className="text-slate-800">{getCountryName(variant.country || '')}</span></span>
         <span className="text-slate-300">|</span>
         <span className="flex items-center gap-1">Storage: <span className="text-slate-800">{getStorageName(variant.storage || '')}</span></span>
