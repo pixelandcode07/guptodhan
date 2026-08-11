@@ -9,7 +9,6 @@ import { createDonationCampaignSchema } from './donation-campaign.validation';
 import { DonationCampaignServices } from './donation-campaign.service';
 import { ZodError } from 'zod';
 
-// ✅ HELPER: টোকেন থেকে ইউজার ডাটা বের করার ফাংশন
 const getUserDetailsFromToken = (req: NextRequest) => {
   const authHeader = req.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {
@@ -63,13 +62,12 @@ const createCampaign = async (req: NextRequest) => {
       });
     }
 
-    // ✅ MAGIC FIX: endDate স্ট্রিং হিসেবে আসলে সেটাকে Date Object-এ কনভার্ট করা হলো
     const finalPayload = {
       ...validatedData,
       creator: new Types.ObjectId(userId),
       category: categoryId,
       images: uploadResults.map((img) => img.secure_url),
-      endDate: validatedData.endDate ? new Date(validatedData.endDate) : undefined, // কনভার্সন
+      endDate: validatedData.endDate ? new Date(validatedData.endDate) : undefined, 
     };
 
     const result = await DonationCampaignServices.createCampaignInDB(finalPayload);
@@ -190,13 +188,14 @@ const moderateCampaign = async (
   try {
     const { id } = await context.params;
     const adminId = req.headers.get('x-user-id');
-    const { action, rejectionReason } = await req.json();
+    // ✅ MAGIC FIX: Receive 'status' from body for the 'change_status' action
+    const { action, rejectionReason, status } = await req.json();
 
     if (!action) {
       return sendResponse({
         success: false,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: 'Action is required (approve or reject)',
+        message: 'Action is required',
         data: null,
       });
     }
@@ -218,7 +217,8 @@ const moderateCampaign = async (
         message: 'Campaign approved successfully!',
         data: result,
       });
-    } else if (action === 'reject') {
+    } 
+    else if (action === 'reject') {
       if (!rejectionReason) {
         return sendResponse({
           success: false,
@@ -228,21 +228,38 @@ const moderateCampaign = async (
         });
       }
 
-      const result = await DonationCampaignServices.rejectCampaignInDB(
-        id,
-        rejectionReason
-      );
+      const result = await DonationCampaignServices.rejectCampaignInDB(id, rejectionReason);
       return sendResponse({
         success: true,
         statusCode: StatusCodes.OK,
         message: 'Campaign rejected successfully!',
         data: result,
       });
-    } else {
+    } 
+    // ✅ MAGIC FIX: New Action for changing public status
+    else if (action === 'change_status') {
+      if (!status) {
+        return sendResponse({
+          success: false,
+          statusCode: StatusCodes.BAD_REQUEST,
+          message: 'Status value is required',
+          data: null,
+        });
+      }
+
+      const result = await DonationCampaignServices.updateCampaignStatusInDB(id, status);
+      return sendResponse({
+        success: true,
+        statusCode: StatusCodes.OK,
+        message: `Campaign status updated to ${status}!`,
+        data: result,
+      });
+    } 
+    else {
       return sendResponse({
         success: false,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: 'Invalid action. Use "approve" or "reject"',
+        message: 'Invalid action.',
         data: null,
       });
     }
@@ -268,19 +285,16 @@ const updateCampaign = async (
     const formData = await req.formData();
     const payload: any = {};
 
-    // 1. Handle Text Fields
     payload.title = formData.get('title');
     payload.item = formData.get('item');
     payload.description = formData.get('description');
     
-    // ✅ Handle new fields during update
     if (formData.get('goalAmount')) payload.goalAmount = Number(formData.get('goalAmount'));
     if (formData.get('quantity')) payload.quantity = Number(formData.get('quantity'));
     if (formData.get('endDate')) payload.endDate = new Date(formData.get('endDate') as string);
     
     payload.category = new Types.ObjectId(formData.get('category') as string);
 
-    // 2. Handle Images (Existing + New)
     const existingImages = formData.getAll('existingImages') as string[];
     const newImageFiles = formData.getAll('newImages') as File[];
 
@@ -297,7 +311,6 @@ const updateCampaign = async (
     }
     payload.images = finalImages;
 
-    // 3. Service Call
     const result = await DonationCampaignServices.updateCampaignInDB(id, userId, payload);
 
     return sendResponse({
@@ -316,7 +329,6 @@ const updateCampaign = async (
   }
 };
 
-// ✅ DELETE CAMPAIGN
 const deleteCampaign = async (
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
