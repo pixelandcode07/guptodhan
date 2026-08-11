@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { Loader2, Briefcase, Mail, Phone, MapPin } from 'lucide-react';
+import { Loader2, Briefcase, Mail, Phone, MapPin, Trash2 } from 'lucide-react'; // ✅ Trash2 আইকন ইম্পোর্ট করা হয়েছে
 import Image from 'next/image';
 
 interface IJob {
@@ -33,6 +33,7 @@ export default function JobManagementClient() {
   const [jobs, setJobs] = useState<IJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null); // ✅ ডিলিট লোডিং স্টেট
 
   // Fetch all jobs for Admin
   const fetchJobs = async () => {
@@ -80,6 +81,29 @@ export default function JobManagementClient() {
     }
   };
 
+  // ✅ Handle Job Delete
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this job? This action cannot be undone.")) return;
+    
+    try {
+      setDeletingId(id);
+      // এখানে edit রাউট ব্যবহার করা হয়েছে কারণ সেখানে delete মেথড ও admin রোল অ্যালাউড আছে
+      const res = await axios.delete(`/api/v1/job/${id}/edit`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.data.success) {
+        toast.success('Job deleted successfully!');
+        // স্টেট থেকে জবটি সরিয়ে ফেলা হচ্ছে
+        setJobs((prev) => prev.filter((job) => job._id !== id));
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to delete job');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-[70vh]">
@@ -95,7 +119,7 @@ export default function JobManagementClient() {
           <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
             <Briefcase className="text-blue-600" /> Manage Jobs
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Approve, reject or view jobs posted by users.</p>
+          <p className="text-sm text-gray-500 mt-1">Approve, reject, view or delete jobs posted by users.</p>
         </div>
         <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-md font-semibold">
           Total Jobs: {jobs.length}
@@ -110,7 +134,7 @@ export default function JobManagementClient() {
               <th className="p-4 font-semibold">Posted By</th>
               <th className="p-4 font-semibold">Contact Details</th>
               <th className="p-4 font-semibold">Status</th>
-              <th className="p-4 font-semibold">Action</th>
+              <th className="p-4 font-semibold text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -180,14 +204,14 @@ export default function JobManagementClient() {
                     </span>
                   </td>
 
-                  {/* Action Dropdown */}
+                  {/* Action Dropdown & Delete Button */}
                   <td className="p-4">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-end gap-2">
                       {updatingId === job._id ? (
                         <Loader2 className="animate-spin h-5 w-5 text-blue-600" />
                       ) : (
                         <select
-                          className="bg-white border border-gray-300 text-gray-700 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-full p-2 outline-none cursor-pointer"
+                          className="bg-white border border-gray-300 text-gray-700 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none cursor-pointer min-w-[100px]"
                           value={job.status}
                           onChange={(e) => handleStatusChange(job._id, e.target.value)}
                         >
@@ -195,6 +219,21 @@ export default function JobManagementClient() {
                           <option value="approved">Approve</option>
                           <option value="rejected">Reject</option>
                         </select>
+                      )}
+
+                      {/* ✅ Delete Button */}
+                      {deletingId === job._id ? (
+                        <div className="p-2">
+                          <Loader2 className="animate-spin h-5 w-5 text-red-500" />
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleDelete(job._id)}
+                          className="p-2 text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                          title="Delete Job"
+                        >
+                          <Trash2 size={18} />
+                        </button>
                       )}
                     </div>
                   </td>
