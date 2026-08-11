@@ -96,7 +96,7 @@ export default function DonationDashboardPage() {
 
                 {/* 3. My Requests Card (✅ MAGIC FIX: Now Clickable) */}
                 <Card className="relative overflow-hidden group hover:border-purple-400 transition-colors">
-                    <Link href="/home/UserProfile/donation-status" className="absolute inset-0 z-10">
+                    <Link href="/home/UserProfile/my-claims" className="absolute inset-0 z-10">
                         <span className="sr-only">View My Requests</span>
                     </Link>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -114,7 +114,7 @@ export default function DonationDashboardPage() {
 
                 {/* 4. Approved Claims (Now Clickable) */}
                 <Card className="relative overflow-hidden group hover:border-orange-400 transition-colors">
-                    <Link href="/home/UserProfile/donation-status" className="absolute inset-0 z-10">
+                    <Link href="/home/UserProfile/my-claims" className="absolute inset-0 z-10">
                         <span className="sr-only">View Approved Requests</span>
                     </Link>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
