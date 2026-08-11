@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import api from '@/lib/axios'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Heart, Gift, CheckCircle, Clock, ShoppingBag, Bell } from 'lucide-react'
+import { Heart, Gift, Clock, ShoppingBag, Bell } from 'lucide-react'
 import Link from 'next/link'
 
 export default function DonationDashboardPage() {
@@ -13,7 +13,7 @@ export default function DonationDashboardPage() {
         completedCampaigns: 0,
         totalClaims: 0,
         approvedClaims: 0,
-        receivedRequests: 0 // ✅ ডাটা রিসিভ করার জন্য স্টেট
+        receivedRequests: 0 
     })
     const [loading, setLoading] = useState(true)
 
@@ -56,10 +56,9 @@ export default function DonationDashboardPage() {
                 </Link>
             </div>
             
-            {/* ✅ MAGIC FIX: সব কার্ডের সাইজ ও ডিজাইন এক করা হলো */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 
-                {/* 1. Received Requests Card (New & Clickable) */}
+                {/* 1. Received Requests Card */}
                 <Card className="relative overflow-hidden group hover:border-blue-400 transition-colors border-blue-200 bg-blue-50/50">
                     <Link href="/home/UserProfile/received-requests" className="absolute inset-0 z-10">
                         <span className="sr-only">View Received Requests</span>
@@ -77,41 +76,60 @@ export default function DonationDashboardPage() {
                     </CardContent>
                 </Card>
 
-                {/* 2. Total Campaigns */}
-                <Card>
+                {/* 2. Total Campaigns (Now Clickable) */}
+                <Card className="relative overflow-hidden group hover:border-red-400 transition-colors">
+                    <Link href="/home/UserProfile/my-campaigns" className="absolute inset-0 z-10">
+                        <span className="sr-only">View Total Campaigns</span>
+                    </Link>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Campaigns</CardTitle>
                         <Heart className="h-4 w-4 text-red-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{stats.totalCampaigns || 0}</div>
-                        <p className="text-xs text-muted-foreground mt-1">Donations you posted</p>
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center justify-between">
+                            Donations you posted
+                            <span className="font-bold text-red-500 group-hover:underline">View &rarr;</span>
+                        </p>
                     </CardContent>
                 </Card>
 
-                {/* 4. Total Claims */}
-                <Card>
+                {/* 3. My Requests Card (✅ MAGIC FIX: Now Clickable) */}
+                <Card className="relative overflow-hidden group hover:border-purple-400 transition-colors">
+                    <Link href="/home/UserProfile/donation-status" className="absolute inset-0 z-10">
+                        <span className="sr-only">View My Requests</span>
+                    </Link>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">My Requests</CardTitle>
                         <Gift className="h-4 w-4 text-purple-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{stats.totalClaims || 0}</div>
-                        <p className="text-xs text-muted-foreground mt-1">Items you applied for</p>
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center justify-between">
+                            Items you applied for
+                            <span className="font-bold text-purple-500 group-hover:underline">View &rarr;</span>
+                        </p>
                     </CardContent>
                 </Card>
 
-                {/* 5. Approved Claims */}
-                <Card>
+                {/* 4. Approved Claims (Now Clickable) */}
+                <Card className="relative overflow-hidden group hover:border-orange-400 transition-colors">
+                    <Link href="/home/UserProfile/donation-status" className="absolute inset-0 z-10">
+                        <span className="sr-only">View Approved Requests</span>
+                    </Link>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Approved Requests</CardTitle>
                         <Clock className="h-4 w-4 text-orange-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{stats.approvedClaims || 0}</div>
-                        <p className="text-xs text-muted-foreground mt-1">Requests accepted by donors</p>
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center justify-between">
+                            Requests accepted by donors
+                            <span className="font-bold text-orange-500 group-hover:underline">View &rarr;</span>
+                        </p>
                     </CardContent>
                 </Card>
+                
             </div>
         </div>
     )
