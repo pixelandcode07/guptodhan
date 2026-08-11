@@ -28,7 +28,6 @@ const formatMoney = (val: number) => {
   return `৳${val.toFixed(0)}`;
 };
 
-// ✅ MAGIC FIX: Receive globalTotalOrders as a prop
 export default function RevenueChart({ 
   data, 
   globalTotalOrders = 0 
@@ -36,18 +35,35 @@ export default function RevenueChart({
   data: RevenueData[], 
   globalTotalOrders?: number 
 }) {
-  const [timeframe, setTimeframe] = useState('14 Days');
+  const [timeframe, setTimeframe] = useState('7 Days');
 
+  // ✅ MAGIC FIX: Date Based Filtering (অ্যারে না কেটে অরিজিনাল তারিখ অনুযায়ী ফিল্টার)
   const filteredData = useMemo(() => {
     if (!data || data.length === 0) return [];
     
-    let days = data.length; 
-    if (timeframe === '7 Days') days = 7;
-    if (timeframe === '14 Days') days = 14;
-    if (timeframe === '30 Days') days = 30;
-    if (timeframe === 'Yearly') days = 365;
+    const now = new Date();
+    now.setHours(23, 59, 59, 999); // আজকের দিনের শেষ সময়
+
+    const cutoff = new Date(now);
     
-    return data.slice(-days);
+    if (timeframe === '7 Days') {
+      cutoff.setDate(now.getDate() - 7);
+    } else if (timeframe === '14 Days') {
+      cutoff.setDate(now.getDate() - 14);
+    } else if (timeframe === '30 Days') {
+      cutoff.setDate(now.getDate() - 30);
+    } else if (timeframe === 'Yearly') {
+      cutoff.setDate(now.getDate() - 365);
+    }
+
+    cutoff.setHours(0, 0, 0, 0); // কাটঅফ দিনের শুরুর সময়
+
+    return data.filter(item => {
+      const itemDate = new Date(item.date);
+      // যদি Date ফরম্যাট ভুল থাকে তবে ডাটা রেখে দিবে, নাহলে তারিখ অনুযায়ী ফিল্টার করবে
+      if (isNaN(itemDate.getTime())) return true; 
+      return itemDate >= cutoff && itemDate <= now;
+    });
   }, [data, timeframe]);
 
   const stats = useMemo(() => {
@@ -80,8 +96,10 @@ export default function RevenueChart({
   }, [filteredData, globalTotalOrders]);
 
   const getBarColor = (value: number) => {
-    if (value >= stats.maxRevenue * 0.8) return '#f97316'; 
-    if (value >= stats.maxRevenue * 0.5) return '#fb923c'; 
+    if (stats.maxRevenue > 0) {
+      if (value >= stats.maxRevenue * 0.8) return '#f97316'; 
+      if (value >= stats.maxRevenue * 0.5) return '#fb923c'; 
+    }
     return '#fed7aa'; 
   };
 
@@ -218,7 +236,6 @@ export default function RevenueChart({
             </div>
             
             <div className="flex items-center gap-3">
-              {/* ✅ MAGIC FIX: Added Filter Dropdown */}
               <select
                 value={timeframe}
                 onChange={(e) => setTimeframe(e.target.value)}
