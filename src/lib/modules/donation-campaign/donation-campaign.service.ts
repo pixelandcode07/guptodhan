@@ -22,7 +22,6 @@ const createCampaignInDB = async (payload: Partial<IDonationCampaign>) => {
     status: 'inactive', 
   });
 
-  // ✅ MAGIC FIX: Admin Notification Added Here
   await createAdminNotification(
     'donation',
     `New Donation Campaign pending approval: ${result.title}`,
@@ -171,29 +170,26 @@ const updateCampaignInDB = async (id: string, userId: string, payload: Partial<I
     throw new Error('Campaign not found');
   }
 
-  // ✅ Ownership Check (Only creator can edit)
   const isOwner = campaign.creator.toString() === userId;
   if (!isOwner) {
     throw new Error('Forbidden: Only the creator can edit this campaign.');
   }
 
-  // ✅ Strict Whitelist: শুধুমাত্র এই ফিল্ডগুলোই ইউজার এডিট করতে পারবে
   const updateFields: any = {
     title: payload.title,
     category: payload.category,
     item: payload.item,
     description: payload.description,
     goalAmount: payload.goalAmount,
-    images: payload.images, // এখানে মার্জ করা ছবিগুলো আসবে
-    moderationStatus: 'pending', // এডিট করলে আবার পেন্ডিং হবে
-    status: 'inactive',          // এডিট করলে আবার ইনঅ্যাক্টিভ হবে
+    images: payload.images, 
+    moderationStatus: 'pending', 
+    status: 'inactive',          
   };
 
   const result = await DonationCampaign.findByIdAndUpdate(id, updateFields, { new: true });
   return result;
 };
 
-// ✅ DELETE: Owner এবং Admin সিকিউরিটি অ্যাড করা হয়েছে
 const deleteCampaignFromDB = async (id: string, userId: string, userRole: string) => {
   await dbConnect();
 
@@ -203,7 +199,6 @@ const deleteCampaignFromDB = async (id: string, userId: string, userRole: string
     throw new Error('Campaign not found to delete');
   }
 
-  // ✅ Security Check
   const isOwner = campaign.creator.toString() === userId;
   const isAdmin = userRole === 'admin';
 
@@ -239,6 +234,23 @@ const incrementDonorCount = async (campaignId: string, amount: number) => {
   return result;
 };
 
+// ✅ MAGIC FIX: New function to handle ONLY status changes by admin
+const updateCampaignStatusInDB = async (id: string, status: string) => {
+  await dbConnect();
+  
+  const result = await DonationCampaign.findByIdAndUpdate(
+    id,
+    { status },
+    { new: true }
+  ).populate('creator', 'name profilePicture').populate('category', 'name');
+
+  if (!result) {
+    throw new Error('Campaign not found to update status');
+  }
+
+  return result;
+};
+
 export const DonationCampaignServices = {
   createCampaignInDB,
   getPendingCampaignsFromDB,
@@ -252,4 +264,5 @@ export const DonationCampaignServices = {
   updateCampaignInDB,
   deleteCampaignFromDB,
   incrementDonorCount,
+  updateCampaignStatusInDB, // ✅ Exported here
 };
