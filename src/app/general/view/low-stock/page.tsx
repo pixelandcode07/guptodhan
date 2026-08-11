@@ -1,13 +1,14 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { AlertTriangle, Edit, ArrowLeft, PackageSearch, ChevronLeft, ChevronRight } from 'lucide-react';
+// ✅ Search আইকন ইম্পোর্ট করা হয়েছে
+import { AlertTriangle, Edit, ArrowLeft, PackageSearch, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
-// ✅ Next.js 15: searchParams is a Promise
+// ✅ Next.js 15: searchParams is a Promise (Added search param)
 interface PageProps {
-    searchParams: Promise<{ page?: string }>;
+    searchParams: Promise<{ page?: string; search?: string }>;
 }
 
 async function getLowStockProducts() {
@@ -35,13 +36,31 @@ async function getLowStockProducts() {
 
 export default async function LowStockAdminPage({ searchParams }: PageProps) {
     const resolvedSearchParams = await searchParams;
-    const products = await getLowStockProducts();
+    const searchQuery = resolvedSearchParams.search || ''; // ✅ সার্চ কুয়েরি রিসিভ
+    
+    let products = await getLowStockProducts();
+
+    // ── Search Filter Logic ───────────────────────────────────────────────
+    if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        products = products.filter((p: any) => {
+            const title = (p.productTitle || '').toLowerCase();
+            const category = (p.category?.name || '').toLowerCase();
+            const price = String(p.discountPrice || p.productPrice || '');
+            const stock = String(p.stock || 0);
+
+            // Title, Category, Price বা Stock-এর যেকোনো একটার সাথে মিললে ডাটা দেখাবে
+            return title.includes(q) || category.includes(q) || price.includes(q) || stock.includes(q);
+        });
+    }
 
     // ── Pagination Logic ──────────────────────────────────────────────────
     const ITEMS_PER_PAGE = 10;
-    const currentPage = Math.max(1, parseInt(resolvedSearchParams.page || '1', 10));
     const totalItems = products.length;
-    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+    
+    // কারেন্ট পেজ যেন টোটাল পেজের চেয়ে বেশি না হয় তার লজিক
+    const currentPage = Math.min(Math.max(1, parseInt(resolvedSearchParams.page || '1', 10)), totalPages);
 
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const paginatedProducts = products.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -61,7 +80,7 @@ export default async function LowStockAdminPage({ searchParams }: PageProps) {
         <div className="p-4 md:p-6 w-full max-w-full overflow-x-hidden">
             
             {/* Header Section */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-white p-4 md:p-5 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 bg-white p-4 md:p-5 rounded-xl border border-gray-200 shadow-sm">
                 <div className="flex items-center gap-3">
                     <div className="p-2.5 bg-red-50 border border-red-100 rounded-lg">
                         <AlertTriangle className="w-6 h-6 text-red-600" />
@@ -69,17 +88,31 @@ export default async function LowStockAdminPage({ searchParams }: PageProps) {
                     <div>
                         <h1 className="text-xl font-bold text-gray-800">Low Stock Inventory</h1>
                         <p className="text-sm text-gray-500">
-                            {/* ✅ MAGIC FIX: Showing Total Count Here */}
-                            Total <span className="font-bold text-red-600">{totalItems}</span> products with 10 or fewer items in stock
+                            Total <span className="font-bold text-red-600">{totalItems}</span> products found
                         </p>
                     </div>
                 </div>
-                <Link 
-                    href="/general/home" 
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-100 hover:text-blue-600 transition-colors text-sm font-semibold shadow-sm"
-                >
-                    <ArrowLeft className="w-4 h-4" /> Back to Dashboard
-                </Link>
+
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                    {/* ✅ Search Input Form */}
+                    <form method="GET" className="relative w-full sm:w-72">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            name="search"
+                            defaultValue={searchQuery}
+                            placeholder="Search by product, category, price..."
+                            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        />
+                    </form>
+
+                    <Link 
+                        href="/general/home" 
+                        className="flex items-center justify-center w-full sm:w-auto gap-2 px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-100 hover:text-blue-600 transition-colors text-sm font-semibold shadow-sm whitespace-nowrap"
+                    >
+                        <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+                    </Link>
+                </div>
             </div>
 
             {/* Table Section */}
@@ -146,8 +179,12 @@ export default async function LowStockAdminPage({ searchParams }: PageProps) {
                                     <td colSpan={5} className="px-6 py-16 text-center">
                                         <div className="flex flex-col items-center justify-center text-gray-500">
                                             <PackageSearch className="w-12 h-12 text-gray-300 mb-3" />
-                                            <p className="text-lg font-semibold text-gray-700">No Low Stock Products</p>
-                                            <p className="text-sm mt-1">All your products are currently well-stocked!</p>
+                                            <p className="text-lg font-semibold text-gray-700">
+                                                {searchQuery ? 'No matching products found' : 'No Low Stock Products'}
+                                            </p>
+                                            <p className="text-sm mt-1">
+                                                {searchQuery ? `We couldn't find anything matching "${searchQuery}"` : 'All your products are currently well-stocked!'}
+                                            </p>
                                         </div>
                                     </td>
                                 </tr>
@@ -156,18 +193,18 @@ export default async function LowStockAdminPage({ searchParams }: PageProps) {
                     </table>
                 </div>
 
-                {/* ✅ Pagination Controls */}
+                {/* ✅ Pagination Controls (Updated to keep search query in URL) */}
                 {totalPages > 1 && (
                     <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-200 gap-4">
                         <div className="text-sm text-gray-500">
-                            Showing <span className="font-medium text-gray-800">{startIndex + 1}</span> to <span className="font-medium text-gray-800">{Math.min(startIndex + ITEMS_PER_PAGE, totalItems)}</span> of <span className="font-medium text-gray-800">{totalItems}</span> entries
+                            Showing <span className="font-medium text-gray-800">{paginatedProducts.length > 0 ? startIndex + 1 : 0}</span> to <span className="font-medium text-gray-800">{Math.min(startIndex + ITEMS_PER_PAGE, totalItems)}</span> of <span className="font-medium text-gray-800">{totalItems}</span> entries
                         </div>
 
                         <div className="flex items-center gap-1.5 flex-wrap">
                             {/* Prev Button */}
                             {currentPage > 1 ? (
                                 <Link
-                                    href={`?page=${currentPage - 1}`}
+                                    href={`?page=${currentPage - 1}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`}
                                     className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:border-[#00005E] hover:text-[#00005E] transition-colors bg-white shadow-sm"
                                 >
                                     <ChevronLeft className="w-4 h-4" />
@@ -187,7 +224,7 @@ export default async function LowStockAdminPage({ searchParams }: PageProps) {
                                 ) : (
                                     <Link
                                         key={item}
-                                        href={`?page=${item}`}
+                                        href={`?page=${item}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`}
                                         className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors shadow-sm ${
                                             currentPage === item
                                                 ? "bg-[#00005E] text-white border border-[#00005E]"
@@ -202,7 +239,7 @@ export default async function LowStockAdminPage({ searchParams }: PageProps) {
                             {/* Next Button */}
                             {currentPage < totalPages ? (
                                 <Link
-                                    href={`?page=${currentPage + 1}`}
+                                    href={`?page=${currentPage + 1}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`}
                                     className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:border-[#00005E] hover:text-[#00005E] transition-colors bg-white shadow-sm"
                                 >
                                     <ChevronRight className="w-4 h-4" />
