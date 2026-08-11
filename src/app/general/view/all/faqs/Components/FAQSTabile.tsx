@@ -15,21 +15,21 @@ export default function FAQSTabile({ initialFaqs }: { initialFaqs: any[] }) {
   const [statusLoading, setStatusLoading] = useState<string | null>(null);
   const router = useRouter();
 
-  // ✅ MAGIC FIX: Status Toggle Handler
-  const handleToggleStatus = async (id: string, currentStatus: string) => {
+  // ✅ MAGIC FIX 1: Status Toggle Handler (Using isActive instead of status)
+  const handleToggleStatus = async (id: string, currentIsActive: boolean) => {
     try {
       setStatusLoading(id);
-      const newStatus = currentStatus === "active" ? "inactive" : "active";
+      const newIsActive = !currentIsActive; // true থাকলে false, false থাকলে true
 
-      // আপনার API রাউট অনুযায়ী স্ট্যাটাস আপডেট করা হচ্ছে
-      const res = await axios.patch(`/api/v1/faq/${id}`, { status: newStatus });
+      // API তে isActive আপডেট পাঠানো হচ্ছে
+      const res = await axios.patch(`/api/v1/faq/${id}`, { isActive: newIsActive });
 
       if (res.data.success) {
-        toast.success(`Status updated to ${newStatus}!`);
+        toast.success(`Status updated to ${newIsActive ? 'Active' : 'Inactive'}!`);
         // UI সাথে সাথে আপডেট করার জন্য
         setFaqs((prev) =>
           prev.map((faq) =>
-            faq._id === id ? { ...faq, status: newStatus } : faq
+            faq._id === id ? { ...faq, isActive: newIsActive } : faq
           )
         );
         router.refresh();
@@ -63,7 +63,8 @@ export default function FAQSTabile({ initialFaqs }: { initialFaqs: any[] }) {
   const filteredFaqs = faqs.filter(
     (faq) =>
       faq.question?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      faq.category?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      faq.category?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      faq.category?.categoryName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -123,14 +124,12 @@ export default function FAQSTabile({ initialFaqs }: { initialFaqs: any[] }) {
             ) : (
               filteredFaqs.map((faq, index) => (
                 <tr key={faq._id} className="hover:bg-gray-50/50 transition-colors">
-                  {/* ✅ MAGIC FIX 1: ID-এর বদলে Index + 1 বসানো হয়েছে */}
                   <td className="px-6 py-4 text-sm text-gray-600 font-medium">
                     {index + 1}
                   </td>
 
-                  {/* ✅ MAGIC FIX 2: Category Object থেকে নাম বের করা হয়েছে */}
                   <td className="px-6 py-4 text-sm text-gray-800 font-medium whitespace-nowrap">
-                    {faq.category?.name || "Uncategorized"}
+                    {faq.category?.name || faq.category?.categoryName || "Uncategorized"}
                   </td>
 
                   <td className="px-6 py-4 text-sm text-gray-600">
@@ -141,13 +140,13 @@ export default function FAQSTabile({ initialFaqs }: { initialFaqs: any[] }) {
                     <p className="line-clamp-2">{faq.answer}</p>
                   </td>
 
-                  {/* ✅ MAGIC FIX 3: ক্লিকেবল Status Toggle বাটন */}
+                  {/* ✅ MAGIC FIX 2: isActive ফিল্ড ব্যবহার করে স্ট্যাটাস দেখানো হচ্ছে */}
                   <td className="px-6 py-4 text-center">
                     <button
-                      onClick={() => handleToggleStatus(faq._id, faq.status)}
+                      onClick={() => handleToggleStatus(faq._id, faq.isActive ?? true)} // ডিফল্ট true ধরে নিচ্ছি
                       disabled={statusLoading === faq._id}
                       className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full border transition-all ${
-                        faq.status === "active"
+                        faq.isActive !== false // যদি false না হয় তার মানে Active
                           ? "bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
                           : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
                       } disabled:opacity-50 flex items-center justify-center mx-auto min-w-[80px]`}
@@ -155,14 +154,15 @@ export default function FAQSTabile({ initialFaqs }: { initialFaqs: any[] }) {
                       {statusLoading === faq._id ? (
                         <Loader2 className="animate-spin h-3 w-3" />
                       ) : (
-                        <span>{faq.status}</span>
+                        <span>{faq.isActive !== false ? 'Active' : 'Inactive'}</span>
                       )}
                     </button>
                   </td>
 
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
-                      <Link href={`/general/edit/faq/${faq._id}`}>
+                      {/* ✅ MAGIC FIX 3: Edit লিংকের পাথ ঠিক করা হয়েছে (যেখানে আপনার এডিট পেজটি আছে) */}
+                      <Link href={`/general/view/all/faqs/edit?_id=${faq._id}`}>
                         <Button
                           variant="outline"
                           size="icon"
