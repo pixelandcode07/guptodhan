@@ -18,6 +18,7 @@ import "@/lib/modules/vendor-store/vendorStore.model";
 import "@/lib/modules/promo-code/promoCode.model";
 import { VendorProductModel } from '@/lib/modules/product/vendorProduct.model';
 import { sendSMS } from '@/lib/utils/smsPortal';
+import { createAdminNotification } from '@/lib/utils/createAdminNotification';
 
 // --- Helper: ID Conversion ---
 const toObjectId = (id: string | any, label: string, options: { optional?: boolean } = {}) => {
@@ -46,6 +47,7 @@ const calculateDeliveryCharge = (location: string, products: any[]) => {
   return charge + extraCharge;
 };
 
+// --- Create Order (Multi-Vendor Supported) ---
 // --- Create Order (Multi-Vendor Supported) ---
 const createOrderWithDetails = async (req: NextRequest) => {
   await dbConnect();
@@ -81,7 +83,7 @@ const createOrderWithDetails = async (req: NextRequest) => {
     const createdOrders = [];
     const transactionGroupId = `TRX-${Date.now()}`;
 
-    // ✅ MAGIC FIX: একাধিক স্টোরের অর্ডার হলে যেন ডেলিভারি চার্জ ডাবল না হয় তার জন্য ট্র্যাকিং
+    // ✅ MAGIC FIX: একাধিক স্টোরের অর্ডার হলে যেন ডেলিভারি চার্জ ডাবল না হয় তার জন্য ট্র্যাকিং
     let isFrontendChargeApplied = false;
     const isSingleStore = Object.keys(orderGroups).length === 1;
 
@@ -127,8 +129,8 @@ const createOrderWithDetails = async (req: NextRequest) => {
         shippingPostalCode: body.shippingPostalCode,
         shippingCountry: body.shippingCountry || 'Bangladesh',
         addressDetails: body.addressDetails,
-        deliveryCharge, // ✅ 100% synced with frontend
-        totalAmount,    // ✅ 100% synced with frontend (including coupons)
+        deliveryCharge, 
+        totalAmount,    
         paymentStatus: 'Pending',
         orderStatus: 'Pending',
         orderDate: new Date(),
@@ -158,13 +160,17 @@ const createOrderWithDetails = async (req: NextRequest) => {
 
       createdOrders.push(newOrder);
 
-      // SMS পাঠানো
-      const smsMessage = `Dear ${shippingName}, your order ${orderId} has been placed. Total: ${totalAmount} TK. Thank you for shopping with Guptodhan!`;
-      sendSMS(shippingPhone, smsMessage).catch(err => console.error("SMS Error:", err));
-    }
+      // ✅ MAGIC FIX: Admin Notification Added Here (For Checkout Flow)
+      await createAdminNotification(
+        'order',
+        `New Order #${orderId} received from ${shippingName}`,
+        `/general/view/orders/${newOrder._id}`
+      );
 
-    // ক্যাশ ক্লিয়ার করা
-    // await deleteCachePattern(`orders:user:${userId}*`);
+      // SMS পাঠানো (KhudeBarta Balance না থাকলে এখানে Error ধরবে, কিন্তু প্রসেস ক্র্যাশ করবে না)
+      const smsMessage = `Dear ${shippingName}, your order ${orderId} has been placed. Total: ${totalAmount} TK. Thank you for shopping with Guptodhan!`;
+      sendSMS(shippingPhone, smsMessage).catch(err => console.error("SMS Error (Ignored):", err));
+    }
 
     return sendResponse({
       success: true,
