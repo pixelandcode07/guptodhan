@@ -21,7 +21,6 @@ export default function RearrangeStoragesClient() {
           ) : null,
         };
       }}
-      sortItems={(a, b) => a.label.localeCompare(b.label)}
     />
   );
 }
