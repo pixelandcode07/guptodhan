@@ -5,6 +5,7 @@ import useSWR from 'swr';
 interface EcommerceCounts {
   productCount: string;
   reviewCount: string;
+  lowStockCount: string;
   qaCount: string;
   orderCount: string;
   pendingCount: string;
@@ -28,17 +29,11 @@ export const useEcommerceCounts = (): EcommerceCounts => {
         ...(userRole ? { 'x-user-role': userRole } : {}),
       },
     });
-  //   const data = res.data?.data;
-  //   if (Array.isArray(data)) return data.length;
-  //   if (typeof res.data?.count === 'number') return res.data.count;
-  //   return 0;
-  // };
 
     if (res.data?.data?.pagination?.total !== undefined) {
       return res.data.data.pagination.total;
     }
     
-  
     if (typeof res.data?.count === 'number') {
       return res.data.count;
     }
@@ -46,10 +41,22 @@ export const useEcommerceCounts = (): EcommerceCounts => {
     const data = res.data?.data;
     if (Array.isArray(data)) return data.length;
     
- 
     if (data?.products && Array.isArray(data.products)) return data.products.length;
 
     return 0;
+  };
+
+  const fetchLowStockCount = async () => {
+    try {
+      const res = await axios.get('/api/v1/public/product?limit=1000');
+      const products = res.data?.data?.products || res.data?.data || [];
+      if (Array.isArray(products)) {
+        return products.filter((p: any) => typeof p.stock === 'number' && p.stock <= 10).length;
+      }
+      return 0;
+    } catch {
+      return 0;
+    }
   };
 
   const swrConfig = { revalidateOnFocus: false, dedupingInterval: 60000 } as const;
@@ -57,6 +64,12 @@ export const useEcommerceCounts = (): EcommerceCounts => {
   const { data: productCountNum } = useSWR(
     token ? ['/api/v1/product', token, userRole] : null,
     () => fetchCount('/api/v1/product'),
+    swrConfig
+  );
+
+  const { data: lowStockCountNum } = useSWR(
+    token ? ['/api/v1/public/product/low-stock-count', token, userRole] : null,
+    fetchLowStockCount,
     swrConfig
   );
   
@@ -126,6 +139,7 @@ export const useEcommerceCounts = (): EcommerceCounts => {
   return {
     productCount: String(productCountNum ?? 0),
     reviewCount: String(reviewCountNum ?? 0),
+    lowStockCount: String(lowStockCountNum ?? 0),
     qaCount: String(qaCountNum ?? 0),
     orderCount: String(orderCountNum ?? 0),
     pendingCount: String(pendingCountNum ?? 0),
