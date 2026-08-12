@@ -227,17 +227,29 @@ function CartItemRow({
 
       {/* Image */}
       <td className="py-4 px-2">
-        <div className="relative w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-          <Image
-            src={item.product.image}
-            alt={item.product.name}
-            width={64}
-            height={64}
-            className="w-full h-full object-cover"
-          />
+        <div className="relative w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 group">
+          {((item.product as any).slug || item.product.id) ? (
+            <Link href={`/product/${(item.product as any).slug || item.product.id}`} className="block w-full h-full">
+              <Image
+                src={item.product.image}
+                alt={item.product.name}
+                width={64}
+                height={64}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </Link>
+          ) : (
+            <Image
+              src={item.product.image}
+              alt={item.product.name}
+              width={64}
+              height={64}
+              className="w-full h-full object-cover"
+            />
+          )}
           <button
             onClick={handleRemove}
-            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
+            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 z-10"
           >
             ×
           </button>
@@ -252,7 +264,15 @@ function CartItemRow({
               {storeName}
             </div>
           )}
-          <h3 className="font-medium text-gray-900 text-sm mb-1">{item.product.name}</h3>
+          <h3 className="font-medium text-gray-900 text-sm mb-1 hover:text-blue-600 transition-colors">
+            {((item.product as any).slug || item.product.id) ? (
+              <Link href={`/product/${(item.product as any).slug || item.product.id}`}>
+                {item.product.name}
+              </Link>
+            ) : (
+              item.product.name
+            )}
+          </h3>
           {(hasVariant(item.product.size) || hasVariant(item.product.color)) && (
             <div className="flex items-center gap-2 text-xs text-gray-600">
               {hasVariant(item.product.size) && <span>Size: {item.product.size}</span>}
