@@ -253,8 +253,8 @@ export default function OrderDetailsPage() {
         const productName = product?.productTitle || found.shippingName || 'Product'
         const productSlug = product?.slug || product?._id || '' 
         
-        const unitPrice = detail.unitPrice || (detail.totalPrice && detail.quantity ? detail.totalPrice / detail.quantity : 0) || product?.productPrice || 0
-        const itemSubtotal = detail.totalPrice || (unitPrice * (detail.quantity || 1))
+        const unitPrice = detail.unitPrice || detail.discountPrice || (detail.totalPrice && detail.quantity ? detail.totalPrice / detail.quantity : 0) || product?.discountPrice || product?.productPrice || 0
+        const itemSubtotal = unitPrice * (detail.quantity || 1)
 
         return {
           id: detail._id || detail.orderDetailsId || `item_${index}`,
@@ -270,7 +270,7 @@ export default function OrderDetailsPage() {
         }
       })
 
-      const subtotal = found.orderDetails?.reduce((sum, detail) => sum + (detail.totalPrice || 0), 0) || 0
+      const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0)
       const deliveryCharge = found.deliveryCharge || 0
       const discount = subtotal + deliveryCharge - (found.totalAmount || 0)
 
