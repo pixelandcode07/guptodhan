@@ -16,6 +16,7 @@ export type OrderRow = {
   name: string
   phone: string
   email?: string
+  storeName?: string
   total: number
   deliveryCharge?: number
   productTotal?: number
@@ -265,6 +266,18 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
         {row.getValue("orderNo")}
       </div>
     )
+  },
+  { 
+    accessorKey: "storeName", 
+    header: () => <span className="whitespace-nowrap font-semibold text-blue-700">Vendor Name</span>,
+    cell: ({ row }) => {
+      const storeName = (row.getValue("storeName") as string) || row.original.store?.name || "Main Store";
+      return (
+        <div className="max-w-[160px] truncate font-semibold text-xs text-blue-700 bg-blue-50 px-2.5 py-1 rounded border border-blue-200" title={storeName}>
+          {storeName}
+        </div>
+      );
+    }
   },
   { accessorKey: "orderDate", header: () => <span>Order Date</span> },
   { accessorKey: "from", header: () => <span>From</span> },

@@ -123,6 +123,7 @@ export default function OrdersTable({
                 name: o.shippingName || '-',
                 phone: o.shippingPhone || '-',
                 email: o.shippingEmail || '-',
+                storeName: o.storeId?.storeName || (o as any).storeName || 'Main Store',
                 total: typeof o.totalAmount === 'number' ? o.totalAmount : 0,
                 deliveryCharge: typeof o.deliveryCharge === 'number' ? o.deliveryCharge : 0,
                 productTotal: typeof o.productTotal === 'number' ? o.productTotal : 0,
@@ -141,9 +142,9 @@ export default function OrdersTable({
                     email: o.userId.email || '-',
                     phone: o.userId.phoneNumber || '-'
                 } : undefined,
-                store: o.storeId ? {
-                    name: o.storeId.storeName || '-',
-                    id: o.storeId._id
+                store: (o.storeId || (o as any).storeName) ? {
+                    name: o.storeId?.storeName || (o as any).storeName || 'Main Store',
+                    id: o.storeId?._id || ''
                 } : undefined,
             }))
             
@@ -173,6 +174,7 @@ export default function OrdersTable({
         return rows.filter((r) => {
             const searchableFields = [
                 r.orderNo,
+                r.storeName,
                 r.name,
                 r.phone,
                 r.status,
