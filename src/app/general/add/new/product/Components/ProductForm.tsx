@@ -28,6 +28,7 @@ import ProductVariantForm, { IProductOption } from "./ProductVariantForm";
 import ProductImageGallery from "./ProductImageGallery";
 import PricingInventory from "./PricingInventory";
 import TagInput from "./TagInput";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import imageCompression from "browser-image-compression";
 
@@ -778,102 +779,107 @@ export default function ProductForm({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Store <span className="text-red-500">*</span></Label>
-                    <Select value={store} onValueChange={setStore}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Select store" /></SelectTrigger>
-                      <SelectContent>
-                        {listStores.map((s: any) => (
-                          <SelectItem key={getIdFromRef(s)} value={getIdFromRef(s)}>{s.storeName}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={listStores.map((s: any) => ({ label: s.storeName, value: getIdFromRef(s) }))}
+                      value={store}
+                      onValueChange={setStore}
+                      placeholder="Select store"
+                    />
                   </div>
+
                   <div className="space-y-2">
                     <Label>Category <span className="text-red-500">*</span></Label>
-                    <Select value={category} onValueChange={(val) => { setCategory(val); if (!isInitialLoad.current) { setSubcategory(""); setChildCategory(""); } }}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Select category" /></SelectTrigger>
-                      <SelectContent>
-                        {listCategories.map((c: any) => (
-                          <SelectItem key={getIdFromRef(c)} value={getIdFromRef(c)}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={listCategories.map((c: any) => ({ label: c.name, value: getIdFromRef(c) }))}
+                      value={category}
+                      onValueChange={(val) => {
+                        setCategory(val);
+                        if (!isInitialLoad.current) {
+                          setSubcategory("");
+                          setChildCategory("");
+                        }
+                      }}
+                      placeholder="Select category"
+                    />
                   </div>
+
                   <div className="space-y-2">
                     <Label>Subcategory</Label>
-                    <Select value={subcategory} onValueChange={(val) => { setSubcategory(val); if (!isInitialLoad.current) setChildCategory(""); }} disabled={!category}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Select subcategory" /></SelectTrigger>
-                      <SelectContent>
-                        {subcategories.map((sc: any) => (
-                          <SelectItem key={getIdFromRef(sc)} value={getIdFromRef(sc)}>{sc.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={subcategories.map((sc: any) => ({ label: sc.name, value: getIdFromRef(sc) }))}
+                      value={subcategory}
+                      onValueChange={(val) => {
+                        setSubcategory(val);
+                        if (!isInitialLoad.current) setChildCategory("");
+                      }}
+                      placeholder="Select subcategory"
+                      disabled={!category}
+                    />
                   </div>
+
                   <div className="space-y-2">
                     <Label>Child Category</Label>
-                    <Select value={childCategory} onValueChange={setChildCategory} disabled={!subcategory}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Select child category" /></SelectTrigger>
-                      <SelectContent>
-                        {childCategories.map((cc: any) => (
-                          <SelectItem key={getIdFromRef(cc)} value={getIdFromRef(cc)}>{cc.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={childCategories.map((cc: any) => ({ label: cc.name, value: getIdFromRef(cc) }))}
+                      value={childCategory}
+                      onValueChange={setChildCategory}
+                      placeholder="Select child category"
+                      disabled={!subcategory}
+                    />
                   </div>
+
                   <div className="space-y-2">
                     <Label>Brand</Label>
-                    <Select value={brand} onValueChange={(val) => { setBrand(val); if (!isInitialLoad.current) setModel(""); }}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Select brand" /></SelectTrigger>
-                      <SelectContent>
-                        {listBrands.map((b: any) => (
-                          <SelectItem key={getIdFromRef(b)} value={getIdFromRef(b)}>{b.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={listBrands.map((b: any) => ({ label: b.name, value: getIdFromRef(b) }))}
+                      value={brand}
+                      onValueChange={(val) => {
+                        setBrand(val);
+                        if (!isInitialLoad.current) setModel("");
+                      }}
+                      placeholder="Select brand"
+                    />
                   </div>
+
                   <div className="space-y-2">
                     <Label>Model</Label>
-                    <Select value={model} onValueChange={setModel} disabled={models.length === 0}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Select model" /></SelectTrigger>
-                      <SelectContent>
-                        {models.map((m: any) => (
-                          <SelectItem key={getIdFromRef(m)} value={getIdFromRef(m)}>{m.modelName}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={models.map((m: any) => ({ label: m.modelName, value: getIdFromRef(m) }))}
+                      value={model}
+                      onValueChange={setModel}
+                      placeholder="Select model"
+                      disabled={models.length === 0}
+                    />
                   </div>
+
                   <div className="space-y-2">
                     <Label>Flag</Label>
-                    <Select value={flag} onValueChange={setFlag}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
-                        {listFlags.map((f: any) => (
-                          <SelectItem key={getIdFromRef(f)} value={getIdFromRef(f)}>{f.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={listFlags.map((f: any) => ({ label: f.name, value: getIdFromRef(f) }))}
+                      value={flag}
+                      onValueChange={setFlag}
+                      placeholder="Select flag"
+                    />
                   </div>
+
                   <div className="space-y-2">
                     <Label>Unit</Label>
-                    <Select value={unit} onValueChange={setUnit}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
-                        {listUnits.map((u: any) => (
-                          <SelectItem key={getIdFromRef(u)} value={getIdFromRef(u)}>{u.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={listUnits.map((u: any) => ({ label: u.name, value: getIdFromRef(u) }))}
+                      value={unit}
+                      onValueChange={setUnit}
+                      placeholder="Select unit"
+                    />
                   </div>
+
                   <div className="space-y-2">
                     <Label>Warranty</Label>
-                    <Select value={warranty} onValueChange={setWarranty}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Optional" /></SelectTrigger>
-                      <SelectContent>
-                        {listWarranties.map((w: any) => (
-                          <SelectItem key={getIdFromRef(w)} value={getIdFromRef(w)}>{w.warrantyName}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={listWarranties.map((w: any) => ({ label: w.warrantyName || w.name, value: getIdFromRef(w) }))}
+                      value={warranty}
+                      onValueChange={setWarranty}
+                      placeholder="Optional"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Video URL</Label>
