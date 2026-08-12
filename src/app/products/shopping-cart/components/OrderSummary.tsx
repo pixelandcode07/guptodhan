@@ -34,14 +34,6 @@ export default function OrderSummary({
       return;
     }
 
-    if (!termsAccepted) {
-      toast.error('Please accept terms and conditions', {
-        description: 'You must agree to the terms and conditions to proceed.',
-        duration: 3000,
-      });
-      return;
-    }
-
     // Save only selected items to localStorage for checkout
     try {
       localStorage.setItem('cart', JSON.stringify(selectedCartItems));

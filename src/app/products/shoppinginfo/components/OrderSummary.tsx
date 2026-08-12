@@ -57,13 +57,6 @@ export default function OrderSummary({
       toast.error('Please login to place an order')
       return
     }
-    if (!termsAccepted) {
-      toast.error('Please accept terms and conditions', {
-        description: 'You must agree to the terms and conditions to place your order.',
-        duration: 3000,
-      })
-      return
-    }
     onPlaceOrder(payment)
   }
 
@@ -85,7 +78,6 @@ export default function OrderSummary({
 
   const getButtonLabel = () => {
     if (!user) return 'Login Required'
-    if (!termsAccepted) return 'Accept Terms to Continue'
     return payment === 'cod' ? 'Place Order (COD)' : 'Place Order & Pay Online'
   }
 
