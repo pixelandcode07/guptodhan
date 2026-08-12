@@ -340,6 +340,51 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         return;
       }
 
+      // ✅ Fetch product to check available stock before updating
+      try {
+        const productResponse = await axios.get(`/api/v1/product/${cartItem.product.id}`);
+        const productData = productResponse.data?.data;
+
+        if (productData) {
+          let availableStock = productData.stock || 0;
+
+          // Check variant stock if color/size exist
+          const cartColor = (cartItem.product.color || '').trim().toLowerCase();
+          const cartSize = (cartItem.product.size || '').trim().toLowerCase();
+          const hasVariantInfo = cartColor && cartColor !== '—' || cartSize && cartSize !== '—';
+
+          if (hasVariantInfo && productData.productOptions?.length > 0) {
+            const variant = productData.productOptions.find((opt: any) => {
+              const optColor = Array.isArray(opt.color) ? opt.color[0] : opt.color;
+              const optSize = Array.isArray(opt.size) ? opt.size[0] : opt.size;
+              const colorMatch = (cartColor && cartColor !== '—')
+                ? (optColor || '').trim().toLowerCase() === cartColor
+                : true;
+              const sizeMatch = (cartSize && cartSize !== '—')
+                ? (optSize || '').trim().toLowerCase() === cartSize
+                : true;
+              return colorMatch && sizeMatch;
+            });
+
+            if (variant) {
+              availableStock = variant.stock || 0;
+            }
+          }
+
+          if (newQuantity > availableStock) {
+            toast.error('Insufficient stock!', {
+              description: `Only ${availableStock} item(s) available.`,
+              duration: 3000,
+            });
+            // Re-fetch cart to revert the optimistic UI update
+            await fetchCartItems({ silent: true });
+            return;
+          }
+        }
+      } catch {
+        // If stock check fails, proceed with update (don't block the user)
+      }
+
       const newTotalPrice = newQuantity * cartItem.product.price;
 
       const response = await api.patch(`/add-to-cart/get-cart/${userId}/${cartItem.cartId}`, {
@@ -363,6 +408,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         errorMessage = axiosError.response?.data?.message || errorMessage;
       }
       toast.error('Failed to update quantity', { description: errorMessage, duration: 3000 });
+      // ✅ Re-fetch cart to revert the optimistic UI update
+      await fetchCartItems({ silent: true });
     } finally {
       setIsLoading(false);
     }
