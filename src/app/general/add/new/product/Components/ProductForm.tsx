@@ -135,7 +135,7 @@ export default function ProductForm({
   // ── Dynamic Lists ──────────────────────────────────────────────────────────
   const [subcategories,  setSubcategories]  = useState<any[]>([]);
   const [childCategories,setChildCategories]= useState<any[]>([]);
-  const [models,         setModels]         = useState<any[]>([]);
+  const [models,         setModels]         = useState<any[]>(initialData?.models || []);
 
   // ── Variant States ─────────────────────────────────────────────────────────
   const [specialOffer, setSpecialOffer] = useState(false);
@@ -411,20 +411,23 @@ export default function ProductForm({
   }, [subcategory, token]);
 
   useEffect(() => {
-    if (isInitialLoad.current) return;
     const fetchModels = async () => {
-      if (brand && token) {
-        try {
-          const res = await axios.get(
-            `/api/v1/product-config/modelName?brandId=${brand}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          setModels(res.data?.data?.filter((m: any) => m.status === "active") || []);
-          setModel("");
-        } catch {}
-      } else {
-        setModels([]);
-        setModel("");
+      try {
+        const url = brand
+          ? `/api/v1/product-config/modelName?brandId=${brand}`
+          : `/api/v1/product-config/modelName/active`;
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await axios.get(url, { headers });
+        const fetched = res.data?.data?.filter((m: any) => m.status === "active") || res.data?.data || [];
+        if (fetched.length > 0) {
+          setModels(fetched);
+        } else if (initialData?.models?.length > 0) {
+          setModels(initialData.models);
+        }
+      } catch {
+        if (initialData?.models?.length > 0) {
+          setModels(initialData.models);
+        }
       }
     };
     fetchModels();
@@ -830,7 +833,7 @@ export default function ProductForm({
                   </div>
                   <div className="space-y-2">
                     <Label>Model</Label>
-                    <Select value={model} onValueChange={setModel} disabled={!brand}>
+                    <Select value={model} onValueChange={setModel} disabled={models.length === 0}>
                       <SelectTrigger className="h-11"><SelectValue placeholder="Select model" /></SelectTrigger>
                       <SelectContent>
                         {models.map((m: any) => (
