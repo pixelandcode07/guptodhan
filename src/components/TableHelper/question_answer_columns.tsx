@@ -94,7 +94,7 @@ export const getQuestionAnswerColumns = (
     cell: ({ row }) => {
       const question = row.getValue("question") as string;
       return (
-        <div className="max-w-xs truncate" title={question}>
+        <div className="max-w-[200px] sm:max-w-xs truncate break-all text-xs sm:text-sm" title={question}>
           {question}
         </div>
       );
@@ -106,7 +106,7 @@ export const getQuestionAnswerColumns = (
     cell: ({ row }) => {
       const answer = row.getValue("answer_from_admin") as string;
       return (
-        <div className="max-w-xs truncate" title={answer}>
+        <div className="max-w-[200px] sm:max-w-xs truncate break-all text-xs sm:text-sm" title={answer}>
           {answer || "-"}
         </div>
       );
