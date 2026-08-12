@@ -94,6 +94,8 @@ function CheckoutItemRow({
     }
   };
 
+  const storeName = item.seller?.name || (item as any).storeName || (item as any).sellerName || '';
+
   return (
     <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
       <td className="py-4 px-2">
@@ -122,6 +124,11 @@ function CheckoutItemRow({
       </td>
       <td className="py-4 px-2">
         <div>
+          {storeName && (
+            <div className="text-xs font-semibold text-blue-600 mb-0.5">
+              {storeName}
+            </div>
+          )}
           <h3 className="font-medium text-gray-900 text-sm mb-1">{item.product.name}</h3>
           {(hasVariant(item.product.size) || hasVariant(item.product.color)) && (
             <div className="flex items-center gap-2 text-xs text-gray-600">
@@ -235,6 +242,8 @@ function CheckoutItemMobileCard({
     }
   };
 
+  const storeName = item.seller?.name || (item as any).storeName || (item as any).sellerName || '';
+
   return (
     <div className="rounded-md border border-gray-200 p-3">
       <div className="flex gap-3">
@@ -248,6 +257,11 @@ function CheckoutItemMobileCard({
           />
         </div>
         <div className="min-w-0 flex-1">
+          {storeName && (
+            <div className="text-xs font-semibold text-blue-600 mb-0.5 truncate">
+              {storeName}
+            </div>
+          )}
           <h3 className="truncate text-sm font-medium text-gray-900">{item.product.name}</h3>
           {(hasVariant(item.product.size) || hasVariant(item.product.color)) && (
             <div className="mt-1 text-xs text-gray-600">
