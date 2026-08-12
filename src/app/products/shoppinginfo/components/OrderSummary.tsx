@@ -2,6 +2,7 @@
 
 import React from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import OrderSuccessModal from './OrderSuccessModal'
 import CouponSection, { AppliedCoupon } from './CouponSection'
@@ -240,20 +241,47 @@ export default function OrderSummary({
       {/* ✅ Terms + Button */}
       <div className="border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-4">
         {/* Terms */}
-        <label className="flex items-start gap-2.5 cursor-pointer select-none">
+        <div className="flex items-start gap-2.5 select-none">
           <input
+            id="terms-checkout-checkbox"
             type="checkbox"
             className="mt-0.5 w-4 h-4 flex-shrink-0 cursor-pointer accent-blue-600"
             checked={termsAccepted}
             onChange={(e) => setTermsAccepted(e.target.checked)}
           />
-          <span className="text-xs text-gray-600 leading-relaxed">
+          <label htmlFor="terms-checkout-checkbox" className="text-xs text-gray-600 leading-relaxed cursor-pointer">
             I have read and agree to the{' '}
-            <a className="text-blue-600 hover:underline font-medium" href="#">Terms and Conditions</a>,{' '}
-            <a className="text-blue-600 hover:underline font-medium" href="#">Privacy Policy</a> and{' '}
-            <a className="text-blue-600 hover:underline font-medium" href="#">Refund and Return Policy</a>
-          </span>
-        </label>
+            <Link
+              href="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-blue-600 hover:underline font-medium relative z-10"
+            >
+              Terms and Conditions
+            </Link>
+            ,{' '}
+            <Link
+              href="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-blue-600 hover:underline font-medium relative z-10"
+            >
+              Privacy Policy
+            </Link>
+            {' '}and{' '}
+            <Link
+              href="/return"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-blue-600 hover:underline font-medium relative z-10"
+            >
+              Refund and Return Policy
+            </Link>
+          </label>
+        </div>
 
         {/* Place Order Button */}
         <Button
