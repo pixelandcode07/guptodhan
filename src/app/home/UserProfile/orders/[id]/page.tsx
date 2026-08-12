@@ -16,12 +16,23 @@ import OrderStatusBadge from '@/components/UserProfile/Order/OrderStatusBadge'
 import ReturnRequestModal from '@/components/UserProfile/Order/ReturnRequestModal' 
 
 function mapOrderStatusToUI(status: string): OrderStatus {
-  const s = status.toLowerCase()
+  if (!status) return 'to_pay'
+  const s = status.trim().toLowerCase()
   if (s === 'delivered') return 'delivered'
   if (s === 'cancelled' || s === 'canceled') return 'cancelled'
-  if (s === 'shipped') return 'to_receive'
-  if (s === 'processing') return 'to_ship'
-  if (s === 'return request' || s === 'returned') return 'return_refund'
+  if (
+    s === 'shipped' ||
+    s === 'shipping' ||
+    s.includes('transit') ||
+    s.includes('receive') ||
+    s.includes('delivery') ||
+    s.includes('dispatched') ||
+    s.includes('way')
+  ) {
+    return 'to_receive'
+  }
+  if (s === 'processing' || s === 'approved' || s === 'ready to ship' || s.includes('ship')) return 'to_ship'
+  if (s.includes('return')) return 'return_refund'
   return 'to_pay'
 }
 
