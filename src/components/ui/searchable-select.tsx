@@ -48,16 +48,33 @@ export function SearchableSelect({
           aria-expanded={open}
           disabled={disabled}
           className={cn(
-            'w-full h-11 justify-between bg-white px-3 font-normal text-left border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 rounded-md',
+            'w-full h-11 justify-between bg-white px-3 font-normal text-left border-gray-300 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 rounded-md relative',
             !value && 'text-gray-400',
             disabled && 'cursor-not-allowed opacity-50 bg-gray-100',
             className
           )}
         >
-          <span className="truncate">
+          <span className="truncate pr-4">
             {selectedOption ? selectedOption.label : placeholder}
           </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <div className="flex items-center gap-1 shrink-0 ml-2">
+            {value && !disabled && (
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onValueChange('');
+                }}
+                className="p-1 rounded-full hover:bg-gray-200 text-gray-400 hover:text-gray-700 transition-colors"
+                title="Unselect"
+              >
+                <X className="h-3.5 w-3.5" />
+              </span>
+            )}
+            <ChevronsUpDown className="h-4 w-4 opacity-50" />
+          </div>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] min-w-[220px] p-2 bg-white shadow-xl rounded-lg border border-gray-200 z-50">
@@ -92,7 +109,9 @@ export function SearchableSelect({
                 <div
                   key={opt.value}
                   onClick={() => {
-                    onValueChange(opt.value);
+                    // Toggle selection: unselect if already selected
+                    const newValue = isSelected ? '' : opt.value;
+                    onValueChange(newValue);
                     setOpen(false);
                     setSearch('');
                   }}
