@@ -276,10 +276,11 @@ export default function LogInRegister() {
     <DialogContent className="sm:max-w-md">
       <DialogTitle className="sr-only">Authentication</DialogTitle>
 
+      {/* ✅ MAGIC FIX: ওভারল্যাপ হওয়া কাস্টম বাটনটি hidden করা হয়েছে, প্রোগ্রামাটিক ক্লিকের জন্য ref ঠিক রাখা হয়েছে */}
       <DialogClose asChild>
         <button
           ref={closeButtonRef}
-          className="absolute right-4 top-4 text-3xl font-light text-gray-500 hover:text-gray-800 focus:outline-none"
+          className="hidden" 
           aria-label="Close"
         >
         </button>
