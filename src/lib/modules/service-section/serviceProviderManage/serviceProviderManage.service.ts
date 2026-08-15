@@ -1,16 +1,20 @@
 import { IBooking } from "./serviceProviderManage.interface";
 import { BookingModel } from "./serviceProviderManage.model";
-import { createAdminNotification } from "@/lib/utils/createAdminNotification"; // ✅ IMPORTED FUNCTION
+import { createAdminNotification } from "@/lib/utils/createAdminNotification";
 
 const createBookingInDB = async (payload: Partial<IBooking>) => {
   const result = await BookingModel.create(payload);
 
-  // ✅ MAGIC FIX: Admin Notification Added Here
-  await createAdminNotification(
-    'new_service_booking',
-    `New service booking created!`,
-    `/general/service/orders` // অ্যাডমিন প্যানেলের বুকিং পেজের লিংক
-  );
+  // ✅ MAGIC FIX: Safe Enum + Try/Catch added so it NEVER crashes
+  try {
+    await createAdminNotification(
+      'service_request', // ডাটাবেসের পরিচিত Enum টাইপ ব্যবহার করা হলো
+      `New service booking received!`,
+      `/general/service/orders` 
+    );
+  } catch (error) {
+    console.error("Admin notification failed:", error);
+  }
 
   return result;
 };
