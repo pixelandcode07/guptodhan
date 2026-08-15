@@ -8,11 +8,11 @@ import mongoose, { Types } from 'mongoose';
 const createAdInDB = async (payload: Partial<IClassifiedAd>) => {
   const result = await ClassifiedAd.create({ ...payload, status: 'pending' });
 
-  // ✅ MAGIC FIX: Admin Notification Added Here
+  // ✅ Admin Notification for New Ad
   await createAdminNotification(
     'buy_sell_ad',
     `New Buy & Sell Ad pending approval: ${result.title}`,
-    `/general/buy/sell/listing` // আপনার অ্যাডমিন প্যানেলের অ্যাডস পেজের লিংক
+    `/general/buy/sell/listing` 
   );
 
   return result;
@@ -48,7 +48,7 @@ const searchAdsInDB = async (filters: Record<string, any>, options: { onlyActive
     if (filters.minPrice) query.price.$gte = Number(filters.minPrice);
     if (filters.maxPrice) query.price.$lte = Number(filters.maxPrice);
   }
- 
+  
   if (filters.title) {
     query.title = { $regex: filters.title, $options: 'i' };
   }
@@ -103,12 +103,16 @@ const updateAdInDB = async (adId: string, userId: string, userRole: string, payl
     throw new Error('Forbidden: Only the owner can edit the ad details.');
   }
 
-  // ✅ Owner's own edit always goes back to pending for re-review,
-  // regardless of whether the owner also happens to be an admin.
-  // If an admin edits someone else's ad (not the owner) for moderation/correction,
-  // pending is not forced.
+  // ✅ Owner's own edit always goes back to pending for re-review
   if (isOwner) {
     payload.status = 'pending';
+    
+    // ✅ MAGIC FIX: Notify Admin upon Ad Edit
+    await createAdminNotification(
+      'buy_sell_ad_update',
+      `An ad was updated and needs re-approval: ${payload.title || ad.title}`,
+      `/general/buy/sell/listing`
+    );
   }
 
   return await ClassifiedAd.findByIdAndUpdate(adId, payload, { new: true });
