@@ -43,20 +43,11 @@ import {
 import axios from "axios";
 import SearchBar from "./SearchBar";
 import api from "@/lib/axios";
-// import { useRouter } from "next/navigation";
 
 export default function NavMain() {
   const { data: session } = useSession();
   const user = session?.user;
   const role = (session?.user as any)?.role as string;
-  // const router = useRouter();
-
-  // const handleOpenChange = (open: boolean) => {
-  //   if (!open) {
-  //     router.back();
-  //   }
-  // };
-
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [settings, setSettings] = useState<any>(null);
