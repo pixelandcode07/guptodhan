@@ -73,9 +73,6 @@ const orderSchema = new Schema<IOrder>(
     },
     paymentStatus: {
       type: String,
-      // ✅ FIX: 'Initiated' added — means payment session started,
-      // user redirected to SSLCommerz but hasn't paid yet.
-      // This is different from 'Pending' (COD / not yet started).
       enum:    ["Initiated", "Pending", "Paid", "Failed", "Refunded", "Cancelled"],
       default: "Pending",
     },
@@ -83,6 +80,7 @@ const orderSchema = new Schema<IOrder>(
       type: String,
       enum: [
         "Pending",
+        "Approved", // ✅ MAGIC FIX: New Status Added
         "Processing",
         "Shipped",
         "Delivered",
