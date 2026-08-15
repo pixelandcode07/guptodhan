@@ -9,6 +9,7 @@ import { confirmDelete } from '@/components/ReusableComponents/ConfirmToast';
 import axios from 'axios';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import { useRouter } from 'next/navigation'; // ✅ MAGIC FIX: useRouter Import করা হলো
 
 type ClientDataTableProps = {
     serviceUsers: IProvider[];
@@ -16,8 +17,9 @@ type ClientDataTableProps = {
 
 export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) {
     const [data, setData] = useState<IProvider[]>(serviceUsers || []);
+    const router = useRouter(); // ✅ Router ইনিশিয়ালাইজ করা হলো
     
-    // ✅ NEW: States for Filtering and Searching
+    // States for Filtering and Searching
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
@@ -28,7 +30,7 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
     }, [serviceUsers]);
 
     // ==========================================
-    //  ✅ NEW: Filtering Logic (Search + Status)
+    //  Filtering Logic (Search + Status)
     // ==========================================
     const filteredData = useMemo(() => {
         let result = data;
@@ -85,6 +87,10 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
             ));
 
             toast.success(`Providers ${action === 'approve' ? 'Activated' : 'Deactivated'} successfully!`, { id: toastId });
+            
+            // ✅ MAGIC FIX: সার্ভার ক্যাশ ক্লিয়ার করে নতুন ডাটা আনার নির্দেশ দেওয়া হলো
+            router.refresh();
+
         } catch (error) {
             console.error(error);
             toast.error("Failed to update status for some providers.", { id: toastId });
@@ -104,6 +110,7 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
 
         try {
             const promises = selectedRows.map(row => 
+                // ✅ Users ডিলিট করার API কল করা হচ্ছে
                 axios.delete(`/api/v1/users/${row._id}`) 
             );
             await Promise.all(promises);
@@ -113,16 +120,20 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
             setData(prev => prev.filter(provider => !deletedIds.includes(provider._id)));
 
             toast.success("Providers deleted successfully!", { id: toastId });
+            
+            // ✅ MAGIC FIX: সার্ভার ক্যাশ ক্লিয়ার করে নতুন ডাটা আনার নির্দেশ দেওয়া হলো
+            router.refresh();
+
         } catch (error) {
             console.error(error);
-            toast.error("Failed to delete some providers. Check if delete API exists.", { id: toastId });
+            toast.error("Failed to delete some providers.", { id: toastId });
         }
     };
 
     return (
         <div className="space-y-4">
             
-            {/* ✅ Search & Filter Controls */}
+            {/* Search & Filter Controls */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                 
                 {/* Search Bar */}
@@ -155,7 +166,6 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 <DataTable 
                     columns={getProviderColumns(setData)} 
-                    // ✅ Passed the filteredData to the table instead of raw data
                     data={filteredData} 
                     setData={setData} 
                     onBulkStatusChange={handleBulkStatusChange} 
@@ -171,4 +181,4 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
             </div>
         </div>
     )
-}   
+}
