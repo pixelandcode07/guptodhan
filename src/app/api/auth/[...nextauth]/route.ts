@@ -77,8 +77,10 @@ export const authOptions: AuthOptions = {
       if (account?.provider === 'google') {
         try {
           await dbConnect();
-          
-          let existingUser = await User.findOne({ email: user.email })
+
+          // ✅ FIXED: .lean() এর সাথে explicit password field select করা হচ্ছে
+          // যাতে dbUser.password সবসময় সঠিকভাবে পাওয়া যায়
+          let existingUser: any = await User.findOne({ email: user.email })
             .select('+password')
             .lean();
 
@@ -96,11 +98,18 @@ export const authOptions: AuthOptions = {
             existingUser = await User.findById(newUser._id)
               .select('+password')
               .lean();
-            
+
             console.log('✅ New user created:', existingUser?.email);
           } else {
             console.log('✅ Existing user found:', existingUser.email);
           }
+
+          // ✅ DEBUG LOG — এখানে দেখা যাবে password field আসলেই পাওয়া যাচ্ছে কিনা
+          console.log('🔍 [Google SignIn] existingUser.password exists:', !!existingUser?.password);
+
+          // ✅ FIXED: hasPassword সরাসরি এখানেই calculate করে dbUser এ বসিয়ে দেওয়া হচ্ছে
+          // যাতে jwt callback এ আলাদা করে calculate করার দরকার না পড়ে
+          existingUser.hasPassword = !!existingUser?.password;
 
           user.dbUser = existingUser;
           return true;
@@ -127,8 +136,8 @@ export const authOptions: AuthOptions = {
 
         await dbConnect();
 
-        // ✅ FIXED: select এ password ও hasPassword দুইটাই আছে যাতে fallback calculate করা যায়
-        const latestUser = await User.findById(token.id)
+        // ✅ select এ password ও hasPassword দুইটাই আছে যাতে fallback calculate করা যায়
+        const latestUser: any = await User.findById(token.id)
           .select("+password hasPassword")
           .lean();
 
@@ -139,10 +148,12 @@ export const authOptions: AuthOptions = {
           token.profilePicture = latestUser.profilePicture;
           token.address = latestUser.address;
           token.role = latestUser.role;
-          // ✅ FIXED: পুরনো user document এ hasPassword field না থাকলেও password থেকে সঠিক ভাবে calculate হবে
-          token.hasPassword = latestUser.hasPassword ?? !!latestUser.password;
+          // ✅ পুরনো user document এ hasPassword field না থাকলেও password থেকে সঠিক ভাবে calculate হবে
+          token.hasPassword = !!latestUser.password;
           token.isActive = latestUser.isActive;
           token.isDeleted = latestUser.isDeleted;
+
+          console.log('🔍 [Update Trigger] latestUser.password exists:', !!latestUser.password, '→ hasPassword:', token.hasPassword);
         }
 
         if (token.id) {
@@ -154,7 +165,7 @@ export const authOptions: AuthOptions = {
 
       // ✅ Initial sign-in
       if (user) {
-        const dbUser = user.dbUser || user;
+        const dbUser: any = user.dbUser || user;
 
         token.role = dbUser.role || user.role || 'user';
         token.id = dbUser._id?.toString() || user.id;
@@ -164,11 +175,16 @@ export const authOptions: AuthOptions = {
         token.profilePicture = dbUser.profilePicture || user.profilePicture || user.image;
         token.address = dbUser.address || user.address;
         token.vendorId = user.vendorId || dbUser.vendorInfo?._id?.toString();
-        // ✅ FIXED: dbUser.hasPassword না পেলে user.hasPassword (Credentials login থেকে পাঠানো) থেকে নেওয়া হবে,
-        // এবং dbUser এ password থাকলে সেখান থেকেও fallback calculate হবে
-        token.hasPassword = dbUser.hasPassword ?? user.hasPassword ?? !!dbUser.password ?? false;
+
+        // ✅ FIXED: password field থেকে সরাসরি সঠিক hasPassword calculate করা হচ্ছে
+        // dbUser.password (Google flow) অথবা user.hasPassword (Credentials flow) — যেটাই পাওয়া যাক
+        const calculatedHasPassword = !!dbUser.password || dbUser.hasPassword === true || user.hasPassword === true;
+        token.hasPassword = calculatedHasPassword;
+
         token.isActive = dbUser.isActive ?? true;
         token.isDeleted = dbUser.isDeleted ?? false;
+
+        console.log('🔍 [Initial SignIn] dbUser.password exists:', !!dbUser.password, '| dbUser.hasPassword:', dbUser.hasPassword, '| user.hasPassword:', user.hasPassword, '→ FINAL hasPassword:', token.hasPassword);
 
         const accessTokenPayload = { 
           userId: token.id, 
