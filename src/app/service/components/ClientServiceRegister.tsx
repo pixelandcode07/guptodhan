@@ -377,7 +377,7 @@ export default function ClientServiceRegister({
                     ? "Sending OTP..."
                     : isSubmitting
                       ? "Processing..."
-                      : "Start Earning Today"}
+                      : "Create Account"}
                 </Button>
 
                 <motion.div
