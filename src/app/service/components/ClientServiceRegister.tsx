@@ -73,7 +73,7 @@ export default function ClientServiceRegister({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
-  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false); // Success Dialog State
+  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [otp, setOtp] = useState("");
   const [formData, setFormData] = useState<FormValues | null>(null);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
@@ -124,9 +124,21 @@ export default function ClientServiceRegister({
         description: "Check your email for the verification code.",
       });
     } catch (error: any) {
+      // ✅ MAGIC FIX: Catching Duplicate Errors in Initial Submit
+      let errorMsg = error.response?.data?.message || "Please try again.";
+      if (errorMsg.includes("E11000") || errorMsg.includes("duplicate key")) {
+        if (errorMsg.includes("phoneNumber")) {
+          errorMsg = "This phone number is already registered.";
+        } else if (errorMsg.includes("email")) {
+          errorMsg = "This email is already registered.";
+        } else {
+          errorMsg = "These details are already in use.";
+        }
+      }
+
       toast.error("Failed to send OTP", {
         ...toastStyle,
-        description: error.response?.data?.message || "Please try again.",
+        description: errorMsg,
       });
       setShowOtpModal(false);
     } finally {
@@ -172,13 +184,25 @@ export default function ClientServiceRegister({
       setShowOtpModal(false);
       setFormData(null);
 
-      // Open Success Dialog instead of immediate redirect
+      // Open Success Dialog
       setIsSuccessDialogOpen(true);
     } catch (error: any) {
+      // ✅ MAGIC FIX: Clean and User-Friendly Duplicate Error Message
+      let displayMsg = error.response?.data?.message || "Invalid OTP or server error.";
+      
+      if (displayMsg.includes("E11000") || displayMsg.includes("duplicate key")) {
+        if (displayMsg.includes("phoneNumber")) {
+          displayMsg = "This phone number is already registered.";
+        } else if (displayMsg.includes("email")) {
+          displayMsg = "This email is already registered.";
+        } else {
+          displayMsg = "This account information is already in use.";
+        }
+      }
+
       toast.error("Registration Failed", {
         ...toastStyle,
-        description:
-          error.response?.data?.message || "Invalid OTP or server error.",
+        description: displayMsg,
       });
     } finally {
       setIsVerifyingOtp(false);
@@ -429,7 +453,7 @@ export default function ClientServiceRegister({
                           <Button
                             onClick={handleOtpVerify}
                             disabled={isVerifyingOtp || otp.length !== 6}
-                            className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600"
+                            className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white"
                           >
                             {isVerifyingOtp
                               ? "Verifying..."
