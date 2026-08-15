@@ -36,7 +36,7 @@ export const authOptions: AuthOptions = {
         phoneNumber: { label: 'Phone Number', type: 'text' },
         profilePicture: { label: 'Profile Picture', type: 'text' },
         address: { label: 'Address', type: 'text' },
-        hasPassword: { label: 'Has Password', type: 'text' },
+        hasPassword: { label: 'Has Password', type: 'text' }, // ✅ ADDED
       },
 
       async authorize(credentials) {
@@ -51,7 +51,7 @@ export const authOptions: AuthOptions = {
             profilePicture: credentials.profilePicture,
             address: credentials.address,
             vendorId: credentials.vendorId,
-            hasPassword: credentials.hasPassword === 'true',
+            hasPassword: credentials.hasPassword === 'true', // ✅ ADDED
           };
         }
         return null;
@@ -122,50 +122,35 @@ export const authOptions: AuthOptions = {
       const expiresInString = process.env.JWT_ACCESS_EXPIRES_IN || '20d';
       const expiresInMs = parseExpiresIn(expiresInString);
 
-      // ✅ Handle session update trigger
-      // if (trigger === 'update' && session) {
-      //   console.log('🔄 Session update triggered');
-        
-      //   if (session.name) token.name = session.name;
-      //   if (session.email) token.email = session.email;
-      //   if (session.phoneNumber) token.phoneNumber = session.phoneNumber;
-      //   if (session.profilePicture) token.profilePicture = session.profilePicture;
-      //   if (session.address) token.address = session.address;
-
-      //   if (token.id) {
-      //     await deleteCacheKey(CacheKeys.USER.PROFILE(token.id));
-      //   }
-
-      //   return token;
-      // }
-
       if (trigger === 'update') {
-  console.log("🔄 Refreshing session from database...");
+        console.log("🔄 Refreshing session from database...");
 
-  await dbConnect();
+        await dbConnect();
 
-  const latestUser = await User.findById(token.id)
-    .select("+password hasPassword")
-    .lean();
+        // ✅ FIXED: select এ password ও hasPassword দুইটাই আছে যাতে fallback calculate করা যায়
+        const latestUser = await User.findById(token.id)
+          .select("+password hasPassword")
+          .lean();
 
-  if (latestUser) {
-    token.name = latestUser.name;
-    token.email = latestUser.email;
-    token.phoneNumber = latestUser.phoneNumber;
-    token.profilePicture = latestUser.profilePicture;
-    token.address = latestUser.address;
-    token.role = latestUser.role;
-    token.hasPassword = latestUser.hasPassword;
-    token.isActive = latestUser.isActive;
-    token.isDeleted = latestUser.isDeleted;
-  }
+        if (latestUser) {
+          token.name = latestUser.name;
+          token.email = latestUser.email;
+          token.phoneNumber = latestUser.phoneNumber;
+          token.profilePicture = latestUser.profilePicture;
+          token.address = latestUser.address;
+          token.role = latestUser.role;
+          // ✅ FIXED: পুরনো user document এ hasPassword field না থাকলেও password থেকে সঠিক ভাবে calculate হবে
+          token.hasPassword = latestUser.hasPassword ?? !!latestUser.password;
+          token.isActive = latestUser.isActive;
+          token.isDeleted = latestUser.isDeleted;
+        }
 
-  if (token.id) {
-    await deleteCacheKey(CacheKeys.USER.PROFILE(token.id));
-  }
+        if (token.id) {
+          await deleteCacheKey(CacheKeys.USER.PROFILE(token.id));
+        }
 
-  return token;
-}
+        return token;
+      }
 
       // ✅ Initial sign-in
       if (user) {
@@ -179,7 +164,9 @@ export const authOptions: AuthOptions = {
         token.profilePicture = dbUser.profilePicture || user.profilePicture || user.image;
         token.address = dbUser.address || user.address;
         token.vendorId = user.vendorId || dbUser.vendorInfo?._id?.toString();
-        token.hasPassword = dbUser.hasPassword ?? user.hasPassword ?? false;
+        // ✅ FIXED: dbUser.hasPassword না পেলে user.hasPassword (Credentials login থেকে পাঠানো) থেকে নেওয়া হবে,
+        // এবং dbUser এ password থাকলে সেখান থেকেও fallback calculate হবে
+        token.hasPassword = dbUser.hasPassword ?? user.hasPassword ?? !!dbUser.password ?? false;
         token.isActive = dbUser.isActive ?? true;
         token.isDeleted = dbUser.isDeleted ?? false;
 
