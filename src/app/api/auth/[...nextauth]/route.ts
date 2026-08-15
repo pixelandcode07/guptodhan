@@ -14,7 +14,6 @@ export const authOptions: AuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      // ✅ FIX: Add authorization parameters
       authorization: {
         params: {
           prompt: "consent",
@@ -36,11 +35,15 @@ export const authOptions: AuthOptions = {
         phoneNumber: { label: 'Phone Number', type: 'text' },
         profilePicture: { label: 'Profile Picture', type: 'text' },
         address: { label: 'Address', type: 'text' },
-        hasPassword: { label: 'Has Password', type: 'text' }, // ✅ ADDED
+        hasPassword: { label: 'Has Password', type: 'text' },
       },
 
       async authorize(credentials) {
         if (credentials?.userId && credentials?.role) {
+          // ✅ MAGIC FIX: ফ্রন্টএন্ডের ভরসায় না থেকে ডাটাবেস থেকে সরাসরি পাসওয়ার্ড চেক করা হচ্ছে
+          await dbConnect();
+          const dbUser = await User.findById(credentials.userId).select('+password').lean();
+
           return {
             id: credentials.userId,
             role: credentials.role,
@@ -51,7 +54,7 @@ export const authOptions: AuthOptions = {
             profilePicture: credentials.profilePicture,
             address: credentials.address,
             vendorId: credentials.vendorId,
-            hasPassword: credentials.hasPassword === 'true', // ✅ ADDED
+            hasPassword: !!dbUser?.password, // 🔥 Guaranteed fix: DataBase confirm!
           };
         }
         return null;
@@ -60,32 +63,22 @@ export const authOptions: AuthOptions = {
   ],
 
   callbacks: {
-    // ✅ FIXED: Redirect callback to prevent 404
     async redirect({ url, baseUrl }) {
-      // If the url is relative, use it
       if (url.startsWith("/")) return `${baseUrl}${url}`;
-      
-      // If the url is on the same origin, use it
       if (new URL(url).origin === baseUrl) return url;
-      
-      // Otherwise redirect to home
       return baseUrl;
     },
 
-    // 🔥 GOOGLE SIGN-IN → USER CREATE/CHECK
     async signIn({ user, account, profile }: { user: any; account: any; profile?: any }) {
       if (account?.provider === 'google') {
         try {
           await dbConnect();
 
-          // ✅ FIXED: .lean() এর সাথে explicit password field select করা হচ্ছে
-          // যাতে dbUser.password সবসময় সঠিকভাবে পাওয়া যায়
           let existingUser: any = await User.findOne({ email: user.email })
             .select('+password')
             .lean();
 
           if (!existingUser) {
-            console.log('✅ Creating new user from Google sign-in');
             const newUser = await User.create({
               name: user.name,
               email: user.email,
@@ -98,25 +91,11 @@ export const authOptions: AuthOptions = {
             existingUser = await User.findById(newUser._id)
               .select('+password')
               .lean();
-
-            console.log('✅ New user created:', existingUser?.email);
-          } else {
-            console.log('✅ Existing user found:', existingUser.email);
           }
 
-          // ✅ DEBUG LOG — এখানে দেখা যাবে password field আসলেই পাওয়া যাচ্ছে কিনা
-          console.log('🔍 [Google SignIn] RAW existingUser keys:', Object.keys(existingUser || {}));
-          console.log('🔍 [Google SignIn] existingUser.password exists:', !!existingUser?.password);
-
-          // ✅ FIXED: hasPassword সরাসরি এখানেই calculate করে dbUser এ বসিয়ে দেওয়া হচ্ছে
-          // যাতে jwt callback এ আলাদা করে calculate করার দরকার না পড়ে
           existingUser.hasPassword = !!existingUser?.password;
-
-          console.log('🔍 [Google SignIn] existingUser.hasPassword AFTER set:', existingUser.hasPassword);
-
           user.dbUser = existingUser;
 
-          console.log('🔍 [Google SignIn] user.dbUser assigned, keys:', Object.keys(user.dbUser || {}));
           return true;
         } catch (error) {
           console.error('❌ Error during Google sign-in:', error);
@@ -137,11 +116,7 @@ export const authOptions: AuthOptions = {
       const expiresInMs = parseExpiresIn(expiresInString);
 
       if (trigger === 'update') {
-        console.log("🔄 Refreshing session from database...");
-
         await dbConnect();
-
-        // ✅ select এ password ও hasPassword দুইটাই আছে যাতে fallback calculate করা যায়
         const latestUser: any = await User.findById(token.id)
           .select("+password hasPassword")
           .lean();
@@ -153,12 +128,9 @@ export const authOptions: AuthOptions = {
           token.profilePicture = latestUser.profilePicture;
           token.address = latestUser.address;
           token.role = latestUser.role;
-          // ✅ পুরনো user document এ hasPassword field না থাকলেও password থেকে সঠিক ভাবে calculate হবে
           token.hasPassword = !!latestUser.password;
           token.isActive = latestUser.isActive;
           token.isDeleted = latestUser.isDeleted;
-
-          console.log('🔍 [Update Trigger] latestUser.password exists:', !!latestUser.password, '→ hasPassword:', token.hasPassword);
         }
 
         if (token.id) {
@@ -168,7 +140,7 @@ export const authOptions: AuthOptions = {
         return token;
       }
 
-      // ✅ Initial sign-in
+      // Initial sign-in
       if (user) {
         const dbUser: any = user.dbUser || user;
 
@@ -181,15 +153,11 @@ export const authOptions: AuthOptions = {
         token.address = dbUser.address || user.address;
         token.vendorId = user.vendorId || dbUser.vendorInfo?._id?.toString();
 
-        // ✅ FIXED: password field থেকে সরাসরি সঠিক hasPassword calculate করা হচ্ছে
-        // dbUser.password (Google flow) অথবা user.hasPassword (Credentials flow) — যেটাই পাওয়া যাক
-        const calculatedHasPassword = !!dbUser.password || dbUser.hasPassword === true || user.hasPassword === true;
-        token.hasPassword = calculatedHasPassword;
+        // ✅ FIXED: hasPassword will directly come from authorize function which checks DB
+        token.hasPassword = user.hasPassword;
 
         token.isActive = dbUser.isActive ?? true;
         token.isDeleted = dbUser.isDeleted ?? false;
-
-        console.log('🔍 [Initial SignIn] dbUser.password exists:', !!dbUser.password, '| dbUser.hasPassword:', dbUser.hasPassword, '| user.hasPassword:', user.hasPassword, '→ FINAL hasPassword:', token.hasPassword);
 
         const accessTokenPayload = { 
           userId: token.id, 
@@ -215,8 +183,6 @@ export const authOptions: AuthOptions = {
         );
 
         token.accessTokenExpires = Date.now() + expiresInMs;
-
-        console.log('✅ Tokens generated for user:', token.email);
         return token;
       }
 
@@ -226,8 +192,6 @@ export const authOptions: AuthOptions = {
       if (!isExpired) {
         return token;
       }
-
-      console.log('⏰ Access token expired. Attempting refresh...');
       
       try {
         if (!token.refreshToken) {
@@ -272,7 +236,6 @@ export const authOptions: AuthOptions = {
         token.accessTokenExpires = Date.now() + expiresInMs;
         token.role = currentUser.role;
 
-        console.log('✅ Access token refreshed');
         return token;
 
       } catch (error: any) {
@@ -314,12 +277,9 @@ export const authOptions: AuthOptions = {
   pages: {
     signIn: '/auth/signin',
     error: '/auth/error',
-    // ✅ FIX: Remove newUser page if not needed
   },
 
   secret: process.env.NEXTAUTH_SECRET,
-  
-  // ✅ Enable debug in development
   debug: process.env.NODE_ENV === 'development',
 };
 
