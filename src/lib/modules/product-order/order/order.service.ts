@@ -811,7 +811,7 @@ const requestReturnInDB = async (orderId: string, reason: string) => {
     // ✅ MAGIC FIX: Admin Notification Added Here (Return Request এর জন্য)
     try {
       await createAdminNotification(
-        'new_order', // ডাটাবেসে অর্ডারের নোটিফিকেশনের জন্য পরিচিত Enum (enum error এড়াতে)
+        'order', // ডাটাবেসে অর্ডারের নোটিফিকেশনের জন্য পরিচিত Enum (enum error এড়াতে)
         `Return Requested for Order! Reason: ${reason}`,
         `/general/view/orders` // অ্যাডমিন প্যানেলে অর্ডারের লিংকে নিয়ে যাবে
       );
