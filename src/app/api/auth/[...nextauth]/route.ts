@@ -36,6 +36,7 @@ export const authOptions: AuthOptions = {
         phoneNumber: { label: 'Phone Number', type: 'text' },
         profilePicture: { label: 'Profile Picture', type: 'text' },
         address: { label: 'Address', type: 'text' },
+        hasPassword: { label: 'Has Password', type: 'text' },
       },
 
       async authorize(credentials) {
@@ -50,6 +51,7 @@ export const authOptions: AuthOptions = {
             profilePicture: credentials.profilePicture,
             address: credentials.address,
             vendorId: credentials.vendorId,
+            hasPassword: credentials.hasPassword === 'true',
           };
         }
         return null;
@@ -177,7 +179,7 @@ export const authOptions: AuthOptions = {
         token.profilePicture = dbUser.profilePicture || user.profilePicture || user.image;
         token.address = dbUser.address || user.address;
         token.vendorId = user.vendorId || dbUser.vendorInfo?._id?.toString();
-        token.hasPassword = dbUser.hasPassword ?? false;
+        token.hasPassword = dbUser.hasPassword ?? user.hasPassword ?? false;
         token.isActive = dbUser.isActive ?? true;
         token.isDeleted = dbUser.isDeleted ?? false;
 
