@@ -1,9 +1,17 @@
 import { IBooking } from "./serviceProviderManage.interface";
 import { BookingModel } from "./serviceProviderManage.model";
-
+import { createAdminNotification } from "@/lib/utils/createAdminNotification"; // ✅ IMPORTED FUNCTION
 
 const createBookingInDB = async (payload: Partial<IBooking>) => {
   const result = await BookingModel.create(payload);
+
+  // ✅ MAGIC FIX: Admin Notification Added Here
+  await createAdminNotification(
+    'new_service_booking',
+    `New service booking created!`,
+    `/general/service/orders` // অ্যাডমিন প্যানেলের বুকিং পেজের লিংক
+  );
+
   return result;
 };
 
