@@ -1107,14 +1107,7 @@ const prepareWords = (searchTerm: string): string[] => {
     .filter((w) => w.length > 0);
 };
 
-// ─── Regex escape helper ───────────────────────────────────────────────────
-// Escapes characters that are special in JS RegExp (., +, *, ?, ^, $, (, ),
-// [, ], {, }, |, \). Without this, a query word like "3+3" is interpreted
-// as the regex quantifier "one-or-more of the preceding char" instead of a
-// literal "+", so it silently fails to match text that actually contains
-// "3+3". Make sure this same helper is used inside prepareWords /
-// buildTitleMatch / buildDescriptionMatch / buildTagOrRegex wherever a
-// search word is interpolated into `new RegExp(...)`.
+// ─── Regex escape helper ───────────────────────────────────────────────
 const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // ─── getLiveSuggestionsFromDB ─────────────────────────────────────────────────
