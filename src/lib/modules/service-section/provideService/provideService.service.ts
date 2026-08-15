@@ -6,7 +6,7 @@ import { ServiceModel } from "./provideService.model";
 const createServiceInDB = async (payload: Partial<IService>) => {
   const result = await ServiceModel.create(payload);
 
-  // ✅ MAGIC FIX: Admin Notification Added Here
+  // ✅ Admin Notification Added Here
   await createAdminNotification(
     'service_request',
     `New Service pending approval: ${result.service_title}`,
@@ -102,15 +102,12 @@ const getVisibleServicesFromDB = async () => {
   return { total_services, services };
 };
 
-// --- Delete a service (Provider) ---
+// --- Delete a service (Admin / Provider) ---
 const deleteServiceInDB = async (id: string, provider_id: string) => {
-  const service = await ServiceModel.findByIdAndUpdate(
-    id,
-    { service_status: "Disabled", is_visible_to_customers: false },
-    { new: true }
-  );
+  // ✅ MAGIC FIX: findByIdAndUpdate এর বদলে findByIdAndDelete ব্যবহার করে ডাটাবেস থেকে পুরোপুরি ডিলিট করা হলো
+  const service = await ServiceModel.findByIdAndDelete(id);
 
-  if (!service) throw new Error("Service not found or not owned by provider.");
+  if (!service) throw new Error("Service not found or already deleted.");
   return service;
 };
 
