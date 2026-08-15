@@ -9,11 +9,15 @@ const createAdInDB = async (payload: Partial<IClassifiedAd>) => {
   const result = await ClassifiedAd.create({ ...payload, status: 'pending' });
 
   // ✅ Admin Notification for New Ad
-  await createAdminNotification(
-    'buy_sell_ad',
-    `New Buy & Sell Ad pending approval: ${result.title}`,
-    `/general/buy/sell/listing` 
-  );
+  try {
+    await createAdminNotification(
+      'buy_sell_ad', // ডাটাবেসের পরিচিত Enum টাইপ
+      `New Buy & Sell Ad pending approval: ${result.title}`,
+      `/general/buy/sell/listing` 
+    );
+  } catch (error) {
+    console.error("Admin notification failed:", error);
+  }
 
   return result;
 };
@@ -103,16 +107,19 @@ const updateAdInDB = async (adId: string, userId: string, userRole: string, payl
     throw new Error('Forbidden: Only the owner can edit the ad details.');
   }
 
-  // ✅ Owner's own edit always goes back to pending for re-review
   if (isOwner) {
     payload.status = 'pending';
     
-    // ✅ MAGIC FIX: Notify Admin upon Ad Edit
-    await createAdminNotification(
-      'buy_sell_ad_update',
-      `An ad was updated and needs re-approval: ${payload.title || ad.title}`,
-      `/general/buy/sell/listing`
-    );
+    // ✅ MAGIC FIX: Safe Enum + Try/Catch added so it NEVER crashes
+    try {
+      await createAdminNotification(
+        'buy_sell_ad', // ডাটাবেসের পরিচিত Enum টাইপ ব্যবহার করা হলো
+        `Ad was updated and needs re-approval: ${payload.title || ad.title}`,
+        `/general/buy/sell/listing`
+      );
+    } catch (error) {
+      console.error("Admin notification failed:", error);
+    }
   }
 
   return await ClassifiedAd.findByIdAndUpdate(adId, payload, { new: true });
@@ -216,7 +223,6 @@ const getAllAdsForAdminFromDB = async () => {
     .sort({ createdAt: -1 });
 }
 
-// ✅ UPDATE STATUS: Admin Only
 const updateAdStatusInDB = async (adId: string, status: string) => {
   const ad = await ClassifiedAd.findById(adId);
   if (!ad) {
