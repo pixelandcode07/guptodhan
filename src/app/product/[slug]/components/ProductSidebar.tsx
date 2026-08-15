@@ -61,10 +61,10 @@ export default function ProductMainInfo({
   relatedData,
   onColorChange,
   onSizeChange,
-  onCountryChange, // ✅ NEW
+  onCountryChange,
   selectedColor = '',
   selectedSize = '',
-  selectedCountry = '', // ✅ NEW
+  selectedCountry = '',
 }: any) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -84,19 +84,32 @@ export default function ProductMainInfo({
   const [deliveryLoading, setDeliveryLoading] = useState(true);
   const pickerRef = useRef<HTMLDivElement>(null);
 
-  // ─── Store Info (Phone number extract logic) ─────────
+  // ─── Store Info (Dynamic Rating and Completion Rate logic added) ─────────
   const storeInfo = useMemo(() => {
     const vendor = product.vendorStoreId;
     let id = null;
     let name = 'Unknown Store';
     let logo = null;
     let phone = '018XXXXXXXX'; // Fallback phone
+    let rating = 0;
+    let completedOrders = 0;
+    let cancelledOrders = 0;
+    let totalOrders = 0;
+
+    // Helper function to extract stats from the store object
+    const extractStats = (storeObj: any) => {
+      rating = storeObj.averageRating || storeObj.rating || 0;
+      completedOrders = storeObj.completedOrders || storeObj.deliveredOrders || 0;
+      cancelledOrders = storeObj.cancelledOrders || storeObj.canceledOrders || storeObj.rejectedOrders || 0;
+      totalOrders = storeObj.totalOrders || (completedOrders + cancelledOrders) || 0;
+    };
 
     if (vendor && typeof vendor === 'object') {
       name = vendor.storeName || name;
       logo = vendor.storeLogo || logo;
       phone = vendor.storePhone || phone;
       id = vendor._id || vendor.id || null;
+      extractStats(vendor);
     }
 
     if (!id && relatedData?.stores?.length > 0) {
@@ -106,6 +119,7 @@ export default function ProductMainInfo({
           id = foundByName._id || foundByName.id;
           if (!logo) logo = foundByName.storeLogo;
           phone = foundByName.storePhone || phone;
+          extractStats(foundByName);
         }
       }
       if (!id && vendor && typeof vendor === 'string') {
@@ -115,11 +129,16 @@ export default function ProductMainInfo({
           name = foundById.storeName;
           logo = foundById.storeLogo;
           phone = foundById.storePhone || phone;
+          extractStats(foundById);
         }
       }
     }
 
-    return { id, name, logo, phone };
+    // ✅ Calculate Percentages
+    const ratingPercent = rating > 0 ? `${((rating / 5) * 100).toFixed(0)}%` : 'New';
+    const completionRate = totalOrders > 0 ? `${((completedOrders / totalOrders) * 100).toFixed(0)}%` : 'New';
+
+    return { id, name, logo, phone, ratingPercent, completionRate };
   }, [product.vendorStoreId, relatedData?.stores]);
 
   // ─── Wishlist Status 
@@ -683,18 +702,15 @@ export default function ProductMainInfo({
               </div>
             </div>
 
+            {/* ✅ MAGIC FIX: Seller Rating & Completion Rate only */}
             <div className="flex text-center border-t border-gray-100 pt-3 mb-4 bg-gray-50 rounded-md p-2">
-              <div className="w-1/3 border-r border-gray-200">
-                <p className="text-[10px] text-gray-400 uppercase">Rating</p>
-                <p className="font-bold text-sm text-gray-800">92%</p>
+              <div className="w-1/2 border-r border-gray-200 px-1">
+                <p className="text-[10px] text-gray-400 uppercase">Seller Rating</p>
+                <p className="font-bold text-sm text-gray-800">{storeInfo.ratingPercent}</p>
               </div>
-              <div className="w-1/3 border-r border-gray-200">
-                <p className="text-[10px] text-gray-400 uppercase">Ship Time</p>
-                <p className="font-bold text-sm text-gray-800">98%</p>
-              </div>
-              <div className="w-1/3">
-                <p className="text-[10px] text-gray-400 uppercase">Response</p>
-                <p className="font-bold text-sm text-gray-800">95%</p>
+              <div className="w-1/2 px-1">
+                <p className="text-[10px] text-gray-400 uppercase">Completion Rate</p>
+                <p className="font-bold text-sm text-gray-800">{storeInfo.completionRate}</p>
               </div>
             </div>
 
