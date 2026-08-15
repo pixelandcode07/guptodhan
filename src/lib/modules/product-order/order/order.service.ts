@@ -4,17 +4,14 @@ import { OrderModel } from './order.model';
 import { Types } from 'mongoose';
 import { StoreModel } from '../../vendor-store/vendorStore.model';
 
-// ✅ MAGIC FIX: Import Product and Details Models for Stock Reduction
 import { VendorProductModel } from '../../product/vendorProduct.model';
 import { OrderDetailsModel } from '../orderDetails/orderDetails.model';
 
-// ✅ Import Models explicitly
 import '@/lib/modules/product/vendorProduct.model';
 import '@/lib/modules/vendor-store/vendorStore.model'; 
 import '@/lib/modules/promo-code/promoCode.model';
 import '@/lib/modules/product-order/orderDetails/orderDetails.model';
 
-// ✅ Redis Cache Imports
 import { getCachedData, deleteCacheKey, deleteCachePattern } from '@/lib/redis/cache-helpers';
 import { CacheKeys, CacheTTL } from '@/lib/redis/cache-keys';
 import { User } from '../../user/user.model';
@@ -36,7 +33,6 @@ const createOrderInDB = async (payload: Partial<IOrder>) => {
 
     console.log('✅ Order created successfully:', result._id);
 
-    // ✅ MAGIC FIX: Admin Notification Added Here
     await createAdminNotification(
       'order',
       `New Order #${result.orderId} received from ${result.shippingName}`,
@@ -279,7 +275,6 @@ const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
 
     const result = await OrderModel.findByIdAndUpdate(id, payload, { new: true });
 
-    // ✅ MAGIC FIX: Check if order status is changed to 'Delivered'
     const isNowDelivered = result?.orderStatus === 'Delivered';
     const wasNotDelivered = previousOrder.orderStatus !== 'Delivered';
 
@@ -308,7 +303,6 @@ const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
       const detailsIds = result?.orderDetails || previousOrder.orderDetails || [];
       
       if (detailsIds.length > 0) {
-        // Bulletproof order details lookup
         const orderDetails = await OrderDetailsModel.find({
           $or: [
             { _id: { $in: detailsIds } },
@@ -320,21 +314,19 @@ const updateOrderInDB = async (id: string, payload: Partial<IOrder>) => {
           if (item.productId && item.quantity) {
             await VendorProductModel.findByIdAndUpdate(item.productId, {
               $inc: { 
-                stock: -item.quantity,       // 📉 স্টক কমানো হচ্ছে
-                sellCount: item.quantity     // 📈 সেল কাউন্ট বাড়ানো হচ্ছে
+                stock: -item.quantity,       
+                sellCount: item.quantity     
               }
             });
           }
         }
         console.log(`✅ Stock reduced successfully for Order ID: ${result?._id}`);
 
-        // 🧹 CLEAR CACHES SO FRONTEND UI SHOWS NEW STOCK INSTANTLY
         await deleteCachePattern('*product*');
         await deleteCachePattern('products:*');
       }
     }
 
-    // Cache clearing for orders
     await deleteCacheKey(CacheKeys.ORDER.BY_ID(id));
     if (result?.userId) {
       await deleteCachePattern(`orders:user:${result?.userId}*`);
@@ -808,12 +800,12 @@ const requestReturnInDB = async (orderId: string, reason: string) => {
       await deleteCachePattern(`orders:user:${order.userId}*`);
     }
 
-    // ✅ MAGIC FIX: Admin Notification Added Here (Return Request এর জন্য)
+    // ✅ MAGIC FIX: 'result' এর পরিবর্তে 'order' ব্যবহার করা হলো
     try {
       await createAdminNotification(
-        'order', // ডাটাবেসে অর্ডারের নোটিফিকেশনের জন্য পরিচিত Enum (enum error এড়াতে)
+        'order', 
         `Return Requested for Order! Reason: ${reason}`,
-        `/general/view/orders/${result._id}` // অ্যাডমিন প্যানেলে অর্ডারের লিংকে নিয়ে যাবে
+        `/general/view/orders/${order._id}` // <-- Fixed here
       );
     } catch (error) {
       console.error("Admin notification failed for return request:", error);
