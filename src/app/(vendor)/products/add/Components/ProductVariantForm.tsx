@@ -428,6 +428,6 @@ const VariantCard = React.memo(({
       </div>
     </div>
   );
-});
+}); 
 
 VariantCard.displayName = 'VariantCard';
