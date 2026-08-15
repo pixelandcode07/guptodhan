@@ -9,7 +9,7 @@ import { confirmDelete } from '@/components/ReusableComponents/ConfirmToast';
 import axios from 'axios';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import { useRouter } from 'next/navigation'; 
+import { useRouter } from 'next/navigation';
 
 type ClientDataTableProps = {
     serviceUsers: IProvider[];
@@ -77,7 +77,6 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
             ));
 
             toast.success(`Providers ${action === 'approve' ? 'Activated' : 'Deactivated'} successfully!`, { id: toastId });
-            
             router.refresh();
 
         } catch (error) {
@@ -96,8 +95,8 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
 
         try {
             const promises = selectedRows.map(row => 
-                // ✅ Users ডিলিট করার API কল করা হচ্ছে
-                axios.delete(`/api/v1/users/${row._id}`) 
+                // ✅ MAGIC FIX: Service Provider এর জন্য নতুন তৈরি করা ডিলিট API কল করা হচ্ছে
+                axios.delete(`/api/v1/service-section/service-provider/${row._id}`) 
             );
             await Promise.all(promises);
 
@@ -106,12 +105,12 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
 
             toast.success("Providers deleted successfully!", { id: toastId });
             
-            // ✅ MAGIC FIX: সার্ভার ক্যাশ ক্লিয়ার করে নতুন ডাটা আনার নির্দেশ
+            // ✅ সার্ভার ক্যাশ ক্লিয়ার করে ফ্রেশ ডাটা আনা হচ্ছে
             router.refresh();
 
         } catch (error) {
             console.error(error);
-            toast.error("Failed to delete some providers. Check if delete API exists.", { id: toastId });
+            toast.error("Failed to delete some providers.", { id: toastId });
         }
     };
 
