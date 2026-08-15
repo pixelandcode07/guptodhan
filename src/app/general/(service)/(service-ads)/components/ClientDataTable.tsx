@@ -34,6 +34,7 @@ export default function ClientDataTable({ allAds }: ClientDataTableProps) {
 
         try {
             const promises = selectedRows.map(row => 
+                // ✅ Service Ads ডিলিট করার API (provide-service)
                 axios.delete(`/api/v1/service-section/provide-service/${row._id}`)
             );
             await Promise.all(promises);
@@ -76,8 +77,6 @@ export default function ClientDataTable({ allAds }: ClientDataTableProps) {
             ));
 
             toast.success(`Services marked as ${targetStatus} successfully!`, { id: toastId });
-
-            // ✅ MAGIC FIX: Next.js কে সার্ভার থেকে নতুন ডাটা আনার নির্দেশ দেওয়া হলো
             router.refresh(); 
 
         } catch (error) {
@@ -92,7 +91,7 @@ export default function ClientDataTable({ allAds }: ClientDataTableProps) {
                 columns={getServiceColumns(setData)} 
                 data={data} 
                 setData={setData} 
-                onBulkDelete={handleBulkDelete}     
+                onBulkDelete={handleBulkDelete}       
                 onBulkStatusChange={handleBulkStatusChange} 
             />
         </div>
