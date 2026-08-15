@@ -10,7 +10,7 @@ const createBookingInDB = async (payload: Partial<IBooking>) => {
     await createAdminNotification(
       'service_request', // ডাটাবেসের পরিচিত Enum টাইপ ব্যবহার করা হলো
       `New service booking received!`,
-      `/general/service/orders` 
+      `/general/all-service-request` 
     );
   } catch (error) {
     console.error("Admin notification failed:", error);
