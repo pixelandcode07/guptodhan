@@ -105,13 +105,18 @@ export const authOptions: AuthOptions = {
           }
 
           // ✅ DEBUG LOG — এখানে দেখা যাবে password field আসলেই পাওয়া যাচ্ছে কিনা
+          console.log('🔍 [Google SignIn] RAW existingUser keys:', Object.keys(existingUser || {}));
           console.log('🔍 [Google SignIn] existingUser.password exists:', !!existingUser?.password);
 
           // ✅ FIXED: hasPassword সরাসরি এখানেই calculate করে dbUser এ বসিয়ে দেওয়া হচ্ছে
           // যাতে jwt callback এ আলাদা করে calculate করার দরকার না পড়ে
           existingUser.hasPassword = !!existingUser?.password;
 
+          console.log('🔍 [Google SignIn] existingUser.hasPassword AFTER set:', existingUser.hasPassword);
+
           user.dbUser = existingUser;
+
+          console.log('🔍 [Google SignIn] user.dbUser assigned, keys:', Object.keys(user.dbUser || {}));
           return true;
         } catch (error) {
           console.error('❌ Error during Google sign-in:', error);
