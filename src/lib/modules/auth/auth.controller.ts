@@ -182,7 +182,7 @@ const refreshToken = async (req: NextRequest) => {
   }
 
   if (!token) {
-    // ৩ নম্বর পছন্দ: রিকোয়েস্ট বডি
+    // ৩ নম্বর পছন্দ: রিকোয়েস্ট বডি
     try {
       const body = await req.json();
       token = body?.refreshToken;
@@ -579,7 +579,7 @@ const registerServiceProvider = async (req: NextRequest) => {
     phoneNumber: formData.get('phoneNumber') as string,
     address: formData.get('address') as string || '',
     profilePicture: profilePictureUrl,
-    // অন্যান্য তথ্য যা সার্ভিস প্রোভাইডারের জন্য প্রয়োজন
+    // অন্যান্য তথ্য যা সার্ভিস প্রোভাইডারের জন্য প্রয়োজন
     category: formData.get('serviceCategory') as string,
     // experience: formData.get('experience') as string,
     bio: formData.get('bio') as string || '',
@@ -713,7 +713,7 @@ const adminLogin = async (req: NextRequest) => {
     path: '/',
   });
 
-  // মিডলওয়্যারের জন্য এক্সেস টোকেন কুকিতে সেট করা
+  // মিডলওয়্যারের জন্য এক্সেস টোকেন কুকিতে সেট করা
   response.cookies.set('accessToken', accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -732,7 +732,7 @@ const serviceProviderSendForgotPasswordOtp = async (req: NextRequest) => {
   return sendResponse({ 
     success: true, 
     statusCode: StatusCodes.OK, 
-    message: 'পাসওয়ার্ড রিসেট ওটিপি ইমেইলে পাঠানো হয়েছে।', 
+    message: 'পাসওয়ার্ড রিসেট ওটিপি ইমেইলে পাঠানো হয়েছে।', 
     data: null 
   });
 };
@@ -744,7 +744,7 @@ const serviceProviderVerifyForgotPasswordOtp = async (req: NextRequest) => {
   return sendResponse({ 
     success: true, 
     statusCode: StatusCodes.OK, 
-    message: 'OTP ভেরিফাইড! এখন পাসওয়ার্ড রিসেট করুন।', 
+    message: 'OTP ভেরিফাইড! এখন পাসওয়ার্ড রিসেট করুন।', 
     data: result 
   });
 };
@@ -757,7 +757,7 @@ const serviceProviderResetPassword = async (req: NextRequest) => {
   return sendResponse({ 
     success: true, 
     statusCode: StatusCodes.OK, 
-    message: 'সার্ভিস প্রোভাইডার পাসওয়ার্ড সফলভাবে রিসেট হয়েছে।', 
+    message: 'সার্ভিস প্রোভাইডার পাসওয়ার্ড সফলভাবে রিসেট হয়েছে।', 
     data: null 
   });
 };
@@ -782,9 +782,9 @@ export const AuthController = {
   vendorSendForgotPasswordOtp,
   vendorVerifyForgotPasswordOtp,
   vendorResetPassword,
-  serviceProviderSendForgotPasswordOtp,
-  serviceProviderVerifyForgotPasswordOtp,
-  serviceProviderResetPassword,
+  serviceProviderSendForgotPasswordOtp,      // ✅ ADDED
+  serviceProviderVerifyForgotPasswordOtp,    // ✅ ADDED
+  serviceProviderResetPassword,              // ✅ ADDED
   adminLogin,
   sendForgotPasswordOtp,
   verifyForgotPasswordOtp,
