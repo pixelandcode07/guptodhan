@@ -14,11 +14,6 @@ import { Vendor } from '../vendors/vendor.model';
 import { OtpServices } from '../otp/otp.service';
 import { createAdminNotification } from '@/lib/utils/createAdminNotification';
 
-
-
-
-
-
 const loginUser = async (payload: TLoginUser) => {
   const { identifier, password: plainPassword } = payload;
 
@@ -49,10 +44,12 @@ const loginUser = async (payload: TLoginUser) => {
     throw new Error('Incorrect password!');
   }
 
+  // ✅ MAGIC FIX: Added hasPassword to JWT payload so NextAuth session can read it
   const jwtPayload = {
     userId: user._id.toString(),
     email: user.email,
     role: user.role,
+    hasPassword: !!user.password, 
   };
 
   const accessTokenSecret = process.env.JWT_ACCESS_SECRET;
@@ -75,19 +72,16 @@ const loginUser = async (payload: TLoginUser) => {
     refreshToken,
     user: {
       ...userWithoutPassword,
-      hasPassword: !!password, // ← এটা যোগ করো
+      hasPassword: !!password, 
     },
   };
 };
 
-
-// vendorLogin service 
 const vendorLogin = async (payload: TLoginUser) => {
   const { identifier, password: plainPassword } = payload;
 
   const isEmail = identifier.includes('@');
 
-  // 🔥 ১. এখানে populate('vendorInfo') যোগ করতে হবে যাতে ভেন্ডর আইডি পাওয়া যায়
   const user = isEmail
     ? await User.findOne({ email: identifier }).select('+password').populate('vendorInfo')
     : await User.findOne({ phoneNumber: identifier }).select('+password').populate('vendorInfo');
@@ -95,18 +89,18 @@ const vendorLogin = async (payload: TLoginUser) => {
   if (!user) throw new Error('Invalid credentials.');
   if (user.role !== 'vendor') throw new Error('Access denied. Vendor account required.');
 
-  // ... (বাকি ভ্যালিডেশন কোড আগের মতোই থাকবে: isActive, password check etc.)
   if (!user.isActive) throw new Error('Your account is not active. Please contact support.');
   if (!user.password) throw new Error('Password not set. Use social login.');
 
   const isPasswordMatched = await user.isPasswordMatched(plainPassword, user.password);
   if (!isPasswordMatched) throw new Error('Invalid credentials.');
 
-  // ... (Token generation code same as before)
+  // ✅ MAGIC FIX: Added hasPassword
   const jwtPayload = {
     userId: user._id.toString(),
     email: user.email,
     role: user.role,
+    hasPassword: !!user.password, 
   };
 
   const accessToken = generateToken(jwtPayload, process.env.JWT_ACCESS_SECRET!, process.env.JWT_ACCESS_EXPIRES_IN!);
@@ -114,8 +108,6 @@ const vendorLogin = async (payload: TLoginUser) => {
 
   const { password, ...userWithoutPassword } = user.toObject();
 
-
-  // 🔥 ২. ইউজারের সাথে vendorId রিটার্ন করুন
   return {
     accessToken,
     refreshToken,
@@ -128,27 +120,20 @@ const vendorLogin = async (payload: TLoginUser) => {
       profilePicture: userWithoutPassword.profilePicture,
       address: userWithoutPassword.address,
       isActive: userWithoutPassword.isActive,
-      // vendorId: (userWithoutPassword.vendorInfo as any)?._id || null, 
       vendorId: userWithoutPassword.vendorInfo?._id || null,
       hasPassword: !!password,
     }
   };
 };
 
-
-// ------------------------------------
-// --- NEW: VENDOR CHANGE PASSWORD ---
-// ------------------------------------
 const vendorChangePassword = async (userId: string, payload: TChangePassword) => {
   const user = await User.findById(userId).select('+password');
 
   if (!user) throw new Error('User not found!');
 
-  // --- VENDOR CHECK ---
   if (user.role !== 'vendor') {
     throw new Error('Access denied. This function is for vendors only.');
   }
-  // --- END VENDOR CHECK ---
 
   if (!user.password) throw new Error('Password not set for this user.');
 
@@ -160,10 +145,6 @@ const vendorChangePassword = async (userId: string, payload: TChangePassword) =>
   return null;
 };
 
-
-// ------------------------------------
-// --- NEW: VENDOR FORGOT PASSWORD (STEP 1) ---
-// ------------------------------------
 const vendorSendForgotPasswordOtpToEmail = async (email: string) => {
   await connectRedis();
 
@@ -172,11 +153,9 @@ const vendorSendForgotPasswordOtpToEmail = async (email: string) => {
     throw new Error('No user found with this email address.');
   }
 
-  // --- VENDOR CHECK ---
   if (user.role !== 'vendor') {
     throw new Error('This email is not associated with a vendor account.');
   }
-  // --- END VENDOR CHECK ---
 
   if (!user.email) {
     throw new Error('This user does not have a registered email address.');
@@ -184,22 +163,17 @@ const vendorSendForgotPasswordOtpToEmail = async (email: string) => {
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const redisKey = `reset-otp:email:${email}`;
-  await redisClient.set(redisKey, otp, { EX: 300 }); // 5 min expiry
+  await redisClient.set(redisKey, otp, { EX: 300 }); 
 
   await sendEmail({
     to: user.email,
     subject: 'Vendor Password Reset Code',
-    template: 'otp.ejs', // একই টেমপ্লেট ব্যবহার করা যাবে
+    template: 'otp.ejs', 
     data: { name: user.name, otp: otp },
   });
 
   return null;
 };
-
-// ------------------------------------
-// --- NEW: VENDOR FORGOT PASSWORD (STEP 2) ---
-// ------------------------------------
-
 
 const vendorVerifyForgotPasswordOtpFromEmail = async (email: string, otp: string) => {
   await connectRedis();
@@ -214,7 +188,6 @@ const vendorVerifyForgotPasswordOtpFromEmail = async (email: string, otp: string
   if (!user) throw new Error('User not found.');
   if (user.role !== 'vendor') throw new Error('This email is not associated with a vendor account.');
 
-  // এখানে userId + type দুটোই দাও
   const resetToken = generateToken(
     {
       userId: user._id.toString(),
@@ -228,16 +201,12 @@ const vendorVerifyForgotPasswordOtpFromEmail = async (email: string, otp: string
   return { resetToken };
 };
 
-
-
 const refreshToken = async (token: string) => {
-  // ১. রিফ্রেশ সিক্রেট কি চেক করা
   const refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
   if (!refreshTokenSecret) {
     throw new Error('JWT refresh secret not configured in environment variables.');
   }
 
-  // ২. টোকেনটি ভেরিফাই করা (এটি REFRESH_SECRET দিয়ে হবে)
   let decoded: any;
   try {
     decoded = verifyToken(token, refreshTokenSecret);
@@ -245,13 +214,11 @@ const refreshToken = async (token: string) => {
     throw new Error('Invalid or expired refresh token. Please login again.');
   }
 
-  // ৩. ডিকোড করা ডেটা থেকে ইউজার আইডি নেওয়া
   const { userId } = decoded;
   if (!userId) {
     throw new Error('Invalid token payload.');
   }
 
-  // ৪. ডাটাবেসে ইউজার আছে কি না এবং একটিভ কি না তা চেক করা
   const user = await User.findById(userId);
   if (!user) {
     throw new Error('User not found!');
@@ -265,14 +232,14 @@ const refreshToken = async (token: string) => {
     throw new Error('User account is inactive.');
   }
 
-  // ৫. নতুন এক্সেস টোকেনের জন্য পেলোড তৈরি
+  // ✅ MAGIC FIX: Added hasPassword
   const jwtPayload = {
     userId: user._id.toString(),
     email: user.email,
     role: user.role,
+    hasPassword: !!user.password,
   };
 
-  // ৬. নতুন এক্সেস টোকেন জেনারেট করা (এটি ACCESS_SECRET দিয়ে হবে)
   const accessTokenSecret = process.env.JWT_ACCESS_SECRET;
   const accessTokenExpiresIn = process.env.JWT_ACCESS_EXPIRES_IN;
 
@@ -286,7 +253,6 @@ const refreshToken = async (token: string) => {
     accessTokenExpiresIn
   );
 
-  // ৭. শুধুমাত্র নতুন এক্সেস টোকেনটি রিটার্ন করা
   return {
     accessToken,
   };
@@ -306,30 +272,23 @@ const changePassword = async (userId: string, payload: TChangePassword) => {
 };
 
 const setPasswordForSocialLogin = async (userId: string, newPassword: string) => {
-  // এখানে .select('+password') যোগ করা হয়েছে
   const user = await User.findById(userId).select('+password');
 
   if (!user) {
     throw new Error('User not found!');
   }
 
-  // এখন এই চেকটি কাজ করবে
   if (user.password) {
     throw new Error('This account already has a password. Please use the "Change Password" feature instead.');
   }
 
-  // নতুন পাসওয়ার্ড সেট করা
   user.password = newPassword;
-// If password is set successfully, we can also mark hasPassword as true
   user.hasPassword = true;
 
-  // সেভ করার সময় এখন pre-save হুকটি ট্রিগার হবে
   await user.save();
-
   return null;
 };
 
-// --- শুধুমাত্র ইমেইলের জন্য: Forgot Password এর জন্য OTP পাঠানোর সার্ভিস ---
 const sendForgotPasswordOtpToEmail = async (email: string) => {
   await connectRedis();
 
@@ -338,7 +297,6 @@ const sendForgotPasswordOtpToEmail = async (email: string) => {
     throw new Error('No user found with this email address.');
   }
 
-  // সমাধান: sendEmail কল করার আগে নিশ্চিত করা হচ্ছে যে user.email আছে
   if (!user.email) {
     throw new Error('This user does not have a registered email address.');
   }
@@ -348,7 +306,7 @@ const sendForgotPasswordOtpToEmail = async (email: string) => {
   await redisClient.set(redisKey, otp, { EX: 300 });
 
   await sendEmail({
-    to: user.email, // এখন TypeScript নিশ্চিত যে এটি একটি string
+    to: user.email, 
     subject: 'Your Password Reset Code',
     template: 'otp.ejs',
     data: { name: user.name, otp: otp },
@@ -360,7 +318,6 @@ const sendForgotPasswordOtpToEmail = async (email: string) => {
 const sendForgotPasswordOtp = async (identifier: string) => {
   const isEmail = identifier.includes('@');
   
-  // Find User
   const user = isEmail
     ? await User.findOne({ email: identifier })
     : await User.findOne({ phoneNumber: identifier });
@@ -369,7 +326,6 @@ const sendForgotPasswordOtp = async (identifier: string) => {
     throw new Error('No account found with this email/phone number.');
   }
 
-  // Send OTP using existing OtpServices
   let otpResult;
   if (isEmail) {
     if (!user.email) throw new Error("User has no email attached.");
@@ -381,23 +337,20 @@ const sendForgotPasswordOtp = async (identifier: string) => {
 
   return { 
     type: isEmail ? 'email' : 'phone',
-    otp: otpResult?.otp // Only in dev mode
+    otp: otpResult?.otp 
   };
 };
 
-// 2. Verify OTP & Generate Reset Token
 const verifyForgotPasswordOtp = async (identifier: string, otp: string) => {
   const otpNumber = Number(otp);
   if (isNaN(otpNumber)) throw new Error("Invalid OTP format");
 
-  // Verify OTP (Do not delete yet, or delete - depends on flow. Let's verify & delete)
   const verificationResult = await OtpServices.verifyOtpService(identifier, otpNumber, true);
 
   if (!verificationResult.status) {
     throw new Error(verificationResult.message);
   }
 
-  // Find User Again to get ID
   const isEmail = identifier.includes('@');
   const user = isEmail
     ? await User.findOne({ email: identifier })
@@ -405,9 +358,8 @@ const verifyForgotPasswordOtp = async (identifier: string, otp: string) => {
 
   if (!user) throw new Error('User not found.');
 
-  // Generate Reset Token
   const resetTokenPayload = { userId: user._id.toString(), purpose: 'password-reset' };
-  const resetToken = generateToken(resetTokenPayload, process.env.JWT_ACCESS_SECRET!, '10m'); // 10 minutes
+  const resetToken = generateToken(resetTokenPayload, process.env.JWT_ACCESS_SECRET!, '10m'); 
 
   return { resetToken };
 };
@@ -425,12 +377,11 @@ const verifyForgotPasswordOtpFromEmail = async (email: string, otp: string) => {
   if (!user) { throw new Error('User not found.'); }
 
   const resetTokenPayload = { userId: user._id.toString(), purpose: 'password-reset' };
-  const resetToken = generateToken(resetTokenPayload, process.env.JWT_ACCESS_SECRET!, '10m'); // 10 minutes validity
+  const resetToken = generateToken(resetTokenPayload, process.env.JWT_ACCESS_SECRET!, '10m'); 
 
   await redisClient.del(redisKey);
   return { resetToken };
 };
-
 
 const getResetTokenWithFirebase = async (idToken: string) => {
   const decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
@@ -448,9 +399,6 @@ const getResetTokenWithFirebase = async (idToken: string) => {
   return { resetToken };
 };
 
-
-
-// --- Reset Password With Token ---
 const resetPasswordWithToken = async (token: string, newPassword: string) => {
   let decoded: any;
   try {
@@ -462,7 +410,6 @@ const resetPasswordWithToken = async (token: string, newPassword: string) => {
   const user = await User.findById(decoded.userId);
   if (!user) throw new Error('User not found');
 
-  // Vendor check handled by specific routes if needed, or generic reset works for all roles
   if (decoded.type === 'vendor_password_reset' && user.role !== 'vendor') {
     throw new Error('This token is not valid for vendor accounts');
   }
@@ -475,20 +422,16 @@ const resetPasswordWithToken = async (token: string, newPassword: string) => {
 const vendorSendRegistrationOtp = async (email: string) => {
   await connectRedis();
 
-  // ১. চেক করা ইমেইল আগে থেকে আছে কি না
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     throw new Error('This email is already registered. Please login.');
   }
 
-  // ২. OTP জেনারেট করা
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const redisKey = `registration-otp:${email}`;
   
-  // ৫ মিনিটের জন্য সেভ করা
   await redisClient.set(redisKey, otp, { EX: 300 }); 
 
-  // ৩. ইমেইল পাঠানো
   await sendEmail({
     to: email,
     subject: 'Guptodhan Vendor Registration OTP',
@@ -501,12 +444,10 @@ const vendorSendRegistrationOtp = async (email: string) => {
 
 export const registerVendor = async (payload: any, otp: string = '', isByAdmin = false) => {
   try {
-    // ✅ Step 1: Connect to Redis (for OTP verification if not admin)
     if (!isByAdmin) {
       await connectRedis();
     }
 
-    // ✅ Step 2: Extract data
     const {
       email,
       name,
@@ -517,14 +458,6 @@ export const registerVendor = async (payload: any, otp: string = '', isByAdmin =
       ...vendorData
     } = payload;
 
-    console.log('📝 Registering vendor:', {
-      email,
-      name,
-      isByAdmin,
-      hasOTP: !!otp,
-    });
-
-    // ✅ Step 3: Verify OTP if not admin
     if (!isByAdmin) {
       if (!otp) {
         throw new Error('OTP is required for manual registration');
@@ -536,39 +469,28 @@ export const registerVendor = async (payload: any, otp: string = '', isByAdmin =
       if (!storedOtp || storedOtp !== otp) {
         throw new Error('Invalid or expired OTP');
       }
-
-      console.log('✅ OTP verified');
     }
 
-    // ✅ Step 4: Check explicitly for Duplicate Email OR Phone Number
-    // প্রথমে ইমেইল চেক
     const existingEmail = await User.findOne({ email });
     if (existingEmail) {
       throw new Error('This Email address is already registered');
     }
 
-    // এরপর স্পেসিফিক ভাবে ফোন নাম্বার চেক
     const existingPhone = await User.findOne({ phoneNumber });
     if (existingPhone) {
       throw new Error('This Phone number is already registered');
     }
 
-    console.log('✅ Email and Phone are unique');
-
-    // ✅ Step 5: Create User (WITHOUT SESSION/TRANSACTION)
     const newUser = await User.create({
       name,
       email,
-      password, // Will be hashed by pre-save middleware
+      password, 
       phoneNumber,
       address,
       role: 'vendor',
       isActive: isByAdmin ? true : false,
     });
 
-    console.log('✅ User created:', newUser._id);
-
-    // ✅ Step 6: Create Vendor (WITHOUT SESSION/TRANSACTION)
     try {
       const newVendor = await Vendor.create({
         ...vendorData,
@@ -576,22 +498,14 @@ export const registerVendor = async (payload: any, otp: string = '', isByAdmin =
         businessCategory,
       });
 
-      console.log('✅ Vendor created:', newVendor._id);
-
-      // ✅ Step 7: Update User with Vendor reference
       newUser.vendorInfo = newVendor._id;
       await newUser.save();
 
-      console.log('✅ User updated with vendorInfo');
-
-      // ✅ Step 8: Delete OTP from Redis if not admin
       if (!isByAdmin) {
         const redisKey = `registration-otp:${email}`;
         await redisClient.del(redisKey);
-        console.log('✅ OTP deleted from Redis');
       }
 
-      // ✅ MAGIC FIX: Admin Notification Added Here (শুধু ইউজার নিজে করলে নোটিফিকেশন যাবে)
       if (!isByAdmin) {
         await createAdminNotification(
           'vendor_request',
@@ -610,22 +524,14 @@ export const registerVendor = async (payload: any, otp: string = '', isByAdmin =
         status: newVendor.status,
       };
     } catch (vendorError: any) {
-      console.error('❌ Vendor creation error:', vendorError);
-
-      // ✅ Rollback: Delete user if vendor creation fails
       try {
         await User.findByIdAndDelete(newUser._id);
-        console.log('✅ Rolled back: User deleted');
       } catch (deleteError) {
         console.error('⚠️ Error deleting user during rollback:', deleteError);
       }
-
       throw new Error(`Vendor creation failed: ${vendorError.message}`);
     }
   } catch (error: any) {
-    console.error('❌ Registration error:', error.message);
-    
-    // মঙ্গোডিবির কাঁচা এরর আসলে সেটাকেও সুন্দর করে হ্যান্ডেল করা
     if (error.code === 11000) {
       if (error.keyPattern?.phoneNumber) {
         throw new Error('This Phone number is already registered');
@@ -634,20 +540,15 @@ export const registerVendor = async (payload: any, otp: string = '', isByAdmin =
         throw new Error('This Email address is already registered');
       }
     }
-    
     throw error;
   }
 };
-
-
-
-
 
 const serviceProviderSendRegistrationOtp = async (email: string) => {
   await connectRedis();
 
   const existingUser = await User.findOne({ email });
-  if (existingUser) throw new Error('এই ইমেইলটি ইতিমধ্যে ব্যবহার করা হয়েছে।');
+  if (existingUser) throw new Error('এই ইমেইলটি ইতিমধ্যে ব্যবহার করা হয়েছে।');
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const redisKey = `sp-registration-otp:${email}`; 
@@ -674,7 +575,6 @@ const registerServiceProvider = async (payload: any, otp: string) => {
     throw new Error('Invalid OTP or OTP has expired.');
   }
 
-  // ❌ Transaction Block Removed to fix VPS Error
 try {
     const userData = {
       name,
@@ -683,22 +583,19 @@ try {
       phoneNumber,
       address,
       role: 'service-provider',
-      isActive: false, // Default inactive until approved
+      isActive: false, 
       status: 'pending',
       serviceProviderInfo: providerData,
     };
 
-    // ✅ Direct Database Creation (No Session)
     const newUser = await User.create(userData);
 
     if (!newUser) {
         throw new Error('Failed to create user.');
     }
 
-    // Delete OTP after successful registration
     await redisClient.del(redisKey);
     
-    // ✅ MAGIC FIX: Admin Notification Added Here
     await createAdminNotification(
       'service_request',
       `New Service Provider Registration Request from ${newUser.name}`,
@@ -708,7 +605,6 @@ try {
     return newUser;
 
   } catch (error) {
-    // No transaction to abort, just throw the error
     throw error;
   }
 };
@@ -732,10 +628,12 @@ const loginWithGoogle = async (idToken: string) => {
     });
   }
 
+  // ✅ MAGIC FIX: Added hasPassword
   const jwtPayload = {
     userId: user._id.toString(),
     email: user.email,
     role: user.role,
+    hasPassword: !!user.password,
   };
 
   const accessToken = generateToken(
@@ -753,20 +651,13 @@ const loginWithGoogle = async (idToken: string) => {
   return {
     accessToken,
     refreshToken,
-    // user: userWithoutPassword
     user: {
-      // ...userWithoutPassword,
        ...user.toObject(),
       hasPassword: !!password,
     },
-
   };
 };
 
-
-// ------------------------------------
-// --- SERVICE PROVIDER LOGIN ---
-// ------------------------------------
 const serviceProviderLogin = async (payload: TLoginUser) => {
   const { identifier, password: plainPassword } = payload;
 
@@ -780,13 +671,10 @@ const serviceProviderLogin = async (payload: TLoginUser) => {
     throw new Error('Invalid credentials.');
   }
 
-
-  // ✅ Role check
   if (user.role !== 'service-provider') {
     throw new Error('Access denied. Service provider account required.');
   }
 
-  // ✅ Account status check
   if (!user.isActive) {
     throw new Error('Your account is inactive. Please contact support.');
   }
@@ -800,17 +688,16 @@ const serviceProviderLogin = async (payload: TLoginUser) => {
     user.password
   );
 
-  console.log('🟢 PASSWORD MATCHED:', isPasswordMatched);
-
   if (!isPasswordMatched) {
     throw new Error('Incorrect password!');
   }
 
-  // 🔐 JWT Payload
+  // ✅ MAGIC FIX: Added hasPassword
   const jwtPayload = {
     userId: user._id.toString(),
     email: user.email,
     role: user.role,
+    hasPassword: !!user.password,
   };
 
   const accessToken = generateToken(
@@ -839,17 +726,16 @@ const serviceProviderLogin = async (payload: TLoginUser) => {
       profilePicture: userWithoutPassword.profilePicture,
       address: userWithoutPassword.address,
       serviceProviderInfo: userWithoutPassword.serviceProviderInfo || null,
+      hasPassword: !!password, // ✅ Returned for consistency
     },
   };
 };
-
 
 const adminLogin = async (payload: TLoginUser) => {
   const { identifier, password: plainPassword } = payload;
 
   const isEmail = identifier.includes('@');
 
-  // ১. ইউজার খুঁজে বের করা (ইমেইল বা ফোন দিয়ে)
   const user = isEmail
     ? await User.findOne({ email: identifier }).select('+password')
     : await User.findOne({ phoneNumber: identifier }).select('+password');
@@ -858,27 +744,25 @@ const adminLogin = async (payload: TLoginUser) => {
     throw new Error('Invalid credentials.');
   }
 
-  // 🔥 ২. এডমিন রোল চেক করা (সবথেকে গুরুত্বপূর্ণ)
   if (user.role !== 'admin') {
     throw new Error('Access denied. Admin privileges required.');
   }
 
-  // ৩. অ্যাকাউন্ট অ্যাক্টিভ কিনা চেক করা
   if (!user.isActive) {
     throw new Error('Your admin account is inactive. Please contact system owner.');
   }
 
-  // ৪. পাসওয়ার্ড চেক করা
   const isPasswordMatched = await user.isPasswordMatched(plainPassword, user.password!);
   if (!isPasswordMatched) {
     throw new Error('Invalid credentials.');
   }
 
-  // ৫. টোকেন জেনারেট করা
+  // ✅ MAGIC FIX: Added hasPassword
   const jwtPayload = {
     userId: user._id.toString(),
     email: user.email,
     role: user.role,
+    hasPassword: !!user.password,
   };
 
   const accessToken = generateToken(
@@ -898,26 +782,26 @@ const adminLogin = async (payload: TLoginUser) => {
   return {
     accessToken,
     refreshToken,
-    user: userWithoutPassword,
+    user: {
+       ...userWithoutPassword,
+       hasPassword: !!password, // ✅ Returned for consistency
+    }
   };
 };
-
-
 
 const serviceProviderSendForgotPasswordOtp = async (email: string) => {
   await connectRedis();
 
   const user = await User.findOne({ email });
-  if (!user) throw new Error('এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট পাওয়া যায়নি।');
+  if (!user) throw new Error('এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট পাওয়া যায়নি।');
 
-  // রোল চেক
   if (user.role !== 'service-provider') {
-    throw new Error('এই ইমেইলটি সার্ভিস প্রোভাইডার অ্যাকাউন্টের সাথে যুক্ত নয়।');
+    throw new Error('এই ইমেইলটি সার্ভিস প্রোভাইডার অ্যাকাউন্টের সাথে যুক্ত নয়।');
   }
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const redisKey = `sp-reset-otp:email:${email}`;
-  await redisClient.set(redisKey, otp, { EX: 300 }); // ৫ মিনিট মেয়াদ
+  await redisClient.set(redisKey, otp, { EX: 300 }); 
 
   await sendEmail({
     to: email,
@@ -929,34 +813,30 @@ const serviceProviderSendForgotPasswordOtp = async (email: string) => {
   return null;
 };
 
-// --- ২. ওটিপি ভেরিফাই করে রিসেট টোকেন দেওয়া ---
 const serviceProviderVerifyForgotPasswordOtp = async (email: string, otp: string) => {
   await connectRedis();
   const redisKey = `sp-reset-otp:email:${email}`;
   const storedOtp = await redisClient.get(redisKey);
 
   if (!storedOtp || storedOtp !== otp) {
-    throw new Error('OTP সঠিক নয় অথবা মেয়াদ শেষ হয়ে গেছে।');
+    throw new Error('OTP সঠিক নয় অথবা মেয়াদ শেষ হয়ে গেছে।');
   }
 
   const user = await User.findOne({ email });
-  if (!user) throw new Error('ইউজার পাওয়া যায়নি।');
+  if (!user) throw new Error('ইউজার পাওয়া যায়নি।');
 
-  // একটি সিকিউর রিসেট টোকেন জেনারেট করা
   const resetToken = generateToken(
     { 
       userId: user._id.toString(), 
       type: 'sp_password_reset' 
     },
     process.env.JWT_ACCESS_SECRET!,
-    '10m' // ১০ মিনিট মেয়াদ
+    '10m' 
   );
 
   await redisClient.del(redisKey);
   return { resetToken };
 };
-
-
 
 export const AuthServices = {
   loginUser,
