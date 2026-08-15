@@ -1290,6 +1290,60 @@ const getLandingPageProductsFromDB = async () => {
 //   };
 // };
 
+
+
+// const buildDescriptionMatch = (words: string[]): Record<string, any> => {
+//   if (words.length === 0) return {};
+//   if (words.length === 1) {
+//     return {
+//       shortDescription: { $regex: new RegExp(`\\b${words[0]}`, "i") },
+//     };
+//   }
+//   return {
+//     $and: words.map((w) => ({
+//       shortDescription: { $regex: new RegExp(`\\b${w}`, "i") },
+//     })),
+//   };
+// };
+
+
+
+// const buildTagOrRegex = (words: string[]): RegExp =>
+//   new RegExp(words.map((w) => `\\b${w}`).join("|"), "i");
+
+
+
+// ─── prepareWords ─────────────────────────────────────────────────────────────
+// const prepareWords = (searchTerm: string): string[] => {
+//   return searchTerm
+//     .trim()
+//     .toLowerCase()
+//     .split(/\s+/)
+//     .map((w) => w.replace(/[^\w\u0980-\u09FF]/g, ""))
+//     .filter((w) => w.length > 0);
+// };
+
+
+
+// ─── Regex escape helper ───────────────────────────────────────────────
+// const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const escapeRegex = (str: string): string => {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+const prepareWords = (searchTerm: string): string[] => {
+  return searchTerm
+    .normalize("NFC")
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .map((word) =>
+      word.replace(/[^\p{L}\p{M}\p{N}_-]/gu, "")
+    )
+    .filter(Boolean);
+};
+
 const buildTitleMatch = (words: string[]): Record<string, any> => {
   if (words.length === 0) return {};
 
@@ -1312,21 +1366,9 @@ const buildTitleMatch = (words: string[]): Record<string, any> => {
   };
 };
 
-// const buildDescriptionMatch = (words: string[]): Record<string, any> => {
-//   if (words.length === 0) return {};
-//   if (words.length === 1) {
-//     return {
-//       shortDescription: { $regex: new RegExp(`\\b${words[0]}`, "i") },
-//     };
-//   }
-//   return {
-//     $and: words.map((w) => ({
-//       shortDescription: { $regex: new RegExp(`\\b${w}`, "i") },
-//     })),
-//   };
-// };
-
-const buildDescriptionMatch = (words: string[]): Record<string, any> => {
+const buildDescriptionMatch = (
+  words: string[]
+): Record<string, any> => {
   if (words.length === 0) return {};
 
   if (words.length === 1) {
@@ -1348,35 +1390,12 @@ const buildDescriptionMatch = (words: string[]): Record<string, any> => {
   };
 };
 
-// const buildTagOrRegex = (words: string[]): RegExp =>
-//   new RegExp(words.map((w) => `\\b${w}`).join("|"), "i");
-
 const buildTagOrRegex = (words: string[]): RegExp => {
-  return new RegExp(words.map((word) => escapeRegex(word)).join("|"), "i");
+  return new RegExp(
+    words.map((word) => escapeRegex(word)).join("|"),
+    "i"
+  );
 };
-
-// ─── prepareWords ─────────────────────────────────────────────────────────────
-// const prepareWords = (searchTerm: string): string[] => {
-//   return searchTerm
-//     .trim()
-//     .toLowerCase()
-//     .split(/\s+/)
-//     .map((w) => w.replace(/[^\w\u0980-\u09FF]/g, ""))
-//     .filter((w) => w.length > 0);
-// };
-
-const prepareWords = (searchTerm: string): string[] => {
-  return searchTerm
-    .normalize("NFC")
-    .trim()
-    .toLowerCase()
-    .split(/\s+/)
-    .map((word) => word.replace(/[^\p{L}\p{N}_-]/gu, ""))
-    .filter(Boolean);
-};
-
-// ─── Regex escape helper ───────────────────────────────────────────────
-const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // ─── getLiveSuggestionsFromDB ─────────────────────────────────────────────────
 
