@@ -35,7 +35,7 @@ type SetPasswordFormData = z.infer<typeof setPasswordSchema>;
 type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 
 export default function ChangePasswordPage() {
-  const { data: session, status,update } = useSession();
+  const { data: session, status, update } = useSession();
   console.log("Session", session)
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
@@ -71,24 +71,34 @@ export default function ChangePasswordPage() {
           newPassword: data.newPassword,
         });
         toast.success('Password changed successfully!');
+        reset();
       } else {
         // Set Password (first time after social login)
         await axios.post('/api/v1/auth/set-password', {
           newPassword: data.newPassword,
         });
 
-        // Refresh the NextAuth session
-await update();
-        toast.success('Password set successfully! You can now log in with password.');
-      }
+        toast.success('Password set successfully! Refreshing your session...');
 
-      reset();
+        // ✅ FIXED: শুধু update() call করলে React state race condition এ purono
+        // session থেকে যেতে পারে। তাই আমরা:
+        // 1. NextAuth session কে explicitly refresh করাচ্ছি (JWT callback এ trigger:'update' hit করবে)
+        // 2. তারপর পুরো page hard reload করে দিচ্ছি, যাতে server থেকে 100% নতুন session আসে
+        await update();
+
+        // Small delay দিয়ে নিশ্চিত করা হচ্ছে update() এর network call শেষ হয়েছে,
+        // তারপর hard reload — এটাই guaranteed fresh session আনার সবচেয়ে নিরাপদ উপায়
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+
+        return; // reload হয়ে যাবে তাই নিচের finally তে setIsSubmitting(false) দরকার নেই
+      }
     } catch (error: any) {
       const message =
         error.response?.data?.message ||
         'Failed to update password. Please try again.';
       toast.error(message);
-    } finally {
       setIsSubmitting(false);
     }
   };
