@@ -813,7 +813,7 @@ const requestReturnInDB = async (orderId: string, reason: string) => {
       await createAdminNotification(
         'order', // ডাটাবেসে অর্ডারের নোটিফিকেশনের জন্য পরিচিত Enum (enum error এড়াতে)
         `Return Requested for Order! Reason: ${reason}`,
-        `/general/view/orders` // অ্যাডমিন প্যানেলে অর্ডারের লিংকে নিয়ে যাবে
+        `/general/view/orders/${result._id}` // অ্যাডমিন প্যানেলে অর্ডারের লিংকে নিয়ে যাবে
       );
     } catch (error) {
       console.error("Admin notification failed for return request:", error);
