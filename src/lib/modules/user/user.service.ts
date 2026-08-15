@@ -3,7 +3,6 @@ import { Types } from 'mongoose';
 import { TUserInput, TUser } from './user.interface';
 import { User } from './user.model';
 import { deleteFromCloudinary } from '@/lib/utils/cloudinary';
-import bcrypt from 'bcrypt';
 import { getCachedData, deleteCacheKey, deleteCachePattern } from '@/lib/redis/cache-helpers';
 import { CacheKeys, CacheTTL } from '@/lib/redis/cache-keys';
 import '@/lib/modules/service-category/serviceCategory.model';
@@ -24,8 +23,8 @@ const createUserIntoDB = async (payload: TUserInput): Promise<Partial<TUser> | n
     }
   }
 
-  // ❌ REMOVED: const hashedPassword = await bcrypt.hash(payload.password, 12);
-  // ✅ Plain password পাঠাচ্ছি, Model এর pre-save hook এটা হ্যাশ করে নিবে।
+  // ✅ MAGIC FIX: Mark hasPassword as true. pre-save hook will hash the plain password.
+  payload.hasPassword = true;
   
   const newUser = await User.create(payload);
   
@@ -46,7 +45,6 @@ const getMyProfileFromDB = async (userId: string): Promise<Partial<TUser> | null
   return getCachedData(
     cacheKey,
     async () => {
-      // Database query with lean() for better performance
       const user = await User.findById(userId)
         .select('-password')
         .lean();
@@ -67,7 +65,6 @@ const updateMyProfileInDB = async (
   const user = await User.findById(userId).lean();
   if (!user) throw new Error('User not found!');
 
-  // Delete old profile picture if updating
   if (payload.profilePicture && user.profilePicture) {
     try {
       await deleteFromCloudinary(user.profilePicture);
@@ -76,12 +73,11 @@ const updateMyProfileInDB = async (
     }
   }
 
-  // ✅ MAGIC FIX: $set ব্যবহার করে ডাটা আপডেট করা হচ্ছে
   const updateData: any = { ...payload };
 
   const result = await User.findByIdAndUpdate(
     userId, 
-    { $set: updateData }, // $set ইউজ করলে ইমেইল পারফেক্টলি আপডেট হয়
+    { $set: updateData }, 
     {
       new: true,
       runValidators: true,
@@ -90,9 +86,7 @@ const updateMyProfileInDB = async (
     .select('-password')
     .lean();
 
-  // 🗑️ CRITICAL: Cache invalidation
   try {
-    // ইউজারের প্রোফাইল ক্যাশ রিমুভ
     if (typeof deleteCacheKey === 'function') {
       await deleteCacheKey(`user:profile:${userId}`);
       if (payload.email) {
@@ -102,9 +96,6 @@ const updateMyProfileInDB = async (
         await deleteCacheKey(`user:phone:${payload.phoneNumber}`);
       }
     }
-
-    // যদি আপনার deleteCachePattern নামের ফাংশন থাকে (আগের সলিউশন অনুযায়ী), তবে সেটা ইউজ করতে পারেন:
-    // await deleteCachePattern(`*${userId}*`);
   } catch (error) {
     console.warn("Cache clear failed:", error);
   }
@@ -114,12 +105,11 @@ const updateMyProfileInDB = async (
 
 /**
  * 📋 Get All Users (Admin) - No Caching (Real-time data needed)
- * But optimized with lean() and select()
  */
 const getAllUsersFromDB = async (): Promise<TUser[]> => {
   return User.find({ isDeleted: false })
     .select('-password')
-    .sort({ createdAt: -1 }) // Latest first
+    .sort({ createdAt: -1 }) 
     .lean();
 };
 
@@ -135,7 +125,6 @@ const deleteUserFromDB = async (id: string): Promise<Partial<TUser> | null> => {
     .select('-password')
     .lean();
 
-  // 🗑️ Clear all user-related caches
   await deleteCacheKey(CacheKeys.USER.PROFILE(id));
   await deleteCachePattern(CacheKeys.PATTERNS.USERS_LIST);
 
@@ -146,12 +135,14 @@ const deleteUserFromDB = async (id: string): Promise<Partial<TUser> | null> => {
  * 🛠️ Service Provider Registration
  */
 const createServiceProviderIntoDB = async (payload: any) => {
-  const hashedPassword = await bcrypt.hash(payload.password, 12);
+  // ❌ REMOVED EXPLICIT HASHING TO PREVENT DOUBLE HASHING
+  // const hashedPassword = await bcrypt.hash(payload.password, 12);
 
   const userPayload: any = {
     name: payload.name,
     email: payload.email,
-    password: hashedPassword,
+    password: payload.password, // ✅ Plain password, pre('save') hook will hash it ONCE
+    hasPassword: true, // ✅ Set to true
     phoneNumber: payload.phoneNumber,
     address: payload.address,
     role: 'service-provider',
@@ -200,7 +191,6 @@ const updateUserByAdminInDB = async (
   const user = await User.findById(id).lean();
   if (!user) throw new Error('User not found!');
 
-  // Security: Don't allow password update from this endpoint
   if (payload.password) {
     delete payload.password;
   }
@@ -212,18 +202,15 @@ const updateUserByAdminInDB = async (
     .select('-password')
     .lean();
 
-  // 🗑️ Cache invalidation
   await deleteCacheKey(CacheKeys.USER.PROFILE(id));
 
   return result;
 };
 
 /**
- * 🔍 Get User by ID (No populate - direct data only)
+ * 🔍 Get User by ID
  */
 const getUserByIdFromDB = async (id: string): Promise<Partial<TUser> | null> => {
-  // ✅ No populate - direct user data only
-  // If serviceCategory needed, create separate endpoint
   const user = await User.findById(id)
     .select('-password')
     .lean();
@@ -240,7 +227,6 @@ const createUserByAdminInDB = async (payload: any): Promise<Partial<TUser> | nul
   if (payload.email) query.push({ email: payload.email });
   if (payload.phoneNumber) query.push({ phoneNumber: payload.phoneNumber });
 
-  // 1. Check if user already exists
   if (query.length > 0) {
     const isUserExist = await User.findOne({ $or: query }).lean();
     if (isUserExist) {
@@ -248,14 +234,12 @@ const createUserByAdminInDB = async (payload: any): Promise<Partial<TUser> | nul
     }
   }
 
-  // 2. Set default verified status because Admin is creating it
   payload.isVerified = true;
   payload.isActive = true;
+  payload.hasPassword = true; // ✅ Mark hasPassword
 
-  // 3. Create user (Password will be hashed automatically by pre-save hook in user.model.ts)
   const newUser = await User.create(payload);
   
-  // 4. Clear cache to update the Admin UI immediately
   await deleteCachePattern(CacheKeys.PATTERNS.USERS_LIST);
 
   const result = await User.findById(newUser._id)
