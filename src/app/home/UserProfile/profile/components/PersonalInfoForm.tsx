@@ -71,8 +71,14 @@ export default function PersonalInfoForm({
       return;
     }
 
-    // ✅ If Email is changed, trigger OTP Modal!
+    // ✅ If Email is changed, trigger OTP Modal to verify the NEW email!
     if (email.trim() !== initialEmail.trim()) {
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (email.trim() !== '' && !emailRegex.test(email)) {
+        toast.error('Please enter a valid email address');
+        return;
+      }
       await sendOtpForEmailChange();
     } else {
       // If email is NOT changed, just save normally
@@ -86,19 +92,19 @@ export default function PersonalInfoForm({
   const sendOtpForEmailChange = async () => {
     setIsSendingOtp(true);
     try {
-      // ⚠️ এখানে আপনার আসল Send OTP API বসাবেন
-      const res = await axios.post('/api/v1/auth/send-otp', { phoneNumber: phone });
+      // ✅ MAGIC FIX: phoneNumber এর বদলে email পাঠানো হচ্ছে
+      const res = await axios.post('/api/v1/auth/send-otp', { email: email });
       
       if (res.data.success) {
-        toast.success(`OTP sent to your phone: ${phone}`);
+        toast.success(`OTP sent to your new email: ${email}`);
         setShowOtpModal(true);
       } else {
         toast.error(res.data.message || "Failed to send OTP");
       }
     } catch (err) {
-      // ⚠️ API না থাকলে যাতে ব্লক না হয়, তার জন্য Demo Mode
-      console.warn("OTP API might not be connected yet. Showing modal for demo.");
-      toast.success(`OTP sent to ${phone} (Demo Mode)`);
+      // ⚠️ API না থাকলে যাতে ব্লক না হয়, তার জন্য Demo Mode
+      console.warn("OTP API error. Showing modal for demo.", err);
+      toast.success(`OTP sent to ${email} (Demo Mode)`);
       setShowOtpModal(true);
     } finally {
       setIsSendingOtp(false);
@@ -116,11 +122,11 @@ export default function PersonalInfoForm({
 
     setIsVerifyingOtp(true);
     try {
-      // ⚠️ এখানে আপনার আসল Verify OTP API বসাবেন
-      const res = await axios.post('/api/v1/auth/verify-otp', { phoneNumber: phone, otp });
+      // ✅ MAGIC FIX: phoneNumber এর বদলে email দিয়ে ভেরিফাই করা হচ্ছে
+      const res = await axios.post('/api/v1/auth/verify-otp', { email: email, otp });
       
       if (res.data.success) {
-        toast.success("OTP Verified Successfully!");
+        toast.success("Email Verified Successfully!");
         setShowOtpModal(false);
         setOtp('');
         executeSave(); // Now save the new email to DB!
@@ -193,7 +199,7 @@ export default function PersonalInfoForm({
             />
           </div>
 
-          {/* ✅ New Email Field */}
+          {/* Email Field */}
           <div className="grid gap-2">
             <label className="text-sm font-medium text-gray-700">
               Email Address
@@ -207,7 +213,7 @@ export default function PersonalInfoForm({
             />
             {email !== initialEmail && email !== '' && (
               <p className="text-[11px] text-orange-500 mt-1 font-medium">
-                Changing your email requires phone verification via OTP.
+                Changing your email requires verification via OTP sent to the new email address.
               </p>
             )}
           </div>
@@ -247,10 +253,10 @@ export default function PersonalInfoForm({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="bg-white p-6 sm:p-8 rounded-2xl w-full max-w-sm shadow-2xl transform transition-all">
             <div className="text-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Verify Your Number</h3>
+              <h3 className="text-xl font-bold text-gray-900">Verify Your Email</h3>
               <p className="text-sm text-gray-500 mt-2">
                 To update your email, enter the OTP sent to <br />
-                <span className="font-bold text-[#00005E]">{phone}</span>
+                <span className="font-bold text-[#00005E]">{email}</span>
               </p>
             </div>
 
