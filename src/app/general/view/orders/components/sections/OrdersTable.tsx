@@ -88,7 +88,7 @@ export default function OrdersTable({
             const mapSlugToApiStatus = (value: string): string | undefined => {
                 switch (value) {
                     case 'pending': return 'Pending'
-                    case 'approved': return 'Processing'
+                    case 'approved': return 'Approved' // ✅ MAGIC FIX: Added Approved Status
                     case 'ready-to-ship': return 'Processing'
                     case 'in-transit': return 'Shipped'
                     case 'delivered': return 'Delivered'
@@ -219,7 +219,6 @@ export default function OrdersTable({
       }
     };
 
-    // ✅ Action Column with Stop Propagation
     const actionColumn: ColumnDef<OrderRow> = {
         id: "actions",
         header: "ACTION",
@@ -339,7 +338,6 @@ export default function OrdersTable({
         },
     };
 
-    // Filter out default action column if present and add custom actionColumn at the end
     const filteredColumns = ordersColumns.filter((col: any) => {
         const idName = col.id?.toString().toLowerCase() || '';
         return !idName.includes('actions');
@@ -421,12 +419,15 @@ export default function OrdersTable({
                   <option value="Failed">Failed</option>
                 </select>
                 
+                {/* ✅ MAGIC FIX: Added Approved to Bulk Update */}
                 <select
                   value={bulkOrderStatus}
                   onChange={(e) => setBulkOrderStatus(e.target.value)}
                   className="h-8 text-xs border border-blue-200 rounded px-2 outline-none focus:ring-1 focus:ring-blue-500 text-gray-700"
                 >
                   <option value="">Order Status...</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Approved">Approved</option>
                   <option value="Processing">Processing</option>
                   <option value="Shipped">Shipped</option>
                   <option value="Delivered">Delivered</option>
@@ -468,7 +469,6 @@ export default function OrdersTable({
                 />
             )}
 
-            {/* ✅ Reason View Modal */}
             {selectedReason && (
                 <Dialog open={reasonModalOpen} onOpenChange={setReasonModalOpen}>
                     <DialogContent className="sm:max-w-md">

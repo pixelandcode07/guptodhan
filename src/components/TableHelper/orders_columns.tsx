@@ -300,7 +300,6 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
     )
   },
   
-  // ✅ 1. Product Price Column
   { 
     accessorKey: "productTotal", 
     header: () => <span className="whitespace-nowrap">Product Price</span>,
@@ -311,7 +310,6 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
     )
   },
 
-  // ✅ 2. Delivery Charge Column
   { 
     accessorKey: "deliveryCharge", 
     header: () => <span className="whitespace-nowrap">Delivery Price</span>,
@@ -322,7 +320,6 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
     )
   },
 
-  // Existing Total
   { 
     accessorKey: "total", 
     header: () => <span>Total</span>,
@@ -336,7 +333,6 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
     }
   },
 
-  // ✅ 3. Admin Earn Column
   { 
     accessorKey: "adminEarned", 
     header: () => <span className="whitespace-nowrap text-blue-600">Admin Earn</span>,
@@ -347,7 +343,6 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
     )
   },
 
-  // ✅ 4. Vendor Earn Column
   { 
     accessorKey: "vendorEarned", 
     header: () => <span className="whitespace-nowrap text-purple-600">Vendor Sell</span>,
@@ -463,13 +458,17 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       
+      // ✅ MAGIC FIX: Added 'approved' status styles
       const getStatusStyle = (status: string) => {
         switch (status.toLowerCase()) {
           case 'pending': return "bg-yellow-100 text-yellow-800";
+          case 'approved': return "bg-teal-100 text-teal-800"; 
           case 'processing': return "bg-blue-100 text-blue-800";
           case 'shipped': return "bg-purple-100 text-purple-800";
           case 'delivered': return "bg-green-100 text-green-800";
           case 'cancelled': return "bg-red-100 text-red-800";
+          case 'returned': return "bg-orange-100 text-orange-800";
+          case 'return request': return "bg-red-100 text-red-800";
           default: return "bg-gray-100 text-gray-800";
         }
       };
