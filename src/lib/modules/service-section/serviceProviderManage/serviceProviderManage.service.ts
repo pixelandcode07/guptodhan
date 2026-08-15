@@ -121,6 +121,11 @@ const cancelBookingInDB = async (
   return booking;
 };
 
+const deleteBookingInDB = async (booking_id: string) => {
+  const booking = await BookingModel.findByIdAndDelete(booking_id);
+  if (!booking) throw new Error("Booking not found to delete.");
+  return booking;
+};
 
 export const BookingServices = {
   createBookingInDB,
@@ -129,7 +134,7 @@ export const BookingServices = {
   updateBookingInDB,
   getAllBookingsFromDB,
   getUserBookingsFromDB,
-
+  deleteBookingInDB,
   confirmBookingInDB,
   completeBookingInDB,
   cancelBookingInDB,
