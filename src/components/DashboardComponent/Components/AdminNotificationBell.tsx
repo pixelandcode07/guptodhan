@@ -31,8 +31,8 @@ export default function AdminNotificationBell() {
 
   useEffect(() => {
     fetchNotifications();
-    // প্রতি ১ মিনিট পর পর নতুন নোটিফিকেশন চেক করবে (Polling)
-    const interval = setInterval(fetchNotifications, 60000);
+    // ✅ MAGIC FIX: ৬০ সেকেন্ডের জায়গায় ১০ সেকেন্ড করা হলো, যাতে নোটিফিকেশন সাথে সাথে চলে আসে!
+    const interval = setInterval(fetchNotifications, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -73,7 +73,7 @@ export default function AdminNotificationBell() {
       >
         <Bell className="w-5 h-5 text-gray-700" />
         {notifications.length > 0 && (
-          <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white">
+          <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white animate-pulse">
             {notifications.length > 9 ? '9+' : notifications.length}
           </span>
         )}
