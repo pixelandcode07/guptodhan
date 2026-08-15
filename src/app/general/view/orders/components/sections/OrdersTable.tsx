@@ -123,6 +123,7 @@ export default function OrdersTable({
                 name: o.shippingName || '-',
                 phone: o.shippingPhone || '-',
                 email: o.shippingEmail || '-',
+                storeName: o.storeId?.storeName || (o as any).storeName || 'Main Store',
                 total: typeof o.totalAmount === 'number' ? o.totalAmount : 0,
                 deliveryCharge: typeof o.deliveryCharge === 'number' ? o.deliveryCharge : 0,
                 productTotal: typeof o.productTotal === 'number' ? o.productTotal : 0,
@@ -141,9 +142,9 @@ export default function OrdersTable({
                     email: o.userId.email || '-',
                     phone: o.userId.phoneNumber || '-'
                 } : undefined,
-                store: o.storeId ? {
-                    name: o.storeId.storeName || '-',
-                    id: o.storeId._id
+                store: (o.storeId || (o as any).storeName) ? {
+                    name: o.storeId?.storeName || (o as any).storeName || 'Main Store',
+                    id: o.storeId?._id || ''
                 } : undefined,
             }))
             
@@ -173,6 +174,7 @@ export default function OrdersTable({
         return rows.filter((r) => {
             const searchableFields = [
                 r.orderNo,
+                r.storeName,
                 r.name,
                 r.phone,
                 r.status,
@@ -337,43 +339,13 @@ export default function OrdersTable({
         },
     };
 
-    // ✅ MAGIC FIX: Added Cancel Reason Column dynamically
-    const cancelReasonColumn: ColumnDef<OrderRow> = {
-        id: "cancelReason",
-        header: "CANCEL REASON",
-        cell: ({ row }) => {
-            const order = row.original as any;
-            const reason = order.returnReason || order.cancelReason || '-';
-            return (
-                <div 
-                  className={`text-xs font-medium truncate max-w-[120px] ${reason !== '-' ? 'text-red-500' : 'text-gray-400'}`} 
-                  title={reason}
-                >
-                    {reason}
-                </div>
-            );
-        }
-    };
-
-    // Filter duplicate columns and inject the Cancel Reason column before Status
+    // Filter out default action column if present and add custom actionColumn at the end
     const filteredColumns = ordersColumns.filter((col: any) => {
-        const headerName = col.header?.toString().toLowerCase() || '';
         const idName = col.id?.toString().toLowerCase() || '';
-        return !headerName.includes('action') && !idName.includes('action');
+        return !idName.includes('actions');
     });
 
-    // Insert Cancel Reason right before 'Status'
-    let finalColumns = [...filteredColumns];
-    const statusIndex = finalColumns.findIndex((col: any) => col.id === 'status' || col.header?.toString().toLowerCase().includes('status'));
-    
-    if (statusIndex !== -1) {
-        finalColumns.splice(statusIndex, 0, cancelReasonColumn);
-    } else {
-        finalColumns.push(cancelReasonColumn);
-    }
-    
-    // Add the Action column at the very end
-    finalColumns.push(actionColumn);
+    let finalColumns = [...filteredColumns, actionColumn];
 
     const handleBulkStatusUpdate = async () => {
       if (selectedRows.length === 0) return;

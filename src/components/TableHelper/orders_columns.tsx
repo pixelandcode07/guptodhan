@@ -16,6 +16,7 @@ export type OrderRow = {
   name: string
   phone: string
   email?: string
+  storeName?: string
   total: number
   deliveryCharge?: number
   productTotal?: number
@@ -27,6 +28,7 @@ export type OrderRow = {
   trackingId?: string
   parcelId?: string
   cancelReason?: string 
+  returnReason?: string
   customer?: {
     name: string
     email: string
@@ -265,6 +267,18 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
       </div>
     )
   },
+  { 
+    accessorKey: "storeName", 
+    header: () => <span className="whitespace-nowrap font-semibold text-blue-700">Vendor Name</span>,
+    cell: ({ row }) => {
+      const storeName = (row.getValue("storeName") as string) || row.original.store?.name || "Main Store";
+      return (
+        <div className="max-w-[160px] truncate font-semibold text-xs text-blue-700 bg-blue-50 px-2.5 py-1 rounded border border-blue-200" title={storeName}>
+          {storeName}
+        </div>
+      );
+    }
+  },
   { accessorKey: "orderDate", header: () => <span>Order Date</span> },
   { accessorKey: "from", header: () => <span>From</span> },
   { 
@@ -410,18 +424,34 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
     }
   },
   { 
-    accessorKey: "cancelReason", 
-    header: () => <span className="text-red-500 font-semibold whitespace-nowrap">Cancel Reason</span>,
+    accessorKey: "returnReason", 
+    header: () => <span className="text-orange-500 font-semibold whitespace-nowrap">Return Reason</span>,
     cell: ({ row }) => {
-      const cancelReason = row.getValue("cancelReason") as string;
-      const status = row.original.status.toLowerCase();
+      const returnReason = (row.original as any).returnReason as string;
       
-      if (status !== 'cancelled' || !cancelReason) {
+      if (!returnReason || returnReason === '-') {
         return <span className="text-gray-400 text-xs">-</span>;
       }
 
       return (
-        <div className="text-xs text-red-600 font-medium max-w-[150px] whitespace-normal">
+        <div className="text-xs text-orange-600 font-medium max-w-[150px] whitespace-normal" title={returnReason}>
+          {returnReason}
+        </div>
+      );
+    }
+  },
+  { 
+    accessorKey: "cancelReason", 
+    header: () => <span className="text-red-500 font-semibold whitespace-nowrap">Cancel Reason</span>,
+    cell: ({ row }) => {
+      const cancelReason = row.getValue("cancelReason") as string;
+      
+      if (!cancelReason || cancelReason === '-') {
+        return <span className="text-gray-400 text-xs">-</span>;
+      }
+
+      return (
+        <div className="text-xs text-red-600 font-medium max-w-[150px] whitespace-normal" title={cancelReason}>
           {cancelReason}
         </div>
       );

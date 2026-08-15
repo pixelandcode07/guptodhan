@@ -48,7 +48,6 @@ export default function RearrangeBannersClient() {
           ),
         };
       }}
-      sortItems={(a, b) => a.label.localeCompare(b.label)}
     />
   );
 }

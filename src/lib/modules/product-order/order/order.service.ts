@@ -619,6 +619,19 @@ const getReturnedOrdersByUserFromDB = async (userId: string) => {
           { $unwind: { path: '$storeId', preserveNullAndEmptyArrays: true } },
         ]);
 
+        result.forEach((order: any) => {
+          if (Array.isArray(order.orderDetails) && Array.isArray(order.products)) {
+            order.orderDetails = order.orderDetails.map((detail: any, idx: number) => {
+              const pIdStr = detail.productId ? detail.productId.toString() : '';
+              const matchedProduct = order.products.find((p: any) => p._id?.toString() === pIdStr) || order.products[idx] || null;
+              return {
+                ...detail,
+                productId: matchedProduct || detail.productId,
+              };
+            });
+          }
+        });
+
         return result;
       } catch (error) {
         console.error('Error in getReturnedOrdersByUserFromDB:', error);

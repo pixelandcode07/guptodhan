@@ -173,11 +173,18 @@ export const slider_columns: ColumnDef<any>[] = [
               imageUrl = uploadData.url;
             }
             
-            // Update slider with new data
-            const updateData = {
+            // Update slider with new data — filter out empty strings
+            // so partial Zod validation treats them as "not provided"
+            const updateData: Record<string, any> = {
               ...form,
               image: imageUrl,
             };
+            // Remove empty-string fields to avoid Zod min(1) failures on partial updates
+            Object.keys(updateData).forEach((key) => {
+              if (updateData[key] === '') {
+                delete updateData[key];
+              }
+            });
             
             const res = await fetch(`/api/v1/slider-form/${item._id}`, {
               method: 'PATCH',

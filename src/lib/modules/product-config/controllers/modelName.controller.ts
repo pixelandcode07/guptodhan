@@ -67,10 +67,21 @@ const createModelForm = async (req: NextRequest) => {
     }
 };
 
-// Get all model forms
-const getAllModelForms = async () => {
+// Get all model forms (or by brand if query provided)
+const getAllModelForms = async (req?: NextRequest) => {
     await dbConnect();
-    const result = await ModelFormServices.getAllModelFormsFromDB();
+    let result;
+    if (req?.url && req.url.includes('brandId=')) {
+        const { searchParams } = new URL(req.url);
+        const brandId = searchParams.get('brandId');
+        if (brandId && brandId !== 'undefined' && brandId !== 'null') {
+            result = await ModelFormServices.getModelFormsByBrandFromDB(brandId);
+        } else {
+            result = await ModelFormServices.getAllActiveModelFormsFromDB();
+        }
+    } else {
+        result = await ModelFormServices.getAllModelFormsFromDB();
+    }
 
     return sendResponse({
         success: true,

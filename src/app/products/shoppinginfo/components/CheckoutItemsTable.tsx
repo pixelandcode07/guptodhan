@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import type { CartItem } from '../../shopping-cart/ShoppingCartContent';
@@ -94,17 +95,32 @@ function CheckoutItemRow({
     }
   };
 
+  const storeName = item.seller?.name || (item as any).storeName || (item as any).sellerName || '';
+  const productSlug = (item.product as any).slug || item.product.id || '';
+
   return (
     <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
       <td className="py-4 px-2">
-        <div className="relative w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-          <Image
-            src={item.product.image}
-            alt={item.product.name}
-            width={64}
-            height={64}
-            className="w-full h-full object-cover"
-          />
+        <div className="relative w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0 group">
+          {productSlug ? (
+            <Link href={`/product/${productSlug}`} className="block w-full h-full">
+              <Image
+                src={item.product.image}
+                alt={item.product.name}
+                width={64}
+                height={64}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </Link>
+          ) : (
+            <Image
+              src={item.product.image}
+              alt={item.product.name}
+              width={64}
+              height={64}
+              className="w-full h-full object-cover"
+            />
+          )}
           {/* ✅ e.preventDefault() যুক্ত করা হলো */}
           <button
             type="button"
@@ -113,7 +129,7 @@ function CheckoutItemRow({
               e.stopPropagation();
               onRemoveItem(item.id);
             }}
-            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
+            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 z-10"
             aria-label="Remove item"
           >
             ×
@@ -122,7 +138,20 @@ function CheckoutItemRow({
       </td>
       <td className="py-4 px-2">
         <div>
-          <h3 className="font-medium text-gray-900 text-sm mb-1">{item.product.name}</h3>
+          {storeName && (
+            <div className="text-xs font-semibold text-blue-600 mb-0.5">
+              {storeName}
+            </div>
+          )}
+          <h3 className="font-medium text-gray-900 text-sm mb-1 hover:text-blue-600 transition-colors">
+            {productSlug ? (
+              <Link href={`/product/${productSlug}`}>
+                {item.product.name}
+              </Link>
+            ) : (
+              item.product.name
+            )}
+          </h3>
           {(hasVariant(item.product.size) || hasVariant(item.product.color)) && (
             <div className="flex items-center gap-2 text-xs text-gray-600">
               {hasVariant(item.product.size) && <span>Size: {item.product.size}</span>}
@@ -235,20 +264,48 @@ function CheckoutItemMobileCard({
     }
   };
 
+  const storeName = item.seller?.name || (item as any).storeName || (item as any).sellerName || '';
+  const productSlug = (item.product as any).slug || item.product.id || '';
+
   return (
     <div className="rounded-md border border-gray-200 p-3">
       <div className="flex gap-3">
-        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100">
-          <Image
-            src={item.product.image}
-            alt={item.product.name}
-            width={64}
-            height={64}
-            className="h-full w-full object-cover"
-          />
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100 group">
+          {productSlug ? (
+            <Link href={`/product/${productSlug}`} className="block h-full w-full">
+              <Image
+                src={item.product.image}
+                alt={item.product.name}
+                width={64}
+                height={64}
+                className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </Link>
+          ) : (
+            <Image
+              src={item.product.image}
+              alt={item.product.name}
+              width={64}
+              height={64}
+              className="h-full w-full object-cover"
+            />
+          )}
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-medium text-gray-900">{item.product.name}</h3>
+          {storeName && (
+            <div className="text-xs font-semibold text-blue-600 mb-0.5 truncate">
+              {storeName}
+            </div>
+          )}
+          <h3 className="truncate text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
+            {productSlug ? (
+              <Link href={`/product/${productSlug}`}>
+                {item.product.name}
+              </Link>
+            ) : (
+              item.product.name
+            )}
+          </h3>
           {(hasVariant(item.product.size) || hasVariant(item.product.color)) && (
             <div className="mt-1 text-xs text-gray-600">
               {hasVariant(item.product.size) && <span>Size: {item.product.size}</span>}

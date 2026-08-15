@@ -16,12 +16,23 @@ import OrderStatusBadge from '@/components/UserProfile/Order/OrderStatusBadge'
 import ReturnRequestModal from '@/components/UserProfile/Order/ReturnRequestModal' 
 
 function mapOrderStatusToUI(status: string): OrderStatus {
-  const s = status.toLowerCase()
+  if (!status) return 'to_pay'
+  const s = status.trim().toLowerCase()
   if (s === 'delivered') return 'delivered'
   if (s === 'cancelled' || s === 'canceled') return 'cancelled'
-  if (s === 'shipped') return 'to_receive'
-  if (s === 'processing') return 'to_ship'
-  if (s === 'return request' || s === 'returned') return 'return_refund'
+  if (
+    s === 'shipped' ||
+    s === 'shipping' ||
+    s.includes('transit') ||
+    s.includes('receive') ||
+    s.includes('delivery') ||
+    s.includes('dispatched') ||
+    s.includes('way')
+  ) {
+    return 'to_receive'
+  }
+  if (s === 'processing' || s === 'approved' || s === 'ready to ship' || s.includes('ship')) return 'to_ship'
+  if (s.includes('return')) return 'return_refund'
   return 'to_pay'
 }
 
@@ -239,22 +250,33 @@ export default function OrderDetailsPage() {
                        'productTitle' in detail.productId
           ? detail.productId
           : null
+
+        const productFromList = Array.isArray(found.products)
+          ? found.products.find((p: any) => p._id?.toString() === (typeof detail.productId === 'string' ? detail.productId : (detail.productId as any)?._id?.toString()))
+          : null
+
+        const targetProduct = product || productFromList
         
         let productImage = '/img/product/p-1.png'
-        if (product?.thumbnailImage) {
-          productImage = product.thumbnailImage
-        } else if (product?.photoGallery) {
-          const gallery = Array.isArray(product.photoGallery) ? product.photoGallery : [product.photoGallery]
+        if (targetProduct?.thumbnailImage) {
+          productImage = targetProduct.thumbnailImage
+        } else if (targetProduct?.photoGallery) {
+          const gallery = Array.isArray(targetProduct.photoGallery) ? targetProduct.photoGallery : [targetProduct.photoGallery]
           if (gallery.length > 0) {
             productImage = gallery[0]
           }
         }
         
-        const productName = product?.productTitle || found.shippingName || 'Product'
-        const productSlug = product?.slug || product?._id || '' 
+        const productName = targetProduct?.productTitle || found.shippingName || 'Product'
+        const productSlug = targetProduct?.slug || targetProduct?._id || '' 
         
-        const unitPrice = detail.unitPrice || (detail.totalPrice && detail.quantity ? detail.totalPrice / detail.quantity : 0) || product?.productPrice || 0
-        const itemSubtotal = detail.totalPrice || (unitPrice * (detail.quantity || 1))
+        const unitPrice = detail.discountPrice || detail.unitPrice || (detail.totalPrice && detail.quantity ? detail.totalPrice / detail.quantity : 0) || targetProduct?.discountPrice || targetProduct?.productPrice || 0
+        const originalUnitPrice = detail.originalPrice || targetProduct?.productPrice || targetProduct?.regularPrice || unitPrice || 0
+
+        const effectiveOriginalPrice = Math.max(originalUnitPrice, unitPrice)
+        const itemDiscount = effectiveOriginalPrice > unitPrice ? (effectiveOriginalPrice - unitPrice) * (detail.quantity || 1) : 0
+        const itemSubtotal = unitPrice * (detail.quantity || 1)
+        const itemOriginalSubtotal = effectiveOriginalPrice * (detail.quantity || 1)
 
         return {
           id: detail._id || detail.orderDetailsId || `item_${index}`,
@@ -266,13 +288,31 @@ export default function OrderDetailsPage() {
           size: detail.size?.trim() && detail.size !== '—' ? detail.size : '',
           color: detail.color?.trim() && detail.color !== '—' ? detail.color : '',
           unitPrice,
-          subtotal: itemSubtotal, 
+          originalUnitPrice: effectiveOriginalPrice,
+          subtotal: itemSubtotal,
+          originalSubtotal: itemOriginalSubtotal,
+          itemDiscount,
         }
       })
 
-      const subtotal = found.orderDetails?.reduce((sum, detail) => sum + (detail.totalPrice || 0), 0) || 0
+      const netSubtotal = items.reduce((sum, item) => sum + item.subtotal, 0)
+      const rawSubtotal = items.reduce((sum, item) => sum + (item.originalSubtotal || item.subtotal), 0)
+      const totalItemDiscount = items.reduce((sum, item) => sum + (item.itemDiscount || 0), 0)
       const deliveryCharge = found.deliveryCharge || 0
-      const discount = subtotal + deliveryCharge - (found.totalAmount || 0)
+
+      // Overall order discount logic
+      let calculatedDiscount = 0
+      if (rawSubtotal > netSubtotal) {
+        calculatedDiscount = rawSubtotal - netSubtotal
+      } else if (found.totalAmount && (netSubtotal + deliveryCharge > found.totalAmount)) {
+        calculatedDiscount = (netSubtotal + deliveryCharge) - found.totalAmount
+      }
+      
+      const discount = Math.max(calculatedDiscount, totalItemDiscount, found.discount || 0)
+      const displaySubtotal = discount > 0 ? rawSubtotal : netSubtotal
+      const finalTotalAmount = found.totalAmount && found.totalAmount > 0 
+        ? found.totalAmount 
+        : (displaySubtotal - discount + deliveryCharge)
 
       const mapped: OrderWithDetails = {
         id: found._id,
@@ -286,10 +326,10 @@ export default function OrderDetailsPage() {
         trackingId: found.trackingId,
         parcelId: found.parcelId,
         items,
-        subtotal,
+        subtotal: displaySubtotal,
         deliveryCharge,
         discount: discount > 0 ? discount : 0,
-        totalAmount: found.totalAmount || 0,
+        totalAmount: finalTotalAmount,
       }
       setOrder(mapped)
     } catch (error) {
@@ -405,12 +445,26 @@ export default function OrderDetailsPage() {
                     {item.title || 'Product'}
                   </Link>
                   
-                  <div className="text-xs text-gray-500 mt-2 flex items-center gap-2">
+                  <div className="text-xs text-gray-500 mt-2 flex items-center gap-2 flex-wrap">
                     <span>Qty: {item.quantity || 1}</span>
                     <span className="text-gray-300">|</span>
-                    <span>Unit Price: <span className="font-medium text-gray-700">{formatCurrency(item.unitPrice)}</span></span>
+                    <span>
+                      Unit Price: <span className="font-medium text-gray-700">{formatCurrency(item.unitPrice)}</span>
+                      {item.originalUnitPrice && item.originalUnitPrice > item.unitPrice && (
+                        <span className="line-through text-gray-400 text-xs ml-1.5">{formatCurrency(item.originalUnitPrice)}</span>
+                      )}
+                    </span>
                   </div>
                   
+                  {item.itemDiscount && item.itemDiscount > 0 && (
+                    <div className="text-xs font-semibold text-green-600 mt-1 flex items-center gap-1.5">
+                      <span>Discount: -{formatCurrency(item.itemDiscount)}</span>
+                      <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">
+                        Saved
+                      </span>
+                    </div>
+                  )}
+
                   {(item.size || item.color) && (
                     <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
                       {item.color && <span>Color: {item.color}</span>}

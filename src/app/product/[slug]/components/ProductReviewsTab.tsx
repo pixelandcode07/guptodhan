@@ -59,6 +59,7 @@ export default function ProductReviewsTab({
   const [reviewFiles, setReviewFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [activePreviewImage, setActivePreviewImage] = useState<string | null>(null);
   
   const [canReview, setCanReview] = useState(false);
   const [isCheckingEligibility, setIsCheckingEligibility] = useState(true);
@@ -460,11 +461,13 @@ export default function ProductReviewsTab({
                 <p className="text-gray-800 text-sm leading-relaxed mt-2">{review.comment}</p>
 
                 {review.reviewImages && review.reviewImages.length > 0 && (
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex gap-2 mt-3 flex-wrap">
                     {review.reviewImages.map((img, i) => (
                       <div
                         key={i}
-                        className="relative w-16 h-16 sm:w-20 sm:h-20 rounded border border-gray-200 overflow-hidden cursor-zoom-in hover:opacity-90 transition-opacity"
+                        onClick={() => setActivePreviewImage(img)}
+                        className="relative w-16 h-16 sm:w-20 sm:h-20 rounded border border-gray-200 overflow-hidden cursor-pointer hover:opacity-90 transition-all hover:scale-105 hover:ring-2 hover:ring-blue-500 shrink-0"
+                        title="Click to view full image"
                       >
                         <Image src={img} alt={`Review ${i}`} fill className="object-cover" />
                       </div>
@@ -479,6 +482,30 @@ export default function ProductReviewsTab({
 
       {renderReviewFormArea()}
       
+      {/* ✅ Review Image Preview Lightbox Modal */}
+      {activePreviewImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 animate-in fade-in duration-200"
+          onClick={() => setActivePreviewImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] w-full flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => setActivePreviewImage(null)}
+              className="absolute -top-10 right-0 text-white hover:text-gray-300 p-2 rounded-full bg-black/50 hover:bg-black/80 transition-colors"
+              aria-label="Close preview"
+            >
+              <X size={24} />
+            </button>
+            <img
+              src={activePreviewImage}
+              alt="Review Full Size"
+              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl border border-gray-800"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

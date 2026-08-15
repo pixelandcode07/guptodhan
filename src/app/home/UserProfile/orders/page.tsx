@@ -11,13 +11,23 @@ import Link from 'next/link'
 import { ShoppingBag } from 'lucide-react' 
 
 function mapOrderStatusToUI(status: string): OrderStatus {
-  const s = status.toLowerCase()
+  if (!status) return 'to_pay'
+  const s = status.trim().toLowerCase()
   if (s === 'delivered') return 'delivered'
   if (s === 'cancelled' || s === 'canceled') return 'cancelled'
-  if (s === 'shipped') return 'to_receive'
-  if (s === 'processing') return 'to_ship'
-  if (s === 'return request') return 'return_refund' 
-  if (s === 'returned') return 'return_refund' 
+  if (
+    s === 'shipped' ||
+    s === 'shipping' ||
+    s.includes('transit') ||
+    s.includes('receive') ||
+    s.includes('delivery') ||
+    s.includes('dispatched') ||
+    s.includes('way')
+  ) {
+    return 'to_receive'
+  }
+  if (s === 'processing' || s === 'approved' || s === 'ready to ship' || s.includes('ship')) return 'to_ship'
+  if (s.includes('return')) return 'return_refund' 
   return 'to_pay'
 }
 
@@ -187,6 +197,16 @@ export default function UserOrdersPage() {
     )
   }
 
+  const filterCounts: Partial<Record<OrderStatus, number>> = {
+    all: orders.length,
+    to_pay: orders.filter(o => o.status === 'to_pay').length,
+    to_ship: orders.filter(o => o.status === 'to_ship').length,
+    to_receive: orders.filter(o => o.status === 'to_receive').length,
+    delivered: orders.filter(o => o.status === 'delivered').length,
+    return_refund: orders.filter(o => o.status === 'return_refund').length,
+    cancelled: orders.filter(o => o.status === 'cancelled').length,
+  }
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between px-4 mt-1 mb-4">
@@ -202,7 +222,7 @@ export default function UserOrdersPage() {
       </div>
       
       <div className="px-4 mb-4">
-        <OrderFilters value={filter} onChange={setFilter} />
+        <OrderFilters value={filter} onChange={setFilter} counts={filterCounts} />
       </div>
       
       <div className="px-4">

@@ -51,6 +51,15 @@ const reviewSchema = new Schema<IReview>(
       default: [],     
       required: false,  
     },
+    status: {
+      type: String,
+      enum: ['active', 'inactive'],
+      default: 'active',
+    },
+    replyFromAdmin: {
+      type: String,
+      default: '',
+    },
   },
   { timestamps: true }
 );

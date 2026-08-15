@@ -27,7 +27,6 @@ export default function RearrangeBuySellCategoriesClient() {
                     ) : null,
                 };
             }}
-            sortItems={(a, b) => a.label.localeCompare(b.label)}
         />
     );
 }

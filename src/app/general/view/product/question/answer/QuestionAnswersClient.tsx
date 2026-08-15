@@ -311,34 +311,37 @@ export default function QuestionAnswersClient() {
       </AlertDialog>
 
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Answer</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="sm:max-w-lg w-[calc(100vw-2rem)] max-w-lg min-w-0 overflow-hidden">
+          <DialogHeader className="min-w-0 max-w-full">
+            <DialogTitle className="text-base sm:text-lg">Edit Answer</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Provide or update the answer for this question. This will be visible on the product page.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm font-medium text-gray-900">Question</p>
-              <p className="text-sm text-gray-600">
+          <div className="space-y-3 min-w-0 max-w-full overflow-hidden">
+            <div className="min-w-0 max-w-full">
+              <p className="text-xs sm:text-sm font-medium text-gray-900">Question</p>
+              <p className="text-xs sm:text-sm text-gray-600 break-all whitespace-pre-wrap min-w-0 max-w-full">
                 {qaPendingEdit?.question || "N/A"}
               </p>
             </div>
-            <Textarea
-              value={editAnswer}
-              onChange={(e) => setEditAnswer(e.target.value)}
-              placeholder="Type your answer here..."
-              rows={4}
-            />
+            <div className="min-w-0 max-w-full">
+              <Textarea
+                value={editAnswer}
+                onChange={(e) => setEditAnswer(e.target.value)}
+                placeholder="Type your answer here..."
+                rows={4}
+                className="w-full min-w-0 max-w-full break-all whitespace-pre-wrap resize-y text-xs sm:text-sm p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={editLoading}>
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={editLoading} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button onClick={saveAnswer} disabled={editLoading || !editAnswer.trim()}>
+            <Button onClick={saveAnswer} disabled={editLoading || !editAnswer.trim()} className="w-full sm:w-auto">
               {editLoading ? "Saving..." : "Save Answer"}
             </Button>
           </DialogFooter>
