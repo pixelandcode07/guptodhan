@@ -155,6 +155,7 @@ const getAllOrdersFromDB = async (status?: string) => {
               createdAt: 1,
               transactionId: 1, 
               cancelReason: 1,
+              returnReason: 1, // ✅ MAGIC FIX: Return Reason Added to Output
             },
           },
         ]);
@@ -221,6 +222,8 @@ const getOrdersByUserFromDB = async (userId: string) => {
               orderDate: 1,
               storeId: 1,
               createdAt: 1,
+              returnReason: 1, // ✅ MAGIC FIX
+              cancelReason: 1, // ✅ MAGIC FIX
               orderDetails: {
                 $map: {
                   input: '$orderDetails',
@@ -439,6 +442,8 @@ const getOrderByIdFromDB = async (id: string) => {
               trackingId: 1,
               parcelId: 1,
               couponId: 1,
+              returnReason: 1, // ✅ MAGIC FIX
+              cancelReason: 1, // ✅ MAGIC FIX
               orderDetails: {
                 $map: {
                   input: '$orderDetails',
@@ -766,6 +771,7 @@ const getFilteredOrdersFromDB = async (filters: any) => {
           createdAt: 1,
           transactionId: 1, 
           cancelReason: 1,
+          returnReason: 1, // ✅ MAGIC FIX: Return Reason Added to Output
         },
       },
     ]);
@@ -800,12 +806,11 @@ const requestReturnInDB = async (orderId: string, reason: string) => {
       await deleteCachePattern(`orders:user:${order.userId}*`);
     }
 
-    // ✅ MAGIC FIX: 'result' এর পরিবর্তে 'order' ব্যবহার করা হলো
     try {
       await createAdminNotification(
         'order', 
         `Return Requested for Order! Reason: ${reason}`,
-        `/general/view/orders/${order._id}` // <-- Fixed here
+        `/general/view/orders/${order._id}` 
       );
     } catch (error) {
       console.error("Admin notification failed for return request:", error);
