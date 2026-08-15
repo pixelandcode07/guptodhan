@@ -9,7 +9,7 @@ import { confirmDelete } from '@/components/ReusableComponents/ConfirmToast';
 import axios from 'axios';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import { useRouter } from 'next/navigation'; // ✅ MAGIC FIX: useRouter Import করা হলো
+import { useRouter } from 'next/navigation'; 
 
 type ClientDataTableProps = {
     serviceUsers: IProvider[];
@@ -17,9 +17,8 @@ type ClientDataTableProps = {
 
 export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) {
     const [data, setData] = useState<IProvider[]>(serviceUsers || []);
-    const router = useRouter(); // ✅ Router ইনিশিয়ালাইজ করা হলো
+    const router = useRouter(); 
     
-    // States for Filtering and Searching
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
@@ -29,19 +28,14 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
         }
     }, [serviceUsers]);
 
-    // ==========================================
-    //  Filtering Logic (Search + Status)
-    // ==========================================
     const filteredData = useMemo(() => {
         let result = data;
 
-        // 1. Status Filter
         if (statusFilter !== 'all') {
             const isActiveRequired = statusFilter === 'active';
             result = result.filter(provider => provider.isActive === isActiveRequired);
         }
 
-        // 2. Search Filter (Name, Email, Phone, Role)
         const q = searchQuery.trim().toLowerCase();
         if (q) {
             result = result.filter(provider => {
@@ -58,9 +52,6 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
         return result;
     }, [data, searchQuery, statusFilter]);
 
-    // ==========================================
-    //  Bulk Status Change Handler (Approve/Reject)
-    // ==========================================
     const handleBulkStatusChange = async (selectedRows: IProvider[], newStatus: 'active' | 'inactive') => {
         if (selectedRows.length === 0) return;
 
@@ -74,7 +65,6 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
             
             await Promise.all(promises);
 
-            // Instant UI Update
             const updatedIds = selectedRows.map(r => r._id);
             setData(prev => prev.map(provider => 
                 updatedIds.includes(provider._id) 
@@ -88,7 +78,6 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
 
             toast.success(`Providers ${action === 'approve' ? 'Activated' : 'Deactivated'} successfully!`, { id: toastId });
             
-            // ✅ MAGIC FIX: সার্ভার ক্যাশ ক্লিয়ার করে নতুন ডাটা আনার নির্দেশ দেওয়া হলো
             router.refresh();
 
         } catch (error) {
@@ -97,9 +86,6 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
         }
     };
 
-    // ==========================================
-    //  Bulk Delete Handler
-    // ==========================================
     const handleBulkDelete = async (selectedRows: IProvider[]) => {
         if (selectedRows.length === 0) return;
 
@@ -115,28 +101,24 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
             );
             await Promise.all(promises);
 
-            // Filter out deleted items from local state
             const deletedIds = selectedRows.map(r => r._id);
             setData(prev => prev.filter(provider => !deletedIds.includes(provider._id)));
 
             toast.success("Providers deleted successfully!", { id: toastId });
             
-            // ✅ MAGIC FIX: সার্ভার ক্যাশ ক্লিয়ার করে নতুন ডাটা আনার নির্দেশ দেওয়া হলো
+            // ✅ MAGIC FIX: সার্ভার ক্যাশ ক্লিয়ার করে নতুন ডাটা আনার নির্দেশ
             router.refresh();
 
         } catch (error) {
             console.error(error);
-            toast.error("Failed to delete some providers.", { id: toastId });
+            toast.error("Failed to delete some providers. Check if delete API exists.", { id: toastId });
         }
     };
 
     return (
         <div className="space-y-4">
             
-            {/* Search & Filter Controls */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                
-                {/* Search Bar */}
                 <div className="relative w-full sm:max-w-xs">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
@@ -147,7 +129,6 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
                     />
                 </div>
 
-                {/* Status Dropdown */}
                 <div className="w-full sm:w-auto">
                     <select
                         value={statusFilter}
@@ -159,10 +140,8 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
                         <option value="inactive">Inactive Providers</option>
                     </select>
                 </div>
-
             </div>
 
-            {/* Data Table */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 <DataTable 
                     columns={getProviderColumns(setData)} 
@@ -172,7 +151,6 @@ export default function ClientDataTable({ serviceUsers }: ClientDataTableProps) 
                     onBulkDelete={handleBulkDelete}             
                 />
                 
-                {/* Fallback Message when no records match */}
                 {filteredData.length === 0 && (
                     <div className="p-8 text-center text-gray-500 text-sm">
                         No provider requests found matching your criteria.
