@@ -36,10 +36,9 @@ const loginUser = async (req: NextRequest) => {
     success: true,
     statusCode: StatusCodes.OK,
     message: 'User logged in successfully!',
-    data: { ...dataForResponseBody, accessToken }, // ফ্রন্টএন্ডের জন্য এক্সেস টোকেন ডাটাতেও থাকলো
+    data: { ...dataForResponseBody, accessToken }, 
   });
 
-  // ✅ 1. Refresh Token Cookie
   response.cookies.set('refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -47,9 +46,8 @@ const loginUser = async (req: NextRequest) => {
     path: '/',
   });
 
-  // ✅ 2. Access Token Cookie (Middleware এর জন্য এটি জরুরি)
   response.cookies.set('accessToken', accessToken, {
-    httpOnly: true, // সিকিউরিটির জন্য true রাখা ভালো
+    httpOnly: true, 
     secure: process.env.NODE_ENV === 'production',
     maxAge: 24 * 60 * 60, // 1 Day
     path: '/',
@@ -82,12 +80,12 @@ const vendorLogin = async (req: NextRequest) => {
         role: user.role,
         profilePicture: user.profilePicture,
         address: user.address,
-        vendorId: user.vendorId, // ✅ Vendor ID pass করা হচ্ছে
+        vendorId: user.vendorId, 
+        hasPassword: user.hasPassword, // ✅ MAGIC FIX
       }
     },
   });
 
-  // ✅ 1. Refresh Token Cookie
   response.cookies.set('refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -95,7 +93,6 @@ const vendorLogin = async (req: NextRequest) => {
     path: '/',
   });
 
-  // ✅ 2. Access Token Cookie
   response.cookies.set('accessToken', accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -156,7 +153,6 @@ const vendorResetPassword = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
   const validatedData = resetPasswordWithTokenSchema.parse(body);
-  // Reusing the unified reset service logic
   await AuthServices.resetPasswordWithToken(validatedData.token, validatedData.newPassword);
   return sendResponse({
     success: true,
@@ -170,11 +166,9 @@ const vendorResetPassword = async (req: NextRequest) => {
 const refreshToken = async (req: NextRequest) => {
   await dbConnect();
 
-  // ১. টোকেন খোঁজার ৩টি ধাপ (Priority based)
-  let token = req.cookies.get('refreshToken')?.value; // ১ নম্বর পছন্দ: কুকি
+  let token = req.cookies.get('refreshToken')?.value; 
 
   if (!token) {
-    // ২ নম্বর পছন্দ: অথরাইজেশন হেডার (Bearer <token>)
     const authHeader = req.headers.get('authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.split(' ')[1];
@@ -182,7 +176,6 @@ const refreshToken = async (req: NextRequest) => {
   }
 
   if (!token) {
-    // ৩ নম্বর পছন্দ: রিকোয়েস্ট বডি
     try {
       const body = await req.json();
       token = body?.refreshToken;
@@ -191,7 +184,6 @@ const refreshToken = async (req: NextRequest) => {
     }
   }
 
-  // ২. এখন ভ্যালিডেশন চেক করলে আর এরর আসবে না
   const validatedData = refreshTokenValidationSchema.parse({ refreshToken: token });
 
   const result = await AuthServices.refreshToken(validatedData.refreshToken);
@@ -203,11 +195,10 @@ const refreshToken = async (req: NextRequest) => {
     data: result,
   });
 
-  // ৩. নতুন টোকেনটি কুকিতে সেট করা
   response.cookies.set('accessToken', result.accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 20 * 24 * 60 * 60, // ২০ দিন
+    maxAge: 20 * 24 * 60 * 60, 
     path: '/',
   });
 
@@ -263,7 +254,6 @@ const sendForgotPasswordOtp = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
   
-  // Custom check as zod schema might need update
   if (!body.identifier) {
     throw new Error("Identifier (email or phone) is required.");
   }
@@ -274,7 +264,7 @@ const sendForgotPasswordOtp = async (req: NextRequest) => {
     success: true, 
     statusCode: StatusCodes.OK, 
     message: `A password reset OTP has been sent to your ${result.type}.`, 
-    data: { type: result.type, otp: result.otp } // otp will be hidden in prod by service logic
+    data: { type: result.type, otp: result.otp } 
   });
 };
 
@@ -327,12 +317,10 @@ const vendorSendRegistrationOtp = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
 
-  // ইমেইল চেক করা
   if (!body.email) {
     throw new Error("Email is required to send OTP");
   }
 
-  // সার্ভিস কল করে OTP পাঠানো (এটি Redis-এ জমা থাকবে ৫ মিনিট)
   await AuthServices.vendorSendRegistrationOtp(body.email);
 
   return sendResponse({
@@ -343,27 +331,21 @@ const vendorSendRegistrationOtp = async (req: NextRequest) => {
   });
 };
 
-// --- ২. ভেন্ডর রেজিস্ট্রেশন (OTP ভেরিফিকেশনসহ) ---
 const registerVendor = async (req: NextRequest) => {
   try {
-    // ✅ Step 1: Connect to database
     await dbConnect();
     console.log('✅ Database connected');
 
-    // ✅ Step 2: Check if admin (from session)
     const session = await getServerSession(authOptions);
     const isByAdmin = session?.user?.role === 'admin';
     console.log('👤 Admin request:', isByAdmin);
 
-    // ✅ Step 3: Extract form data
     const formData = await req.formData();
     console.log('📝 Form data received');
 
-    // ✅ Step 4: Get OTP and email
     const otp = (formData.get('otp') as string) || '';
     const email = formData.get('email') as string;
 
-    // ✅ Step 5: Validate OTP for non-admin
     if (!isByAdmin) {
       if (!otp || otp.length !== 6) {
         return sendResponse({
@@ -376,7 +358,6 @@ const registerVendor = async (req: NextRequest) => {
       console.log('✅ OTP format valid');
     }
 
-    // ✅ Step 6: Get files
     const ownerNidFile = formData.get('ownerNid') as File | null;
     const tradeLicenseFile = formData.get('tradeLicense') as File | null;
 
@@ -398,14 +379,6 @@ const registerVendor = async (req: NextRequest) => {
       });
     }
 
-    console.log('✅ Files received:', {
-      ownerNid: ownerNidFile.name,
-      tradeLicense: tradeLicenseFile.name,
-    });
-
-    // ✅ Step 7: Upload files to Cloudinary
-    console.log('📤 Uploading files to Cloudinary...');
-    
     let ownerNidUrl = '';
     let tradeLicenseUrl = '';
 
@@ -423,10 +396,7 @@ const registerVendor = async (req: NextRequest) => {
 
       ownerNidUrl = ownerNidResult.secure_url;
       tradeLicenseUrl = tradeLicenseResult.secure_url;
-
-      console.log('✅ Files uploaded to Cloudinary');
     } catch (uploadError: any) {
-      console.error('❌ Cloudinary upload error:', uploadError);
       return sendResponse({
         success: false,
         statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
@@ -435,42 +405,25 @@ const registerVendor = async (req: NextRequest) => {
       });
     }
 
-    // ✅ Step 8: Build payload for service
     const payload: any = {
-      // User fields
       name: formData.get('name') as string,
       email: email,
       password: formData.get('password') as string,
       phoneNumber: formData.get('phoneNumber') as string,
       address: (formData.get('address') as string) || '',
-
-      // Vendor fields
       businessName: formData.get('businessName') as string,
       businessAddress: (formData.get('businessAddress') as string) || '',
       tradeLicenseNumber: (formData.get('tradeLicenseNumber') as string) || '',
       ownerName: formData.get('ownerName') as string,
-
       businessCategory: JSON.parse(
         (formData.get('businessCategory') as string) || '[]'
       ),
-
       ownerNidUrl,
       tradeLicenseUrl,
-
       status: isByAdmin ? 'approved' : 'pending',
     };
  
-    console.log('📋 Payload built:', {
-      name: payload.name,
-      email: payload.email,
-      businessName: payload.businessName,
-      status: payload.status,
-    });
-
-    // ✅ Step 9: Call service to register vendor
     const result = await AuthServices.registerVendor(payload, otp, isByAdmin);
-
-    console.log('✅ Vendor registration successful');
 
     return sendResponse({
       success: true,
@@ -481,11 +434,6 @@ const registerVendor = async (req: NextRequest) => {
       data: result,
     });
   } catch (error: any) {
-    console.error('❌ Registration error:', {
-      message: error.message,
-      stack: error.stack,
-    });
-
     return sendResponse({
       success: false,
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
@@ -515,7 +463,6 @@ const checkDuplicate = async (req: NextRequest) => {
     const body = await req.json();
     const { email, phoneNumber } = body;
 
-    // ✅ Inline check — no new service function
     const existingEmail = await User.findOne({ email });
     if (existingEmail) {
       return sendResponse({
@@ -560,7 +507,6 @@ const registerServiceProvider = async (req: NextRequest) => {
   const otp = formData.get('otp') as string;
   if (!otp) throw new Error('OTP is required for registration.');
 
-  // যদি সার্ভিস প্রোভাইডারের ছবি বা NID থাকে তবে এখানে আপলোড লজিক বসাতে পারেন
   const profilePictureFile = formData.get('cvUrl') as File | null;
   let profilePictureUrl = '';
 
@@ -579,9 +525,7 @@ const registerServiceProvider = async (req: NextRequest) => {
     phoneNumber: formData.get('phoneNumber') as string,
     address: formData.get('address') as string || '',
     profilePicture: profilePictureUrl,
-    // অন্যান্য তথ্য যা সার্ভিস প্রোভাইডারের জন্য প্রয়োজন
     category: formData.get('serviceCategory') as string,
-    // experience: formData.get('experience') as string,
     bio: formData.get('bio') as string || '',
   };
 
@@ -629,7 +573,6 @@ const googleLoginHandler = async (req: NextRequest) => {
   return response;
 };
 
-
 const serviceProviderLogin = async (req: NextRequest) => {
   await dbConnect();
 
@@ -655,11 +598,11 @@ const serviceProviderLogin = async (req: NextRequest) => {
         profilePicture: user.profilePicture,
         address: user.address,
         serviceProviderInfo: user.serviceProviderInfo,
+        hasPassword: user.hasPassword, // ✅ MAGIC FIX
       },
     },
   });
 
-  // 🍪 Refresh Token Cookie
   response.cookies.set('refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -667,7 +610,6 @@ const serviceProviderLogin = async (req: NextRequest) => {
     path: '/',
   });
 
-  // 🍪 Access Token Cookie
   response.cookies.set('accessToken', accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -682,7 +624,6 @@ const adminLogin = async (req: NextRequest) => {
   await dbConnect();
   const body = await req.json();
   
-  // আমরা আগের loginValidationSchema ব্যবহার করতে পারি (যেখানে identifier এবং password থাকে)
   const validatedData = loginValidationSchema.parse(body);
   
   const result = await AuthServices.adminLogin(validatedData);
@@ -701,11 +642,11 @@ const adminLogin = async (req: NextRequest) => {
         email: user.email,
         role: user.role,
         profilePicture: user.profilePicture,
+        hasPassword: (user as any).hasPassword, // ✅ MAGIC FIX
       },
     },
   });
 
-  // সিকিউরিটির জন্য কুকিতে রিফ্রেশ টোকেন সেট করা
   response.cookies.set('refreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -713,7 +654,6 @@ const adminLogin = async (req: NextRequest) => {
     path: '/',
   });
 
-  // মিডলওয়্যারের জন্য এক্সেস টোকেন কুকিতে সেট করা
   response.cookies.set('accessToken', accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -732,7 +672,7 @@ const serviceProviderSendForgotPasswordOtp = async (req: NextRequest) => {
   return sendResponse({ 
     success: true, 
     statusCode: StatusCodes.OK, 
-    message: 'পাসওয়ার্ড রিসেট ওটিপি ইমেইলে পাঠানো হয়েছে।', 
+    message: 'পাসওয়ার্ড রিসেট ওটিপি ইমেইলে পাঠানো হয়েছে।', 
     data: null 
   });
 };
@@ -744,7 +684,7 @@ const serviceProviderVerifyForgotPasswordOtp = async (req: NextRequest) => {
   return sendResponse({ 
     success: true, 
     statusCode: StatusCodes.OK, 
-    message: 'OTP ভেরিফাইড! এখন পাসওয়ার্ড রিসেট করুন।', 
+    message: 'OTP ভেরিফাইড! এখন পাসওয়ার্ড রিসেট করুন।', 
     data: result 
   });
 };
@@ -752,12 +692,11 @@ const serviceProviderVerifyForgotPasswordOtp = async (req: NextRequest) => {
 const serviceProviderResetPassword = async (req: NextRequest) => {
   await dbConnect();
   const { token, newPassword } = await req.json();
-  // এখানে ভেন্ডর বা ইউজারের রিসেট সার্ভিসটিই ব্যবহার করা যাবে
   await AuthServices.resetPasswordWithToken(token, newPassword);
   return sendResponse({ 
     success: true, 
     statusCode: StatusCodes.OK, 
-    message: 'সার্ভিস প্রোভাইডার পাসওয়ার্ড সফলভাবে রিসেট হয়েছে।', 
+    message: 'সার্ভিস প্রোভাইডার পাসওয়ার্ড সফলভাবে রিসেট হয়েছে।', 
     data: null 
   });
 };
