@@ -3,8 +3,8 @@ import React, { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import api from '@/lib/axios'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Heart, Gift, CheckCircle, Clock, ShoppingBag } from 'lucide-react' // ✅ ShoppingBag আইকন ইম্পোর্ট করা হলো
-import Link from 'next/link' // ✅ Link ইম্পোর্ট করা হলো
+import { Heart, Gift, Clock, ShoppingBag, Bell } from 'lucide-react'
+import Link from 'next/link'
 
 export default function DonationDashboardPage() {
     const { data: session } = useSession()
@@ -12,7 +12,8 @@ export default function DonationDashboardPage() {
         totalCampaigns: 0,
         completedCampaigns: 0,
         totalClaims: 0,
-        approvedClaims: 0
+        approvedClaims: 0,
+        receivedRequests: 0 
     })
     const [loading, setLoading] = useState(true)
 
@@ -40,11 +41,10 @@ export default function DonationDashboardPage() {
         if (session) fetchStats()
     }, [session])
 
-    if (loading) return <div className="p-8 text-center">Loading stats...</div>
+    if (loading) return <div className="p-8 text-center text-gray-500 animate-pulse font-medium">Loading stats...</div>
 
     return (
         <div className="p-6">
-            {/* ✅ Donation Overview Heading এবং Shop Now বাটন */}
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-xl font-semibold text-gray-800">Donation Overview</h1>
                 
@@ -52,59 +52,84 @@ export default function DonationDashboardPage() {
                     href="/products" 
                     className="flex items-center gap-2 bg-[#0097E9] hover:bg-[#0097E9]/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap"
                 >
-                    <ShoppingBag className="w-4 h-4" />
-                    Shop Now
+                    <ShoppingBag className="w-4 h-4" /> Shop Now
                 </Link>
             </div>
             
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {/* Total Campaigns */}
-                <Card>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                
+                {/* 1. Received Requests Card */}
+                <Card className="relative overflow-hidden group hover:border-blue-400 transition-colors border-blue-200 bg-blue-50/50">
+                    <Link href="/home/UserProfile/received-requests" className="absolute inset-0 z-10">
+                        <span className="sr-only">View Received Requests</span>
+                    </Link>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-blue-900">Received Requests</CardTitle>
+                        <Bell className="h-4 w-4 text-blue-600" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-blue-700">{stats.receivedRequests || 0}</div>
+                        <p className="text-xs text-blue-600 mt-1 flex items-center justify-between">
+                            People requested your items
+                            <span className="font-bold group-hover:underline">View &rarr;</span>
+                        </p>
+                    </CardContent>
+                </Card>
+
+                {/* 2. Total Campaigns (Now Clickable) */}
+                <Card className="relative overflow-hidden group hover:border-red-400 transition-colors">
+                    <Link href="/home/UserProfile/my-campaigns" className="absolute inset-0 z-10">
+                        <span className="sr-only">View Total Campaigns</span>
+                    </Link>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Campaigns</CardTitle>
                         <Heart className="h-4 w-4 text-red-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalCampaigns}</div>
-                        <p className="text-xs text-muted-foreground">Donations you posted</p>
+                        <div className="text-2xl font-bold">{stats.totalCampaigns || 0}</div>
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center justify-between">
+                            Donations you posted
+                            <span className="font-bold text-red-500 group-hover:underline">View &rarr;</span>
+                        </p>
                     </CardContent>
                 </Card>
 
-                {/* Completed Campaigns */}
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Successful Donations</CardTitle>
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.completedCampaigns}</div>
-                        <p className="text-xs text-muted-foreground">Items donated successfully</p>
-                    </CardContent>
-                </Card>
-
-                {/* Total Claims */}
-                <Card>
+                {/* 3. My Requests Card (✅ MAGIC FIX: Now Clickable) */}
+                <Card className="relative overflow-hidden group hover:border-purple-400 transition-colors">
+                    <Link href="/home/UserProfile/my-claims" className="absolute inset-0 z-10">
+                        <span className="sr-only">View My Requests</span>
+                    </Link>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">My Requests</CardTitle>
-                        <Gift className="h-4 w-4 text-blue-500" />
+                        <Gift className="h-4 w-4 text-purple-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalClaims}</div>
-                        <p className="text-xs text-muted-foreground">Items you applied for</p>
+                        <div className="text-2xl font-bold">{stats.totalClaims || 0}</div>
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center justify-between">
+                            Items you applied for
+                            <span className="font-bold text-purple-500 group-hover:underline">View &rarr;</span>
+                        </p>
                     </CardContent>
                 </Card>
 
-                {/* Approved Claims */}
-                <Card>
+                {/* 4. Approved Claims (Now Clickable) */}
+                <Card className="relative overflow-hidden group hover:border-orange-400 transition-colors">
+                    <Link href="/home/UserProfile/my-claims" className="absolute inset-0 z-10">
+                        <span className="sr-only">View Approved Requests</span>
+                    </Link>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Approved Requests</CardTitle>
                         <Clock className="h-4 w-4 text-orange-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.approvedClaims}</div>
-                        <p className="text-xs text-muted-foreground">Requests accepted by donors</p>
+                        <div className="text-2xl font-bold">{stats.approvedClaims || 0}</div>
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center justify-between">
+                            Requests accepted by donors
+                            <span className="font-bold text-orange-500 group-hover:underline">View &rarr;</span>
+                        </p>
                     </CardContent>
                 </Card>
+                
             </div>
         </div>
     )

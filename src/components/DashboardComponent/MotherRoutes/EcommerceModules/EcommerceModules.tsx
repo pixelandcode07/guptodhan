@@ -86,24 +86,22 @@ export function EcommerceModules({
                         <SidebarMenuButton
                           asChild
                           isActive={active}
-                          className={`flex items-center gap-2 pl-5 ${active
-                            ? 'bg-[#051b38] hover:bg-[#051b38] text-white border-b border-white rounded-md font-medium'
-                            : 'text-white bg-[#132843]'
+                          className={`flex items-center justify-between gap-2 pl-4 pr-3 ${active
+                            ? 'bg-[#051b38] hover:bg-[#051b38] text-white border-b border-amber-400 rounded-md font-medium'
+                            : 'text-gray-200 bg-[#132843] hover:bg-[#1a3356] hover:text-white'
                           }`}
                         >
-                          <Link href={subItem.url}>
-                            <span>{subItem.title}</span>
+                          <Link href={subItem.url} className="flex items-center justify-between w-full">
+                            <span className="truncate text-xs font-normal">{subItem.title}</span>
                             
-                            
-                            {subItem.count && (
-                              <span className="ml-auto text-xs px-2 py-1 rounded bg-orange-500 text-white">
+                            {subItem.count !== undefined && subItem.count !== null && (
+                              <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/90 text-white shadow-sm shrink-0 min-w-[20px] text-center">
                                 {subItem.count}
                               </span>
                             )}
 
-                            {/* ✅ New Badge: এখানে subItem.isNew চেক করা হচ্ছে */}
                             {subItem.isNew && (
-                              <span className="ml-auto text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded font-bold uppercase">
+                              <span className="ml-auto text-[9px] bg-rose-500 text-white px-1.5 py-0.5 rounded-full font-extrabold uppercase shrink-0">
                                 New
                               </span>
                             )}

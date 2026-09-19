@@ -86,8 +86,6 @@ export default function LogInRegister() {
 
   const [showPin, setShowPin] = useState<boolean>(false)
 
-  // ✅ FIXED: '0' + slice ছিল bug — এখন শুধু slice করে 01XXXXXXXXX বানাচ্ছি
-  // +8801816506070 → slice(3) → 01816506070 ✅ (আগে '0'+slice(3) = 001... ❌ ছিল)
   const normalizePhone = (identifier: string): string => {
     const trimmed = identifier.trim()
     if (trimmed.includes('@')) return trimmed

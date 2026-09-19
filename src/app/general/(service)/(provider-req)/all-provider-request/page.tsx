@@ -4,10 +4,14 @@ import { getServerSession } from 'next-auth';
 import React from 'react'
 import ClientDataTable from '../components/ClientDataTable';
 
+// ✅ MAGIC FIX: Next.js এর এগ্রেসিভ ক্যাশিং বন্ধ করা হলো। এখন রিলোড দিলে ফ্রেশ ডাটা আসবে।
+export const dynamic = 'force-dynamic'; 
+
 export default async function ProviderReq() {
     const session = await getServerSession(authOptions)
     const token = (session as any)?.accessToken;
     const allServiceUsers = await fetchAllProviderReq(token)
+    
     return (
         <div>
             <div className='py-5'>

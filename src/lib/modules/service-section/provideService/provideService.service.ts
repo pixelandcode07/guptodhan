@@ -1,9 +1,18 @@
+import { createAdminNotification } from "@/lib/utils/createAdminNotification";
 import { IService } from "./provideService.interface";
 import { ServiceModel } from "./provideService.model";
 
 // --- Create a new service ---
 const createServiceInDB = async (payload: Partial<IService>) => {
   const result = await ServiceModel.create(payload);
+
+  // ✅ Admin Notification Added Here
+  await createAdminNotification(
+    'service_request',
+    `New Service pending approval: ${result.service_title}`,
+    `/general/all-service-request`
+  );
+
   return result;
 };
 
@@ -93,15 +102,12 @@ const getVisibleServicesFromDB = async () => {
   return { total_services, services };
 };
 
-// --- Delete a service (Provider) ---
+// --- Delete a service (Admin / Provider) ---
 const deleteServiceInDB = async (id: string, provider_id: string) => {
-  const service = await ServiceModel.findByIdAndUpdate(
-    id,
-    { service_status: "Disabled", is_visible_to_customers: false },
-    { new: true }
-  );
+  // ✅ MAGIC FIX: findByIdAndUpdate এর বদলে findByIdAndDelete ব্যবহার করে ডাটাবেস থেকে পুরোপুরি ডিলিট করা হলো
+  const service = await ServiceModel.findByIdAndDelete(id);
 
-  if (!service) throw new Error("Service not found or not owned by provider.");
+  if (!service) throw new Error("Service not found or already deleted.");
   return service;
 };
 

@@ -33,8 +33,6 @@ export const createVendorProductValidationSchema = z.object({
   sku: z.string().optional(),
   rewardPoints: z.number().optional(),
   callForPrice: z.boolean().optional(),
-  
-  // ✅ NEW: Shipping Cost Validation
   shippingCost: z.number().optional(), 
 
   category: z.string().min(1),
@@ -45,7 +43,10 @@ export const createVendorProductValidationSchema = z.object({
   flag: z.string().optional(),
   warranty: z.string().optional(),
   weightUnit: z.string().optional(),
-  offerDeadline: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional(),
+  
+  // ✅ MAGIC FIX: Added .nullable() to allow null values when removing the deadline
+  offerDeadline: z.union([z.date(), z.string().transform((str) => new Date(str))]).nullable().optional(),
+  
   metaTitle: z.string().optional(),
   metaKeyword: z.string().optional(),
   metaDescription: z.string().optional(),
@@ -74,8 +75,6 @@ export const updateVendorProductValidationSchema = z.object({
   sku: z.string().optional(),
   rewardPoints: z.number().optional(),
   callForPrice: z.boolean().optional(),
-  
-  // ✅ NEW: Shipping Cost Validation
   shippingCost: z.number().optional(),
 
   category: z.string().optional(),
@@ -86,7 +85,10 @@ export const updateVendorProductValidationSchema = z.object({
   flag: z.string().optional(),
   warranty: z.string().optional(),
   weightUnit: z.string().optional(),
-  offerDeadline: z.union([z.date(), z.string().transform((str) => new Date(str))]).optional(),
+  
+  // ✅ MAGIC FIX: Added .nullable() to allow null values when removing the deadline
+  offerDeadline: z.union([z.date(), z.string().transform((str) => new Date(str))]).nullable().optional(),
+  
   metaTitle: z.string().optional(),
   metaKeyword: z.string().optional(),
   metaDescription: z.string().optional(),

@@ -8,6 +8,11 @@ export const createDonationCampaignSchema = z.object({
   }),
   description: z.string().min(20, 'Description must be at least 20 characters'),
   goalAmount: z.number().optional().default(0),
+  
+  // ✅ NEW FIELD VALIDATIONS
+  quantity: z.number().optional().default(1),
+  endDate: z.string().optional().nullable(),
+  
   images: z.array(z.any()).optional(),
 });
 

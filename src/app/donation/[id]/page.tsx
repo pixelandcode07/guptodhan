@@ -20,6 +20,8 @@ interface IDonationCampaign {
   moderationStatus?: string;
   goalAmount?: number;
   raisedAmount?: number;
+  quantity?: number; // ✅ Added Quantity
+  endDate?: string;  // ✅ Added End Date
   donorsCount?: number;
   createdAt?: string;
 }

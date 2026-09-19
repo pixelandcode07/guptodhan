@@ -65,7 +65,10 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   const [isToggling, setIsToggling] = useState(false);
   const [search, setSearch] = useState<string>("");
 
-  // ✅ FIX: Page Memory State
+  // ✅ NEW: Status Filter State
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+
+  // Page Memory State
   const [savedPage, setSavedPage] = useState(0);
   const [isPageLoaded, setIsPageLoaded] = useState(false);
   
@@ -76,7 +79,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   const token = s?.accessToken;
   const userRole = s?.user?.role;
 
-  // ✅ Retrieve last visited page from session storage
+  // Retrieve last visited page from session storage
   useEffect(() => {
     const pg = sessionStorage.getItem('adminProductListPageIdx');
     if (pg) {
@@ -85,7 +88,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     setIsPageLoaded(true);
   }, []);
 
-  // ✅ Save page index on change
+  // Save page index on change
   const handlePageChange = (pageIndex: number) => {
     sessionStorage.setItem('adminProductListPageIdx', String(pageIndex));
   };
@@ -162,18 +165,29 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
     setRows(mapped);
   }, [products, categoryMap, storeMap, flagMap]);
 
+  // ✅ UPDATED: Filter logic with Status & Search
   const filteredRows = useMemo(() => {
+    let result = rows;
+
+    // 1. Status Filter
+    if (statusFilter !== 'all') {
+      result = result.filter(r => r.status.toLowerCase() === statusFilter);
+    }
+
+    // 2. Search Filter
     const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    
-    return rows.filter((r) => {
-      const searchableFields = [
-        String(r.id), r.name, r.category, r.store, r.price, 
-        r.offer_price, r.stock, r.flag, r.status, r.created_at, r.updated_at
-      ];
-      return searchableFields.some((field) => field && field.toLowerCase().includes(q));
-    });
-  }, [rows, search]);
+    if (q) {
+      result = result.filter((r) => {
+        const searchableFields = [
+          String(r.id), r.name, r.category, r.store, r.price, 
+          r.offer_price, r.stock, r.flag, r.status, r.created_at, r.updated_at
+        ];
+        return searchableFields.some((field) => field && field.toLowerCase().includes(q));
+      });
+    }
+
+    return result;
+  }, [rows, search, statusFilter]);
 
   const onView = useCallback((product: Product) => {
     if (product._id) {
@@ -288,6 +302,7 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
   }, [productToToggle, token, userRole, router]);
 
   const confirmDelete = useCallback(async () => {
+
     if (!productToDelete) return;
     setIsDeleting(true);
     try {
@@ -335,10 +350,23 @@ export default function ProductTableClient({ initialData }: ProductTableClientPr
         onDownloadCSV={onDownloadCSV}
       />
 
+      {/* ✅ NEW: Active/Inactive Filter Dropdown */}
+      <div className="mb-4 flex justify-end">
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+          className="w-full sm:w-48 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm cursor-pointer"
+        >
+          <option value="all">All Products</option>
+          <option value="active">Active Products</option>
+          <option value="inactive">Inactive Products</option>
+        </select>
+      </div>
+
       <div className="mb-4 sm:mb-6">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
           <div className="min-w-[840px]">
-            {/* ✅ Render DataTable only after session storage is loaded */}
+            {/* Render DataTable only after session storage is loaded */}
             {isPageLoaded && (
               <DataTable 
                 columns={columns} 

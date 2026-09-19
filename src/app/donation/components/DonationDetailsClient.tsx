@@ -9,8 +9,7 @@ import { Label } from '@/components/ui/label'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
-import { AlertCircle, CheckCircle2, Loader2, Package, DollarSign, Heart, Users, TrendingUp, Phone, Mail, User, ChevronLeft, ChevronRight, Calendar, HandHeart, X } from 'lucide-react'
-import Image from 'next/image'
+import { AlertCircle, CheckCircle2, Loader2, Package, DollarSign, Heart, Users, TrendingUp, Phone, Mail, User, ChevronLeft, ChevronRight, Calendar, HandHeart, X, Clock } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { motion, AnimatePresence } from 'framer-motion'
 import LogInRegister from '@/app/components/LogInAndRegister/LogIn_Register'
@@ -41,6 +40,8 @@ interface IDonationCampaign {
   moderationStatus?: string
   goalAmount?: number
   raisedAmount?: number
+  quantity?: number 
+  endDate?: string  
   donorsCount?: number
   createdAt?: string
 }
@@ -52,19 +53,25 @@ interface DonationDetailsClientProps {
 function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: DonationClaimModalProps) {
   const { data: session } = useSession()
   const token = (session as any)?.accessToken
+  const userEmail = session?.user?.email || '' // ✅ ইউজারের ইমেইল বের করা হলো
+
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  
   const [formData, setFormData] = useState({
-    name: '', phone: '', email: '', reason: '',
+    name: '', phone: '', email: userEmail, reason: '',
     amount: '', paymentMethod: 'bkash', accountNumber: '',
   })
 
+  // ✅ মডাল ওপেন হলে ইমেইল ডিফল্টভাবে সেট হবে
   useEffect(() => {
     if (!open) {
-      setFormData({ name: '', phone: '', email: '', reason: '', amount: '', paymentMethod: 'bkash', accountNumber: '' })
+      setFormData({ name: '', phone: '', email: session?.user?.email || '', reason: '', amount: '', paymentMethod: 'bkash', accountNumber: '' })
       setErrors({})
+    } else {
+      setFormData(prev => ({ ...prev, email: session?.user?.email || '' }))
     }
-  }, [open])
+  }, [open, session])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -90,27 +97,40 @@ function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: Donat
   }
 
   const handleSubmit = async () => {
+    if (loading) return;
+
     if (!session) {
       onOpenChange(false)
       setTimeout(() => onLoginRequired(), 200)
       return
     }
     if (!validateForm()) { toast.error('Please fill all required fields correctly'); return }
+    
     try {
       setLoading(true)
       let finalReason = formData.reason.trim()
       if (item?.type === 'money') {
         finalReason += `\n\nAmount: ${formData.amount} BDT\nMethod: ${formData.paymentMethod.toUpperCase()}\nAccount: ${formData.accountNumber}`
       }
+      
       const response = await fetch('/api/v1/donation-claims', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ itemId: item?.id, name: formData.name.trim(), phone: formData.phone.trim(), email: formData.email.trim(), reason: finalReason }),
+        body: JSON.stringify({ 
+          itemId: item?.id, 
+          name: formData.name.trim(), 
+          phone: formData.phone.trim(), 
+          email: formData.email.trim(), 
+          reason: finalReason 
+        }),
       })
+      
       const result = await response.json()
+      
       if (result.success) {
         toast.success('Request submitted successfully!')
         onOpenChange(false)
+        setTimeout(() => window.location.reload(), 1500)
       } else {
         toast.error(result.message || 'Failed to submit request')
       }
@@ -163,18 +183,27 @@ function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: Donat
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5"><User size={12} /> Full Name <span className="text-red-500">*</span></Label>
-                <Input name="name" placeholder="Your full name" value={formData.name} onChange={handleChange} className={`h-9 text-sm ${errors.name ? 'border-red-400' : ''}`} />
+                <Input name="name" placeholder="Your full name" value={formData.name} onChange={handleChange} className={`h-9 text-sm bg-white ${errors.name ? 'border-red-400' : ''}`} />
                 {errors.name && <p className="text-[11px] text-red-500">{errors.name}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5"><Phone size={12} /> Phone <span className="text-red-500">*</span></Label>
-                <Input name="phone" placeholder="01XXXXXXXXX" value={formData.phone} onChange={handleChange} className={`h-9 text-sm ${errors.phone ? 'border-red-400' : ''}`} />
+                <Input name="phone" placeholder="01XXXXXXXXX" value={formData.phone} onChange={handleChange} className={`h-9 text-sm bg-white ${errors.phone ? 'border-red-400' : ''}`} />
                 {errors.phone && <p className="text-[11px] text-red-500">{errors.phone}</p>}
               </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5"><Mail size={12} /> Email <span className="text-red-500">*</span></Label>
-              <Input name="email" type="email" placeholder="your@email.com" value={formData.email} onChange={handleChange} className={`h-9 text-sm ${errors.email ? 'border-red-400' : ''}`} />
+              {/* ✅ MAGIC FIX: Email input is disabled and pre-filled with logged-in user's email */}
+              <Input 
+                name="email" 
+                type="email" 
+                placeholder="your@email.com" 
+                value={formData.email} 
+                disabled 
+                className={`h-9 text-sm bg-slate-100 cursor-not-allowed text-gray-500 ${errors.email ? 'border-red-400' : ''}`} 
+              />
+              <p className="text-[10px] text-gray-400 italic">* Your logged-in email is automatically used.</p>
               {errors.email && <p className="text-[11px] text-red-500">{errors.email}</p>}
             </div>
           </div>
@@ -214,7 +243,7 @@ function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: Donat
             <Textarea
               name="reason"
               placeholder="Explain why you need this donation. Be honest and specific..."
-              className={`min-h-28 resize-none text-sm ${errors.reason ? 'border-red-400' : ''}`}
+              className={`min-h-28 resize-none text-sm bg-white ${errors.reason ? 'border-red-400' : ''}`}
               value={formData.reason}
               onChange={handleChange}
             />
@@ -229,7 +258,7 @@ function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: Donat
 
         <div className="px-6 pb-5 pt-3 border-t bg-white flex-shrink-0">
           <Button onClick={handleSubmit} disabled={loading}
-            className="w-full h-11 bg-[#00005E] hover:bg-[#000045] text-white font-bold rounded-xl text-sm">
+            className="w-full h-11 bg-[#00005E] hover:bg-[#000045] text-white font-bold rounded-xl text-sm transition-all shadow-sm">
             {loading ? <><Loader2 className="animate-spin mr-2" size={16} />Submitting...</> : <><CheckCircle2 className="mr-2" size={16} />Submit Request</>}
           </Button>
         </div>
@@ -249,7 +278,9 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
   const progress = campaign.goalAmount && campaign.goalAmount > 0
     ? Math.round((campaign.raisedAmount || 0) / campaign.goalAmount * 100) : 0
 
-  // ✅ Here is the logic: if not logged in, show Login Modal
+  const isExpired = campaign.endDate ? new Date(campaign.endDate).getTime() < new Date().getTime() : false;
+  const isOutOfStock = campaign.item !== 'money' && (campaign.quantity === undefined || campaign.quantity <= 0);
+
   const handleRequestClick = () => {
     if (!session) {
       setLoginOpen(true)
@@ -267,8 +298,6 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* ✅ Login Modal — fixed overlay, Dialog এর উপর নির্ভর করে না */}
-      {/* Note: Wrapped LogInRegister inside Dialog so shadcn UI doesn't crash */}
       <AnimatePresence>
         {loginOpen && (
           <div className="fixed inset-0 z-[999] flex items-center justify-center px-4">
@@ -294,9 +323,7 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                 <X size={16} className="text-gray-600" />
               </button>
               
-              <Dialog open={true} onOpenChange={setLoginOpen}>
-                <LogInRegister />
-              </Dialog>
+              <LogInRegister />
               
             </motion.div>
           </div>
@@ -318,8 +345,7 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
           {/* ======================== */}
           <div className="lg:col-span-2 space-y-5">
 
-            {/* Image Gallery */}
-            <div className="bg-white rounded-2xl overflow-hidden border border-gray-100">
+            <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
               <div className="relative w-full bg-gray-100" style={{ aspectRatio: '16/10' }}>
                 {campaign.images?.length > 0 ? (
                   <>
@@ -349,9 +375,6 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                             />
                           ))}
                         </div>
-                        <span className="absolute top-3 right-3 bg-black/50 text-white text-xs px-2.5 py-1 rounded-full font-medium">
-                          {currentImageIndex + 1} / {campaign.images.length}
-                        </span>
                       </>
                     )}
                   </>
@@ -361,22 +384,9 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                   </div>
                 )}
               </div>
-
-              {campaign.images?.length > 1 && (
-                <div className="flex gap-2 p-3 border-t border-gray-100 overflow-x-auto">
-                  {campaign.images.map((img, idx) => (
-                    <button key={idx} onClick={() => setCurrentImageIndex(idx)}
-                      className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${idx === currentImageIndex ? 'border-[#00005E]' : 'border-transparent opacity-60 hover:opacity-100'}`}
-                    >
-                      <img src={img} alt="" className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
 
-            {/* Campaign Details */}
-            <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 space-y-5">
+            <div className="bg-white rounded-2xl p-5 sm:p-6 border border-gray-100 shadow-sm space-y-5">
               <div className="flex flex-wrap gap-2">
                 {campaign.category && (
                   <span className="text-xs font-semibold px-3 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-100">
@@ -387,9 +397,10 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                   ${campaign.item === 'money' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-orange-50 text-orange-700 border-orange-100'}`}>
                   {campaign.item === 'money' ? '💸 Fund' : '📦 Item'}
                 </span>
-                {campaign.status && (
-                  <span className="text-xs font-semibold px-3 py-1 bg-gray-50 text-gray-600 rounded-full border border-gray-100 capitalize">
-                    {campaign.status}
+                
+                {(isExpired || isOutOfStock) && (
+                  <span className="text-xs font-bold px-3 py-1 bg-red-100 text-red-700 rounded-full border border-red-200 uppercase tracking-wide">
+                    {isOutOfStock ? 'Out of Stock' : 'Expired'}
                   </span>
                 )}
               </div>
@@ -398,40 +409,12 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                 {campaign.title}
               </h1>
 
-              {campaign.createdAt && (
-                <div className="flex items-center gap-1.5 text-sm text-gray-400">
-                  <Calendar size={14} />
-                  <span>{formatDate(campaign.createdAt)}</span>
-                </div>
-              )}
-
               <div className="h-px bg-gray-100" />
 
               <div
                 dangerouslySetInnerHTML={{ __html: campaign.description || '<p>No description available.</p>' }}
                 className="text-sm sm:text-base text-gray-600 leading-relaxed prose prose-sm max-w-none"
               />
-
-              {campaign.creator && (
-                <>
-                  <div className="h-px bg-gray-100" />
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-100 flex-shrink-0 bg-gray-100">
-                      {campaign.creator.profilePicture ? (
-                        <img src={campaign.creator.profilePicture} alt={campaign.creator.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-[#00005E] text-white font-bold text-sm">
-                          {campaign.creator.name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900">{campaign.creator.name}</p>
-                      <p className="text-xs text-gray-400">Campaign Organizer</p>
-                    </div>
-                  </div>
-                </>
-              )}
             </div>
           </div>
 
@@ -439,9 +422,9 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
           {/* RIGHT: Sidebar           */}
           {/* ======================== */}
           <div className="space-y-4">
-            <div className="bg-white rounded-2xl p-5 border border-gray-100 space-y-5 sticky top-4">
+            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm space-y-5 sticky top-4">
 
-              {campaign.item === 'money' && campaign.goalAmount && campaign.goalAmount > 0 && (
+              {campaign.item === 'money' && campaign.goalAmount && campaign.goalAmount > 0 ? (
                 <div className="space-y-4">
                   <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
                     <DollarSign size={16} className="text-emerald-600" /> Fundraising Progress
@@ -459,7 +442,6 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                         className={`h-full rounded-full ${progress >= 100 ? 'bg-emerald-500' : 'bg-[#00005E]'}`}
                       />
                     </div>
-                    <p className="text-xs text-gray-400 text-right">{progress}% funded</p>
                   </div>
                   <div className="grid grid-cols-2 gap-3 pt-1">
                     <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-100">
@@ -477,31 +459,54 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                   </div>
                   <div className="h-px bg-gray-100" />
                 </div>
-              )}
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-blue-50 rounded-xl p-3 text-center border border-blue-100">
+                      <Package className="text-blue-600 mx-auto mb-1.5" size={18} />
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Quantity</p>
+                      <p className={`font-black text-lg ${campaign.quantity === 0 ? 'text-red-500' : 'text-blue-900'}`}>
+                        {campaign.quantity === 0 ? '0' : campaign.quantity || 1} Pcs
+                      </p>
+                    </div>
+                    <div className="bg-red-50 rounded-xl p-3 text-center border border-red-100">
+                      <Heart className="text-red-500 mx-auto mb-1.5" size={18} />
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Requests</p>
+                      <p className="font-black text-red-900 text-lg">{campaign.donorsCount || 0}</p>
+                    </div>
+                  </div>
 
-              {campaign.item !== 'money' && (
-                <div className="text-center py-2 space-y-2">
-                  <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto">
-                    <Heart className="text-red-500" size={22} />
-                  </div>
-                  <div>
-                    <p className="text-3xl font-bold text-gray-900">{campaign.donorsCount || 0}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">people requested this item</p>
-                  </div>
+                  {campaign.endDate && (
+                    <div className={`rounded-xl p-3 flex items-center justify-center gap-2 border ${
+                      isExpired ? 'bg-red-50 border-red-200 text-red-600' : 'bg-orange-50 border-orange-100 text-orange-700'
+                    }`}>
+                      <Clock size={16} className={isExpired ? "" : "animate-pulse"} />
+                      <span className="text-xs font-bold">
+                        {isExpired ? 'Expired On: ' : 'Valid Until: '} 
+                        {formatDate(campaign.endDate)}
+                      </span>
+                    </div>
+                  )}
                   <div className="h-px bg-gray-100" />
                 </div>
               )}
 
+              {/* ✅ ACTION BUTTON */}
               {isOwner ? (
                 <button disabled className="w-full py-3 bg-gray-50 text-gray-400 text-sm font-semibold rounded-xl cursor-not-allowed border border-gray-100">
                   ✓ Your Campaign
+                </button>
+              ) : isExpired || isOutOfStock ? (
+                <button disabled className="w-full py-3 bg-red-50 text-red-500 text-sm font-semibold rounded-xl cursor-not-allowed border border-red-200 flex justify-center items-center gap-2">
+                  <X size={16} />
+                  {isOutOfStock ? 'Out of Stock' : 'Campaign Expired'}
                 </button>
               ) : (
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={handleRequestClick} // This securely redirects to Login if not signed in
-                  className="w-full py-3 bg-[#00005E] hover:bg-[#000045] text-white font-bold rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
+                  onClick={handleRequestClick} 
+                  className="w-full py-3 bg-[#00005E] hover:bg-[#000045] text-white font-bold rounded-xl transition-colors text-sm flex items-center justify-center gap-2 shadow-sm shadow-blue-900/20"
                 >
                   <HandHeart size={16} />
                   {campaign.item === 'money' ? 'Support Campaign' : 'Request Item'}
@@ -522,11 +527,6 @@ export default function DonationDetailsClient({ campaign }: DonationDetailsClien
                     <span>{step}</span>
                   </div>
                 ))}
-              </div>
-
-              <div className="flex items-center justify-center gap-2 text-xs text-emerald-600 font-semibold">
-                <CheckCircle2 size={14} />
-                All requests are manually verified
               </div>
             </div>
           </div>

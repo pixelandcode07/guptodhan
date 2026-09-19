@@ -18,22 +18,25 @@ type DonationItem = {
   type: string
 }
 
+// ✅ MAGIC FIX: এখানে onLoginRequired যুক্ত করা হলো টাইপস্ক্রিপ্ট এরর দূর করার জন্য
 interface DonationClaimModalProps {
   open: boolean
   onOpenChange: (v: boolean) => void
   item?: DonationItem
+  onLoginRequired?: () => void 
 }
 
-export default function DonationClaimModal({ open, onOpenChange, item }: DonationClaimModalProps) {
+export default function DonationClaimModal({ open, onOpenChange, item, onLoginRequired }: DonationClaimModalProps) {
   const { data: session } = useSession()
   const token = (session as any)?.accessToken
+  const userEmail = session?.user?.email || ''
 
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
-    email: '',
+    email: userEmail, 
     reason: '',
     amount: '',
     paymentMethod: 'bkash',
@@ -45,20 +48,21 @@ export default function DonationClaimModal({ open, onOpenChange, item }: Donatio
       setFormData({
         name: '',
         phone: '',
-        email: '',
+        email: session?.user?.email || '', 
         reason: '',
         amount: '',
         paymentMethod: 'bkash',
         accountNumber: ''
       })
       setErrors({})
+    } else {
+      setFormData(prev => ({ ...prev, email: session?.user?.email || '' }))
     }
-  }, [open])
+  }, [open, session])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
@@ -80,7 +84,6 @@ export default function DonationClaimModal({ open, onOpenChange, item }: Donatio
     }
     if (!formData.reason.trim()) newErrors.reason = 'Reason is required'
 
-    // Money-specific validation
     if (item?.type === 'money') {
       if (!formData.amount.trim()) {
         newErrors.amount = 'Amount is required'
@@ -97,9 +100,14 @@ export default function DonationClaimModal({ open, onOpenChange, item }: Donatio
   }
 
   const handleSubmit = async () => {
+    // ✅ MAGIC FIX: যদি ইউজার লগ-ইন না থাকে, তবে onLoginRequired কল করে লগ-ইন মডাল ওপেন হবে
     if (!session) {
-      toast.error("Please login first to submit a request")
       onOpenChange(false)
+      if (onLoginRequired) {
+          setTimeout(() => onLoginRequired(), 200)
+      } else {
+          toast.error("Please login first to submit a request")
+      }
       return
     }
 
@@ -277,7 +285,7 @@ export default function DonationClaimModal({ open, onOpenChange, item }: Donatio
               </div>
             </div>
 
-            {/* Email */}
+            {/* Email (Disabled and pre-filled) */}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-xs sm:text-sm font-semibold text-slate-700 flex items-center gap-2">
                 <Mail size={16} />
@@ -289,14 +297,12 @@ export default function DonationClaimModal({ open, onOpenChange, item }: Donatio
                 type="email"
                 placeholder="your.email@example.com"
                 value={formData.email}
-                onChange={handleChange}
-                className={`h-10 text-sm ${errors.email ? 'border-red-500 focus:border-red-500' : ''}`}
+                disabled 
+                className="h-10 text-sm bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200" 
               />
-              {errors.email && (
-                <p className="text-xs text-red-600 flex items-center gap-1">
-                  <AlertCircle size={12} /> {errors.email}
-                </p>
-              )}
+              <p className="text-[11px] text-slate-500 italic mt-1">
+                * Your logged-in email is automatically used for this request.
+              </p>
             </div>
           </div>
 

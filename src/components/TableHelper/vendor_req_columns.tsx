@@ -147,22 +147,22 @@ export const vendor_req_columns: ColumnDef<Vendor>[] = [
         });
       };
 
-      const handleDelete = async () => {
-        const confirmed = await confirmDelete(
-          'Are you sure you want to delete this vendor and their account permanently?'
-        );
+      // const handleDelete = async () => {
+      //   const confirmed = await confirmDelete(
+      //     'Are you sure you want to delete this vendor and their account permanently?'
+      //   );
 
-        if (!confirmed) {
-          toast.success('Deletion cancelled');
-          return;
-        }
+      //   if (!confirmed) {
+      //     toast.success('Deletion cancelled');
+      //     return;
+      //   }
 
-        toast.promise(deleteVendor(vendor._id), {
-          loading: 'Deleting vendor...',
-          success: (data) => data.message,
-          error: (data) => data.message,
-        });
-      };
+      //   toast.promise(deleteVendor(vendor._id), {
+      //     loading: 'Deleting vendor...',
+      //     success: (data) => data.message,
+      //     error: (data) => data.message,
+      //   });
+      // };
 
       return (
         <div className="flex items-center gap-1">
@@ -186,9 +186,9 @@ export const vendor_req_columns: ColumnDef<Vendor>[] = [
               <Edit className="h-4 w-4" />
             </Link>
           </Button>
-          <Button size="icon" className="h-8 w-8 bg-red-700" onClick={handleDelete}>
+          {/* <Button size="icon" className="h-8 w-8 bg-red-700" onClick={handleDelete}>
             <Trash className="h-4 w-4" />
-          </Button>
+          </Button> */}
         </div>
       );
     },

@@ -7,6 +7,54 @@ import { confirmDelete } from '@/components/ReusableComponents/ConfirmToast';
 import { toast } from 'sonner';
 import axios from 'axios';
 
+export function formatAddress(val: any): string {
+  if (!val) return '-';
+
+  let parsed = val;
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      try {
+        parsed = JSON.parse(trimmed);
+      } catch (e) {
+        return val;
+      }
+    } else {
+      return val;
+    }
+  }
+
+  if (Array.isArray(parsed)) {
+    if (parsed.length === 0) return '-';
+    parsed = parsed.find((a: any) => a?.isDefault || a?.default) || parsed[0];
+  }
+
+  if (typeof parsed === 'object' && parsed !== null) {
+    const parts = [
+      parsed.street || parsed.address || parsed.streetAddress || parsed.addressLine1 || parsed.fullAddress,
+      parsed.upazila || parsed.thana || parsed.subDistrict || parsed.area,
+      parsed.district || parsed.city,
+      parsed.division || parsed.state,
+      parsed.postalCode || parsed.postCode || parsed.zip,
+    ].filter(Boolean);
+
+    if (parts.length > 0) {
+      return parts.join(', ');
+    }
+
+    const values = Object.values(parsed)
+      .filter((v) => typeof v === 'string' || typeof v === 'number')
+      .map((v) => String(v).trim())
+      .filter((v) => v !== '' && v !== 'false' && v !== 'true');
+
+    if (values.length > 0) {
+      return values.join(', ');
+    }
+  }
+
+  return String(val) || '-';
+}
+
 export type Customer = {
   id: number;
   _id?: string;
@@ -85,10 +133,11 @@ export const customer_columns: ColumnDef<Customer>[] = [
     accessorKey: 'address',
     header: 'Address',
     cell: ({ row }) => {
-      const address = row.getValue('address') as string;
+      const rawAddress = row.getValue('address');
+      const formatted = formatAddress(rawAddress);
       return (
-        <div className="max-w-xs truncate" title={address}>
-          {address}
+        <div className="max-w-xs truncate" title={formatted}>
+          {formatted}
         </div>
       );
     },

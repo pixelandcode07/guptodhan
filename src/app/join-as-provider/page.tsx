@@ -1,5 +1,4 @@
 import { LogIn, UserPlus, Briefcase, CheckCircle2 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 export default function ServiceProviderBanner() {
@@ -67,22 +66,54 @@ export default function ServiceProviderBanner() {
                         </ul>
                     </div>
 
-                    {/* Right: Illustration / Images */}
+                    {/* Right: Illustration / Dashboard SVG */}
                     <div className="relative z-10 flex items-center justify-center">
                         <div className="w-full max-w-md p-4 rounded-xl bg-gradient-to-tr from-white to-blue-50 shadow-inner border border-white/60">
-                            <div className="rounded-lg overflow-hidden">
-                                {/* <img
-                                    src="https://images.unsplash.com/photo-1600880212319-4627a58c882c?q=80&w=1200&auto=format&fit=crop"
-                                    alt="service provider dashboard preview"
-                                    className="w-full h-52 object-cover"
-                                /> */}
-                                <Image
-                                    src={'/img/maintainence.jpeg'}
-                                    alt="service provider dashboard preview"
-                                    className="w-full h-52 object-cover"
-                                    width={1200}
-                                    height={630}
-                                />
+                            <div className="rounded-lg overflow-hidden shadow-sm">
+                                
+                                {/* ✅ MAGIC FIX: Professional Dashboard SVG Illustration */}
+                                <svg className="w-full h-52 object-cover bg-slate-50" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+                                    <rect width="400" height="200" fill="#f0f9ff" />
+                                    {/* Sidebar */}
+                                    <rect x="0" y="0" width="70" height="200" fill="#1e40af" />
+                                    <rect x="15" y="20" width="40" height="8" rx="4" fill="#60a5fa" />
+                                    <rect x="15" y="45" width="30" height="4" rx="2" fill="#3b82f6" />
+                                    <rect x="15" y="60" width="35" height="4" rx="2" fill="#3b82f6" />
+                                    <rect x="15" y="75" width="25" height="4" rx="2" fill="#3b82f6" />
+                                    <rect x="15" y="90" width="30" height="4" rx="2" fill="#3b82f6" />
+
+                                    {/* Header */}
+                                    <rect x="70" y="0" width="330" height="30" fill="#ffffff" />
+                                    <circle cx="370" cy="15" r="8" fill="#dbeafe" />
+                                    <rect x="310" y="13" width="40" height="4" rx="2" fill="#e2e8f0" />
+
+                                    {/* Content Area */}
+                                    {/* Stats Card 1 */}
+                                    <rect x="90" y="50" width="135" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
+                                    <circle cx="115" cy="80" r="14" fill="#dbeafe" />
+                                    <path d="M110 80 L114 84 L120 76" stroke="#2563eb" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                                    <rect x="140" y="65" width="50" height="6" rx="3" fill="#94a3b8" />
+                                    <rect x="140" y="80" width="70" height="10" rx="5" fill="#1e293b" />
+
+                                    {/* Stats Card 2 */}
+                                    <rect x="240" y="50" width="135" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
+                                    <circle cx="265" cy="80" r="14" fill="#dcfce7" />
+                                    <path d="M261 80 L264 83 L269 77" stroke="#16a34a" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                                    <rect x="290" y="65" width="50" height="6" rx="3" fill="#94a3b8" />
+                                    <rect x="290" y="80" width="60" height="10" rx="5" fill="#1e293b" />
+
+                                    {/* Chart Area */}
+                                    <rect x="90" y="125" width="285" height="60" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
+                                    <rect x="110" y="145" width="15" height="25" rx="3" fill="#3b82f6" />
+                                    <rect x="140" y="135" width="15" height="35" rx="3" fill="#93c5fd" />
+                                    <rect x="170" y="155" width="15" height="15" rx="3" fill="#3b82f6" />
+                                    <rect x="200" y="130" width="15" height="40" rx="3" fill="#93c5fd" />
+                                    <rect x="230" y="140" width="15" height="30" rx="3" fill="#3b82f6" />
+                                    <rect x="260" y="125" width="15" height="45" rx="3" fill="#93c5fd" />
+                                    <rect x="290" y="150" width="15" height="20" rx="3" fill="#3b82f6" />
+                                    <rect x="320" y="135" width="15" height="35" rx="3" fill="#93c5fd" />
+                                </svg>
+                                
                                 <div className="p-4 bg-white">
                                     <h3 className="font-semibold text-slate-800">Professional Dashboard</h3>
                                     <p className="text-sm text-slate-500 mt-2">Track your appointments, manage service listings, and monitor your monthly growth.</p>

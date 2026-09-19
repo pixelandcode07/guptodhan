@@ -1,9 +1,8 @@
-import React, { Suspense } from 'react'
+import { Suspense } from 'react'
 import DonationHome from './components/DonationHome'
 import DonationBanner from './components/DonationBanner'
 import { Metadata } from 'next'
 
-// 🔥 ডাটা যাতে ক্যাশ না হয় এবং সবসময় লেটেস্ট থাকে
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {

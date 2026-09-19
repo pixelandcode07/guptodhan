@@ -1,12 +1,13 @@
 'use client'
 
 import { DataTable } from '@/components/TableHelper/data-table'
-import { getServiceColumns } from '@/components/TableHelper/service_data_columns'; // ✅ Imported the dynamic function
+import { getServiceColumns } from '@/components/TableHelper/service_data_columns'; 
 import { ServiceData } from '@/types/ServiceDataType';
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner';
 import { confirmDelete } from '@/components/ReusableComponents/ConfirmToast';
 import axios from 'axios';
+import { useRouter } from 'next/navigation'; // ✅ MAGIC FIX: useRouter Import করা হলো
 
 type ClientDataTableProps = {
     allAds: ServiceData[];
@@ -14,6 +15,7 @@ type ClientDataTableProps = {
 
 export default function ClientDataTable({ allAds }: ClientDataTableProps) {
     const [data, setData] = useState<ServiceData[]>(allAds || []);
+    const router = useRouter(); // ✅ Router ইনিশিয়ালাইজ করা হলো
 
     useEffect(() => {
         if(allAds) {
@@ -32,6 +34,7 @@ export default function ClientDataTable({ allAds }: ClientDataTableProps) {
 
         try {
             const promises = selectedRows.map(row => 
+                // ✅ Service Ads ডিলিট করার API (provide-service)
                 axios.delete(`/api/v1/service-section/provide-service/${row._id}`)
             );
             await Promise.all(promises);
@@ -41,6 +44,10 @@ export default function ClientDataTable({ allAds }: ClientDataTableProps) {
             setData(prev => prev.filter(ad => !deletedIds.includes(ad._id)));
 
             toast.success("Services deleted successfully!", { id: toastId });
+
+            // ✅ MAGIC FIX: Next.js কে সার্ভার থেকে নতুন ডাটা আনার নির্দেশ দেওয়া হলো
+            router.refresh(); 
+
         } catch (error) {
             console.error(error);
             toast.error("Failed to delete some services.", { id: toastId });
@@ -57,7 +64,6 @@ export default function ClientDataTable({ allAds }: ClientDataTableProps) {
 
         try {
             const promises = selectedRows.map(row => 
-                // ✅ Sending correctly formatted data { action: 'approve'/'reject' }
                 axios.patch(`/api/v1/service-section/provide-service/status/${row._id}`, { action: targetAction })
             );
             await Promise.all(promises);
@@ -71,6 +77,8 @@ export default function ClientDataTable({ allAds }: ClientDataTableProps) {
             ));
 
             toast.success(`Services marked as ${targetStatus} successfully!`, { id: toastId });
+            router.refresh(); 
+
         } catch (error) {
             console.error(error);
             toast.error("Failed to update status for some services.", { id: toastId });
@@ -80,11 +88,11 @@ export default function ClientDataTable({ allAds }: ClientDataTableProps) {
     return (
         <div>
             <DataTable 
-                columns={getServiceColumns(setData)}  // ✅ Passing `setData` directly to columns
+                columns={getServiceColumns(setData)} 
                 data={data} 
                 setData={setData} 
-                onBulkDelete={handleBulkDelete}       // ✅ Enabled Bulk Delete
-                onBulkStatusChange={handleBulkStatusChange} // ✅ Enabled Bulk Status Change
+                onBulkDelete={handleBulkDelete}       
+                onBulkStatusChange={handleBulkStatusChange} 
             />
         </div>
     )

@@ -8,12 +8,15 @@ import { ShoppingBag } from 'lucide-react'
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions)
   const user = session?.user
+  
   const userName = user?.name ?? 'Guest User'
   const userImage = user?.image ?? null
+  const userPhone = user?.phoneNumber ?? ''
+  const userEmail = user?.email ?? '' // ✅ Added Email
 
   return (
     <div className="bg-white rounded-md p-6">
-      {/* ✅ Profile Heading এবং Shop Now বাটন */}
+      {/* Profile Heading and Shop Now Button */}
       <div className="flex items-center justify-between mb-4">
         <PageHeader title="Profile" />
         
@@ -29,6 +32,8 @@ export default async function ProfilePage() {
       <ProfileClient 
         userName={userName} 
         userImage={userImage}
+        userPhone={userPhone}
+        userEmail={userEmail} // ✅ Pass Email
       />
     </div>
   )

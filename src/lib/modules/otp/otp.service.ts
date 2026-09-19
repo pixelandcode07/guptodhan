@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import bcrypt from "bcrypt";
 import { OtpModel } from "./otp.model";
-import { sendSMS } from "../../utils/smsPortal";
+import { sendSMS } from "../../utils/smsPortal"; // ✅ MAGIC FIX: আসল SMS Gateway ইমপোর্ট করা হয়েছে
 
 // ========================================
 // 📧 Email Configuration
@@ -89,15 +89,14 @@ const sendPhoneOtpService = async (phone: string) => {
   // DB তে save করা — phone number raw রাখা হচ্ছে (identifier হিসেবে)
   await saveOtpRecord(phone, otp, "phone");
 
-  // SMS পাঠানো — formatBDPhoneNumber কাজটা smsPortal.ts এর ভেতরেই হবে
-  const messageContent = `${otp} is your verification code. Valid for 5 minutes.`;
+  // ✅ MAGIC FIX: আসল SMS Gateway দিয়ে মেসেজ পাঠানো হচ্ছে
+  const messageContent = `${otp} is your Guptodhan verification code. Valid for 5 minutes.`;
   const smsResult = await sendSMS(phone, messageContent);
 
   if (!smsResult.success) {
-    // SMS fail হলেও OTP DB তে আছে, তবে warning দেওয়া হচ্ছে
     console.error("❌ SMS পাঠাতে ব্যর্থ:", smsResult.error ?? smsResult.data);
-    // Production এ এখানে throw করতে পারেন যদি SMS mandatory হয়
-    // throw new Error("Failed to send OTP via SMS");
+  } else {
+    console.log("✅ SMS Successfully delivered to the gateway.");
   }
 
   const showOtp =
@@ -195,6 +194,14 @@ const verifyOtpService = async (
 
   if (!isMatch) {
     console.warn(`❌ OTP mismatch for ${identifier}`);
+    
+    // Attempt count logic
+    record.attempts += 1;
+    if (record.attempts >= record.maxAttempts) {
+        record.isBlocked = true;
+    }
+    await record.save();
+
     return { status: false, message: "Invalid OTP" };
   }
 

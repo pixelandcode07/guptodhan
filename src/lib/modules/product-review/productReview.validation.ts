@@ -30,4 +30,6 @@ export const updateReviewValidationSchema = z.object({
 
   // ✅ Optional array for updating multiple images
   reviewImages: z.array(z.string()).optional(),
+  status: z.enum(['active', 'inactive']).optional(),
+  replyFromAdmin: z.string().optional(),
 });

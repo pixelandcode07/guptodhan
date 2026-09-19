@@ -14,6 +14,11 @@ export interface IDonationCampaign extends Document {
   status: 'active' | 'inactive' | 'completed' | 'archived';
   goalAmount: number;
   raisedAmount: number;
+
+  // ✅ MAGIC FIX: TypeScript error সমাধান করার জন্য ফিল্ড দুটি যুক্ত করা হলো
+  quantity?: number;
+  endDate?: Date;
+
   donorsCount: number;
   
   approvedAt?: Date;

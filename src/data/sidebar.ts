@@ -118,7 +118,7 @@ export const sidebarData = {
       items: [
         { title: 'Add New Product', url: '/general/add/new/product' },
         {
-          title: 'View All Products (829)',
+          title: 'All Products (829)',
           url: '/general/view/all/product',
           count: '829',
         },

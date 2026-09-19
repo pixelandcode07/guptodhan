@@ -194,15 +194,6 @@ export default function OrdersToolbar({
                             />
                         </div>
                     </div>
-
-                    {/* Search Bar */}
-                    <input
-                        type="text"
-                        placeholder="Search orders by Order No, Name, Phone..."
-                        value={searchTerm} 
-                        onChange={(e) => setSearchTerm && setSearchTerm(e.target.value)} 
-                        className="w-full md:flex-1 h-9 border border-gray-300 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
                 </div>
             </div>
         </div>

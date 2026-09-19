@@ -12,9 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, EyeOff, Briefcase, Star, Zap, Users } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import Link from 'next/link'; // ✅ Link import করা হয়েছে
 
 // Form validation schema
 const loginSchema = z.object({
@@ -100,7 +101,7 @@ export default function ServiceLoginPage() {
             <div className="w-full grid lg:grid-cols-2 gap-12 items-center shadow-2xl overflow-hidden bg-white">
 
                 {/* Left Side - Animated Illustration */}
-                <div className="hidden lg:flex flex-col justify-center items-center bg-gradient-to-br from-blue-600 to-purple-700 text-white relative overflow-hidden">
+                <div className="hidden lg:flex flex-col justify-center items-center bg-gradient-to-br from-blue-600 to-purple-700 text-white relative overflow-hidden h-screen">
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -108,9 +109,6 @@ export default function ServiceLoginPage() {
                         className="mt-10 text-center z-10"
                     >
                         <h2 className="text-4xl font-bold mb-4">Welcome Back!</h2>
-                        {/* <p className="text-xl text-blue-100">
-                            Log in to manage your services and connect with clients
-                        </p> */}
                     </motion.div>
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
@@ -129,7 +127,7 @@ export default function ServiceLoginPage() {
                     </motion.div>
                 </div>
                 {/* Right Side - Login Form */}
-                <div className="p-8 lg:p-16 flex flex-col justify-center">
+                <div className="p-8 lg:p-16 flex flex-col justify-center min-h-screen lg:min-h-0">
                     <motion.div
                         initial={{ opacity: 0, x: 30 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -218,17 +216,21 @@ export default function ServiceLoginPage() {
                                 >
                                     <p>
                                         Don't have an account?{' '}
-                                        <a
+                                        <Link
                                             href="/service/register"
                                             className="font-medium text-blue-600 hover:underline hover:text-purple-600 transition"
                                         >
                                             Register as Provider
-                                        </a>
+                                        </Link>
                                     </p>
                                     <p>
-                                        <a href="#" className="text-gray-500 hover:text-gray-700 hover:underline">
+                                        {/* ✅ MAGIC FIX: Link updated to point to the new forgot password page */}
+                                        <Link 
+                                            href="/service/forgot-password" 
+                                            className="text-gray-500 hover:text-blue-600 hover:underline transition"
+                                        >
                                             Forgot password?
-                                        </a>
+                                        </Link>
                                     </p>
                                 </motion.div>
                             </CardContent>

@@ -1,9 +1,21 @@
 import { IBooking } from "./serviceProviderManage.interface";
 import { BookingModel } from "./serviceProviderManage.model";
-
+import { createAdminNotification } from "@/lib/utils/createAdminNotification";
 
 const createBookingInDB = async (payload: Partial<IBooking>) => {
   const result = await BookingModel.create(payload);
+
+  // ✅ MAGIC FIX: Safe Enum + Try/Catch added so it NEVER crashes
+  try {
+    await createAdminNotification(
+      'service_request', // ডাটাবেসের পরিচিত Enum টাইপ ব্যবহার করা হলো
+      `New service booking received!`,
+      `/general/all-service-request` 
+    );
+  } catch (error) {
+    console.error("Admin notification failed:", error);
+  }
+
   return result;
 };
 
@@ -109,6 +121,11 @@ const cancelBookingInDB = async (
   return booking;
 };
 
+const deleteBookingInDB = async (booking_id: string) => {
+  const booking = await BookingModel.findByIdAndDelete(booking_id);
+  if (!booking) throw new Error("Booking not found to delete.");
+  return booking;
+};
 
 export const BookingServices = {
   createBookingInDB,
@@ -117,7 +134,7 @@ export const BookingServices = {
   updateBookingInDB,
   getAllBookingsFromDB,
   getUserBookingsFromDB,
-
+  deleteBookingInDB,
   confirmBookingInDB,
   completeBookingInDB,
   cancelBookingInDB,

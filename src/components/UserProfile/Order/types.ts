@@ -13,6 +13,9 @@ export interface OrderItem {
 export interface OrderItemSummary extends OrderItem {
   subtotal?: number
   unitPrice?: number
+  originalUnitPrice?: number
+  originalSubtotal?: number
+  itemDiscount?: number
 }
 
 export interface OrderSummary {

@@ -9,8 +9,9 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import OrderDetailsSkeleton from './OrderDetailsSkeleton';
+import { AlertCircle } from 'lucide-react'; // ✅ MAGIC FIX: Icon import for alerts
 
-// ✅ JSON অনুযায়ী টাইপ ডিফিনিশন
+// ✅ JSON অনুযায়ী টাইপ ডিফিনিশন
 type ApiOrder = {
   _id: string;
   orderId?: string;
@@ -28,6 +29,9 @@ type ApiOrder = {
   shippingCity?: string;
   shippingDistrict?: string;
   shippingCountry?: string;
+  createdAt?: string; 
+  returnReason?: string; // ✅ MAGIC FIX: Added returnReason
+  cancelReason?: string; // ✅ MAGIC FIX: Added cancelReason
   orderDetails?: Array<{
     _id: string;
     quantity: number;
@@ -45,11 +49,17 @@ type ApiOrder = {
   storeId?: any;
 };
 
-function mapApiOrderToDetails(order: ApiOrder): OrderDetailsData {
+// ✅ Extend OrderDetailsData to include reasons
+interface ExtendedOrderDetailsData extends OrderDetailsData {
+  returnReason?: string;
+  cancelReason?: string;
+}
+
+function mapApiOrderToDetails(order: ApiOrder): ExtendedOrderDetailsData {
   const user = typeof order.userId === 'object' && order.userId !== null ? order.userId : {};
   const store = typeof order.storeId === 'object' && order.storeId !== null ? order.storeId : {};
 
-  // ✅ এড্রেস স্ট্রিং তৈরি (Street, City, District মিলিয়ে)
+  // ✅ এড্রেস স্ট্রিং তৈরি (Street, City, District মিলিয়ে)
   const fullAddress = [
     order.shippingStreetAddress,
     order.shippingCity,
@@ -69,13 +79,19 @@ function mapApiOrderToDetails(order: ApiOrder): OrderDetailsData {
     color: item.color,
   }));
 
+  // ✅ Date Formatting
+  const orderDateStr = order.createdAt 
+    ? new Date(order.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) 
+    : 'Unknown Date';
+
   return {
     id: order._id,
     orderNo: order.orderId || order._id,
+    orderDate: orderDateStr, 
     name: order.shippingName || user?.name || 'Customer',
     phone: order.shippingPhone || user?.phoneNumber || 'N/A',
     email: order.shippingEmail || user?.email,
-    address: fullAddress, // ✅ এই এড্রেসটি এখন ভিউতে শো করবে
+    address: fullAddress, 
     total: typeof order.totalAmount === 'number' ? order.totalAmount : 0,
     deliveryCharge: order.deliveryCharge || 0,
     payment: order.paymentStatus || 'Pending',
@@ -83,6 +99,8 @@ function mapApiOrderToDetails(order: ApiOrder): OrderDetailsData {
     deliveryMethod: order.deliveryMethodId || 'COD',
     trackingId: order.trackingId,
     parcelId: order.parcelId,
+    returnReason: order.returnReason, // ✅ Mapped
+    cancelReason: order.cancelReason, // ✅ Mapped
     customer: {
       name: user?.name,
       email: user?.email,
@@ -92,12 +110,12 @@ function mapApiOrderToDetails(order: ApiOrder): OrderDetailsData {
       name: store?.storeName,
       id: typeof store === 'object' ? store?._id : undefined,
     },
-    items: items, // ✅ প্রোডাক্ট লিস্ট ভিউতে পাস করা হচ্ছে
+    items: items,
   };
 }
 
 export default function OrderDetailsPageClient({ orderId }: { orderId: string }) {
-  const [order, setOrder] = useState<OrderDetailsData | null>(null);
+  const [order, setOrder] = useState<ExtendedOrderDetailsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { data: session, status } = useSession();
@@ -165,6 +183,33 @@ export default function OrderDetailsPageClient({ orderId }: { orderId: string })
         </Button>
         <div className="text-sm font-mono text-gray-500">Order #{order.orderNo}</div>
       </div>
+
+      {/* ✅ MAGIC FIX: Display Return & Cancel Reason prominently above the standard view */}
+      {(order.status === 'Return Request' || order.status === 'Returned' || order.returnReason) && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+          <div>
+            <h3 className="text-red-800 font-bold text-sm uppercase tracking-wider mb-1">
+              {order.status === 'Returned' ? 'Order Returned' : 'Return Requested'}
+            </h3>
+            <p className="text-red-700 text-sm">
+              <span className="font-semibold">Reason:</span> {order.returnReason || 'No specific reason provided by customer.'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {(order.status === 'Cancelled' || order.cancelReason) && !order.returnReason && (
+        <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-lg shadow-sm flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5" />
+          <div>
+            <h3 className="text-orange-800 font-bold text-sm uppercase tracking-wider mb-1">Order Cancelled</h3>
+            <p className="text-orange-700 text-sm">
+              <span className="font-semibold">Reason:</span> {order.cancelReason || 'No reason provided.'}
+            </p>
+          </div>
+        </div>
+      )}
 
       <OrderDetailsView
         order={order}

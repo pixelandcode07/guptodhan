@@ -65,7 +65,7 @@ export function LowStockAlert({ products }: { products: any[] }) {
 
         {products.length > 0 && (
           <Link 
-            href="/products/low-stock" 
+            href="/general/view/low-stock" 
             className="mt-4 w-full py-2 bg-gradient-to-r from-red-500/10 to-orange-500/10 text-red-600 rounded-lg text-sm font-bold hover:from-red-500/20 hover:to-orange-500/20 transition-all duration-200 block text-center"
           >
             View All Low Stock Products →

@@ -5,9 +5,11 @@ export async function fetchJustForYouData(): Promise<ProductCardType[]> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
   try {
-    const res = await axios.get(`${baseUrl}/api/v1/product/forYou`, {
+    // ✅ FIX: নতুন অ্যালগরিদম API কল করা হচ্ছে (page=1, limit=60)
+    const res = await axios.get(`${baseUrl}/api/v1/product/just-for-you?page=1&limit=60`, {
       headers: { 'Cache-Control': 'no-store' },
     });
+    
     if (res.data?.success && Array.isArray(res.data.data)) {
       return res.data.data;
     }
