@@ -66,13 +66,13 @@ const EMPTY_FORM: FormData = {
 const isValidObjectId = (id?: string) => !!id && /^[0-9a-fA-F]{24}$/.test(id)
 
 export default function ShoppingInfoContent({
-  cartItems,
-  onUpdateQuantity,
-  onRemoveItem,
+    cartItems,
+    onUpdateQuantity,
+    onRemoveItem,
 }: {
-  cartItems: CartItem[];
-  onUpdateQuantity?: (itemId: string, newQuantity: number) => void;
-  onRemoveItem?: (itemId: string) => void;
+    cartItems: CartItem[];
+    onUpdateQuantity?: (itemId: string, newQuantity: number) => void;
+    onRemoveItem?: (itemId: string) => void;
 }) {
     const { data: session } = useSession()
 
@@ -108,9 +108,6 @@ export default function ShoppingInfoContent({
         .then(d => { if (Array.isArray(d?.data)) setApiDeliveryCharges(d.data) })
         .catch(() => {})
     }, [])
-
-    const matchedCharge = apiDeliveryCharges.find(c => c.districtName === formData.district)
-    const baseDistrictCharge = matchedCharge ? matchedCharge.deliveryCharge : (formData.district ? 130 : 0)
 
     const [successModalOpen, setSuccessModalOpen] = useState(false)
     const [successOrderId, setSuccessOrderId]     = useState('')
@@ -249,10 +246,41 @@ export default function ShoppingInfoContent({
     const totalSavings = enrichedCartItems.reduce((s, i) => s + (i.product.originalPrice - i.product.price) * i.product.quantity, 0)
     const totalItems = enrichedCartItems.reduce((s, i) => s + i.product.quantity, 0)
 
-    const finalDeliveryCharge = (() => {
-        const custom = enrichedCartItems.reduce((s, i) => s + (i.product.shippingCost || 0) * i.product.quantity, 0)
-        return custom > 0 ? custom : baseDistrictCharge
-    })()
+    // =========================================================================
+    // ✅ STRICT MATCH FIX FOR DELIVERY CHARGE (Without isDhaka)
+    // =========================================================================
+    const finalDeliveryCharge = useMemo(() => {
+        if (!formData.district && !formData.city && !formData.address) return 0;
+
+        // 1. Product level custom shipping cost check
+        const totalCustomCharge = enrichedCartItems.reduce((sum, item) => {
+            const cost = item.product.shippingCost || 0;
+            return sum + (cost > 0 ? cost : 0);
+        }, 0);
+
+        if (totalCustomCharge > 0) {
+            return totalCustomCharge;
+        }
+
+        // 2. Exact match with API district
+        const matchedCharge = apiDeliveryCharges.find(c => {
+            const dName = (c.districtName || '').toLowerCase().trim();
+            const fDist = (formData.district || '').toLowerCase().trim();
+            const fCity = (formData.city || '').toLowerCase().trim();
+            if (!dName) return false;
+            // Exact strict match to avoid partial matches
+            return dName === fDist || dName === fCity;
+        });
+
+        if (matchedCharge && typeof matchedCharge.deliveryCharge === 'number') {
+            return matchedCharge.deliveryCharge;
+        }
+
+        // 3. Absolute Fallback: Strictly checking 'Dhaka'
+        const isStrictlyDhaka = (formData.city || '').toLowerCase().trim() === 'dhaka';
+        return isStrictlyDhaka ? 60 : 120;
+    }, [enrichedCartItems, apiDeliveryCharges, formData.district, formData.city, formData.address]);
+
 
     const couponDiscount = (() => {
         if (!appliedCoupon) return 0
@@ -315,8 +343,11 @@ export default function ShoppingInfoContent({
                 shippingPostalCode:    formData.postalCode,
                 shippingCountry:       formData.country,
                 addressDetails:        addressDetail,
+                
+                // ✅ FRONTEND TOTALS: Sending these directly to the backend
                 deliveryCharge:        finalDeliveryCharge,
                 totalAmount:           subtotal - couponDiscount + finalDeliveryCharge,
+                
                 paymentStatus:         'Pending' as const,
                 orderStatus:           'Pending' as const,
                 orderForm:             'Website' as const,
@@ -334,7 +365,7 @@ export default function ShoppingInfoContent({
                 couponId: appliedCoupon?._id || undefined,
             }
 
-            // ✅ PAYMENT GATEWAY LOGIC
+            // PAYMENT GATEWAY LOGIC
             if (paymentMethod === 'card') {
                 toast.loading('Initializing secure payment...', { id: 'pay' })
                 try {
@@ -353,13 +384,12 @@ export default function ShoppingInfoContent({
                 return
             }
 
-            // ✅ COD LOGIC (এখানে কার্ট ক্লিয়ার করা হবে কারণ পেমেন্ট দরকার নেই)
+            // COD LOGIC
             const { data } = await axios.post('/api/v1/product-order', orderData)
             if (data.success) {
                 const primary  = Array.isArray(data.data) ? data.data[0] : data.data
-                const trackingOrderId  = primary.orderId // ORD-12345...
+                const trackingOrderId  = primary.orderId 
                 
-                // 🔥 FIX: Extract Original MongoDB _id robustly
                 const realMongoDbId = primary._id?.$oid || primary._id;
 
                 if (selectedDelivery === 'steadfast') {
@@ -375,7 +405,6 @@ export default function ShoppingInfoContent({
                     } catch (e) {}
                 }
                 
-                // ✅ COD এর ক্ষেত্রে success modal-এ অরিজিনাল ডাটাবেস _id পাস করা হচ্ছে
                 showSuccessModal(realMongoDbId || trackingOrderId)
             } else {
                 showError(data.message || 'Order failed')

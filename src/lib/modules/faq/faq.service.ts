@@ -11,7 +11,10 @@ const createFAQInDB = async (payload: Partial<IFAQ>) => {
 
 // Get all active FAQs
 const getAllFAQsFromDB = async () => {
-  const result = await FAQModel.find({}).sort({ createdAt: -1 }).lean();
+  const result = await FAQModel.find({})
+    .populate('category', 'name') // ✅ MAGIC FIX: populate যুক্ত করা হয়েছে যাতে আইডি-এর বদলে ক্যাটাগরির নাম আসে
+    .sort({ createdAt: -1 })
+    .lean();
   return result;
 };
 
@@ -51,7 +54,7 @@ const getPublicGroupedFAQsFromDB = async () => {
               }
             }
           },
-          { $sort: { createdAt: -1 } } // FAQ গুলোকে লেটেস্ট অনুযায়ী সাজাও
+          { $sort: { createdAt: -1 } } // FAQ গুলোকে লেটেস্ট অনুযায়ী সাজাও
         ],
         as: 'faqs'
       }
@@ -60,10 +63,10 @@ const getPublicGroupedFAQsFromDB = async () => {
     // ৩. যেসব ক্যাটাগরিতে কোনো FAQ নেই, সেগুলো বাদ দাও
     { $match: { 'faqs.0': { $exists: true } } }, 
     
-    // ৪. ক্যাটাগরির নাম অনুযায়ী সাজাও
+    // ৪. ক্যাটাগরির নাম অনুযায়ী সাজাও
     { $sort: { name: 1 } },
     
-    // ৫. ফ্রন্টএন্ডে পাঠানোর জন্য সুন্দর করে সাজিয়ে দাও
+    // ৫. ফ্রন্টএন্ডে পাঠানোর জন্য সুন্দর করে সাজিয়ে দাও
     {
       $project: {
         _id: 1,
@@ -96,7 +99,7 @@ export const FAQServices = {
   createFAQInDB,
   getAllFAQsFromDB,
   getFAQsByCategoryFromDB,
-  getPublicGroupedFAQsFromDB, // ✅ Exported new function
+  getPublicGroupedFAQsFromDB, 
   updateFAQInDB,
   deleteFAQFromDB,
 };

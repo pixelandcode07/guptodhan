@@ -144,7 +144,7 @@ export default function ReviewsClient() {
         reply_from_admin: review.replyFromAdmin || "",
         customer: String(review.userEmail ?? ""),
         name: String(review.userName ?? ""),
-        status: review.status === "active" ? "Active" : "Inactive",
+        status: review.status === "inactive" ? "Inactive" : "Active",
         created_at: review.createdAt
           ? new Date(review.createdAt).toLocaleString()
           : "",
@@ -179,6 +179,84 @@ export default function ReviewsClient() {
     [token, userRole, fetchReviews]
   );
 
+  const handleStatusToggle = useCallback(
+    async (reviewId: string, newStatus: "active" | "inactive") => {
+      try {
+        await axios.patch(
+          `/api/v1/product-review/${reviewId}`,
+          { status: newStatus },
+          {
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              ...(userRole ? { "x-user-role": userRole } : {}),
+            },
+          }
+        );
+
+        toast.success(`Review status updated to ${newStatus}!`);
+        fetchReviews();
+      } catch (error) {
+        console.error("Failed to update status:", error);
+        toast.error("Failed to update review status. Please try again.");
+      }
+    },
+    [token, userRole, fetchReviews]
+  );
+
+  const handleBulkDelete = useCallback(
+    async (selectedRows: Review[]) => {
+      try {
+        await Promise.all(
+          selectedRows
+            .filter((r) => r.dbId)
+            .map((r) =>
+              axios.delete(`/api/v1/product-review/${r.dbId}`, {
+                headers: {
+                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                  ...(userRole ? { "x-user-role": userRole } : {}),
+                },
+              })
+            )
+        );
+        toast.success(`${selectedRows.length} reviews deleted successfully!`);
+        fetchReviews();
+      } catch (error) {
+        console.error("Bulk delete failed:", error);
+        toast.error("Failed to delete selected reviews.");
+      }
+    },
+    [token, userRole, fetchReviews]
+  );
+
+  const handleBulkStatusChange = useCallback(
+    async (selectedRows: Review[], status: "active" | "inactive") => {
+      try {
+        await Promise.all(
+          selectedRows
+            .filter((r) => r.dbId)
+            .map((r) =>
+              axios.patch(
+                `/api/v1/product-review/${r.dbId}`,
+                { status },
+                {
+                  headers: {
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    ...(userRole ? { "x-user-role": userRole } : {}),
+                  },
+                }
+              )
+            )
+        );
+        toast.success(`${selectedRows.length} reviews updated to ${status}!`);
+        fetchReviews();
+      } catch (error) {
+        console.error("Bulk status change failed:", error);
+        toast.error("Failed to update status for selected reviews.");
+      }
+    },
+    [token, userRole, fetchReviews]
+  );
+
   useEffect(() => {
     fetchReviews();
   }, [fetchReviews]);
@@ -200,8 +278,10 @@ export default function ReviewsClient() {
               <div className="overflow-x-auto">
                 <div className="min-w-[900px]">
                   <DataTable
-                    columns={createReviewColumns(handleDeleteReview)}
+                    columns={createReviewColumns(handleDeleteReview, handleStatusToggle)}
                     data={data}
+                    onBulkDelete={handleBulkDelete}
+                    onBulkStatusChange={handleBulkStatusChange}
                   />
                 </div>
               </div>

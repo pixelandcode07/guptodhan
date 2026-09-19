@@ -303,8 +303,8 @@ export default function CategoryClient({ initialData }: { initialData: CategoryD
                         </Breadcrumb>
                         <div className='flex items-center gap-3'>
                             <h1 className="text-lg md:text-xl font-bold text-gray-800">{initialData.category.name}</h1>
-                            <span className="hidden md:inline text-gray-300">|</span>
-                            <p className="text-sm md:text-base text-gray-500 font-medium">{initialData.totalProducts} Products</p>
+                            {/* <span className="hidden md:inline text-gray-300">|</span>
+                            <p className="text-sm md:text-base text-gray-500 font-medium">{initialData.totalProducts} Products</p> */}
                         </div>
                     </div>
                 </div>

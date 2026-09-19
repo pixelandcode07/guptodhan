@@ -320,7 +320,7 @@ export default function ChildCategoryClient({ initialData }: { initialData: Chil
                 <div className="bg-gradient-to-r from-indigo-900 to-pink-900 text-white py-16">
                     <div className="max-w-7xl mx-auto px-4 text-center">
                         <h1 className="text-4xl md:text-5xl font-bold mb-2">{initialData.childCategory.name}</h1>
-                        <p className="text-lg opacity-90">{initialData.totalProducts} Products</p>
+                        {/* <p className="text-lg opacity-90">{initialData.totalProducts} Products</p> */}
                     </div>
                 </div>
 

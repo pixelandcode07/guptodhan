@@ -16,6 +16,7 @@ export type OrderRow = {
   name: string
   phone: string
   email?: string
+  storeName?: string
   total: number
   deliveryCharge?: number
   productTotal?: number
@@ -27,6 +28,7 @@ export type OrderRow = {
   trackingId?: string
   parcelId?: string
   cancelReason?: string 
+  returnReason?: string
   customer?: {
     name: string
     email: string
@@ -265,6 +267,18 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
       </div>
     )
   },
+  { 
+    accessorKey: "storeName", 
+    header: () => <span className="whitespace-nowrap font-semibold text-blue-700">Vendor Name</span>,
+    cell: ({ row }) => {
+      const storeName = (row.getValue("storeName") as string) || row.original.store?.name || "Main Store";
+      return (
+        <div className="max-w-[160px] truncate font-semibold text-xs text-blue-700 bg-blue-50 px-2.5 py-1 rounded border border-blue-200" title={storeName}>
+          {storeName}
+        </div>
+      );
+    }
+  },
   { accessorKey: "orderDate", header: () => <span>Order Date</span> },
   { accessorKey: "from", header: () => <span>From</span> },
   { 
@@ -286,7 +300,6 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
     )
   },
   
-  // ✅ 1. Product Price Column
   { 
     accessorKey: "productTotal", 
     header: () => <span className="whitespace-nowrap">Product Price</span>,
@@ -297,7 +310,6 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
     )
   },
 
-  // ✅ 2. Delivery Charge Column
   { 
     accessorKey: "deliveryCharge", 
     header: () => <span className="whitespace-nowrap">Delivery Price</span>,
@@ -308,7 +320,6 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
     )
   },
 
-  // Existing Total
   { 
     accessorKey: "total", 
     header: () => <span>Total</span>,
@@ -322,7 +333,6 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
     }
   },
 
-  // ✅ 3. Admin Earn Column
   { 
     accessorKey: "adminEarned", 
     header: () => <span className="whitespace-nowrap text-blue-600">Admin Earn</span>,
@@ -333,10 +343,9 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
     )
   },
 
-  // ✅ 4. Vendor Earn Column
   { 
     accessorKey: "vendorEarned", 
-    header: () => <span className="whitespace-nowrap text-purple-600">Vendor Earn</span>,
+    header: () => <span className="whitespace-nowrap text-purple-600">Vendor Sell</span>,
     cell: ({ row }) => (
       <div className="font-mono text-sm font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded text-center border border-purple-100">
         ৳{Number(row.getValue("vendorEarned") || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -410,18 +419,34 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
     }
   },
   { 
-    accessorKey: "cancelReason", 
-    header: () => <span className="text-red-500 font-semibold whitespace-nowrap">Cancel Reason</span>,
+    accessorKey: "returnReason", 
+    header: () => <span className="text-orange-500 font-semibold whitespace-nowrap">Return Reason</span>,
     cell: ({ row }) => {
-      const cancelReason = row.getValue("cancelReason") as string;
-      const status = row.original.status.toLowerCase();
+      const returnReason = (row.original as any).returnReason as string;
       
-      if (status !== 'cancelled' || !cancelReason) {
+      if (!returnReason || returnReason === '-') {
         return <span className="text-gray-400 text-xs">-</span>;
       }
 
       return (
-        <div className="text-xs text-red-600 font-medium max-w-[150px] whitespace-normal">
+        <div className="text-xs text-orange-600 font-medium max-w-[150px] whitespace-normal" title={returnReason}>
+          {returnReason}
+        </div>
+      );
+    }
+  },
+  { 
+    accessorKey: "cancelReason", 
+    header: () => <span className="text-red-500 font-semibold whitespace-nowrap">Cancel Reason</span>,
+    cell: ({ row }) => {
+      const cancelReason = row.getValue("cancelReason") as string;
+      
+      if (!cancelReason || cancelReason === '-') {
+        return <span className="text-gray-400 text-xs">-</span>;
+      }
+
+      return (
+        <div className="text-xs text-red-600 font-medium max-w-[150px] whitespace-normal" title={cancelReason}>
           {cancelReason}
         </div>
       );
@@ -433,13 +458,17 @@ export const ordersColumns: ColumnDef<OrderRow>[] = [
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       
+      // ✅ MAGIC FIX: Added 'approved' status styles
       const getStatusStyle = (status: string) => {
         switch (status.toLowerCase()) {
           case 'pending': return "bg-yellow-100 text-yellow-800";
+          case 'approved': return "bg-teal-100 text-teal-800"; 
           case 'processing': return "bg-blue-100 text-blue-800";
           case 'shipped': return "bg-purple-100 text-purple-800";
           case 'delivered': return "bg-green-100 text-green-800";
           case 'cancelled': return "bg-red-100 text-red-800";
+          case 'returned': return "bg-orange-100 text-orange-800";
+          case 'return request': return "bg-red-100 text-red-800";
           default: return "bg-gray-100 text-gray-800";
         }
       };

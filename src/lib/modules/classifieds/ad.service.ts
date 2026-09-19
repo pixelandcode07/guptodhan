@@ -1,11 +1,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { createAdminNotification } from '@/lib/utils/createAdminNotification';
 import { IClassifiedAd } from './ad.interface';
 import { ClassifiedAd } from './ad.model';
 import { deleteFromCloudinary } from '@/lib/utils/cloudinary';
 import mongoose, { Types } from 'mongoose';
 
 const createAdInDB = async (payload: Partial<IClassifiedAd>) => {
-  return await ClassifiedAd.create({ ...payload, status: 'pending' });
+  const result = await ClassifiedAd.create({ ...payload, status: 'pending' });
+
+  // ✅ Admin Notification for New Ad
+  try {
+    await createAdminNotification(
+      'buy_sell_ad', // ডাটাবেসের পরিচিত Enum টাইপ
+      `New Buy & Sell Ad pending approval: ${result.title}`,
+      `/general/buy/sell/listing` 
+    );
+  } catch (error) {
+    console.error("Admin notification failed:", error);
+  }
+
+  return result;
 };
 
 const searchAdsInDB = async (filters: Record<string, any>, options: { onlyActive?: boolean } = { onlyActive: true }) => {
@@ -38,7 +52,7 @@ const searchAdsInDB = async (filters: Record<string, any>, options: { onlyActive
     if (filters.minPrice) query.price.$gte = Number(filters.minPrice);
     if (filters.maxPrice) query.price.$lte = Number(filters.maxPrice);
   }
- 
+  
   if (filters.title) {
     query.title = { $regex: filters.title, $options: 'i' };
   }
@@ -93,12 +107,19 @@ const updateAdInDB = async (adId: string, userId: string, userRole: string, payl
     throw new Error('Forbidden: Only the owner can edit the ad details.');
   }
 
-  // ✅ Owner's own edit always goes back to pending for re-review,
-  // regardless of whether the owner also happens to be an admin.
-  // If an admin edits someone else's ad (not the owner) for moderation/correction,
-  // pending is not forced.
   if (isOwner) {
     payload.status = 'pending';
+    
+    // ✅ MAGIC FIX: Safe Enum + Try/Catch added so it NEVER crashes
+    try {
+      await createAdminNotification(
+        'buy_sell_ad', // ডাটাবেসের পরিচিত Enum টাইপ ব্যবহার করা হলো
+        `Ad was updated and needs re-approval: ${payload.title || ad.title}`,
+        `/general/buy/sell/listing`
+      );
+    } catch (error) {
+      console.error("Admin notification failed:", error);
+    }
   }
 
   return await ClassifiedAd.findByIdAndUpdate(adId, payload, { new: true });
@@ -202,7 +223,6 @@ const getAllAdsForAdminFromDB = async () => {
     .sort({ createdAt: -1 });
 }
 
-// ✅ UPDATE STATUS: Admin Only
 const updateAdStatusInDB = async (adId: string, status: string) => {
   const ad = await ClassifiedAd.findById(adId);
   if (!ad) {

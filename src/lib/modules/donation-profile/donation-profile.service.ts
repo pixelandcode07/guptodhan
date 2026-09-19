@@ -1,57 +1,84 @@
-// src/lib/modules/donation-profile/donation-profile.service.ts
-
-import mongoose from "mongoose";
+import { Types } from "mongoose";
 import { DonationCampaign } from "../donation-campaign/donation-campaign.model";
 import { DonationClaim } from "../donation-claim/donation-claim.model";
 
-import "@/lib/modules/donation-category/donation-category.model"; 
-import "@/lib/modules/user/user.model"; 
-
+// ১. ইউজারের ড্যাশবোর্ড স্ট্যাটাস বের করা
 const getUserStatsFromDB = async (userId: string, userEmail: string) => {
-  // স্ট্রিং আইডিকে অবজেক্ট আইডিতে রূপান্তর
-  const creatorId = new mongoose.Types.ObjectId(userId);
+    const totalCampaigns = await DonationCampaign.countDocuments({ 
+        creator: new Types.ObjectId(userId) 
+    });
 
-  const totalCampaigns = await DonationCampaign.countDocuments({ creator: creatorId });
-  const completedCampaigns = await DonationCampaign.countDocuments({ creator: creatorId, status: 'completed' });
-  
-  // ইমেইল কুয়েরি (নিশ্চিত করুন ডাটাবেসে ইমেইল হুবহু এক আছে)
-  const totalClaims = await DonationClaim.countDocuments({ email: userEmail });
-  const approvedClaims = await DonationClaim.countDocuments({ email: userEmail, status: 'approved' });
+    const completedCampaigns = await DonationCampaign.countDocuments({ 
+        creator: new Types.ObjectId(userId), 
+        status: 'completed' 
+    });
 
-  return {
-    totalCampaigns,
-    completedCampaigns,
-    totalClaims,
-    approvedClaims
-  };
+    const totalClaims = await DonationClaim.countDocuments({
+        email: userEmail
+    });
+
+    const approvedClaims = await DonationClaim.countDocuments({
+        email: userEmail,
+        status: 'approved'
+    });
+
+    const userCampaigns = await DonationCampaign.find({ creator: new Types.ObjectId(userId) }).select('_id');
+    const campaignIds = userCampaigns.map(c => c._id);
+    const receivedRequests = await DonationClaim.countDocuments({ item: { $in: campaignIds } });
+
+    return {
+        totalCampaigns,
+        completedCampaigns,
+        totalClaims,
+        approvedClaims,
+        receivedRequests 
+    };
 };
 
+// ২. ইউজারের তৈরি করা ক্যাম্পেইন বের করা
 const getUserCampaignsFromDB = async (userId: string) => {
-  const campaigns = await DonationCampaign.find({ 
-    creator: new mongoose.Types.ObjectId(userId) // আইডি অবজেক্টে রূপান্তর
-  })
-    .populate('category', 'name') 
-    .sort({ createdAt: -1 });
-    
-  return campaigns;
+    const campaigns = await DonationCampaign.find({ creator: new Types.ObjectId(userId) })
+        .sort({ createdAt: -1 })
+        .populate('category', 'categoryName')
+        .lean();
+    return campaigns;
 };
 
+// ৩. ইউজারের আবেদন করা ক্লেইম বের করা
 const getUserClaimsFromDB = async (userEmail: string) => {
-  if (!userEmail) return [];
-  
-  const claims = await DonationClaim.find({ email: userEmail })
-    .populate({
-      path: 'item',
-      select: 'title item images status',
-      model: 'DonationCampaign' 
+    const claims = await DonationClaim.find({
+        email: userEmail
     })
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .populate({
+        path: 'item',
+        select: 'title images status category creator', // ✅ MAGIC FIX: creator যুক্ত করা হলো
+        populate: {
+            path: 'creator',
+            select: 'name email phoneNumber' // ✅ MAGIC FIX: ডোনারের নাম, ইমেইল, ফোন নাম্বার বের করা হলো
+        }
+    })
+    .lean();
 
-  return claims;
+    return claims;
+};
+
+// ৪. ইউজারের ক্যাম্পেইনে আসা অন্যদের রিকোয়েস্ট বের করা
+const getReceivedClaimsFromDB = async (userId: string) => {
+    const userCampaigns = await DonationCampaign.find({ creator: new Types.ObjectId(userId) }).select('_id');
+    const campaignIds = userCampaigns.map(c => c._id);
+
+    const claims = await DonationClaim.find({ item: { $in: campaignIds } })
+        .sort({ createdAt: -1 })
+        .populate({ path: 'item', select: 'title images status' })
+        .lean();
+
+    return claims;
 };
 
 export const DonationProfileServices = {
-  getUserStatsFromDB,
-  getUserCampaignsFromDB,
-  getUserClaimsFromDB,
+    getUserStatsFromDB,
+    getUserCampaignsFromDB,
+    getUserClaimsFromDB,
+    getReceivedClaimsFromDB
 };

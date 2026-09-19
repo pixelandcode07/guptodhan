@@ -10,6 +10,7 @@ import { verifyToken } from '@/lib/utils/jwt';
 import dbConnect from '@/lib/db';
 import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 import mongoose from 'mongoose';
+import { deleteCachePattern } from '@/lib/redis/cache-helpers';
 
 const getUserDetailsFromToken = (req: NextRequest) => {
   const authHeader = req.headers.get('authorization');
@@ -30,7 +31,6 @@ const createService = async (req: NextRequest) => {
   const { userId } = getUserDetailsFromToken(req);
   const formData = await req.formData();
 
-  // Image handling
   const images = formData.getAll('service_images') as File[];
   let imageUrls: string[] = [];
   if (images.length > 0 && images[0] instanceof File) {
@@ -71,6 +71,8 @@ const createService = async (req: NextRequest) => {
     ...validatedData,
     provider_id: new mongoose.Types.ObjectId(validatedData.provider_id) as any,
   });
+
+  try { await deleteCachePattern('service*'); } catch (e) {}
 
   return sendResponse({
     success: true,
@@ -119,6 +121,9 @@ const updateService = async (
   const body = await req.json();
   const validatedData = updateServiceValidationSchema.parse(body);
   const result = await ServiceServices.updateServiceInDB(id, validatedData);
+  
+  try { await deleteCachePattern('service*'); } catch (e) {}
+
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
@@ -133,7 +138,12 @@ const deleteService = async (
 ) => {
   await dbConnect();
   const { id } = await params;
+  
+  // ডিলিট সার্ভিস কল করা হচ্ছে
   const result = await ServiceServices.deleteServiceInDB(id, '');
+  
+  try { await deleteCachePattern('service*'); } catch (e) {}
+
   return sendResponse({
     success: true,
     statusCode: StatusCodes.OK,
@@ -179,6 +189,8 @@ const changeServiceStatus = async (
     status,
     is_visible_to_customers
   );
+
+  try { await deleteCachePattern('service*'); } catch (e) {}
 
   return sendResponse({
     success: true,

@@ -1,21 +1,45 @@
-import SectionTitle from '@/components/ui/SectionTitle';
-import { UserServices } from '@/lib/modules/user/user.service'; // ✅ Import your service directly
-import dbConnect from '@/lib/db'; // ✅ Import your database connection
-import UserTable from './Components/UserTable';
+import { UserServices } from '@/lib/modules/user/user.service';
+import dbConnect from '@/lib/db';
+import { SystemUserRow } from '@/components/TableHelper/system_users_columns';
+import SystemUsersClient from '../../all/subscribed/users/components/SystemUsersClient';
 
-// This is now an async Server Component
-export default async function UsersPage() {
-  // Directly connect to the DB and call the service function on the server
-  await dbConnect();
-  // Assuming you have a service function to get all users
-  const usersData = await UserServices.getAllUsersFromDB();
+export const dynamic = 'force-dynamic';
 
-  return (
-    <div className="pb-6 pt-5 space-y-6 bg-white">
-      <SectionTitle text="System Users List" />
-      <div className="px-5">
-        <UserTable data={JSON.parse(JSON.stringify(usersData))} />
+export default async function ViewAllSystemUsersPage() {
+  try {
+    await dbConnect();
+    // Fetch all users from the database
+    const users = await UserServices.getAllUsersFromDB();
+
+    // Map the database response to our table row format
+    const mappedUsers: SystemUserRow[] = users.map((user: any, index: number) => ({
+      _id: user._id?.toString() || "",
+      sl: index + 1,
+      name: user.name || "Unknown",
+      email: user.email || "",
+      phoneNumber: user.phoneNumber || "",
+      profilePicture: user.profilePicture || "",
+      role: user.role || "user",
+      isActive: user.isActive ?? true,
+      createdAt: user.createdAt?.toISOString() || new Date().toISOString(),
+      updatedAt: user.updatedAt?.toISOString() || new Date().toISOString(),
+    }));
+
+    return (
+      <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+        <div className="max-w-[1500px] mx-auto">
+          <SystemUsersClient initialUsers={mappedUsers} />
+        </div>
       </div>
-    </div>
-  );
+    );
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return (
+      <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+        <div className="max-w-[1500px] mx-auto text-center text-red-500 py-20 font-bold">
+          Failed to load users. Please check your database connection.
+        </div>
+      </div>
+    );
+  }
 }

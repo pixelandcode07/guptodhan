@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { 
   BarChart, 
   Bar, 
@@ -9,64 +9,134 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  Cell,
-  Legend
+  Cell
 } from 'recharts';
-import { ArrowUpRight, ArrowDownRight, Download, Filter, MoreHorizontal } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Download } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
+import { toast } from 'sonner';
 
 interface RevenueData {
   date: string;
   Sales: number;
 }
 
-export default function RevenueChart({ data }: { data: RevenueData[] }) {
-  const [timeframe, setTimeframe] = useState('14 Days');
-  const [showFilter, setShowFilter] = useState(false);
+// Money Formatter Helper
+const formatMoney = (val: number) => {
+  if (val >= 1000000) return `৳${(val / 1000000).toFixed(2)}M`;
+  if (val >= 1000) return `৳${(val / 1000).toFixed(1)}k`;
+  return `৳${val.toFixed(0)}`;
+};
 
-  // Advanced calculations
-  const stats = useMemo(() => {
-    if (data.length === 0) {
-      return {
-        totalRevenue: 0,
-        avgRevenue: 0,
-        maxRevenue: 0,
-        growth: 0,
-        change: 0,
-        totalOrders: 0
-      };
+export default function RevenueChart({ 
+  data, 
+  globalTotalOrders = 0 
+}: { 
+  data: RevenueData[], 
+  globalTotalOrders?: number 
+}) {
+  const [timeframe, setTimeframe] = useState('7 Days');
+
+  // ✅ MAGIC FIX: Date Based Filtering (অ্যারে না কেটে অরিজিনাল তারিখ অনুযায়ী ফিল্টার)
+  const filteredData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    
+    const now = new Date();
+    now.setHours(23, 59, 59, 999); // আজকের দিনের শেষ সময়
+
+    const cutoff = new Date(now);
+    
+    if (timeframe === '7 Days') {
+      cutoff.setDate(now.getDate() - 7);
+    } else if (timeframe === '14 Days') {
+      cutoff.setDate(now.getDate() - 14);
+    } else if (timeframe === '30 Days') {
+      cutoff.setDate(now.getDate() - 30);
+    } else if (timeframe === 'Yearly') {
+      cutoff.setDate(now.getDate() - 365);
     }
 
-    const total = data.reduce((sum, item) => sum + (item.Sales || 0), 0);
-    const avg = total / data.length;
-    const max = Math.max(...data.map(d => d.Sales || 0));
-    const firstHalf = data.slice(0, Math.ceil(data.length / 2)).reduce((sum, item) => sum + (item.Sales || 0), 0);
-    const secondHalf = data.slice(Math.ceil(data.length / 2)).reduce((sum, item) => sum + (item.Sales || 0), 0);
-    const growthRate = firstHalf > 0 ? ((secondHalf - firstHalf) / firstHalf * 100) : 0;
+    cutoff.setHours(0, 0, 0, 0); // কাটঅফ দিনের শুরুর সময়
+
+    return data.filter(item => {
+      const itemDate = new Date(item.date);
+      // যদি Date ফরম্যাট ভুল থাকে তবে ডাটা রেখে দিবে, নাহলে তারিখ অনুযায়ী ফিল্টার করবে
+      if (isNaN(itemDate.getTime())) return true; 
+      return itemDate >= cutoff && itemDate <= now;
+    });
+  }, [data, timeframe]);
+
+  const stats = useMemo(() => {
+    if (!filteredData || filteredData.length === 0) {
+      return { totalRevenue: 0, avgRevenue: 0, maxRevenue: 0, growth: 0, totalOrders: globalTotalOrders };
+    }
+
+    const total = filteredData.reduce((sum, item) => sum + (item.Sales || 0), 0);
+    const avg = total / filteredData.length;
+    const max = Math.max(...filteredData.map(d => d.Sales || 0));
+
+    const halfIndex = Math.floor(filteredData.length / 2);
+    const firstHalf = filteredData.slice(0, halfIndex).reduce((sum, item) => sum + (item.Sales || 0), 0);
+    const secondHalf = filteredData.slice(halfIndex).reduce((sum, item) => sum + (item.Sales || 0), 0);
+    
+    let growthRate = 0;
+    if (firstHalf > 0) {
+      growthRate = ((secondHalf - firstHalf) / firstHalf) * 100;
+    } else if (secondHalf > 0) {
+      growthRate = 100;
+    }
 
     return {
       totalRevenue: total,
       avgRevenue: avg,
       maxRevenue: max,
       growth: growthRate,
-      change: growthRate,
-      totalOrders: data.length * 15
+      totalOrders: globalTotalOrders 
     };
-  }, [data]);
+  }, [filteredData, globalTotalOrders]);
 
-  // Get bar colors based on value
   const getBarColor = (value: number) => {
-    if (value >= stats.maxRevenue * 0.8) return '#f97316'; // Orange - High
-    if (value >= stats.maxRevenue * 0.5) return '#fb923c'; // Light Orange - Medium
-    return '#fed7aa'; // Pale Orange - Low
+    if (stats.maxRevenue > 0) {
+      if (value >= stats.maxRevenue * 0.8) return '#f97316'; 
+      if (value >= stats.maxRevenue * 0.5) return '#fb923c'; 
+    }
+    return '#fed7aa'; 
   };
 
-  // Custom tooltip
+  const handleExport = () => {
+    if (filteredData.length === 0) {
+        toast.error("No data to export");
+        return;
+    }
+    
+    const headers = ['Date', 'Sales (Revenue)'];
+    const csvRows = [headers.join(',')];
+    
+    filteredData.forEach(item => {
+        const values = [`"${item.date}"`, item.Sales];
+        csvRows.push(values.join(','));
+    });
+    
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    const filename = `revenue-report-${timeframe.replace(/\s+/g, '-').toLowerCase()}.csv`;
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success(`Revenue report for ${timeframe} exported successfully!`);
+  };
+
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const value = payload[0].value;
       const date = payload[0].payload.date;
-      const percentOfMax = ((value / stats.maxRevenue) * 100).toFixed(0);
+      const percentOfMax = stats.maxRevenue > 0 ? ((value / stats.maxRevenue) * 100).toFixed(0) : 0;
       
       return (
         <div className="bg-white/95 backdrop-blur-md border border-gray-200 p-4 rounded-xl shadow-2xl min-w-[200px] z-50">
@@ -76,7 +146,7 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
               <div>
                 <p className="text-xs text-gray-500 font-medium mb-1">Revenue</p>
                 <p className="text-xl font-bold bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
-                  ৳{(value / 1000).toFixed(1)}k
+                  {formatMoney(value)}
                 </p>
               </div>
               <span className="text-xs font-semibold px-2 py-1 rounded-md bg-orange-100 text-orange-700">
@@ -96,9 +166,8 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
     return null;
   };
 
-  // Stat card component
   const StatCard = ({ label, value, growth, icon: Icon, gradient }: any) => (
-    <div className={`rounded-xl p-4 backdrop-blur-sm border border-white/20 bg-gradient-to-br ${gradient}`}>
+    <div className={`rounded-xl p-4 backdrop-blur-sm border border-white/20 bg-gradient-to-br ${gradient} h-full transition-transform hover:-translate-y-1 hover:shadow-lg`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-xs font-medium text-white/70 uppercase tracking-wider mb-1">{label}</p>
@@ -123,35 +192,42 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
 
   return (
     <div className="space-y-6">
-      {/* Premium Stats Grid */}
+      {/* ── TOP 4 CARDS ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="Total Revenue"
-          value={`৳${(stats.totalRevenue / 1000000).toFixed(2)}M`}
-          growth={stats.growth}
-          gradient="from-orange-500 via-orange-600 to-red-600"
-        />
-        <StatCard
-          label="Daily Average"
-          value={`৳${(stats.avgRevenue / 1000).toFixed(1)}k`}
-          gradient="from-blue-500 via-blue-600 to-cyan-600"
-        />
-        <StatCard
-          label="Peak Revenue"
-          value={`৳${(stats.maxRevenue / 1000).toFixed(1)}k`}
-          gradient="from-purple-500 via-purple-600 to-pink-600"
-        />
-        <StatCard
-          label="Total Orders"
-          value={stats.totalOrders}
-          growth={2.4}
-          gradient="from-emerald-500 via-emerald-600 to-teal-600"
-        />
+        <Link href="/general/view/orders" className="block h-full">
+          <StatCard
+            label="Total Revenue"
+            value={formatMoney(stats.totalRevenue)}
+            growth={stats.growth}
+            gradient="from-orange-500 via-orange-600 to-red-600"
+          />
+        </Link>
+        <Link href="/general/view/orders" className="block h-full">
+          <StatCard
+            label="Daily Average"
+            value={formatMoney(stats.avgRevenue)}
+            gradient="from-blue-500 via-blue-600 to-cyan-600"
+          />
+        </Link>
+        <Link href="/general/view/orders" className="block h-full">
+          <StatCard
+            label="Peak Revenue"
+            value={formatMoney(stats.maxRevenue)}
+            gradient="from-purple-500 via-purple-600 to-pink-600"
+          />
+        </Link>
+        <Link href="/general/view/orders" className="block h-full">
+          <StatCard
+            label="Total Orders"
+            value={stats.totalOrders} 
+            growth={2.4} 
+            gradient="from-emerald-500 via-emerald-600 to-teal-600"
+          />
+        </Link>
       </div>
 
-      {/* Main Chart Card */}
+      {/* ── MAIN CHART CARD ── */}
       <Card className="border-0 shadow-lg overflow-hidden bg-gradient-to-br from-white to-gray-50">
-        {/* Header */}
         <CardHeader className="pb-4 border-b border-gray-100">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -159,49 +235,22 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
               <p className="text-sm text-gray-500 mt-1">Daily revenue performance and trends</p>
             </div>
             
-            <div className="flex items-center gap-2">
-              {/* Timeframe Dropdown */}
-              <div className="relative">
-                <button 
-                  onClick={() => setShowFilter(!showFilter)}
-                  className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 border border-gray-200 transition-all duration-200 hover:shadow-md"
-                >
-                  <Filter className="w-4 h-4 text-gray-500" />
-                  {timeframe}
-                  <svg className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${showFilter ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
-                </button>
-                
-                {showFilter && (
-                  <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                    {['7 Days', '14 Days', '30 Days', 'Yearly'].map(period => (
-                      <button
-                        key={period}
-                        onClick={() => {
-                          setTimeframe(period);
-                          setShowFilter(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm ${
-                          timeframe === period 
-                            ? 'bg-orange-50 text-orange-600 font-semibold' 
-                            : 'text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        {period}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+            <div className="flex items-center gap-3">
+              <select
+                value={timeframe}
+                onChange={(e) => setTimeframe(e.target.value)}
+                className="bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:border-orange-400 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all px-3 py-2 cursor-pointer shadow-sm"
+              >
+                <option value="7 Days">Last 7 Days</option>
+                <option value="14 Days">Last 14 Days</option>
+                <option value="30 Days">Last 1 Month</option>
+                <option value="Yearly">Last 1 Year</option>
+              </select>
 
-              {/* More options button */}
-              <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 transition-all duration-200 hover:text-gray-600">
-                <MoreHorizontal className="w-5 h-5" />
-              </button>
-
-              {/* Export button */}
-              <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md">
+              <button 
+                onClick={handleExport}
+                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md"
+              >
                 <Download className="w-4 h-4" />
                 <span className="hidden lg:inline">Export</span>
               </button>
@@ -209,12 +258,11 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
           </div>
         </CardHeader>
 
-        {/* Chart Area */}
         <CardContent className="pt-6">
           <div className="h-[400px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
-                data={data}
+                data={filteredData}
                 margin={{ top: 20, right: 20, left: -10, bottom: 60 }}
                 barCategoryGap="15%"
               >
@@ -238,9 +286,9 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
                   tickLine={false}
                   tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
                   dy={10}
-                  angle={data.length > 10 ? -45 : 0}
-                  textAnchor={data.length > 10 ? "end" : "middle"}
-                  height={data.length > 10 ? 80 : 40}
+                  angle={filteredData.length > 10 ? -45 : 0}
+                  textAnchor={filteredData.length > 10 ? "end" : "middle"}
+                  height={filteredData.length > 10 ? 80 : 40}
                   tickFormatter={(val) => {
                     try {
                       const d = new Date(val);
@@ -276,7 +324,7 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
                   maxBarSize={50}
                   animationDuration={600}
                 >
-                  {data.map((entry, index) => (
+                  {filteredData.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`}
                       fill={getBarColor(entry.Sales)}
@@ -287,24 +335,26 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
             </ResponsiveContainer>
           </div>
 
-          {/* Footer Stats */}
+          {/* ── BOTTOM 4 CARDS ── */}
           <div className="mt-8 pt-6 border-t border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Total Days', value: data.length, color: 'from-blue-500 to-blue-600' },
-              { label: 'Avg Daily', value: `৳${(stats.avgRevenue / 1000).toFixed(1)}k`, color: 'from-orange-500 to-orange-600' },
-              { label: 'Peak Value', value: `৳${(stats.maxRevenue / 1000).toFixed(1)}k`, color: 'from-purple-500 to-purple-600' },
+              { label: 'Total Days', value: filteredData.length, color: 'from-blue-500 to-blue-600' },
+              { label: 'Avg Daily', value: formatMoney(stats.avgRevenue), color: 'from-orange-500 to-orange-600' },
+              { label: 'Peak Value', value: formatMoney(stats.maxRevenue), color: 'from-purple-500 to-purple-600' },
               { label: 'Growth', value: `${stats.growth.toFixed(1)}%`, color: stats.growth >= 0 ? 'from-green-500 to-green-600' : 'from-red-500 to-red-600' },
             ].map((item, idx) => (
-              <div key={idx} className={`p-3 rounded-lg bg-gradient-to-br ${item.color} text-white`}>
-                <p className="text-xs font-medium opacity-80 uppercase tracking-wider">{item.label}</p>
-                <p className="text-lg md:text-xl font-bold mt-1">{item.value}</p>
-              </div>
+              <Link href="/general/view/orders" key={idx} className="block transition-transform hover:-translate-y-1">
+                <div className={`p-3 rounded-lg bg-gradient-to-br ${item.color} text-white h-full shadow-md hover:shadow-lg`}>
+                  <p className="text-xs font-medium opacity-80 uppercase tracking-wider">{item.label}</p>
+                  <p className="text-lg md:text-xl font-bold mt-1">{item.value}</p>
+                </div>
+              </Link>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Insights Cards */}
+      {/* ── INSIGHTS CARDS ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="border-0 shadow-md overflow-hidden bg-gradient-to-br from-blue-50 to-cyan-50">
           <CardContent className="pt-6">
@@ -337,7 +387,7 @@ export default function RevenueChart({ data }: { data: RevenueData[] }) {
               <div className="flex-1">
                 <h4 className="font-semibold text-gray-900">Key Insight</h4>
                 <p className="text-sm text-gray-600 mt-1">
-                  Peak revenue of ৳{(stats.maxRevenue / 1000).toFixed(1)}k represents {((stats.maxRevenue / stats.avgRevenue - 1) * 100).toFixed(0)}% above average. Analyze factors driving peak performance.
+                  Peak revenue of {formatMoney(stats.maxRevenue)} represents {stats.avgRevenue > 0 ? ((stats.maxRevenue / stats.avgRevenue - 1) * 100).toFixed(0) : 0}% above average. Analyze factors driving peak performance.
                 </p>
               </div>
             </div>

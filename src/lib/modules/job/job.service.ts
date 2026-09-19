@@ -33,12 +33,12 @@ const getApprovedJobsFromDB = async () => {
       $project: {
         _id: 1,
         title: 1,
-        description: 1,   // ✅ FIXED: Missing Description Added
+        description: 1,   
         companyName: 1,
         location: 1,
         category: 1,
         salaryRange: 1,
-        status: 1,        // ✅ FIXED: Status Added (এটি না থাকায় ফ্রন্টএন্ডে শো করছিল না)
+        status: 1,        
         createdAt: 1,
         updatedAt: 1,
         postedBy: {
@@ -53,7 +53,6 @@ const getApprovedJobsFromDB = async () => {
 
 // 🔥 Admin: Get All Jobs (Populate Fixed)
 const getAllJobsForAdminFromDB = async () => {
-  // যেহেতু উপরে User মডেল ইমপোর্ট করা আছে, তাই এখন populate কাজ করবে
   return await Job.find()
     .sort({ createdAt: -1 })
     .populate('postedBy', 'name email phoneNumber profilePicture role');
@@ -119,20 +118,25 @@ const getMyJobsFromDB = async (userId: string) => {
     .lean();
 };
 
-// Edit My Job
-const updateMyJobInDB = async (jobId: string, userId: string, payload: Partial<IJob>) => {
+// Edit My Job (✅ Admin can edit any job directly)
+const updateMyJobInDB = async (jobId: string, userId: string, role: string, payload: Partial<IJob>) => {
+  if (role === 'admin') {
+    return await Job.findByIdAndUpdate(jobId, payload, { new: true, runValidators: true });
+  }
   return await Job.findOneAndUpdate(
-    { _id: jobId, postedBy: userId }, // ✅ শুধু নিজের job edit করতে পারবে
-    { ...payload, status: 'pending' }, // ✅ edit করলে আবার pending হবে
+    { _id: jobId, postedBy: userId }, 
+    { ...payload, status: 'pending' }, 
     { new: true, runValidators: true }
   );
 };
 
-// Delete My Job
-const deleteMyJobFromDB = async (jobId: string, userId: string) => {
+// Delete My Job (✅ Admin can delete any job directly)
+const deleteMyJobFromDB = async (jobId: string, userId: string, role?: string) => {
+  if (role === 'admin') {
+    return await Job.findByIdAndDelete(jobId);
+  }
   return await Job.findOneAndDelete({ _id: jobId, postedBy: userId });
 };
-
 
 export const JobService = {
   createJobIntoDB,
@@ -140,7 +144,7 @@ export const JobService = {
   getAllJobsForAdminFromDB,
   updateJobStatusInDB,
   getSingleJobByIdFromDB,
-   getMyJobsFromDB,       // ✅ new
-  updateMyJobInDB,       // ✅ new
+  getMyJobsFromDB,
+  updateMyJobInDB,
   deleteMyJobFromDB,
 };

@@ -13,4 +13,6 @@ export interface IReview extends Document {
 
   //multiple images
   reviewImages?: string[];
+  status?: string;
+  replyFromAdmin?: string;
 }

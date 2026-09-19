@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
   Trash2, Eye, Check, X, Search, RefreshCw, ChevronDown,
-  Package, Clock, TrendingUp, Users, ShieldCheck, ShieldAlert
+  Package, Clock, TrendingUp, Users, ShieldCheck, ShieldAlert, Calendar
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -35,6 +35,7 @@ interface Campaign {
   status: 'active' | 'inactive' | 'completed' | 'archived';
   moderationStatus: 'pending' | 'approved' | 'rejected';
   createdAt: string;
+  updatedAt?: string;
   creator?: { _id: string; name: string; email?: string };
   rejectionReason?: string;
   goalAmount?: number;
@@ -57,12 +58,10 @@ export default function AdminDonateListPage() {
   const [moderationFilter, setModerationFilter] = useState<string>("all");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // ✅ Fetch all campaigns
   const fetchCampaigns = async () => {
     try {
       setLoading(true);
-      // @ts-ignore
-      const token = session?.accessToken;
+      const token = (session as any)?.accessToken;
       if (!token) return;
 
       const res = await fetch('/api/v1/donation-campaigns', {
@@ -91,7 +90,6 @@ export default function AdminDonateListPage() {
     if (session) fetchCampaigns();
   }, [session]);
 
-  // ✅ Filter campaigns
   useEffect(() => {
     let filtered = campaigns;
     
@@ -113,9 +111,7 @@ export default function AdminDonateListPage() {
     setFilteredCampaigns(filtered);
   }, [searchQuery, statusFilter, moderationFilter, campaigns]);
 
-  // ✅ Handle Moderation Status Change from Dropdown
   const handleModerationChange = async (id: string, action: 'approve' | 'reject') => {
-    // If rejecting, open dialog for reason
     if (action === 'reject') {
       const camp = campaigns.find(c => c._id === id);
       setSelectedCampaign(camp || null);
@@ -123,11 +119,9 @@ export default function AdminDonateListPage() {
       return;
     }
 
-    // If approving, directly approve
     setActionLoading(id);
     try {
-      // @ts-ignore
-      const token = session?.accessToken;
+      const token = (session as any)?.accessToken;
       
       const res = await fetch(`/api/v1/donation-campaigns/${id}/moderate`, {
         method: 'PATCH',
@@ -154,7 +148,6 @@ export default function AdminDonateListPage() {
     }
   };
 
-  // ✅ Reject Campaign (called from dialog)
   const handleReject = async () => {
     if (!selectedCampaign || !rejectionReason.trim()) {
       toast.error("Please provide a rejection reason");
@@ -163,8 +156,7 @@ export default function AdminDonateListPage() {
     
     setActionLoading(selectedCampaign._id);
     try {
-      // @ts-ignore
-      const token = session?.accessToken;
+      const token = (session as any)?.accessToken;
       
       const res = await fetch(`/api/v1/donation-campaigns/${selectedCampaign._id}/moderate`, {
         method: 'PATCH',
@@ -196,21 +188,20 @@ export default function AdminDonateListPage() {
     }
   };
 
-  // ✅ Change Status via Dropdown (যেকোনো status এ change করা যাবে)
+  // ✅ MAGIC FIX: Hit the /moderate endpoint with 'change_status' action
   const handleStatusChange = async (id: string, newStatus: string) => {
     setActionLoading(id);
     
     try {
-      // @ts-ignore
-      const token = session?.accessToken;
+      const token = (session as any)?.accessToken;
       
-      const res = await fetch(`/api/v1/donation-campaigns/${id}`, {
+      const res = await fetch(`/api/v1/donation-campaigns/${id}/moderate`, {
         method: 'PATCH',
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ action: 'change_status', status: newStatus }) // ✅ Changed here
       });
 
       const data = await res.json();
@@ -229,13 +220,11 @@ export default function AdminDonateListPage() {
     }
   };
 
-  // ✅ Delete Campaign
   const handleDelete = async (id: string) => {
     if (!confirm("⚠️ Are you sure? This action cannot be undone.")) return;
     
     try {
-      // @ts-ignore
-      const token = session?.accessToken;
+      const token = (session as any)?.accessToken;
       
       const res = await fetch(`/api/v1/donation-campaigns/${id}`, {
         method: 'DELETE',
@@ -259,7 +248,6 @@ export default function AdminDonateListPage() {
     }
   };
 
-  // Badge helpers
   const getModerationBadge = (s: string) => {
     if (s === 'approved') return <Badge className="bg-green-500 text-white gap-1"><ShieldCheck size={12}/> Approved</Badge>;
     if (s === 'rejected') return <Badge variant="destructive" className="gap-1"><ShieldAlert size={12}/> Rejected</Badge>;
@@ -273,9 +261,15 @@ export default function AdminDonateListPage() {
     return <Badge variant="secondary">Archived</Badge>;
   };
 
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return 'N/A';
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      day: 'numeric', month: 'short', year: 'numeric'
+    });
+  };
+
   return (
     <div className="p-4 md:p-8 space-y-6 bg-slate-50 min-h-screen">
-      {/* Page Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -288,7 +282,6 @@ export default function AdminDonateListPage() {
         </Button>
       </div>
 
-      {/* Analytics Dashboard */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-xl border shadow-sm">
           <div className="flex justify-between items-center mb-2">
@@ -329,7 +322,6 @@ export default function AdminDonateListPage() {
         </div>
       </div>
 
-      {/* Filters & Search */}
       <div className="bg-white p-4 rounded-xl border shadow-sm flex flex-wrap gap-4">
         <div className="flex-1 min-w-[250px] relative">
           <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
@@ -366,13 +358,13 @@ export default function AdminDonateListPage() {
         </Select>
       </div>
 
-      {/* Main Table */}
       <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
         <Table>
           <TableHeader className="bg-slate-50">
             <TableRow>
               <TableHead className="w-[300px]">Campaign Info</TableHead>
               <TableHead>Creator</TableHead>
+              <TableHead>Dates</TableHead>
               <TableHead>Moderation</TableHead>
               <TableHead>Public Status</TableHead>
               <TableHead>Progress</TableHead>
@@ -382,14 +374,14 @@ export default function AdminDonateListPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-10">
+                <TableCell colSpan={7} className="text-center py-10">
                   <RefreshCw className="animate-spin mx-auto mb-2" size={24} />
                   <p>Loading campaigns...</p>
                 </TableCell>
               </TableRow>
             ) : filteredCampaigns.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-10 text-slate-400">
+                <TableCell colSpan={7} className="text-center py-10 text-slate-400">
                   No campaigns found matching your filters.
                 </TableCell>
               </TableRow>
@@ -418,9 +410,23 @@ export default function AdminDonateListPage() {
                     <p className="text-sm font-medium">{camp.creator?.name || 'Anonymous'}</p>
                     <p className="text-[10px] text-slate-400">{camp.creator?.email}</p>
                   </TableCell>
+
+                  <TableCell>
+                    <div className="flex flex-col gap-1.5 text-xs text-slate-600">
+                      <div className="flex items-center gap-1.5" title="Created At">
+                        <Calendar size={13} className="text-blue-500" />
+                        <span>C: {formatDate(camp.createdAt)}</span>
+                      </div>
+                      {camp.updatedAt && (
+                        <div className="flex items-center gap-1.5" title="Updated At">
+                          <Clock size={13} className="text-orange-500" />
+                          <span>U: {formatDate(camp.updatedAt)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
                   
                   <TableCell>
-                    {/* ✅ MODERATION DROPDOWN - সব campaigns এর জন্য */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button 
@@ -454,7 +460,6 @@ export default function AdminDonateListPage() {
                   </TableCell>
                   
                   <TableCell>
-                    {/* ✅ STATUS DROPDOWN - সব campaigns এর জন্য */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button 
@@ -511,7 +516,6 @@ export default function AdminDonateListPage() {
                   
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      {/* 👁️ VIEW DETAILS */}
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -524,7 +528,6 @@ export default function AdminDonateListPage() {
                         <Eye size={16} className="text-blue-500" />
                       </Button>
                       
-                      {/* 🗑️ DELETE */}
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -542,7 +545,6 @@ export default function AdminDonateListPage() {
         </Table>
       </div>
 
-      {/* ❌ REJECT DIALOG */}
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -581,7 +583,6 @@ export default function AdminDonateListPage() {
         </DialogContent>
       </Dialog>
 
-      {/* 👁️ DETAIL DIALOG */}
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
         <DialogContent className="max-w-2xl overflow-y-auto max-h-[90vh]">
           <DialogHeader>
@@ -589,7 +590,6 @@ export default function AdminDonateListPage() {
           </DialogHeader>
           {selectedCampaign && (
             <div className="space-y-4">
-              {/* Images */}
               {selectedCampaign.images && selectedCampaign.images.length > 0 && (
                 <div className="grid grid-cols-2 gap-4">
                   {selectedCampaign.images.map((img, i) => (
@@ -603,7 +603,6 @@ export default function AdminDonateListPage() {
                 </div>
               )}
               
-              {/* Title & Description */}
               <div className="space-y-2">
                 <h2 className="text-xl font-bold">{selectedCampaign.title}</h2>
                 <p className="text-slate-600 text-sm whitespace-pre-wrap">
@@ -611,7 +610,6 @@ export default function AdminDonateListPage() {
                 </p>
               </div>
               
-              {/* Details Grid */}
               <div className="grid grid-cols-2 gap-4 text-sm bg-slate-50 p-4 rounded-lg">
                 <p><strong>Item Type:</strong> {selectedCampaign.item}</p>
                 <p><strong>Category:</strong> {selectedCampaign.category?.name || 'N/A'}</p>
@@ -619,15 +617,15 @@ export default function AdminDonateListPage() {
                 <p><strong>Raised Amount:</strong> ৳{selectedCampaign.raisedAmount || 0}</p>
                 <p><strong>Donors Count:</strong> {selectedCampaign.donorsCount || 0}</p>
                 <p><strong>Creator:</strong> {selectedCampaign.creator?.name || 'Unknown'}</p>
+                <p><strong>Created At:</strong> {formatDate(selectedCampaign.createdAt)}</p>
+                <p><strong>Updated At:</strong> {formatDate(selectedCampaign.updatedAt)}</p>
               </div>
               
-              {/* Status Badges */}
               <div className="flex gap-3">
                 {getModerationBadge(selectedCampaign.moderationStatus)}
                 {getStatusBadge(selectedCampaign.status)}
               </div>
               
-              {/* Rejection Reason if exists */}
               {selectedCampaign.rejectionReason && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="text-sm font-semibold text-red-700 mb-1">Rejection Reason:</p>

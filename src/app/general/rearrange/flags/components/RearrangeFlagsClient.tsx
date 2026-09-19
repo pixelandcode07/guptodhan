@@ -21,7 +21,6 @@ export default function RearrangeFlagsClient() {
           ) : null,
         };
       }}
-      sortItems={(a, b) => a.label.localeCompare(b.label)}
     />
   );
 }

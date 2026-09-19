@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import Image from 'next/image';
-import Link from 'next/link';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import Image from "next/image";
+import Link from "next/link";
 import {
   ChevronLeft,
   ChevronRight,
@@ -17,8 +17,8 @@ import {
   Home,
   ChevronRight as ChevronRightIcon,
   Check,
-  Copy
-} from 'lucide-react';
+  Copy,
+} from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -26,14 +26,14 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
-import ReportDialog from '@/components/ReusableComponents/ReportDialog';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+} from "@/components/ui/breadcrumb";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import ReportDialog from "@/components/ReusableComponents/ReportDialog";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 
 import {
   Dialog,
@@ -42,9 +42,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface Ad {
   _id: string;
@@ -58,8 +58,8 @@ interface Ad {
   brand?: string;
   productModel?: string;
   edition?: string;
-  category: { name: string };
-  subCategory: { name: string };
+  category?: { name?: string }; // ✅ FIX: Made optional
+  subCategory?: { name?: string }; // ✅ FIX: Made optional
   division: string;
   district: string;
   upazila: string;
@@ -81,12 +81,12 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
   const [showPhone, setShowPhone] = useState(false);
   const [expandedDesc, setExpandedDesc] = useState(false);
   const [isStartingChat, setIsStartingChat] = useState(false);
-  const [chatError, setChatError] = useState('');
+  const [chatError, setChatError] = useState("");
 
   const [openShareDialog, setOpenShareDialog] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const currentUrl = typeof window !== "undefined" ? window.location.href : "";
 
   const handleCopyLink = async () => {
     try {
@@ -94,49 +94,59 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
 
   const handleStartChat = async () => {
-    setChatError('');
+    setChatError("");
 
-    if (status !== 'authenticated' || !session?.user) {
-      router.push('/login');
-      return;
-    }
+    // if (status !== 'authenticated' || !session?.user) {
+    //   router.push('/login');
+    //   return;
+    // }
+
+    if (status !== "authenticated" || !session?.user) {
+    localStorage.setItem(
+        "redirectAfterLogin",
+        window.location.pathname
+    );
+
+    window.dispatchEvent(new Event("open-login-dialog"));
+
+    return;
+}
 
     const userId = (session.user as any).id;
     const token = (session.user as any).accessToken;
 
     if (userId === ad.user._id) {
-      setChatError('You cannot start conversation with yourself');
+      setChatError("You cannot start conversation with yourself");
       return;
     }
 
     try {
       setIsStartingChat(true);
-      const response = await fetch('/api/v1/conversations', {
-        method: 'POST',
+      const response = await fetch("/api/v1/conversations", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ adId: ad._id }),
       });
 
-      if (!response.ok) throw new Error('Failed to start conversation');
+      if (!response.ok) throw new Error("Failed to start conversation");
       const data = await response.json();
       router.push(`/home/chat/${data.data._id}`);
     } catch (error) {
-      console.error('Error starting chat:', error);
-      setChatError('Failed to start conversation. Please try again.');
+      console.error("Error starting chat:", error);
+      setChatError("Failed to start conversation. Please try again.");
     } finally {
       setIsStartingChat(false);
     }
   };
 
-  // ✅ FIXED: Variants এ proper type দেওয়া হয়েছে
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
@@ -152,7 +162,7 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
       opacity: 1,
       transition: {
         duration: 0.6,
-        ease: 'easeOut' as const, // ✅ as const দিয়ে string literal type করা হয়েছে
+        ease: "easeOut" as const,
       },
     },
   };
@@ -165,6 +175,10 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
       transition: { duration: 0.5 },
     },
   };
+
+  // ✅ SAFELY GET CATEGORY NAMES OR FALLBACK
+  const categoryName = ad.category?.name || "Classifieds";
+  const subCategoryName = ad.subCategory?.name || "General";
 
   return (
     <motion.div
@@ -180,7 +194,10 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
-                  <Link href="/" className="flex items-center gap-1.5 hover:text-green-600">
+                  <Link
+                    href="/"
+                    className="flex items-center gap-1.5 hover:text-green-600"
+                  >
                     <Home className="w-4 h-4" />
                     Home
                   </Link>
@@ -192,7 +209,8 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
                   <Link href="#" className="hover:text-green-600">
-                    {ad.category.name}
+                    {/* ✅ FIXED CATEGORY NAME RENDERING */}
+                    {categoryName}
                   </Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
@@ -202,7 +220,8 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
                   <Link href="#" className="hover:text-green-600">
-                    {ad.subCategory.name}
+                    {/* ✅ FIXED SUBCATEGORY NAME RENDERING */}
+                    {subCategoryName}
                   </Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
@@ -222,7 +241,10 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
           {/* Left Column */}
-          <motion.div variants={itemVariants} className="lg:col-span-2 space-y-8">
+          <motion.div
+            variants={itemVariants}
+            className="lg:col-span-2 space-y-8"
+          >
             {/* Image Gallery */}
             <Card className="overflow-hidden rounded-2xl shadow-2xl bg-white">
               <div className="relative bg-gradient-to-b from-black/10 to-transparent">
@@ -235,8 +257,8 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                     className="aspect-square md:aspect-[4/3] lg:aspect-video relative w-full"
                   >
                     <Image
-                      src={ad.images[selectedImage] || '/placeholder.png'}
-                      alt={ad.title}
+                      src={ad.images?.[selectedImage] || "/placeholder.png"}
+                      alt={ad.title || "Ad Image"}
                       fill
                       className="object-contain p-6 md:p-10 lg:p-12"
                       priority={selectedImage === 0}
@@ -245,12 +267,17 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                   </motion.div>
                 </AnimatePresence>
 
-                {ad.images.length > 1 && (
+                {ad.images && ad.images.length > 1 && (
                   <>
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => setSelectedImage((prev) => (prev - 1 + ad.images.length) % ad.images.length)}
+                      onClick={() =>
+                        setSelectedImage(
+                          (prev) =>
+                            (prev - 1 + ad.images.length) % ad.images.length,
+                        )
+                      }
                       className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur p-3 rounded-full shadow-xl z-10"
                     >
                       <ChevronLeft className="w-6 h-6" />
@@ -259,7 +286,11 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => setSelectedImage((prev) => (prev + 1) % ad.images.length)}
+                      onClick={() =>
+                        setSelectedImage(
+                          (prev) => (prev + 1) % ad.images.length,
+                        )
+                      }
                       className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur p-3 rounded-full shadow-xl z-10"
                     >
                       <ChevronRight className="w-6 h-6" />
@@ -272,7 +303,7 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                 )}
               </div>
 
-              {ad.images.length > 1 && (
+              {ad.images && ad.images.length > 1 && (
                 <div className="bg-gray-50/80 p-4 border-t">
                   <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
                     {ad.images.map((img, i) => (
@@ -283,8 +314,8 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                         onClick={() => setSelectedImage(i)}
                         className={`relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0 rounded-xl overflow-hidden ring-4 transition-all ${
                           selectedImage === i
-                            ? 'ring-green-500 shadow-lg shadow-green-500/30'
-                            : 'ring-transparent'
+                            ? "ring-green-500 shadow-lg shadow-green-500/30"
+                            : "ring-transparent"
                         }`}
                       >
                         <Image src={img} alt="" fill className="object-cover" />
@@ -298,17 +329,25 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
             {/* Description */}
             <motion.div variants={itemVariants}>
               <Card className="p-6 md:p-8 rounded-2xl shadow-xl bg-white">
-                <h2 className="text-2xl font-bold mb-5 text-gray-900">Description</h2>
-                <div className={`text-gray-700 leading-relaxed text-base ${!expandedDesc && 'line-clamp-6'}`}>
-                  <pre className="whitespace-pre-wrap font-sans">{ad.description}</pre>
+                <h2 className="text-2xl font-bold mb-5 text-gray-900">
+                  Description
+                </h2>
+                <div
+                  className={`text-gray-700 leading-relaxed text-base ${!expandedDesc && "line-clamp-6"}`}
+                >
+                  <pre className="whitespace-pre-wrap font-sans">
+                    {ad.description}
+                  </pre>
                 </div>
-                {ad.description.length > 300 && (
+                {ad.description && ad.description.length > 300 && (
                   <button
                     onClick={() => setExpandedDesc(!expandedDesc)}
                     className="mt-5 text-green-600 font-medium flex items-center gap-2 hover:gap-3 transition-all"
                   >
-                    {expandedDesc ? 'Show Less' : 'Show More'}
-                    <ChevronRight className={`w-5 h-5 transition-transform ${expandedDesc ? 'rotate-90' : ''}`} />
+                    {expandedDesc ? "Show Less" : "Show More"}
+                    <ChevronRight
+                      className={`w-5 h-5 transition-transform ${expandedDesc ? "rotate-90" : ""}`}
+                    />
                   </button>
                 )}
               </Card>
@@ -316,11 +355,16 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
           </motion.div>
 
           {/* Right Sidebar - Sticky */}
-          <motion.div variants={itemVariants} className="lg:sticky lg:top-6 h-fit">
+          <motion.div
+            variants={itemVariants}
+            className="lg:sticky lg:top-6 h-fit"
+          >
             <Card className="p-6 md:p-8 rounded-2xl shadow-2xl bg-white">
               <div className="space-y-6">
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">{ad.title}</h1>
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">
+                    {ad.title}
+                  </h1>
                   {(ad.brand || ad.productModel || ad.edition) && (
                     <p className="text-lg text-gray-600 mt-1.5 font-medium">
                       {ad.brand} {ad.productModel} {ad.edition}
@@ -329,14 +373,21 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                 </div>
 
                 <div className="flex items-end gap-3">
-                  <p className="text-3xl md:text-4xl font-bold text-green-600">৳{ad.price.toLocaleString()}</p>
+                  <p className="text-3xl md:text-4xl font-bold text-green-600">
+                    ৳{ad.price?.toLocaleString() || 0}
+                  </p>
                   {ad.isNegotiable && (
-                    <Badge className="px-3 py-1 bg-green-100 text-green-800 font-medium">Negotiable</Badge>
+                    <Badge className="px-3 py-1 bg-green-100 text-green-800 font-medium">
+                      Negotiable
+                    </Badge>
                   )}
                 </div>
 
                 <div className="flex flex-wrap gap-3">
-                  <Badge variant="secondary" className="px-3 py-1.5 capitalize font-medium">
+                  <Badge
+                    variant="secondary"
+                    className="px-3 py-1.5 capitalize font-medium"
+                  >
                     {ad.condition}
                   </Badge>
                   <Badge className="px-3 py-1.5 bg-purple-100 text-purple-800 flex items-center gap-1.5 font-medium">
@@ -365,7 +416,7 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                     disabled={isStartingChat}
                   >
                     <MessageCircle className="w-5 h-5 mr-2" />
-                    {isStartingChat ? 'Starting Chat...' : 'Message Seller'}
+                    {isStartingChat ? "Starting Chat..." : "Message Seller"}
                   </Button>
 
                   <Button
@@ -375,14 +426,17 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                     onClick={() => setShowPhone(true)}
                   >
                     <Phone className="w-5 h-5 mr-2" />
-                    {showPhone || !ad.contactDetails.isPhoneHidden
-                      ? ad.contactDetails.phone
-                      : 'Show Phone Number'}
+                    {showPhone || !ad.contactDetails?.isPhoneHidden
+                      ? ad.contactDetails?.phone || "Phone not available"
+                      : "Show Phone Number"}
                   </Button>
                 </div>
 
                 <div className="flex gap-3">
-                  <Dialog open={openShareDialog} onOpenChange={setOpenShareDialog}>
+                  <Dialog
+                    open={openShareDialog}
+                    onOpenChange={setOpenShareDialog}
+                  >
                     <DialogTrigger asChild>
                       <Button variant="outline" className="flex-1">
                         <Share2 className="w-5 h-5 mr-2" /> Share
@@ -397,7 +451,9 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                       </DialogHeader>
                       <div className="flex items-center space-x-2 mt-4">
                         <div className="grid flex-1 gap-2">
-                          <Label htmlFor="link" className="sr-only">Link</Label>
+                          <Label htmlFor="link" className="sr-only">
+                            Link
+                          </Label>
                           <Input
                             id="link"
                             defaultValue={currentUrl}
@@ -405,7 +461,11 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                             className="h-10"
                           />
                         </div>
-                        <Button size="sm" className="px-3" onClick={handleCopyLink}>
+                        <Button
+                          size="sm"
+                          className="px-3"
+                          onClick={handleCopyLink}
+                        >
                           <span className="sr-only">Copy</span>
                           {copied ? (
                             <Check className="h-4 w-4 text-white" />
@@ -425,7 +485,7 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
                   <ReportDialog
                     adId={ad._id}
                     adTitle={ad.title}
-                    sellerName={ad.user.name}
+                    sellerName={ad.user?.name || "Unknown"}
                     trigger={
                       <Button variant="outline" size="icon">
                         <Flag className="w-5 h-5 text-red-600" />
@@ -438,18 +498,24 @@ export default function AdDetailsClient({ ad }: { ad: Ad }) {
 
                 <div className="flex items-center gap-4">
                   <Avatar className="w-14 h-14 ring-4 ring-green-100">
-                    <AvatarImage src={ad.user.profilePicture} />
-                    <AvatarFallback className="font-semibold">{ad.user.name[0]}</AvatarFallback>
+                    <AvatarImage src={ad.user?.profilePicture} />
+                    <AvatarFallback className="font-semibold">
+                      {ad.user?.name?.[0] || "U"}
+                    </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-bold text-lg">{ad.user.name}</p>
+                    <p className="font-bold text-lg">
+                      {ad.user?.name || "User"}
+                    </p>
                     <p className="text-sm text-gray-600">Active on Guptodhan</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 text-gray-700">
                   <MapPin className="w-5 h-5 text-green-600" />
-                  <span className="font-medium">{ad.district}, {ad.division}</span>
+                  <span className="font-medium">
+                    {ad.district}, {ad.division}
+                  </span>
                 </div>
               </div>
             </Card>

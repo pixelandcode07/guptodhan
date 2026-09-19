@@ -29,7 +29,33 @@ export type Review = {
   created_at: string
 }
 
-export const createReviewColumns = (onDelete: (reviewId: string) => void): ColumnDef<Review>[] => [
+export const createReviewColumns = (
+  onDelete: (reviewId: string) => void,
+  onStatusToggle?: (reviewId: string, newStatus: "active" | "inactive") => void
+): ColumnDef<Review>[] => [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <input
+        type="checkbox"
+        className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        checked={table.getIsAllPageRowsSelected()}
+        onChange={table.getToggleAllPageRowsSelectedHandler()}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <input
+        type="checkbox"
+        className="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        checked={row.getIsSelected()}
+        onChange={row.getToggleSelectedHandler()}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
   {
     accessorKey: "id",
     header: () => <span className="text-xs sm:text-sm">SL</span>,
@@ -140,13 +166,26 @@ export const createReviewColumns = (onDelete: (reviewId: string) => void): Colum
     accessorKey: "status",
     header: () => <span className="text-xs sm:text-sm">Status</span>,
     cell: ({ row }) => {
-      const status = row.getValue("status") as string;
+      const review = row.original;
+      const status = review.status;
       return (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          status === "Active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-        }`}>
+        <button
+          type="button"
+          onClick={() => {
+            if (review.dbId && onStatusToggle) {
+              const newStatus = status === "Active" ? "inactive" : "active";
+              onStatusToggle(review.dbId, newStatus);
+            }
+          }}
+          className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full cursor-pointer transition-all hover:opacity-80 active:scale-95 ${
+            status === "Active"
+              ? "bg-green-100 text-green-800 hover:bg-green-200 border border-green-300"
+              : "bg-red-100 text-red-800 hover:bg-red-200 border border-red-300"
+          }`}
+          title="Click to toggle status"
+        >
           {status}
-        </span>
+        </button>
       );
     },
   },

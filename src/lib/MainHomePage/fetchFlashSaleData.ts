@@ -6,7 +6,8 @@ export async function fetchFlashSaleData(): Promise<ProductCardType[]> {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
     try {
-        const res = await axios.get(`${baseUrl}/api/v1/product/offerProduct`, {
+        // ✅ FIX: URL এর শেষে ?limit=6 যোগ করা হয়েছে
+        const res = await axios.get(`${baseUrl}/api/v1/product/offerProduct?limit=6`, {
             headers: { 'Cache-Control': 'no-store' },
         });
 
@@ -20,5 +21,3 @@ export async function fetchFlashSaleData(): Promise<ProductCardType[]> {
         return [];
     }
 }
-
-

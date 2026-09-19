@@ -20,6 +20,7 @@ export default async function ViewAllSlidersPage() {
     status: (it.status === 'active' ? 'Active' : 'Inactive'),
     created_at: new Date(it.createdAt || it.created_at || Date.now()).toLocaleString(),
     _id: (it?._id && typeof it._id === 'object' && 'toString' in it._id) ? (it._id as any).toString() : String(it._id),
+    textPosition: it.textPosition || '',
   }));
   
   return (

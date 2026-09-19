@@ -23,10 +23,22 @@ const getAllActiveModelFormsFromDB = async () => {
 
 // Get model forms by brand
 const getModelFormsByBrandFromDB = async (brandId: string) => {
-  const result = await ModelForm.find({
-    brand: new Types.ObjectId(brandId),
-    status: 'active',
-  }).sort({ modelName: 1 });
+  let query: any = { status: 'active' };
+  if (brandId && Types.ObjectId.isValid(brandId)) {
+    query = {
+      $or: [
+        { brand: new Types.ObjectId(brandId) },
+        { brand: new Types.ObjectId("000000000000000000000000") },
+        { brand: { $exists: false } },
+        { brand: null },
+      ],
+      status: 'active',
+    };
+  }
+  const result = await ModelForm.find(query).sort({ modelName: 1 });
+  if (!result || result.length === 0) {
+    return await ModelForm.find({ status: 'active' }).sort({ modelName: 1 });
+  }
   return result;
 };
 

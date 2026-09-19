@@ -260,7 +260,32 @@ const cancelBooking = async (
 };
 
 
+const deleteBooking = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> } // Route is [id]
+) => {
+  await dbConnect();
+  const { id } = await params;
 
+  try {
+    const result = await BookingServices.deleteBookingInDB(id);
+
+    return sendResponse({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: "Booking deleted successfully!",
+      data: result,
+    });
+  } catch (error: any) {
+    console.error("Error deleting booking:", error);
+    return sendResponse({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: error.message || "Failed to delete booking",
+      data: null,
+    });
+  }
+};
 export const BookingController = {
   createBooking,
   getAllBookings,
@@ -268,7 +293,7 @@ export const BookingController = {
   getBookingByOrderId,
   updateBooking,
   getUserBookings,
-
+deleteBooking,
   cancelBooking,
   completeBooking,
   confirmBooking,

@@ -70,6 +70,12 @@ export default function MyReturn() {
               product = detail.productId;
             } else if (detail.product && typeof detail.product === 'object') {
               product = detail.product;
+            } else if (Array.isArray(order.products) && order.products.length > 0) {
+              const pIdStr = detail.productId ? detail.productId.toString() : '';
+              product = order.products.find((p: any) => p._id?.toString() === pIdStr || p.id?.toString() === pIdStr)
+                     || order.products[index]
+                     || order.products[0]
+                     || null;
             }
 
             // 🔥 ইমেজ হ্যান্ডলিং (যেকোনো জায়গা থেকে ইমেজ খুঁজবে)
@@ -78,12 +84,14 @@ export default function MyReturn() {
               productImage = product.thumbnailImage;
             } else if (Array.isArray(product?.photoGallery) && product.photoGallery.length > 0) {
               productImage = product.photoGallery[0];
-            } else if (detail.thumbnailImage || detail.productImage) {
-              productImage = detail.thumbnailImage || detail.productImage;
+            } else if (product?.image || product?.productImage) {
+              productImage = product.image || product.productImage;
+            } else if (detail.thumbnailImage || detail.productImage || detail.image) {
+              productImage = detail.thumbnailImage || detail.productImage || detail.image;
             }
 
             // 🔥 প্রোডাক্ট নেম (ভুল করেও যেন ইউজারের নাম না দেখায়)
-            const productName = product?.productTitle || product?.name || detail.productName || 'Returned Product';
+            const productName = product?.productTitle || product?.title || product?.name || detail.productName || 'Returned Product';
             const productSlug = product?.slug || product?._id || detail.productId || '';
 
             // 🔥 সাইজ এবং কালার ক্লিনিং

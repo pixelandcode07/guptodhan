@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Truck, CheckCircle2, Package, Download, ArrowLeft, ShoppingBag } from 'lucide-react';
+import { Truck, CheckCircle2, Package, Download, ArrowLeft, ShoppingBag, CalendarDays } from 'lucide-react';
 import api from '@/lib/axios';
 import { generateInvoice, OrderInvoiceData } from './utils/invoiceGenerator';
 import Link from 'next/link';
@@ -15,6 +15,7 @@ import Image from 'next/image';
 export interface OrderDetailsData {
   id: string;
   orderNo: string;
+  orderDate?: string; 
   name: string;
   phone: string;
   email?: string;
@@ -64,27 +65,30 @@ export default function OrderDetailsView({
 }: OrderDetailsViewProps) {
   const [loading, setLoading] = useState(false);
   const [orderStatus, setOrderStatus] = useState(order.status);
+  const [paymentStatus, setPaymentStatus] = useState(order.payment); // ✅ MAGIC FIX: Payment Status State Added
   const [trackingId, setTrackingId] = useState(order.trackingId || '');
   const [parcelId, setParcelId] = useState(order.parcelId || '');
 
   useEffect(() => {
     setOrderStatus(order.status);
+    setPaymentStatus(order.payment);
     setTrackingId(order.trackingId || '');
     setParcelId(order.parcelId || '');
   }, [order]);
 
   const isShipped = useMemo(() => orderStatus === 'Shipped' || orderStatus === 'Delivered', [orderStatus]);
   const isCOD = useMemo(() => order.deliveryMethod?.toLowerCase() === 'cod' || order.deliveryMethod?.toLowerCase() === 'standard', [order.deliveryMethod]);
-  const canShip = useMemo(() => orderStatus === 'Processing' || orderStatus === 'Pending', [orderStatus]);
+  const canShip = useMemo(() => orderStatus === 'Processing' || orderStatus === 'Pending' || orderStatus === 'Approved', [orderStatus]);
 
   // ১. স্ট্যাটাস আপডেট
   const handleStatusUpdate = async () => {
     try {
       setLoading(true);
-      const updateData = { orderStatus, trackingId: trackingId || undefined, parcelId: parcelId || undefined };
+      // ✅ MAGIC FIX: Pass both orderStatus and paymentStatus
+      const updateData = { orderStatus, paymentStatus, trackingId: trackingId || undefined, parcelId: parcelId || undefined };
       await api.patch(`/product-order/${order.id}`, updateData);
       toast.success('Order status updated!');
-      onOrderUpdate?.({ status: orderStatus, trackingId, parcelId });
+      onOrderUpdate?.({ status: orderStatus, payment: paymentStatus, trackingId, parcelId });
     } catch (error) {
       toast.error('Update failed');
     } finally {
@@ -147,7 +151,14 @@ export default function OrderDetailsView({
         <div className="bg-slate-50 border-b border-gray-200 px-5 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>
             <h2 className="text-xl font-bold text-slate-800 tracking-tight">Order Details</h2>
-            <p className="text-xs font-mono text-slate-500 mt-0.5">#{order.orderNo}</p>
+            <div className="flex items-center gap-3 mt-0.5">
+               <p className="text-xs font-mono text-slate-500">#{order.orderNo}</p>
+               <span className="text-slate-300">|</span>
+               <p className="text-xs text-slate-500 flex items-center gap-1">
+                 <CalendarDays className="w-3.5 h-3.5" /> 
+                 {order.orderDate || 'Unknown Date'}
+               </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${order.payment.toLowerCase().includes('paid') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
@@ -161,7 +172,7 @@ export default function OrderDetailsView({
             <Label className="text-[10px] uppercase text-slate-400 font-black tracking-widest">Shipping To</Label>
             <p className="text-base font-bold text-slate-900">{order.name}</p>
             <p className="text-sm font-medium text-slate-600">{order.phone}</p>
-            <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded-md border border-slate-100 italic leading-relaxed">
+            <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded-md border border-slate-100 italic leading-relaxed mt-2">
               {order.address || 'No address provided'}
             </div>
           </div>
@@ -173,7 +184,7 @@ export default function OrderDetailsView({
         </div>
       </div>
 
-      {/* প্রোডাক্ট টেবিল (Smart Rendering) */}
+      {/* প্রোডাক্ট টেবিল */}
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="bg-slate-50 border-b border-gray-200 px-5 py-3 flex items-center gap-2">
           <ShoppingBag className="h-4 w-4 text-slate-600" />
@@ -222,13 +233,24 @@ export default function OrderDetailsView({
 
       {/* অ্যাকশন সেকশন */}
       <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-4">
           <div className="space-y-1.5">
-            <Label className="text-[10px] font-bold uppercase text-slate-400">Status</Label>
+            <Label className="text-[10px] font-bold uppercase text-slate-400">Order Status</Label>
             <Select value={orderStatus} onValueChange={setOrderStatus}>
               <SelectTrigger className="h-10 text-xs font-bold"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                {/* ✅ MAGIC FIX: All statuses added as per requirement */}
+                {['Pending', 'Approved', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Returned', 'Return Request'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-bold uppercase text-slate-400">Payment Status</Label>
+            <Select value={paymentStatus} onValueChange={setPaymentStatus}>
+              <SelectTrigger className="h-10 text-xs font-bold"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {/* ✅ MAGIC FIX: Payment status update added */}
+                {['Initiated', 'Pending', 'Paid', 'Failed', 'Refunded', 'Cancelled'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

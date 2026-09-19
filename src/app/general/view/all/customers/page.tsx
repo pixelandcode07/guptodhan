@@ -1,4 +1,4 @@
-import { Customer } from "@/components/TableHelper/customer_columns";
+import { Customer, formatAddress } from "@/components/TableHelper/customer_columns";
 import CustomersClient from './components/CustomersClient';
 import { UserServices } from '@/lib/modules/user/user.service';
 import dbConnect from '@/lib/db';
@@ -18,7 +18,7 @@ export default async function ViewAllCustomersPage() {
       name: user.name || "",
       email: user.email || "",
       phone: user.phoneNumber || "",
-      address: user.address || "",
+      address: formatAddress(user.address),
       delete_request_submitted: "",
       wallet: user.rewardPoints || 0,
       created_at: user.createdAt ? new Date(user.createdAt).toLocaleString() : "",

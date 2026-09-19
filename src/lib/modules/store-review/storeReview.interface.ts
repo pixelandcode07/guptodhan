@@ -1,8 +1,10 @@
+import { Types } from 'mongoose';
+
 export interface IStoreReview {
-  storeId: string;
+  storeId: Types.ObjectId | string;
   userId: string;
   userName: string;
-  userImage: string;
+  userImage?: string; 
   rating: number;
   comment: string;
   createdAt?: Date;

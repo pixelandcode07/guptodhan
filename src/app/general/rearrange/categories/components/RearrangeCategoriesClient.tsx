@@ -20,7 +20,6 @@ export default function RearrangeCategoriesClient() {
           ) : null,
         };
       }}
-      sortItems={(a, b) => a.label.localeCompare(b.label)}
     />
   );
 }

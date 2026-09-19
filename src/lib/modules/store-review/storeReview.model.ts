@@ -17,7 +17,6 @@ const storeReviewSchema = new Schema(
     },
     userImage: {
       type: String,
-      required: true,
     },
     rating: {
       type: Number,

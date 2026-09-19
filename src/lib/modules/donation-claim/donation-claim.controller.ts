@@ -6,7 +6,6 @@ import { sendResponse } from '@/lib/utils/sendResponse'
 import dbConnect from '@/lib/db'
 import { createDonationClaimSchema } from './donation-claim.validation'
 import { DonationClaimServices } from './donation-claim.service'
-import { DonationCampaignServices } from '../donation-campaign/donation-campaign.service'
 import { ZodError } from 'zod'
 import { verifyToken } from '@/lib/utils/jwt'
 import { DonationCampaign } from '../donation-campaign/donation-campaign.model'
@@ -155,15 +154,8 @@ const createClaim = async (req: NextRequest) => {
       throw claimError
     }
 
-    // Increment donor count
-    console.log('Incrementing donor count for campaign:', validatedData.itemId)
-    try {
-      await DonationCampaignServices.incrementDonorCount(validatedData.itemId, 0)
-      console.log('✅ Donor count incremented')
-    } catch (incrementError) {
-      console.log('⚠️ Warning: Error incrementing donor count:', incrementError)
-      // Don't fail the request if increment fails
-    }
+    // ✅ MAGIC FIX: এখান থেকে duplicate `incrementDonorCount` কলটি মুছে ফেলা হয়েছে। 
+    // কারণ এটি Service ফাইলের ভেতরে অলরেডি একবার কল করা আছে।
 
     console.log('=== createClaim completed successfully ===')
 

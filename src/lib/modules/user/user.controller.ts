@@ -9,6 +9,8 @@ import { uploadToCloudinary } from '@/lib/utils/cloudinary';
 import { OtpServices } from '@/lib/modules/otp/otp.service';
 import { Types } from 'mongoose';
 import { OtpModel } from '../otp/otp.model';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { getServerSession } from 'next-auth';
 
 const registerUser = async (req: NextRequest) => {
   await dbConnect();
@@ -295,6 +297,8 @@ const registerServiceProvider = async (req: NextRequest) => {
 // 👤 GET MY PROFILE
 // ========================================
 const getMyProfile = async (req: NextRequest) => {
+  const session = await getServerSession(authOptions);
+  console.log("TOKEN---->", session?.accessToken)
   await dbConnect();
   const userId = req.headers.get('x-user-id');
   
@@ -303,6 +307,7 @@ const getMyProfile = async (req: NextRequest) => {
   }
 
   const result = await UserServices.getMyProfileFromDB(userId);
+  console.log('User Profile', result);
 
   return sendResponse({
     success: true,
@@ -328,11 +333,13 @@ const updateMyProfile = async (req: NextRequest) => {
   const name = formData.get('name') as string;
   const address = formData.get('address') as string;
   const phoneNumber = formData.get('phoneNumber') as string;
+  const email = formData.get('email') as string; // ✅ MAGIC FIX: Email রিসিভ করা হলো!
 
   const payload: any = {};
   if (name) payload.name = name;
   if (phoneNumber) payload.phoneNumber = phoneNumber;
   if (typeof address === 'string') payload.address = address;
+  if (email) payload.email = email; // ✅ MAGIC FIX: Email কে পেলোডে যুক্ত করা হলো!
 
   if (file) {
     const buffer = Buffer.from(await file.arrayBuffer());

@@ -28,6 +28,7 @@ import ProductVariantForm, { IProductOption } from "./ProductVariantForm";
 import ProductImageGallery from "./ProductImageGallery";
 import PricingInventory from "./PricingInventory";
 import TagInput from "./TagInput";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import imageCompression from "browser-image-compression";
 
@@ -64,8 +65,6 @@ const resolveOptionId = (
   if (found) return String(found._id || found.id || "");
   return "";
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 export default function ProductForm({
   initialData,
@@ -119,8 +118,6 @@ export default function ProductForm({
   const [shippingCost,  setShippingCost]  = useState<number | undefined>(undefined);
 
   const [callForPrice, setCallForPrice] = useState(false);
-
-  // ── ✅ FIX: callForPrice toggle হলে price preserve করার জন্য ref ──────────
   const preservedPrice         = useRef<number | undefined>(undefined);
   const preservedDiscountPrice = useRef<number | undefined>(undefined);
   const preservedStock         = useRef<number | undefined>(undefined);
@@ -139,7 +136,7 @@ export default function ProductForm({
   // ── Dynamic Lists ──────────────────────────────────────────────────────────
   const [subcategories,  setSubcategories]  = useState<any[]>([]);
   const [childCategories,setChildCategories]= useState<any[]>([]);
-  const [models,         setModels]         = useState<any[]>([]);
+  const [models,         setModels]         = useState<any[]>(initialData?.models || []);
 
   // ── Variant States ─────────────────────────────────────────────────────────
   const [specialOffer, setSpecialOffer] = useState(false);
@@ -161,24 +158,18 @@ export default function ProductForm({
   const initialModelId       = useRef<string | null>(null);
   const initialSubcategoryId = useRef<string | null>(null);
 
-  // ── ✅ Store permission check ──────────────────────────────────────────────
   const hasCallForPricePermission = useMemo(() => {
     if (!store) return false;
     const selectedStoreObj = listStores.find((s: any) => getIdFromRef(s) === store);
     return selectedStoreObj?.callForPricePermission === true;
   }, [store, listStores]);
 
-  // ── ✅ FIX: callForPrice toggle হলে price state preserve করো ───────────────
-  // callForPrice ON হলে current price ref এ save করো
-  // callForPrice OFF হলে ref থেকে price restore করো
   useEffect(() => {
     if (callForPrice) {
-      // ON হলে current values ref এ backup রাখো
       preservedPrice.current         = price;
       preservedDiscountPrice.current = discountPrice;
       preservedStock.current         = stock;
     } else {
-      // OFF হলে backup থেকে restore করো (যদি ref এ value থাকে)
       if (preservedPrice.current !== undefined) {
         setPrice(preservedPrice.current);
       }
@@ -189,10 +180,8 @@ export default function ProductForm({
         setStock(preservedStock.current);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callForPrice]);
 
-  // ── 1. Load existing product (edit mode) ──────────────────────────────────
   useEffect(() => {
     const fetchExistingProduct = async () => {
       if (!isEditMode || !productId || !token) {
@@ -213,7 +202,6 @@ export default function ProductForm({
           return;
         }
 
-        // Basic
         setTitle(p.productTitle || "");
         setShortDescription(p.shortDescription || "");
         setFullDescription(p.fullDescription || "");
@@ -221,7 +209,6 @@ export default function ProductForm({
         setWarrantyPolicy(p.warrantyPolicy || "");
         setProductTags(Array.isArray(p.productTag) ? p.productTag : []);
 
-        // SEO
         setMetaTitle(p.metaTitle || "");
         setMetaDescription(p.metaDescription || "");
         setMetaKeywordTags(
@@ -234,13 +221,10 @@ export default function ProductForm({
             : []
         );
 
-        // Images
         setThumbnailPreview(p.thumbnailImage || null);
         setInitialThumbnailUrl(p.thumbnailImage || null);
         setExistingGalleryUrls(Array.isArray(p.photoGallery) ? p.photoGallery : []);
 
-        // ✅ FIX: Pricing — সবসময় DB থেকে আসা price set করো
-        // callForPrice ON থাকলেও price state এ রাখো, শুধু UI তে hide থাকবে
         const dbPrice         = p.productPrice   ?? undefined;
         const dbDiscountPrice = p.discountPrice  ?? undefined;
         const dbStock         = p.stock          ?? undefined;
@@ -253,7 +237,6 @@ export default function ProductForm({
         setProductCode(p.sku || "");
         setVideoUrl(p.videoUrl || "");
 
-        // ✅ FIX: callForPrice restore — ref এও backup রাখো যাতে toggle এ reset না হয়
         const isCallForPrice = !!p.callForPrice;
         setCallForPrice(isCallForPrice);
         if (isCallForPrice) {
@@ -262,7 +245,6 @@ export default function ProductForm({
           preservedStock.current         = dbStock;
         }
 
-        // Special Offer
         if (p.offerDeadline) {
           setSpecialOffer(true);
           const deadline = new Date(p.offerDeadline);
@@ -272,9 +254,11 @@ export default function ProductForm({
           const hours   = String(deadline.getHours()).padStart(2, "0");
           const minutes = String(deadline.getMinutes()).padStart(2, "0");
           setOfferEndTime(`${year}-${month}-${day}T${hours}:${minutes}`);
+        } else {
+          setSpecialOffer(false);
+          setOfferEndTime("");
         }
 
-        // IDs
         const catId      = getIdFromRef(p.category);
         const subId      = getIdFromRef(p.subCategory);
         const childId    = getIdFromRef(p.childCategory);
@@ -283,7 +267,6 @@ export default function ProductForm({
         if (subId)      initialSubcategoryId.current = subId;
         if (modelIdRef) initialModelId.current       = modelIdRef;
 
-        // Dependent lists
         const promises: Promise<void>[] = [];
         if (catId) {
           promises.push(
@@ -320,7 +303,6 @@ export default function ProductForm({
         }
         await Promise.all(promises);
 
-        // Set main IDs
         const storeId    = getIdFromRef(p.vendorStoreId);
         const flagId     = getIdFromRef(p.flag);
         const unitId     = getIdFromRef(p.weightUnit);
@@ -336,7 +318,6 @@ export default function ProductForm({
         if (warrantyId) setWarranty(warrantyId);
         if (childId)    setChildCategory(childId);
 
-        // Variants
         if (p.productOptions?.length > 0) {
           setHasVariant(true);
           const currentVariantOptions = variantOptionsInitial;
@@ -369,51 +350,12 @@ export default function ProductForm({
               warranty:      warrantyId,
               country:       countryId,
               stock:         opt.stock         || 0,
-              // ✅ FIX: variant price সবসময় DB থেকে আসা value রাখো
               price:         opt.price         ?? 0,
               discountPrice: opt.discountPrice ?? 0,
             };
           });
 
           setVariants(mappedVariants);
-
-          const missingStorageOptions: any[] = [];
-          p.productOptions.forEach((opt: any) => {
-            const rawStorage = opt.storage;
-            if (!rawStorage) return;
-            const rawStr = typeof rawStorage === "string" ? rawStorage.trim() : getIdFromRef(rawStorage);
-            if (!rawStr) return;
-            const alreadyResolved = resolveOptionId(rawStorage, currentVariantOptions?.storageTypes || [], ["name"]);
-            if (!alreadyResolved) {
-              const existing    = currentVariantOptions?.storageTypes || [];
-              const existingIds = new Set(existing.map((s: any) => String(s._id || s.id)));
-              const customId    = rawStr;
-              if (!existingIds.has(customId)) {
-                missingStorageOptions.push({ _id: customId, name: rawStr, ram: undefined, rom: undefined });
-              }
-            }
-          });
-
-          if (missingStorageOptions.length > 0) {
-            setVariantOptions((prev: any) => {
-              const existing    = prev?.storageTypes || [];
-              const existingIds = new Set(existing.map((s: any) => String(s._id || s.id)));
-              const merged      = [...existing, ...missingStorageOptions.filter((s) => !existingIds.has(String(s._id)))];
-              return { ...prev, storageTypes: merged };
-            });
-            setVariants((prev) =>
-              prev.map((v, idx) => {
-                const opt = p.productOptions[idx];
-                if (!opt) return v;
-                const rawStorage = opt.storage;
-                if (!rawStorage) return v;
-                const rawStr = typeof rawStorage === "string" ? rawStorage.trim() : getIdFromRef(rawStorage);
-                const alreadyResolved = resolveOptionId(rawStorage, currentVariantOptions?.storageTypes || [], ["name"]);
-                if (!alreadyResolved && rawStr) return { ...v, storage: rawStr };
-                return v;
-              })
-            );
-          }
         }
       } catch (err: any) {
         console.error(err);
@@ -425,10 +367,8 @@ export default function ProductForm({
     };
 
     fetchExistingProduct();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditMode, productId, token]);
 
-  // ── 2. Fetch subcategories ─────────────────────────────────────────────────
   useEffect(() => {
     if (isInitialLoad.current) return;
     const fetchSubs = async () => {
@@ -451,7 +391,6 @@ export default function ProductForm({
     fetchSubs();
   }, [category, token]);
 
-  // ── 3. Fetch child categories ──────────────────────────────────────────────
   useEffect(() => {
     if (isInitialLoad.current) return;
     const fetchChildren = async () => {
@@ -472,28 +411,29 @@ export default function ProductForm({
     fetchChildren();
   }, [subcategory, token]);
 
-  // ── 4. Fetch models ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (isInitialLoad.current) return;
     const fetchModels = async () => {
-      if (brand && token) {
-        try {
-          const res = await axios.get(
-            `/api/v1/product-config/modelName?brandId=${brand}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          setModels(res.data?.data?.filter((m: any) => m.status === "active") || []);
-          setModel("");
-        } catch {}
-      } else {
-        setModels([]);
-        setModel("");
+      try {
+        const url = brand
+          ? `/api/v1/product-config/modelName?brandId=${brand}`
+          : `/api/v1/product-config/modelName/active`;
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await axios.get(url, { headers });
+        const fetched = res.data?.data?.filter((m: any) => m.status === "active") || res.data?.data || [];
+        if (fetched.length > 0) {
+          setModels(fetched);
+        } else if (initialData?.models?.length > 0) {
+          setModels(initialData.models);
+        }
+      } catch {
+        if (initialData?.models?.length > 0) {
+          setModels(initialData.models);
+        }
       }
     };
     fetchModels();
   }, [brand, token]);
 
-  // ── 5. Set model after list loads ─────────────────────────────────────────
   useEffect(() => {
     if (!isEditMode || !initialModelId.current) return;
     if (models.length > 0 && !model) {
@@ -506,7 +446,6 @@ export default function ProductForm({
     }
   }, [models, model, isEditMode]);
 
-  // ── 6. Set subcategory after list loads ───────────────────────────────────
   useEffect(() => {
     if (!isEditMode || !initialSubcategoryId.current) return;
     if (subcategories.length > 0 && !subcategory) {
@@ -519,7 +458,6 @@ export default function ProductForm({
     }
   }, [subcategories, subcategory, isEditMode]);
 
-  // ── Pricing handlers ───────────────────────────────────────────────────────
   const pricingFormData = {
     price:         price         ?? "",
     discountPrice: discountPrice ?? "",
@@ -546,7 +484,6 @@ export default function ProductForm({
     if (field === "shippingCost")  setShippingCost(updater);
   };
 
-  // ── Upload helper ──────────────────────────────────────────────────────────
   const uploadFile = async (file: File): Promise<string> => {
     try {
       const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true, fileType: file.type };
@@ -564,7 +501,6 @@ export default function ProductForm({
     }
   };
 
-  // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!token) return toast.error("⚠️ Authentication required.");
@@ -573,7 +509,6 @@ export default function ProductForm({
 
     const finalCallForPrice = hasCallForPricePermission ? callForPrice : false;
 
-    // ✅ FIX: callForPrice OFF থাকলেই price validate করো
     if (!finalCallForPrice && (!price || price <= 0)) {
       return toast.error("⚠️ Price is required unless 'Call for Price' is active.");
     }
@@ -611,9 +546,6 @@ export default function ProductForm({
         removedPhotoGallery: removedGalleryUrls.length > 0 ? removedGalleryUrls : undefined,
         removeThumbnail:     removedThumbnailUrl || undefined,
 
-        // ✅ FIX: price ?? 0 ব্যবহার করো (|| 0 না)
-        // callForPrice ON থাকলেও price state এ যা আছে তাই পাঠাও
-        // Backend এ safety guard আছে
         productPrice:  price         ?? 0,
         discountPrice: discountPrice ?? undefined,
         stock:         stock         ?? 0,
@@ -631,7 +563,10 @@ export default function ProductForm({
         flag:          flag          || undefined,
         warranty:      warranty      || undefined,
         weightUnit:    unit          || undefined,
-        offerDeadline: offerEndTime  ? new Date(offerEndTime) : undefined,
+
+        // ✅ MAGIC FIX: Correct handling of null for offerDeadline
+        offerDeadline: specialOffer && offerEndTime ? new Date(offerEndTime) : null,
+
         metaTitle:     metaTitle     || undefined,
         metaKeyword:   metaKeywordTags.length > 0 ? metaKeywordTags.join(", ") : undefined,
         metaDescription: metaDescription || undefined,
@@ -653,7 +588,6 @@ export default function ProductForm({
                   condition:     safeId(variant.condition) ? [variant.condition] : [],
                   warranty:      safeId(variant.warranty),
                   stock:         variant.stock,
-                  // ✅ FIX: variant price ?? 0 (|| 0 না)
                   price:         variant.price         ?? 0,
                   discountPrice: variant.discountPrice ?? 0,
                 };
@@ -714,7 +648,6 @@ export default function ProductForm({
     <>
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
 
-        {/* Sticky action bar */}
         <div className="flex justify-end gap-2 sticky top-4 z-10 bg-gray-50/80 backdrop-blur-sm py-2 px-4 rounded-lg shadow-sm -mt-4">
           <Button type="button" variant="destructive" onClick={() => router.back()}>
             <X className="mr-2 h-4 w-4" /> Discard
@@ -727,7 +660,6 @@ export default function ProductForm({
 
         <div className="space-y-4 sm:space-y-6">
 
-          {/* Row 1: Basic Info + Thumbnail */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <Card className="shadow-sm border-gray-200 flex flex-col h-full">
               <CardHeader className="pb-4 border-b border-gray-100">
@@ -775,7 +707,6 @@ export default function ProductForm({
             </Card>
           </div>
 
-          {/* Row 2: Description + Pricing */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <Card className="shadow-sm border-gray-200 flex flex-col h-full">
               <CardHeader className="pb-4 border-b border-gray-100">
@@ -801,7 +732,6 @@ export default function ProductForm({
               </CardHeader>
               <CardContent className="pt-6 space-y-4 flex-1">
 
-                {/* Call for Price Toggle — শুধু permission থাকলে দেখাবে */}
                 {hasCallForPricePermission && (
                   <div className="flex items-center justify-between bg-blue-50/50 p-4 border border-blue-100 rounded-lg">
                     <div>
@@ -812,13 +742,7 @@ export default function ProductForm({
                   </div>
                 )}
 
-                {/* ✅ FIX: && দিয়ে unmount না করে div দিয়ে hide করো */}
-                {/* এতে price state intact থাকে, reset হয় না */}
-                <div className={
-                  !hasCallForPricePermission || !callForPrice
-                    ? "block"
-                    : "hidden"
-                }>
+                <div className={!hasCallForPricePermission || !callForPrice ? "block" : "hidden"}>
                   <PricingInventory
                     formData={pricingFormData}
                     handleInputChange={handlePricingInputChange}
@@ -855,102 +779,107 @@ export default function ProductForm({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Store <span className="text-red-500">*</span></Label>
-                    <Select value={store} onValueChange={setStore}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Select store" /></SelectTrigger>
-                      <SelectContent>
-                        {listStores.map((s: any) => (
-                          <SelectItem key={getIdFromRef(s)} value={getIdFromRef(s)}>{s.storeName}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={listStores.map((s: any) => ({ label: s.storeName, value: getIdFromRef(s) }))}
+                      value={store}
+                      onValueChange={setStore}
+                      placeholder="Select store"
+                    />
                   </div>
+
                   <div className="space-y-2">
                     <Label>Category <span className="text-red-500">*</span></Label>
-                    <Select value={category} onValueChange={(val) => { setCategory(val); if (!isInitialLoad.current) { setSubcategory(""); setChildCategory(""); } }}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Select category" /></SelectTrigger>
-                      <SelectContent>
-                        {listCategories.map((c: any) => (
-                          <SelectItem key={getIdFromRef(c)} value={getIdFromRef(c)}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={listCategories.map((c: any) => ({ label: c.name, value: getIdFromRef(c) }))}
+                      value={category}
+                      onValueChange={(val) => {
+                        setCategory(val);
+                        if (!isInitialLoad.current) {
+                          setSubcategory("");
+                          setChildCategory("");
+                        }
+                      }}
+                      placeholder="Select category"
+                    />
                   </div>
+
                   <div className="space-y-2">
                     <Label>Subcategory</Label>
-                    <Select value={subcategory} onValueChange={(val) => { setSubcategory(val); if (!isInitialLoad.current) setChildCategory(""); }} disabled={!category}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Select subcategory" /></SelectTrigger>
-                      <SelectContent>
-                        {subcategories.map((sc: any) => (
-                          <SelectItem key={getIdFromRef(sc)} value={getIdFromRef(sc)}>{sc.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={subcategories.map((sc: any) => ({ label: sc.name, value: getIdFromRef(sc) }))}
+                      value={subcategory}
+                      onValueChange={(val) => {
+                        setSubcategory(val);
+                        if (!isInitialLoad.current) setChildCategory("");
+                      }}
+                      placeholder="Select subcategory"
+                      disabled={!category}
+                    />
                   </div>
+
                   <div className="space-y-2">
                     <Label>Child Category</Label>
-                    <Select value={childCategory} onValueChange={setChildCategory} disabled={!subcategory}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Select child category" /></SelectTrigger>
-                      <SelectContent>
-                        {childCategories.map((cc: any) => (
-                          <SelectItem key={getIdFromRef(cc)} value={getIdFromRef(cc)}>{cc.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={childCategories.map((cc: any) => ({ label: cc.name, value: getIdFromRef(cc) }))}
+                      value={childCategory}
+                      onValueChange={setChildCategory}
+                      placeholder="Select child category"
+                      disabled={!subcategory}
+                    />
                   </div>
+
                   <div className="space-y-2">
                     <Label>Brand</Label>
-                    <Select value={brand} onValueChange={(val) => { setBrand(val); if (!isInitialLoad.current) setModel(""); }}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Select brand" /></SelectTrigger>
-                      <SelectContent>
-                        {listBrands.map((b: any) => (
-                          <SelectItem key={getIdFromRef(b)} value={getIdFromRef(b)}>{b.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={listBrands.map((b: any) => ({ label: b.name, value: getIdFromRef(b) }))}
+                      value={brand}
+                      onValueChange={(val) => {
+                        setBrand(val);
+                        if (!isInitialLoad.current) setModel("");
+                      }}
+                      placeholder="Select brand"
+                    />
                   </div>
+
                   <div className="space-y-2">
                     <Label>Model</Label>
-                    <Select value={model} onValueChange={setModel} disabled={!brand}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Select model" /></SelectTrigger>
-                      <SelectContent>
-                        {models.map((m: any) => (
-                          <SelectItem key={getIdFromRef(m)} value={getIdFromRef(m)}>{m.modelName}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={models.map((m: any) => ({ label: m.modelName, value: getIdFromRef(m) }))}
+                      value={model}
+                      onValueChange={setModel}
+                      placeholder="Select model"
+                      disabled={models.length === 0}
+                    />
                   </div>
+
                   <div className="space-y-2">
                     <Label>Flag</Label>
-                    <Select value={flag} onValueChange={setFlag}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
-                        {listFlags.map((f: any) => (
-                          <SelectItem key={getIdFromRef(f)} value={getIdFromRef(f)}>{f.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={listFlags.map((f: any) => ({ label: f.name, value: getIdFromRef(f) }))}
+                      value={flag}
+                      onValueChange={setFlag}
+                      placeholder="Select flag"
+                    />
                   </div>
+
                   <div className="space-y-2">
                     <Label>Unit</Label>
-                    <Select value={unit} onValueChange={setUnit}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
-                        {listUnits.map((u: any) => (
-                          <SelectItem key={getIdFromRef(u)} value={getIdFromRef(u)}>{u.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={listUnits.map((u: any) => ({ label: u.name, value: getIdFromRef(u) }))}
+                      value={unit}
+                      onValueChange={setUnit}
+                      placeholder="Select unit"
+                    />
                   </div>
+
                   <div className="space-y-2">
                     <Label>Warranty</Label>
-                    <Select value={warranty} onValueChange={setWarranty}>
-                      <SelectTrigger className="h-11"><SelectValue placeholder="Optional" /></SelectTrigger>
-                      <SelectContent>
-                        {listWarranties.map((w: any) => (
-                          <SelectItem key={getIdFromRef(w)} value={getIdFromRef(w)}>{w.warrantyName}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={listWarranties.map((w: any) => ({ label: w.warrantyName || w.name, value: getIdFromRef(w) }))}
+                      value={warranty}
+                      onValueChange={setWarranty}
+                      placeholder="Optional"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Video URL</Label>
@@ -1027,5 +956,5 @@ export default function ProductForm({
         </div>
       </form>
     </>
-  );
+  ); 
 }

@@ -74,6 +74,7 @@ export default function OrderUpdateModal({ order, isOpen, onClose, onSuccess }: 
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="Pending">Pending</SelectItem>
+                                <SelectItem value="Approved">Approved</SelectItem> {/* ✅ MAGIC FIX: Added Approved Status */}
                                 <SelectItem value="Processing">Processing</SelectItem>
                                 <SelectItem value="Shipped">Shipped</SelectItem>
                                 <SelectItem value="Delivered">Delivered</SelectItem>

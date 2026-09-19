@@ -12,6 +12,7 @@ import { ProductSimTypeServices } from '@/lib/modules/product-config/services/pr
 import { ProductSizeServices } from '@/lib/modules/product-config/services/productSize.service';
 import { DeviceConditionServices } from '@/lib/modules/product-config/services/deviceCondition.service';
 import { StorageTypeServices } from '@/lib/modules/product-config/services/storageType.service';
+import { ModelFormServices } from '@/lib/modules/product-config/services/modelCreate.service';
 import ProductForm from './Components/ProductForm';
 import { ProductCountryService } from '@/lib/modules/product-config/country/productCountry.service';
 
@@ -32,6 +33,7 @@ export default async function AddProductPage() {
       conditionsData,
       storageTypesData,
       countriesData,
+      modelsData,
     ] = await Promise.all([
       StoreServices.getAllStoresFromDB(),
       CategoryServices.getAllCategoriesFromDB(),
@@ -44,8 +46,8 @@ export default async function AddProductPage() {
       ProductSizeServices.getAllProductSizesFromDB(),
       DeviceConditionServices.getAllDeviceConditionsFromDB(),
       StorageTypeServices.getAllStorageTypesFromDB(),
-      // ✅ NEW: onlyActive = true
       ProductCountryService.getAllCountriesFromDB(true),
+      ModelFormServices.getAllActiveModelFormsFromDB(),
     ]);
 
     const initialData = {
@@ -55,7 +57,7 @@ export default async function AddProductPage() {
       flags:       JSON.parse(JSON.stringify(flagsData      || [])),
       units:       JSON.parse(JSON.stringify(unitsData      || [])),
       warranties:  JSON.parse(JSON.stringify(warrantiesData || [])),
-      models:      [],
+      models:      JSON.parse(JSON.stringify(modelsData     || [])),
       variantOptions: {
         warranties:   JSON.parse(JSON.stringify(warrantiesData   || [])),
         conditions:   JSON.parse(JSON.stringify(conditionsData   || [])),

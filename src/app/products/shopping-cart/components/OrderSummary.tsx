@@ -1,6 +1,7 @@
 "use client"
 
 import React from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -28,14 +29,6 @@ export default function OrderSummary({
     if (selectedCartItems.length === 0) {
       toast.error('Please select at least one item to checkout', {
         description: 'You must select items from your cart to proceed.',
-        duration: 3000,
-      });
-      return;
-    }
-
-    if (!termsAccepted) {
-      toast.error('Please accept terms and conditions', {
-        description: 'You must agree to the terms and conditions to proceed.',
         duration: 3000,
       });
       return;
@@ -96,21 +89,48 @@ export default function OrderSummary({
       </div>
 
       {/* Terms and Conditions */}
-      <div className="text-xs text-gray-500 mb-4">
-        <label className="flex items-start gap-2 cursor-pointer">
+      <div className="text-xs text-gray-500 mb-4 select-none">
+        <div className="flex items-start gap-2">
           <input 
+            id="terms-cart-checkbox"
             type="checkbox" 
-            className="mt-1" 
+            className="mt-0.5 w-4 h-4 flex-shrink-0 cursor-pointer accent-blue-600" 
             checked={termsAccepted}
             onChange={(e) => setTermsAccepted(e.target.checked)}
           />
-          <span>
+          <label htmlFor="terms-cart-checkbox" className="cursor-pointer leading-relaxed">
             I have read and agree to the{' '}
-            <a href="#" className="text-blue-600 hover:underline">Terms and Conditions</a>,{' '}
-            <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a> and{' '}
-            <a href="#" className="text-blue-600 hover:underline">Refund and Return Policy</a>
-          </span>
-        </label>
+            <Link
+              href="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-blue-600 hover:underline font-medium relative z-10"
+            >
+              Terms and Conditions
+            </Link>
+            ,{' '}
+            <Link
+              href="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-blue-600 hover:underline font-medium relative z-10"
+            >
+              Privacy Policy
+            </Link>
+            {' '}and{' '}
+            <Link
+              href="/return"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-blue-600 hover:underline font-medium relative z-10"
+            >
+              Refund and Return Policy
+            </Link>
+          </label>
+        </div>
       </div>
 
       {/* Checkout Button */}

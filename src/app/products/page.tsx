@@ -5,7 +5,8 @@ async function getProducts(searchParams: any) {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://www.guptodhan.com';
     const params = new URLSearchParams();
     params.set('page', searchParams?.page || '1');
-    params.set('limit', '12'); // ✅ 12 products = 3 complete rows of 4
+    
+    params.set('limit', '24'); 
 
     if (searchParams?.search) params.set('search', searchParams.search);
     if (searchParams?.brand)    params.set('brand', searchParams.brand);

@@ -156,7 +156,11 @@ const ToBeReview: FC = () => {
                     </span>
                   )}
                 </div>
-                <p className="text-sm font-bold text-gray-800 line-clamp-2 leading-snug">{order.productName}</p>
+                
+                {/* ✅ ক্লিকেবল টাইটেল (ডিফল্ট পেজে নিয়ে যাবে) */}
+                <Link href={order.slug ? `/product/${order.slug}` : '#'}>
+                  <p className="text-sm font-bold text-gray-800 line-clamp-2 leading-snug hover:text-blue-600 transition-colors cursor-pointer">{order.productName}</p>
+                </Link>
                 
                 <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
                   <span className="font-semibold text-blue-600">৳ {order.price.toLocaleString()}</span>
@@ -177,6 +181,7 @@ const ToBeReview: FC = () => {
                 {order.status.toUpperCase()}
               </Badge>
               
+              {/* ✅ MAGIC FIX: Review Now বাটনে ক্লিক করলে #reviews ট্যাবে নিয়ে যাবে */}
               <Link 
                 href={order.slug ? `/product/${order.slug}#reviews` : '#'}
                 className="text-xs font-bold bg-[#EF4A23] hover:bg-[#d43d1a] text-white px-4 py-2 rounded-md transition-colors shadow-sm"

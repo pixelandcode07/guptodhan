@@ -1,7 +1,7 @@
 'use client';
 
 import axios from 'axios';
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
@@ -40,7 +40,7 @@ import Link from 'next/link';
 
 // Types
 type Division = keyof typeof division_wise_locations;
-type City = keyof (typeof division_wise_locations)[Division];
+type City = string;
 type Area = string;
 
 type FormData = {
@@ -74,9 +74,10 @@ export default function ClientServicePostForm({ categories }: { categories: any[
     const [loading, setLoading] = useState(false);
     const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
-    const [selectedDivision, setSelectedDivision] = useState<Division | ''>('');
-    const [selectedCity, setSelectedCity] = useState<City | ''>('');
-    const [selectedArea, setSelectedArea] = useState<Area | ''>('');
+    // ✅ FIX 1: Using undefined as default state to prevent Radix Select crashes
+    const [selectedDivision, setSelectedDivision] = useState<Division | undefined>(undefined);
+    const [selectedCity, setSelectedCity] = useState<City | undefined>(undefined);
+    const [selectedArea, setSelectedArea] = useState<Area | undefined>(undefined);
 
     const toastStyle = {
         style: {
@@ -90,18 +91,36 @@ export default function ClientServicePostForm({ categories }: { categories: any[
         defaultValues: { pricing_type: 'fixed', available_time_slots: [], working_days: [] },
     });
 
-    const selectedTimeSlots = watch('available_time_slots');
-    const selectedWorkingDays = watch('working_days');
+    const selectedTimeSlots = watch('available_time_slots') || [];
+    const selectedWorkingDays = watch('working_days') || [];
 
-    // Location Logic
+    // Location Data logic
     const divisions = Object.keys(division_wise_locations) as Division[];
-    const cities = useMemo(() => selectedDivision ? Object.keys(division_wise_locations[selectedDivision]) as City[] : [], [selectedDivision]);
-    const areas = useMemo(() => selectedDivision && selectedCity ? (division_wise_locations[selectedDivision] as any)[selectedCity] as Area[] : [], [selectedDivision, selectedCity]);
+    
+    const cities = useMemo(() => {
+        if (!selectedDivision) return [];
+        return Object.keys(division_wise_locations[selectedDivision]) as City[];
+    }, [selectedDivision]);
+    
+    const areas = useMemo(() => {
+        if (!selectedDivision || !selectedCity) return [];
+        const cityData = (division_wise_locations[selectedDivision] as Record<string, Area[]>)[selectedCity];
+        return cityData ? cityData : [];
+    }, [selectedDivision, selectedCity]);
 
-    useEffect(() => { setSelectedCity(''); setSelectedArea(''); }, [selectedDivision]);
-    useEffect(() => { setSelectedArea(''); }, [selectedCity]);
+    // ✅ FIX 2: Synchronous State Updates to prevent React rendering conflicts
+    const handleDivisionChange = (val: string) => {
+        setSelectedDivision(val as Division);
+        setSelectedCity(undefined); // Instantly clear city
+        setSelectedArea(undefined); // Instantly clear area
+    };
 
-    // ✅ FIX 1: Image Validation Helper
+    const handleCityChange = (val: string) => {
+        setSelectedCity(val);
+        setSelectedArea(undefined); // Instantly clear area
+    };
+
+    // Image Validation Helper
     const validateFile = (file: File) => {
         const maxSize = 2 * 1024 * 1024; // 2MB Limit
         if (file.size > maxSize) {
@@ -112,30 +131,38 @@ export default function ClientServicePostForm({ categories }: { categories: any[
     };
 
     const handleImageChange = (index: number) => (file: File | null) => {
-        // ✅ Check size before setting state
         if (file && !validateFile(file)) return;
 
         setImages(prev => {
             const next = [...prev];
-            if (file) next[index] = file; else next.splice(index, 1);
+            if (file) next[index] = file; 
+            else next.splice(index, 1);
             return next.filter(Boolean);
         });
     };
 
     const onSubmit: SubmitHandler<FormData> = async (data) => {
-        if (!(session as any)?.accessToken) return toast.error("Please login first");
+        const token = (session as any)?.accessToken;
+        
+        if (!token) {
+            toast.error("Please login first to post a service", { ...toastStyle });
+            return;
+        }
 
         // Basic validation
         if (images.length === 0) return toast.error("Please upload at least one image", { ...toastStyle });
         if (!selectedDivision || !selectedCity || !selectedArea) return toast.error("Please select full location details", { ...toastStyle });
 
         setLoading(true);
-        const toastId = toast.loading("Publishing service... Please wait.");
+        const toastId = toast.loading("Publishing your service... Please wait.");
 
         const formData = new FormData();
         Object.entries(data).forEach(([key, value]) => {
-            if (Array.isArray(value)) value.forEach(v => formData.append(key, v));
-            else formData.append(key, String(value));
+            if (Array.isArray(value)) {
+                value.forEach(v => formData.append(key, v));
+            } else if (value !== undefined && value !== null) {
+                formData.append(key, String(value));
+            }
         });
 
         // Location Data
@@ -147,37 +174,30 @@ export default function ClientServicePostForm({ categories }: { categories: any[
         images.forEach(file => formData.append('service_images', file));
 
         try {
-            // ✅ FIX 2: Increased Timeout to 120 seconds (2 minutes)
-            const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/service-section/provide-service`, formData, {
+            // ✅ FIX 3: Fully bypassed CORS error using Relative URL 
+            // Because frontend and backend are on the exact same project!
+            const apiUrl = '/api/v1/service-section/provide-service';
+
+            const res = await axios.post(apiUrl, formData, {
                 headers: {
-                    'Authorization': `Bearer ${(session as any)?.accessToken}`,
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'multipart/form-data'
                 },
-                timeout: 120000
+                timeout: 120000 // 2 minutes timeout for image upload
             });
 
             if (res.data.success) {
-                toast.success(
-                    "Service posted successfully!", {
-                    ...toastStyle,
-                    id: toastId
-                });
+                toast.success("Service posted successfully!", { ...toastStyle, id: toastId });
                 setShowSuccessDialog(true);
             }
         } catch (err: any) {
-            console.error(err);
-            const errorMsg = err.response?.data?.message || "Failed to post service";
+            console.error("Submission Error: ", err);
+            const errorMsg = err.response?.data?.message || "Failed to post service. Please try again.";
 
             if (err.code === 'ECONNABORTED') {
-                toast.error("Request timed out. Please try uploading smaller images.", {
-                    ...toastStyle,
-                    id: toastId
-                });
+                toast.error("Request timed out. Please try uploading smaller images.", { ...toastStyle, id: toastId });
             } else {
-                toast.error(errorMsg, {
-                    ...toastStyle,
-                    id: toastId
-                });
+                toast.error(errorMsg, { ...toastStyle, id: toastId });
             }
         } finally {
             setLoading(false);
@@ -191,7 +211,7 @@ export default function ClientServicePostForm({ categories }: { categories: any[
                 <div className="max-w-6xl mx-auto px-4 h-20 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Link href={'/'} className='cursor-pointer'>
-                            <Image src="/img/logo.png" alt="Guptodhan" width={100} height={100} className="rounded-xl shadow-sm" />
+                            <Image src="/img/logo.png" alt="Guptodhan" width={100} height={100} className="rounded-xl shadow-sm" priority />
                         </Link>
                         <div className=''>
                             <h1 className="text-xl font-bold text-gray-800">Post a Service</h1>
@@ -221,10 +241,10 @@ export default function ClientServicePostForm({ categories }: { categories: any[
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-gray-600">Category</Label>
-                                    <Controller name="service_category" control={control} render={({ field }) => (
+                                    <Controller name="service_category" control={control} rules={{ required: true }} render={({ field }) => (
                                         <Select value={field.value} onValueChange={field.onChange}>
                                             <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                                            <SelectContent>{categories.map(cat => <SelectItem key={cat._id} value={cat.name}>{cat.name}</SelectItem>)}</SelectContent>
+                                            <SelectContent>{categories.map(cat => <SelectItem key={cat._id || cat.name} value={cat.name}>{cat.name}</SelectItem>)}</SelectContent>
                                         </Select>
                                     )} />
                                 </div>
@@ -245,21 +265,21 @@ export default function ClientServicePostForm({ categories }: { categories: any[
                         <CardContent className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-2">
                                 <Label className="text-xs uppercase tracking-wider text-gray-500">District / Division</Label>
-                                <Select value={selectedDivision} onValueChange={(v) => setSelectedDivision(v as Division)}>
+                                <Select value={selectedDivision} onValueChange={handleDivisionChange}>
                                     <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                                     <SelectContent>{divisions.map(div => <SelectItem key={div} value={div}>{div}</SelectItem>)}</SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-xs uppercase tracking-wider text-gray-500">City</Label>
-                                <Select value={selectedCity} onValueChange={(v) => setSelectedCity(v as City)} disabled={!selectedDivision}>
+                                <Select value={selectedCity} onValueChange={handleCityChange} disabled={!selectedDivision || cities.length === 0}>
                                     <SelectTrigger><SelectValue placeholder="Select City" /></SelectTrigger>
                                     <SelectContent>{cities.map(city => <SelectItem key={city} value={city}>{city}</SelectItem>)}</SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-xs uppercase tracking-wider text-gray-500">Area / Thana</Label>
-                                <Select value={selectedArea} onValueChange={setSelectedArea} disabled={!selectedCity}>
+                                <Select value={selectedArea} onValueChange={setSelectedArea} disabled={!selectedCity || areas.length === 0}>
                                     <SelectTrigger><SelectValue placeholder="Select Area" /></SelectTrigger>
                                     <SelectContent>{areas.map(area => <SelectItem key={area} value={area}>{area}</SelectItem>)}</SelectContent>
                                 </Select>
@@ -290,11 +310,11 @@ export default function ClientServicePostForm({ categories }: { categories: any[
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label>Base Price (৳)</Label>
-                                        <Input type="number" {...register('base_price')} className="border-green-100" />
+                                        <Input type="number" {...register('base_price', { required: true, valueAsNumber: true })} className="border-green-100" />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Min. Charge (৳)</Label>
-                                        <Input type="number" {...register('minimum_charge')} className="border-green-100" />
+                                        <Input type="number" {...register('minimum_charge', { valueAsNumber: true })} className="border-green-100" />
                                     </div>
                                 </div>
                             </CardContent>
@@ -377,8 +397,8 @@ export default function ClientServicePostForm({ categories }: { categories: any[
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="sm:justify-center flex-col sm:flex-row gap-4 mt-8">
-                        <Button variant="outline" className="rounded-xl px-8" onClick={() => { reset(); setImages([]); setShowSuccessDialog(false); }}>Stay Here</Button>
-                        <Button className="rounded-xl px-8" onClick={() => router.push('/home/service')}>Go to Services</Button>
+                        <Button variant="outline" className="rounded-xl px-8" onClick={() => { reset(); setImages([]); setShowSuccessDialog(false); }}>Post Another</Button>
+                        <Button className="rounded-xl px-8 bg-[#0097E9] hover:bg-[#007cbd] text-white" onClick={() => router.push('/home/service')}>Go to Services</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
